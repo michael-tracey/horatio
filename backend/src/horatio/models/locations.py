@@ -47,10 +47,13 @@ class Location(Record):
         JSONB, default=list, server_default="[]"
     )
     # Each {"name", "level", "secret", "by"}: a negative quality, ×1 to ×3, kept
-    # secret from the controller or not, and who is behind it (p. 127).
+    # secret from the controller or not, and who is behind it (p. 127). Out of Code
+    # also counts the "games" passed at its level (horatio.location_quests).
     negatives: Mapped[list[dict[str, Any]]] = mapped_column(
         JSONB, default=list, server_default="[]"
     )
+    # The qualities Damaged has switched off, as staff chose them (p. 127).
+    damaged_off: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
     # Who controls it: a character, an NPC known only by name, nobody, or nobody
     # ever (uncontrollable, p. 121).
     control: Mapped[str] = mapped_column(default="none", server_default="none")

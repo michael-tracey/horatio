@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { QuestCharacterChoice, QuestOut, QuestRequirementOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, RichText, Select, Textarea } from "../../components/ui";
@@ -29,7 +29,7 @@ export function QuestPage({ troupeId }: { troupeId: string }) {
     <div className="flex flex-col gap-4">
       <Overview quest={q} troupeId={troupeId} />
       <Requirements quest={q} everyone={everyone} />
-      <Scenarios quest={q} />
+      <Scenarios quest={q} everyone={everyone} />
       <Party quest={q} everyone={everyone} />
       {(q.status === "completed" || q.status === "failed") && <Tale quest={q} />}
       {q.deliveries.length > 0 && <Deliveries quest={q} />}
@@ -98,7 +98,7 @@ function Overview({ quest: q, troupeId }: { quest: QuestOut; troupeId: string })
             save.mutate(editing);
           }}
         >
-          <QuestFields troupeId={troupeId} draft={editing} onChange={(change) => setEditing({ ...editing, ...change })} />
+          <QuestFields troupeId={troupeId} draft={editing} onChange={(change) => setEditing({ ...editing, ...change })} most={q.location ? 10 : 5} />
           <div className="flex gap-2">
             <Button type="submit" disabled={save.isPending}>
               Save
@@ -116,6 +116,15 @@ function Overview({ quest: q, troupeId }: { quest: QuestOut; troupeId: string })
             {q.offer === "unlocked" && q.unlock_quest_name && ` (scenario ${q.unlock_scenario} of ${q.unlock_quest_name})`}
           </p>
           {q.objective && <p className="whitespace-pre-line">{q.objective}</p>}
+          {q.location && (
+            <p>
+              When it is completed,{" "}
+              <Link to={`/troupes/${troupeId}/locations/${q.location.id}`} className="text-gold hover:text-parchment">
+                {q.location.name}
+              </Link>{" "}
+              changes: {q.location.change}.
+            </p>
+          )}
           <p className="text-mist">{guidanceText(q.guidance)}</p>
           {q.staff_notes && <p className="whitespace-pre-line text-mist">Staff notes: {q.staff_notes}</p>}
           {q.request && (
@@ -312,7 +321,7 @@ function RequirementRow({ quest: q, requirement: r, number, everyone }: { quest:
   );
 }
 
-function Scenarios({ quest: q }: { quest: QuestOut }) {
+function Scenarios({ quest: q, everyone }: { quest: QuestOut; everyone: QuestCharacterChoice[] }) {
   const [editing, setEditing] = useState<{ success_text: string; fail_text: string }[] | null>(null);
   const save = useAction(async (scenarios: { success_text: string; fail_text: string }[]) => {
     await unwrap(
@@ -411,6 +420,14 @@ function Scenarios({ quest: q }: { quest: QuestOut }) {
                   </>
                 )}
                 {s.awaiting_delivery && <p className="mt-1 text-xs text-mist">Recorded in {s.cycle_name}; it goes out with that cycle's delivery.</p>}
+                {s.resources.map((r, i) => (
+                  <p key={i} className="mt-1 text-xs text-gold">
+                    {r.name} expended Resources {r.dots}: {r.successes} {r.successes === 1 ? "success" : "successes"}.
+                  </p>
+                ))}
+                {q.location && q.can_send && q.status === "active" && next?.number === s.number && (
+                  <ExpendResources quest={q} number={s.number} everyone={everyone} />
+                )}
                 {q.can_send &&
                   q.status === "active" &&
                   next?.number === s.number &&
@@ -425,6 +442,46 @@ function Scenarios({ quest: q }: { quest: QuestOut }) {
         </>
       )}
     </Card>
+  );
+}
+
+/** The Resources shortcut on a location quest (Vol. II Issue 1, p. 120). */
+function ExpendResources({ quest: q, number, everyone }: { quest: QuestOut; number: number; everyone: QuestCharacterChoice[] }) {
+  const [who, setWho] = useState(q.leader?.id ?? "");
+  const [dots, setDots] = useState(q.difficulty);
+  const expend = useAction(() =>
+    unwrap(api.POST("/api/quests/{quest_id}/scenarios/{number}/resources", { params: { path: { quest_id: q.id, number } }, body: { character_id: who, dots } })),
+  );
+  return (
+    <form
+      aria-label={`Resources on scenario ${number}`}
+      className="mt-3 flex flex-col gap-2 border-t border-ash pt-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        expend.mutate(undefined);
+      }}
+    >
+      <p className="text-xs text-mist">Resources equal to the difficulty, {q.difficulty}, succeed this step; each dot over gives one more success.</p>
+      <div className="flex flex-wrap items-end gap-2">
+        <Field label="Expended by">
+          <Select value={who} onChange={(e) => setWho(e.target.value)} className="w-auto">
+            <option value="">Choose a character</option>
+            {everyone.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Resources dots">
+          <Input type="number" min={1} max={10} value={dots} onChange={(e) => setDots(Number(e.target.value))} className="w-24" />
+        </Field>
+        <Button type="submit" variant="secondary" disabled={!who || expend.isPending}>
+          Expend Resources
+        </Button>
+      </div>
+      <ErrorText error={expend.error} />
+    </form>
   );
 }
 

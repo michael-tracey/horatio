@@ -9,13 +9,14 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import quest_actions, quest_requirements, quests
+from horatio import location_quests, quest_actions, quest_requirements, quests
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
     Character,
     Delivery,
     DowntimeCycle,
+    Location,
     Quest,
     QuestLogEntry,
     QuestRequest,
@@ -55,12 +56,35 @@ class QuestCharacterChoice(BaseModel):
     title: str = ""
 
 
+class QuestLocationRef(BaseModel):
+    id: uuid.UUID
+    name: str
+
+
+class WhoseOut(BaseModel):
+    """A character a Contacts lookup may mean, and the locations it controls."""
+
+    name: str
+    locations: list[str]
+
+
 class QuestRequestOut(BaseModel):
     id: uuid.UUID
     troupe_id: uuid.UUID
     character_id: uuid.UUID
     character_name: str
     player_name: str
+    # custom, or about a location: acquire | quality | undermine | repair | whose
+    kind: str
+    # What a location request names: name, address, map_link, quality, detail,
+    # negative, victory, target.
+    details: dict[str, str]
+    # The location record it is about, for those who keep locations.
+    location: QuestLocationRef | None = None
+    # For a Contacts lookup: the troupe's characters it may mean, and what each controls.
+    whose: list[WhoseOut] = []
+    # The reader keeps locations, so can match it to one.
+    can_match: bool = False
     objective: str
     reason: str
     companions: str
@@ -113,6 +137,15 @@ class RequirementOut(BaseModel):
     checks: list[RequirementCheckOut]
 
 
+class ResourcesOut(BaseModel):
+    """Resources expended on a location quest's scenario (Vol. II Issue 1, p. 120)."""
+
+    character_id: uuid.UUID
+    name: str
+    dots: int
+    successes: int
+
+
 class ScenarioOut(BaseModel):
     number: int
     success_text: str
@@ -125,6 +158,7 @@ class ScenarioOut(BaseModel):
     # and still to go out with its delivery.
     cycle_name: str | None = None
     awaiting_delivery: bool = False
+    resources: list[ResourcesOut] = []
 
 
 class MemberOut(BaseModel):
@@ -167,6 +201,16 @@ class Guidance(BaseModel):
     scenarios: int
 
 
+class QuestLocationOut(BaseModel):
+    """The location a quest changes when it is completed, and how."""
+
+    id: uuid.UUID
+    name: str
+    # acquire | quality | swap | upgrade | negative | infiltrate
+    kind: str
+    change: str
+
+
 class QuestOut(BaseModel):
     """A quest as staff see it."""
 
@@ -205,6 +249,8 @@ class QuestOut(BaseModel):
     deliveries: list[QuestDeliveryOut]
     # Quest actions for it in the troupe's open (or last closed) downtime cycle.
     downtime: QuestDowntimeOut | None = None
+    # The location it changes, for those who keep locations.
+    location: QuestLocationOut | None = None
     # The reader may change it, assign it, send it and check sheets against it.
     can_edit: bool
     can_assign: bool
@@ -269,6 +315,7 @@ class PlayerQuestOut(BaseModel):
 
 class PlayerRequestOut(BaseModel):
     id: uuid.UUID
+    kind: str
     objective: str
     reason: str
     companions: str
@@ -307,7 +354,8 @@ class AssignmentIn(BaseModel):
 
 
 class RequestAnswerIn(BaseModel):
-    outcome: Literal["not_needed", "refused"]
+    # done: a repair or a Contacts lookup answered without a quest.
+    outcome: Literal["not_needed", "refused", "done"]
     note: str = Field(max_length=4000)
 
 
@@ -320,7 +368,8 @@ class QuestIn(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     objective: str = Field(default="", max_length=8000)
     category: Category = "simple"
-    difficulty: int = Field(default=1, ge=1, le=5)
+    # 1 to 5; a location's qualities can raise it further (Vol. II Issue 1, p. 126).
+    difficulty: int = Field(default=1, ge=1, le=10)
     downtime_only: bool = False
     staff_notes: str = Field(default="", max_length=8000)
     leader_id: uuid.UUID | None = None
@@ -475,12 +524,24 @@ def request_out(
     )
     quest = db.get(Quest, request.quest_id) if request.quest_id else None
     running = quests.is_running(db, user, troupe)
+    location = db.get(Location, request.location_id) if request.location_id and running else None
+    open_ = request.status in ("new", "working")
     return QuestRequestOut(
         id=request.id,
         troupe_id=request.troupe_id,
         character_id=character.id,
         character_name=character.name,
         player_name=people.get(request.requested_by, ""),
+        kind=request.kind,
+        details={k: str(v) for k, v in request.details.items()},
+        location=QuestLocationRef(id=location.id, name=location.name) if location else None,
+        whose=[
+            WhoseOut(name=w.name, locations=w.locations)
+            for w in location_quests.whose(db, troupe, request.details.get("target", ""))
+        ]
+        if running and request.kind == "whose" and open_
+        else [],
+        can_match=running and open_ and request.kind in ("acquire", "undermine"),
         objective=request.objective,
         reason=request.reason,
         companions=request.companions,
@@ -553,6 +614,7 @@ def scenario_out(db: DbSession, s: QuestScenario) -> ScenarioOut:
         sent_at=s.sent_at,
         cycle_name=cycle.name if cycle else None,
         awaiting_delivery=quests.awaiting_delivery(s),
+        resources=[ResourcesOut(**r) for r in s.resources],
     )
 
 
@@ -669,10 +731,24 @@ def quest_out(db: DbSession, user: User, troupe: Troupe, quest: Quest) -> QuestO
             for d, name in sent_out
         ],
         downtime=downtime_out(db, quest),
+        location=location_out(db, quest) if running else None,
         can_edit=may_work and open_,
         can_assign=running and open_,
         can_send=running and open_,
         can_check=running,
+    )
+
+
+def location_out(db: DbSession, quest: Quest) -> QuestLocationOut | None:
+    location = db.get(Location, quest.location_id) if quest.location_id else None
+    if location is None or quest.location_change is None:
+        return None
+    change = location_quests.Change(**quest.location_change)
+    return QuestLocationOut(
+        id=location.id,
+        name=location.name,
+        kind=change.kind,
+        change=location_quests.describe_change(location, change),
     )
 
 
@@ -751,6 +827,7 @@ def player_request_out(db: DbSession, request: QuestRequest) -> PlayerRequestOut
     quest = db.get(Quest, request.quest_id) if request.quest_id else None
     return PlayerRequestOut(
         id=request.id,
+        kind=request.kind,
         objective=request.objective,
         reason=request.reason,
         companions=request.companions,
@@ -994,6 +1071,11 @@ def answer_request(
     request, troupe = staff_request(db, user, request_id)
     if not quests.may_work_on(db, user, troupe, request):
         raise forbidden()
+    if body.outcome == "done" and request.kind not in ("repair", "whose"):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Answer it with a quest, as not needed, or refuse it.",
+        )
     quests.answer(db, user, request, body.outcome, body.note)
     db.commit()
     return request_out(db, user, troupe, request)

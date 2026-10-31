@@ -711,6 +711,29 @@
         "title": "ArchivedTroupeOut",
         "type": "object"
       },
+      "AskableQualityOut": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "text",
+          "detail"
+        ],
+        "title": "AskableQualityOut",
+        "type": "object"
+      },
       "AspectNeed": {
         "properties": {
           "aspect": {
@@ -2406,6 +2429,63 @@
           "picks"
         ],
         "title": "CategoryPicks",
+        "type": "object"
+      },
+      "Change": {
+        "description": "What a location quest does to its location when it is completed.",
+        "properties": {
+          "detail": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Detail",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "acquire",
+              "quality",
+              "swap",
+              "upgrade",
+              "negative",
+              "infiltrate"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "negative": {
+            "default": "",
+            "maxLength": 40,
+            "title": "Negative",
+            "type": "string"
+          },
+          "quality": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Quality",
+            "type": "string"
+          },
+          "secret": {
+            "default": false,
+            "title": "Secret",
+            "type": "boolean"
+          },
+          "swap_out": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Swap Out",
+            "type": "string"
+          },
+          "victory": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Victory",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "Change",
         "type": "object"
       },
       "ChangeEquipmentIn": {
@@ -5802,6 +5882,24 @@
           "extra"
         ],
         "title": "DifferenceOut",
+        "type": "object"
+      },
+      "DifficultyModifierOut": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "amount"
+        ],
+        "title": "DifficultyModifierOut",
         "type": "object"
       },
       "DiscardIn": {
@@ -10096,6 +10194,38 @@
         "title": "HealthLevel",
         "type": "object"
       },
+      "HeldLocationNameOut": {
+        "properties": {
+          "effects": {
+            "items": {
+              "$ref": "#/components/schemas/LocationEffectOut"
+            },
+            "title": "Effects",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "joint": {
+            "title": "Joint",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "joint",
+          "effects"
+        ],
+        "title": "HeldLocationNameOut",
+        "type": "object"
+      },
       "HeldLocationOut": {
         "properties": {
           "id": {
@@ -10187,6 +10317,35 @@
         "title": "HeldLocationQualityOut",
         "type": "object"
       },
+      "HeldLocationsOut": {
+        "properties": {
+          "locations": {
+            "items": {
+              "$ref": "#/components/schemas/HeldLocationNameOut"
+            },
+            "title": "Locations",
+            "type": "array"
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/AskableQualityOut"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "staff": {
+            "title": "Staff",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "locations",
+          "qualities",
+          "staff"
+        ],
+        "title": "HeldLocationsOut",
+        "type": "object"
+      },
       "HeldNegativeQualityOut": {
         "properties": {
           "by": {
@@ -10196,6 +10355,11 @@
           "effect": {
             "title": "Effect",
             "type": "string"
+          },
+          "games": {
+            "default": 0,
+            "title": "Games",
+            "type": "integer"
           },
           "level": {
             "title": "Level",
@@ -12615,6 +12779,14 @@
             "title": "Controller Name",
             "type": "string"
           },
+          "damaged_off": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Damaged Off",
+            "type": "array"
+          },
           "elysium_since": {
             "anyOf": [
               {
@@ -12886,6 +13058,14 @@
               }
             ]
           },
+          "damaged_off": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Damaged Off",
+            "type": "array"
+          },
           "elysium_qualities": {
             "anyOf": [
               {
@@ -12911,6 +13091,17 @@
           "feeding_block": {
             "title": "Feeding Block",
             "type": "string"
+          },
+          "forfeit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forfeit"
           },
           "haven_advantages": {
             "items": {
@@ -13110,6 +13301,34 @@
         "title": "LocationDetailOut",
         "type": "object"
       },
+      "LocationEffectOut": {
+        "properties": {
+          "gives": {
+            "title": "Gives",
+            "type": "string"
+          },
+          "off_because": {
+            "title": "Off Because",
+            "type": "string"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "quality": {
+            "title": "Quality",
+            "type": "string"
+          }
+        },
+        "required": [
+          "quality",
+          "gives",
+          "on",
+          "off_because"
+        ],
+        "title": "LocationEffectOut",
+        "type": "object"
+      },
       "LocationIn": {
         "description": "A location's fields; on a change, those left out stay as they are.",
         "properties": {
@@ -13147,6 +13366,14 @@
             "maxLength": 120,
             "title": "Controller Name",
             "type": "string"
+          },
+          "damaged_off": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Damaged Off",
+            "type": "array"
           },
           "elysium_since": {
             "anyOf": [
@@ -13441,6 +13668,14 @@
               }
             ]
           },
+          "damaged_off": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Damaged Off",
+            "type": "array"
+          },
           "elysium_qualities": {
             "anyOf": [
               {
@@ -13466,6 +13701,17 @@
           "feeding_block": {
             "title": "Feeding Block",
             "type": "string"
+          },
+          "forfeit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forfeit"
           },
           "haven_advantages": {
             "items": {
@@ -13832,6 +14078,167 @@
           "per_qualities"
         ],
         "title": "LocationQualityOut",
+        "type": "object"
+      },
+      "LocationQuestIn": {
+        "properties": {
+          "category": {
+            "default": "simple",
+            "enum": [
+              "simple",
+              "complex",
+              "epic"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "change": {
+            "$ref": "#/components/schemas/Change"
+          },
+          "difficulty": {
+            "default": 1,
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Difficulty",
+            "type": "integer"
+          },
+          "downtime_only": {
+            "default": false,
+            "title": "Downtime Only",
+            "type": "boolean"
+          },
+          "leader_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Leader Id"
+          },
+          "location_id": {
+            "format": "uuid",
+            "title": "Location Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "objective": {
+            "default": "",
+            "maxLength": 8000,
+            "title": "Objective",
+            "type": "string"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "requirements": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RequirementIn"
+            },
+            "maxItems": 30,
+            "title": "Requirements",
+            "type": "array"
+          },
+          "staff_notes": {
+            "default": "",
+            "maxLength": 8000,
+            "title": "Staff Notes",
+            "type": "string"
+          }
+        },
+        "required": [
+          "location_id",
+          "change",
+          "name"
+        ],
+        "title": "LocationQuestIn",
+        "type": "object"
+      },
+      "LocationQuestPlanOut": {
+        "properties": {
+          "category": {
+            "enum": [
+              "simple",
+              "complex",
+              "epic"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "category_note": {
+            "title": "Category Note",
+            "type": "string"
+          },
+          "change": {
+            "title": "Change",
+            "type": "string"
+          },
+          "difficulty": {
+            "title": "Difficulty",
+            "type": "integer"
+          },
+          "fewer": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Fewer",
+            "type": "array"
+          },
+          "modifiers": {
+            "items": {
+              "$ref": "#/components/schemas/DifficultyModifierOut"
+            },
+            "title": "Modifiers",
+            "type": "array"
+          },
+          "refusal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refusal"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/SuggestedRequirementOut"
+            },
+            "title": "Suggestions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "category",
+          "category_note",
+          "difficulty",
+          "modifiers",
+          "suggestions",
+          "fewer",
+          "refusal",
+          "change"
+        ],
+        "title": "LocationQuestPlanOut",
         "type": "object"
       },
       "LocationRef": {
@@ -14486,6 +14893,34 @@
           "refund"
         ],
         "title": "LossOut",
+        "type": "object"
+      },
+      "MatchIn": {
+        "properties": {
+          "location_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          },
+          "new": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NewLocationIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "MatchIn",
         "type": "object"
       },
       "Me": {
@@ -15428,6 +15863,27 @@
           "handle"
         ],
         "title": "NewLead",
+        "type": "object"
+      },
+      "NewLocationIn": {
+        "properties": {
+          "qualities": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LocationQualityIn"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "rating": {
+            "default": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "title": "NewLocationIn",
         "type": "object"
       },
       "NewNpc": {
@@ -17219,6 +17675,42 @@
         "title": "PlacedDots",
         "type": "object"
       },
+      "PlanIn": {
+        "properties": {
+          "change": {
+            "$ref": "#/components/schemas/Change"
+          },
+          "leader_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Leader Id"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          }
+        },
+        "required": [
+          "change"
+        ],
+        "title": "PlanIn",
+        "type": "object"
+      },
       "PlanOut": {
         "description": "What resolving an entry would record, before staff confirm it.",
         "properties": {
@@ -18356,6 +18848,10 @@
             "title": "Id",
             "type": "string"
           },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
           "note": {
             "title": "Note",
             "type": "string"
@@ -18398,6 +18894,7 @@
         },
         "required": [
           "id",
+          "kind",
           "objective",
           "reason",
           "companions",
@@ -20212,7 +20709,7 @@
           },
           "difficulty": {
             "default": 1,
-            "maximum": 5.0,
+            "maximum": 10.0,
             "minimum": 1.0,
             "title": "Difficulty",
             "type": "integer"
@@ -20320,6 +20817,55 @@
           "name"
         ],
         "title": "QuestIn",
+        "type": "object"
+      },
+      "QuestLocationOut": {
+        "description": "The location a quest changes when it is completed, and how.",
+        "properties": {
+          "change": {
+            "title": "Change",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "change"
+        ],
+        "title": "QuestLocationOut",
+        "type": "object"
+      },
+      "QuestLocationRef": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "QuestLocationRef",
         "type": "object"
       },
       "QuestOut": {
@@ -20449,6 +20995,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/QuestCharacterRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuestLocationOut"
               },
               {
                 "type": "null"
@@ -20672,6 +21228,11 @@
             "title": "Can Assign",
             "type": "boolean"
           },
+          "can_match": {
+            "default": false,
+            "title": "Can Match",
+            "type": "boolean"
+          },
           "can_work": {
             "title": "Can Work",
             "type": "boolean"
@@ -20694,10 +21255,31 @@
             "title": "Created At",
             "type": "string"
           },
+          "details": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Details",
+            "type": "object"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuestLocationRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "note": {
             "title": "Note",
@@ -20775,6 +21357,14 @@
             "format": "uuid",
             "title": "Troupe Id",
             "type": "string"
+          },
+          "whose": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/WhoseOut"
+            },
+            "title": "Whose",
+            "type": "array"
           }
         },
         "required": [
@@ -20783,6 +21373,8 @@
           "character_id",
           "character_name",
           "player_name",
+          "kind",
+          "details",
           "objective",
           "reason",
           "companions",
@@ -21600,6 +22192,37 @@
         "title": "RemoveIn",
         "type": "object"
       },
+      "RemoveNegativeIn": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          }
+        },
+        "required": [
+          "name",
+          "character_id"
+        ],
+        "title": "RemoveNegativeIn",
+        "type": "object"
+      },
       "RemovedOut": {
         "properties": {
           "note": {
@@ -21669,7 +22292,8 @@
           "outcome": {
             "enum": [
               "not_needed",
-              "refused"
+              "refused",
+              "done"
             ],
             "title": "Outcome",
             "type": "string"
@@ -21680,6 +22304,92 @@
           "note"
         ],
         "title": "RequestAnswerIn",
+        "type": "object"
+      },
+      "RequestFields": {
+        "properties": {
+          "address": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Address",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Detail",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "acquire",
+              "quality",
+              "undermine",
+              "repair",
+              "whose"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "location_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          },
+          "map_link": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Map Link",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Name",
+            "type": "string"
+          },
+          "negative": {
+            "default": "",
+            "maxLength": 40,
+            "title": "Negative",
+            "type": "string"
+          },
+          "quality": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Quality",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Reason",
+            "type": "string"
+          },
+          "target": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Target",
+            "type": "string"
+          },
+          "victory": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Victory",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "RequestFields",
         "type": "object"
       },
       "RequestIn": {
@@ -22061,6 +22771,57 @@
           "regains"
         ],
         "title": "ResourceOut",
+        "type": "object"
+      },
+      "ResourcesIn": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "dots": {
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Dots",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "character_id",
+          "dots"
+        ],
+        "title": "ResourcesIn",
+        "type": "object"
+      },
+      "ResourcesOut": {
+        "description": "Resources expended on a location quest's scenario (Vol. II Issue 1, p. 120).",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "dots": {
+            "title": "Dots",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "successes": {
+            "title": "Successes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "dots",
+          "successes"
+        ],
+        "title": "ResourcesOut",
         "type": "object"
       },
       "ResultIn": {
@@ -22843,6 +23604,14 @@
               }
             ]
           },
+          "damaged_off": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Damaged Off",
+            "type": "array"
+          },
           "elysium_qualities": {
             "anyOf": [
               {
@@ -22868,6 +23637,17 @@
           "feeding_block": {
             "title": "Feeding Block",
             "type": "string"
+          },
+          "forfeit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forfeit"
           },
           "haven_advantages": {
             "items": {
@@ -23110,6 +23890,14 @@
           "number": {
             "title": "Number",
             "type": "integer"
+          },
+          "resources": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ResourcesOut"
+            },
+            "title": "Resources",
+            "type": "array"
           },
           "result": {
             "anyOf": [
@@ -25724,6 +26512,74 @@
           "rating"
         ],
         "title": "StockPin",
+        "type": "object"
+      },
+      "SuggestedRequirementOut": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "action": "#/components/schemas/ActionSpend",
+                  "aspect": "#/components/schemas/AspectNeed",
+                  "background": "#/components/schemas/BackgroundSpend",
+                  "influence": "#/components/schemas/InfluenceSpend",
+                  "item": "#/components/schemas/ItemSpend",
+                  "pool": "#/components/schemas/PoolSpend",
+                  "status": "#/components/schemas/StatusSpend",
+                  "text": "#/components/schemas/TextNeed",
+                  "trait": "#/components/schemas/TraitNeed"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/TraitNeed"
+                },
+                {
+                  "$ref": "#/components/schemas/AspectNeed"
+                },
+                {
+                  "$ref": "#/components/schemas/InfluenceSpend"
+                },
+                {
+                  "$ref": "#/components/schemas/BackgroundSpend"
+                },
+                {
+                  "$ref": "#/components/schemas/StatusSpend"
+                },
+                {
+                  "$ref": "#/components/schemas/PoolSpend"
+                },
+                {
+                  "$ref": "#/components/schemas/ActionSpend"
+                },
+                {
+                  "$ref": "#/components/schemas/ItemSpend"
+                },
+                {
+                  "$ref": "#/components/schemas/TextNeed"
+                }
+              ]
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "options",
+          "label"
+        ],
+        "title": "SuggestedRequirementOut",
         "type": "object"
       },
       "SuppressIn": {
@@ -28946,6 +29802,28 @@
           "shows_negative"
         ],
         "title": "WhosWhoOut",
+        "type": "object"
+      },
+      "WhoseOut": {
+        "description": "A character a Contacts lookup may mean, and the locations it controls.",
+        "properties": {
+          "locations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Locations",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "locations"
+        ],
+        "title": "WhoseOut",
         "type": "object"
       },
       "WindowOut": {
@@ -32734,6 +33612,50 @@
         ]
       }
     },
+    "/api/characters/{character_id}/held-locations": {
+      "get": {
+        "description": "The names of the locations the character controls, and what their qualities\ngive it: for its player, without why one is off; for staff, with it.",
+        "operationId": "held_locations_api_characters__character_id__held_locations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeldLocationsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Held Locations",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
     "/api/characters/{character_id}/home-troupe": {
       "delete": {
         "operationId": "withdraw_home_troupe_api_characters__character_id__home_troupe_delete",
@@ -33399,6 +34321,60 @@
         "summary": "Change Leaving",
         "tags": [
           "characters"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/location-requests": {
+      "post": {
+        "description": "Ask to acquire, add a quality to, undermine or repair a location, or to learn\nwhose locations are whose. Counts toward the troupe's requests per cycle.",
+        "operationId": "request_location_quest_api_characters__character_id__location_requests_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestFields"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Request Location Quest",
+        "tags": [
+          "locations"
         ]
       }
     },
@@ -39966,6 +40942,158 @@
         ]
       }
     },
+    "/api/locations/{location_id}/forfeit": {
+      "post": {
+        "description": "Confirm Insolvent \u00d72's forfeit: the controller, whose Resources are below its\nrating, gives it up (p. 128).",
+        "operationId": "forfeit_location_api_locations__location_id__forfeit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Forfeit Location",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
+    "/api/locations/{location_id}/negatives/remove": {
+      "post": {
+        "description": "Take one level of a negative off, spending what the book asks: Resources dots,\nor an Elite or Underworld action, at the location's rating (pp. 127-129).",
+        "operationId": "remove_negative_api_locations__location_id__negatives_remove_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveNegativeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Negative",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
+    "/api/locations/{location_id}/quest-plan": {
+      "post": {
+        "description": "The quest a change to the location takes: its category and difficulty, with\nthe reasons, the requirements its qualities suggest, and why it can't be built,\nif it can't.",
+        "operationId": "plan_quest_api_locations__location_id__quest_plan_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Location Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationQuestPlanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Plan Quest",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
     "/api/notifications": {
       "get": {
         "operationId": "list_notifications_api_notifications_get",
@@ -40911,6 +42039,60 @@
         ]
       }
     },
+    "/api/quest-requests/{request_id}/location": {
+      "put": {
+        "description": "Match a request to acquire or undermine a place to the troupe's record of it,\nor make a new standard location from it.",
+        "operationId": "match_request_api_quest_requests__request_id__location_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Match Request",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
     "/api/quest-requests/{request_id}/read": {
       "post": {
         "operationId": "read_request_api_quest_requests__request_id__read_post",
@@ -41723,6 +42905,69 @@
         "summary": "Meet Requirement",
         "tags": [
           "quests"
+        ]
+      }
+    },
+    "/api/quests/{quest_id}/scenarios/{number}/resources": {
+      "post": {
+        "description": "A member expends Resources to succeed a step of a location quest: dots equal to\nthe difficulty give one success, each dot over one more (p. 120).",
+        "operationId": "expend_resources_api_quests__quest_id__scenarios__number__resources_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quest_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quest Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "number",
+            "required": true,
+            "schema": {
+              "title": "Number",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResourcesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Expend Resources",
+        "tags": [
+          "locations"
         ]
       }
     },
@@ -47429,6 +48674,60 @@
           }
         },
         "summary": "Archive Quality",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/location-quests": {
+      "post": {
+        "description": "Build a quest that changes a location when it is completed, in draft: from a\nrequest, or from the location's page. Refused, with the reason, when the\nlocation can't be targeted.",
+        "operationId": "build_location_quest_api_troupes__troupe_id__location_quests_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationQuestIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Build Location Quest",
         "tags": [
           "locations"
         ]

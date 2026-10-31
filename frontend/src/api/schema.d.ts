@@ -996,6 +996,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/held-locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Held Locations
+         * @description The names of the locations the character controls, and what their qualities
+         *     give it: for its player, without why one is off; for staff, with it.
+         */
+        get: operations["held_locations_api_characters__character_id__held_locations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/home-troupe": {
         parameters: {
             query?: never;
@@ -1200,6 +1221,27 @@ export interface paths {
          */
         put: operations["change_leaving_api_characters__character_id__leaving_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/location-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request Location Quest
+         * @description Ask to acquire, add a quality to, undermine or repair a location, or to learn
+         *     whose locations are whose. Counts toward the troupe's requests per cycle.
+         */
+        post: operations["request_location_quest_api_characters__character_id__location_requests_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3330,6 +3372,70 @@ export interface paths {
         patch: operations["change_location_api_locations__location_id__patch"];
         trace?: never;
     };
+    "/api/locations/{location_id}/forfeit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Forfeit Location
+         * @description Confirm Insolvent ×2's forfeit: the controller, whose Resources are below its
+         *     rating, gives it up (p. 128).
+         */
+        post: operations["forfeit_location_api_locations__location_id__forfeit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/locations/{location_id}/negatives/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove Negative
+         * @description Take one level of a negative off, spending what the book asks: Resources dots,
+         *     or an Elite or Underworld action, at the location's rating (pp. 127-129).
+         */
+        post: operations["remove_negative_api_locations__location_id__negatives_remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/locations/{location_id}/quest-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Plan Quest
+         * @description The quest a change to the location takes: its category and difficulty, with
+         *     the reasons, the requirements its qualities suggest, and why it can't be built,
+         *     if it can't.
+         */
+        post: operations["plan_quest_api_locations__location_id__quest_plan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/notifications": {
         parameters: {
             query?: never;
@@ -3723,6 +3829,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/quest-requests/{request_id}/location": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Match Request
+         * @description Match a request to acquire or undermine a place to the troupe's record of it,
+         *     or make a new standard location from it.
+         */
+        put: operations["match_request_api_quest_requests__request_id__location_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/quest-requests/{request_id}/read": {
         parameters: {
             query?: never;
@@ -3952,6 +4079,27 @@ export interface paths {
         post: operations["meet_requirement_api_quests__quest_id__requirements__requirement_id__met_post"];
         /** Unmeet Requirement */
         delete: operations["unmeet_requirement_api_quests__quest_id__requirements__requirement_id__met_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{quest_id}/scenarios/{number}/resources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Expend Resources
+         * @description A member expends Resources to succeed a step of a location quest: dots equal to
+         *     the difficulty give one success, each dot over one more (p. 120).
+         */
+        post: operations["expend_resources_api_quests__quest_id__scenarios__number__resources_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -5618,6 +5766,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/location-quests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Build Location Quest
+         * @description Build a quest that changes a location when it is completed, in draft: from a
+         *     request, or from the location's page. Refused, with the reason, when the
+         *     location can't be targeted.
+         */
+        post: operations["build_location_quest_api_troupes__troupe_id__location_quests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/locations": {
         parameters: {
             query?: never;
@@ -6835,6 +7005,15 @@ export interface components {
             /** Unsettled */
             unsettled: boolean;
         };
+        /** AskableQualityOut */
+        AskableQualityOut: {
+            /** Detail */
+            detail: string;
+            /** Name */
+            name: string;
+            /** Text */
+            text: string;
+        };
         /** AspectNeed */
         AspectNeed: {
             /**
@@ -7404,6 +7583,47 @@ export interface components {
         CategoryPicks: {
             /** Picks */
             picks: components["schemas"]["CategoryPick"][];
+        };
+        /**
+         * Change
+         * @description What a location quest does to its location when it is completed.
+         */
+        Change: {
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "acquire" | "quality" | "swap" | "upgrade" | "negative" | "infiltrate";
+            /**
+             * Negative
+             * @default
+             */
+            negative: string;
+            /**
+             * Quality
+             * @default
+             */
+            quality: string;
+            /**
+             * Secret
+             * @default false
+             */
+            secret: boolean;
+            /**
+             * Swap Out
+             * @default
+             */
+            swap_out: string;
+            /**
+             * Victory
+             * @default
+             */
+            victory: string;
         };
         /** ChangeEquipmentIn */
         ChangeEquipmentIn: {
@@ -8621,6 +8841,13 @@ export interface components {
             pool_rating: number | null;
             /** Rating */
             rating: number;
+        };
+        /** DifficultyModifierOut */
+        DifficultyModifierOut: {
+            /** Amount */
+            amount: number;
+            /** Reason */
+            reason: string;
         };
         /** DiscardIn */
         DiscardIn: {
@@ -10260,6 +10487,20 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** HeldLocationNameOut */
+        HeldLocationNameOut: {
+            /** Effects */
+            effects: components["schemas"]["LocationEffectOut"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Joint */
+            joint: boolean;
+            /** Name */
+            name: string;
+        };
         /** HeldLocationOut */
         HeldLocationOut: {
             /**
@@ -10299,12 +10540,26 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** HeldLocationsOut */
+        HeldLocationsOut: {
+            /** Locations */
+            locations: components["schemas"]["HeldLocationNameOut"][];
+            /** Qualities */
+            qualities: components["schemas"]["AskableQualityOut"][];
+            /** Staff */
+            staff: boolean;
+        };
         /** HeldNegativeQualityOut */
         HeldNegativeQualityOut: {
             /** By */
             by: string;
             /** Effect */
             effect: string;
+            /**
+             * Games
+             * @default 0
+             */
+            games: number;
             /** Level */
             level: number;
             /** Name */
@@ -11278,6 +11533,11 @@ export interface components {
              * @default
              */
             controller_name: string;
+            /**
+             * Damaged Off
+             * @default []
+             */
+            damaged_off: string[];
             /** Elysium Since */
             elysium_since?: number | null;
             /**
@@ -11401,12 +11661,19 @@ export interface components {
              */
             control: "character" | "named" | "none" | "uncontrollable";
             controller: components["schemas"]["LocationPerson"] | null;
+            /**
+             * Damaged Off
+             * @default []
+             */
+            damaged_off: string[];
             /** Elysium Qualities */
             elysium_qualities: number | null;
             /** Elysium Since */
             elysium_since: number | null;
             /** Feeding Block */
             feeding_block: string;
+            /** Forfeit */
+            forfeit?: string | null;
             /** Haven Advantages */
             haven_advantages: string[];
             haven_of: components["schemas"]["LocationPerson"] | null;
@@ -11464,6 +11731,17 @@ export interface components {
             /** Web Address */
             web_address: string;
         };
+        /** LocationEffectOut */
+        LocationEffectOut: {
+            /** Gives */
+            gives: string;
+            /** Off Because */
+            off_because: string;
+            /** On */
+            on: boolean;
+            /** Quality */
+            quality: string;
+        };
         /**
          * LocationIn
          * @description A location's fields; on a change, those left out stay as they are.
@@ -11487,6 +11765,11 @@ export interface components {
              * @default
              */
             controller_name: string;
+            /**
+             * Damaged Off
+             * @default []
+             */
+            damaged_off: string[];
             /** Elysium Since */
             elysium_since?: number | null;
             /**
@@ -11622,12 +11905,19 @@ export interface components {
              */
             control: "character" | "named" | "none" | "uncontrollable";
             controller: components["schemas"]["LocationPerson"] | null;
+            /**
+             * Damaged Off
+             * @default []
+             */
+            damaged_off: string[];
             /** Elysium Qualities */
             elysium_qualities: number | null;
             /** Elysium Since */
             elysium_since: number | null;
             /** Feeding Block */
             feeding_block: string;
+            /** Forfeit */
+            forfeit?: string | null;
             /** Haven Advantages */
             haven_advantages: string[];
             haven_of: components["schemas"]["LocationPerson"] | null;
@@ -11738,6 +12028,74 @@ export interface components {
             suggested: components["schemas"]["LocationSuggestion"][];
             /** Text */
             text: string;
+        };
+        /** LocationQuestIn */
+        LocationQuestIn: {
+            /**
+             * Category
+             * @default simple
+             * @enum {string}
+             */
+            category: "simple" | "complex" | "epic";
+            change: components["schemas"]["Change"];
+            /**
+             * Difficulty
+             * @default 1
+             */
+            difficulty: number;
+            /**
+             * Downtime Only
+             * @default false
+             */
+            downtime_only: boolean;
+            /** Leader Id */
+            leader_id?: string | null;
+            /**
+             * Location Id
+             * Format: uuid
+             */
+            location_id: string;
+            /** Name */
+            name: string;
+            /**
+             * Objective
+             * @default
+             */
+            objective: string;
+            /** Request Id */
+            request_id?: string | null;
+            /**
+             * Requirements
+             * @default []
+             */
+            requirements: components["schemas"]["RequirementIn"][];
+            /**
+             * Staff Notes
+             * @default
+             */
+            staff_notes: string;
+        };
+        /** LocationQuestPlanOut */
+        LocationQuestPlanOut: {
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "simple" | "complex" | "epic";
+            /** Category Note */
+            category_note: string;
+            /** Change */
+            change: string;
+            /** Difficulty */
+            difficulty: number;
+            /** Fewer */
+            fewer: string[];
+            /** Modifiers */
+            modifiers: components["schemas"]["DifficultyModifierOut"][];
+            /** Refusal */
+            refusal: string | null;
+            /** Suggestions */
+            suggestions: components["schemas"]["SuggestedRequirementOut"][];
         };
         /** LocationRef */
         LocationRef: {
@@ -12008,6 +12366,12 @@ export interface components {
             rating: number;
             /** Refund */
             refund: number;
+        };
+        /** MatchIn */
+        MatchIn: {
+            /** Location Id */
+            location_id?: string | null;
+            new?: components["schemas"]["NewLocationIn"] | null;
         };
         /** Me */
         Me: {
@@ -12362,6 +12726,19 @@ export interface components {
         NewLead: {
             /** Handle */
             handle: string;
+        };
+        /** NewLocationIn */
+        NewLocationIn: {
+            /**
+             * Qualities
+             * @default []
+             */
+            qualities: components["schemas"]["LocationQualityIn"][];
+            /**
+             * Rating
+             * @default 1
+             */
+            rating: number;
         };
         /** NewNpc */
         NewNpc: {
@@ -13060,6 +13437,14 @@ export interface components {
             /** Rating */
             rating: number;
         };
+        /** PlanIn */
+        PlanIn: {
+            change: components["schemas"]["Change"];
+            /** Leader Id */
+            leader_id?: string | null;
+            /** Request Id */
+            request_id?: string | null;
+        };
         /**
          * PlanOut
          * @description What resolving an entry would record, before staff confirm it.
@@ -13455,6 +13840,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Kind */
+            kind: string;
             /** Note */
             note: string;
             /** Objective */
@@ -14250,6 +14637,33 @@ export interface components {
             unlock_scenario?: number | null;
         };
         /**
+         * QuestLocationOut
+         * @description The location a quest changes when it is completed, and how.
+         */
+        QuestLocationOut: {
+            /** Change */
+            change: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+        };
+        /** QuestLocationRef */
+        QuestLocationRef: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /**
          * QuestOut
          * @description A quest as staff see it.
          */
@@ -14295,6 +14709,7 @@ export interface components {
              */
             id: string;
             leader: components["schemas"]["QuestCharacterRef"] | null;
+            location?: components["schemas"]["QuestLocationOut"] | null;
             /** Log */
             log: components["schemas"]["LogOut"][];
             /** Members */
@@ -14349,6 +14764,11 @@ export interface components {
             assigned_to_user_id: string | null;
             /** Can Assign */
             can_assign: boolean;
+            /**
+             * Can Match
+             * @default false
+             */
+            can_match: boolean;
             /** Can Work */
             can_work: boolean;
             /**
@@ -14365,11 +14785,18 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Details */
+            details: {
+                [key: string]: string;
+            };
             /**
              * Id
              * Format: uuid
              */
             id: string;
+            /** Kind */
+            kind: string;
+            location?: components["schemas"]["QuestLocationRef"] | null;
             /** Note */
             note: string;
             /** Objective */
@@ -14395,6 +14822,11 @@ export interface components {
              * Format: uuid
              */
             troupe_id: string;
+            /**
+             * Whose
+             * @default []
+             */
+            whose: components["schemas"]["WhoseOut"][];
         };
         /** QuestResultIn */
         QuestResultIn: {
@@ -14696,6 +15128,18 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** RemoveNegativeIn */
+        RemoveNegativeIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Name */
+            name: string;
+            /** Request Id */
+            request_id?: string | null;
+        };
         /** RemovedOut */
         RemovedOut: {
             /** Note */
@@ -14724,7 +15168,62 @@ export interface components {
              * Outcome
              * @enum {string}
              */
-            outcome: "not_needed" | "refused";
+            outcome: "not_needed" | "refused" | "done";
+        };
+        /** RequestFields */
+        RequestFields: {
+            /**
+             * Address
+             * @default
+             */
+            address: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "acquire" | "quality" | "undermine" | "repair" | "whose";
+            /** Location Id */
+            location_id?: string | null;
+            /**
+             * Map Link
+             * @default
+             */
+            map_link: string;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /**
+             * Negative
+             * @default
+             */
+            negative: string;
+            /**
+             * Quality
+             * @default
+             */
+            quality: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            /**
+             * Target
+             * @default
+             */
+            target: string;
+            /**
+             * Victory
+             * @default
+             */
+            victory: string;
         };
         /** RequestIn */
         RequestIn: {
@@ -14840,6 +15339,33 @@ export interface components {
             regains: string;
             /** Size */
             size: number;
+        };
+        /** ResourcesIn */
+        ResourcesIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Dots */
+            dots: number;
+        };
+        /**
+         * ResourcesOut
+         * @description Resources expended on a location quest's scenario (Vol. II Issue 1, p. 120).
+         */
+        ResourcesOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Dots */
+            dots: number;
+            /** Name */
+            name: string;
+            /** Successes */
+            successes: number;
         };
         /** ResultIn */
         ResultIn: {
@@ -15148,12 +15674,19 @@ export interface components {
              */
             control: "character" | "named" | "none" | "uncontrollable";
             controller: components["schemas"]["LocationPerson"] | null;
+            /**
+             * Damaged Off
+             * @default []
+             */
+            damaged_off: string[];
             /** Elysium Qualities */
             elysium_qualities: number | null;
             /** Elysium Since */
             elysium_since: number | null;
             /** Feeding Block */
             feeding_block: string;
+            /** Forfeit */
+            forfeit?: string | null;
             /** Haven Advantages */
             haven_advantages: string[];
             haven_of: components["schemas"]["LocationPerson"] | null;
@@ -15237,6 +15770,11 @@ export interface components {
             fail_text: string;
             /** Number */
             number: number;
+            /**
+             * Resources
+             * @default []
+             */
+            resources: components["schemas"]["ResourcesOut"][];
             /** Result */
             result: string | null;
             /** Result Text */
@@ -16255,6 +16793,15 @@ export interface components {
             name: string;
             /** Rating */
             rating: number;
+        };
+        /** SuggestedRequirementOut */
+        SuggestedRequirementOut: {
+            /** Label */
+            label: string;
+            /** Options */
+            options: (components["schemas"]["TraitNeed"] | components["schemas"]["AspectNeed"] | components["schemas"]["InfluenceSpend"] | components["schemas"]["BackgroundSpend"] | components["schemas"]["StatusSpend"] | components["schemas"]["PoolSpend"] | components["schemas"]["ActionSpend"] | components["schemas"]["ItemSpend"] | components["schemas"]["TextNeed"])[];
+            /** Source */
+            source: string;
         };
         /** SuppressIn */
         SuppressIn: {
@@ -17383,6 +17930,16 @@ export interface components {
             troupe_id: string;
             /** Troupe Name */
             troupe_name: string;
+        };
+        /**
+         * WhoseOut
+         * @description A character a Contacts lookup may mean, and the locations it controls.
+         */
+        WhoseOut: {
+            /** Locations */
+            locations: string[];
+            /** Name */
+            name: string;
         };
         /**
          * WindowOut
@@ -19595,6 +20152,37 @@ export interface operations {
             };
         };
     };
+    held_locations_api_characters__character_id__held_locations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeldLocationsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     request_home_troupe_api_characters__character_id__home_troupe_post: {
         parameters: {
             query?: never;
@@ -20017,6 +20605,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CharacterOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    request_location_quest_api_characters__character_id__location_requests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestFields"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerRequestOut"];
                 };
             };
             /** @description Validation Error */
@@ -24200,6 +24823,107 @@ export interface operations {
             };
         };
     };
+    forfeit_location_api_locations__location_id__forfeit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_negative_api_locations__location_id__negatives_remove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemoveNegativeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    plan_quest_api_locations__location_id__quest_plan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationQuestPlanOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_notifications_api_notifications_get: {
         parameters: {
             query?: never;
@@ -24871,6 +25595,41 @@ export interface operations {
             };
         };
     };
+    match_request_api_quest_requests__request_id__location_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestRequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_request_api_quest_requests__request_id__read_post: {
         parameters: {
             query?: never;
@@ -25383,6 +26142,42 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    expend_resources_api_quests__quest_id__scenarios__number__resources_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quest_id: string;
+                number: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResourcesIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -28829,6 +29624,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OwnLocationQualityOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    build_location_quest_api_troupes__troupe_id__location_quests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocationQuestIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestOut"];
                 };
             };
             /** @description Validation Error */

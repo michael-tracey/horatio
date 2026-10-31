@@ -143,6 +143,8 @@ class Draft:
     haven_advantages: list[str] = field(default_factory=list[str])
     elysium_since: int | None = None
     notes: str = ""
+    # The qualities Damaged has switched off, as staff chose them (p. 127).
+    damaged_off: list[str] = field(default_factory=list[str])
 
 
 SCALARS = (
@@ -179,6 +181,7 @@ def draft_of(location: Location) -> Draft:
             for n in location.negatives
         ],
         haven_advantages=list(location.haven_advantages),
+        damaged_off=list(location.damaged_off),
     )
 
 
@@ -209,6 +212,10 @@ def tidied(draft: Draft) -> Draft:
         draft.influence_area = ""
     if draft.haven_of_id is None:
         draft.haven_advantages = []
+    # Damaged switches off only qualities the location has, and only while it is Damaged.
+    held = {q.name for q in draft.qualities}
+    damaged = any(n.name == "Damaged" for n in draft.negatives)
+    draft.damaged_off = [q for q in dict.fromkeys(draft.damaged_off) if q in held and damaged]
     return draft
 
 
@@ -546,10 +553,16 @@ def apply(location: Location, draft: Draft) -> None:
     for key in SCALARS:
         setattr(location, key, getattr(draft, key))
     location.qualities = [{"name": q.name, "detail": q.detail} for q in draft.qualities]
+    # Out of Code keeps its count of games passed while its level stays
+    # (horatio.location_quests).
+    games = {(n["name"], n["level"]): n.get("games", 0) for n in location.negatives or []}
     location.negatives = [
-        {"name": n.name, "level": n.level, "secret": n.secret, "by": n.by} for n in draft.negatives
+        {"name": n.name, "level": n.level, "secret": n.secret, "by": n.by}
+        | ({"games": g} if (g := games.get((n.name, n.level), 0)) else {})
+        for n in draft.negatives
     ]
     location.haven_advantages = list(draft.haven_advantages)
+    location.damaged_off = list(draft.damaged_off)
 
 
 def counted_for(db: Session, location: Location) -> set[uuid.UUID]:
@@ -728,6 +741,7 @@ def changed(db: Session, before: Draft, after: Draft) -> list[str]:
             [negative_text(n) for n in after.negatives],
         ),
         listed_change("advantages", before.haven_advantages, after.haven_advantages),
+        listed_change("switched off by Damaged", before.damaged_off, after.damaged_off),
     ):
         if item:
             found.append(item)
