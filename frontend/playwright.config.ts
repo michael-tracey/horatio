@@ -9,6 +9,8 @@ export default defineConfig({
   // Two workers, as on CI's runners, keep its answers inside the suite's waits;
   // the default of half the cores floods it on a bigger machine.
   workers: 2,
+  // Each test a unit of its own, so CI's --shard can split a file between runners.
+  fullyParallel: true,
   use: {
     baseURL: process.env.HORATIO_E2E_URL ?? "http://localhost:8766",
     screenshot: "only-on-failure",
