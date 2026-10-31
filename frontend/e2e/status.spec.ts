@@ -144,7 +144,9 @@ test("Status & Titles: a Camarilla player takes Harpy and gains its status, swit
   const held = titles.getByRole("region", { name: "Titles held" });
   const status = p.locator("section").filter({ has: p.getByRole("heading", { name: "Status", exact: true }) });
   const fromTitles = status.getByRole("region", { name: "Status from titles, age and merits" });
-  await expect(choices.getByRole("listitem", { name: "Harpy" }).getByText("Gives Prominent · Noble · Guardian")).toBeVisible();
+  await expect(choices.getByRole("listitem", { name: "Harpy", exact: true }).getByText("Gives Prominent · Noble · Guardian")).toBeVisible();
+  // The Master Harpy is the Harpy by another name, and gives the same (#340).
+  await expect(choices.getByRole("listitem", { name: "Master Harpy" }).getByText("Gives Prominent · Noble · Guardian")).toBeVisible();
   // The Prince is held, by one character at a time: not for the taking.
   const princeRow = choices.getByRole("listitem", { name: "Prince", exact: true });
   await expect(princeRow.getByText(/Held by Mirela Stoica: only one holds it at a time/)).toBeVisible();
