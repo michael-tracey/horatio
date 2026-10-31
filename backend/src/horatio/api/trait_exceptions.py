@@ -171,8 +171,9 @@ class DiablerieListOut(BaseModel):
     can_record: bool
     # The viewer is the player, and can say they committed one.
     can_ask: bool
-    # One the player asked for is waiting on staff.
+    # One the player asked for is waiting on staff, and the night they said it was.
     waiting: ApprovalOut | None
+    waiting_on: date | None = None
 
 
 class DiablerieRecorded(BaseModel):
@@ -226,6 +227,7 @@ def list_diablerie(character_id: uuid.UUID, db: DbSession, user: CurrentUser) ->
     staff = may_record(db, user, character)
     mine = character.kind == "pc" and character.player_id == user.id
     waiting = sheets.pending_approvals(db, character, "diablerie")
+    asked = diablerie.asked_for(db, waiting[0]) if waiting else None
     names = {
         u.id: u.display_name
         for u in db.scalars(
@@ -257,6 +259,7 @@ def list_diablerie(character_id: uuid.UUID, db: DbSession, user: CurrentUser) ->
             and not waiting
         ),
         waiting=approval_out(waiting[0]) if waiting else None,
+        waiting_on=asked.committed_on if asked else None,
     )
 
 

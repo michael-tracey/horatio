@@ -7,11 +7,13 @@ import { Button, ErrorText } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { MoveCharacter } from "../custodian/MoveCharacter";
+import { DiablerieForm, diablerieAction, useDiablerie } from "./Diablerie";
 import { RetireCharacter } from "./Leaving";
 
 /**
  * The character's less-used actions, behind a ⋯ button beside Play: Rename,
- * Pronouns, Move to another player (the custodian's, for a PC), Retire and Delete. `renameOn` is the first day a player who renamed lately can again;
+ * Pronouns, Move to another player (the custodian's, for a PC), diablerie (staff record it,
+ * the player asks them to), Retire and Delete. `renameOn` is the first day a player who renamed lately can again;
  * the item says so instead of renaming.
  */
 export function CharacterMenu({
@@ -38,7 +40,10 @@ export function CharacterMenu({
   const [retiring, setRetiring] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [moving, setMoving] = useState(false);
+  const [diablerie, setDiablerie] = useState(false);
   const dates = useDates();
+  const diablerieList = useDiablerie(character);
+  const diablerieItem = diablerieAction(diablerieList.data);
   const menu = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -55,7 +60,7 @@ export function CharacterMenu({
       document.removeEventListener("keydown", escape);
     };
   }, [open]);
-  if (!canRename && !renameOn && !onPronouns && !canRetire && !canDelete && !canMove) return null;
+  if (!canRename && !renameOn && !onPronouns && !canRetire && !canDelete && !canMove && !diablerieItem) return null;
   const item = "block w-full px-3 py-2 text-left text-sm hover:bg-ash disabled:cursor-default disabled:text-mist disabled:hover:bg-transparent";
 
   return (
@@ -111,6 +116,19 @@ export function CharacterMenu({
               Move to another player…
             </button>
           )}
+          {diablerieItem && (
+            <button
+              type="button"
+              role="menuitem"
+              className={item}
+              onClick={() => {
+                setOpen(false);
+                setDiablerie(true);
+              }}
+            >
+              {diablerieItem}
+            </button>
+          )}
           {canRetire && (
             <button
               type="button"
@@ -141,6 +159,14 @@ export function CharacterMenu({
       )}
       <Dialog title={`Move ${character.name} to another player`} open={moving} onClose={() => setMoving(false)}>
         <MoveCharacter characterId={character.id} characterName={character.name} playerId={character.player_id} onDone={() => setMoving(false)} />
+      </Dialog>
+      <Dialog
+        title={diablerieList.data?.can_record ? `Record diablerie for ${character.name}` : "Ask staff about diablerie"}
+        open={diablerie}
+        onClose={() => setDiablerie(false)}
+        phoneFull
+      >
+        {diablerieList.data && <DiablerieForm character={character} list={diablerieList.data} onClose={() => setDiablerie(false)} />}
       </Dialog>
       <Dialog title={`Retire ${character.name}`} open={retiring} onClose={() => setRetiring(false)}>
         <RetireCharacter character={character} onDone={() => setRetiring(false)} />
