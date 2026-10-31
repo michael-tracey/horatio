@@ -51,7 +51,7 @@ test("merits and flaws on the sheet: Tainted Embrace caps fleeting status at 4 a
   // The Status tab: one fleeting status fewer, and why.
   await p.goto(`/characters/${id}/status`);
   const card = p.locator("section").filter({ has: p.getByRole("heading", { name: "Status", exact: true }) });
-  await expect(card.getByText("Acknowledged by the Camarilla.")).toBeVisible();
+  await expect(card.getByRole("listitem", { name: "Acknowledged" })).toContainText("by the Camarilla");
   await expect(card.getByText("Fleeting: 0 of 4")).toBeVisible();
   await expect(card.getByText("Cap: Tainted Embrace: 1 less")).toBeVisible();
   await p.screenshot(shots("status-cap-flaw"));

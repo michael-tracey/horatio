@@ -4,7 +4,8 @@ import { api, unwrap } from "../../api/client";
 import type { EquipmentItemOut, EquipmentOut, EquipmentHolderOut, TroupeTemplateOut } from "../../api/types";
 import { Button, ErrorText, Field, Input, Loading, Notice, Select, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
-import { GRADE_NAMES, NEW_ITEM, body, factsText, fromItem, fromTemplate, qualityChoices, qualityOf, type Draft, type Grade, type Kind } from "./equipment";
+import { pageLabel } from "../../components/TraitInfo";
+import { NEW_ITEM, body, factsText, fromItem, fromTemplate, gradesOf, qualityChoices, qualityOf, type Draft, type Grade, type Kind } from "./equipment";
 
 /** The book's rules for a splat's equipment: kinds, grades, qualities and templates. */
 export function useEquipmentRules(splat: string) {
@@ -27,7 +28,8 @@ export function useTroupeTemplates(troupeId: string) {
  * Give an item to one of the troupe's home characters, or change one it holds:
  * from a template or by hand, with its facts and any rule it breaks shown as it
  * is built. A special item takes any number of qualities and effects of the
- * troupe's own.
+ * troupe's own. A Vampiric Text (#341) has no qualities: one of the books', from
+ * its template, or one of the troupe's own, by name.
  */
 export function EquipmentEditor({
   troupeId,
@@ -54,6 +56,7 @@ export function EquipmentEditor({
   const templates = useTroupeTemplates(troupeId);
   const [draft, setDraft] = useState<Draft>(item ? fromItem(item) : NEW_ITEM);
   const [template, setTemplate] = useState<string | null>(null);
+  const [page, setPage] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [savedTemplate, setSavedTemplate] = useState<string | null>(null);
   const set = (change: Partial<Draft>) => setDraft({ ...draft, ...change });
@@ -102,6 +105,7 @@ export function EquipmentEditor({
   const choices = qualityChoices(book, draft.kind, draft.qualities);
   const problems = check.data?.problems ?? [];
   const label = item ? `Change ${item.name}` : "Give equipment";
+  const text = draft.kind === "text";
 
   const startFrom = (value: string) => {
     const at = value.indexOf(":");
@@ -112,6 +116,7 @@ export function EquipmentEditor({
     if (!found) return;
     setDraft({ ...fromTemplate(found), staff_note: draft.staff_note });
     setTemplate(found.name);
+    setPage("page" in found ? (found.page ?? null) : null);
   };
 
   return (
@@ -150,21 +155,39 @@ export function EquipmentEditor({
               </optgroup>
             )}
             <optgroup label="The book's (MET: VTM pp. 521–524)">
-              {book.templates.map((t) => (
-                <option key={t.name} value={`book:${t.name}`}>
-                  {t.name}
-                </option>
-              ))}
+              {book.templates
+                .filter((t) => t.kind !== "text")
+                .map((t) => (
+                  <option key={t.name} value={`book:${t.name}`}>
+                    {t.name}
+                  </option>
+                ))}
+            </optgroup>
+            <optgroup label="Vampiric texts">
+              {book.templates
+                .filter((t) => t.kind === "text")
+                .map((t) => (
+                  <option key={t.name} value={`book:${t.name}`}>
+                    {t.name}
+                  </option>
+                ))}
             </optgroup>
           </Select>
         </Field>
       )}
+      {template && pageLabel(page) && <p className="-mt-2 text-xs text-mist">{template}: {pageLabel(page)}</p>}
       <div className="grid gap-3 sm:grid-cols-3">
         <Field label="Name">
           <Input value={draft.name} onChange={(e) => set({ name: e.target.value })} placeholder="Grandfather's revolver" />
         </Field>
         <Field label="Kind">
-          <Select value={draft.kind} onChange={(e) => set({ kind: e.target.value as Kind, qualities: [] })}>
+          <Select
+            value={draft.kind}
+            onChange={(e) => {
+              const kind = e.target.value as Kind;
+              set({ kind, qualities: [], ...(kind === "text" ? { crafted: false, grade: draft.grade === "cheap" ? "standard" : draft.grade } : {}) });
+            }}
+          >
             {book.kinds.map((k) => (
               <option key={k.key} value={k.key}>
                 {k.name}
@@ -174,76 +197,78 @@ export function EquipmentEditor({
         </Field>
         <Field label="Grade">
           <Select value={draft.grade} onChange={(e) => set({ grade: e.target.value as Grade })}>
-            {(Object.keys(GRADE_NAMES) as Grade[]).map((g) => (
+            {gradesOf(draft.kind).map(([g, name]) => (
               <option key={g} value={g}>
-                {GRADE_NAMES[g]}
+                {name}
               </option>
             ))}
           </Select>
         </Field>
       </div>
 
-      <fieldset className="flex flex-col gap-2">
-        <legend className="mb-1 text-sm text-mist">Qualities</legend>
-        {draft.qualities.length === 0 && <p className="text-sm text-mist">None yet.</p>}
-        <ul aria-label="Qualities chosen" className="flex flex-col gap-2">
-          {draft.qualities.map((q, i) => {
-            const quality = qualityOf(book, draft.kind, q.name);
-            const takesDetail = quality?.needs_detail || !!quality?.detail_prompt;
-            return (
-              <li key={i} className="flex flex-wrap items-start gap-2 rounded-md border border-ash/60 p-2 text-sm">
-                <div className="min-w-48 flex-1">
-                  <span className="text-parchment">{q.name}</span>
-                  {quality && (
-                    <span className="block text-xs text-mist">
-                      {quality.effect}
-                      {quality.page && ` (p. ${quality.page})`}
-                    </span>
-                  )}
-                  {takesDetail && (
-                    <div className="mt-1">
-                      <Field label={`${q.name} detail${quality?.needs_detail ? "" : " (optional)"}`} hint={quality?.detail_prompt ?? undefined}>
-                        <Input
-                          value={q.detail}
-                          onChange={(e) => set({ qualities: draft.qualities.map((d, n) => (n === i ? { ...d, detail: e.target.value } : d)) })}
-                        />
-                      </Field>
-                    </div>
-                  )}
-                </div>
-                <Button type="button" variant="ghost" aria-label={`Remove ${q.name}`} onClick={() => set({ qualities: draft.qualities.filter((_, n) => n !== i) })}>
-                  ×
-                </Button>
-              </li>
-            );
-          })}
-        </ul>
-        <Field label="Add a quality">
-          <Select
-            value=""
-            onChange={(e) => {
-              if (e.target.value) set({ qualities: [...draft.qualities, { name: e.target.value, detail: "" }] });
-            }}
-          >
-            <option value="">Choose…</option>
-            {choices.map((q) => (
-              <option key={q.name} value={q.name}>
-                {q.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={draft.crafted} onChange={(e) => set({ crafted: e.target.checked })} />
-          Crafted: its Artisan or Masterwork was added while crafting, and takes no slot
-        </label>
-        {draft.kind === "ranged" && (
+      {!text && (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 text-sm text-mist">Qualities</legend>
+          {draft.qualities.length === 0 && <p className="text-sm text-mist">None yet.</p>}
+          <ul aria-label="Qualities chosen" className="flex flex-col gap-2">
+            {draft.qualities.map((q, i) => {
+              const quality = qualityOf(book, draft.kind, q.name);
+              const takesDetail = quality?.needs_detail || !!quality?.detail_prompt;
+              return (
+                <li key={i} className="flex flex-wrap items-start gap-2 rounded-md border border-ash/60 p-2 text-sm">
+                  <div className="min-w-48 flex-1">
+                    <span className="text-parchment">{q.name}</span>
+                    {quality && (
+                      <span className="block text-xs text-mist">
+                        {quality.effect}
+                        {quality.page && ` (p. ${quality.page})`}
+                      </span>
+                    )}
+                    {takesDetail && (
+                      <div className="mt-1">
+                        <Field label={`${q.name} detail${quality?.needs_detail ? "" : " (optional)"}`} hint={quality?.detail_prompt ?? undefined}>
+                          <Input
+                            value={q.detail}
+                            onChange={(e) => set({ qualities: draft.qualities.map((d, n) => (n === i ? { ...d, detail: e.target.value } : d)) })}
+                          />
+                        </Field>
+                      </div>
+                    )}
+                  </div>
+                  <Button type="button" variant="ghost" aria-label={`Remove ${q.name}`} onClick={() => set({ qualities: draft.qualities.filter((_, n) => n !== i) })}>
+                    ×
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+          <Field label="Add a quality">
+            <Select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) set({ qualities: [...draft.qualities, { name: e.target.value, detail: "" }] });
+              }}
+            >
+              <option value="">Choose…</option>
+              {choices.map((q) => (
+                <option key={q.name} value={q.name}>
+                  {q.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={draft.archaic} onChange={(e) => set({ archaic: e.target.checked })} />
-            Archaic (a bow or crossbow): may shoot with Athletics instead of Firearms, p. 279
+            <input type="checkbox" checked={draft.crafted} onChange={(e) => set({ crafted: e.target.checked })} />
+            Crafted: its Artisan or Masterwork was added while crafting, and takes no slot
           </label>
-        )}
-      </fieldset>
+          {draft.kind === "ranged" && (
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={draft.archaic} onChange={(e) => set({ archaic: e.target.checked })} />
+              Archaic (a bow or crossbow): may shoot with Athletics instead of Firearms, p. 279
+            </label>
+          )}
+        </fieldset>
+      )}
 
       {draft.grade === "special" && (
         <fieldset className="flex flex-col gap-2">
@@ -280,7 +305,9 @@ export function EquipmentEditor({
       )}
 
       <div aria-live="polite" className="flex flex-col gap-1 rounded-md border border-ash/60 bg-night/40 p-2 text-sm">
-        <p aria-label="What it is">{check.data ? factsText(check.data) || "No hands, damage or range: it isn't a weapon." : "…"}</p>
+        <p aria-label="What it is">
+          {text ? "A vampiric text: it has no qualities, and isn't equipped at a game." : check.data ? factsText(check.data) || "No hands, damage or range: it isn't a weapon." : "…"}
+        </p>
         {!!check.data?.aggravated_against.length && <p className="text-xs text-mist">Aggravated damage to {check.data.aggravated_against.join("; ")}.</p>}
         {problems.length > 0 && (
           <ul aria-label="Rules it breaks" className="list-inside list-disc text-blood-bright">

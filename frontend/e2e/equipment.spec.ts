@@ -450,6 +450,89 @@ test("players give equipment to each other in their home troupe and discard it, 
   expect(await holds(s, corwin)).toEqual(["Silver Dagger"]);
 });
 
+test("a storyteller gives the Book of Nod from a character's page, its player passes it on, and the history shows both", async ({ browser }) => {
+  const custodian = await person(browser, "scribe-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "scribe-lead");
+  const player = await person(browser, "scribe-player");
+  const second = await person(browser, "scribe-second");
+  const call = (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => page.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await call(page, method, url, data);
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Scriptorium ${run}`, lead_handle: lead.handle });
+  const build = async (page: Page, name: string) => {
+    const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+    for (const [category, picks] of Object.entries({ ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Haven", 2], ["Generation", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] }))
+      await send(page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([n, rating]) => ({ name: n, rating })) });
+    await send(page, "POST", `/api/characters/${id}/creation/complete`);
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    return id as string;
+  };
+  const theodora = await build(player.page, "Theodora");
+  const lucan = await build(second.page, "Lucan");
+
+  // No sheet offers a text: it isn't a trait.
+  const rules = await (await player.page.request.get("/api/rules/vampire")).json();
+  expect(rules.categories.map((c: { key: string }) => c.key)).not.toContain("vampiric_texts");
+
+  // The lead gives Theodora the Book of Nod from her page: the book's text, with its line and pages, and no qualities.
+  const l = lead.page;
+  await l.goto(`/characters/${theodora}`);
+  await l.getByRole("button", { name: "Give equipment" }).click();
+  const form = l.getByRole("dialog").getByRole("form", { name: "Give equipment" });
+  await form.getByLabel("Start from").selectOption({ label: "The Book of Nod" });
+  await expect(form.getByLabel("Kind")).toHaveValue("text");
+  await expect(form.getByLabel("Description (optional)")).toHaveValue(/legends of Caine/);
+  await expect(form.getByText("The Book of Nod: MET: VTM pp. 28, 421 & 453")).toBeVisible();
+  await expect(form.getByLabel("What it is")).toHaveText("A vampiric text: it has no qualities, and isn't equipped at a game.");
+  await expect(form.getByLabel("Add a quality")).toHaveCount(0);
+  await form.getByRole("button", { name: "Give to Theodora" }).click();
+  await expect(l.getByText("Gave Theodora The Book of Nod.")).toBeVisible();
+
+  // Its player sees it, and can't give one to herself.
+  const p = player.page;
+  const mine = await call(p, "POST", `/api/troupes/${troupe.id}/equipment`, { character_id: theodora, name: "The Book of Nod", kind: "text", grade: "standard", qualities: [] });
+  expect(mine.status()).toBe(403);
+  await p.goto(`/characters/${theodora}/equipment`);
+  const card = p.getByRole("list", { name: "Equipment" }).getByRole("listitem", { name: "The Book of Nod" });
+  await expect(card).toContainText("Vampiric text");
+  await expect(card).toContainText("legends of Caine");
+
+  // She passes it to Lucan.
+  await card.getByRole("button", { name: "Give", exact: true }).click();
+  await card.getByRole("form", { name: "Give The Book of Nod" }).getByRole("combobox", { name: "Give it to" }).click();
+  await p.getByRole("listbox", { name: "Characters" }).getByRole("option", { name: /Lucan/ }).click();
+  await card.getByRole("button", { name: "Give to Lucan" }).click();
+  await expect(p.getByText("Gave The Book of Nod to Lucan.")).toBeVisible();
+  await expect(p.getByRole("listitem", { name: "The Book of Nod" })).toHaveCount(0);
+
+  // Lucan's player has it on his Play View, with the texts, never equipped.
+  const s = second.page;
+  await s.goto(`/play/characters/${lucan}`);
+  await s.getByRole("tab", { name: "Equipment" }).click();
+  await expect(s.getByRole("region", { name: "Vampiric texts" }).getByRole("listitem", { name: "The Book of Nod" })).toBeVisible();
+  await s.screenshot(shots("play-vampiric-text"));
+
+  // The troupe's Equipment tab finds it by its kind, and its history shows both.
+  await l.goto(`/troupes/${troupe.id}`);
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("link", { name: "Equipment", exact: true }).click();
+  await l.getByLabel("Kind", { exact: true }).selectOption({ label: "Vampiric texts" });
+  const held = l.getByRole("list", { name: "Equipment", exact: true });
+  const nod = held.getByRole("listitem", { name: "The Book of Nod, held by Lucan" });
+  await nod.getByRole("button", { name: "The Book of Nod, held by Lucan" }).click();
+  await nod.getByRole("button", { name: "History" }).click();
+  const history = nod.getByRole("list", { name: "The Book of Nod's history" });
+  await expect(history).toContainText(`Given to Theodora by Scriptorium ${run}, from the template The Book of Nod`);
+  await expect(history).toContainText("Given by Theodora to Lucan");
+});
+
 test("staff find who holds what in the Characters filter, and items on the Equipment tab, each view linking to the other", async ({ browser }) => {
   const custodian = await person(browser, "seek-custodian");
   makeCustodian(custodian.email);

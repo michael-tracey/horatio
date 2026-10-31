@@ -51,7 +51,7 @@ test("a player keeps their own sect status, naming its patron from the home trou
   await p.goto(`/characters/${id}`);
   await p.getByRole("link", { name: "Status & Titles", exact: true }).click();
   const card = p.locator("section").filter({ has: p.getByRole("heading", { name: "Status", exact: true }) });
-  await expect(card.getByText("Acknowledged by the Camarilla.")).toBeVisible();
+  await expect(card.getByRole("listitem", { name: "Acknowledged" })).toContainText("by the Camarilla");
   await expect(card.getByText("Fleeting: 0 of 5")).toBeVisible();
 
   // Celestine is given Loyal by the Prince, picked from the home troupe's characters.
@@ -96,7 +96,7 @@ test("a player keeps their own sect status, naming its patron from the home trou
   expect(refused.status()).toBe(409);
 });
 
-test("Status & Titles: a Camarilla player takes Harpy and gains its status, switches to Keeper of Elysium, and opens a status ban in a panel, on desktop and phone (#321)", async ({ browser }) => {
+test("Status & Titles: a Camarilla player sees the status held with its sources, takes Harpy from the titles sidebar and gains its status, switches to Keeper of Elysium, and opens a status ban, on desktop and phone (#321, #339)", async ({ browser }) => {
   const custodian = await person(browser, "stitles-cust");
   makeCustodian(custodian.email);
   const lead = await person(browser, "stitles-lead");
@@ -135,18 +135,33 @@ test("Status & Titles: a Camarilla player takes Harpy and gains its status, swit
   const prince = await send(lead.page, "POST", `/api/troupes/${troupeId}/npcs`, { name: "Mirela Stoica", wizard: false });
   await send(lead.page, "PUT", `/api/characters/${prince.id}/npc/ratings`, { category: "sect", name: "Camarilla", rating: null, detail: "" });
   await send(lead.page, "PUT", `/api/troupes/${troupeId}/characters/${prince.id}/titles`, { titles: ["Prince"] });
+  // Loyal, from the Prince.
+  await send(p, "POST", `/api/characters/${id}/status`, { name: "Loyal", patron_id: prince.id, patron_text: "", place: "Elysium", story: "For holding the door" });
 
-  // The tab lists the troupe's Camarilla titles, each with the status it gives.
+  // The status held is the main column, a line each with its type and where it comes
+  // from; the titles are a sidebar beside it, listing the troupe's Camarilla titles,
+  // each with the status it gives.
   await p.goto(`/characters/${id}`);
   await p.getByRole("link", { name: "Status & Titles", exact: true }).click();
-  const titles = p.locator("section").filter({ has: p.getByRole("heading", { name: "Titles", exact: true }) });
+  const titles = p.getByRole("complementary", { name: "Titles" });
   const choices = titles.getByRole("region", { name: "Titles to choose" });
   const held = titles.getByRole("region", { name: "Titles held" });
   const status = p.locator("section").filter({ has: p.getByRole("heading", { name: "Status", exact: true }) });
-  const fromTitles = status.getByRole("region", { name: "Status from titles, age and merits" });
+  const list = status.getByRole("list", { name: "Status held" });
+  const line = (name: string) => list.getByRole("listitem", { name, exact: true });
+  await expect(line("Acknowledged").getByText("accepted", { exact: true })).toBeVisible();
+  await expect(line("Acknowledged")).toContainText("by the Camarilla");
+  await expect(line("Loyal").getByText("fleeting", { exact: true })).toBeVisible();
+  await expect(line("Loyal")).toContainText("from Mirela Stoica (Prince at the time)");
+  await expect(line("Loyal")).toContainText("For holding the door");
   await expect(choices.getByRole("listitem", { name: "Harpy", exact: true }).getByText("Gives Prominent · Noble · Guardian")).toBeVisible();
   // The Master Harpy is the Harpy by another name, and gives the same (#340).
   await expect(choices.getByRole("listitem", { name: "Master Harpy" }).getByText("Gives Prominent · Noble · Guardian")).toBeVisible();
+  const statusBox = (await status.boundingBox())!;
+  const titlesBox = (await titles.boundingBox())!;
+  if (p.viewportSize()!.width >= 1024) expect(titlesBox.x).toBeGreaterThanOrEqual(statusBox.x + statusBox.width);
+  else expect(titlesBox.y).toBeGreaterThanOrEqual(statusBox.y + statusBox.height);
+  expect(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   // The Prince is held, by one character at a time: not for the taking.
   const princeRow = choices.getByRole("listitem", { name: "Prince", exact: true });
   await expect(princeRow.getByText(/Held by Mirela Stoica: only one holds it at a time/)).toBeVisible();
@@ -154,8 +169,9 @@ test("Status & Titles: a Camarilla player takes Harpy and gains its status, swit
 
   // Harpy, the first title, is active at once, and gives its status.
   await choices.getByRole("button", { name: "Take Harpy" }).click();
-  await expect(held.getByRole("listitem", { name: "Harpy" }).getByText("active", { exact: true })).toBeVisible();
-  await expect(fromTitles).toContainText("Harpy: Prominent, Noble, Guardian");
+  await expect(held.getByRole("listitem", { name: "Harpy", exact: true }).getByText("active", { exact: true })).toBeVisible();
+  for (const name of ["Prominent", "Noble", "Guardian"]) await expect(line(name)).toContainText("from the title Harpy");
+  await expect(line("Noble").getByText("abiding", { exact: true })).toBeVisible();
   await p.screenshot(shots("status-titles"));
   // The storytellers are told, with a link to the tab.
   const bell = (await (await lead.page.request.get("/api/notifications")).json()).items as { summary: string; link: string }[];
@@ -165,21 +181,30 @@ test("Status & Titles: a Camarilla player takes Harpy and gains its status, swit
   await choices.getByRole("button", { name: "Take Keeper of Elysium" }).click();
   await choices.getByRole("group", { name: "Take Keeper of Elysium" }).getByRole("button", { name: "Make it active" }).click();
   await expect(held.getByRole("listitem", { name: "Keeper of Elysium" }).getByText("active", { exact: true })).toBeVisible();
-  await expect(held.getByRole("listitem", { name: "Harpy" }).getByText("not active")).toBeVisible();
-  await expect(fromTitles).toContainText("Keeper of Elysium: Enforcer, Guardian");
-  await expect(fromTitles).not.toContainText("Harpy");
+  await expect(held.getByRole("listitem", { name: "Harpy", exact: true }).getByText("not active")).toBeVisible();
+  for (const name of ["Enforcer", "Guardian"]) await expect(line(name)).toContainText("from the title Keeper of Elysium");
+  await expect(list).not.toContainText("Harpy");
 
   // Given up, it leaves Harpy held but not active, and no status from either.
   await held.getByRole("button", { name: "Give up Keeper of Elysium" }).click();
   await held.getByRole("button", { name: "Yes, give it up" }).click();
   await expect(held.getByRole("listitem", { name: "Keeper of Elysium" })).toHaveCount(0);
   await expect(titles.getByText("No title is active, so none gives status.")).toBeVisible();
-  await expect(fromTitles).toHaveCount(0);
+  await expect(list).not.toContainText("from the title");
   await held.getByRole("button", { name: "Make Harpy active" }).click();
-  await expect(fromTitles).toContainText("Harpy: Prominent, Noble, Guardian");
+  await expect(line("Noble")).toContainText("from the title Harpy");
+  // Back on the tab holding a title, the titles to choose wait behind a button.
+  await p.reload();
+  const another = choices.getByRole("button", { name: /Choose another title/ });
+  await expect(another).toHaveAttribute("aria-expanded", "false");
+  await expect(choices.getByRole("listitem", { name: "Sheriff" })).toHaveCount(0);
+  await expect(line("Loyal")).toBeVisible();
+  await p.screenshot(shots("status-titles-held"));
+  await another.click();
+  await expect(choices.getByRole("listitem", { name: "Sheriff" })).toBeVisible();
 
-  // The bans are in the sidebar; one opens in a panel saying what it does and why.
-  const bans = p.getByRole("complementary", { name: "Status bans" });
+  // The bans are below the status; one opens in a panel saying what it does and why.
+  const bans = p.locator("section").filter({ has: p.getByRole("heading", { name: "Status bans" }) });
   await bans.getByRole("button", { name: /lesser ban: Not Embraced into a pillar clan/ }).click();
   const panel = p.getByRole("dialog", { name: "Lesser status ban" });
   await expect(panel.getByText("A lesser ban cuts fleeting status to 3, a greater to 1 (MET: VTM p. 312).", { exact: false })).toBeVisible();
@@ -188,17 +213,23 @@ test("Status & Titles: a Camarilla player takes Harpy and gains its status, swit
   await panel.getByRole("button", { name: "Close" }).click();
   await expect(panel).toBeHidden();
 
-  // The lead, on a phone: the sidebar sits below, and the panel fills the screen, where
-  // the lead makes Lady Vasquez exempt with a reason.
+  // The lead, on a phone: the titles sidebar sits below the status and its bans, and
+  // the panel fills the screen, where the lead makes Lady Vasquez exempt with a reason.
   const l = lead.page;
   await l.setViewportSize({ width: 390, height: 844 });
   await l.goto(`/characters/${id}/status`);
-  const leadBans = l.getByRole("complementary", { name: "Status bans" });
-  const leadTitles = l.locator("section").filter({ has: l.getByRole("heading", { name: "Titles", exact: true }) });
+  const leadBans = l.locator("section").filter({ has: l.getByRole("heading", { name: "Status bans" }) });
+  const leadStatus = l.locator("section").filter({ has: l.getByRole("heading", { name: "Status", exact: true }) });
+  const leadTitles = l.getByRole("complementary", { name: "Titles" });
   await expect(leadBans.getByRole("button", { name: /lesser ban: Not Embraced into a pillar clan/ })).toBeVisible();
-  const asideBox = (await leadBans.boundingBox())!;
-  const titlesBox = (await leadTitles.boundingBox())!;
-  expect(asideBox.y).toBeGreaterThan(titlesBox.y + titlesBox.height - 1);
+  await expect(leadTitles.getByRole("listitem", { name: "Harpy", exact: true })).toBeVisible();
+  const leadStatusBox = (await leadStatus.boundingBox())!;
+  const bansBox = (await leadBans.boundingBox())!;
+  const leadTitlesBox = (await leadTitles.boundingBox())!;
+  expect(bansBox.y).toBeGreaterThan(leadStatusBox.y + leadStatusBox.height - 1);
+  expect(leadTitlesBox.y).toBeGreaterThan(bansBox.y + bansBox.height - 1);
+  expect(await l.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await l.screenshot(shots("status-titles-lead-phone"));
   await leadBans.getByRole("button", { name: /lesser ban: Not Embraced into a pillar clan/ }).click();
   const leadPanel = l.getByRole("dialog", { name: "Lesser status ban" });
   await expect(leadPanel).toBeVisible();

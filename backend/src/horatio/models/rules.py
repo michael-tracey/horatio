@@ -283,7 +283,8 @@ class HouseTrait(Record):
     )
 
 
-EQUIPMENT_KIND_CHECK = "kind in ('melee', 'ranged', 'protective', 'miscellaneous')"
+# A Vampiric Text (text) from issue #341.
+EQUIPMENT_KIND_CHECK = "kind in ('melee', 'ranged', 'protective', 'miscellaneous', 'text')"
 
 
 class EquipmentQuality(Record):

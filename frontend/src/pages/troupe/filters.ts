@@ -185,6 +185,7 @@ const KIND_WORDS: Record<string, [string, boolean]> = {
   ranged: ["ranged weapon", true],
   protective: ["protective gear", false],
   miscellaneous: ["miscellaneous gear", false],
+  text: ["vampiric text", true],
 };
 
 export function matchOf(c: Condition): EquipmentMatch {
