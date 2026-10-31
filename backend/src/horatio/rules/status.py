@@ -17,8 +17,9 @@ the trait's properties:
     duration    how long it lasts, as below: a negative status, or a fleeting one
                 that lapses (Scholar)
 
-and its page is the trait's page reference. A status of the Independent Alliance
-has its sect and nothing more: no book describes it.
+and its page is the trait's page reference. A status says what holding it does,
+or that it has `no_rules_yet`: a status of the Independent Alliance has its sect
+and nothing more, as no book describes it, and staff use the troupe's own words.
 
 A duration lasts `games` games or `months` months, whichever is longer; `stacks`
 when each further one adds the same again (Warned); `this_game` for the game it is
@@ -35,10 +36,22 @@ A title gives the abiding status named in `status` for as long as it is held; or
 one of `choose_one`, chosen at the start of each game (a Bishop's Blessed or
 Enforcer); and with `while_absent`, more status while the holder of another title
 is away from the game (a Seneschal's Authority, while the Prince is absent).
-Horatio cannot know who is at a game, so the holder says so. A title with no sect
-can go to anyone. A `unique` title is held by only one character in a troupe at a
-time (a Prince, a Sheriff); any other may be held by several (a Primogen, an
-Archon).
+Horatio cannot know who is at a game, so the holder says so. A `note` says in words
+what the data cannot (a Myrmidon's Sanctioned, which is fleeting status).
+
+A title of a sect says what it gives: its status, or in `gives_none` why the book
+gives it none, with the page; or that it has `no_rules_yet` (the Independent
+Alliance's), with no page. The loader refuses a sect title that says none of
+these, so no title is blank without a reason. A title with no sect can go to
+anyone; a clan's title (a Tremere Lord) names its `clan` and no sect, and gives no
+sect status.
+
+A title's `aliases` are other names for the same office (a Templar is also called
+a Paladin): each is a title of its own, giving the same as the title it names
+(`alias_of`), ranked beside it, and a `unique` title's names are one office, held
+by one character between them. A `unique` title is held by only one character in a
+troupe at a time (a Prince, a Sheriff); any other may be held by several (a
+Primogen, an Archon).
 
 The caps (p. 313): a character carries into a game the status of one abiding
 source (its titles and its social age are each a source), all its innate and
@@ -97,6 +110,8 @@ class StatusData:
     censure: str = ""
     punishment: str = ""
     duration: DurationData | None = None
+    # No book describes it yet (the Independent Alliance's): it has a name and a sect.
+    no_rules_yet: bool = False
 
     @property
     def counts(self) -> bool:
@@ -146,10 +161,27 @@ class TitleData:
     # Only one character in a troupe holds it at a time (a Prince): a player cannot
     # choose it while another character holds it (horatio.titles).
     unique: bool = False
+    # A clan's title (a Tremere Lord): it has no sect, and gives no sect status.
+    clan: str | None = None
+    # Other names for the same office (a Templar's Paladin), each a title of its own.
+    aliases: tuple[str, ...] = ()
+    # The title this one is another name for: it gives the same.
+    alias_of: str | None = None
+    # Why it gives no status, in words, where the book says so (the page is `page`).
+    gives_none: str = ""
+    # What the data cannot say about what it gives, in a line of our own words.
+    note: str = ""
+    # No book describes it yet (the Independent Alliance's): it gives nothing.
+    no_rules_yet: bool = False
 
     @property
     def gives_status(self) -> bool:
         return bool(self.status or self.choose_one or self.while_absent)
+
+    @property
+    def office(self) -> str:
+        """The title it is, whichever of its names it goes by: Baron for an Advocate."""
+        return self.alias_of or self.name
 
     @property
     def named_status(self) -> tuple[str, ...]:
@@ -240,6 +272,7 @@ def status_from_trait(name: str, properties: Mapping[str, Any], page: str | None
         censure=properties.get("censure", ""),
         punishment=properties.get("punishment", ""),
         duration=duration_from_dict(duration) if duration else None,
+        no_rules_yet=properties.get("no_rules_yet", False),
     )
 
 
@@ -283,6 +316,11 @@ def title_from_dict(raw: Mapping[str, Any]) -> TitleData:
         page=raw.get("page"),
         rank=raw.get("rank"),
         unique=raw.get("unique", False),
+        clan=raw.get("clan"),
+        aliases=tuple(raw.get("aliases", [])),
+        gives_none=raw.get("gives_none", ""),
+        note=raw.get("note", ""),
+        no_rules_yet=raw.get("no_rules_yet", False),
     )
 
 
@@ -290,9 +328,10 @@ def titles_from(raw: Iterable[str | Mapping[str, Any]]) -> tuple[TitleData, ...]
     """Titles from a list of names, or tables with a name and what the title is
     (sect, status). A name may come both bare and as a table; the table says what it
     is. A table without a rank is ranked by its place among the tables, so the rules
-    data lists them highest first. Sorted by name."""
+    data lists them highest first. Each of a table's aliases is a title too, the same
+    as the one it names. Sorted by name."""
     found: dict[str, TitleData] = {}
-    described: set[str] = set()
+    described: dict[str, TitleData] = {}
     for entry in raw:
         if isinstance(entry, str):
             found.setdefault(entry, TitleData(name=entry))
@@ -302,8 +341,19 @@ def titles_from(raw: Iterable[str | Mapping[str, Any]]) -> tuple[TitleData, ...]
             raise ValueError(f"title {title.name!r} is described twice")
         if title.rank is None:
             title = replace(title, rank=len(described) + 1)
-        described.add(title.name)
+        described[title.name] = title
         found[title.name] = title
+    named_by: dict[str, str] = {}
+    for title in described.values():
+        for alias in title.aliases:
+            if alias in described:
+                raise ValueError(f"{alias!r} is a title, and another name for {title.name}")
+            if alias in named_by:
+                raise ValueError(
+                    f"{alias!r} is another name for both {named_by[alias]} and {title.name}"
+                )
+            named_by[alias] = title.name
+            found[alias] = replace(title, name=alias, aliases=(), alias_of=title.name)
     return tuple(found[name] for name in sorted(found))
 
 
@@ -383,15 +433,18 @@ def plain(value: Any) -> Any:
 
 def status_rules_to_dict(rules: StatusRulesData, titles: Sequence[TitleData]) -> dict[str, Any]:
     """What `rule_sets.status_rules` holds: the caps and what changes them, the
-    sects, the social ages, and the titles that are more than a name (the names are
-    in `rule_sets.titles`)."""
+    sects, the social ages, and the titles that are more than a name, each with its
+    aliases (the names, aliases among them, are in `rule_sets.titles`)."""
     found: dict[str, Any] = {
         "sects": [plain(s) for s in rules.sects.values()],
         "social_ages": [plain(a) for a in rules.social_ages],
         "cap_changes": [plain(c) for c in rules.cap_changes],
         "outsiders": [plain(o) for o in rules.outsiders],
         "titles": [
-            plain(t) for t in titles if t.sect or t.gives_status or t.page or t.rank is not None
+            plain(t)
+            for t in titles
+            if t.alias_of is None
+            and (t.sect or t.clan or t.gives_status or t.page or t.rank is not None)
         ],
     }
     if rules.caps is not None:
@@ -417,11 +470,14 @@ def check_status_rules(
     rules: StatusRulesData,
     titles: Sequence[TitleData],
 ) -> None:
-    """Refuse status rules that name a status, sect or title the rule set lacks, or
-    a title or social age giving status that is not abiding status of its sect."""
+    """Refuse status rules that name a status, sect, clan or title the rule set
+    lacks; a status that says not what it does, nor that it has no rules yet; a
+    title or social age giving status that is not abiding status of its sect; and a
+    sect's title that says not what it gives, or why it gives nothing."""
     from horatio.rules.checks import validate_condition
 
     sect_names = {name for category, name in traits if category == "sect"}
+    clan_names = {name for category, name in traits if category == "clan"}
     statuses = statuses_of(traits)
 
     for status in statuses.values():
@@ -430,6 +486,12 @@ def check_status_rules(
             raise ValueError(f"{where} has unknown type {status.type!r}")
         if status.sect != GENERAL and status.sect not in sect_names:
             raise ValueError(f"{where} has unknown sect {status.sect!r}")
+        says = status.passive or status.spent or status.censure
+        if status.no_rules_yet:
+            if says or status.page:
+                raise ValueError(f"{where} has no rules yet, so it says nothing more")
+        elif not says:
+            raise ValueError(f"{where} says not what it does, nor that it has no rules yet")
         duration = status.duration
         if duration is not None:
             if not duration.text:
@@ -470,6 +532,25 @@ def check_status_rules(
         where = f"title {title.name!r}"
         if title.sect is not None and title.sect not in sect_names:
             raise ValueError(f"{where} has unknown sect {title.sect!r}")
+        if title.clan is not None:
+            if title.clan not in clan_names:
+                raise ValueError(f"{where} has unknown clan {title.clan!r}")
+            if title.sect is not None:
+                raise ValueError(f"{where} is a clan's title, so it has no sect")
+            if title.gives_status:
+                raise ValueError(f"{where} is a clan's title, so it gives no sect status")
+        if title.no_rules_yet:
+            if title.sect is None:
+                raise ValueError(f"{where} has no rules yet, but no sect to have them")
+            if title.gives_status or title.gives_none or title.note or title.page:
+                raise ValueError(f"{where} has no rules yet, so it says nothing more")
+        elif title.gives_none:
+            if title.gives_status:
+                raise ValueError(f"{where} gives status, and says why it gives none")
+            if not title.page:
+                raise ValueError(f"{where} says why it gives no status, but not where")
+        elif title.sect is not None and not title.gives_status:
+            raise ValueError(f"{where} is a {title.sect} title that says not what it gives")
         abiding(title.named_status, title.sect, where)
         if len(title.choose_one) == 1:
             raise ValueError(f"{where} gives a choice of one status")
