@@ -26,7 +26,7 @@ test("storytellers log influence for PCs, NPCs and names only, and a player read
   const p = player.page;
   await p.reload();
   await p.getByLabel("Name").fill("Corvin");
-  await p.getByLabel("Build for").selectOption({ label: troupeName });
+  await p.getByLabel("Which troupe will you play in?").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Create" }).click();
   await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
   const corvin = new URL(p.url()).pathname.split("/")[2]!;
@@ -196,7 +196,7 @@ test("influence spent at a game goes in the troupe's influence log, and comes of
   const p = player.page;
   await p.reload();
   await p.getByLabel("Name").fill("Iris");
-  await p.getByLabel("Build for").selectOption({ label: troupeName });
+  await p.getByLabel("Which troupe will you play in?").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Create" }).click();
   await p.getByLabel("Clan").selectOption("Brujah");
   await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
@@ -336,7 +336,7 @@ test("Gossip is filled from the influence log, and a discovery block hides an en
   const p = player.page;
   await p.reload();
   await p.getByLabel("Name").fill("Agnes");
-  await p.getByLabel("Build for").selectOption({ label: troupeName });
+  await p.getByLabel("Which troupe will you play in?").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Create" }).click();
   await p.getByLabel("Clan").selectOption("Brujah");
   await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
