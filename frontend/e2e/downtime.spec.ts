@@ -475,19 +475,63 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(narrator.page.getByText("written", { exact: true })).toBeVisible();
   await narrator.page.screenshot(shots("narrator"));
 
-  // The lead closes and delivers; the player reads the result.
+  // The lead closes, told first what closing means while it isn't yet due.
   await lead.page.getByRole("link", { name: "Overview" }).click();
   await lead.page.getByRole("button", { name: "Close submissions" }).click();
-  await lead.page.getByRole("button", { name: "Deliver results" }).click();
+  const closing = lead.page.getByRole("region", { name: "Close submissions?" });
+  await expect(closing.getByText(/^It isn't due until /)).toBeVisible();
+  await expect(closing.getByText("The 1 participant has submitted.")).toBeVisible();
+  await lead.page.screenshot(shots("cycle-close"));
+  await closing.getByRole("button", { name: "Yes, close submissions" }).click();
+  await expect(lead.page.getByText("closed", { exact: true })).toBeVisible();
+
+  // Delivering starts on the Delivery tab, which says what would go. Agnes's influence
+  // action and her feeding are still unanswered, so by default nothing goes.
+  await lead.page.getByRole("link", { name: "Deliver results" }).click();
+  const deliverCard = lead.page.locator("section").filter({ has: lead.page.getByRole("heading", { name: "Deliver results" }) });
+  await expect(deliverCard.getByText("0 of 1 downtime has every response written.")).toBeVisible();
+  await expect(deliverCard.getByText("Agnes (1 of 3)")).toBeVisible();
+  await expect(deliverCard.getByRole("button", { name: "Nothing to deliver" })).toBeDisabled();
+  await deliverCard.getByLabel("Also deliver the 1 partly written, with what's written so far").check();
+  await deliverCard.getByRole("button", { name: "Deliver 1 downtime" }).click();
   await expect(lead.page.getByText("Delivered 1 downtime.")).toBeVisible();
-  // The Delivery tab shows each participant against each channel; with no connectors, in Horatio only.
-  await lead.page.getByRole("link", { name: "Delivery", exact: true }).click();
+  // Each participant against each channel; with no connectors, in Horatio only.
   await expect(lead.page.getByRole("columnheader", { name: "In Horatio" })).toBeVisible();
   await expect(lead.page.getByRole("row", { name: /Agnes.*sent/ })).toBeVisible();
-  await lead.page.getByRole("link", { name: "Overview" }).click();
   await p.getByRole("link", { name: "Results" }).click();
   await expect(p.getByText("you feed well and unseen")).toBeVisible();
   await p.screenshot(shots("results"));
+
+  // The rest is answered after delivery: the downtime shows as changed, and goes again as an update.
+  await lead.page.getByRole("link", { name: "Responses", exact: true }).click();
+  await lead.page.getByRole("button", { name: /^unassigned \(1\)/i }).click();
+  await lead.page.getByLabel("Response to Agnes").fill("The desk sergeant owes you a favour.");
+  await lead.page.getByRole("button", { name: "Save response" }).click();
+  await expect(lead.page.getByRole("button", { name: /^written \(2\)/i })).toBeVisible();
+  await lead.page.getByRole("link", { name: "Feeding", exact: true }).click();
+  await expect(lead.page.getByText("Already delivered: a change goes out as an update with the next delivery.")).toBeVisible();
+  await lead.page.getByRole("button", { name: "Answer", exact: true }).click();
+  await expect(lead.page.getByRole("button", { name: "Change answer" })).toBeVisible();
+  await lead.page.getByRole("link", { name: "Delivery", exact: true }).click();
+  await expect(lead.page.getByRole("row", { name: /Agnes/ }).getByText("changed since delivery")).toBeVisible();
+  await expect(deliverCard.getByText("Agnes (update)")).toBeVisible();
+  await lead.page.screenshot(shots("cycle-delivery"));
+  await deliverCard.getByRole("button", { name: "Deliver 1 downtime" }).click();
+  await expect(lead.page.getByText("Delivered 1 downtime, as an update.")).toBeVisible();
+  await expect(lead.page.getByText("changed since delivery")).toHaveCount(0);
+  await p.reload();
+  await expect(p.getByText("The desk sergeant owes you a favour.")).toBeVisible();
+  await expect(p.getByText("you feed well and unseen")).toBeVisible();
+  await expect(p.getByText("updated", { exact: true })).toBeVisible();
+
+  // Marking the cycle complete says first that nothing is left.
+  await lead.page.getByRole("link", { name: "Overview" }).click();
+  await lead.page.getByRole("button", { name: "Mark complete" }).click();
+  const completing = lead.page.getByRole("region", { name: "Mark complete?" });
+  await expect(completing.getByText("Every response is written.")).toBeVisible();
+  await expect(completing.getByText("Players have every result as it stands.")).toBeVisible();
+  await completing.getByRole("button", { name: "Yes, mark complete" }).click();
+  await expect(lead.page.getByText("complete", { exact: true })).toBeVisible();
 
   // Results always go out in Horatio; Discord needs the server set up first.
   await lead.page.getByRole("link", { name: "Troupes" }).click();
@@ -608,6 +652,93 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   }
   await expect(troupeSheets.getByRole("img", { name: /dots$/ })).toHaveCount(0);
   await troupeSheets.close();
+});
+
+/**
+ * The player's writing is never lost: it saves itself once they stop typing, a
+ * save that fails says so and keeps the text, a refetch while it is unsaved
+ * leaves it be, and a removed action can be put back.
+ */
+test("a downtime keeps the player's writing: autosave, a failed save, a refetch, and Undo", async ({ browser }) => {
+  const custodian = await person(browser, "dtkeep-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "dtkeep-lead");
+  const player = await person(browser, "dtkeep-player");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "GET" | "POST" | "PUT", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data: method === "GET" ? undefined : (data ?? {}) });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Kept Words ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  const { id } = await send(player.page, "POST", "/api/characters", { splat: "vampire", name: "Corvin" });
+  await send(player.page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  const picks: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, list] of Object.entries(picks))
+    await send(player.page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+  await send(player.page, "POST", `/api/characters/${id}/creation/complete`);
+  const asked = await send(player.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+  const now = Date.now();
+  const cycle = await send(lead.page, "POST", `/api/troupes/${troupe.id}/cycles`, {
+    name: "Quiet month",
+    closes_at: new Date(now + 7 * 86400e3).toISOString(),
+    grace_ends_at: new Date(now + 9 * 86400e3).toISOString(),
+  });
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/open`);
+
+  // On a phone, the deadline comes before the first question (on a desktop it is beside them).
+  const p = player.page;
+  await p.goto(`/characters/${id}/downtime`);
+  const due = p.getByText(/^Due /);
+  await expect(due).toBeVisible();
+  if (test.info().project.name === "phone")
+    expect((await due.boundingBox())!.y).toBeLessThan((await p.getByRole("heading", { name: "Feeding" }).boundingBox())!.y);
+
+  // The answer saves itself once typing stops, and is there after a reload.
+  const saved = p.getByText(/^Saved \d/);
+  await p.getByRole("button", { name: /Add an action/ }).first().click();
+  const answer = p.getByLabel("Downtime action");
+  await answer.fill("Watch the docks for the courier.");
+  await expect(p.getByText("Not saved yet")).toBeVisible();
+  await expect(saved).toBeVisible({ timeout: 10_000 });
+  await p.reload();
+  await expect(answer).toHaveValue("Watch the docks for the courier.");
+
+  // A save that can't get through says so, and the writing stays.
+  await p.route("**/downtime/answers", (route) => route.abort());
+  const longer = "Watch the docks for the courier, then follow him to his haven.";
+  await answer.fill(longer);
+  await expect(p.getByText("Couldn't save:")).toBeVisible({ timeout: 10_000 });
+  // Staff give another action meanwhile, and the page asks again when the player comes back to it.
+  const [participant] = await send(lead.page, "GET", `/api/cycles/${cycle.id}/participants`);
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/participants/${participant.id}/adjustments`, { action_kind: "general", delta: 1, reason: "Helped at game" });
+  await p.evaluate(() => window.dispatchEvent(new Event("visibilitychange")));
+  await expect(p.getByText("+1 general: Helped at game")).toBeVisible();
+  await expect(answer).toHaveValue(longer);
+  await p.unroute("**/downtime/answers");
+  await p.getByRole("button", { name: "try again" }).click();
+  await expect(saved).toBeVisible();
+
+  // Removing an action can be undone.
+  await p.getByRole("button", { name: "Remove this action" }).click();
+  await expect(answer).toHaveCount(0);
+  await p.getByRole("button", { name: "Undo" }).click();
+  await expect(answer).toHaveValue(longer);
+  await expect(saved).toBeVisible({ timeout: 10_000 });
+  await p.screenshot(shots("downtime-saved"));
+  await p.reload();
+  await expect(answer).toHaveValue(longer);
 });
 
 test("feeding in a downtime: Herd given to another character, both answered, and half Blood at the next game", async ({ browser }) => {

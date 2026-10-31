@@ -571,7 +571,7 @@ test("at a game, a Seneschal elder chooses one source of status, spends Authorit
 
   // Spending Authority greys it out for the game; Undo gives it back.
   await abiding.getByRole("button", { name: "Spend Authority" }).click();
-  await p.getByRole("dialog", { name: "Note for this spend" }).getByRole("button", { name: "Save" }).click();
+  await p.getByRole("dialog", { name: "Note for this spend" }).getByRole("button", { name: "Skip the note" }).click();
   await expect(abiding.getByRole("button", { name: "Undo spending Authority" })).toBeVisible();
   await expect(abiding.getByText("Spent", { exact: true })).toBeVisible();
   await expect(p.getByRole("status")).toHaveText("Saved");

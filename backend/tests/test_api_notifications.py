@@ -109,7 +109,7 @@ def test_players_hear_when_downtime_results_arrive(troupe: Troupe) -> None:
     feed = scene.response_for("Feed at the docks")["id"]
     troupe.assistant.client.put(f"/responses/{feed}", json={"body": "You feed well."})
     troupe.assistant.client.post(f"/cycles/{scene.cycle['id']}/close")
-    troupe.assistant.client.post(f"/cycles/{scene.cycle['id']}/deliver")
+    troupe.assistant.client.post(f"/cycles/{scene.cycle['id']}/deliver", json={"partial": True})
 
     found = bell(troupe.player)
     assert found["count"] == 1
@@ -137,7 +137,7 @@ def test_people_only_mark_their_own_messages_read(troupe: Troupe) -> None:
     feed = scene.response_for("Feed at the docks")["id"]
     troupe.assistant.client.put(f"/responses/{feed}", json={"body": "You feed well."})
     troupe.assistant.client.post(f"/cycles/{scene.cycle['id']}/close")
-    troupe.assistant.client.post(f"/cycles/{scene.cycle['id']}/deliver")
+    troupe.assistant.client.post(f"/cycles/{scene.cycle['id']}/deliver", json={"partial": True})
     message = bell(troupe.player)["items"][0]["id"]
 
     troupe.stranger.client.post("/notifications/read", json={"ids": [message]})

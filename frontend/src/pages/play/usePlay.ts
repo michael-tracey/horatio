@@ -105,9 +105,12 @@ export function usePlay(characterId: string) {
     return () => window.clearInterval(timer);
   }, [queue, online, failed, sending, flush]);
 
+  // Gives the tap made, so Undo can name it.
   const tap = useCallback(
-    (what: Parameters<typeof makeTap>[0]) => {
-      setQueue((now) => [...now, makeTap(what, view.data?.game?.id)]);
+    (what: Parameters<typeof makeTap>[0]): Tap => {
+      const made = makeTap(what, view.data?.game?.id);
+      setQueue((now) => [...now, made]);
+      return made;
     },
     [view.data?.game?.id],
   );

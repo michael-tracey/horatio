@@ -217,8 +217,6 @@ def record(
         raise unprocessable("This is not a Quest action.")
     if item.cycle.status == "complete":
         raise conflict("This cycle is complete.")
-    if responses.delivered(db, item.answer.submission_id):
-        raise conflict("These results have already been delivered.")
     quest_id = quest_id_of(item.answer.structured)
     quest = db.get(Quest, quest_id) if quest_id else None
     number = item.answer.structured.get("scenario")
@@ -238,8 +236,6 @@ def record(
     for action in actions(db, quest, item.cycle):
         response = action.response
         if response is None or action.scenario != scenario.number:
-            continue
-        if responses.delivered(db, action.answer.submission_id):
             continue
         response.body = body
         response.status = "written"
@@ -272,7 +268,9 @@ def deliver(db: Session, staff: User, cycle: DowntimeCycle) -> int:
             if a.scenario == scenario.number
             and a.response is not None
             and a.response.status == "written"
-            and responses.delivered(db, a.answer.submission_id)
+            and responses.up_to_date(
+                db, cycle, a.character, db.get_one(Submission, a.answer.submission_id)
+            )
         }
         scenario.sent_at = now()
         later = any(
