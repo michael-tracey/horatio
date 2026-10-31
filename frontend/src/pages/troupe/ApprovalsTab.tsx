@@ -13,6 +13,8 @@ import { describeDifference, settlementLabel } from "../../settlements";
 import { joining, type XpChoice } from "./xpRange";
 import { useBackstoryStanding } from "../character/BackstoryTab";
 import { ApprovalBackstory } from "./ApprovalBackstory";
+import { askedLine } from "./approvals";
+import { generationText } from "../../generation";
 
 type State = "pending" | "approved" | "declined" | "withdrawn";
 type Kind = "home_troupe_change" | "discipline" | "review" | "exception" | "diablerie" | "merit_flaw";
@@ -144,6 +146,16 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
         </Badge>
       }
     >
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-mist" title={approval.asked_at ? dates.dateTime(approval.asked_at) : undefined}>
+          {askedLine(approval)}
+        </p>
+        <Link to={`/characters/${approval.character_id}`}>
+          <Button variant="secondary" tabIndex={-1} className="min-h-8 px-3">
+            Open sheet
+          </Button>
+        </Link>
+      </div>
       {approval.player_note && <p className="mb-3 text-sm italic">"{approval.player_note}"</p>}
       {d && ex && (
         <div className="mb-3 flex flex-col gap-1 text-sm">
@@ -209,7 +221,11 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
       )}
       {joining && approval.locks.length > 0 && (
         <p className="mb-3 text-sm">
-          Accepting at {approval.locks.map((l) => `${l.name} ${l.rating ?? ""}`.trim()).join(", ")}.{" "}
+          Accepting at{" "}
+          {approval.locks
+            .map((l) => (l.name === "Generation" ? generationText(l.rating ?? 0, l.generation, true) : `${l.name} ${l.rating ?? ""}`.trim()))
+            .join(", ")}
+          .{" "}
           <span className="text-mist">Accepting locks it: after that the player can't change it.</span>
         </p>
       )}

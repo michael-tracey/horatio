@@ -512,7 +512,8 @@ def describe(condition: Condition) -> str:
             parts.append("for " + " or ".join(test))
         elif key == "generation":
             parts.append(
-                describe_facts({"generation": test}, {"generation": "Generation {}"}) or ""
+                describe_facts({"generation": test}, {"generation": "Generation background {}"})
+                or ""
             )
         elif key == "any_of":
             parts.append(" or ".join(describe(c) for c in test))

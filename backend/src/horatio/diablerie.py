@@ -450,7 +450,7 @@ def record(
 
 def told(plan: Plan) -> str:
     """What the player is told a diablerie did."""
-    parts = [f"Generation {plan.from_generation} → {plan.to_generation}"]
+    parts = [f"Generation background {plan.from_generation} → {plan.to_generation}"]
     if plan.techniques:
         refund = sum(t.refund for t in plan.techniques)
         names = ", ".join(t.name for t in plan.techniques)

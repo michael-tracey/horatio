@@ -371,7 +371,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.screenshot(shots("rules"));
   // …and set its own price: Generation 1 skills at a flat 1 XP a dot, which Agnes pays.
   await lead.page.getByRole("link", { name: "Costs", exact: true }).click();
-  await lead.page.getByRole("button", { name: "Change the price for All skills, Generation 1" }).click();
+  await lead.page.getByRole("button", { name: "Change the price for All Skills, Generation background 1" }).click();
   await lead.page.getByLabel("How it's priced").selectOption({ label: "The same for each dot" });
   await lead.page.getByLabel("XP per dot").fill("1");
   await lead.page.getByLabel("Note for players").fill("Skills come easily here");

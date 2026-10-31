@@ -163,11 +163,14 @@ def test_once_a_home_troupe_accepts_the_character_generation_is_fixed(troupe: Tr
     request = troupe.player.client.post(
         f"/characters/{character_id}/home-troupe", json={"troupe_id": troupe.id}
     ).json()
-    # Staff see the Generation they are accepting.
+    # Staff see the Generation they are accepting, and the generation it gives, with
+    # who asked and when.
     queued = troupe.lead.client.get(f"/troupes/{troupe.id}/approvals").json()
-    assert next(a for a in queued if a["id"] == request["id"])["locks"] == [
-        {"name": "Generation", "rating": 1}
-    ]
+    asked = next(a for a in queued if a["id"] == request["id"])
+    assert asked["locks"] == [{"name": "Generation", "rating": 1, "generation": 11}]
+    assert (asked["clan"], asked["age"]) == ("Brujah", "Neonate")
+    assert asked["player_name"] == troupe.player.email.removesuffix("@example.com")
+    assert asked["asked_at"]
     troupe.lead.client.post(f"/approvals/{request['id']}/approve", json={})
 
     refused = spend(troupe.player, character_id, generation(2, 1))

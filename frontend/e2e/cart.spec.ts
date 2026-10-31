@@ -64,7 +64,7 @@ test("Generation changes in the cart until a home troupe accepts the character, 
   const l = lead.page;
   await l.goto(`/troupes/${troupeId}/approvals`);
   const card = l.locator("section").filter({ hasText: "Ottoline" });
-  await expect(card).toContainText("Accepting at Generation 2.");
+  await expect(card).toContainText("Accepting at 9th generation (Generation background ●●).");
   await expect(card).toContainText("Accepting locks it");
   await card.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(l.getByText("Nothing pending.")).toBeVisible();

@@ -98,6 +98,8 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(p.getByRole("heading", { name: "Lucien" })).toBeVisible();
   await expect(p.getByLabel("Blood: 8 of 12")).toBeVisible();
   await expect(p.getByText("2 blood a turn")).toBeVisible();
+  // The header names the generation two dots of Generation give, not "Generation 2".
+  await expect(p.getByText("9th generation")).toBeVisible();
   // Quick notes start on, but Blood, Willpower and healing never stop to ask.
   await expect(p.getByLabel("Quick notes")).toBeChecked();
   await p.getByRole("button", { name: "Spend Blood", exact: true }).last().click();
