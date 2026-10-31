@@ -100,7 +100,7 @@ export function ProfileEditor({ profile, onDone }: { profile: TroupeProfileOut; 
 
           <Part title="New players">
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Taking new players?">
+              <Field label="Taking new players?" hint="Shows on the troupe list and the profile.">
                 <Select
                   value={form.new_players ?? ""}
                   onChange={(e) => set({ new_players: e.target.value === "" ? null : (e.target.value as "welcoming" | "closed") })}

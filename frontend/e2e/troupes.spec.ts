@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab, builtVampire, ATTRIBUTES_AND_FOCUSES } from "./support";
 
 /** A troupe's setup: its rules, XP range, staff, profile and archiving, and asking for one. */
 
@@ -233,6 +233,57 @@ test("storytellers filter the troupe's characters and print what they find", asy
   await printed.close();
 });
 
+test("the troupe list says what each troupe is, whether it takes new players and where you play, and keeps the ask form shut", async ({ browser }) => {
+  const custodian = await person(browser, "chooser-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "chooser-lead");
+  const player = await person(browser, "chooser-player");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT" | "PATCH", url: string, data: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const troupeName = `Court of the Corn Exchange ${run}`;
+  const troupeId = (await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle })).id;
+  await backstoryOptional(custodian.page, troupeId);
+  await send(lead.page, "PATCH", `/api/troupes/${troupeId}`, {
+    description: "A **Camarilla** court that meets under the old dome.\n\nGames run monthly; see the profile for more.",
+  });
+  await send(lead.page, "PUT", `/api/troupes/${troupeId}/profile`, { new_players: "welcoming", venue: { region: "Leeds" } });
+  const id = await builtVampire(player.page, "Clémence Aubry", "Brujah", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  const asked = await send(player.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+
+  // The player's own troupe comes first, with the start of its description as plain text.
+  const p = player.page;
+  await p.goto("/troupes");
+  const list = p.locator("main ul").first();
+  await expect(list.getByRole("listitem").first()).toContainText(troupeName);
+  const row = list.getByRole("listitem").filter({ hasText: troupeName });
+  await expect(row.getByText("A Camarilla court that meets under the old dome.", { exact: true })).toBeVisible();
+  await expect(row.getByText("Leeds", { exact: true })).toBeVisible();
+  await expect(row.getByText("Welcoming new players", { exact: true })).toBeVisible();
+  await expect(row.getByText("You play here", { exact: true })).toBeVisible();
+  await expect(row.getByText("Clémence Aubry", { exact: true })).toBeVisible();
+
+  // Asking for a troupe of your own is one line until opened.
+  const open = p.getByRole("button", { name: "Ask for a new troupe" });
+  await expect(open).toHaveAttribute("aria-expanded", "false");
+  await expect(p.getByLabel("Troupe name")).toHaveCount(0);
+  await p.screenshot(shots("troupes-list"));
+
+  // Its staff see that they run it.
+  await lead.page.goto("/troupes");
+  const theirs = lead.page.locator("main ul").first().getByRole("listitem").filter({ hasText: troupeName });
+  await expect(theirs.getByText("You run this", { exact: true })).toBeVisible();
+  await expect(theirs.getByText("You play here", { exact: true })).toHaveCount(0);
+});
+
 test("someone asks for a troupe of their own, and the custodian approves it", async ({ browser }) => {
   const custodian = await person(browser, "requests-custodian");
   makeCustodian(custodian.email);
@@ -241,6 +292,7 @@ test("someone asks for a troupe of their own, and the custodian approves it", as
 
   const a = asker.page;
   await a.getByRole("link", { name: "Troupes" }).click();
+  await a.getByRole("button", { name: "Ask for a new troupe" }).click();
   await a.getByLabel("Troupe name").fill(troupeName);
   await a.getByLabel("Note to the custodian").fill("Eight players ready.");
   await a.getByRole("button", { name: "Send request" }).click();
