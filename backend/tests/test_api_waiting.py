@@ -140,6 +140,11 @@ def test_results_ready_to_deliver_once_the_cycle_is_closed(troupe: Troupe) -> No
     assert "deliveries" not in counts(troupe, troupe.storyteller)
 
     assert troupe.storyteller.client.post(f"/cycles/{cycle_id}/close").status_code == 200
+    # Only once every response is written.
+    assert "deliveries" not in counts(troupe, troupe.storyteller)
+    for other in ("Patrol the park", "Lean on the mayor", "Vera, for courtesy"):
+        written = scene.response_for(other)["id"]
+        troupe.storyteller.client.put(f"/responses/{written}", json={"body": "Done."})
     line = waiting(troupe, troupe.assistant)["deliveries"]
     assert line["count"] == 1
     assert line["link"] == f"/cycles/{cycle_id}/delivery"
@@ -147,6 +152,9 @@ def test_results_ready_to_deliver_once_the_cycle_is_closed(troupe: Troupe) -> No
 
     assert troupe.storyteller.client.post(f"/cycles/{cycle_id}/deliver").status_code == 200
     assert "deliveries" not in counts(troupe, troupe.storyteller)
+    # A response changed since is an update waiting to go.
+    troupe.storyteller.client.put(f"/responses/{response['id']}", json={"body": "You feed well."})
+    assert counts(troupe, troupe.storyteller)["deliveries"] == 1
 
 
 def test_allowance_shortfalls_in_the_open_cycle(troupe: Troupe) -> None:

@@ -355,6 +355,30 @@ def test_half_blood_lasts_one_game(troupe: Troupe) -> None:
     assert reset.json()["blood"]["start"] == reset.json()["blood"]["most"]
 
 
+def test_a_feeding_answer_changed_after_delivery_goes_out_as_an_update(troupe: Troupe) -> None:
+    agnes = vampire(troupe, troupe.player, "Agnes", "Toreador")
+    cycle = open_cycle(troupe, new_cycle(troupe))
+    submit(troupe.player, agnes)
+    participant = character_view(troupe, cycle["id"], "Agnes")["participant_id"]
+    url = f"/cycles/{cycle['id']}/participants/{participant}/feeding-answer"
+    troupe.storyteller.client.put(url, json={"result": "full"})
+    troupe.storyteller.client.post(f"/cycles/{cycle['id']}/close")
+    first = troupe.storyteller.client.post(f"/cycles/{cycle['id']}/deliver").json()
+    assert (first["delivered"], first["updated"]) == (1, 0)
+    assert troupe.player.client.get(f"/characters/{agnes}/play").json()["half_blood"] is False
+
+    # Still answerable once delivered: the change goes out with the next delivery.
+    assert character_view(troupe, cycle["id"], "Agnes")["delivered"] is True
+    changed = troupe.storyteller.client.put(url, json={"result": "half"})
+    assert changed.status_code == 200, changed.text
+    again = troupe.storyteller.client.post(f"/cycles/{cycle['id']}/deliver").json()
+    assert (again["delivered"], again["updated"]) == (1, 1)
+
+    [result] = troupe.player.client.get(f"/characters/{agnes}/downtime/results").json()
+    assert "*Result:* **Half Blood next game.**" in result["message"]
+    assert troupe.player.client.get(f"/characters/{agnes}/play").json()["half_blood"] is True
+
+
 def test_an_other_answer_has_no_working(troupe: Troupe) -> None:
     agnes = vampire(troupe, troupe.player, "Agnes", "Toreador")
     cycle = open_cycle(troupe, new_cycle(troupe))

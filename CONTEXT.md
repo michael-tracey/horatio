@@ -392,7 +392,7 @@ A narrator turning down an action assigned to them or accepted from any narrator
 _Avoid_: Reject, unassign, give back
 
 **Delivery**:
-Sending a submission's responses to its player.
+Sending a submission's responses to its player. By default only submissions with every response written go; staff can choose to send partly written ones too. A response written or changed after delivery goes out with the next delivery, as an update.
 _Avoid_: Send, publish
 
 **Connector**:

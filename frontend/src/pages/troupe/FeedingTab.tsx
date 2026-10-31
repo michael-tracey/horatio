@@ -115,7 +115,7 @@ function CharacterFeeding({ cycle, character: c }: { cycle: CycleOut; character:
     setReply((r) => (r ? `${r} ${rolled.text}` : rolled.text));
   });
   const submitted = c.submission_status === "submitted";
-  const answerable = submitted && !c.delivered && cycle.status !== "complete";
+  const answerable = submitted && cycle.status !== "complete";
   const tallyText = `${c.tally.parts.map((p) => `${p.label} ${p.amount}`).join(" + ")} = ${c.tally.total} of ${c.tally.needed}`;
 
   return (
@@ -187,6 +187,7 @@ function CharacterFeeding({ cycle, character: c }: { cycle: CycleOut; character:
               </Button>
             )}
           </div>
+          {c.delivered && <p className="text-xs text-mist">Already delivered: a change goes out as an update with the next delivery.</p>}
         </form>
       ) : (
         !submitted && <p className="mt-2 text-xs text-mist">Answered once the downtime is submitted.</p>

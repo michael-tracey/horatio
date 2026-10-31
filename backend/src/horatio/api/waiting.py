@@ -21,14 +21,12 @@ from horatio.api.responses import cycle_progress
 from horatio.api.troupes import get_troupe
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
-    Answer,
     Approval,
     Character,
     CharacterTrait,
     CycleParticipant,
     DowntimeCycle,
     InfluenceEntry,
-    Response,
     Submission,
     TraitCategory,
     TraitDefinition,
@@ -162,33 +160,17 @@ def my_responses(db: Session, user: User, troupe: Troupe) -> list[WaitingLine]:
 
 
 def deliveries(db: Session, _user: User, troupe: Troupe) -> list[WaitingLine]:
-    """Downtimes of a closed cycle with written responses not yet delivered."""
-    lines: list[WaitingLine] = []
-    for cycle in cycles(db, troupe, "closed", "complete"):
-        written = (
-            select(Answer.submission_id)
-            .join(Response, Response.answer_id == Answer.id)
-            .where(Response.status == "written")
+    """Downtimes of a closed cycle with every response written and something its
+    player has not had: first results, or an update."""
+    return [
+        WaitingLine(
+            kind="deliveries",
+            label=f"{cycle.name}: results ready to deliver",
+            count=sum(r.finished and r.due for r in responses.readiness(db, cycle)),
+            link=f"/cycles/{cycle.id}/delivery",
         )
-        ready = db.scalars(
-            select(Submission.id)
-            .join(CycleParticipant, Submission.participant_id == CycleParticipant.id)
-            .where(
-                CycleParticipant.cycle_id == cycle.id,
-                CycleParticipant.removed_at.is_(None),
-                Submission.status == "submitted",
-                Submission.id.in_(written),
-            )
-        )
-        lines.append(
-            WaitingLine(
-                kind="deliveries",
-                label=f"{cycle.name}: results ready to deliver",
-                count=sum(not responses.delivered(db, s) for s in ready),
-                link=f"/cycles/{cycle.id}/delivery",
-            )
-        )
-    return lines
+        for cycle in cycles(db, troupe, "closed")
+    ]
 
 
 def influence_details(db: Session, _user: User, troupe: Troupe) -> list[WaitingLine]:

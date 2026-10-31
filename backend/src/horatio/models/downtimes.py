@@ -240,11 +240,13 @@ class Delivery(Record):
             " or (submission_id is null and quest_id is not null and character_id is not null)",
             name="one_subject",
         ),
-        # Never send the same submission twice on one channel.
+        # Never send the same submission's results twice on one channel; an
+        # update is a new revision.
         Index(
             "uq_deliveries_sent_once",
             "submission_id",
             "channel",
+            "revision",
             unique=True,
             postgresql_where=text("status = 'sent' and not test_mode"),
         ),
@@ -263,6 +265,9 @@ class Delivery(Record):
     )
     # A quest's message's subject, such as "Quest: The Lost Journal".
     subject: Mapped[str] = mapped_column(default="", server_default="")
+    # A downtime's results: 1 when first delivered, and one more for each update
+    # delivered after responses were written or changed (horatio.responses).
+    revision: Mapped[int] = mapped_column(default=1, server_default="1")
     channel: Mapped[str]
     status: Mapped[str] = mapped_column(default="pending", server_default="pending")
     test_mode: Mapped[bool] = mapped_column(default=False, server_default="false")

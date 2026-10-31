@@ -474,19 +474,63 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(narrator.page.getByText("written", { exact: true })).toBeVisible();
   await narrator.page.screenshot(shots("narrator"));
 
-  // The lead closes and delivers; the player reads the result.
+  // The lead closes, told first what closing means while it isn't yet due.
   await lead.page.getByRole("link", { name: "Overview" }).click();
   await lead.page.getByRole("button", { name: "Close submissions" }).click();
-  await lead.page.getByRole("button", { name: "Deliver results" }).click();
+  const closing = lead.page.getByRole("region", { name: "Close submissions?" });
+  await expect(closing.getByText(/^It isn't due until /)).toBeVisible();
+  await expect(closing.getByText("The 1 participant has submitted.")).toBeVisible();
+  await lead.page.screenshot(shots("cycle-close"));
+  await closing.getByRole("button", { name: "Yes, close submissions" }).click();
+  await expect(lead.page.getByText("closed", { exact: true })).toBeVisible();
+
+  // Delivering starts on the Delivery tab, which says what would go. Agnes's influence
+  // action and her feeding are still unanswered, so by default nothing goes.
+  await lead.page.getByRole("link", { name: "Deliver results" }).click();
+  const deliverCard = lead.page.locator("section").filter({ has: lead.page.getByRole("heading", { name: "Deliver results" }) });
+  await expect(deliverCard.getByText("0 of 1 downtime has every response written.")).toBeVisible();
+  await expect(deliverCard.getByText("Agnes (1 of 3)")).toBeVisible();
+  await expect(deliverCard.getByRole("button", { name: "Nothing to deliver" })).toBeDisabled();
+  await deliverCard.getByLabel("Also deliver the 1 partly written, with what's written so far").check();
+  await deliverCard.getByRole("button", { name: "Deliver 1 downtime" }).click();
   await expect(lead.page.getByText("Delivered 1 downtime.")).toBeVisible();
-  // The Delivery tab shows each participant against each channel; with no connectors, in Horatio only.
-  await lead.page.getByRole("link", { name: "Delivery", exact: true }).click();
+  // Each participant against each channel; with no connectors, in Horatio only.
   await expect(lead.page.getByRole("columnheader", { name: "In Horatio" })).toBeVisible();
   await expect(lead.page.getByRole("row", { name: /Agnes.*sent/ })).toBeVisible();
-  await lead.page.getByRole("link", { name: "Overview" }).click();
   await p.getByRole("link", { name: "Results" }).click();
   await expect(p.getByText("you feed well and unseen")).toBeVisible();
   await p.screenshot(shots("results"));
+
+  // The rest is answered after delivery: the downtime shows as changed, and goes again as an update.
+  await lead.page.getByRole("link", { name: "Responses", exact: true }).click();
+  await lead.page.getByRole("button", { name: /^unassigned \(1\)/i }).click();
+  await lead.page.getByLabel("Response to Agnes").fill("The desk sergeant owes you a favour.");
+  await lead.page.getByRole("button", { name: "Save response" }).click();
+  await expect(lead.page.getByRole("button", { name: /^written \(2\)/i })).toBeVisible();
+  await lead.page.getByRole("link", { name: "Feeding", exact: true }).click();
+  await expect(lead.page.getByText("Already delivered: a change goes out as an update with the next delivery.")).toBeVisible();
+  await lead.page.getByRole("button", { name: "Answer", exact: true }).click();
+  await expect(lead.page.getByRole("button", { name: "Change answer" })).toBeVisible();
+  await lead.page.getByRole("link", { name: "Delivery", exact: true }).click();
+  await expect(lead.page.getByRole("row", { name: /Agnes/ }).getByText("changed since delivery")).toBeVisible();
+  await expect(deliverCard.getByText("Agnes (update)")).toBeVisible();
+  await lead.page.screenshot(shots("cycle-delivery"));
+  await deliverCard.getByRole("button", { name: "Deliver 1 downtime" }).click();
+  await expect(lead.page.getByText("Delivered 1 downtime, as an update.")).toBeVisible();
+  await expect(lead.page.getByText("changed since delivery")).toHaveCount(0);
+  await p.reload();
+  await expect(p.getByText("The desk sergeant owes you a favour.")).toBeVisible();
+  await expect(p.getByText("you feed well and unseen")).toBeVisible();
+  await expect(p.getByText("updated", { exact: true })).toBeVisible();
+
+  // Marking the cycle complete says first that nothing is left.
+  await lead.page.getByRole("link", { name: "Overview" }).click();
+  await lead.page.getByRole("button", { name: "Mark complete" }).click();
+  const completing = lead.page.getByRole("region", { name: "Mark complete?" });
+  await expect(completing.getByText("Every response is written.")).toBeVisible();
+  await expect(completing.getByText("Players have every result as it stands.")).toBeVisible();
+  await completing.getByRole("button", { name: "Yes, mark complete" }).click();
+  await expect(lead.page.getByText("complete", { exact: true })).toBeVisible();
 
   // Results always go out in Horatio; Discord needs the server set up first.
   await lead.page.getByRole("link", { name: "Troupes" }).click();

@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from horatio import audit, delivery
+from horatio import audit, delivery, responses
 from horatio.api.downtimes import staff_cycle, staff_troupe
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.connectors import CONNECTORS
@@ -133,6 +133,15 @@ class DeliveryOut(BaseModel):
 class ParticipantDeliveries(BaseModel):
     character_id: uuid.UUID
     character_name: str
+    # Responses written, with the feeding answer for a character who feeds, of all
+    # there are to write.
+    answered: int
+    to_answer: int
+    # Delivered in Horatio; changed since, from responses written or changed after;
+    # and whether it has anything its player has not had (first results, or a change).
+    delivered: bool
+    changed: bool
+    due: bool
     # The latest delivery on each channel; a channel with none is missing.
     deliveries: dict[str, DeliveryOut]
 
@@ -145,22 +154,13 @@ class DeliveryStatus(BaseModel):
 
 @router.get("/cycles/{cycle_id}/deliveries")
 def cycle_deliveries(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> DeliveryStatus:
-    """Each submission against each channel: how its delivery went."""
+    """Each submission against each channel: how ready it is, and how its delivery
+    went."""
     cycle, troupe = staff_cycle(db, user, cycle_id, TroupeAction.DELIVER_RESPONSES)
-    rows = db.execute(
-        select(Submission, Character)
-        .join(CycleParticipant, Submission.participant_id == CycleParticipant.id)
-        .join(Character, CycleParticipant.character_id == Character.id)
-        .where(
-            CycleParticipant.cycle_id == cycle.id,
-            CycleParticipant.removed_at.is_(None),
-            Submission.status == "submitted",
-        )
-        .order_by(Character.name)
-    ).all()
+    rows = responses.readiness(db, cycle)
     deliveries = db.scalars(
         select(Delivery)
-        .where(Delivery.submission_id.in_([s.id for s, _ in rows]))
+        .where(Delivery.submission_id.in_([r.submission.id for r in rows]))
         .order_by(Delivery.created_at, Delivery.id)
     ).all()
     names = {
@@ -180,15 +180,20 @@ def cycle_deliveries(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> D
         channels=channels,
         participants=[
             ParticipantDeliveries(
-                character_id=character.id,
-                character_name=character.name,
+                character_id=r.character.id,
+                character_name=r.character.name,
+                answered=r.answered,
+                to_answer=r.to_answer,
+                delivered=r.last is not None,
+                changed=r.changed,
+                due=r.due,
                 deliveries={
                     channel: delivery_out(d, names)
                     for channel in channels
-                    if (d := latest.get((submission.id, channel))) is not None
+                    if (d := latest.get((r.submission.id, channel))) is not None
                 },
             )
-            for submission, character in rows
+            for r in rows
         ],
     )
 
