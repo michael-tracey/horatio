@@ -36,7 +36,7 @@ class TitleChoiceOut(BaseModel):
     page: str | None
     # Only one character in the troupe holds it at a time.
     unique: bool
-    # The other characters in the troupe who hold it, by name.
+    # The other characters in the troupe who hold it, by any of its names.
     holders: list[str]
     # Whether the viewer can choose it now: not a unique title someone else holds,
     # unless the viewer is staff.
@@ -105,10 +105,12 @@ def titles_out(db: DbSession, user: User, character: Character) -> CharacterTitl
         )
         for name in sorted(holding, key=lambda n: titles.court_key(order, n))
     ]
+    # Who holds each office, by any of its names (a Baron's, an Advocate's).
     holders: dict[str, list[str]] = {}
     for h in titles.holdings(db, troupe.id):
         if h.character.id != character.id:
-            holders.setdefault(h.title, []).append(h.character.name)
+            office = data[h.title].office if h.title in data else h.title
+            holders.setdefault(office, []).append(h.character.name)
     choices = [
         TitleChoiceOut(
             name=name,
@@ -116,8 +118,9 @@ def titles_out(db: DbSession, user: User, character: Character) -> CharacterTitl
             status=titles.gives_words(t),
             page=t.page,
             unique=t.unique,
-            holders=holders.get(name, []),
-            open=acting is not None and not (t.unique and holders.get(name) and acting == "player"),
+            holders=holders.get(t.office, []),
+            open=acting is not None
+            and not (t.unique and holders.get(t.office) and acting == "player"),
         )
         for name, t in sorted(
             titles.offered(db, troupe).items(), key=lambda i: titles.court_key(order, i[0])

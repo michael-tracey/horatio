@@ -7,8 +7,8 @@
 # Anarch Movement) for each sect's own. Page numbers are the book's printed ones.
 # The effects are one-line summaries in our own words: the book has the full text.
 #
-# The Independent Alliance's status has no rulebook source yet: each has its sect
-# (from Yorick's catalogue) and nothing more.
+# The Independent Alliance's status and titles have no rulebook source yet: each has
+# its sect (from Yorick's catalogue), is marked `no_rules_yet`, and gives nothing.
 
 # What a character carries into a game (p. 313): the status of one abiding source,
 # all innate and negative status, and up to 5 fleeting, or fewer under a status
@@ -184,6 +184,9 @@ page = "484"
 # --- social age ------------------------------------------------------------------------------
 #
 # In the Camarilla, social age is a source of abiding status like a title (p. 400).
+# Ancilla and Elder are social ages, worked out from the sheet, not titles. The
+# Sabbat and the Anarchs have none: Sabbat status ignores generation and age
+# (p. 446), and the Anarchs reject status by social class (p. 481).
 
 [[social_ages]]
 sect = "Camarilla"
@@ -200,7 +203,10 @@ page = "400"
 # --- titles ----------------------------------------------------------------------------------
 #
 # The abiding status each title gives during its holder's tenure. Titles in the
-# catalogue's list that are not here have no sect and give no status.
+# catalogue's list that are not here have no sect and give no status. A sect's
+# title that gives none says why in `gives_none`, with its page; one of the
+# Independent Alliance has `no_rules_yet` (horatio.rules.status). `aliases` are
+# other names for the same office, which give the same.
 #
 # They are listed highest first within each sect, as the Who's Who ranks its court
 # (horatio.whos_who): the Camarilla's from the Inner Circle down to the Scourge
@@ -210,9 +216,8 @@ page = "400"
 # Sheriff, a Baron): no player can choose it while another character holds it. The
 # rest may be held by several (a Primogen of each clan, Archons, a pack's Ductus).
 #
-# A Myrmidon has an Archon's authority, but Sanctioned in place of Noble (p. 371);
-# Sanctioned is fleeting status, so the title gives none here. A Lesser Harpy, who
-# gains Guardian while the Master Harpy is away (p. 379), is not in the list.
+# A Lesser Harpy, who gains Guardian while the Master Harpy is away (p. 379), is
+# not in the list.
 
 [[titles]]
 name = "Inner Circle"
@@ -237,6 +242,23 @@ page = "373"
 name = "Archon"
 sect = "Camarilla"
 status = ["Commander", "Noble"]
+page = "373"
+
+# An Archon's authority, with Sanctioned in place of Noble (p. 371). Sanctioned is
+# fleeting status, which a title cannot give, so the note says it.
+[[titles]]
+name = "Myrmidon"
+sect = "Camarilla"
+status = ["Commander"]
+note = "Sanctioned in place of an Archon's Noble: fleeting status, which staff give."
+page = "371"
+
+# The Josians, a taskforce of Archons hunting the infernal, have no status of
+# their own in the book.
+[[titles]]
+name = "Josian Archon"
+sect = "Camarilla"
+gives_none = "The book describes the Josians but gives them no status of their own."
 page = "373"
 
 [[titles]]
@@ -371,10 +393,58 @@ page = "421"
 [[titles]]
 name = "Abbot"
 sect = "Sabbat"
+gives_none = "An Abbot gains no abiding status for the office."
 page = "421"
 
+# The Black Hand's ranks (p. 424) and the Inquisition's (p. 425): the book names
+# them and gives them no status.
+[[titles]]
+name = "Seraph"
+sect = "Sabbat"
+gives_none = "A rank of the Black Hand: the book gives it no status."
+page = "424"
+
+[[titles]]
+name = "Dominion"
+sect = "Sabbat"
+gives_none = "A rank of the Black Hand: the book gives it no status."
+page = "424"
+
+[[titles]]
+name = "Agent"
+sect = "Sabbat"
+gives_none = "A rank of the Black Hand: the book gives it no status."
+page = "424"
+
+[[titles]]
+name = "Grand Inquisitor"
+unique = true
+sect = "Sabbat"
+gives_none = "A rank of the Inquisition: the book gives it no status."
+page = "425"
+
+[[titles]]
+name = "Judge Inquisitor"
+sect = "Sabbat"
+gives_none = "A rank of the Inquisition: the book gives it no status."
+page = "425"
+
+[[titles]]
+name = "Knight Inquisitor"
+sect = "Sabbat"
+gives_none = "A rank of the Inquisition: the book gives it no status."
+page = "425"
+
+[[titles]]
+name = "Watcher"
+sect = "Sabbat"
+gives_none = "A rank of the Inquisition: the book gives it no status."
+page = "425"
+
+# Advocate is the modern name for a Baron (p. 472).
 [[titles]]
 name = "Baron"
+aliases = ["Advocate"]
 unique = true
 sect = "Anarch"
 status = ["Authority", "Mandate"]
@@ -398,85 +468,46 @@ sect = "Anarch"
 status = ["Established"]
 page = "474"
 
-# The rest of the catalogue's titles of a sect, as Yorick's catalogue has them. They
-# give no status. Clan titles (a Giovanni Capo, a Lasombra Blood Duke) have no sect.
-
-[[titles]]
-name = "Ancilla"
-sect = "Camarilla"
-
-[[titles]]
-name = "Elder"
-sect = "Camarilla"
-
-[[titles]]
-name = "Josian Archon"
-sect = "Camarilla"
+# Clan titles belong to a clan, not a sect, and give no sect status. Lord is a
+# Tremere rank (p. 64), as is Pontifex (p. 187).
 
 [[titles]]
 name = "Lord"
-sect = "Camarilla"
-
-[[titles]]
-name = "Myrmidon"
-sect = "Camarilla"
+clan = "Tremere"
+page = "64"
 
 [[titles]]
 name = "Pontifex"
-sect = "Camarilla"
+clan = "Tremere"
+page = "187"
 
-[[titles]]
-name = "Agent"
-sect = "Sabbat"
-
-[[titles]]
-name = "Dominion"
-sect = "Sabbat"
-
-[[titles]]
-name = "Grand Inquisitor"
-unique = true
-sect = "Sabbat"
-
-[[titles]]
-name = "Judge Inquisitor"
-sect = "Sabbat"
-
-[[titles]]
-name = "Knight Inquisitor"
-sect = "Sabbat"
-
-[[titles]]
-name = "Seraph"
-sect = "Sabbat"
-
-[[titles]]
-name = "Watcher"
-sect = "Sabbat"
-
-[[titles]]
-name = "Advocate"
-sect = "Anarch"
+# The Independent Alliance's titles, from Yorick's catalogue: no book we have
+# describes them (Vol. 2, pp. 20-21, has the alliance all but dissolved).
 
 [[titles]]
 name = "Actuary"
 sect = "Independent Alliance"
+no_rules_yet = true
 
 [[titles]]
 name = "Emissary"
 sect = "Independent Alliance"
+no_rules_yet = true
 
 [[titles]]
 name = "Executioner"
 sect = "Independent Alliance"
+no_rules_yet = true
 
 [[titles]]
 name = "Malak"
 sect = "Independent Alliance"
+no_rules_yet = true
 
 [[titles]]
 name = "Trustee"
 sect = "Independent Alliance"
+no_rules_yet = true
 
 # --- general status (pp. 313-317) ------------------------------------------------------------
 #
@@ -1191,6 +1222,7 @@ name = "Chairman"
 [traits.properties]
 type = "Abiding"
 sect = "Independent Alliance"
+no_rules_yet = true
 
 [[traits]]
 category = "status_traits"
@@ -1198,6 +1230,7 @@ name = "Cold"
 [traits.properties]
 type = "Abiding"
 sect = "Independent Alliance"
+no_rules_yet = true
 
 [[traits]]
 category = "status_traits"
@@ -1205,6 +1238,7 @@ name = "Executor"
 [traits.properties]
 type = "Abiding"
 sect = "Independent Alliance"
+no_rules_yet = true
 
 [[traits]]
 category = "status_traits"
@@ -1212,6 +1246,7 @@ name = "Licensed"
 [traits.properties]
 type = "Abiding"
 sect = "Independent Alliance"
+no_rules_yet = true
 
 [[traits]]
 category = "status_traits"
@@ -1219,6 +1254,7 @@ name = "Muscle"
 [traits.properties]
 type = "Abiding"
 sect = "Independent Alliance"
+no_rules_yet = true
 
 [[traits]]
 category = "status_traits"
@@ -1226,6 +1262,7 @@ name = "Trusted"
 [traits.properties]
 type = "Abiding"
 sect = "Independent Alliance"
+no_rules_yet = true
 
 [[traits]]
 category = "status_traits"
@@ -1233,6 +1270,7 @@ name = "Black-Balled"
 [traits.properties]
 type = "Negative"
 sect = "Independent Alliance"
+no_rules_yet = true
 
 [[traits]]
 category = "status_traits"
@@ -1240,6 +1278,7 @@ name = "Bounty"
 [traits.properties]
 type = "Negative"
 sect = "Independent Alliance"
+no_rules_yet = true
 
 [[traits]]
 category = "status_traits"
@@ -1247,3 +1286,4 @@ name = "Controller"
 [traits.properties]
 type = "Negative"
 sect = "Independent Alliance"
+no_rules_yet = true
