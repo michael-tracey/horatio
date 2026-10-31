@@ -11,19 +11,20 @@ import { titleGroups } from "../troupe/titleGroups";
 import { StatusCard, useStatus, WithReason } from "./StatusCard";
 
 /**
- * The character page's Status & Titles tab: its titles, then its sect status, with
- * the status bans in a sidebar beside them (below them on a phone).
+ * The character page's Status & Titles tab: the status the character holds now, a
+ * line each, with the status bans below it, and its titles in a sidebar, where the
+ * active one is picked (below the status on a phone).
  */
 export function StatusTitlesTab({ character }: { character: CharacterOut }) {
   return (
     // minmax(0, …): a ban's one line is cut short rather than widening the page.
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <div className="flex min-w-0 flex-col gap-4">
-        <TitlesCard character={character} />
         <StatusCard character={character} />
-      </div>
-      <aside aria-label="Status bans" className="flex min-w-0 flex-col gap-3">
         <Bans character={character} />
+      </div>
+      <aside aria-label="Titles" className="flex min-w-0 flex-col gap-4">
+        <TitlesCard character={character} />
       </aside>
     </div>
   );
@@ -147,13 +148,24 @@ function HeldRow({ character, titles, held }: { character: CharacterOut; titles:
   );
 }
 
-/** The titles the character can choose, by sect: each with the status it gives and who holds it. */
+/**
+ * The titles the character can choose, by sect: each with the status it gives and
+ * who holds it. Open at first only while the character holds no title, so the
+ * sidebar stays short once it does.
+ */
 function Choices({ character, titles, active }: { character: CharacterOut; titles: CharacterTitlesOut; active: HeldTitleOut | null }) {
+  const [open, setOpen] = useState(titles.held.length === 0);
   const groups = titleGroups(titles.sect ? [titles.sect] : [], titles.choices);
   return (
     <section aria-label="Titles to choose" className="flex flex-col gap-2 border-t border-ash pt-3">
-      <h3 className="text-xs tracking-wide text-mist uppercase">Titles to choose{titles.troupe_name ? ` in ${titles.troupe_name}` : ""}</h3>
-      {groups.map(([sect, list]) => {
+      <h3 className="text-xs tracking-wide text-mist uppercase">
+        <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="flex items-center gap-1.5 text-left uppercase hover:text-gold">
+          <span aria-hidden>{open ? "▾" : "▸"}</span>
+          {titles.held.length ? "Choose another title" : "Choose a title"}
+          {titles.troupe_name ? ` in ${titles.troupe_name}` : ""}
+        </button>
+      </h3>
+      {open && groups.map(([sect, list]) => {
         const rows = (
           <ul className="flex flex-col divide-y divide-ash/60">
             {list.map((c) => (
@@ -186,8 +198,8 @@ function ChoiceRow({ character, titles, choice, active }: { character: Character
   const page = pageLabel(choice.page);
   return (
     <li aria-label={choice.name} className="flex flex-col gap-1 py-1.5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="min-w-0">
+      <div className="flex items-start justify-between gap-2">
+        <span className="min-w-0 flex-1">
           <span className="text-parchment">{choice.name}</span>
           <span className="block text-xs text-mist">
             {gives(choice.status)}
@@ -203,7 +215,7 @@ function ChoiceRow({ character, titles, choice, active }: { character: Character
         {choice.open && !asking && (
           <Button
             variant="ghost"
-            className="min-h-8 px-2 text-xs"
+            className="min-h-8 shrink-0 px-2 text-xs"
             aria-label={`Take ${choice.name}`}
             disabled={take.isPending}
             // The first title held is active at once; another asks.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DerivedOut, EndingOut, PatronChoiceOut } from "../../api/types";
-import { bySource, capText, endingText, findPatrons, outsiderText, patronLabel, suppressedText } from "./status";
+import { capText, derivedLines, endingText, findPatrons, outsiderText, patronLabel, sourceText, suppressedText } from "./status";
 
 const day = (d: string) => `day ${d}`;
 const ending = (over: Partial<EndingOut>): EndingOut => ({
@@ -54,7 +54,7 @@ describe("suppressedText", () => {
   });
 });
 
-const derived = (name: string, source: string, kind: DerivedOut["kind"] = "title"): DerivedOut => ({
+const derived = (name: string, source: string, kind: DerivedOut["kind"] = "title", over: Partial<DerivedOut> = {}): DerivedOut => ({
   name,
   type: "Abiding",
   source,
@@ -62,14 +62,35 @@ const derived = (name: string, source: string, kind: DerivedOut["kind"] = "title
   troupe_id: kind === "title" ? "t1" : null,
   troupe_name: kind === "title" ? "Court" : null,
   condition: "",
+  ...over,
 });
 
-describe("bySource", () => {
-  it("groups derived status by title, age and merit", () => {
-    const groups = bySource([derived("Authority", "Prince"), derived("Commander", "Prince"), derived("Confirmed", "Elder", "social_age")]);
-    expect(groups.map((g) => [g.source, g.status.map((s) => s.name)])).toEqual([
-      ["Prince", ["Authority", "Commander"]],
-      ["Elder", ["Confirmed"]],
+describe("derived status", () => {
+  it("says where each comes from", () => {
+    expect(sourceText(derived("Noble", "Harpy"), "Court")).toBe("the title Harpy");
+    expect(sourceText(derived("Noble", "Harpy"), "Elsewhere")).toBe("the title Harpy in Court");
+    expect(sourceText(derived("Authority", "Seneschal", "title", { condition: "while the Prince is absent" }), "Court")).toBe(
+      "the title Seneschal (while the Prince is absent)",
+    );
+    expect(sourceText(derived("Confirmed", "Elder", "social_age"), "Court")).toBe("the social age Elder");
+    expect(sourceText(derived("Loyalist", "Loyalist", "faction"), "Court")).toBe("the Loyalist faction");
+    expect(sourceText(derived("Architect", "Founder", "merit"), "Court")).toBe("Founder");
+  });
+
+  it("is a line per status, naming every source, abiding before innate", () => {
+    const lines = derivedLines(
+      [
+        derived("Architect", "Founder", "merit", { type: "Innate" }),
+        derived("Authority", "Prince"),
+        derived("Confirmed", "Prince"),
+        derived("Confirmed", "Elder", "social_age"),
+      ],
+      "Court",
+    );
+    expect(lines).toEqual([
+      { name: "Authority", type: "Abiding", sources: ["the title Prince"] },
+      { name: "Confirmed", type: "Abiding", sources: ["the title Prince", "the social age Elder"] },
+      { name: "Architect", type: "Innate", sources: ["Founder"] },
     ]);
   });
 });
