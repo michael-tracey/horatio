@@ -5,6 +5,7 @@ import { Avatar } from "../../components/Avatar";
 import { AtHandle } from "../../components/PersonPicker";
 import { Badge, Card } from "../../components/ui";
 import { useDates } from "../../dates";
+import { withNext } from "../../next";
 import { filled, linksOf, newPlayersText, type LinkKind } from "./profile";
 
 /**
@@ -83,7 +84,7 @@ export function TroupeProfileView({ profile: p, signedIn }: { profile: TroupePro
                 {venue.address ||
                   (venue.address_hidden && (
                     <span className="text-mist">
-                      <Link to="/sign-in" className="text-gold underline">
+                      <Link to={withNext("/sign-in", `/t/${p.id}`)} className="text-gold underline">
                         Sign in
                       </Link>{" "}
                       to see the address.

@@ -3,7 +3,28 @@ import { Link, useParams } from "react-router";
 import { api, ApiError, unwrap } from "../api/client";
 import { Loading, PageTitle } from "../components/ui";
 import { useMe } from "../hooks";
+import { withNext } from "../next";
 import { TroupeProfileView } from "./troupe/TroupeProfile";
+
+const primary = "inline-flex min-h-10 items-center justify-center rounded-md bg-blood px-4 text-sm font-medium text-parchment hover:bg-blood-bright";
+
+/**
+ * For someone signed out: make an account, the main way on, or sign in. Either
+ * goes on to the troupe's own page, which tells them how to play there.
+ */
+function JoinOrSignIn({ troupeId }: { troupeId: string }) {
+  const next = `/troupes/${troupeId}`;
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <Link to={withNext("/sign-up", next)} className={primary}>
+        Create an account to play here
+      </Link>
+      <Link to={withNext("/sign-in", next)} className="text-sm text-gold underline">
+        Sign in
+      </Link>
+    </div>
+  );
+}
 
 /**
  * A troupe's profile at its shareable address, /t/<troupe>: for anyone at all
@@ -27,11 +48,7 @@ export function PublicTroupePage() {
         <p className="text-mist">
           {missing ? (signedIn ? "There is no such troupe." : "This troupe's profile is only for people signed in, or there is no such troupe.") : profile.error.message}
         </p>
-        {!signedIn && (
-          <Link to="/sign-in" className="text-gold underline">
-            Sign in
-          </Link>
-        )}
+        {!signedIn && <JoinOrSignIn troupeId={troupeId} />}
       </div>
     );
   }
@@ -55,9 +72,7 @@ export function PublicTroupePage() {
               Open the troupe
             </Link>
           ) : (
-            <Link to="/sign-in" className="text-sm text-gold underline">
-              Sign in
-            </Link>
+            <JoinOrSignIn troupeId={p.id} />
           )
         }
       >

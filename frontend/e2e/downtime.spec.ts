@@ -58,7 +58,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   // loaded before the troupe existed.)
   await p.reload();
   await p.getByLabel("Name").fill("Agnes");
-  await p.getByLabel("Build for").selectOption({ label: troupeName });
+  await p.getByLabel("Which troupe will you play in?").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Create" }).click();
   await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
   await p.getByLabel("Clan").selectOption("Brujah");

@@ -12,9 +12,11 @@ in the audit log (`account.reset_requested`), whether an account matched or
 not, so being turned away says nothing either.
 """
 
+import re
 import secrets
 from datetime import UTC, datetime, timedelta
 from email.utils import formataddr
+from urllib.parse import quote, unquote
 
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
@@ -59,8 +61,26 @@ def issue_reset(db: Session, user: User, by: User) -> tuple[str, datetime]:
     return token, expires_at
 
 
-def reset_url(token: str) -> str:
-    return f"{get_settings().public_url.rstrip('/')}/reset-password/{token}"
+# A tab, newline, backslash or the like, which could turn a path into another site.
+UNSAFE_IN_PATH = re.compile(r"[\\\s\x00-\x1f\x7f]")
+
+
+def same_site_path(raw: str | None) -> str | None:
+    """`raw` if it is a path on this site, to go on to after the reset: a single
+    leading `/`, never `//host` or `/\\host`, even once decoded. The page checks it
+    again before it follows it."""
+    if not raw or len(raw) > 2000 or not raw.startswith("/") or raw.startswith("//"):
+        return None
+    decoded = unquote(raw)
+    if UNSAFE_IN_PATH.search(raw) or decoded.startswith("//") or UNSAFE_IN_PATH.search(decoded):
+        return None
+    return raw
+
+
+def reset_url(token: str, next_path: str | None = None) -> str:
+    url = f"{get_settings().public_url.rstrip('/')}/reset-password/{token}"
+    safe = same_site_path(next_path)
+    return f"{url}?next={quote(safe, safe='')}" if safe else url
 
 
 def live_reset(db: Session, user: User) -> PasswordReset | None:
@@ -132,9 +152,13 @@ def limited(db: Session, address: str, ip: str | None) -> str | None:
     return None
 
 
-def request_reset(db: Session, address: str, ip: str | None) -> tuple[User, str] | None:
+def request_reset(
+    db: Session, address: str, ip: str | None, next_path: str | None = None
+) -> tuple[User, str] | None:
     """Someone asks for a link to `address` themselves. Logs the request, and if an
-    account uses the address, makes it a link: the account and the link, to email."""
+    account uses the address, makes it a link: the account and the link, to email.
+    The link goes on to `next_path` once the password is set, if that is a path on
+    this site (where they were going when they found they had forgotten it)."""
     address = address.strip().lower()
     user = db.scalar(
         select(User).where(func.lower(User.email) == address, User.merged_into_id.is_(None))
@@ -147,7 +171,7 @@ def request_reset(db: Session, address: str, ip: str | None) -> tuple[User, str]
         # The link would not work; the answer is the same as ever.
         return None
     token, _ = issue_reset(db, user, user)
-    return user, reset_url(token)
+    return user, reset_url(token, next_path)
 
 
 def reset_email_text(user: User, url: str, by: User | None) -> str:
