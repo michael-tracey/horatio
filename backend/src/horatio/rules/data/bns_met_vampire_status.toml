@@ -216,9 +216,6 @@ page = "400"
 # Sheriff, a Baron): no player can choose it while another character holds it. The
 # rest may be held by several (a Primogen of each clan, Archons, a pack's Ductus).
 #
-# A Lesser Harpy, who gains Guardian while the Master Harpy is away (p. 379), is
-# not in the list.
-
 [[titles]]
 name = "Inner Circle"
 sect = "Camarilla"
@@ -306,12 +303,25 @@ page = "377"
 title = "Primogen"
 status = ["Noble"]
 
+# The Harpy is also called the Master Harpy, and appoints up to two Lesser Harpies,
+# who gain Guardian at their gathering while she is away (p. 379).
 [[titles]]
 name = "Harpy"
+aliases = ["Master Harpy"]
 unique = true
 sect = "Camarilla"
 status = ["Prominent", "Noble", "Guardian"]
 page = "379"
+
+[[titles]]
+name = "Lesser Harpy"
+sect = "Camarilla"
+page = "379"
+
+[[titles.while_absent]]
+title = "Harpy"
+status = ["Guardian"]
+note = "At her own local gathering."
 
 [[titles]]
 name = "Keeper of Elysium"
@@ -366,8 +376,11 @@ title = "Archbishop"
 status = ["Ordained"]
 note = "Only for a Bishop given a Blood Bath on taking office."
 
+# A Templar is also called a Paladin (p. 420), though the book now keeps that name
+# for the Inquisition's Knight Inquisitors (p. 425).
 [[titles]]
 name = "Templar"
+aliases = ["Paladin"]
 sect = "Sabbat"
 status = ["Enforcer"]
 page = "420"
@@ -441,10 +454,10 @@ sect = "Sabbat"
 gives_none = "A rank of the Inquisition: the book gives it no status."
 page = "425"
 
-# Advocate is the modern name for a Baron (p. 472).
+# Advocate is the modern name for a Baron, as are President and Minister (p. 472).
 [[titles]]
 name = "Baron"
-aliases = ["Advocate"]
+aliases = ["Advocate", "President", "Minister"]
 unique = true
 sect = "Anarch"
 status = ["Authority", "Mandate"]
@@ -456,20 +469,32 @@ sect = "Anarch"
 status = ["Enforcer", "Warrant"]
 page = "473"
 
+# An Architect is sometimes called a Civil Engineer (p. 473).
 [[titles]]
 name = "Architect"
+aliases = ["Civil Engineer"]
 sect = "Anarch"
 status = ["Enforcer"]
 page = "473"
 
+# Ambassadors are also called Heralds or Emissaries (p. 473). Emissary is the
+# Independent Alliance's title in Yorick's catalogue, and a title has one meaning
+# in a troupe, so only Herald is an Ambassador here.
 [[titles]]
 name = "Ambassador"
+aliases = ["Herald"]
 sect = "Anarch"
 status = ["Established"]
 page = "474"
 
 # Clan titles belong to a clan, not a sect, and give no sect status. Lord is a
-# Tremere rank (p. 64), as is Pontifex (p. 187).
+# Tremere rank (p. 64), as is Pontifex (p. 187); Capo, Don and Dona are the
+# Giovanni's (the Family's signatories to the Independent Alliance, p. 38).
+#
+# The catalogue's other clan titles are names only, with no clan, until a book we
+# have gives one: Blood Duchess, Blood Duke, Hierophant, High Priest, High
+# Priestess, Lord Commander, Moshir, Netaji, Rom baro, Shadow King, Shadow Queen
+# and Soldier.
 
 [[titles]]
 name = "Lord"
@@ -480,6 +505,21 @@ page = "64"
 name = "Pontifex"
 clan = "Tremere"
 page = "187"
+
+[[titles]]
+name = "Capo"
+clan = "Giovanni"
+page = "38"
+
+[[titles]]
+name = "Don"
+clan = "Giovanni"
+page = "38"
+
+[[titles]]
+name = "Dona"
+clan = "Giovanni"
+page = "38"
 
 # The Independent Alliance's titles, from Yorick's catalogue: no book we have
 # describes them (Vol. 2, pp. 20-21, has the alliance all but dissolved).
