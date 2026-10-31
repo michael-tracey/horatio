@@ -249,7 +249,12 @@ def make_request(
     objective: str,
     reason: str,
     companions: str,
+    kind: str = "custom",
+    details: dict[str, Any] | None = None,
+    location_id: uuid.UUID | None = None,
 ) -> QuestRequest:
+    """A request in the troupe's queue: a custom quest, or one about a location
+    (horatio.location_quests checks those first)."""
     troupe = home_troupe(db, character)
     found = allowance(db, troupe, character)
     if found.refusal is not None or troupe is None:
@@ -261,9 +266,12 @@ def make_request(
         troupe_id=troupe.id,
         character_id=character.id,
         requested_by=player.id,
+        kind=kind,
         objective=objective,
         reason=reason.strip(),
         companions=companions.strip(),
+        details=details or {},
+        location_id=location_id,
         cycle_id=found.cycle.id if found.cycle else None,
     )
     db.add(request)
@@ -291,11 +299,12 @@ def answer(
     db: Session,
     staff: User,
     request: QuestRequest,
-    outcome: Literal["not_needed", "refused"],
+    outcome: Literal["not_needed", "refused", "done"],
     note: str,
 ) -> None:
-    """Answer a request without a quest: not needed (which gives the slot back), or
-    refused, with a note for the player."""
+    """Answer a request without a quest: not needed (which gives the slot back),
+    refused, or done (a repair made, a Contacts lookup answered), with a note for
+    the player."""
     if request.status in ("answered", "withdrawn"):
         raise conflict("This request is already answered.")
     if request.quest_id is not None:
@@ -317,7 +326,7 @@ def finish_request(
     db.flush()
     character = db.get_one(Character, request.character_id)
     if outcome != "quest":
-        said = "isn't needed" if outcome == "not_needed" else "was refused"
+        said = {"not_needed": "isn't needed", "done": "is answered"}.get(outcome, "was refused")
         notify(
             db,
             [request.requested_by],
@@ -976,6 +985,11 @@ def send_result(
         quest.finished_by = [{"id": str(c.id), "name": c.name} for c in members_now]
         log(db, quest, staff, f"marked it {ended}")
     db.flush()
+    if ended == "completed" and quest.location_id is not None:
+        # A location quest changes its location (horatio.location_quests).
+        from horatio import location_quests
+
+        location_quests.complete(db, staff, quest)
     if cycle is None:
         summary, subject, full_text = result_news(quest, scenario, ended)
         tell(

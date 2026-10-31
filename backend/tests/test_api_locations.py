@@ -273,6 +273,7 @@ def test_a_secret_compromised_is_kept_from_the_controllers_player(scene: Scene) 
             "secret": True,
             "by": "hunters",
             "effect": "Hostile forces watch who comes and goes.",
+            "games": 0,
         }
     ]
     player = scene.troupe.player.client

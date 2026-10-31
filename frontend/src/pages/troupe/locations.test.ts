@@ -32,6 +32,8 @@ function location(change: Partial<LocationOut>): LocationOut {
     notes: "",
     subsidiaries: [],
     not_counted: null,
+    damaged_off: [],
+    forfeit: null,
     updated_at: "2026-10-30T00:00:00Z",
     ...change,
   };
@@ -59,7 +61,7 @@ describe("locations", () => {
       name: "The Rack bar",
       address: "Lexington",
       locked: true,
-      negatives: [{ name: "Compromised", level: 1, secret: true, by: "hunters", effect: "" }],
+      negatives: [{ name: "Compromised", level: 1, secret: true, by: "hunters", effect: "", games: 0 }],
     });
     const all = [grove, rack];
     expect(filtered(all, { ...NO_FILTERS, query: "lexing" })).toEqual([rack]);

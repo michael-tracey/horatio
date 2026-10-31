@@ -19,6 +19,7 @@ type Draft = {
   parent_id: string;
   qualities: Quality[];
   negatives: Negative[];
+  damaged_off: string[];
   held: Held;
   controller: Who;
   joint: Who;
@@ -52,6 +53,7 @@ function draftOf(l: LocationOut | null): Draft {
     parent_id: l?.parent?.id ?? "",
     qualities: l?.qualities.map((q) => ({ name: q.name, detail: q.detail })) ?? [],
     negatives: l?.negatives.map((n) => ({ name: n.name, level: n.level, secret: n.secret, by: n.by })) ?? [],
+    damaged_off: l?.damaged_off ?? [],
     held: !l || l.control === "none" ? "none" : l.control === "uncontrollable" ? "uncontrollable" : "controlled",
     controller: whoOf(l?.controller ?? null),
     joint: whoOf(l?.joint ?? null),
@@ -84,6 +86,7 @@ function bodyOf(d: Draft): LocationIn {
     parent_id: d.parent_id || null,
     qualities: d.qualities,
     negatives: d.negatives,
+    damaged_off: d.negatives.some((n) => n.name === "Damaged") ? d.damaged_off : [],
     control,
     controller_id: controlled ? idOf(d.controller) : null,
     controller_name: controlled ? nameOf(d.controller) : "",
@@ -342,6 +345,21 @@ export function LocationForm({
             </div>
           );
         })}
+        {d.negatives.some((n) => n.name === "Damaged") && d.qualities.length > 0 && (
+          <fieldset aria-label="Switched off by Damaged" className="flex flex-wrap gap-x-4 gap-y-1 rounded-md border border-ash/60 p-2 text-sm">
+            <legend className="px-1 text-xs text-mist">Switched off by Damaged, as staff choose (p. 127)</legend>
+            {[...new Set(d.qualities.map((q) => q.name))].map((name) => (
+              <label key={name} className="flex min-h-8 items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={d.damaged_off.includes(name)}
+                  onChange={(e) => set({ damaged_off: e.target.checked ? [...d.damaged_off, name] : d.damaged_off.filter((x) => x !== name) })}
+                />
+                {name}
+              </label>
+            ))}
+          </fieldset>
+        )}
         <div>
           <Button
             type="button"

@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import or_, select
 
-from horatio import audit, locations, specializations
+from horatio import audit, location_quests, locations, specializations
 from horatio.api.downtimes import staff_troupe
 from horatio.api.roster import LogEntry, log_entries
 from horatio.auth.deps import CurrentUser, DbSession
@@ -480,6 +480,8 @@ class LocationIn(BaseModel):
     haven_advantages: list[str] = []
     elysium_since: int | None = Field(default=None, ge=1, le=9999)
     notes: str = Field(default="", max_length=10000)
+    # The qualities Damaged switches off, as staff choose them (p. 127).
+    damaged_off: list[str] = []
 
 
 class LocationChange(LocationIn):
@@ -517,6 +519,8 @@ class HeldNegativeQualityOut(BaseModel):
     by: str
     # What its level does.
     effect: str
+    # Out of Code: games passed at this level; it gets worse after two.
+    games: int = 0
 
 
 class LocationSubsidiaryOut(BaseModel):
@@ -560,6 +564,10 @@ class LocationOut(BaseModel):
     subsidiaries: list[LocationSubsidiaryOut]
     # For the controller: why it doesn't count toward their control limit, if not.
     not_counted: str | None
+    damaged_off: list[str] = []
+    # Insolvent ×2, with its controller's Resources below its rating: why it is
+    # forfeit, for staff to confirm.
+    forfeit: str | None = None
     updated_at: datetime
 
 
@@ -616,6 +624,7 @@ def location_out(db: DbSession, rules: LocationRules, location: Location) -> Loc
             secret=n.get("secret", False),
             by=n.get("by", ""),
             effect=effect(rules, n["name"], n["level"]),
+            games=n.get("games", 0),
         )
         for n in location.negatives
     ]
@@ -665,6 +674,8 @@ def location_out(db: DbSession, rules: LocationRules, location: Location) -> Loc
         not_counted=(
             locations.not_counted(db, location, controller) if controller is not None else None
         ),
+        damaged_off=list(location.damaged_off),
+        forfeit=location_quests.forfeit_reason(db, location),
         updated_at=location.updated_at,
     )
 

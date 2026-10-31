@@ -147,6 +147,7 @@ export function outcomeText(outcome: string | null | undefined): string {
   if (outcome === "quest") return "with a quest";
   if (outcome === "not_needed") return "not needed";
   if (outcome === "refused") return "refused";
+  if (outcome === "done") return "done";
   return "";
 }
 

@@ -105,6 +105,10 @@ def add_game(db: Session, staff: User, troupe: Troupe, amount: int, reason: str)
         )
     )
     audit.record(db, staff, "troupe.xp_range_game", troupe_id=troupe.id, amount=amount)
+    # A game has passed: Out of Code counts it (horatio.location_quests).
+    from horatio import location_quests
+
+    location_quests.game_passed(db, staff, troupe)
 
 
 def add_downtime(db: Session, staff: User, cycle: DowntimeCycle) -> None:

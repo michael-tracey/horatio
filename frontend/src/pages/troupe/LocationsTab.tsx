@@ -7,6 +7,7 @@ import { LogList } from "../../components/LogList";
 import { Badge, Button, Card, Empty, ErrorText, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { LocationForm, Warnings } from "./LocationForm";
+import { RemoveNegative } from "./RemoveNegative";
 import { controlText, controllerKey, countText, distinct, filtered, influenceText, NO_FILTERS, qualitiesText, qualityText, typeText, type Filters } from "./locations";
 
 /**
@@ -14,7 +15,7 @@ import { controlText, controllerKey, countText, distinct, filtered, influenceTex
  * Locations that matter in its chronicle and its characters' Havens, with who
  * controls each. Players never see the record.
  */
-export function LocationsTab({ troupeId }: { troupeId: string }) {
+export function LocationsTab({ troupeId, questsOn = false }: { troupeId: string; questsOn?: boolean }) {
   const path = { params: { path: { troupe_id: troupeId } } };
   const list = useQuery({
     queryKey: ["locations", troupeId],
@@ -30,7 +31,7 @@ export function LocationsTab({ troupeId }: { troupeId: string }) {
     <Routes>
       <Route index element={<List troupeId={troupeId} locations={list.data} catalogue={catalogue.data} />} />
       <Route path="new" element={<New troupeId={troupeId} locations={list.data} catalogue={catalogue.data} />} />
-      <Route path=":locationId" element={<One troupeId={troupeId} locations={list.data} catalogue={catalogue.data} />} />
+      <Route path=":locationId" element={<One troupeId={troupeId} locations={list.data} catalogue={catalogue.data} questsOn={questsOn} />} />
     </Routes>
   );
 }
@@ -182,7 +183,7 @@ function New({ troupeId, locations, catalogue }: Props) {
   );
 }
 
-function One({ troupeId, locations, catalogue }: Props) {
+function One({ troupeId, locations, catalogue, questsOn }: Props & { questsOn: boolean }) {
   const { locationId = "" } = useParams();
   const navigate = useNavigate();
   const back = `/troupes/${troupeId}/locations`;
@@ -198,6 +199,7 @@ function One({ troupeId, locations, catalogue }: Props) {
     await unwrap(api.DELETE("/api/locations/{location_id}", { params: { path: { location_id: locationId } } }));
     navigate(back);
   });
+  const forfeit = useAction(() => unwrap(api.POST("/api/locations/{location_id}/forfeit", { params: { path: { location_id: locationId } } })));
   return (
     <div className="flex flex-col gap-4">
       <Link to={back} className="text-sm text-mist hover:text-gold">
@@ -225,7 +227,26 @@ function One({ troupeId, locations, catalogue }: Props) {
               />
             </Card>
           ) : (
-            <Record location={location.data} catalogue={catalogue} onEdit={() => setEditing(true)} />
+            <Record
+              location={location.data}
+              catalogue={catalogue}
+              onEdit={() => setEditing(true)}
+              onQuest={questsOn ? () => navigate(`/troupes/${troupeId}/quests/new?location=${locationId}`) : undefined}
+            />
+          )}
+          {location.data.forfeit && (
+            <Card title="Forfeit">
+              <p className="text-sm text-blood-bright">{location.data.forfeit}</p>
+              <Button className="mt-2" variant="danger" disabled={forfeit.isPending} onClick={() => forfeit.mutate(undefined)}>
+                Confirm: nobody controls it now
+              </Button>
+              <ErrorText error={forfeit.error} />
+            </Card>
+          )}
+          {location.data.negatives.length > 0 && !editing && (
+            <Card title="Remove a negative">
+              <RemoveNegative troupeId={troupeId} location={location.data} />
+            </Card>
           )}
           {location.data.subsidiaries.length > 0 && (
             <Card title="Subsidiaries">
@@ -267,7 +288,7 @@ function One({ troupeId, locations, catalogue }: Props) {
 }
 
 /** The location as staff keep it. */
-function Record({ location: l, catalogue, onEdit }: { location: LocationDetailOut; catalogue: LocationCatalogueOut; onEdit: () => void }) {
+function Record({ location: l, catalogue, onEdit, onQuest }: { location: LocationDetailOut; catalogue: LocationCatalogueOut; onEdit: () => void; onQuest?: () => void }) {
   const quality = (name: string) => catalogue.qualities.find((q) => q.name === name);
   const advantage = (name: string) => catalogue.haven_advantages.find((a) => a.name === name);
   const rows: [string, ReactNode][] = [
@@ -289,6 +310,11 @@ function Record({ location: l, catalogue, onEdit }: { location: LocationDetailOu
       actions={
         <span className="flex items-center gap-2">
           {l.locked && <Badge tone="blood">Locked</Badge>}
+          {onQuest && (
+            <Button variant="ghost" onClick={onQuest}>
+              Build a quest
+            </Button>
+          )}
           <Button variant="secondary" onClick={onEdit}>
             Edit
           </Button>
@@ -335,6 +361,12 @@ function Record({ location: l, catalogue, onEdit }: { location: LocationDetailOu
                 )}
                 {n.by && <span className="text-mist"> · by {n.by}</span>}
                 <span className="block text-xs text-mist">{n.effect}</span>
+                {n.name === "Out of Code" && n.games > 0 && (
+                  <span className="block text-xs text-blood-bright">
+                    {n.games} {n.games === 1 ? "game has" : "games have"} passed at this level; it gets worse after two.
+                  </span>
+                )}
+                {n.name === "Damaged" && l.damaged_off.length > 0 && <span className="block text-xs text-mist">Switched off: {l.damaged_off.join(", ")}.</span>}
               </li>
             ))}
           </ul>

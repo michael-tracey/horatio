@@ -16,11 +16,17 @@ class QuestRequest(Record):
 
     __tablename__ = "quest_requests"
     __table_args__ = (
-        # Only a custom quest for now; acquiring and changing locations come later.
-        CheckConstraint("kind in ('custom')", name="kind"),
+        # A custom quest; or one about a location (horatio.location_quests): to
+        # acquire it, add a quality, undermine it or repair it; or learning whose
+        # locations are whose with Contacts.
+        CheckConstraint(
+            "kind in ('custom', 'acquire', 'quality', 'undermine', 'repair', 'whose')",
+            name="kind",
+        ),
         CheckConstraint("status in ('new', 'working', 'answered', 'withdrawn')", name="status"),
         CheckConstraint(
-            "outcome is null or outcome in ('quest', 'not_needed', 'refused')", name="outcome"
+            "outcome is null or outcome in ('quest', 'not_needed', 'refused', 'done')",
+            name="outcome",
         ),
         CheckConstraint(
             "not (assigned_to_any_narrator and assigned_to_user_id is not null)",
@@ -39,8 +45,14 @@ class QuestRequest(Record):
     objective: Mapped[str]
     reason: Mapped[str] = mapped_column(default="", server_default="")
     companions: Mapped[str] = mapped_column(default="", server_default="")
-    # What another kind of request names (a location, a quality), for the kinds to come.
+    # What a location request names: the place by name, address and map link, the
+    # quality or negative wanted, a victory condition, or another character.
     details: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # The location record it is about: the character's own, or the one staff matched
+    # it to or made from it.
+    location_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("locations.id", ondelete="SET NULL"), index=True
+    )
     # The downtime cycle whose request limit it counts against: the open one when it
     # was made, or the next; null when the troupe had neither.
     cycle_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -55,7 +67,8 @@ class QuestRequest(Record):
     assigned_to_any_narrator: Mapped[bool] = mapped_column(default=False, server_default="false")
     assigned_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     # How staff answered: with a quest, as not needed (which gives the slot back),
-    # or refused; with a note for the player.
+    # refused, or done without a quest (a repair, a Contacts lookup); with a note for
+    # the player.
     outcome: Mapped[str | None]
     note: Mapped[str] = mapped_column(default="", server_default="")
     answered_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
@@ -75,7 +88,8 @@ class Quest(Record):
     __tablename__ = "quests"
     __table_args__ = (
         CheckConstraint("category in ('simple', 'complex', 'epic')", name="category"),
-        CheckConstraint("difficulty between 1 and 5", name="difficulty"),
+        # A location's qualities can raise it past 5 (Vol. II Issue 1, p. 126).
+        CheckConstraint("difficulty between 1 and 10", name="difficulty"),
         CheckConstraint(
             "status in ('draft', 'active', 'completed', 'failed', 'closed')", name="status"
         ),
@@ -100,6 +114,14 @@ class Quest(Record):
     downtime_only: Mapped[bool] = mapped_column(default=False, server_default="false")
     # For staff only.
     staff_notes: Mapped[str] = mapped_column(default="", server_default="")
+    # The location it changes when it is completed, and how
+    # (horatio.location_quests.Change): control passes to its leader, a quality is
+    # added or swapped, its type upgraded, a negative added, or an infiltration's
+    # victory condition recorded.
+    location_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("locations.id", ondelete="SET NULL"), index=True
+    )
+    location_change: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     # draft while staff build it; active once its requirements are sent; then
     # completed or failed after its last scenario, or closed by staff at any point.
     status: Mapped[str] = mapped_column(default="draft", server_default="draft", index=True)
@@ -222,6 +244,11 @@ class QuestScenario(Record):
     )
     # The party when it passed ([character id]): who it unlocks other quests for.
     party: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    # Resources spent on it on a location quest, each {character_id, name, dots,
+    # successes} (Vol. II Issue 1, p. 120).
+    resources: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, default=list, server_default="[]"
+    )
 
 
 class QuestLogEntry(Record):

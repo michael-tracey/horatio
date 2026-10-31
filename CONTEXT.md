@@ -390,11 +390,11 @@ A Stock Location: a place that matters in a troupe's chronicle, standard, presti
 _Avoid_: Property, building, venue
 
 **Location Quality**:
-One thing a location has, such as Guards or Haunt, from the catalogue as the troupe plays it: the book's standard, iconic, supernatural and Elysium qualities, those its house options add, and its own. A standard location has up to its rating in qualities, a prestige or iconic one twice that; only an iconic one has iconic qualities, and none more than one supernatural quality. Some carry a detail, such as a Laboratory's specialisation.
+One thing a location has, such as Guards or Haunt, from the catalogue as the troupe plays it: the book's standard, iconic, supernatural and Elysium qualities, those its house options add, and its own. A standard location has up to its rating in qualities, a prestige or iconic one twice that; only an iconic one has iconic qualities, and none more than one supernatural quality. Some carry a detail, such as a Laboratory's specialisation. A few give the controller something countable, shown on their sheet, such as Profitable's Resources 1, unless a negative quality switches it off.
 _Avoid_: Feature, perk, advantage (that is a Haven's)
 
 **Negative Quality**:
-A harm done to a location, such as Damaged or Compromised, at ×1 to ×3, each level switching more of it off. Staff may keep one secret from the controller, and note who is behind it.
+A harm done to a location, such as Damaged or Compromised, at ×1 to ×3, each level switching more of it off. Staff may keep one secret from the controller, and note who is behind it. Staff remove a level for Resources or influence at the location's rating; Out of Code gets worse by itself after two games.
 _Avoid_: Flaw, damage (for the whole)
 
 **Conglomerate**:
@@ -438,6 +438,10 @@ _Avoid_: Downtime quest
 **Quest Leader**:
 The character a quest is for, who leads its party: the one who asked for it, the one staff give it to, or the first to join one offered more widely. Its player shares the quest and tells its tale.
 _Avoid_: Owner, quest giver
+
+**Location Quest**:
+A quest built from a location (Vol. II Issue 1, pp. 118-129) that changes it when completed: control passes to its leader, a quality is added (and the rating goes up) or swapped, its type is upgraded, a negative quality is imposed, or an infiltration's goal is met. Its category comes from the location's type and its difficulty from its rating and qualities; a locked location or a Haven can't be targeted, nor a controlled one taken until it is Insolvent ×3. A player asks for one through a quest request to acquire, add a quality to or undermine a location, typed in by name where they can't see the record.
+_Avoid_: Property quest, location mission
 
 **Party**:
 The quest's leader and the characters who joined it. Characters a quest is shared with or offered to see it and may join; only the party sees its results.

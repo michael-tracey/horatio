@@ -40,7 +40,7 @@ from horatio.models import (
     XpEntry,
 )
 from horatio.rules import feeding as feeding_rules
-from horatio.rules.allowance import allowance
+from horatio.rules.allowance import AllowanceLine, allowance
 from horatio.rules.model import SheetTrait
 from horatio.rules.store import read_troupe_rules
 from horatio.sheets import conflict, pending_disciplines, sheet_rows, unprocessable
@@ -305,12 +305,20 @@ def fill_allowance(
     rules = read_troupe_rules(db, character.splat, troupe.id)
     sheet = allowance_sheet(db, character)
     totals, lines = allowance(rules, sheet)
+    # What the character's locations add: Fancy, Lowdown and Dirty (horatio.location_quests).
+    from horatio import location_quests
+
+    found: list[AllowanceLine] = list(lines)
+    for line in location_quests.allowance_lines(db, character, troupe.id):
+        if line.action_kind in totals:
+            totals[line.action_kind] += line.amount
+            found.append(line)
     participant.feeding = feeding_rules.basis(rules, sheet)
     participant.allowance = totals
     participant.allowance_breakdown = [
         {"action_kind": line.action_kind, "source": line.source, "amount": line.amount}
         | ({"note": line.note} if line.note else {})
-        for line in lines
+        for line in found
     ]
 
 

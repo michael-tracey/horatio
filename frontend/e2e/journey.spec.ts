@@ -8436,6 +8436,152 @@ test("the troupe's locations: a storyteller adds the Grove Arcade, is refused an
   await expect(owner.page.getByText(/Controls 1 of 5 locations/)).toHaveCount(0);
 });
 
+test("location quests: a player acquires Ruby's Bar, adds Profitable, a rival makes it Insolvent, and a repair brings the Resources back", async ({ browser }) => {
+  // Three requests and their quests, from the Quests tab to the sheet.
+  test.slow();
+  const custodian = await person(browser, "lq-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "lq-lead");
+  const owner = await person(browser, "lq-owner");
+  const rival = await person(browser, "lq-rival");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Ruby Court ${run}`, lead_handle: lead.handle });
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/quest-settings`, { enabled: true, requests_per_cycle: 5 });
+
+  // Agnes has Elite 3, for the repair; Bram is her rival. Both are at home in the troupe.
+  const vampire = async (p: Page, name: string, backgrounds: [string, number][]) => {
+    const { id } = await send(p, "POST", "/api/characters", { splat: "vampire", name });
+    await send(p, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 3], ["Social", 7], ["Mental", 5]],
+      focus_physicals: [["Dexterity", 1]],
+      focus_mentals: [["Intelligence", 1]],
+      focus_socials: [["Manipulation", 1]],
+      skills: [["Leadership", 4], ["Subterfuge", 3], ["Academics", 3], ["Awareness", 2], ["Empathy", 2], ["Investigation", 2], ["Dodge", 1], ["Drive", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds,
+      disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+    };
+    for (const [category, list] of Object.entries(picks))
+      await send(p, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+    await send(p, "POST", `/api/characters/${id}/creation/complete`);
+    const asked = await send(p, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    return id as string;
+  };
+  const agnes = await vampire(owner.page, "Agnes Ruby", [["Influences: The Elite", 3], ["Haven", 2], ["Generation", 1]]);
+  const bram = await vampire(rival.page, "Bram Rival", [["Resources", 3], ["Haven", 2], ["Generation", 1]]);
+
+  const o = owner.page;
+  const l = lead.page;
+  const ask = async (p: Page, characterId: string, kind: string, fill: () => Promise<void>) => {
+    await p.goto(`/characters/${characterId}/quests`);
+    await p.getByLabel("What kind of request").selectOption({ label: kind });
+    await fill();
+    await p.getByRole("button", { name: "Ask for this quest" }).click();
+  };
+  // Staff build the quest from a request, send it, and pass its one scenario.
+  const buildAndComplete = async (from: string) => {
+    await l.goto(`/troupes/${troupe.id}/quests`);
+    await l.getByRole("listitem", { name: `Request from ${from}` }).getByRole("button", { name: "Build a location quest" }).click();
+    const builder = l.getByRole("form", { name: "Build a location quest" });
+    await expect(builder.getByLabel("Category")).toHaveValue("simple");
+    await builder.getByRole("button", { name: "Build the quest" }).click();
+    await l.getByRole("button", { name: "Send requirements" }).click();
+    await expect(l.getByText("Under way")).toBeVisible();
+    await l.getByRole("button", { name: "Send scenario 1's result" }).click();
+    await expect(l.getByText("Completed", { exact: true })).toBeVisible();
+  };
+
+  // Acquire: Agnes's player asks for Ruby's Bar, 12 Main St.
+  await ask(o, agnes, "Acquire a location", async () => {
+    await o.getByLabel("Name of the place").fill("Ruby's Bar");
+    await o.getByLabel("Address").fill("12 Main St");
+  });
+  await expect(o.getByText("Acquire Ruby's Bar, 12 Main St")).toBeVisible();
+
+  // The lead makes it a new standard 2 with a Hangout, and builds a Simple 2 from it.
+  await l.goto(`/troupes/${troupe.id}/quests`);
+  const request = l.getByRole("listitem", { name: "Request from Agnes Ruby" });
+  const match = request.getByRole("group", { name: "Match to a location" });
+  await match.getByLabel("Or a new standard location, rated").selectOption("2");
+  await match.getByLabel("With the quality").selectOption("Hangout");
+  await match.getByRole("button", { name: "Make Ruby's Bar a new location" }).click();
+  await expect(request.getByRole("link", { name: "Ruby's Bar" })).toBeVisible();
+  await request.getByRole("button", { name: "Build a location quest" }).click();
+  const builder = l.getByRole("form", { name: "Build a location quest" });
+  await expect(builder.getByLabel("Difficulty")).toHaveValue("2");
+  await expect(builder.getByText("From Ruby's Bar: Rating 2.")).toBeVisible();
+  await expect(builder.getByText("On success, control passes to its leader.")).toBeVisible();
+  await expect(builder.getByLabel(/Empathy 2 \(Hangout\)/)).toBeChecked();
+  await builder.getByRole("button", { name: "Build the quest" }).click();
+  await expect(l.getByRole("heading", { name: "Acquire Ruby's Bar" })).toBeVisible();
+  await expect(l.getByText("Simple 2 · Leader: Agnes Ruby", { exact: false })).toBeVisible();
+  await expect(l.getByText("changes: control passes to its leader.", { exact: false })).toBeVisible();
+  await l.getByRole("button", { name: "Send requirements" }).click();
+  await l.getByRole("button", { name: "Send scenario 1's result" }).click();
+  await expect(l.getByText("Completed", { exact: true })).toBeVisible();
+
+  // Agnes controls it now: her player sees its name on the sheet, and its Hangout's Contacts.
+  await o.goto(`/characters/${agnes}`);
+  const held = o.getByRole("list", { name: "Locations held" });
+  await expect(held.getByText("Ruby's Bar", { exact: true })).toBeVisible();
+  await expect(held.getByText("Contacts 1, from Ruby's Bar (Hangout)")).toBeVisible();
+
+  // Add a quality: Profitable, by a Simple quest; the bar is rated 3, and gives Resources 1.
+  await ask(o, agnes, "Add a quality to one of your locations", async () => {
+    await o.getByLabel("Which of your locations").selectOption({ label: "Ruby's Bar" });
+    await o.getByLabel("The quality you want").selectOption("Profitable");
+  });
+  await expect(o.getByText("Add Profitable to Ruby's Bar")).toBeVisible();
+  await buildAndComplete("Agnes Ruby");
+  await l.getByRole("link", { name: "Ruby's Bar" }).click();
+  await expect(l.getByText(/^Standard 3/)).toBeVisible();
+  await o.goto(`/characters/${agnes}`);
+  await expect(held.getByText("Resources 1, from Ruby's Bar (Profitable)", { exact: true })).toBeVisible();
+
+  // Undermine: Bram's player wants it Insolvent; the lead matches it to the record.
+  const r = rival.page;
+  await ask(r, bram, "Undermine a location", async () => {
+    await r.getByLabel("Name of the place").fill("Ruby's Bar");
+    await r.getByLabel("Address").fill("12 Main St");
+    await r.getByLabel("What you want to do to it").selectOption({ label: "Make it Insolvent" });
+  });
+  await expect(r.getByText("Undermine Ruby's Bar, 12 Main St: Insolvent")).toBeVisible();
+  await l.goto(`/troupes/${troupe.id}/quests`);
+  const undermine = l.getByRole("listitem", { name: "Request from Bram Rival" });
+  await undermine.getByLabel("The troupe's record of it").selectOption({ label: "Ruby's Bar" });
+  await undermine.getByRole("button", { name: "Match", exact: true }).click();
+  await expect(undermine.getByRole("link", { name: "Ruby's Bar" })).toBeVisible();
+  await buildAndComplete("Bram Rival");
+
+  // Agnes's Resources from it are switched off, without saying why.
+  await o.goto(`/characters/${agnes}`);
+  await expect(held.getByText("Resources 1, from Ruby's Bar (Profitable): not available this cycle", { exact: true })).toBeVisible();
+  await expect(held.getByText(/Insolvent/)).toHaveCount(0);
+  await o.screenshot(shots("location-effects"));
+
+  // Repair: her player asks, and the lead removes Insolvent for an Elite 3 action of hers.
+  await ask(o, agnes, "Repair one of your locations", async () => {
+    await o.getByLabel("Which of your locations").selectOption({ label: "Ruby's Bar" });
+  });
+  await l.goto(`/troupes/${troupe.id}/quests`);
+  const repair = l.getByRole("listitem", { name: "Request from Agnes Ruby" });
+  await expect(repair.getByText("Repair Ruby's Bar")).toBeVisible();
+  await expect(repair.getByText("It takes Elite 3, at Ruby's Bar's rating.")).toBeVisible();
+  await repair.getByRole("button", { name: "Remove one level" }).click();
+  await expect(l.getByText("No quest requests here.")).toBeVisible();
+  await o.goto(`/characters/${agnes}`);
+  await expect(held.getByText("Resources 1, from Ruby's Bar (Profitable)", { exact: true })).toBeVisible();
+  const wide = await o.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(wide).toBeLessThanOrEqual(0);
+});
+
 test("a troupe gives equipment: a dagger from a template, a rifle by hand, refused when it breaks the rules, and a special blade from the character's page", async ({ browser }) => {
   const custodian = await person(browser, "equip-custodian");
   makeCustodian(custodian.email);

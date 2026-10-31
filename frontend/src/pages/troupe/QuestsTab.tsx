@@ -6,8 +6,11 @@ import type { QuestIn, QuestRequestOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, PageTabs, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { buildsFromLocation, changeFromRequest, requestKindText } from "../quests/locationQuests";
 import { guidanceText, offerText, outcomeText, questStatus, questType, requestStatus } from "../quests/quests";
+import { LocationQuestBuilder } from "./LocationQuestBuilder";
 import { QuestPage } from "./QuestPage";
+import { RemoveNegative } from "./RemoveNegative";
 
 type Show = "open" | "new" | "mine" | "any_narrator" | "to_send" | "answered";
 const SHOWS: { value: Show; label: string }[] = [
@@ -85,7 +88,7 @@ function Requests({ troupeId, running }: { troupeId: string; running: boolean })
 function RequestCard({ request: r, troupeId, staff }: { request: QuestRequestOut; troupeId: string; staff: { user_id: string; display_name: string }[] }) {
   const dates = useDates();
   const navigate = useNavigate();
-  const [answering, setAnswering] = useState<"not_needed" | "refused" | null>(null);
+  const [answering, setAnswering] = useState<"not_needed" | "refused" | "done" | null>(null);
   const [note, setNote] = useState("");
   const path = { params: { path: { request_id: r.id } } };
   const assign = useAction((value: string) =>
@@ -93,8 +96,8 @@ function RequestCard({ request: r, troupeId, staff }: { request: QuestRequestOut
   );
   const accept = useAction(() => unwrap(api.POST("/api/quest-requests/{request_id}/accept", path)));
   const read = useAction(() => unwrap(api.POST("/api/quest-requests/{request_id}/read", path)));
-  const answer = useAction(async (outcome: "not_needed" | "refused") => {
-    await unwrap(api.POST("/api/quest-requests/{request_id}/answer", { ...path, body: { outcome, note } }));
+  const answer = useAction(async ({ outcome, words }: { outcome: "not_needed" | "refused" | "done"; words: string }) => {
+    await unwrap(api.POST("/api/quest-requests/{request_id}/answer", { ...path, body: { outcome, note: words } }));
     setAnswering(null);
   });
   const open = r.status === "new" || r.status === "working";
@@ -114,7 +117,35 @@ function RequestCard({ request: r, troupeId, staff }: { request: QuestRequestOut
           {r.outcome ? `: ${outcomeText(r.outcome)}` : ""}
         </Badge>
       </div>
-      <p className="whitespace-pre-line text-parchment">{r.objective}</p>
+      <p className="whitespace-pre-line text-parchment">
+        {requestKindText(r.kind) && <span className="mr-2 text-xs text-gold uppercase">{requestKindText(r.kind)}</span>}
+        {r.objective}
+      </p>
+      {r.details.map_link && (
+        <p className="mt-1">
+          <a href={r.details.map_link} target="_blank" rel="noreferrer" className="text-gold hover:text-parchment">
+            Open the map
+          </a>
+        </p>
+      )}
+      {r.location && (
+        <p className="mt-1 text-mist">
+          Location:{" "}
+          <Link to={`/troupes/${troupeId}/locations/${r.location.id}`} className="text-gold hover:text-parchment">
+            {r.location.name}
+          </Link>
+        </p>
+      )}
+      {r.kind === "whose" && open && r.whose.length > 0 && (
+        <div className="mt-1 text-mist">
+          {r.whose.map((w) => (
+            <p key={w.name}>
+              {w.name} controls {w.locations.length ? w.locations.join(", ") : "no locations"}.
+            </p>
+          ))}
+        </div>
+      )}
+      {r.kind === "whose" && open && r.whose.length === 0 && r.can_assign && <p className="mt-1 text-mist">No character of the troupe goes by that name.</p>}
       {r.reason && <p className="mt-1 whitespace-pre-line text-mist">Why: {r.reason}</p>}
       {r.companions && <p className="mt-1 text-mist">Would bring: {r.companions}</p>}
       {r.note && <p className="mt-1">Answer: {r.note}</p>}
@@ -150,7 +181,29 @@ function RequestCard({ request: r, troupeId, staff }: { request: QuestRequestOut
         )}
         {r.can_work && !r.quest_id && (
           <>
-            <Button onClick={() => navigate(`/troupes/${troupeId}/quests/new?request=${r.id}`)}>Build a quest</Button>
+            {r.kind === "custom" && <Button onClick={() => navigate(`/troupes/${troupeId}/quests/new?request=${r.id}`)}>Build a quest</Button>}
+            {buildsFromLocation(r.kind) && r.location && (
+              <Button onClick={() => navigate(`/troupes/${troupeId}/quests/new?request=${r.id}`)}>Build a location quest</Button>
+            )}
+            {(r.kind === "whose" || r.kind === "repair") && (
+              <Button variant="secondary" onClick={() => setAnswering("done")}>
+                Answer it
+              </Button>
+            )}
+            {r.kind === "undermine" && (
+              <Button
+                variant="ghost"
+                disabled={answer.isPending}
+                onClick={() =>
+                  answer.mutate({
+                    outcome: "refused",
+                    words: "Your character doesn't know this place well enough to target it: they need to have been there, or to have its address (Vol. II Issue 1, p. 126).",
+                  })
+                }
+              >
+                Not known to the character
+              </Button>
+            )}
             <Button variant="secondary" onClick={() => setAnswering("not_needed")}>
               Not needed
             </Button>
@@ -163,20 +216,22 @@ function RequestCard({ request: r, troupeId, staff }: { request: QuestRequestOut
           Mark read
         </Button>
       </div>
+      {r.can_match && !r.location && <MatchLocation request={r} troupeId={troupeId} />}
+      {r.kind === "repair" && open && r.location && r.can_assign && <Repair request={r} troupeId={troupeId} locationId={r.location.id} />}
       {answering && (
         <form
           className="mt-3 flex flex-col gap-2"
           onSubmit={(e) => {
             e.preventDefault();
-            answer.mutate(answering);
+            answer.mutate({ outcome: answering, words: note });
           }}
         >
-          <Field label={answering === "not_needed" ? "Why it isn't needed" : "Why it is refused"}>
+          <Field label={answering === "not_needed" ? "Why it isn't needed" : answering === "done" ? "Your answer" : "Why it is refused"}>
             <Textarea rows={2} required value={note} onChange={(e) => setNote(e.target.value)} />
           </Field>
           <div className="flex gap-2">
             <Button type="submit" disabled={answer.isPending}>
-              {answering === "not_needed" ? "Answer: not needed" : "Refuse it"}
+              {answering === "not_needed" ? "Answer: not needed" : answering === "done" ? "Send the answer" : "Refuse it"}
             </Button>
             <Button type="button" variant="ghost" onClick={() => setAnswering(null)}>
               Cancel
@@ -186,6 +241,93 @@ function RequestCard({ request: r, troupeId, staff }: { request: QuestRequestOut
       )}
       <ErrorText error={assign.error ?? accept.error ?? answer.error ?? read.error} />
     </li>
+  );
+}
+
+/** Staff match a request to acquire or undermine a place to the troupe's record, or make a new one from it. */
+function MatchLocation({ request: r, troupeId }: { request: QuestRequestOut; troupeId: string }) {
+  const [chosen, setChosen] = useState("");
+  const [rating, setRating] = useState(1);
+  const [qualities, setQualities] = useState<string[]>([]);
+  const list = useQuery({
+    queryKey: ["locations", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/locations", { params: { path: { troupe_id: troupeId } } })),
+  });
+  const catalogue = useQuery({
+    queryKey: ["location-catalogue", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/locations/catalogue", { params: { path: { troupe_id: troupeId } } })),
+    enabled: r.kind === "acquire",
+  });
+  const match = useAction((body: { location_id?: string; new?: { rating: number; qualities: { name: string; detail: string }[] } }) =>
+    unwrap(api.PUT("/api/quest-requests/{request_id}/location", { params: { path: { request_id: r.id } }, body })),
+  );
+  const name = r.details.name ?? "the place";
+  return (
+    <div aria-label="Match to a location" role="group" className="mt-3 flex flex-col gap-2 border-t border-ash pt-3">
+      <div className="flex flex-wrap items-end gap-2">
+        <Field label="The troupe's record of it">
+          <Select value={chosen} onChange={(e) => setChosen(e.target.value)} className="w-auto">
+            <option value="">Choose a location</option>
+            {list.data?.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Button variant="secondary" disabled={!chosen || match.isPending} onClick={() => match.mutate({ location_id: chosen })}>
+          Match
+        </Button>
+      </div>
+      {r.kind === "acquire" && (
+        <div className="flex flex-wrap items-end gap-2">
+          <Field label="Or a new standard location, rated">
+            <Select value={rating} onChange={(e) => setRating(Number(e.target.value))} className="w-auto">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="With the quality">
+            <Select value="" onChange={(e) => e.target.value && setQualities([...qualities, e.target.value])} className="w-auto">
+              <option value="">Add a quality</option>
+              {catalogue.data?.qualities
+                .filter((q) => q.kind === "standard" || q.kind === "supernatural")
+                .map((q, i) => (
+                  <option key={`${q.name}${i}`} value={q.name}>
+                    {q.name}
+                  </option>
+                ))}
+            </Select>
+          </Field>
+          {qualities.map((q, i) => (
+            <Button key={i} variant="ghost" className="min-h-8 px-2" aria-label={`Leave out ${q}`} onClick={() => setQualities(qualities.filter((_, j) => j !== i))}>
+              {q} ×
+            </Button>
+          ))}
+          <Button variant="secondary" disabled={match.isPending} onClick={() => match.mutate({ new: { rating, qualities: qualities.map((q) => ({ name: q, detail: "" })) } })}>
+            Make {name} a new location
+          </Button>
+        </div>
+      )}
+      <ErrorText error={match.error ?? list.error} />
+    </div>
+  );
+}
+
+/** A repair request: staff see which negatives the location has, and remove one, which answers it. */
+function Repair({ request: r, troupeId, locationId }: { request: QuestRequestOut; troupeId: string; locationId: string }) {
+  const location = useQuery({
+    queryKey: ["location", locationId],
+    queryFn: () => unwrap(api.GET("/api/locations/{location_id}", { params: { path: { location_id: locationId } } })),
+  });
+  if (!location.data) return <ErrorText error={location.error} />;
+  return (
+    <div className="mt-3 border-t border-ash pt-3">
+      <RemoveNegative troupeId={troupeId} location={location.data} requestId={r.id} payer={r.character_id} />
+    </div>
   );
 }
 
@@ -244,11 +386,14 @@ export function QuestFields({
   draft,
   onChange,
   fromRequest,
+  most = 5,
 }: {
   troupeId: string;
   draft: QuestDraft;
   onChange: (change: Partial<QuestDraft>) => void;
   fromRequest?: boolean;
+  // The highest difficulty offered: a location quest's can go past 5 (Vol. II Issue 1, p. 126).
+  most?: number;
 }) {
   const characters = useQuery({
     queryKey: ["quest-characters", troupeId],
@@ -274,7 +419,7 @@ export function QuestFields({
         </Field>
         <Field label="Difficulty">
           <Select value={draft.difficulty} onChange={(e) => onChange({ difficulty: Number(e.target.value) })}>
-            {[1, 2, 3, 4, 5].map((n) => (
+            {Array.from({ length: Math.max(most, draft.difficulty) }, (_, i) => i + 1).map((n) => (
               <option key={n} value={n}>
                 {n}
               </option>
@@ -354,6 +499,7 @@ function NewQuest({ troupeId }: { troupeId: string }) {
     enabled: !!requestId,
   });
   const from = request.data?.find((r) => r.id === requestId);
+  const locationId = params.get("location");
   const [draft, setDraft] = useState<QuestDraft>({
     name: "",
     objective: "",
@@ -373,6 +519,10 @@ function NewQuest({ troupeId }: { troupeId: string }) {
     navigate(`/troupes/${troupeId}/quests/${made.id}`);
   });
   if (requestId && request.isPending) return <Loading />;
+  if (from && buildsFromLocation(from.kind) && from.location) {
+    return <LocationQuestBuilder troupeId={troupeId} locationId={from.location.id} request={from} start={changeFromRequest(from)} />;
+  }
+  if (!requestId && locationId) return <LocationQuestBuilder troupeId={troupeId} locationId={locationId} />;
   return (
     <Card title={from ? `A quest for ${from.character_name}` : "New quest"}>
       {from && (
