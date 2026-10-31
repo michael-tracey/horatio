@@ -18,8 +18,8 @@ character who has since changed sect, is kept and shown to staff as out of sect.
 of their sect, on the character's Status & Titles tab, unless the troupe's
 "Titles on sheets" setting (Troupe.titles_by) keeps titles to its running staff.
 Staff are told of each choice (horatio.notifications). A `unique` title (a Prince)
-is one no player can choose while another character in the troupe holds it; staff
-can still give it.
+is one no player can choose while another character in the troupe holds it, by
+any of its names (a Baron, or an Advocate); staff can still give it.
 
 **One title is active.** Of the titles a character holds in a troupe, at most one
 is active, and only it gives status (horatio.sect_status): a character carries the
@@ -29,7 +29,7 @@ the active title goes, none is active until one is chosen.
 """
 
 import uuid
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Literal, get_args
 
@@ -70,7 +70,8 @@ def rule_set_titles(db: Session) -> dict[str, TitleData]:
         for title in titles_from([*names, *rules.get("titles", [])]):
             kept = found.get(title.name)
             # Rule sets that share a title agree on it; one that says more wins.
-            if kept is None or ((title.sect or title.gives_status) and not kept.sect):
+            says_more = title.sect or title.clan or title.gives_status
+            if kept is None or (says_more and not (kept.sect or kept.clan)):
                 found[title.name] = title
     return found
 
@@ -506,15 +507,27 @@ def require_choose(
     return troupe, acting
 
 
-def holders_of(db: Session, troupe_id: uuid.UUID, name: str) -> list[Character]:
-    return list(
-        db.scalars(
-            select(Character)
+def office_names(data: Mapping[str, TitleData], name: str) -> set[str]:
+    """Every name of the title's office: Baron, Advocate, and its other names."""
+    title = data.get(name)
+    if title is None:
+        return {name}
+    return {n for n, t in data.items() if t.office == title.office}
+
+
+def holders_of(
+    db: Session, troupe_id: uuid.UUID, names: Iterable[str]
+) -> list[tuple[Character, str]]:
+    """Who holds any of these titles in the troupe, each with the name it holds."""
+    return [
+        (character, name)
+        for character, name in db.execute(
+            select(Character, CharacterTitle.name)
             .join(CharacterTitle, CharacterTitle.character_id == Character.id)
-            .where(CharacterTitle.troupe_id == troupe_id, CharacterTitle.name == name)
+            .where(CharacterTitle.troupe_id == troupe_id, CharacterTitle.name.in_(list(names)))
             .order_by(Character.name)
         )
-    )
+    ]
 
 
 def named(title: TitleData | None, name: str) -> str:
@@ -580,10 +593,13 @@ def choose(
     before = held(db, troupe.id, character.id)
     if name in before:
         raise conflict(f"{character.name} holds {name} already.")
-    others = [c for c in holders_of(db, troupe.id, name) if c.id != character.id]
+    office = office_names(title_data(db, troupe.id), name)
+    others = [(c, n) for c, n in holders_of(db, troupe.id, office) if c.id != character.id]
     if title.unique and others and acting == "player":
+        other, held_as = others[0]
+        same = "," if held_as == name else f", the same office as {name},"
         raise conflict(
-            f"{others[0].name} holds {name}, and only one character holds it at a time:"
+            f"{other.name} holds {held_as}{same} and only one character holds it at a time:"
             " ask your storytellers."
         )
     was = active_title(db, troupe.id, character.id)
