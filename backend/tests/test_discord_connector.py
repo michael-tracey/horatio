@@ -1,5 +1,8 @@
 """The Discord connector against a fake Discord: connecting a server, picking
-channels, splitting long results, and what is worth retrying."""
+channels, splitting long results, and what is worth retrying.
+
+The fake Discord speaks httpx, as the connector does; the test client's responses
+are httpx2."""
 
 import json
 from collections.abc import Callable, Iterator
@@ -7,6 +10,7 @@ from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 import httpx
+import httpx2
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -90,7 +94,7 @@ def fake_discord(monkeypatch: pytest.MonkeyPatch) -> Iterator[FakeDiscord]:
     yield fake
 
 
-def connect_server(ready: Scene, code: str = "good-code") -> httpx.Response:
+def connect_server(ready: Scene, code: str = "good-code") -> httpx2.Response:
     troupe = ready.troupe
     invite = troupe.storyteller.client.post(f"/troupes/{troupe.id}/discord/invite")
     assert invite.status_code == 200, invite.text
@@ -104,7 +108,7 @@ def connect_server(ready: Scene, code: str = "good-code") -> httpx.Response:
     )
 
 
-def set_up(ready: Scene, **settings: Any) -> httpx.Response:
+def set_up(ready: Scene, **settings: Any) -> httpx2.Response:
     troupe = ready.troupe
     return troupe.storyteller.client.put(
         f"/troupes/{troupe.id}/connectors/discord",
