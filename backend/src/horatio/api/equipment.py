@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.exc import NoResultFound
 
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.equipment import ARCHAIC_REFUSED, ItemModifier, ItemQuality, assess, equipment_rules
+from horatio.equipment import ItemModifier, ItemQuality, assess, equipment_rules, kind_problems
 from horatio.rules.equipment import EquipmentRules, Facts
 
 router = APIRouter(prefix="/rules/{splat}/equipment", tags=["equipment"])
@@ -108,6 +108,8 @@ class EquipmentTemplateOut(BaseModel):
     facts: EquipmentFactsOut
     # A bow or crossbow: it may shoot with Athletics instead of Firearms (p. 279).
     archaic: bool = False
+    # What it is, in a line: a Vampiric Text's (#341).
+    description: str = ""
 
 
 class EquipmentOut(BaseModel):
@@ -207,6 +209,7 @@ def equipment(splat: str, db: DbSession, user: CurrentUser) -> EquipmentOut:
                 page=t.page,
                 facts=facts_out(assess(rules, t.kind, t.qualities, t.grade).facts),
                 archaic=t.archaic,
+                description=t.description,
             )
             for t in rules.templates
         ],
@@ -227,6 +230,5 @@ def check(
         crafted=body.crafted,
     )
     problems = list(found.problems)
-    if body.archaic and body.kind != "ranged":
-        problems.append(ARCHAIC_REFUSED)
+    problems += kind_problems(body.kind, body.grade, crafted=body.crafted, archaic=body.archaic)
     return EquipmentCheckOut(**facts_out(found.facts).model_dump(), problems=problems)

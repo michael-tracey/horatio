@@ -1,6 +1,6 @@
 import type { EquipmentFactsOut, EquipmentItemOut, EquipmentOut, EquipmentQualityOut, EquipmentTemplateOut, TroupeTemplateOut } from "../../api/types";
 
-export type Kind = "melee" | "ranged" | "protective" | "miscellaneous";
+export type Kind = "melee" | "ranged" | "protective" | "miscellaneous" | "text";
 export type Grade = "cheap" | "standard" | "special";
 export type DraftQuality = { name: string; detail: string };
 export type DraftEffect = { name: string; effect: string };
@@ -27,6 +27,17 @@ export const GRADE_NAMES: Record<Grade, string> = {
   special: "Special (any number)",
 };
 
+/** A Vampiric Text's grades (#341): one of the books' texts, or one of the troupe's own. */
+export const TEXT_GRADE_NAMES: Partial<Record<Grade, string>> = {
+  standard: "From the books",
+  special: "Special: the troupe's own",
+};
+
+/** The grades an item of `kind` can have, each with its name. */
+export function gradesOf(kind: Kind): [Grade, string][] {
+  return Object.entries(kind === "text" ? TEXT_GRADE_NAMES : GRADE_NAMES) as [Grade, string][];
+}
+
 /** A template, the book's or the troupe's, as a draft to adjust. Its name is the item's. */
 export function fromTemplate(template: EquipmentTemplateOut | TroupeTemplateOut): Draft {
   const own = "effects" in template ? template : null;
@@ -39,7 +50,7 @@ export function fromTemplate(template: EquipmentTemplateOut | TroupeTemplateOut)
     crafted: own?.crafted ?? false,
     archaic: template.archaic ?? false,
     effects: own?.effects.map((e) => ({ ...e })) ?? [],
-    description: own?.description ?? "",
+    description: template.description ?? "",
   };
 }
 
@@ -58,14 +69,15 @@ export function fromItem(item: EquipmentItemOut): Draft {
   };
 }
 
-/** What the API takes: a special item's effects only, and details only where given. */
+/** What the API takes: a special item's effects only, details only where given, and no qualities or crafting for a text. */
 export function body(draft: Draft) {
+  const text = draft.kind === "text";
   return {
     name: draft.name,
     kind: draft.kind,
-    grade: draft.grade,
-    qualities: draft.qualities.map((q) => ({ name: q.name, detail: q.detail.trim() })),
-    crafted: draft.crafted,
+    grade: text && draft.grade === "cheap" ? "standard" : draft.grade,
+    qualities: text ? [] : draft.qualities.map((q) => ({ name: q.name, detail: q.detail.trim() })),
+    crafted: !text && draft.crafted,
     archaic: draft.kind === "ranged" && draft.archaic,
     effects: draft.grade === "special" ? draft.effects : [],
     description: draft.description,
@@ -106,8 +118,8 @@ export function kindText(rules: EquipmentOut | undefined, item: { kind: string; 
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-/** The kinds in the order a game needs them: weapons, then armour, then the rest. */
-const AT_THE_TABLE: Kind[] = ["melee", "ranged", "protective", "miscellaneous"];
+/** The kinds in the order a game needs them: weapons, then armour, then the rest, and texts last. */
+const AT_THE_TABLE: Kind[] = ["melee", "ranged", "protective", "miscellaneous", "text"];
 
 /** Items with combat items first (weapons, then armour), each kind by name as given. */
 export function combatFirst<T extends { kind: string }>(items: T[]): T[] {
@@ -116,6 +128,12 @@ export function combatFirst<T extends { kind: string }>(items: T[]): T[] {
     return i < 0 ? AT_THE_TABLE.length : i;
   };
   return [...items].sort((a, b) => place(a.kind) - place(b.kind));
+}
+
+/** Where an item came from: "Given by Lead of Lords of the Night", or, for a Vampiric Text that was a trait on the sheet (#341), that. */
+export function givenText(item: Pick<EquipmentItemOut, "from_sheet" | "given_by_name" | "troupe_name">): string {
+  if (item.from_sheet) return "Moved from the sheet, where it was a trait";
+  return `Given by ${item.given_by_name ?? "someone"} of ${item.troupe_name ?? "a troupe"}`;
 }
 
 /** What a quality does at the table: "Accurate: +2 wild card bonus", "Customized (hacking): +2 in its

@@ -125,7 +125,7 @@ def test_every_quality_has_its_effect_and_page() -> None:
 
 
 def test_the_kinds_their_defaults_and_the_grades() -> None:
-    assert list(RULES.kinds) == ["melee", "ranged", "protective", "miscellaneous"]
+    assert list(RULES.kinds) == ["melee", "ranged", "protective", "miscellaneous", "text"]
     melee, ranged = RULES.kinds["melee"], RULES.kinds["ranged"]
     assert (melee.hands, melee.damage, melee.shots) == (1, 1, None)
     assert (ranged.hands, ranged.damage, ranged.shots, ranged.range) == (1, 2, 12, "50 steps")
@@ -168,7 +168,7 @@ def test_the_properties_between_qualities() -> None:
 
 
 def test_the_sample_items_are_templates() -> None:
-    templates = {t.name: t for t in RULES.templates}
+    templates = {t.name: t for t in RULES.templates if t.kind != "text"}
     assert len(templates) == 22
     assert templates["Katana"].qualities == tuple(q("Accurate", "Brutal"))
     assert templates["Silver Dagger"].qualities == tuple(q("Concealable", "Silver"))
@@ -178,6 +178,35 @@ def test_the_sample_items_are_templates() -> None:
         q("Superior", "Customized", Customized="video games")
     )
     assert templates["Table-Leg Club (Improvised)"].grade == "cheap"
+
+
+def test_the_catalogues_vampiric_texts_are_templates_with_no_qualities() -> None:
+    """Issue #341: the 35 texts the catalogue had as a trait category, each with its
+    line and page where a book names it, and none where it doesn't."""
+    texts = {t.name: t for t in RULES.templates if t.kind == "text"}
+    assert len(texts) == 35
+    assert all(not t.qualities and t.grade == "standard" for t in texts.values())
+    nod = texts["The Book of Nod"]
+    assert nod.page == "28, 421 & 453"
+    assert "Caine" in nod.description
+    assert texts["Canticle of Japheth"].page == "421"
+    # Spelt right, where the catalogue had a broken apostrophe.
+    assert "Karavalanisha Vrana/Wounds of the Night's Sword" in texts
+    # One no book names: no line, and no page made up.
+    assert (texts["The Analects of Saulot"].page, texts["The Analects of Saulot"].description) == (
+        None,
+        "",
+    )
+    assert assess(RULES, "text", [], "standard").facts == Facts()
+    assert problems("text", q("Accurate")) == "Accurate isn't a vampiric text quality."
+
+
+def test_vampiric_texts_are_no_longer_a_trait_category() -> None:
+    for name in ("bns_met_vampire.toml", "bns_met_ghoul.toml"):
+        rules = load_rule_set(DATA_DIR / name)
+        assert "vampiric_texts" not in rules.categories, name
+        assert not any(category == "vampiric_texts" for category, _ in rules.traits), name
+        assert not any(r.category == "vampiric_texts" for r in rules.cost_rules), name
 
 
 def test_the_ghoul_rule_set_has_the_same_equipment() -> None:

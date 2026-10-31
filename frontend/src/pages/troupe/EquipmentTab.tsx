@@ -8,7 +8,7 @@ import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { ItemActions } from "../character/ItemActions";
 import { EquipmentEditor, useEquipmentRules, useTroupeTemplates } from "./EquipmentEditor";
-import { factsText, kindText, qualityText, type Kind } from "./equipment";
+import { factsText, givenText, kindText, qualityText, type Kind } from "./equipment";
 import { itemsCsv, readSearch, searchQuery, STATUS_NAMES, writeSearch, type ItemSearch, type Sort, type Status } from "./equipmentSearch";
 import { charactersFilter, encode } from "./filters";
 
@@ -17,6 +17,7 @@ const KINDS: { key: Kind; name: string }[] = [
   { key: "ranged", name: "Ranged weapons" },
   { key: "protective", name: "Protective gear" },
   { key: "miscellaneous", name: "Miscellaneous gear" },
+  { key: "text", name: "Vampiric texts" },
 ];
 const GRADES = [
   { key: "cheap", name: "Cheap" },
@@ -75,7 +76,7 @@ export function EquipmentTab({ troupeId, troupeName }: { troupeId: string; troup
       >
         <p className="mb-3 text-sm text-mist">
           What {troupeName}'s home characters hold, PCs and NPCs. Only a character's home troupe gives it equipment or changes what it holds, and an item goes with its
-          character wherever its home is. Weapons, protective gear and other gear, with the book's qualities (MET: VTM pp. 515–524).
+          character wherever its home is. Weapons, protective gear and other gear, with the book's qualities (MET: VTM pp. 515–524), and Vampiric Texts.
         </p>
         {giving && (
           <EquipmentEditor
@@ -379,8 +380,9 @@ function ItemRow({
           <span className="sm:hidden"> grade</span>
         </span>
         <span className="text-xs text-mist">
-          {dates.date(item.given_at)}, by {item.given_by_name ?? "someone"}
-          {item.troupe_name !== troupeName && ` of ${item.troupe_name}`}
+          {dates.date(item.given_at)}
+          {item.from_sheet ? ", from the sheet" : `, by ${item.given_by_name ?? "someone"}`}
+          {!item.from_sheet && item.troupe_name !== troupeName && ` of ${item.troupe_name}`}
         </span>
       </div>
       {open && <ItemDetails item={item} rules={rules} troupeId={troupeId} troupeName={troupeName} holders={holders} />}
@@ -446,7 +448,7 @@ function ItemDetails({
       {item.description && <p className="mt-1 whitespace-pre-line">{item.description}</p>}
       {item.staff_note && <p className="mt-1 whitespace-pre-line text-xs text-mist">Staff note: {item.staff_note}</p>}
       <p className="mt-1 text-xs text-mist">
-        Given by {item.given_by_name ?? "someone"} of {item.troupe_name}, {dates.date(item.given_at)}
+        {givenText(item)}, {dates.date(item.given_at)}
       </p>
       {item.discarded && (
         <p className="mt-1 text-sm">

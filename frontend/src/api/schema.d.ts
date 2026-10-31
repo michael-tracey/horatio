@@ -7653,7 +7653,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "melee" | "ranged" | "protective" | "miscellaneous";
+            kind: "melee" | "ranged" | "protective" | "miscellaneous" | "text";
             /** Name */
             name: string;
             /** Qualities */
@@ -9574,6 +9574,8 @@ export interface components {
             /** Effects */
             effects: components["schemas"]["SpecialEffectModel"][];
             facts: components["schemas"]["EquipmentFactsOut"];
+            /** From Sheet */
+            from_sheet: boolean;
             /**
              * Given At
              * Format: date-time
@@ -9613,13 +9615,10 @@ export interface components {
              * @enum {string}
              */
             status: "held" | "taken_back" | "discarded";
-            /**
-             * Troupe Id
-             * Format: uuid
-             */
-            troupe_id: string;
+            /** Troupe Id */
+            troupe_id: string | null;
             /** Troupe Name */
-            troupe_name: string;
+            troupe_name: string | null;
         };
         /** EquipmentItemOut */
         EquipmentItemOut: {
@@ -9644,6 +9643,8 @@ export interface components {
             /** Effects */
             effects: components["schemas"]["SpecialEffectModel"][];
             facts: components["schemas"]["EquipmentFactsOut"];
+            /** From Sheet */
+            from_sheet: boolean;
             /**
              * Given At
              * Format: date-time
@@ -9681,13 +9682,10 @@ export interface components {
              * @enum {string}
              */
             status: "held" | "taken_back" | "discarded";
-            /**
-             * Troupe Id
-             * Format: uuid
-             */
-            troupe_id: string;
+            /** Troupe Id */
+            troupe_id: string | null;
             /** Troupe Name */
-            troupe_name: string;
+            troupe_name: string | null;
         };
         /** EquipmentItemQuality */
         EquipmentItemQuality: {
@@ -9855,7 +9853,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "melee" | "ranged" | "protective" | "miscellaneous";
+            kind: "melee" | "ranged" | "protective" | "miscellaneous" | "text";
             /** Name */
             name: string;
             /** Qualities */
@@ -9873,6 +9871,11 @@ export interface components {
              * @default false
              */
             archaic: boolean;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
             facts: components["schemas"]["EquipmentFactsOut"];
             /** Grade */
             grade: string;
@@ -10358,7 +10361,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "melee" | "ranged" | "protective" | "miscellaneous";
+            kind: "melee" | "ranged" | "protective" | "miscellaneous" | "text";
             /** Name */
             name: string;
             /** Qualities */
@@ -28508,7 +28511,7 @@ export interface operations {
         parameters: {
             query?: {
                 character_id?: string[] | null;
-                kind?: ("melee" | "ranged" | "protective" | "miscellaneous") | null;
+                kind?: ("melee" | "ranged" | "protective" | "miscellaneous" | "text") | null;
                 quality?: string | null;
                 grade?: ("cheap" | "standard" | "special") | null;
                 q?: string;
