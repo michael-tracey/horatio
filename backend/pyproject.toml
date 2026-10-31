@@ -22,6 +22,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "httpx2>=2.16",
     "pyright>=1.1.390",
     "pytest>=8.3",
     "ruff>=0.8",
@@ -56,8 +57,3 @@ venv = ".venv"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-filterwarnings = [
-    # Starlette's test client now prefers the httpx2 fork. Horatio sticks with httpx
-    # (the Discord connector uses it) until moving is decided on purpose.
-    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
-]
