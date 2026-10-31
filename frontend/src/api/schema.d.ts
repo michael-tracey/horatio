@@ -6748,6 +6748,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/status-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Status Rules
+         * @description Every status of the troupe's sects, and the general status, by sect: its type,
+         *     what it does, and where it comes from here.
+         */
+        get: operations["status_rules_api_troupes__troupe_id__status_rules_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/titles": {
         parameters: {
             query?: never;
@@ -11318,8 +11339,27 @@ export interface components {
         HeldTitleOut: {
             /** Active */
             active: boolean;
+            /** Alias Of */
+            alias_of?: string | null;
+            /** Clan */
+            clan?: string | null;
+            /**
+             * Gives None
+             * @default
+             */
+            gives_none: string;
             /** Name */
             name: string;
+            /**
+             * No Rules Yet
+             * @default false
+             */
+            no_rules_yet: boolean;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
             /** Out Of Sect */
             out_of_sect: boolean;
             /** Page */
@@ -16700,6 +16740,17 @@ export interface components {
             /** Sects */
             sects: string[];
         };
+        /** SectStatusOut */
+        SectStatusOut: {
+            /** Accepted */
+            accepted: string | null;
+            /** Page */
+            page: string | null;
+            /** Sect */
+            sect: string;
+            /** Statuses */
+            statuses: components["schemas"]["StatusRuleOut"][];
+        };
         /**
          * SeenOut
          * @description One status the other carries into its game. Its details (patron, where, the
@@ -17345,6 +17396,11 @@ export interface components {
             duration: string;
             /** Name */
             name: string;
+            /**
+             * No Rules Yet
+             * @default false
+             */
+            no_rules_yet: boolean;
             /** Page */
             page: string | null;
             /** Passive */
@@ -17357,6 +17413,22 @@ export interface components {
             spent: string;
             /** Type */
             type: string;
+        };
+        /**
+         * StatusCapsOut
+         * @description What a character carries into a game (MET: VTM p. 313).
+         */
+        StatusCapsOut: {
+            /** Abiding Sources */
+            abiding_sources: number;
+            /** Fleeting */
+            fleeting: number;
+            /** Greater Ban */
+            greater_ban: number;
+            /** Lesser Ban */
+            lesser_ban: number;
+            /** Page */
+            page: string | null;
         };
         /**
          * StatusChoice
@@ -17494,6 +17566,63 @@ export interface components {
              * @default
              */
             reason: string;
+        };
+        /** StatusRuleOut */
+        StatusRuleOut: {
+            /** Censure */
+            censure: string;
+            /** Duration */
+            duration: string;
+            /** Given By */
+            given_by: components["schemas"]["StatusSourceOut"][];
+            /** Name */
+            name: string;
+            /**
+             * No Rules Yet
+             * @default false
+             */
+            no_rules_yet: boolean;
+            /** Page */
+            page: string | null;
+            /** Passive */
+            passive: string;
+            /** Punishment */
+            punishment: string;
+            /** Sect */
+            sect: string;
+            /** Source */
+            source: string;
+            /** Spent */
+            spent: string;
+            /** Type */
+            type: string;
+        };
+        /** StatusRulesOut */
+        StatusRulesOut: {
+            caps: components["schemas"]["StatusCapsOut"];
+            /** Sects */
+            sects: components["schemas"]["SectStatusOut"][];
+        };
+        /**
+         * StatusSourceOut
+         * @description Where a status comes from in the troupe.
+         */
+        StatusSourceOut: {
+            /** Aliases */
+            aliases: string[];
+            /** Condition */
+            condition: string;
+            /** House */
+            house: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "title" | "social_age" | "faction" | "merit";
+            /** Name */
+            name: string;
+            /** Page */
+            page: string | null;
         };
         /** StatusSpend */
         StatusSpend: {
@@ -17971,10 +18100,29 @@ export interface components {
         };
         /** TitleChoiceOut */
         TitleChoiceOut: {
+            /** Alias Of */
+            alias_of?: string | null;
+            /** Clan */
+            clan?: string | null;
+            /**
+             * Gives None
+             * @default
+             */
+            gives_none: string;
             /** Holders */
             holders: string[];
             /** Name */
             name: string;
+            /**
+             * No Rules Yet
+             * @default false
+             */
+            no_rules_yet: boolean;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
             /** Open */
             open: boolean;
             /** Page */
@@ -18021,14 +18169,33 @@ export interface components {
         };
         /** TitleOut */
         TitleOut: {
+            /** Alias Of */
+            alias_of?: string | null;
             /** Choose One */
             choose_one: string[];
+            /** Clan */
+            clan?: string | null;
+            /**
+             * Gives None
+             * @default
+             */
+            gives_none: string;
             /** Holders */
             holders: components["schemas"]["TitleHolderOut"][];
             /** House */
             house: boolean;
             /** Name */
             name: string;
+            /**
+             * No Rules Yet
+             * @default false
+             */
+            no_rules_yet: boolean;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
             /** Offered */
             offered: boolean;
             /** Page */
@@ -32564,6 +32731,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    status_rules_api_troupes__troupe_id__status_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusRulesOut"];
                 };
             };
             /** @description Validation Error */

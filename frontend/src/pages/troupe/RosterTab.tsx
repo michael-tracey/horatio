@@ -13,7 +13,7 @@ import { useAction } from "../../hooks";
 import { useEquipmentRules } from "./EquipmentEditor";
 import { holdersLink } from "./equipmentSearch";
 import { FilterBuilder } from "./FilterBuilder";
-import { titleGroups, titleStatus } from "./titleGroups";
+import { titleGives, titleGroups, titleStatusWords } from "./titleGroups";
 import { asksEquipment, columnLabel, columnOf, columns, decode, encode, ready, sentence, type Group, type Names } from "./filters";
 
 /**
@@ -472,7 +472,7 @@ function GiveTitle({ troupeId, entry, onGive }: { troupeId: string; entry: Roste
                   <button
                     type="button"
                     className="rounded-full border border-ash px-2.5 py-1 text-xs hover:border-gold hover:text-gold"
-                    title={titleStatus(t) ? `Gives ${titleStatus(t)}` : undefined}
+                    title={titleGives(titleStatusWords(t), t)}
                     onClick={() => onGive(t.name)}
                   >
                     {t.name}
