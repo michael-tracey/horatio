@@ -72,7 +72,7 @@ export function AllowancesSection({ troupeId, canEdit }: { troupeId: string; can
                       <span className={r.replaced ? "" : "text-parchment"}>{r.who}</span>: {r.amount_text}
                     </span>
                     <span className="flex shrink-0 items-center gap-2">
-                      {r.house && <Badge tone="gold">this troupe</Badge>}
+                      {r.house && <Badge tone="gold">House rule</Badge>}
                       {r.replaced && <Badge>replaced here</Badge>}
                       {canEdit && r.house && r.id && (
                         <>

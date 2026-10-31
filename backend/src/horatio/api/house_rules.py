@@ -1,6 +1,7 @@
 """A troupe's house rules: its settings for checks (switching one off, or changing
 how strict it is), its own prices for traits, what new characters start with,
-and how many downtime actions characters get."""
+and how many downtime actions characters get; and all that differs from the book,
+for its players to read."""
 
 import uuid
 from collections.abc import Mapping
@@ -16,7 +17,7 @@ from horatio.api.downtimes import staff_troupe
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.creation import RESTRICTION_TEXT
-from horatio.models import Character, Troupe, User
+from horatio.models import Character, HouseTrait, Troupe, User
 from horatio.permissions import TroupeAction
 from horatio.rules import checks, conditions, pricing
 from horatio.rules.files import EVERYWHERE
@@ -27,6 +28,7 @@ from horatio.rules.model import (
     CreationRuleData,
     RuleSetData,
     Scheme,
+    house_label,
 )
 from horatio.rules.splats import SPLATS
 from horatio.rules.store import (
@@ -947,3 +949,241 @@ def set_clan_rarity(
     )
     db.commit()
     return clan_rarity_out(db, troupe)
+
+
+# --- What players read ------------------------------------------------------------
+
+
+class HouseCostOut(BaseModel):
+    # The category's name, and what the price is about: "All Skills, Generation
+    # background 1", or one trait.
+    category: str
+    subject: str
+    price_text: str
+    # The rule set's price it replaces, under the same condition; None for a trait the
+    # rule set prices only with its whole category.
+    book_text: str | None
+    # The house rule's own wording.
+    text: str | None
+    page: str | None
+
+
+class HouseStartingOut(BaseModel):
+    category: str
+    text: str
+    book_text: str
+
+
+class HouseActionOut(BaseModel):
+    who: str
+    amount_text: str
+    # The rule set's rule it replaces; None for one the rule set does not have.
+    book_text: str | None
+
+
+class SplatHouseRulesOut(BaseModel):
+    """What differs from the book for characters of one splat."""
+
+    splat: str
+    label: str
+    costs: list[HouseCostOut]
+    starting: list[HouseStartingOut]
+    actions: list[HouseActionOut]
+
+
+class HouseCheckOut(BaseModel):
+    rule: str
+    page: str | None
+    # As the rule set has it, and as this troupe plays it: refuse, complete, review,
+    # note or off.
+    strength: str
+    house: str
+
+
+class HouseMeritOut(BaseModel):
+    splat: str
+    category: str
+    name: str
+    points: int
+    kind: str
+    # "staff": given by staff only; "building": available when building for the troupe.
+    availability: str
+    creation_only: bool
+    description: str
+    requirement: str
+    label: str
+    # What its effects do on the sheet, in plain words.
+    summary: str
+
+
+class HouseSettingOut(BaseModel):
+    """Another house rule, in plain words: what it is about, how the troupe plays it,
+    and how the book does."""
+
+    name: str
+    text: str
+    book_text: str
+
+
+class HouseRulesOut(BaseModel):
+    splats: list[SplatHouseRulesOut]
+    checks: list[HouseCheckOut]
+    house_traits: list[HouseMeritOut]
+    other: list[HouseSettingOut]
+    # How its backstories are written (free | either | wizard), and whether one must be
+    # approved before a character is accepted here.
+    backstory_mode: str
+    backstory_required: bool
+
+
+def splat_house_rules(db: DbSession, troupe_id: uuid.UUID, splat: str) -> SplatHouseRulesOut:
+    """The troupe's own prices, starting points and downtime actions for `splat`, each
+    beside the rule set's it replaces. Read from the rules already loaded."""
+    rules = read_troupe_rules(db, splat, troupe_id)
+    rule_set = rules.rule_set
+    position = {key: n for n, key in enumerate(rule_set.categories)}
+    costs: list[HouseCostOut] = []
+    for rule in sorted(rules.house_rules, key=lambda r: (position[r.category], r.trait or "")):
+        category = rule_set.categories[rule.category].name
+        trait = rule_set.traits.get((rule.category, rule.trait)) if rule.trait else None
+        when = conditions.describe(rule.condition, SPLATS[splat].fact_words)
+        what = rule.trait or f"All {category}"
+        book = next((r for r in rule_set.cost_rules if same_subject(rule, r)), None)
+        costs.append(
+            HouseCostOut(
+                category=category,
+                subject=f"{what}, {when}" if when else what,
+                price_text=pricing.describe(rule, unit(rule_set, rule.category)),
+                book_text=pricing.describe(book, unit(rule_set, book.category)) if book else None,
+                text=rule.text,
+                page=trait.page_reference if trait else None,
+            )
+        )
+    kinds = rules.action_kinds()
+    book_actions = {r.key: r for r in (rules.unmerged or rule_set).allowance_rules}
+    actions: list[HouseActionOut] = []
+    for rule in rules.house_allowance_rules:
+        shown = allowance_out(kinds, rule, None)
+        book = book_actions.get(rule.key)
+        actions.append(
+            HouseActionOut(
+                who=shown.who,
+                amount_text=shown.amount_text,
+                book_text=allowance_out(kinds, book, None).amount_text if book else None,
+            )
+        )
+    return SplatHouseRulesOut(
+        splat=splat,
+        label=SPLATS[splat].label,
+        costs=costs,
+        starting=[
+            HouseStartingOut(category=c.name, text=c.text, book_text=c.book_text)
+            for c in starting_out(db, troupe_id, splat)
+            if c.house
+        ],
+        actions=actions,
+    )
+
+
+def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
+    """The troupe's other house rules that differ from the book."""
+    found: list[HouseSettingOut] = []
+    if troupe.starting_blood is not None:
+        found.append(
+            HouseSettingOut(
+                name="Blood at the start of a game",
+                text=f"{troupe.starting_blood} Blood",
+                book_text="Full",
+            )
+        )
+    if troupe.diablerie_flaws != "leave":
+        found.append(
+            HouseSettingOut(
+                name="Diablerie and the Lesser Generation or Thin Blooded flaw",
+                text=f"Diablerie {diablerie.SETTING_TEXT[troupe.diablerie_flaws]}",
+                book_text=f"Diablerie {diablerie.SETTING_TEXT['leave']}",
+            )
+        )
+    if troupe.golconda_enlightened:
+        found.append(
+            HouseSettingOut(
+                name="Golconda and Enlightened",
+                text="Golconda Seekers hold the innate status Enlightened (Vol. 2, p. 267)",
+                book_text="An optional rule, off unless the troupe's sect recognises Golconda",
+            )
+        )
+    if troupe.influence_lookback_days != 90:
+        found.append(
+            HouseSettingOut(
+                name="How far influence lookups look back",
+                text=f"{troupe.influence_lookback_days} days",
+                book_text="The last 3 months",
+            )
+        )
+    if troupe.clan_rarity:
+        rarity = clan_rarity_out(db, troupe)
+        for row in rarity.clans:
+            if row.house is None:
+                continue
+            if rarity.setting and rarity.setting in row.book:
+                book = row.book[rarity.setting].capitalize()
+            else:
+                book = ", ".join(f"{r} for the {sect}" for sect, r in row.book.items()).capitalize()
+            found.append(
+                HouseSettingOut(
+                    name=f"How rare the {row.clan} are",
+                    text=row.house.capitalize(),
+                    book_text=book or "Not given",
+                )
+            )
+    return found
+
+
+@router.get("/house-rules")
+def read_house_rules(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> HouseRulesOut:
+    """What the troupe plays differently from the book, for its players to read before
+    they build or buy: its own prices, starting points, checks, merits and flaws,
+    downtime actions and other house rules, and how its backstories are written.
+    Anyone signed in may read it, as anyone may build a character for the troupe and
+    pay its prices; never its staff's notes, log or connectors."""
+    troupe = db.get(Troupe, troupe_id)
+    if troupe is None or (troupe.archived_at is not None and not user.is_custodian):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
+    splats = ["vampire", *(s for s in troupe.allowed_splats if s != "vampire" and s in SPLATS)]
+    house_traits = db.scalars(
+        select(HouseTrait)
+        .where(HouseTrait.troupe_id == troupe.id, HouseTrait.archived_at.is_(None))
+        .order_by(HouseTrait.category.desc(), HouseTrait.name)
+    ).all()
+    merits: list[HouseMeritOut] = []
+    for h in house_traits:
+        read = read_troupe_rules(db, h.splat, troupe.id).house_trait(h.category, h.name)
+        merits.append(
+            HouseMeritOut(
+                splat=h.splat,
+                category=h.category,
+                name=h.name,
+                points=h.points,
+                kind=h.kind,
+                availability=h.availability,
+                creation_only=h.creation_only,
+                description=h.description,
+                requirement=h.requirement,
+                label=house_label(h.category, troupe.name),
+                summary=read.summary if read is not None and h.effects else "",
+            )
+        )
+    return HouseRulesOut(
+        splats=[splat_house_rules(db, troupe.id, s) for s in splats],
+        checks=[
+            HouseCheckOut(
+                rule=c.message or c.about, page=c.page, strength=c.strength, house=c.house
+            )
+            for c in checks_out(db, troupe.id)
+            if c.house
+        ],
+        house_traits=merits,
+        other=other_settings(db, troupe),
+        backstory_mode=troupe.backstory_mode,
+        backstory_required=troupe.backstory_required,
+    )

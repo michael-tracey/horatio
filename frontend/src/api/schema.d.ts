@@ -5706,6 +5706,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/house-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read House Rules
+         * @description What the troupe plays differently from the book, for its players to read before
+         *     they build or buy: its own prices, starting points, checks, merits and flaws,
+         *     downtime actions and other house rules, and how its backstories are written.
+         *     Anyone signed in may read it, as anyone may build a character for the troupe and
+         *     pay its prices; never its staff's notes, log or connectors.
+         */
+        get: operations["read_house_rules_api_troupes__troupe_id__house_rules_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/house-traits": {
         parameters: {
             query?: never;
@@ -11569,6 +11593,41 @@ export interface components {
              */
             troupe_id: string;
         };
+        /** HouseActionOut */
+        HouseActionOut: {
+            /** Amount Text */
+            amount_text: string;
+            /** Book Text */
+            book_text: string | null;
+            /** Who */
+            who: string;
+        };
+        /** HouseCheckOut */
+        HouseCheckOut: {
+            /** House */
+            house: string;
+            /** Page */
+            page: string | null;
+            /** Rule */
+            rule: string;
+            /** Strength */
+            strength: string;
+        };
+        /** HouseCostOut */
+        HouseCostOut: {
+            /** Book Text */
+            book_text: string | null;
+            /** Category */
+            category: string;
+            /** Page */
+            page: string | null;
+            /** Price Text */
+            price_text: string;
+            /** Subject */
+            subject: string;
+            /** Text */
+            text: string | null;
+        };
         /**
          * HouseMarkOut
          * @description A troupe's own merit or flaw, marked ★ wherever it shows.
@@ -11602,6 +11661,31 @@ export interface components {
             troupe_id: string;
             /** Troupe Name */
             troupe_name: string;
+        };
+        /** HouseMeritOut */
+        HouseMeritOut: {
+            /** Availability */
+            availability: string;
+            /** Category */
+            category: string;
+            /** Creation Only */
+            creation_only: boolean;
+            /** Description */
+            description: string;
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
+            /** Points */
+            points: number;
+            /** Requirement */
+            requirement: string;
+            /** Splat */
+            splat: string;
+            /** Summary */
+            summary: string;
         };
         /**
          * HouseOut
@@ -11637,6 +11721,43 @@ export interface components {
             troupe_id: string;
             /** Troupe Name */
             troupe_name: string;
+        };
+        /** HouseRulesOut */
+        HouseRulesOut: {
+            /** Backstory Mode */
+            backstory_mode: string;
+            /** Backstory Required */
+            backstory_required: boolean;
+            /** Checks */
+            checks: components["schemas"]["HouseCheckOut"][];
+            /** House Traits */
+            house_traits: components["schemas"]["HouseMeritOut"][];
+            /** Other */
+            other: components["schemas"]["HouseSettingOut"][];
+            /** Splats */
+            splats: components["schemas"]["SplatHouseRulesOut"][];
+        };
+        /**
+         * HouseSettingOut
+         * @description Another house rule, in plain words: what it is about, how the troupe plays it,
+         *     and how the book does.
+         */
+        HouseSettingOut: {
+            /** Book Text */
+            book_text: string;
+            /** Name */
+            name: string;
+            /** Text */
+            text: string;
+        };
+        /** HouseStartingOut */
+        HouseStartingOut: {
+            /** Book Text */
+            book_text: string;
+            /** Category */
+            category: string;
+            /** Text */
+            text: string;
         };
         /** HouseTraitIn */
         HouseTraitIn: {
@@ -17389,6 +17510,22 @@ export interface components {
              * @enum {string}
              */
             type: "skill" | "power";
+        };
+        /**
+         * SplatHouseRulesOut
+         * @description What differs from the book for characters of one splat.
+         */
+        SplatHouseRulesOut: {
+            /** Actions */
+            actions: components["schemas"]["HouseActionOut"][];
+            /** Costs */
+            costs: components["schemas"]["HouseCostOut"][];
+            /** Label */
+            label: string;
+            /** Splat */
+            splat: string;
+            /** Starting */
+            starting: components["schemas"]["HouseStartingOut"][];
         };
         /** SplatOut */
         SplatOut: {
@@ -30629,6 +30766,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_house_rules_api_troupes__troupe_id__house_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseRulesOut"];
                 };
             };
             /** @description Validation Error */

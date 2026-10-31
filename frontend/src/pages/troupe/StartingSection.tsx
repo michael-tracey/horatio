@@ -232,7 +232,7 @@ function CategoryRow({ troupeId, splat, category, canEdit }: { troupeId: string;
           {category.house && <span className="block text-xs text-mist">The rule set's: {category.book_text}</span>}
         </span>
         <span className="flex shrink-0 items-center gap-2">
-          {category.house && <Badge tone="gold">this troupe</Badge>}
+          {category.house && <Badge tone="gold">House rule</Badge>}
           {canEdit && !editing && (
             <Button variant="ghost" className="min-h-8 px-2" aria-label={`Change starting ${category.name}`} onClick={() => setEditing(true)}>
               Change

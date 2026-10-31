@@ -71,7 +71,7 @@ function KindCard({ troupeId, kind, canEdit }: { troupeId: string; kind: TroupeK
   return (
     <Card
       title={kind.name}
-      actions={kind.troupe ? <Badge tone="gold">our list</Badge> : <Badge>the rule set's</Badge>}
+      actions={kind.troupe ? <Badge tone="gold">House rule</Badge> : <Badge>the rule set's</Badge>}
     >
       <p className="mb-2 text-xs text-mist">Specialisations of {kind.parent_name}.</p>
       {editing ? (

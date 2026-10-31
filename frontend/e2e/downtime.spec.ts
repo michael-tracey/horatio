@@ -367,7 +367,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("link", { name: "Rules", exact: true }).click();
   await lead.page.getByLabel("Search rules").fill("Calm Heart");
   await lead.page.getByLabel(/Setting for: Brujah cannot take Calm Heart/).selectOption({ label: "Allow, for our review" });
-  await expect(lead.page.getByText("Only those played differently (1)")).toBeVisible();
+  await expect(lead.page.getByText("Only house rules (1)")).toBeVisible();
   await lead.page.screenshot(shots("rules"));
   // …and set its own price: Generation 1 skills at a flat 1 XP a dot, which Agnes pays.
   await lead.page.getByRole("link", { name: "Costs", exact: true }).click();

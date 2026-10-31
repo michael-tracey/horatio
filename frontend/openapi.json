@@ -11940,6 +11940,130 @@
         "title": "HomeTroupeRequest",
         "type": "object"
       },
+      "HouseActionOut": {
+        "properties": {
+          "amount_text": {
+            "title": "Amount Text",
+            "type": "string"
+          },
+          "book_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Book Text"
+          },
+          "who": {
+            "title": "Who",
+            "type": "string"
+          }
+        },
+        "required": [
+          "who",
+          "amount_text",
+          "book_text"
+        ],
+        "title": "HouseActionOut",
+        "type": "object"
+      },
+      "HouseCheckOut": {
+        "properties": {
+          "house": {
+            "title": "House",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "strength": {
+            "title": "Strength",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule",
+          "page",
+          "strength",
+          "house"
+        ],
+        "title": "HouseCheckOut",
+        "type": "object"
+      },
+      "HouseCostOut": {
+        "properties": {
+          "book_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Book Text"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "price_text": {
+            "title": "Price Text",
+            "type": "string"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "required": [
+          "category",
+          "subject",
+          "price_text",
+          "book_text",
+          "text",
+          "page"
+        ],
+        "title": "HouseCostOut",
+        "type": "object"
+      },
       "HouseMarkOut": {
         "description": "A troupe's own merit or flaw, marked \u2605 wherever it shows.",
         "properties": {
@@ -12008,6 +12132,69 @@
         "title": "HouseMarkOut",
         "type": "object"
       },
+      "HouseMeritOut": {
+        "properties": {
+          "availability": {
+            "title": "Availability",
+            "type": "string"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "creation_only": {
+            "title": "Creation Only",
+            "type": "boolean"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "points": {
+            "title": "Points",
+            "type": "integer"
+          },
+          "requirement": {
+            "title": "Requirement",
+            "type": "string"
+          },
+          "splat": {
+            "title": "Splat",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "splat",
+          "category",
+          "name",
+          "points",
+          "kind",
+          "availability",
+          "creation_only",
+          "description",
+          "requirement",
+          "label",
+          "summary"
+        ],
+        "title": "HouseMeritOut",
+        "type": "object"
+      },
       "HouseOut": {
         "description": "A troupe's own merit or flaw (horatio.house_traits), marked \u2605 wherever it shows.",
         "properties": {
@@ -12069,6 +12256,103 @@
           "offered"
         ],
         "title": "HouseOut",
+        "type": "object"
+      },
+      "HouseRulesOut": {
+        "properties": {
+          "backstory_mode": {
+            "title": "Backstory Mode",
+            "type": "string"
+          },
+          "backstory_required": {
+            "title": "Backstory Required",
+            "type": "boolean"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/HouseCheckOut"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "house_traits": {
+            "items": {
+              "$ref": "#/components/schemas/HouseMeritOut"
+            },
+            "title": "House Traits",
+            "type": "array"
+          },
+          "other": {
+            "items": {
+              "$ref": "#/components/schemas/HouseSettingOut"
+            },
+            "title": "Other",
+            "type": "array"
+          },
+          "splats": {
+            "items": {
+              "$ref": "#/components/schemas/SplatHouseRulesOut"
+            },
+            "title": "Splats",
+            "type": "array"
+          }
+        },
+        "required": [
+          "splats",
+          "checks",
+          "house_traits",
+          "other",
+          "backstory_mode",
+          "backstory_required"
+        ],
+        "title": "HouseRulesOut",
+        "type": "object"
+      },
+      "HouseSettingOut": {
+        "description": "Another house rule, in plain words: what it is about, how the troupe plays it,\nand how the book does.",
+        "properties": {
+          "book_text": {
+            "title": "Book Text",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "text",
+          "book_text"
+        ],
+        "title": "HouseSettingOut",
+        "type": "object"
+      },
+      "HouseStartingOut": {
+        "properties": {
+          "book_text": {
+            "title": "Book Text",
+            "type": "string"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "text",
+          "book_text"
+        ],
+        "title": "HouseStartingOut",
         "type": "object"
       },
       "HouseTraitIn": {
@@ -27008,6 +27292,49 @@
           "name"
         ],
         "title": "Specialization",
+        "type": "object"
+      },
+      "SplatHouseRulesOut": {
+        "description": "What differs from the book for characters of one splat.",
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/HouseActionOut"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "costs": {
+            "items": {
+              "$ref": "#/components/schemas/HouseCostOut"
+            },
+            "title": "Costs",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "splat": {
+            "title": "Splat",
+            "type": "string"
+          },
+          "starting": {
+            "items": {
+              "$ref": "#/components/schemas/HouseStartingOut"
+            },
+            "title": "Starting",
+            "type": "array"
+          }
+        },
+        "required": [
+          "splat",
+          "label",
+          "costs",
+          "starting",
+          "actions"
+        ],
+        "title": "SplatHouseRulesOut",
         "type": "object"
       },
       "SplatOut": {
@@ -50091,6 +50418,50 @@
           }
         },
         "summary": "Set Golconda",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/house-rules": {
+      "get": {
+        "description": "What the troupe plays differently from the book, for its players to read before\nthey build or buy: its own prices, starting points, checks, merits and flaws,\ndowntime actions and other house rules, and how its backstories are written.\nAnyone signed in may read it, as anyone may build a character for the troupe and\npay its prices; never its staff's notes, log or connectors.",
+        "operationId": "read_house_rules_api_troupes__troupe_id__house_rules_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseRulesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read House Rules",
         "tags": [
           "house rules"
         ]
