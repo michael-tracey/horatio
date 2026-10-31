@@ -344,7 +344,7 @@ test("changes on the sheet wait in a cart, and only Spend XP makes them, all or 
   await expect(p.getByText("A change can't be made; see the line marked.")).toBeVisible();
   if (test.info().project.name === "phone") {
     // Below the sheet on a phone, the cart is a tap away from the bar at the foot of the screen.
-    await p.getByRole("button", { name: "3 changes · 8 XP · Review" }).click();
+    await p.getByRole("button", { name: /^3 changes · 8 XP · \d+ XP left · Review$/ }).click();
     await expect(p.getByRole("button", { name: "Spend XP" })).toBeInViewport();
   }
   await p.screenshot(shots("cart"));
@@ -423,8 +423,8 @@ test("a Neonate Crusader with Hard as Steel buys one Fortitude elder power throu
   await expect(armor).toBeEnabled();
   await expect(armor).toContainText("Hard as Steel: 20 XP");
   await expect(p.getByRole("button", { name: /^Celerity: / })).toHaveCount(0);
+  // Priced as it is chosen, with no button to press.
   await armor.click();
-  await p.getByRole("button", { name: "Price it" }).click();
   await expect(p.getByText("Hard as Steel: 20 XP.", { exact: true })).toBeVisible();
   await p.getByRole("button", { name: "Add to cart" }).click();
   const line = cart.getByRole("listitem").filter({ hasText: "Add Fortitude: Personal Armor" });

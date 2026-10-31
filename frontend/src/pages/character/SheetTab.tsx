@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Fragment, useState } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type {
@@ -24,15 +24,19 @@ import {
 } from "../../components/ui";
 import { HouseMark } from "../../components/HouseMark";
 import { StepButton, StepButtons } from "../../components/StepButton";
+import { InfoButton } from "../../components/InfoButton";
 import { houseLabels } from "../../houseTraits";
 import { TraitInfo } from "../../components/TraitInfo";
 import { HEALTH_RULE, healthRows } from "../../health";
 import { useAction } from "../../hooks";
 import { pipsOf } from "../../ratings";
+import { PowerList } from "../play/ReferenceTabs";
+import { useReference } from "../play/useReference";
 import { AddTraitPanel } from "./AddTraitPanel";
 import { openToYou, useChoices } from "./choices";
 import { PrintAndBadge } from "./Badge";
 import { CategoryInfo, PartInfo } from "./Info";
+import { categoryInfo } from "./categoryInfo";
 import { added, pick, plannedRating, setRating, swap, swappedTo, unpick, useCart, type Cart, type CartLine } from "./cart";
 import { CartBar, CartPanel, FinishCreation, useCartPrices, useLeaveWarning } from "./CartPanel";
 import { DiablerieWaiting } from "./Diablerie";
@@ -360,17 +364,21 @@ export function SheetTab({
   );
   // Health sits after the part its category belongs to (with willpower), or last.
   const health = s.traits.some((t) => t.category === "health_levels") ? (
-    <HealthLevels key="health_levels" traits={s.traits} />
+    <HealthLevels key="health_levels" traits={s.traits} play={`/play/characters/${character.id}`} />
   ) : null;
   const healthAfter = catalogue.data?.categories.find(
     (c) => c.key === "health_levels",
   )?.group;
   const showCart = shopping && (!locked || lines.length > 0);
   const left = prices.totals?.left;
+  const available = lines.length > 0 && left != null ? left : Math.max(0, s.xp.balance);
 
   return (
     <div className={`grid gap-4 lg:grid-cols-[1fr_18rem] ${showCart && lines.length ? "pb-16 lg:pb-0" : ""}`}>
       <div className="flex flex-col gap-3">
+        {character.kind === "pc" && (
+          <XpLine available={available} afterCart={lines.length > 0 && left != null} mine={mine} sheet={s} />
+        )}
         {mine &&
           character.kind === "pc" &&
           !character.creation_complete &&
@@ -494,6 +502,7 @@ export function SheetTab({
                                 asked={askedOf(t) ? (askedOf(t)!.to_rating > askedOf(t)!.from_rating ? "adding" : "removing") : undefined}
                                 points={pointsOf(t)}
                                 about={aboutOf(t)}
+                                more={t.category === "disciplines" && !inCart(t) ? <SheetPowers characterId={character.id} discipline={t.name} /> : undefined}
                                 exception={exceptionOf(t)}
                                 planned={plannedRating(lines, t)}
                                 swappedTo={swappedTo(lines, t.category, t.name)}
@@ -590,12 +599,10 @@ export function SheetTab({
         {(hasDomitor || character.splat === "vampire") && character.kind === "pc" && <EmbraceCard character={character} catalogue={catalogue.data} />}
         <InfluenceEffects characterId={character.id} />
         <Card dense title="Experience">
-          <dl className="grid grid-cols-3 gap-2 text-center">
+          <dl id="experience" className="grid grid-cols-3 gap-2 text-center">
             <div>
               <dt className="text-xs text-mist">Available</dt>
-              <dd className="font-display text-2xl text-gold">
-                {lines.length > 0 && left != null ? left : Math.max(0, s.xp.balance)}
-              </dd>
+              <dd className="font-display text-2xl text-gold">{available}</dd>
               {lines.length > 0 && left != null && (
                 <dd className="text-xs leading-tight text-gold">after these changes</dd>
               )}
@@ -615,18 +622,23 @@ export function SheetTab({
             </p>
           )}
           {s.limits.length > 0 && (
-            <ul className="mt-3 border-t border-ash pt-2 text-xs text-mist">
-              {s.limits.map((l) => (
-                <li key={l.category} className="flex justify-between">
-                  <span>{l.name}</span>
-                  <span className={l.used >= l.limit ? "text-gold" : undefined}>
-                    {l.category === "flaws"
-                      ? `${Math.min(l.used, l.limit)} of ${l.limit} XP paid`
-                      : `${l.used} of ${l.limit} points`}
+            <div className="mt-3 flex items-start justify-between gap-2 border-t border-ash pt-2 text-sm text-mist">
+              <ul aria-label="Limits">
+                {s.limits.map((l) => (
+                  <li key={l.category} className={l.used >= l.limit ? "text-gold" : undefined}>
+                    {limitText(l)}
+                  </li>
+                ))}
+              </ul>
+              <InfoButton label="About these limits">
+                {s.limits.map((l) => (
+                  <span key={l.category} className="block">
+                    {categoryInfo(l.category, catalogue.data)?.facts[0] ?? `${l.name}: at most ${l.limit}.`}
                   </span>
-                </li>
-              ))}
-            </ul>
+                ))}
+                <span className="mt-1 block text-mist">MET: VTM p. 106</span>
+              </InfoButton>
+            </div>
           )}
         </Card>
         {showCart && (
@@ -653,6 +665,40 @@ export function SheetTab({
       </aside>
       {showCart && <CartBar characterId={character.id} cart={cart} />}
     </div>
+  );
+}
+
+/** A limit on the Experience card, said plainly: "Merits: 3 of 7 points used". */
+export function limitText(l: SheetOut["limits"][number]): string {
+  // Flaws past the limit can be taken, but pay nothing more.
+  if (l.category === "flaws") return `${l.name}: ${Math.min(l.used, l.limit)} of ${l.limit} XP paid out`;
+  return `${l.name}: ${l.used} of ${l.limit} points used`;
+}
+
+/**
+ * The XP to spend, first on a phone, where the Experience card falls below the
+ * whole sheet; it takes the player to that card. Not shown on a wide screen,
+ * which has the card beside the sheet.
+ */
+function XpLine({ available, afterCart, mine, sheet }: { available: number; afterCart: boolean; mine: boolean; sheet: SheetOut }) {
+  const home = sheet.troupes.find((t) => t.home);
+  return (
+    <p className="flex flex-wrap items-baseline gap-x-2 text-sm text-mist lg:hidden">
+      <button
+        type="button"
+        onClick={() => document.getElementById("experience")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+        className="min-h-10 text-left hover:text-parchment"
+      >
+        <strong className="font-display text-xl font-normal text-gold">{available} XP</strong>{" "}
+        {afterCart ? "left after the cart" : mine ? "to spend" : "available"}
+      </button>
+      {sheet.xp.debt > 0 && <span className="text-blood-bright">· XP debt {sheet.xp.debt}</span>}
+      {home && (
+        <span>
+          · {home.troupe_name} <span className="text-xs">(home)</span>
+        </span>
+      )}
+    </p>
   );
 }
 
@@ -708,6 +754,7 @@ function TraitRow({
   onSwap,
   points = null,
   about,
+  more,
   planned = null,
   swappedTo = null,
   exception,
@@ -719,6 +766,8 @@ function TraitRow({
   asked?: "adding" | "removing";
   /** The catalogue's entry for the trait: its description and page open under the row. */
   about?: TraitOut;
+  /** More under the description: a discipline's powers. */
+  more?: ReactNode;
   /** Held by exception: asked of staff, or given by them. */
   exception?: ExceptionOut;
   /** A merit or flaw's fixed point value: shown instead of dots. */
@@ -850,6 +899,7 @@ function TraitRow({
           </>
         }
         description={about?.description}
+        more={more}
         page={about?.page_reference}
       />
       {trait.rating !== null && (
@@ -883,11 +933,23 @@ function TraitRow({
 }
 
 /**
- * Health levels as boxes, laid out like the example BNS sheet: a row of boxes
- * per level, for ticking damage in play. Health is worked out from the rest of
- * the sheet, so nothing here is saved.
+ * A discipline's powers, by dot, as the Play View lists them. Asked for only once
+ * the discipline is opened, from the Play View's reference of the saved sheet.
  */
-function HealthLevels({ traits }: { traits: SheetTraitOut[] }) {
+function SheetPowers({ characterId, discipline }: { characterId: string; discipline: string }) {
+  const { reference, loading, error } = useReference(characterId);
+  if (loading) return <p>Loading its powers…</p>;
+  if (!reference) return <ErrorText error={error} />;
+  const found = reference.disciplines.find((d) => d.name === discipline);
+  return found?.powers.length ? <PowerList discipline={found} /> : null;
+}
+
+/**
+ * Health levels, a row per level as on the example BNS sheet, each with how many
+ * boxes it has: drawn as a count, not boxes to tick, since damage is tracked in
+ * the Play View. Health is worked out from the rest of the sheet, so nothing here is saved.
+ */
+function HealthLevels({ traits, play }: { traits: SheetTraitOut[]; play: string }) {
   return (
     <Card dense title="Health Levels">
       <p className="mb-2 text-xs text-mist">{HEALTH_RULE}</p>
@@ -895,10 +957,11 @@ function HealthLevels({ traits }: { traits: SheetTraitOut[] }) {
         {healthRows(traits).map(({ name, boxes, trait }) => (
           <li key={name} className="flex min-h-6 flex-wrap items-center gap-x-3 gap-y-1">
             <span className="w-24 shrink-0">{name}</span>
-            <span role="img" aria-label={`${name}: ${boxes} boxes`} className="flex flex-wrap gap-1">
+            <span role="img" aria-label={`${name}: ${boxes} boxes`} className="flex items-center gap-1">
               {Array.from({ length: boxes }, (_, i) => (
-                <span key={i} className="h-4 w-4 rounded-sm border border-parchment/70" />
+                <span key={i} className="h-1.5 w-4 rounded-full bg-parchment/50" />
               ))}
+              <span className="ml-1 text-parchment tabular-nums">{boxes}</span>
             </span>
             {trait && trait.granted_rating !== 0 && trait.granted_by.length > 0 && (
               <span className="ml-auto text-xs text-mist">
@@ -909,6 +972,9 @@ function HealthLevels({ traits }: { traits: SheetTraitOut[] }) {
           </li>
         ))}
       </ul>
+      <Link to={play} className="mt-2 inline-block text-sm text-gold underline hover:text-parchment">
+        Track damage in the Play View →
+      </Link>
     </Card>
   );
 }

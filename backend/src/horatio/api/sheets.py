@@ -828,6 +828,20 @@ def refusals(
     }
 
 
+@router.get("/making-room")
+def making_room(
+    character_id: uuid.UUID, category: str, name: str, db: DbSession, user: CurrentUser
+) -> list[str]:
+    """The traits chosen in `category` that `name` could swap in for, where the rules
+    refuse it as things stand: what a picker offers to swap out to make room for it.
+    All are tried in one request, saving nothing; the swap itself is made as a cart."""
+    character = visible_character(db, user, character_id)
+    rules = sheets.rules_for(db, character)
+    if (category, name) not in rules.rule_set.traits:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"No {name!r} in {category!r}.")
+    return sheets.making_room(db, character, category, name)
+
+
 def home_troupe_awarding(db: DbSession, user: User, character: Character) -> Troupe | None:
     """The character's home troupe, if `user` may award (and correct) its XP there."""
     if character.home_troupe_id is None:

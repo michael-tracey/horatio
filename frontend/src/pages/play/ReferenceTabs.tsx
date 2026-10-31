@@ -57,17 +57,7 @@ function TraitLine({ trait: t, reference }: { trait: Trait; reference: PlayRefer
       description={discipline ? [discipline.pool && `${discipline.pool} against ${discipline.versus}.`, discipline.note ?? t.description].filter(Boolean).join(" ") : t.description}
       more={
         discipline ? (
-          <>
-            {discipline.focus && <p className="text-gold">Your focus: {discipline.focus}</p>}
-            <ol className="mt-1 flex flex-col gap-1">
-              {discipline.powers.map((p) => (
-                <li key={p.level}>
-                  <Rating value={p.level} of={p.level} className="min-w-5 text-gold" /> <span className="text-parchment">{p.name}</span> {p.note}
-                  {p.focus && <span className="block text-gold">Your focus: {p.focus}</span>}
-                </li>
-              ))}
-            </ol>
-          </>
+          <PowerList discipline={discipline} />
         ) : focuses.length > 0 ? (
           focuses.map((f) => (
             <p key={f.name} className="mt-0.5">
@@ -79,6 +69,26 @@ function TraitLine({ trait: t, reference }: { trait: Trait; reference: PlayRefer
       summary={t.house_summary}
       page={t.page_reference}
     />
+  );
+}
+
+/**
+ * The powers the character has of a discipline, by dot, with what its focus adds:
+ * under the discipline's name here, and on the character's Sheet tab.
+ */
+export function PowerList({ discipline }: { discipline: DisciplinePowers }) {
+  return (
+    <>
+      {discipline.focus && <p className="text-gold">Your focus: {discipline.focus}</p>}
+      <ol className="mt-1 flex flex-col gap-1">
+        {discipline.powers.map((p) => (
+          <li key={p.level}>
+            <Rating value={p.level} of={p.level} className="min-w-5 text-gold" /> <span className="text-parchment">{p.name}</span> {p.note}
+            {p.focus && <span className="block text-gold">Your focus: {p.focus}</span>}
+          </li>
+        ))}
+      </ol>
+    </>
   );
 }
 
