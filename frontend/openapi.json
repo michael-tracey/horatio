@@ -11186,6 +11186,19 @@
         "title": "GivenOut",
         "type": "object"
       },
+      "GolcondaIn": {
+        "properties": {
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "title": "GolcondaIn",
+        "type": "object"
+      },
       "Guidance": {
         "properties": {
           "requirements": {
@@ -30110,6 +30123,11 @@
           "downtime_xp": {
             "title": "Downtime Xp",
             "type": "integer"
+          },
+          "golconda_enlightened": {
+            "default": false,
+            "title": "Golconda Enlightened",
+            "type": "boolean"
           },
           "id": {
             "format": "uuid",
@@ -49774,6 +49792,60 @@
         "summary": "Remove Game",
         "tags": [
           "troupe profiles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/golconda": {
+      "put": {
+        "description": "Switch on or off the optional rule that Golconda Seekers are Enlightened. The\ncharacters playing by the troupe's rules gain or lose it at once.",
+        "operationId": "set_golconda_api_troupes__troupe_id__golconda_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GolcondaIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Golconda",
+        "tags": [
+          "house rules"
         ]
       }
     },

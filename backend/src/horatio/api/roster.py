@@ -425,6 +425,7 @@ MESSAGES: dict[str, str] = {
     "sheet.diablerie": "{actor} recorded {character}'s diablerie of {committed_on}: Generation"
     " {generation}, techniques lost: {techniques}, Humanity lowered {humanity}, Beast traits"
     " {beast}, flaw: {flaw}.",
+    "house.golconda": "{actor} set the house option: Golconda Seekers {setting}.",
     "house.diablerie_flaws": "{actor} set what diablerie does to Lesser Generation and Thin"
     " Blooded: it {setting}.",
     "house.clan_rarity": "{actor} set how rare clans are here: {rarities}.",

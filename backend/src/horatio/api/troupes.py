@@ -60,6 +60,8 @@ class TroupeOut(BaseModel):
     # House rule: what a diablerie does to a Lesser Generation or Thin Blooded flaw:
     # leave | remove | keep_xp (horatio.diablerie).
     diablerie_flaws: str
+    # House option: Golconda Seekers hold the innate status Enlightened (Vol. 2, p. 267).
+    golconda_enlightened: bool = False
     # Status on sheets (horatio.sect_status): "players" keep their own fleeting and
     # negative status, naming the patron, or only "staff" add and remove it.
     status_by: str
@@ -230,6 +232,7 @@ def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
         starting_blood=troupe.starting_blood,
         influence_lookback_days=troupe.influence_lookback_days,
         diablerie_flaws=troupe.diablerie_flaws,
+        golconda_enlightened=troupe.golconda_enlightened,
         status_by=troupe.status_by,
         titles_by=troupe.titles_by,
         badge_titles=troupe.badge_titles,

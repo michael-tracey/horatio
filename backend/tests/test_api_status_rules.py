@@ -114,6 +114,28 @@ def test_a_troupe_sees_its_sects_and_its_own_titles(troupe: Troupe) -> None:
     assert given_by(found["Established"]) == [("title", "Ambassador", "")]
 
 
+def test_enlightened_comes_from_the_paths_the_troupes_sects_accept(troupe: Troupe) -> None:
+    """Vol. 2, pp. 266-267: each path's merit once, only for the sects the troupe
+    takes; Golconda Seeker only while the house option is on."""
+    paths = {g["name"] for g in statuses(rules_of(troupe))["Enlightened"]["given_by"]}
+    assert len(paths) == 14  # the Sabbat's eleven and the Alliance's five share two
+    assert {"Path of Caine", "Path of Typhon-Set", "Path of Night"} <= paths
+    assert "Golconda Seeker" not in paths
+    enlightened = statuses(rules_of(troupe))["Enlightened"]
+    assert (enlightened["type"], enlightened["sect"]) == ("Innate", "General")
+    assert enlightened["page"] == "Vol. 2, p. 267" and enlightened["source"]
+
+    on = troupe.storyteller.client.put(f"/troupes/{troupe.id}/golconda", json={"on": True})
+    assert on.status_code == 200, on.text
+    limited = troupe.lead.client.patch(
+        f"/troupes/{troupe.id}", json={"allowed_sects": ["Camarilla"]}
+    )
+    assert limited.status_code == 200, limited.text
+
+    # A Camarilla troupe Accepts no path: only Golconda Seeker gives it here.
+    assert given_by(statuses(rules_of(troupe))["Enlightened"]) == [("merit", "Golconda Seeker", "")]
+
+
 def test_only_running_staff_see_the_status_rules(troupe: Troupe) -> None:
     for person in (troupe.player, troupe.stranger, troupe.narrator):
         response = person.client.get(f"/troupes/{troupe.id}/status-rules")

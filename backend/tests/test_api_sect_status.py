@@ -576,6 +576,67 @@ def test_only_the_camarilla_holds_bloodhunted(troupe: Troupe) -> None:
     assert "Bloodhunted is Camarilla status" in refused.json()["detail"]
 
 
+def grant_merit(troupe: Troupe, character_id: str, name: str) -> None:
+    """Put a merit on the sheet, and bring what it grants into line."""
+    put_trait(troupe.session, character_id, "merits", name, 1)
+    character = troupe.session.get_one(Character, uuid.UUID(character_id))
+    apply_grants(troupe.session, troupe.session.get_one(User, character.player_id), character)
+
+
+def enlightened(person: Person, character_id: str) -> list[tuple[str, str, str]]:
+    return [
+        (d["name"], d["type"], d["source"])
+        for d in status(person, character_id)["derived"]
+        if d["name"] == "Enlightened"
+    ]
+
+
+def test_an_accepted_paths_merit_gives_enlightened(troupe: Troupe) -> None:
+    """Vol. 2, pp. 266-267: the Sabbat Accepts the Path of Caine, so its follower is
+    Enlightened; the Camarilla holds every path Heretical, so its follower is not."""
+    rook = member(troupe, "Rook", sect="Sabbat", clan="Lasombra")
+    agnes = member(troupe)
+    grant_merit(troupe, rook, "Path of Caine")
+    grant_merit(troupe, agnes, "Path of Caine")
+
+    assert enlightened(troupe.player, rook) == [("Enlightened", "Innate", "Path of Caine")]
+    assert status(troupe.player, rook)["about"]["Enlightened"]["page"] == "Vol. 2, p. 267"
+    assert enlightened(troupe.player, agnes) == []
+    character = troupe.session.get_one(Character, uuid.UUID(rook))
+    carried = sect_status.carried(troupe.session, character, uuid.UUID(troupe.id))
+    assert ("Enlightened", "Innate") in [(c.name, c.type) for c in carried]
+
+
+def test_a_path_the_sect_does_not_accept_gives_no_enlightened(troupe: Troupe) -> None:
+    rook = member(troupe, "Rook", sect="Sabbat", clan="Lasombra")
+    grant_merit(troupe, rook, "Path of Harmony")
+
+    assert enlightened(troupe.player, rook) == []
+
+
+def test_golconda_seekers_are_enlightened_only_under_the_house_option(troupe: Troupe) -> None:
+    """Vol. 2, p. 267's optional rule, off unless the troupe switches it on."""
+    agnes = member(troupe)
+    grant_merit(troupe, agnes, "Golconda Seeker")
+    where = f"/troupes/{troupe.id}/golconda"
+    assert not troupe.player.client.get(f"/troupes/{troupe.id}").json()["golconda_enlightened"]
+    assert enlightened(troupe.player, agnes) == []
+    assert troupe.player.client.put(where, json={"on": True}).status_code == 403
+
+    on = troupe.storyteller.client.put(where, json={"on": True})
+
+    assert on.status_code == 200, on.text
+    assert on.json()["golconda_enlightened"]
+    assert enlightened(troupe.player, agnes) == [("Enlightened", "Innate", "Golconda Seeker")]
+    log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
+    assert "storyteller set the house option: Golconda Seekers are Enlightened." in log
+
+    off = troupe.storyteller.client.put(where, json={"on": False})
+
+    assert off.status_code == 200, off.text
+    assert enlightened(troupe.player, agnes) == []
+
+
 # --- negative status ends -----------------------------------------------------------------------
 
 

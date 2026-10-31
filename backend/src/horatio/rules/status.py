@@ -64,6 +64,14 @@ source (its titles and its social age are each a source), all its innate and
 negative status, and up to 5 fleeting, or 3 under a lesser ban and 1 under a
 greater.
 
+Each sect's stance on the Paths of Enlightenment (`path_stances`, Vol. 2, p. 266):
+the paths it Accepts and those it holds Heretical (`all_heretical`, every path),
+by their merits. A character with the merit of a path its sect Accepts holds the
+innate status Enlightened (p. 267): `path_grants` makes the grant for each, which
+the rules loader adds to the rule set's. A sect with status rules has a ban on
+following any path (`on_path`) exactly when it Accepts none and holds every path
+Heretical.
+
 Some merits and flaws change the fleeting cap (`cap_changes`): Reputation carries
 1 more (p. 252), Tainted Embrace 1 fewer (p. 405), on top of any ban. One lets a
 character no sect has Accepted hold a sect's fleeting status all the same
@@ -88,6 +96,10 @@ STATUS_CATEGORY = "status_traits"
 GENERAL = "General"
 # The types of status a negative status can take away from its holder.
 TAKEN_TYPES = ("Abiding", "Innate", "Fleeting")
+# The innate status a Path of Enlightenment merit gives where the sect Accepts the
+# path (Vol. 2, p. 267).
+ENLIGHTENED = "Enlightened"
+ENLIGHTENED_PAGE = "Vol. 2, p. 267"
 # Social ages, as horatio.social_age works them out.
 SOCIAL_AGES = ("Neonate", "Ancilla", "Elder")
 
@@ -244,6 +256,27 @@ class OutsiderData:
 
 
 @dataclass(frozen=True)
+class PathStanceData:
+    """A sect's stance on the Paths of Enlightenment (Vol. 2, p. 266): the paths it
+    Accepts and holds Heretical, by their merits; or every path Heretical."""
+
+    sect: str
+    accepted: tuple[str, ...] = ()
+    heretical: tuple[str, ...] = ()
+    all_heretical: bool = False
+    note: str = ""
+    page: str | None = None
+
+    def stance(self, path: str) -> Literal["accepted", "heretical", None]:
+        """The sect's stance on a path, by its merit's name: None for neither."""
+        if path in self.accepted:
+            return "accepted"
+        if self.all_heretical or path in self.heretical:
+            return "heretical"
+        return None
+
+
+@dataclass(frozen=True)
 class StatusRulesData:
     """A rule set's status rules beyond its status traits."""
 
@@ -252,6 +285,7 @@ class StatusRulesData:
     social_ages: tuple[SocialAgeStatusData, ...] = ()
     cap_changes: tuple[CapChangeData, ...] = ()
     outsiders: tuple[OutsiderData, ...] = ()
+    path_stances: Mapping[str, PathStanceData] = field(default_factory=dict[str, PathStanceData])
 
 
 NO_STATUS_RULES = StatusRulesData()
@@ -403,12 +437,43 @@ def outsider_from_dict(raw: Mapping[str, Any]) -> OutsiderData:
     )
 
 
+def path_stance_from_dict(raw: Mapping[str, Any]) -> PathStanceData:
+    return PathStanceData(
+        sect=raw["sect"],
+        accepted=tuple(raw.get("accepted", [])),
+        heretical=tuple(raw.get("heretical", [])),
+        all_heretical=raw.get("all_heretical", False),
+        note=raw.get("note", ""),
+        page=raw.get("page"),
+    )
+
+
+def path_grants(path_stances: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """The grants of Enlightened (Vol. 2, p. 267), as the rules data writes a grant:
+    one for each path a sect Accepts, from the path's merit to a character of that
+    sect."""
+    return [
+        {
+            "key": f"status_traits/{ENLIGHTENED}/{raw['sect']}/{path}",
+            "source": {"category": "merits", "name": path},
+            "when": {"has": {"category": "sect", "name": raw["sect"]}},
+            "kind": "free_up_to",
+            "target": {"category": STATUS_CATEGORY, "name": ENLIGHTENED},
+            "amount": 1,
+            "page": ENLIGHTENED_PAGE,
+        }
+        for raw in path_stances
+        for path in raw.get("accepted", [])
+    ]
+
+
 def status_rules_from(
     caps: Mapping[str, Any] | None,
     sects: Iterable[Mapping[str, Any]],
     social_ages: Iterable[Mapping[str, Any]],
     cap_changes: Iterable[Mapping[str, Any]] = (),
     outsiders: Iterable[Mapping[str, Any]] = (),
+    path_stances: Iterable[Mapping[str, Any]] = (),
 ) -> StatusRulesData:
     by_name: dict[str, SectData] = {}
     for raw in sects:
@@ -416,12 +481,19 @@ def status_rules_from(
         if sect.name in by_name:
             raise ValueError(f"sect {sect.name!r} is described twice")
         by_name[sect.name] = sect
+    stances: dict[str, PathStanceData] = {}
+    for raw in path_stances:
+        stance = path_stance_from_dict(raw)
+        if stance.sect in stances:
+            raise ValueError(f"the paths of {stance.sect!r} are described twice")
+        stances[stance.sect] = stance
     return StatusRulesData(
         caps=caps_from_dict(caps) if caps is not None else None,
         sects=by_name,
         social_ages=tuple(social_age_from_dict(a) for a in social_ages),
         cap_changes=tuple(cap_change_from_dict(c) for c in cap_changes),
         outsiders=tuple(outsider_from_dict(o) for o in outsiders),
+        path_stances=stances,
     )
 
 
@@ -454,6 +526,7 @@ def status_rules_to_dict(rules: StatusRulesData, titles: Sequence[TitleData]) ->
         "social_ages": [plain(a) for a in rules.social_ages],
         "cap_changes": [plain(c) for c in rules.cap_changes],
         "outsiders": [plain(o) for o in rules.outsiders],
+        "path_stances": [plain(p) for p in rules.path_stances.values()],
         "titles": [
             plain(t)
             for t in titles
@@ -473,6 +546,7 @@ def status_rules_from_dict(raw: Mapping[str, Any]) -> StatusRulesData:
         raw.get("social_ages", []),
         raw.get("cap_changes", []),
         raw.get("outsiders", []),
+        raw.get("path_stances", []),
     )
 
 
@@ -488,8 +562,9 @@ def check_status_rules(
     lacks; a status that says not what it does, nor that it has no rules yet; a
     status other than negative that brings or takes away status, or that brings
     status other than negative status of its sect; a title or social age giving
-    status that is not abiding status of its sect; and a sect's title that says not
-    what it gives, or why it gives nothing."""
+    status that is not abiding status of its sect; a sect's title that says not
+    what it gives, or why it gives nothing; and a sect's stance on the paths naming
+    what is not a path's merit, or disagreeing with its ban on following a path."""
     from horatio.rules.checks import validate_condition
 
     sect_names = {name for category, name in traits if category == "sect"}
@@ -609,6 +684,33 @@ def check_status_rules(
             raise ValueError(f"{outsider.name!r} gives status of a sect with no status rules")
         if outsider.fleeting < 1:
             raise ValueError(f"{outsider.name!r} lets its holder hold no status")
+
+    for stance in rules.path_stances.values():
+        where = f"the paths of {stance.sect!r}"
+        if stance.sect not in sect_names:
+            raise ValueError(f"{where}: not a sect in the catalogue")
+        for path in (*stance.accepted, *stance.heretical):
+            merit = traits.get(("merits", path))
+            if merit is None or merit.properties.get("type") != "Morality":
+                raise ValueError(f"{where} name {path!r}, which is not a path's merit")
+        if set(stance.accepted) & set(stance.heretical):
+            raise ValueError(f"{where}: a path is both Accepted and Heretical")
+        if stance.all_heretical and (stance.accepted or stance.heretical):
+            raise ValueError(f"{where}: every path is Heretical, so it names none")
+        if stance.accepted and ENLIGHTENED not in statuses:
+            raise ValueError(f"{where}: Accepted paths give {ENLIGHTENED}, which is no status")
+        sect = rules.sects.get(stance.sect)
+        if sect is not None:
+            bans_paths = any(b.when == {"on_path": True} for b in sect.bans)
+            if bans_paths != (stance.all_heretical and not stance.accepted):
+                raise ValueError(
+                    f"{where}: a ban on following any path goes with every path Heretical"
+                )
+    for sect in rules.sects.values():
+        if sect.name not in rules.path_stances and any(
+            b.when == {"on_path": True} for b in sect.bans
+        ):
+            raise ValueError(f"sect {sect.name!r} bans every path, but has no stance on them")
 
     caps = rules.caps
     if caps is not None and not (
