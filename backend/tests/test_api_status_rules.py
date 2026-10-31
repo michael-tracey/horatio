@@ -81,6 +81,12 @@ def test_every_status_by_sect_with_what_it_does_and_where_it_comes_from(troupe: 
     assert given_by(found["Loyal"]) == [("merit", "Prestigious Sire", "")]
     # Fleeting and negative status is given by people, not by a title.
     assert found["Triumphant"]["given_by"] == []
+    # The blood hunt's sentence: given by a Prince, not by a title, social age or merit.
+    hunted = found["Bloodhunted"]
+    assert (hunted["type"], hunted["sect"], hunted["page"]) == ("Negative", "Camarilla", "389")
+    assert hunted["censure"].startswith("Lose all abiding, innate and fleeting status for good")
+    assert "Sovereign" in hunted["source"] and "Vol. II Issue 1, p. 131" in hunted["duration"]
+    assert hunted["given_by"] == []
     assert found["Warned"]["duration"]
 
     chairman = found["Chairman"]

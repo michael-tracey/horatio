@@ -17527,6 +17527,11 @@ export interface components {
             fleeting_cap: number;
             /** Held */
             held: components["schemas"]["HeldOut"][];
+            /**
+             * Lost
+             * @default []
+             */
+            lost: components["schemas"]["DerivedOut"][];
             /** Outsider Sect */
             outsider_sect?: string | null;
             /** Outsider Through */
@@ -17542,6 +17547,8 @@ export interface components {
              * @default []
              */
             suppressed: components["schemas"]["SuppressionOut"][];
+            /** Taken By */
+            taken_by?: string | null;
             /** Troupe Id */
             troupe_id: string | null;
             /** Troupe Name */

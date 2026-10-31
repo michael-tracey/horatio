@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DerivedOut, EndingOut, PatronChoiceOut } from "../../api/types";
-import { capText, derivedLines, endingText, findPatrons, outsiderText, patronLabel, sourceText, suppressedText } from "./status";
+import { capText, derivedLines, endingText, findPatrons, outsiderText, patronLabel, sourceText, suppressedText, takenText } from "./status";
 
 const day = (d: string) => `day ${d}`;
 const ending = (over: Partial<EndingOut>): EndingOut => ({
@@ -20,6 +20,14 @@ describe("the fleeting cap", () => {
   it("says how a character no sect has Accepted holds status", () => {
     expect(outsiderText({ outsider_sect: "Camarilla", outsider_through: "Emissary to the Camarilla" })).toBe(
       "Accepted by no sect. As Emissary to the Camarilla allows, it holds fleeting Camarilla status.",
+    );
+  });
+});
+
+describe("status taken away", () => {
+  it("says what holding Bloodhunted takes", () => {
+    expect(takenText("Agnes", "Bloodhunted")).toBe(
+      "Agnes holds Bloodhunted: its titles, social age and merits give it no status while it does, and it holds no fleeting status.",
     );
   });
 });

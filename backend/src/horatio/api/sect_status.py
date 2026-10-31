@@ -143,6 +143,10 @@ class StatusOut(BaseModel):
     disgraced: bool
     # Its fleeting status suppressed: not carried into a game, and none gained.
     suppressed: list[SuppressionOut] = []
+    # The held status that takes its status away (Bloodhunted, MET: VTM p. 389), and
+    # what its titles, social age and merits would give it, lost while it is held.
+    taken_by: str | None = None
+    lost: list[DerivedOut] = []
     # The status that can be added: fleeting and negative status of its sect and
     # the general status.
     addable: list[StatusAbout]
@@ -214,6 +218,18 @@ def about(status: sect_status.StatusData) -> StatusAbout:
     )
 
 
+def derived_out(d: sect_status.Derived, names: dict[uuid.UUID, str]) -> DerivedOut:
+    return DerivedOut(
+        name=d.name,
+        type=d.type,
+        source=d.source,
+        kind=d.kind,
+        troupe_id=d.troupe_id,
+        troupe_name=names.get(d.troupe_id) if d.troupe_id else None,
+        condition=d.condition,
+    )
+
+
 def ending_out(ending: sect_status.Ending) -> EndingOut:
     return EndingOut(
         text=ending.text,
@@ -255,7 +271,7 @@ def status_out(db: DbSession, user: User, character: Character) -> StatusOut:
     names = {
         t.id: t.name
         for t in db.query(Troupe).filter(
-            Troupe.id.in_({d.troupe_id for d in found.derived} - {None})
+            Troupe.id.in_({d.troupe_id for d in [*found.derived, *found.lost]} - {None})
         )
     }
     patrons = {
@@ -265,7 +281,11 @@ def status_out(db: DbSession, user: User, character: Character) -> StatusOut:
         )
     }
     statuses = found.rules.statuses
-    shown = {d.name for d in found.derived} | {h.name for h in found.held} | set(found.unresolved)
+    shown = (
+        {d.name for d in [*found.derived, *found.lost]}
+        | {h.name for h in found.held}
+        | set(found.unresolved)
+    )
     if found.accepted:
         shown.add(found.accepted)
     addable = (
@@ -285,18 +305,7 @@ def status_out(db: DbSession, user: User, character: Character) -> StatusOut:
         setting=sect_status.setting_of(home),
         acting=acting if found.sect_data is not None else None,
         staff=sect_status.staff_in(db, user, character, home),
-        derived=[
-            DerivedOut(
-                name=d.name,
-                type=d.type,
-                source=d.source,
-                kind=d.kind,
-                troupe_id=d.troupe_id,
-                troupe_name=names.get(d.troupe_id) if d.troupe_id else None,
-                condition=d.condition,
-            )
-            for d in found.derived
-        ],
+        derived=[derived_out(d, names) for d in found.derived],
         held=[
             HeldOut(
                 id=h.id,
@@ -337,6 +346,8 @@ def status_out(db: DbSession, user: User, character: Character) -> StatusOut:
         outsider_through=found.outsider.name if found.outsider else None,
         disgraced=found.disgraced,
         suppressed=[suppression_out(s) for s in found.suppressing],
+        taken_by=found.taken_by,
+        lost=[derived_out(d, names) for d in found.lost],
         addable=addable,
         about={name: about(statuses[name]) for name in sorted(shown) if name in statuses},
     )

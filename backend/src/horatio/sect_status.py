@@ -45,6 +45,12 @@ at, and `months` calendar months, whichever is later. A stacking status (Warned)
 adds the same again for each one held, and they all end together. `expire` drops
 what is over, and logs it.
 
+**A negative status that takes status away** (Bloodhunted, p. 389): given it, the
+character loses the fleeting status it holds for good, and gains the negative status
+it brings (Forsaken) unless it holds that already. While it lasts, its titles, social
+age and merits give it none of the types taken away (they are shown as lost), and it
+gains no fleeting status: its cap is 0.
+
 **Suppressed** fleeting status (p. 314) is held but neither carried nor gained for a
 while, and comes back on its own: while the character holds Vulgar (p. 403), or for
 as long as staff say (StatusSuppression): the rest of a game, or 2 games or a month
@@ -255,6 +261,10 @@ class Standing:
     outsider: OutsiderData | None = None
     # What suppresses its fleeting status now.
     suppressed: list[Suppressed] = field(default_factory=list[Suppressed])
+    # The held status that takes status away (Bloodhunted), and the derived status
+    # its titles, social age and merits would give, lost while it is held.
+    taken_by: str | None = None
+    lost: list[Derived] = field(default_factory=list[Derived])
 
     @property
     def accepted(self) -> str | None:
@@ -637,7 +647,25 @@ def standing(db: Session, character: Character) -> Standing:
     found.suppressed = suppressions(db, character, found.held)
     found.bans = bans_of(db, character, sect_data, sheet)
     found.fleeting_cap, found.cap_why = fleeting_cap(rules, found.bans, sheet, outsider)
+    taking = next((h for h in found.held if taking_away(found, h)), None)
+    if taking is not None and taking.status is not None:
+        taken = taking.status.takes_away
+        found.taken_by = taking.name
+        found.lost = [d for d in found.derived if d.type in taken]
+        found.derived = [d for d in found.derived if d.type not in taken]
+        if "Fleeting" in taken:
+            found.fleeting_cap, found.cap_why = 0, [f"{taking.name}: none"]
     return found
+
+
+def taking_away(found: Standing, h: Held) -> bool:
+    """Whether a held status takes status away from the character now (Bloodhunted)."""
+    return (
+        h.status is not None
+        and bool(h.status.takes_away)
+        and found.own(h.status)
+        and not (h.ending and h.ending.over)
+    )
 
 
 # --- what it carries into a game ---------------------------------------------------------------
@@ -1007,9 +1035,65 @@ def add(
         reason=reason,
         **({"game": at_game.number} if at_game else {}),
     )
+    if "Fleeting" in status.takes_away and found.fleeting:
+        lose_fleeting(db, user, character, troupe_id, found.fleeting, name)
+    holding = {h.name for h in found.held}
+    for brought in status.brings:
+        if brought in holding or brought not in found.rules.statuses:
+            continue
+        db.add(
+            HeldStatus(
+                character_id=character.id,
+                name=brought,
+                patron_id=row.patron_id,
+                patron_name=row.patron_name,
+                patron_title=row.patron_title,
+                patron_text=row.patron_text,
+                troupe_id=row.troupe_id,
+                place=row.place,
+                given_on=row.given_on,
+                story=row.story,
+                added_by=user.id,
+                game_id=row.game_id,
+            )
+        )
+        audit.record(
+            db,
+            user,
+            "status.added",
+            troupe_id=troupe_id,
+            character_id=character.id,
+            status=brought,
+            patron=patron,
+            type=found.rules.statuses[brought].type.lower(),
+            reason=f"with {name}",
+            **({"game": at_game.number} if at_game else {}),
+        )
     db.flush()
     apply_grants(db, user, character)
     return row
+
+
+def lose_fleeting(
+    db: Session,
+    user: User,
+    character: Character,
+    troupe_id: uuid.UUID | None,
+    fleeting: Sequence[Held],
+    by: str,
+) -> None:
+    """The character loses its fleeting status for good, as `by` (Bloodhunted) takes it
+    away: not spent, and not coming back."""
+    audit.record(
+        db,
+        user,
+        "status.lost",
+        troupe_id=troupe_id,
+        character_id=character.id,
+        statuses=", ".join(h.name for h in fleeting),
+        by=by,
+    )
+    db.execute(delete(HeldStatus).where(HeldStatus.id.in_([h.id for h in fleeting])))
 
 
 def remove(
