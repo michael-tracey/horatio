@@ -54,9 +54,10 @@ def results_link(character: Character) -> str:
     return f"{get_settings().public_url.rstrip('/')}/characters/{character.id}/results"
 
 
-def alert(character: Character, cycle: DowntimeCycle) -> str:
+def alert(character: Character, cycle: DowntimeCycle, updated: bool = False) -> str:
+    news = "have been updated" if updated else "are ready"
     return (
-        f"Your downtime results for {character.name} ({cycle.name}) are ready: "
+        f"Your downtime results for {character.name} ({cycle.name}) {news}: "
         f"{results_link(character)}"
     )
 
@@ -82,32 +83,54 @@ def queue(
     character: Character,
     submission: Submission,
     full_text: str,
+    update_text: str,
+    revision: int,
 ) -> int:
-    """Queue the submission on each connector that has no delivery for it yet (in
-    the connector's current test mode). Returns how many were queued."""
+    """Queue this revision of the submission's results on each connector that has
+    not had it (in the connector's current test mode). On a channel that already
+    sent an earlier one, it goes as an update; one still waiting there is replaced,
+    so the player gets the results once, as they now stand. Returns how many were
+    queued."""
     queued = 0
     for connector in connectors:
-        exists = db.scalar(
-            select(Delivery.id).where(
+        earlier = db.scalars(
+            select(Delivery).where(
                 Delivery.submission_id == submission.id,
                 Delivery.channel == connector.kind,
                 Delivery.test_mode.is_(connector.test_mode),
             )
-        )
-        if exists is not None:
+        ).all()
+        if any(d.revision == revision for d in earlier):
             continue
-        db.add(
-            Delivery(
-                submission_id=submission.id,
-                channel=connector.kind,
-                status="pending",
-                test_mode=connector.test_mode,
-                message=full_text if connector.mode == "full" else alert(character, cycle),
-                sent_by=staff.id,
-                next_attempt_at=now(),
+        update = any(d.status == "sent" for d in earlier)
+        if connector.mode == "full":
+            message = update_text if update else full_text
+        else:
+            message = alert(character, cycle, updated=update)
+        # One the worker is sending now is locked, and left to go.
+        waiting = db.scalar(
+            select(Delivery)
+            .where(
+                Delivery.id.in_([d.id for d in earlier]),
+                Delivery.status == "pending",
             )
+            .limit(1)
+            .with_for_update(skip_locked=True)
         )
-        queued += 1
+        row = waiting or Delivery(
+            submission_id=submission.id,
+            channel=connector.kind,
+            status="pending",
+            test_mode=connector.test_mode,
+            sent_by=staff.id,
+            next_attempt_at=now(),
+        )
+        row.revision = revision
+        row.message = message
+        row.subject = "updated downtime results" if update else ""
+        if waiting is None:
+            db.add(row)
+            queued += 1
     return queued
 
 
@@ -175,7 +198,8 @@ def send_one(db: Session, delivery: Delivery, at: datetime) -> None:
             .join(User, Character.player_id == User.id)
             .where(Submission.id == delivery.submission_id)
         ).one()
-        subject = f"{troupe.name}: downtime results for {character.name} ({cycle.name})"
+        what = delivery.subject or "downtime results"
+        subject = f"{troupe.name}: {what} for {character.name} ({cycle.name})"
         link = results_link(character)
     delivery.attempts += 1
     connector = CONNECTORS.get(delivery.channel)

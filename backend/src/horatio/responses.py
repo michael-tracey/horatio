@@ -7,9 +7,11 @@ assigned to them, can accept one assigned to any narrator (it then becomes
 theirs), and can decline one, which sends it back unassigned. Narrators see
 the question, the player's answer and the character's name, never the sheet.
 
-Delivery sends a submission's written responses to its player, once per
-channel. The only channel today is Horatio itself: the player reads the
-results in the app. Discord and email need credentials and come later.
+Delivery sends a submission's written responses to its player: in Horatio, and
+on each connector the troupe has on (horatio.delivery). By default only
+downtimes with every response written go. Responses can still be written or
+changed once delivered; the downtime then shows as changed, and the next
+delivery sends it again as an update.
 """
 
 import random
@@ -18,7 +20,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from horatio import audit, delivery, feeding
@@ -219,8 +221,6 @@ def write(db: Session, staff: User, item: WorkItem, troupe: Troupe, body: str) -
     if item.cycle.status == "complete":
         raise conflict("This cycle is complete.")
     response = item.response
-    if delivered(db, item.answer.submission_id):
-        raise conflict("These results have already been delivered.")
     response.body = body.strip()
     if response.body:
         response.status = "written"
@@ -283,18 +283,27 @@ def troupe_tables(db: Session, troupe: Troupe) -> dict[str, list[str]]:
 # --- delivery ---------------------------------------------------------------------------
 
 
-def delivered(db: Session, submission_id: uuid.UUID) -> bool:
-    return (
-        db.scalar(
-            select(Delivery.id).where(
-                Delivery.submission_id == submission_id,
-                Delivery.channel == "horatio",
-                Delivery.status == "sent",
-                Delivery.test_mode.is_(False),
-            )
+def last_delivery(db: Session, submission_id: uuid.UUID) -> Delivery | None:
+    """The submission's latest delivery in Horatio: the results its player reads."""
+    return db.scalar(
+        select(Delivery)
+        .where(
+            Delivery.submission_id == submission_id,
+            Delivery.channel == "horatio",
+            Delivery.status == "sent",
+            Delivery.test_mode.is_(False),
         )
-        is not None
+        .order_by(Delivery.revision.desc())
+        .limit(1)
     )
+
+
+def delivered(db: Session, submission_id: uuid.UUID) -> bool:
+    return last_delivery(db, submission_id) is not None
+
+
+HEADING = "**Downtime results for "
+UPDATED_HEADING = "**Updated downtime results for "
 
 
 def compose(db: Session, cycle: DowntimeCycle, character: Character, submission: Submission) -> str:
@@ -307,7 +316,7 @@ def compose(db: Session, cycle: DowntimeCycle, character: Character, submission:
         .where(Answer.submission_id == submission.id, Response.status == "written")
         .order_by(Question.position, Answer.slot)
     )
-    parts = [f"**Downtime results for {character.name} ({cycle.name})**"]
+    parts = [f"{HEADING}{character.name} ({cycle.name})**"]
     fed = feeding.compose(db, submission)
     if fed is not None:
         parts.append(fed)
@@ -318,20 +327,40 @@ def compose(db: Session, cycle: DowntimeCycle, character: Character, submission:
     return "\n\n".join(parts)
 
 
-def deliver_cycle(
-    db: Session, staff: User, cycle: DowntimeCycle, troupe: Troupe
-) -> tuple[int, int]:
-    """Deliver every submission that has written responses: in Horatio, where it
-    was not delivered already, and queued on each of the troupe's connectors that
-    has nothing for it yet; with them, the quest results recorded through the cycle
-    (horatio.quest_actions). Returns how many were delivered in Horatio, and how
-    many deliveries were queued on connectors."""
-    from horatio import quest_actions
+def as_update(message: str) -> str:
+    """The results, headed as an update, for a channel that had them before."""
+    return message.replace(HEADING, UPDATED_HEADING, 1) if message.startswith(HEADING) else message
 
-    if cycle.status not in ("closed", "complete"):
-        raise conflict("Close the cycle before delivering results.")
+
+@dataclass
+class Readiness:
+    """Where one submitted downtime stands for delivery."""
+
+    submission: Submission
+    character: Character
+    # Responses written, with the feeding answer for a character who feeds, of all
+    # there are to write.
+    answered: int
+    to_answer: int
+    # Its latest delivery in Horatio, if it has had one; and whether the results
+    # would read differently now, from responses written or changed since.
+    last: Delivery | None
+    changed: bool
+
+    @property
+    def finished(self) -> bool:
+        return self.answered == self.to_answer
+
+    @property
+    def due(self) -> bool:
+        """Something its player has not had: first results, or a change since."""
+        return self.changed if self.last is not None else self.answered > 0
+
+
+def readiness(db: Session, cycle: DowntimeCycle) -> list[Readiness]:
+    """Each submitted downtime in the cycle, by character name, and how ready it is."""
     rows = db.execute(
-        select(Submission, Character)
+        select(Submission, CycleParticipant, Character)
         .join(CycleParticipant, Submission.participant_id == CycleParticipant.id)
         .join(Character, CycleParticipant.character_id == Character.id)
         .where(
@@ -339,44 +368,136 @@ def deliver_cycle(
             CycleParticipant.removed_at.is_(None),
             Submission.status == "submitted",
         )
-    )
-    connectors = delivery.enabled_connectors(db, troupe.id)
-    count = queued = 0
-    for submission, character in rows:
-        has_written = db.scalar(
-            select(Response.id)
-            .join(Answer, Response.answer_id == Answer.id)
-            .where(Answer.submission_id == submission.id, Response.status == "written")
-            .limit(1)
+        .order_by(Character.name)
+    ).all()
+    ids = [s.id for s, _, _ in rows]
+    counts = {
+        submission_id: (total, written)
+        for submission_id, total, written in db.execute(
+            select(
+                Answer.submission_id,
+                func.count(Response.id),
+                func.count(Response.id).filter(Response.status == "written"),
+            )
+            .join(Response, Response.answer_id == Answer.id)
+            .where(Answer.submission_id.in_(ids))
+            .group_by(Answer.submission_id)
         )
-        if has_written is None and submission.feeding_result is None:
-            continue
-        message = compose(db, cycle, character, submission)
-        queued += delivery.queue(db, staff, connectors, cycle, character, submission, message)
-        if delivered(db, submission.id):
-            continue
-        feeding.mark_half_blood(db, character, submission)
-        db.add(
-            Delivery(
-                submission_id=submission.id,
-                channel="horatio",
-                status="sent",
-                message=message,
-                sent_by=staff.id,
-                sent_at=now(),
-                attempts=1,
+    }
+    lasts: dict[uuid.UUID, Delivery] = {}
+    for d in db.scalars(
+        select(Delivery)
+        .where(
+            Delivery.submission_id.in_(ids),
+            Delivery.channel == "horatio",
+            Delivery.status == "sent",
+            Delivery.test_mode.is_(False),
+        )
+        .order_by(Delivery.revision)
+    ):
+        assert d.submission_id is not None
+        lasts[d.submission_id] = d
+    found: list[Readiness] = []
+    for submission, participant, character in rows:
+        total, written = counts.get(submission.id, (0, 0))
+        fed = submission.feeding_result is not None
+        feeds = fed or feeding.participant_basis(db, participant, character, cycle).get("clan")
+        last = lasts.get(submission.id)
+        found.append(
+            Readiness(
+                submission=submission,
+                character=character,
+                answered=written + fed,
+                to_answer=total + bool(feeds),
+                last=last,
+                changed=last is not None
+                and compose(db, cycle, character, submission) != last.message,
             )
         )
-        notify(
+    return found
+
+
+def up_to_date(
+    db: Session, cycle: DowntimeCycle, character: Character, submission: Submission
+) -> bool:
+    """Whether the player has the submission's results as they stand."""
+    last = last_delivery(db, submission.id)
+    return last is not None and last.message == compose(db, cycle, character, submission)
+
+
+@dataclass
+class Delivered:
+    # Delivered in Horatio, how many of those as updates, and how many deliveries
+    # were queued on connectors.
+    delivered: int = 0
+    updated: int = 0
+    queued: int = 0
+
+
+def deliver_cycle(
+    db: Session, staff: User, cycle: DowntimeCycle, troupe: Troupe, *, partial: bool = False
+) -> Delivered:
+    """Deliver each submission with something new for its player: every one whose
+    responses are all written (and, with `partial`, those partly answered too),
+    for the first time, or again as an update if responses were written or
+    changed since. Each goes out in Horatio and is queued on each of the troupe's
+    connectors that has not had it; with them go the quest results recorded
+    through the cycle (horatio.quest_actions)."""
+    from horatio import quest_actions
+
+    if cycle.status not in ("closed", "complete"):
+        raise conflict("Close the cycle before delivering results.")
+    connectors = delivery.enabled_connectors(db, troupe.id)
+    done = Delivered()
+    for ready in readiness(db, cycle):
+        submission, character, last = ready.submission, ready.character, ready.last
+        if ready.due and (ready.finished or partial):
+            message = compose(db, cycle, character, submission)
+            revision = last.revision + 1 if last is not None else 1
+            # A feeding answer new to the player sets their Blood at the next game.
+            fed = feeding.compose(db, submission)
+            if fed is not None and (last is None or fed not in last.message):
+                feeding.mark_half_blood(db, character, submission)
+            db.add(
+                Delivery(
+                    submission_id=submission.id,
+                    channel="horatio",
+                    revision=revision,
+                    status="sent",
+                    message=message,
+                    sent_by=staff.id,
+                    sent_at=now(),
+                    attempts=1,
+                )
+            )
+            news = "have been updated" if last is not None else "are ready"
+            notify(
+                db,
+                [character.player_id],
+                "downtime.delivered",
+                f"Downtime results for {character.name} ({cycle.name}) {news}.",
+                f"/characters/{character.id}/results",
+                troupe_id=troupe.id,
+                character_id=character.id,
+            )
+            done.delivered += 1
+            done.updated += last is not None
+        elif last is not None:
+            # Nothing new; a connector switched on since still gets what was sent.
+            message, revision = last.message, last.revision
+        else:
+            continue
+        done.queued += delivery.queue(
             db,
-            [character.player_id],
-            "downtime.delivered",
-            f"Downtime results for {character.name} ({cycle.name}) are ready.",
-            f"/characters/{character.id}/results",
-            troupe_id=troupe.id,
-            character_id=character.id,
+            staff,
+            connectors,
+            cycle,
+            character,
+            submission,
+            message,
+            as_update(message),
+            revision,
         )
-        count += 1
     db.flush()
     quest_actions.deliver(db, staff, cycle)
     audit.record(
@@ -385,10 +506,11 @@ def deliver_cycle(
         "downtime.delivered",
         troupe_id=troupe.id,
         cycle_id=cycle.id,
-        count=count,
-        queued=queued,
+        count=done.delivered,
+        updated=done.updated,
+        queued=done.queued,
     )
-    return count, queued
+    return done
 
 
 def complete_cycle(db: Session, staff: User, cycle: DowntimeCycle) -> None:

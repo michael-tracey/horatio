@@ -152,15 +152,24 @@ class Roll(BaseModel):
 
 
 class Delivered(BaseModel):
-    # Delivered in Horatio, and queued on the troupe's connectors.
+    # Delivered in Horatio, how many of those again as updates, and how many
+    # copies were queued on the troupe's connectors.
     delivered: int
+    updated: int = 0
     queued: int = 0
+
+
+class DeliverIn(BaseModel):
+    # Also deliver downtimes with responses still to write.
+    partial: bool = False
 
 
 class ResultOut(BaseModel):
     cycle_id: uuid.UUID
     cycle_name: str
     delivered_at: datetime | None
+    # Delivered again since, with responses written or changed after the first time.
+    updated: bool = False
     message: str
 
 
@@ -431,11 +440,17 @@ def roll_table(troupe_id: uuid.UUID, name: str, db: DbSession, user: CurrentUser
 
 
 @router.post("/cycles/{cycle_id}/deliver")
-def deliver(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Delivered:
+def deliver(
+    cycle_id: uuid.UUID, db: DbSession, user: CurrentUser, body: DeliverIn | None = None
+) -> Delivered:
+    """Deliver the downtimes with every response written, or with `partial` those
+    partly answered too: for the first time, or as an update if changed since."""
     cycle, troupe = staff_cycle(db, user, cycle_id, TroupeAction.DELIVER_RESPONSES)
-    count, queued = responses.deliver_cycle(db, user, cycle, troupe)
+    done = responses.deliver_cycle(
+        db, user, cycle, troupe, partial=body is not None and body.partial
+    )
     db.commit()
-    return Delivered(delivered=count, queued=queued)
+    return Delivered(delivered=done.delivered, updated=done.updated, queued=done.queued)
 
 
 @router.post("/cycles/{cycle_id}/complete")
@@ -448,7 +463,8 @@ def complete(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Delivered
 
 @router.get("/characters/{character_id}/downtime/results")
 def my_results(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[ResultOut]:
-    """Delivered downtime results for the player's character, newest first."""
+    """Delivered downtime results for the player's character, newest first: for
+    each cycle, the latest delivery, which has every response as it was then."""
     character = players_character(db, user, character_id)
     rows = db.execute(
         select(Delivery, DowntimeCycle)
@@ -461,9 +477,18 @@ def my_results(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> lis
             Delivery.status == "sent",
             Delivery.test_mode.is_(False),
         )
-        .order_by(DowntimeCycle.id.desc())
+        .order_by(DowntimeCycle.id.desc(), Delivery.revision.desc())
     )
-    return [
-        ResultOut(cycle_id=c.id, cycle_name=c.name, delivered_at=d.sent_at, message=d.message)
-        for d, c in rows
-    ]
+    latest: dict[uuid.UUID, ResultOut] = {}
+    for d, c in rows:
+        latest.setdefault(
+            c.id,
+            ResultOut(
+                cycle_id=c.id,
+                cycle_name=c.name,
+                delivered_at=d.sent_at,
+                updated=d.revision > 1,
+                message=d.message,
+            ),
+        )
+    return list(latest.values())
