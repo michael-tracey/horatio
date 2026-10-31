@@ -86,6 +86,15 @@ function saved(creation: CreationOut): { picks: Record<string, Picks>; details: 
   return { picks, details };
 }
 
+/** How long after the last tap a step saves itself. */
+const AUTOSAVE_AFTER = 1000;
+
+/** Whether a category's picks, or the fields given them, differ from those of another time. */
+function differs(picks: Picks, details: Record<string, string>, otherPicks: Picks, otherDetails: Record<string, string>): boolean {
+  const entries = (p: Picks) => JSON.stringify(Object.entries(p).sort());
+  return entries(picks) !== entries(otherPicks) || Object.keys(picks).some((key) => (details[key] ?? "").trim() !== (otherDetails[key] ?? ""));
+}
+
 function allowedFor(creation: CreationOut, category: string): Allowed {
   return Object.fromEntries(creation.pools.filter((p) => p.category === category).map((p) => [p.rating, p.allowed]));
 }
@@ -206,9 +215,23 @@ function StepView({
   const savedKey = JSON.stringify(saved(creation));
   const { picks: before, details: savedDetail } = useMemo(() => JSON.parse(savedKey) as ReturnType<typeof saved>, [savedKey]);
   const [picks, setPicks] = useState<Record<string, Picks>>(before);
-  useEffect(() => setPicks(before), [before]);
   const [details, setDetails] = useState(savedDetail);
-  useEffect(() => setDetails(savedDetail), [savedDetail]);
+  // The picks the server last had, as loaded or as last sent. New saved picks replace a
+  // category's only where nothing was tapped since: a tap made while a save is on its
+  // way is kept, and saved next.
+  const synced = useRef({ picks: before, details: savedDetail });
+  useEffect(() => {
+    const was = synced.current;
+    synced.current = { picks: before, details: savedDetail };
+    const untouched = (c: string) => !differs(picks[c] ?? {}, details[c] ?? {}, was.picks[c] ?? {}, was.details[c] ?? {});
+    const categories = new Set([...Object.keys(picks), ...Object.keys(before)]);
+    setPicks(Object.fromEntries([...categories].map((c) => [c, untouched(c) ? (before[c] ?? {}) : (picks[c] ?? {})])));
+    // A field typed with a space at its end keeps it: only what was saved is trimmed.
+    const typed = (c: string) =>
+      Object.fromEntries(Object.entries(savedDetail[c] ?? {}).map(([key, value]) => [key, details[c]?.[key]?.trim() === value ? details[c]![key]! : value]));
+    setDetails(Object.fromEntries([...categories].map((c) => [c, untouched(c) ? typed(c) : (details[c] ?? {})])));
+    // Only new saved picks start this; the taps it reads are those of the same render.
+  }, [before, savedDetail]);
   // A Crafts, Performance or Science with no field, a Retainer with no name, or two
   // with one field or name: by category, then pick. A Retainer saved without a name,
   // from before each was named, may stay so.
@@ -222,29 +245,32 @@ function StepView({
   );
 
   // The categories whose picks or fields differ from those saved.
-  const changed = step.categories.filter((category) => {
-    const mine = picks[category] ?? {};
-    const detail = details[category] ?? {};
-    return !(
-      JSON.stringify(Object.entries(mine).sort()) === JSON.stringify(Object.entries(before[category] ?? {}).sort()) &&
-      Object.keys(mine).every((key) => (detail[key] ?? "").trim() === (savedDetail[category]?.[key] ?? ""))
+  const changed = step.categories.filter((c) => differs(picks[c] ?? {}, details[c] ?? {}, before[c] ?? {}, savedDetail[c] ?? {}));
+  const trimmed = (category: string) => Object.fromEntries(Object.entries(details[category] ?? {}).map(([key, value]) => [key, value.trim()]));
+  const put = (category: string) =>
+    unwrap(
+      api.PUT("/api/characters/{character_id}/creation/categories/{category}", {
+        params: { path: { character_id: character.id, category } },
+        body: { picks: Object.entries(picks[category] ?? {}).map(([key, rating]) => ({ name: traitOf(key), rating, detail: (details[category]?.[key] ?? "").trim() })) },
+        // Kept going if the page is closed meanwhile.
+        keepalive: true,
+      }),
     );
-  });
   const client = useQueryClient();
+  const [savedAt, setSavedAt] = useState<Date>();
   const save = useAction(async () => {
+    const sent = changed.map((c) => [c, picks[c] ?? {}, trimmed(c)] as const);
+    if (!sent.length) return needs;
     let now: CreationOut | undefined;
-    for (const category of changed) {
-      const detail = details[category] ?? {};
-      now = await unwrap(
-        api.PUT("/api/characters/{character_id}/creation/categories/{category}", {
-          params: { path: { character_id: character.id, category } },
-          body: { picks: Object.entries(picks[category] ?? {}).map(([key, rating]) => ({ name: traitOf(key), rating, detail: (detail[key] ?? "").trim() })) },
-        }),
-      );
-    }
+    for (const [category] of sent) now = await put(category);
+    synced.current = {
+      picks: { ...synced.current.picks, ...Object.fromEntries(sent.map(([c, p]) => [c, p])) },
+      details: { ...synced.current.details, ...Object.fromEntries(sent.map(([c, , d]) => [c, d])) },
+    };
     // The last save says what the step still needs. Shown at once (the notice below),
     // not once every query on the page has been asked again.
     client.setQueryData(["creation", character.id], now);
+    setSavedAt(new Date());
     return now!.needs.filter((n) => step.categories.includes(n.step));
   });
   const needs = creation.needs.filter((n) => step.categories.includes(n.step));
@@ -258,6 +284,50 @@ function StepView({
     if (!changed.length) return forward && needs.length ? undefined : to?.();
     save.mutate(undefined, { onSuccess: (left) => (forward && left.length ? undefined : to?.()) });
   };
+
+  // Each step saves itself a moment after the last tap, as Concept does, and on being
+  // left by any route: the step list, Back, another page, or the tab closing or hidden.
+  // Two picks of one trait with one field, or none yet, wait until they differ.
+  const clash = step.categories.some((c) => {
+    const seen = new Set<string>();
+    return Object.keys(picks[c] ?? {}).some((key) => {
+      const one = `${traitOf(key)}/${(details[c]?.[key] ?? "").trim().toLowerCase()}`;
+      return seen.has(one) || !seen.add(one);
+    });
+  });
+  const draft = JSON.stringify(step.categories.map((c) => [picks[c] ?? {}, trimmed(c)])) + savedKey;
+  // A draft already tried against these saved picks (refused, or saved as something
+  // else) is not sent again until it or they change.
+  const tried = useRef("");
+  const ready = changed.length > 0 && !clash;
+  const { mutate: send, isPending: saving } = save;
+  useEffect(() => {
+    if (!ready || saving || tried.current === draft) return;
+    const timer = setTimeout(() => {
+      tried.current = draft;
+      send(undefined);
+    }, AUTOSAVE_AFTER);
+    return () => clearTimeout(timer);
+  }, [ready, saving, draft, send]);
+  const leaving = useRef<(how: "hidden" | "gone" | "closing") => void>(undefined);
+  leaving.current = (how) => {
+    const dirty = step.categories.filter((c) => differs(picks[c] ?? {}, details[c] ?? {}, synced.current.picks[c] ?? {}, synced.current.details[c] ?? {}));
+    if (!dirty.length || clash) return;
+    // A page being closed has no time for one save after another.
+    if (how === "closing") for (const c of dirty) put(c).catch(() => undefined);
+    else if (how === "gone" || !saving) send(undefined);
+  };
+  useEffect(() => {
+    const hidden = () => document.visibilityState === "hidden" && leaving.current?.("hidden");
+    const closing = () => leaving.current?.("closing");
+    document.addEventListener("visibilitychange", hidden);
+    window.addEventListener("pagehide", closing);
+    return () => {
+      document.removeEventListener("visibilitychange", hidden);
+      window.removeEventListener("pagehide", closing);
+      leaving.current?.("gone");
+    };
+  }, []);
 
   // Taking a merit that makes an in-clan choice (Vestiges of Greatness) saves the step at
   // once, so the choice is offered under it rather than only on Concept (#216).
@@ -368,8 +438,8 @@ function StepView({
         </div>
       )}
       {step.key === "merits" && <FreeTraitsToChoose character={character} sheet={sheet} />}
-      {/* Held while saving: the save reloads the picks, which would drop a tap made meanwhile. */}
-      <fieldset disabled={save.isPending} className="flex min-w-0 flex-col gap-8">
+      {/* Not held while saving: a tap made meanwhile is kept, and saved next. */}
+      <fieldset className="flex min-w-0 flex-col gap-8">
         {step.categories.map((category) => {
           const pools = creation.pools.filter((p) => p.category === category);
           const mine = picks[category] ?? {};
@@ -455,10 +525,15 @@ function StepView({
         </div>
       )}
       <ErrorText error={save.error} />
-      <div className="mt-6 flex justify-between gap-2 border-t border-ash pt-4">
+      <div className="mt-6 flex items-center justify-between gap-2 border-t border-ash pt-4">
         <Button variant="secondary" disabled={!onBack || save.isPending} onClick={() => move(onBack, false)}>
           Back
         </Button>
+        {step.categories.length > 0 && (
+          <p className="ml-auto text-xs text-mist" aria-live="polite">
+            {save.isPending ? "Saving…" : savedAt && !changed.length ? `Saved ${savedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}
+          </p>
+        )}
         {onNext && (
           <Button disabled={save.isPending} onClick={() => move(onNext, true)}>
             Save and continue

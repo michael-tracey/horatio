@@ -124,6 +124,7 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   await next("Merits & flaws");
   await next("Review");
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
   await p.locator("main").getByRole("link", { name: "Experience", exact: true }).click();
   await expect(p.getByText(`Starting experience: ${troupeName}'s XP floor`)).toBeVisible();

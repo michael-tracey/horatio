@@ -131,6 +131,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await next("Review");
   await p.screenshot(shots("review"));
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
   const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
   // Health is boxes to tick, like the paper sheet: three of each to start, and no dots.

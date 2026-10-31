@@ -69,6 +69,7 @@ test("a Caitiff takes Vestiges of Greatness on Merits, swaps Celerity for Dement
   await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible();
   await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
 });
 
@@ -154,6 +155,7 @@ test("a Caitiff chooses three common disciplines on Concept, takes Vestiges of G
   await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Review/ }).click();
   await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
 });
 
@@ -225,6 +227,7 @@ for (const forTroupe of [false, true]) {
     await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
     await expect(p.getByRole("listitem").filter({ hasText: "Disciplines at 1" })).toContainText("Protean");
     await p.getByRole("button", { name: "Finish creation" }).click();
+    await p.getByRole("button", { name: "Yes, finish creation" }).click();
     await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
   });
 }
@@ -257,6 +260,7 @@ test("a Caitiff with Vestiges of Greatness is shown its choice on Disciplines, m
   await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0, { timeout: 15_000 });
   await expect(p.getByRole("listitem").filter({ hasText: "Disciplines at 2" })).toContainText("Dementation");
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
 });
 
@@ -288,6 +292,7 @@ test("a Brujah takes Additional Uncommon Discipline on Merits, is held back unti
   await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Review/ }).click();
   await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
 });
 
@@ -358,6 +363,7 @@ test("Thin Blooded taken after the Disciplines step shows the new budget there, 
   await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Review/ }).click();
   await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
 });
 
@@ -392,6 +398,7 @@ test("an Angelis Ater chooses its third in-clan discipline on Disciplines, place
   await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible();
   await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
 });
 
@@ -427,6 +434,7 @@ test("Inept lets the player choose the discipline that loses its free dot, from 
   await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Review/ }).click();
   await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
   await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
 
   // Presence is priced out-of-clan now: a first dot costs what one of Auspex does.
