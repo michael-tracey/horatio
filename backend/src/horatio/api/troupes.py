@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Sequence
 from datetime import datetime
 from typing import Literal
 
@@ -20,10 +21,10 @@ from horatio.models import (
 from horatio.permissions import (
     Role,
     TroupeAction,
-    can_see_whos_who,
     require_custodian,
     require_troupe_action,
-    troupe_role,
+    troupe_roles,
+    whos_who_troupes,
 )
 from horatio.rules.splats import SPLATS, splat_order
 
@@ -215,7 +216,21 @@ def closing_out(db: DbSession, found: closing.Affected) -> ClosingOut:
 
 
 def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
-    figures = xp_range.figures(db, troupe)
+    return troupes_out(db, user, [troupe])[0]
+
+
+def troupes_out(db: DbSession, user: User, troupes: Sequence[Troupe]) -> list[TroupeOut]:
+    """As `troupe_out` for each, asking the database a few times in all rather than
+    a few times for each troupe: the list of troupes is asked for on many pages."""
+    figures = xp_range.figures_of(db, troupes)
+    roles = troupe_roles(db, user, troupes)
+    whos_who = whos_who_troupes(db, user, troupes, roles)
+    return [one_out(t, figures[t.id], roles[t.id], t.id in whos_who) for t in troupes]
+
+
+def one_out(
+    troupe: Troupe, figures: xp_range.Figures, role: Role | None, whos_who: bool
+) -> TroupeOut:
     return TroupeOut(
         id=troupe.id,
         name=troupe.name,
@@ -241,11 +256,11 @@ def troupe_out(db: DbSession, user: User, troupe: Troupe) -> TroupeOut:
         whos_who_negative=troupe.whos_who_negative,
         quests_enabled=troupe.quests_enabled,
         quest_requests_per_cycle=troupe.quest_requests_per_cycle,
-        whos_who=can_see_whos_who(db, user, troupe),
+        whos_who=whos_who,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
         banner=pictures.banner_url(troupe.id, troupe.banner_id),
         public=troupe.public,
-        my_role=troupe_role(db, user, troupe),
+        my_role=role,
     )
 
 
@@ -274,7 +289,7 @@ def existing_user(db: DbSession, handle: str) -> User:
 def list_troupes(db: DbSession, user: CurrentUser) -> list[TroupeOut]:
     """Every troupe still running. Players need to see them to ask to join."""
     troupes = db.scalars(select(Troupe).where(Troupe.archived_at.is_(None)).order_by(Troupe.name))
-    return [troupe_out(db, user, t) for t in troupes]
+    return troupes_out(db, user, list(troupes))
 
 
 @router.get("/archived")

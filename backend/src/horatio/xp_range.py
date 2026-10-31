@@ -19,6 +19,8 @@ earlier one.
 and caps. XP a flaw pays back is traded for the flaw, not given, and is left out.
 """
 
+import uuid
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from typing import Any, Literal
 
@@ -49,19 +51,28 @@ class Figures:
 
 
 def figures(db: Session, troupe: Troupe) -> Figures:
-    totals = {
-        kind: (count, floor or 0, ceiling or 0)
-        for kind, count, floor, ceiling in db.execute(
-            select(
-                XpRangeEntry.kind,
-                func.count(),
-                func.sum(XpRangeEntry.floor_change),
-                func.sum(XpRangeEntry.ceiling_change),
-            )
-            .where(XpRangeEntry.troupe_id == troupe.id)
-            .group_by(XpRangeEntry.kind)
+    return figures_of(db, [troupe])[troupe.id]
+
+
+def figures_of(db: Session, troupes: Sequence[Troupe]) -> dict[uuid.UUID, Figures]:
+    """Each troupe's figures, asked of the database once."""
+    totals: dict[uuid.UUID, dict[str, tuple[int, int, int]]] = {t.id: {} for t in troupes}
+    for troupe_id, kind, count, floor, ceiling in db.execute(
+        select(
+            XpRangeEntry.troupe_id,
+            XpRangeEntry.kind,
+            func.count(),
+            func.sum(XpRangeEntry.floor_change),
+            func.sum(XpRangeEntry.ceiling_change),
         )
-    }
+        .where(XpRangeEntry.troupe_id.in_([t.id for t in troupes]))
+        .group_by(XpRangeEntry.troupe_id, XpRangeEntry.kind)
+    ):
+        totals[troupe_id][kind] = (count, floor or 0, ceiling or 0)
+    return {t.id: summed(t, totals[t.id]) for t in troupes}
+
+
+def summed(troupe: Troupe, totals: dict[str, tuple[int, int, int]]) -> Figures:
     games, game_floor, _ = totals.get("game", (0, 0, 0))
     downtimes, _, downtime_ceiling = totals.get("downtime", (0, 0, 0))
     _, set_floor, set_ceiling = totals.get("set", (0, 0, 0))
