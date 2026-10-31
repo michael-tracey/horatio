@@ -149,6 +149,14 @@ test("a blood hunt: staff give a Primogen Bloodhunted, which brings Forsaken, lo
   await expect(card.getByRole("listitem", { name: "Noble" })).not.toContainText("lost");
   await expect(card.getByRole("listitem", { name: "Forsaken" })).toBeVisible();
   await expect(card.getByText("Fleeting: 0 of 3")).toBeVisible();
+
+  // The status rules page says what it does and where it comes from; no title gives it.
+  await l.goto(`/troupes/${troupeId}/rules/status`);
+  const hunted = l.getByRole("listitem", { name: "Bloodhunted", exact: true });
+  await expect(hunted.getByText("negative", { exact: true })).toBeVisible();
+  await expect(hunted).toContainText("Censure: Lose all abiding, innate and fleeting status for good, and gain Forsaken.");
+  await expect(hunted).toContainText("Comes from: A Prince's blood hunt, by spending Sovereign");
+  await expect(hunted).not.toContainText("Given here by");
 });
 
 test("Status & Titles: a Camarilla player sees the status held with its sources, takes Harpy from the titles sidebar and gains its status, switches to Keeper of Elysium, and opens a status ban, on desktop and phone (#321, #339)", async ({ browser }) => {
