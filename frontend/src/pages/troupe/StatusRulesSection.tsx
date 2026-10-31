@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "../../api/client";
 import type { StatusRuleOut } from "../../api/types";
+import { Explainer } from "../../components/Explainer";
 import { pageLabel } from "../../components/TraitInfo";
 import { Badge, Card, ErrorText, Loading } from "../../components/ui";
 import { NO_RULES_YET } from "../character/status";
@@ -22,7 +23,7 @@ export function StatusRulesSection({ troupeId }: { troupeId: string }) {
   const capsPage = pageLabel(caps.page);
   return (
     <div className="flex flex-col gap-6">
-      <Card title="How status works">
+      <Explainer id="rules-status" title="How status works">
         <dl className="grid gap-x-4 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
           {STATUS_TYPES.map((t) => (
             <div key={t.type} className="contents">
@@ -40,7 +41,7 @@ export function StatusRulesSection({ troupeId }: { troupeId: string }) {
           its social age), all its innate and negative status, and up to {caps.fleeting} fleeting status: {caps.lesser_ban} under a lesser status ban,{" "}
           {caps.greater_ban} under a greater.{capsPage && ` ${capsPage}.`}
         </p>
-      </Card>
+      </Explainer>
       {sects.map((s) => {
         const page = pageLabel(s.page);
         return (

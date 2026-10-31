@@ -2,8 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, EquipmentItemOut, EquipmentReceiverOut } from "../../api/types";
+import { EmptyState } from "../../components/EmptyState";
 import { pageLabel } from "../../components/TraitInfo";
-import { Badge, Empty, ErrorText, Loading, Notice } from "../../components/ui";
+import { Badge, Card, ErrorText, Loading, Notice } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { ItemActions } from "./ItemActions";
@@ -51,11 +52,13 @@ export function EquipmentTab({ character }: { character: CharacterOut }) {
     return (
       <div className="flex flex-col gap-3">
         {notice}
-        <Empty>
-          {can_give && character.status === "active"
-            ? "No equipment yet. Give it with Give equipment, above."
-            : NO_EQUIPMENT}
-        </Empty>
+        <Card>
+          <EmptyState title="No equipment yet.">
+            {can_give && character.status === "active"
+              ? "Give it with Give equipment, above."
+              : "Your storytellers give equipment. Weapons, armour, other gear and Vampiric Texts show here once given."}
+          </EmptyState>
+        </Card>
       </div>
     );
   return (

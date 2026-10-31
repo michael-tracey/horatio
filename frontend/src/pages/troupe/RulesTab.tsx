@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Route, Routes } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CheckOut } from "../../api/types";
+import { Explainer } from "../../components/Explainer";
 import { Badge, Card, ErrorText, Input, Loading, PageTabs, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { AllowancesSection } from "./AllowancesSection";
@@ -142,7 +143,7 @@ function ChecksSection({ troupeId, canEdit }: { troupeId: string; canEdit: boole
 
   return (
     <div className="flex flex-col gap-6">
-      <Card title="How rules work">
+      <Explainer id="rules-checks" title="How rules work">
         <p className="mb-3 text-sm">
           Each rule below comes from the rule set and says what a sheet may hold, with the book page, and how
           this troupe plays it.{" "}
@@ -161,7 +162,7 @@ function ChecksSection({ troupeId, canEdit }: { troupeId: string; canEdit: boole
             </div>
           ))}
         </dl>
-      </Card>
+      </Explainer>
 
       <Card title="Rules">
         <div className="mb-4 flex flex-wrap items-center gap-3">

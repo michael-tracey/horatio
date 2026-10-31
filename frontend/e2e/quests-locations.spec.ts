@@ -438,7 +438,11 @@ test("the troupe's locations: a storyteller adds the Grove Arcade, is refused an
   await l.goto(`/troupes/${troupe.id}`);
   await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
   await l.getByRole("link", { name: "Locations", exact: true }).click();
+  // Nothing to filter yet: what goes here and how to start, and no filters.
   await expect(l.getByText("No locations yet.")).toBeVisible();
+  await expect(l.getByText(/Start with Add a location/)).toBeVisible();
+  await expect(l.getByLabel("Search locations")).toHaveCount(0);
+  await expect(l.getByLabel("Quality")).toHaveCount(0);
   await l.getByRole("button", { name: "Add a location" }).click();
   const add = l.getByRole("form", { name: "Add a location" });
   await add.getByLabel("Name", { exact: true }).fill("Grove Arcade");
@@ -478,8 +482,9 @@ test("the troupe's locations: a storyteller adds the Grove Arcade, is refused an
   await expect(l.getByText(/changed Grove Arcade: negatives \+Compromised ×1, secret \(hunters\)/)).toBeVisible();
   await l.screenshot(shots("location"));
 
-  // Back on the list, it's found by its quality.
+  // Back on the list, now with filters, it's found by its quality.
   await l.getByRole("link", { name: "← All locations" }).click();
+  await expect(l.getByLabel("Search locations")).toBeVisible();
   await l.getByLabel("Quality").selectOption("Haunt");
   await expect(l.getByRole("list", { name: "Locations" }).getByRole("link", { name: "Grove Arcade" })).toBeVisible();
   await l.getByLabel("Quality").selectOption("Workshop");

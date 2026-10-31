@@ -3,6 +3,8 @@ import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { HolderOut, HouseTraitIn, HouseTraitOut } from "../../api/types";
 import { Dialog } from "../../components/Dialog";
+import { EmptyState } from "../../components/EmptyState";
+import { Explainer } from "../../components/Explainer";
 import { HouseMark } from "../../components/HouseMark";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
@@ -74,7 +76,7 @@ export function HouseTraitsSection({ troupeId, canEdit }: { troupeId: string; ca
 
   return (
     <div className="flex flex-col gap-6">
-      <Card title="How house merits and flaws work">
+      <Explainer id="rules-house-traits" title="How house merits and flaws work">
         <p className="text-sm">
           A house merit or flaw is this troupe's own. It shows with a <span className="text-gold">★</span> wherever it
           appears, and only characters whose home troupe this is, or that are being built for it, can hold one; never a
@@ -91,7 +93,7 @@ export function HouseTraitsSection({ troupeId, canEdit }: { troupeId: string; ca
           what it does shows under its description. One with no effects does what its description says, for you to rule
           on at the table.
         </p>
-      </Card>
+      </Explainer>
 
       {editing && (
         <HouseTraitEditor
@@ -114,7 +116,11 @@ export function HouseTraitsSection({ troupeId, canEdit }: { troupeId: string; ca
           )
         }
       >
-        {list.data.length === 0 && <p className="text-sm text-mist">The troupe has no merits or flaws of its own yet.</p>}
+        {list.data.length === 0 && (
+          <EmptyState title="The troupe has no merits or flaws of its own yet.">
+            {canEdit ? "Make one with Add a merit or flaw, above. It shows on sheets with a ★." : "Its storytellers make them; each shows on sheets with a ★."}
+          </EmptyState>
+        )}
         <ul className="divide-y divide-ash">
           {list.data.map((h) => (
             <li key={h.id} className="flex flex-col gap-1 py-2.5">

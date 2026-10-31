@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, HistoryEntryOut, InfluenceStandingOut } from "../../api/types";
+import { EmptyState, FilterBar } from "../../components/EmptyState";
+import { InfoButton } from "../../components/InfoButton";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
@@ -37,11 +39,13 @@ export function InfluenceTab({ character, mine }: { character: CharacterOut; min
     <div className="flex flex-col gap-4">
       <Card
         title="Influence"
+        info={
+          <InfoButton label="About influence">
+            Every influence action {character.name} has taken, wherever it was logged. Each dot of influence is one action a month.
+          </InfoButton>
+        }
         actions={h.log_troupe_id && <LogInfluenceButton troupeId={h.log_troupe_id} characterId={character.id} label={`Log influence for ${character.name}`} />}
       >
-        <p className="mb-3 text-sm text-mist">
-          Every influence action {character.name} has taken, wherever it was logged. Each dot of influence is one action a month.
-        </p>
         <section aria-label="This month">
           <h3 className="mb-1 font-sans text-xs text-mist uppercase">This month</h3>
           {month.length ? (
@@ -56,36 +60,45 @@ export function InfluenceTab({ character, mine }: { character: CharacterOut; min
             <p className="text-sm text-mist">No Elite or Underworld influence.</p>
           )}
         </section>
+        {h.entries.length === 0 && (
+          <div className="mt-3 border-t border-ash pt-2">
+            <EmptyState title={`${character.name} has no influence actions logged yet.`}>
+              An action taken in a downtime or spent at a game shows here once it is logged.
+            </EmptyState>
+          </div>
+        )}
       </Card>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-        <Field label="Type">
-          <Select value={filters.type} onChange={(e) => set({ type: e.target.value as HistoryFilters["type"], specialization: "" })}>
-            <option value="">Both</option>
-            <option value="elite">Elite</option>
-            <option value="underworld">Underworld</option>
-          </Select>
-        </Field>
-        <Field label="Specialisation">
-          <Select value={filters.specialization} onChange={(e) => set({ specialization: e.target.value })}>
-            <option value="">Any</option>
-            {specializations.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="From">
-          <Input type="date" value={filters.from} onChange={(e) => set({ from: e.target.value })} />
-        </Field>
-        <Field label="To">
-          <Input type="date" value={filters.to} onChange={(e) => set({ to: e.target.value })} />
-        </Field>
-        <label className="flex items-center gap-2 self-end pb-2 text-sm" title="What a Gossip or Word on the Street could still turn up">
-          <input type="checkbox" checked={filters.findable} onChange={(e) => set({ findable: e.target.checked })} />
-          Findable now (last {h.lookback_days} days)
-        </label>
-      </div>
-      {shown.length === 0 ? (
-        <Empty>{filtered ? "No influence actions match these filters." : `${character.name} has no influence actions logged yet.`}</Empty>
+      <FilterBar count={h.entries.length} filtering={filtered}>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          <Field label="Type">
+            <Select value={filters.type} onChange={(e) => set({ type: e.target.value as HistoryFilters["type"], specialization: "" })}>
+              <option value="">Both</option>
+              <option value="elite">Elite</option>
+              <option value="underworld">Underworld</option>
+            </Select>
+          </Field>
+          <Field label="Specialisation">
+            <Select value={filters.specialization} onChange={(e) => set({ specialization: e.target.value })}>
+              <option value="">Any</option>
+              {specializations.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="From">
+            <Input type="date" value={filters.from} onChange={(e) => set({ from: e.target.value })} />
+          </Field>
+          <Field label="To">
+            <Input type="date" value={filters.to} onChange={(e) => set({ to: e.target.value })} />
+          </Field>
+          <label className="flex items-center gap-2 self-end pb-2 text-sm" title="What a Gossip or Word on the Street could still turn up">
+            <input type="checkbox" checked={filters.findable} onChange={(e) => set({ findable: e.target.checked })} />
+            Findable now (last {h.lookback_days} days)
+          </label>
+        </div>
+      </FilterBar>
+      {h.entries.length === 0 ? null : shown.length === 0 ? (
+        <Empty>No influence actions match these filters.</Empty>
       ) : (
         <ul className="flex flex-col gap-3">
           {shown.map((entry) => (

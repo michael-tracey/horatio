@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Link, Route, Routes, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { InfluenceChoicesOut, InfluenceEntryIn, InfluenceEntryOut } from "../../api/types";
+import { EmptyState, FilterBar } from "../../components/EmptyState";
+import { InfoButton } from "../../components/InfoButton";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, PageTabs, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
@@ -73,6 +75,8 @@ function Log({ troupeId }: { troupeId: string }) {
   const types = choices.data.types.filter((t) => !filters.type || t.type === filters.type);
   const actions = [...new Map(types.flatMap((t) => t.actions).map((a) => [a.key, a])).values()];
   const specializations = [...new Set(types.flatMap((t) => t.specializations))].sort();
+  const filtering = JSON.stringify(filters) !== JSON.stringify(NO_FILTERS);
+  const none = !filtering && log.data?.total === 0;
   // Merge into the oldest selected: the list is newest first.
   const toMerge = (log.data?.entries ?? []).filter((e) => selected.includes(e.id)).reverse();
 
@@ -80,6 +84,7 @@ function Log({ troupeId }: { troupeId: string }) {
     <div className="flex flex-col gap-4">
       <Card
         title="Influence log"
+        info={<InfoButton label="About the influence log">Players never see this log, only their own characters' actions.</InfoButton>}
         actions={
           !adding && (
             <Button variant="secondary" onClick={() => setAdding(true)}>
@@ -88,61 +93,69 @@ function Log({ troupeId }: { troupeId: string }) {
           )
         }
       >
-        <p className="mb-3 text-sm text-mist">Every influence action taken in this troupe. Players never see this log, only their own characters' actions.</p>
+        {none && !adding ? (
+          <EmptyState title="No influence actions logged yet.">
+            Every influence action taken in this troupe goes here: those spent at a game log themselves, and downtime ones are logged with Log influence, above.
+          </EmptyState>
+        ) : (
+          <p className="mb-3 text-sm text-mist">Every influence action taken in this troupe.</p>
+        )}
         {adding && <EntryForm troupeId={troupeId} choices={choices.data} onDone={() => setAdding(false)} />}
-        <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
-          <Field label="Type">
-            <Select value={filters.type} onChange={(e) => set({ type: e.target.value as LogFilters["type"], action: "" })}>
-              <option value="">Both</option>
-              <option value="elite">Elite</option>
-              <option value="underworld">Underworld</option>
-            </Select>
-          </Field>
-          <Field label="Specialisation">
-            <Select value={filters.specialization} onChange={(e) => set({ specialization: e.target.value })}>
-              <option value="">Any</option>
-              {specializations.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Character">
-            <Select value={filters.who} onChange={(e) => set({ who: e.target.value })}>
-              <option value="">Anyone</option>
-              {choices.data.characters.map((c) => (
-                <option key={c.id} value={`c:${c.id}`}>
-                  {c.name}
-                  {c.in_troupe ? "" : " (left the troupe)"}
-                </option>
-              ))}
-              {choices.data.names.map((n) => (
-                <option key={n} value={`n:${n}`}>
-                  {n} (not in Horatio)
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Action">
-            <Select value={filters.action} onChange={(e) => set({ action: e.target.value })}>
-              <option value="">Any</option>
-              {actions.map((a) => (
-                <option key={a.key} value={a.key}>
-                  {a.label}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="From">
-            <Input type="date" value={filters.from} onChange={(e) => set({ from: e.target.value })} />
-          </Field>
-          <Field label="To">
-            <Input type="date" value={filters.to} onChange={(e) => set({ to: e.target.value })} />
-          </Field>
-        </div>
-        <label className="mt-3 flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={filters.needsDetails} onChange={(e) => set({ needsDetails: e.target.checked })} />
-          Only those that need details
-        </label>
+        <FilterBar count={log.data?.total} filtering={filtering}>
+          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            <Field label="Type">
+              <Select value={filters.type} onChange={(e) => set({ type: e.target.value as LogFilters["type"], action: "" })}>
+                <option value="">Both</option>
+                <option value="elite">Elite</option>
+                <option value="underworld">Underworld</option>
+              </Select>
+            </Field>
+            <Field label="Specialisation">
+              <Select value={filters.specialization} onChange={(e) => set({ specialization: e.target.value })}>
+                <option value="">Any</option>
+                {specializations.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Character">
+              <Select value={filters.who} onChange={(e) => set({ who: e.target.value })}>
+                <option value="">Anyone</option>
+                {choices.data.characters.map((c) => (
+                  <option key={c.id} value={`c:${c.id}`}>
+                    {c.name}
+                    {c.in_troupe ? "" : " (left the troupe)"}
+                  </option>
+                ))}
+                {choices.data.names.map((n) => (
+                  <option key={n} value={`n:${n}`}>
+                    {n} (not in Horatio)
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Action">
+              <Select value={filters.action} onChange={(e) => set({ action: e.target.value })}>
+                <option value="">Any</option>
+                {actions.map((a) => (
+                  <option key={a.key} value={a.key}>
+                    {a.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="From">
+              <Input type="date" value={filters.from} onChange={(e) => set({ from: e.target.value })} />
+            </Field>
+            <Field label="To">
+              <Input type="date" value={filters.to} onChange={(e) => set({ to: e.target.value })} />
+            </Field>
+          </div>
+          <label className="mt-3 flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={filters.needsDetails} onChange={(e) => set({ needsDetails: e.target.checked })} />
+            Only those that need details
+          </label>
+        </FilterBar>
       </Card>
       {toMerge.length > 1 && (
         <div className="flex flex-wrap items-center gap-2">
@@ -159,8 +172,8 @@ function Log({ troupeId }: { troupeId: string }) {
         <Loading />
       ) : log.error ? (
         <ErrorText error={log.error} />
-      ) : log.data.entries.length === 0 ? (
-        <Empty>No influence actions{filters === NO_FILTERS ? " logged yet" : " match these filters"}.</Empty>
+      ) : none ? null : log.data.entries.length === 0 ? (
+        <Empty>No influence actions match these filters.</Empty>
       ) : (
         <>
           <p className="text-sm text-mist">
