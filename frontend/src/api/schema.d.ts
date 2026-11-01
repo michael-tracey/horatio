@@ -6900,7 +6900,9 @@ export interface paths {
         /**
          * Status Rules
          * @description Every status of the troupe's sects, and the general status, by sect: its type,
-         *     what it does, and where it comes from here.
+         *     what it does, and where it comes from here. Anyone signed in may read it, as
+         *     they may the troupe's house rules: it is the book's rules and the troupe's titles,
+         *     never who holds them.
          */
         get: operations["status_rules_api_troupes__troupe_id__status_rules_get"];
         put?: never;

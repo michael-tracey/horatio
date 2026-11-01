@@ -48,7 +48,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByLabel("Person").fill(narrator.handle.slice(0, -3));
   await lead.page.getByRole("option", { name: `@${narrator.handle}` }).click();
   await expect(lead.page.getByLabel("Person")).toHaveValue(narrator.handle);
-  await lead.page.getByRole("button", { name: "Save" }).click();
+  await lead.page.getByRole("button", { name: "Add to staff" }).click();
   await expect(lead.page.getByText(`@${narrator.handle} · Narrator`)).toBeVisible();
 
   // The player builds a character in the creation wizard, then buys Influence with XP.
@@ -363,7 +363,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(lead.page.getByText(/lead approved Agnes \(player\)'s Celerity/)).toBeVisible();
   await lead.page.screenshot(shots("log"));
   // The troupe's rules: the lead can play a check differently.
-  await lead.page.getByRole("link", { name: "Customize", exact: true }).click();
+  await lead.page.getByRole("link", { name: "Customise", exact: true }).click();
   await lead.page.getByRole("link", { name: "Rules", exact: true }).click();
   await lead.page.getByLabel("Search rules").fill("Calm Heart");
   await lead.page.getByLabel(/Setting for: Brujah cannot take Calm Heart/).selectOption({ label: "Allow, for our review" });
@@ -399,7 +399,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByText("raised Agnes's Investigation from 1 to 2 (1 XP).", { exact: false })).toBeVisible();
 
   // The troupe lists the areas its Elite influence covers; Agnes picks one.
-  await lead.page.getByRole("link", { name: "Customize", exact: true }).click();
+  await lead.page.getByRole("link", { name: "Customise", exact: true }).click();
   await lead.page.getByRole("link", { name: "Specialisations", exact: true }).click();
   await lead.page.getByRole("navigation", { name: "Backgrounds" }).getByRole("link", { name: "Influence: Elite" }).click();
   await expect(lead.page).toHaveURL(/\/specializations\/influence-elite$/);
@@ -545,7 +545,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   // Results always go out in Horatio; Discord needs the server set up first.
   await lead.page.getByRole("link", { name: "Troupes" }).click();
   await lead.page.getByRole("link", { name: troupeName }).click();
-  await lead.page.getByRole("link", { name: "Customize", exact: true }).click();
+  await lead.page.getByRole("link", { name: "Customise", exact: true }).click();
   await lead.page.getByRole("link", { name: "Connectors", exact: true }).click();
   await expect(lead.page.getByText("always on")).toBeVisible();
   await expect(lead.page.getByText(/Discord is not set up on this server/)).toBeVisible();

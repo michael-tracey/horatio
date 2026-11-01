@@ -64,8 +64,8 @@ export function TitlesTab({ troupeId }: { troupeId: string }) {
           Give titles to characters on the Characters tab; players choose their own on their character's Status & Titles tab, unless the troupe keeps titles to
           staff. A title of a sect goes only to characters of that sect, and a title means nothing outside this troupe. Of a character's titles, only the
           active one gives status. What each status does is on the{" "}
-          <Link to={`/troupes/${troupeId}/rules/status`} className="text-parchment underline hover:text-gold">
-            Rules tab, under Status
+          <Link to={`/troupes/${troupeId}/status`} className="text-parchment underline hover:text-gold">
+            Status tab
           </Link>
           .
         </p>
