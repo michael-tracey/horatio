@@ -2,15 +2,20 @@
 pinned in by any of them, renamed and removed by their maker or the lead
 storyteller (issue #231)."""
 
+import threading
+import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import Engine, delete, select
 from sqlalchemy.orm import Session
 
-from horatio.models import Scene
+from horatio.api.scenes import pin_at_end
+from horatio.models import Character, Scene, SceneCharacter, User
+from horatio.models import Troupe as TroupeRecord
 from tests.api_helpers import Person, Troupe, new_character
 from tests.test_api_play import send, tap, view
 from tests.test_api_sheets import make_home_troupe_member
@@ -143,6 +148,57 @@ def test_any_running_staff_pin_and_unpin_in_order(troupe: Troupe, session: Sessi
     unpinned = troupe.lead.client.delete(f"{url}/characters/{mara}")
     assert unpinned.json()["characters"] == [lucien, agnes]
     assert troupe.narrator.client.put(f"{url}/characters/{mara}").status_code == 403
+
+
+def test_two_pins_at_once_take_places_one_after_the_other(engine: Engine) -> None:
+    # Two requests at once, each in its own transaction (issue #407): the second
+    # waits for the first to be saved, then goes after it.
+    tag = uuid.uuid4().hex[:8]
+    with Session(engine) as db:
+        lead = User(email=f"pins-{tag}@example.com", display_name="Pins", handle=f"pins{tag}")
+        db.add(lead)
+        db.flush()
+        court = TroupeRecord(name=f"Pins {tag}", lead_user_id=lead.id)
+        db.add(court)
+        db.flush()
+        alder, brant = (
+            Character(player_id=lead.id, splat="vampire", name=n) for n in ("Alder", "Brant")
+        )
+        scene = Scene(troupe_id=court.id, name="Ball", created_by_id=lead.id)
+        db.add_all([alder, brant, scene])
+        db.commit()
+        ids = scene.id, alder.id, brant.id, court.id, lead.id
+    scene_id, alder_id, brant_id, court_id, lead_id = ids
+    first = Session(engine)
+    try:
+        pin_at_end(first, scene_id, alder_id)
+
+        def second() -> None:
+            with Session(engine) as db:
+                pin_at_end(db, scene_id, brant_id)
+                db.commit()
+
+        waiting = threading.Thread(target=second)
+        waiting.start()
+        waiting.join(0.5)
+        assert waiting.is_alive(), "the second pin went ahead before the first was saved"
+        first.commit()
+        waiting.join(10)
+        with Session(engine) as db:
+            places = db.execute(
+                select(SceneCharacter.character_id, SceneCharacter.position)
+                .where(SceneCharacter.scene_id == scene_id)
+                .order_by(SceneCharacter.position)
+            ).all()
+        assert [tuple(p) for p in places] == [(alder_id, 0), (brant_id, 1)]
+    finally:
+        first.close()
+        with Session(engine) as db:
+            db.execute(delete(Scene).where(Scene.id == scene_id))
+            db.execute(delete(Character).where(Character.id.in_([alder_id, brant_id])))
+            db.execute(delete(TroupeRecord).where(TroupeRecord.id == court_id))
+            db.execute(delete(User).where(User.id == lead_id))
+            db.commit()
 
 
 def test_only_the_troupes_own_characters_are_pinned(
