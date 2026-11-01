@@ -97,7 +97,7 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
           />
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={onlyOurs} onChange={(e) => setOnlyOurs(e.target.checked)} />
-            Only this troupe's prices ({ours})
+            Only house rules ({ours})
           </label>
         </div>
         {shown.length === 0 && <p className="text-sm text-mist">No prices match.</p>}
@@ -118,7 +118,7 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
                         {c.text && <span className="block text-xs text-mist no-underline">House rule: {c.text}</span>}
                       </span>
                       <span className="flex shrink-0 items-center gap-2">
-                        {c.house && <Badge tone="gold">this troupe</Badge>}
+                        {c.house && <Badge tone="gold">House rule</Badge>}
                         {c.replaced && <Badge>replaced here</Badge>}
                         {canEdit && c.house && c.id && (
                           <>

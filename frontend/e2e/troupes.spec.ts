@@ -57,6 +57,49 @@ test("a troupe changes what new characters start with and their downtime actions
   await expect(p.getByText("0 of 9 points")).toBeVisible();
 });
 
+test("a troupe's players read its house rules: a price the lead changes shows there beside the book's", async ({ browser }) => {
+  const custodian = await person(browser, "lantern-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "lantern-lead");
+  const player = await person(browser, "lantern-player");
+  const troupeName = `House of Lanterns ${run}`;
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+
+  // The lead prices attributes at 4 XP a dot, with a note for players.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules/costs`);
+  await l.getByRole("button", { name: "Change the price for All Attributes" }).click();
+  await l.getByLabel("How it's priced").selectOption({ label: "The same for each dot" });
+  await l.getByLabel("XP per dot").fill("4");
+  await l.getByLabel("Note for players").fill("Training is slow here");
+  await l.getByRole("button", { name: "Save price" }).click();
+  await expect(l.getByText("Only house rules (1)")).toBeVisible();
+
+  // A player's character visits the troupe; from its Troupes tab the player opens the house rules.
+  const p = player.page;
+  const id = await builtVampire(p, "Liesl", "Brujah", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  const joined = await p.request.post(`/api/characters/${id}/troupes`, { headers: { "X-Horatio": "1" }, data: { troupe_id: troupeId } });
+  expect(joined.status(), await joined.text()).toBeLessThan(300);
+  await p.goto(`/characters/${id}`);
+  await characterTab(p, "Troupes");
+  await p.getByRole("link", { name: `${troupeName}'s house rules` }).click();
+  await expect(p).toHaveURL(new RegExp(`/troupes/${troupeId}/house-rules$`));
+  const costs = p.locator("section").filter({ has: p.getByRole("heading", { name: "Costs", exact: true }) });
+  const attributes = costs.getByRole("listitem").filter({ hasText: "All Attributes" });
+  await expect(attributes.getByText("4 XP per dot")).toBeVisible();
+  await expect(attributes.getByText("By the book: 3 XP per dot")).toBeVisible();
+  await expect(attributes.getByText("House rule: Training is slow here")).toBeVisible();
+  await expect(p.getByText(/The storytellers approve it before the troupe accepts the character/)).toBeVisible();
+  await p.screenshot(shots("house-rules"));
+});
+
 test("a troupe's XP floor and ceiling: new characters start at the floor, and staff settle a joiner's XP", async ({ browser }) => {
   // A whole character creation, then a home troupe request.
   test.slow();

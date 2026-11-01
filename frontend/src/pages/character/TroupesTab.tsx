@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, DifferenceOut, XpStandingOut } from "../../api/types";
 import { EmptyState } from "../../components/EmptyState";
@@ -66,6 +66,7 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
             character={character}
             troupes={troupes.data ?? []}
             currentHome={character.home_troupe_id}
+            homeName={memberships.data?.find((m) => m.home)?.troupe_name ?? null}
             unbanked={sheet.data?.xp.unbanked ?? 0}
           />
         ) : (
@@ -81,15 +82,18 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
             {visits.map((m) => (
               <li key={m.troupe_id} className="flex items-center justify-between gap-2 py-2">
                 <span>{m.troupe_name}</span>
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    if (window.confirm(`Take ${character.name} out of ${m.troupe_name}? Its storytellers will see that it left.`))
-                      leave.mutate(m.troupe_id);
-                  }}
-                >
-                  Leave
-                </Button>
+                <span className="flex items-center gap-1">
+                  <HouseRulesLink troupeId={m.troupe_id} name={m.troupe_name} />
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      if (window.confirm(`Take ${character.name} out of ${m.troupe_name}? Its storytellers will see that it left.`))
+                        leave.mutate(m.troupe_id);
+                    }}
+                  >
+                    Leave
+                  </Button>
+                </span>
               </li>
             ))}
           </ul>
@@ -128,11 +132,13 @@ function HomeTroupe({
   character,
   troupes,
   currentHome,
+  homeName,
   unbanked,
 }: {
   character: CharacterOut;
   troupes: { id: string; name: string }[];
   currentHome: string | null;
+  homeName: string | null;
   /** Creation XP lost if a first home troupe accepts the character now. */
   unbanked: number;
 }) {
@@ -184,6 +190,14 @@ function HomeTroupe({
 
   return (
     <Card title="Home troupe" info={homeInfo}>
+      {currentHome && homeName && (
+        <p className="mb-3 flex flex-wrap items-center gap-x-2 text-sm">
+          <span>
+            Home now: <span className="text-parchment">{homeName}</span>
+          </span>
+          <HouseRulesLink troupeId={currentHome} name={homeName} />
+        </p>
+      )}
       <Field label="Troupe">
         <Select
           value={troupeId}
@@ -203,6 +217,7 @@ function HomeTroupe({
             ))}
         </Select>
       </Field>
+      {troupeId && <HouseRulesLink troupeId={troupeId} name={troupes.find((t) => t.id === troupeId)?.name ?? "the troupe"} />}
       <ErrorText error={preview.error} />
       {differences && (
         <div className="mt-4 flex flex-col gap-3">
@@ -241,6 +256,19 @@ function HomeTroupe({
         </div>
       )}
     </Card>
+  );
+}
+
+/** A link to a troupe's house rules: what it plays differently from the book. */
+function HouseRulesLink({ troupeId, name }: { troupeId: string; name: string }) {
+  return (
+    <Link
+      to={`/troupes/${troupeId}/house-rules`}
+      aria-label={`${name}'s house rules`}
+      className="inline-flex min-h-8 items-center px-2 text-sm text-mist underline hover:text-parchment"
+    >
+      House rules
+    </Link>
   );
 }
 

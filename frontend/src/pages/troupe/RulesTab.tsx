@@ -175,7 +175,7 @@ function ChecksSection({ troupeId, canEdit }: { troupeId: string; canEdit: boole
           />
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={onlyChanged} onChange={(e) => setOnlyChanged(e.target.checked)} />
-            Only those played differently ({changed})
+            Only house rules ({changed})
           </label>
         </div>
         {shown.length === 0 && <p className="text-sm text-mist">No rules match.</p>}
@@ -204,7 +204,11 @@ function RuleRow({ rule, canEdit, onChange }: { rule: CheckOut; canEdit: boolean
       <span className="min-w-0 flex-1 text-sm">
         <span className="text-parchment">{rule.message || rule.about}</span>
         {rule.page && <span className="text-mist"> {pageText(rule.page)}</span>}
-        {rule.house && <span className="ml-2 text-xs text-gold">(changed here)</span>}
+        {rule.house && (
+          <span className="ml-2">
+            <Badge tone="gold">House rule</Badge>
+          </span>
+        )}
       </span>
       <span className="flex shrink-0 items-center gap-2">
         {played && !canEdit && <Badge tone={played.tone}>{played.label}</Badge>}
