@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Route, Routes, useParams } from "react-router";
+import { Navigate, Route, Routes, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { Avatar } from "../../components/Avatar";
 import { Badge, ErrorText, GroupedTabs, Loading, PageTitle } from "../../components/ui";
@@ -25,9 +25,11 @@ import { ProfileTab } from "./ProfileTab";
 import { abilities, roleLabel } from "./roles";
 import { RosterTab } from "./RosterTab";
 import { RulesTab } from "./RulesTab";
+import { SettingsTab } from "./SettingsTab";
 import { SharedBackgroundsTab } from "./SharedBackgroundsTab";
 import { SpecializationsTab } from "./SpecializationsTab";
 import { StaffTab } from "./StaffTab";
+import { StatusRulesTab } from "./StatusRulesSection";
 import { TablesTab } from "./TablesTab";
 import { TitlesTab } from "./TitlesTab";
 import { WhosWhoTab } from "./WhosWhoTab";
@@ -91,22 +93,31 @@ export function TroupePage() {
               { to: `${base}/profile`, label: "Profile" },
               ...(t.whos_who ? [{ to: `${base}/whos-who`, label: "Who's Who" }] : []),
               { to: `${base}/house-rules`, label: "House rules" },
+              { to: `${base}/status`, label: "Status" },
               ...(can.staff ? [{ to: `${base}/staff`, label: "Staff" }] : []),
               ...(can.running ? [{ to: `${base}/log`, label: "Log" }] : []),
             ],
           },
           {
+            // Approvals first, as what a player most often waits on; the group still opens on the roster.
             label: "Characters",
+            to: `${base}/characters`,
             tabs: [
+              ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals", count: waiting.data?.length ?? 0 }] : []),
               ...(can.running ? [{ to: `${base}/characters`, label: "Characters" }] : []),
               ...(can.running ? [{ to: `${base}/npcs`, label: "NPCs" }] : []),
               ...(can.running ? [{ to: `${base}/play`, label: "At game" }] : []),
               ...(can.running ? [{ to: `${base}/xp`, label: "Award XP" }] : []),
               ...(can.running ? [{ to: `${base}/titles`, label: "Titles" }] : []),
-              ...(can.running ? [{ to: `${base}/shared`, label: "Shared backgrounds" }] : []),
+            ],
+          },
+          {
+            // The troupe's own catalogues: places, things and backgrounds characters share.
+            label: "World",
+            tabs: [
               ...(can.running ? [{ to: `${base}/locations`, label: "Locations" }] : []),
               ...(can.running ? [{ to: `${base}/equipment`, label: "Equipment" }] : []),
-              ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals", count: waiting.data?.length ?? 0 }] : []),
+              ...(can.running ? [{ to: `${base}/shared`, label: "Shared backgrounds" }] : []),
             ],
           },
           {
@@ -127,8 +138,9 @@ export function TroupePage() {
             ],
           },
           {
-            label: "Customize",
+            label: "Customise",
             tabs: [
+              ...(can.running ? [{ to: `${base}/settings`, label: "Troupe settings" }] : []),
               ...(can.running ? [{ to: `${base}/rules`, label: "Rules" }] : []),
               ...(can.running ? [{ to: `${base}/specializations`, label: "Specialisations" }] : []),
               ...(can.running ? [{ to: `${base}/connectors`, label: "Connectors" }] : []),
@@ -141,6 +153,7 @@ export function TroupePage() {
         <Route index element={<OverviewTab troupe={t} can={can} />} />
         <Route path="profile" element={<ProfileTab troupe={t} can={can} />} />
         <Route path="house-rules" element={<HouseRulesTab troupe={t} staff={can.running} />} />
+        <Route path="status" element={<StatusRulesTab troupe={t} />} />
         {can.staff && <Route path="staff" element={<StaffTab troupe={t} canManage={can.storyteller} />} />}
         {t.whos_who && <Route path="whos-who" element={<WhosWhoTab troupeId={t.id} />} />}
         {can.running && <Route path="characters" element={<RosterTab troupeId={t.id} />} />}
@@ -155,6 +168,9 @@ export function TroupePage() {
         {can.running && <Route path="locations/*" element={<LocationsTab troupeId={t.id} questsOn={t.quests_enabled} />} />}
         {can.running && <Route path="equipment" element={<EquipmentTab troupeId={t.id} troupeName={t.name} />} />}
         {can.running && <Route path="approvals" element={<ApprovalsTab troupeId={t.id} />} />}
+        {can.running && <Route path="settings" element={<SettingsTab troupe={t} canEdit={can.storyteller && !t.archived} />} />}
+        {/* The status reference was a part of Rules until it moved to the Troupe group. */}
+        <Route path="rules/status" element={<Navigate to={`${base}/status`} replace />} />
         {can.running && <Route path="rules/*" element={<RulesTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.running && <Route path="specializations/*" element={<SpecializationsTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.running && <Route path="log" element={<LogTab troupeId={t.id} />} />}

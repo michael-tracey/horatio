@@ -88,7 +88,7 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   }
 
   // A house rule: characters start a game with 8 blood.
-  await p.goto(`/troupes/${troupeId}/rules/starting`);
+  await p.goto(`/troupes/${troupeId}/settings`);
   await p.getByRole("button", { name: "Change starting blood" }).click();
   await p.getByLabel("This much:").check();
   await p.getByLabel("Starting blood").fill("8");
