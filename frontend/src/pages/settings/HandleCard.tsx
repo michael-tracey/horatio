@@ -2,7 +2,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { Me } from "../../api/types";
-import { Button, Card, ErrorText, Field, Input, Notice } from "../../components/ui";
+import { useToast } from "../../components/Toast";
+import { Button, Card, ErrorText, Field, Input } from "../../components/ui";
 import { useAction, useMe } from "../../hooks";
 
 function day(at: string): string {
@@ -20,14 +21,14 @@ export function HandleCard() {
 
 function Handle({ me }: { me: Me }) {
   const client = useQueryClient();
+  const toast = useToast();
   const [handle, setHandle] = useState(me.handle);
-  const [changed, setChanged] = useState(false);
   const wait = me.next_handle_change;
   const change = useAction(async () => {
     const kept = await unwrap(api.PUT("/api/handle", { body: { handle } }));
     client.setQueryData<Me>(["me"], kept);
     setHandle(kept.handle);
-    setChanged(true);
+    toast({ message: `Your handle is now @${kept.handle}.` });
   });
   const same = handle.trim().replace(/^@/, "") === me.handle;
 
@@ -51,20 +52,9 @@ function Handle({ me }: { me: Me }) {
               : "Letters, numbers, _ and -, 3 to 30 of them. You can change it once in 30 days, and no one else can take your old one for 90."
           }
         >
-          <Input
-            autoComplete="off"
-            autoCapitalize="none"
-            spellCheck={false}
-            required
-            value={handle}
-            onChange={(e) => {
-              setHandle(e.target.value);
-              setChanged(false);
-            }}
-          />
+          <Input autoComplete="off" autoCapitalize="none" spellCheck={false} required value={handle} onChange={(e) => setHandle(e.target.value)} />
         </Field>
         <ErrorText error={change.error} />
-        {changed && !change.error && <Notice>Your handle is now @{me.handle}.</Notice>}
         <Button type="submit" variant="secondary" className="self-start" disabled={change.isPending || same}>
           Change handle
         </Button>

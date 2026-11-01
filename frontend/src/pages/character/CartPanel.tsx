@@ -64,18 +64,8 @@ export function totals(prices: CartOut) {
   };
 }
 
-/** Ask before leaving the page while the cart holds changes. */
-export function useLeaveWarning(active: boolean) {
-  useEffect(() => {
-    if (!active) return;
-    const warn = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [active]);
-}
+// Ask before leaving the page while the cart holds changes.
+export { useLeaveWarning } from "../../hooks";
 
 const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
 

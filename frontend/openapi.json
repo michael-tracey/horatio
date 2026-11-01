@@ -19257,6 +19257,25 @@
         "title": "ParticipantOut",
         "type": "object"
       },
+      "PasswordChange": {
+        "properties": {
+          "current": {
+            "title": "Current",
+            "type": "string"
+          },
+          "password": {
+            "minLength": 10,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "current",
+          "password"
+        ],
+        "title": "PasswordChange",
+        "type": "object"
+      },
       "PasswordResets": {
         "properties": {
           "live": {
@@ -25656,6 +25675,11 @@
               }
             ],
             "title": "Active Title"
+          },
+          "backstory_waiting": {
+            "default": false,
+            "title": "Backstory Waiting",
+            "type": "boolean"
           },
           "character_id": {
             "format": "uuid",
@@ -32350,8 +32374,27 @@
       "WaitingLine": {
         "properties": {
           "count": {
-            "title": "Count",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Count"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
           },
           "kind": {
             "title": "Kind",
@@ -34441,6 +34484,41 @@
           }
         },
         "summary": "Who Am I",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/password": {
+      "post": {
+        "description": "Change your own password, giving the one you have now. Signs you out\neverywhere else, and cancels any reset link you had, but not here.",
+        "operationId": "change_password_api_auth_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Password",
         "tags": [
           "auth"
         ]
@@ -55667,7 +55745,7 @@
     },
     "/api/troupes/{troupe_id}/waiting": {
       "get": {
-        "description": "What is waiting on the viewer in this troupe, for its staff only.",
+        "description": "What is waiting on the viewer in this troupe, for its staff only: the open\ncycle first, then each kind of work with its count.",
         "operationId": "read_waiting_api_troupes__troupe_id__waiting_get",
         "parameters": [
           {

@@ -20,7 +20,7 @@ export function ConfirmEmailPage() {
   });
   const confirm = useAction(() => unwrap(api.POST("/api/auth/email-change/{token}", { params: { path: { token } } })));
   const onward = me.data ? (
-    <Link to="/account" className="text-center text-gold underline">
+    <Link to="/account/settings" className="text-center text-gold underline">
       Back to your account
     </Link>
   ) : (

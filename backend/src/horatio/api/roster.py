@@ -10,7 +10,15 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Select, select
 
-from horatio import character_filter, pictures, social_age, suspensions, titles, whos_who
+from horatio import (
+    backstories,
+    character_filter,
+    pictures,
+    social_age,
+    suspensions,
+    titles,
+    whos_who,
+)
 from horatio.api.downtimes import staff_troupe
 from horatio.api.lines_veils import LinesVeils, lines_veils_of
 from horatio.api.printing import PrintedSheet, print_sheet
@@ -69,6 +77,8 @@ class RosterEntry(BaseModel):
     waiting: bool
     # Discipline dots waiting on this troupe.
     disciplines_waiting: int
+    # Its backstory waits for this troupe's storytellers to read (horatio.backstories).
+    backstory_waiting: bool = False
     joined_at: datetime
     # The player's lines and veils, on an active PC (horatio.lines_veils).
     lines_veils: LinesVeils | None
@@ -111,6 +121,7 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
     seated = whos_who.seated_clans(db, troupe)
     held = {c.id: titles.held(db, troupe_id, c.id) for _, c, _ in rows}
     active = titles.active_titles(db, troupe_id)
+    backstories_waiting = set(backstories.waiting(db, troupe))
     pending = list(
         db.execute(
             select(Approval.character_id, Approval.kind).where(
@@ -146,6 +157,7 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             else m.represented_by,
             waiting=(c.id, "home_troupe_change") in pending,
             disciplines_waiting=sum(1 for p in pending if p == (c.id, "discipline")),
+            backstory_waiting=c.id in backstories_waiting,
             joined_at=m.joined_at,
             lines_veils=lines_veils_of(player)
             if shows_lines_veils and c.kind == "pc" and c.status == "active"
@@ -456,6 +468,7 @@ MESSAGES: dict[str, str] = {
     "no account uses it.",
     "account.reset_cancelled": "{actor} cancelled {member}'s reset link.",
     "account.password_reset": "{actor} set a new password with a reset link.",
+    "account.password_changed": "{actor} changed their password.",
     "account.suspended": "{actor} suspended {member}{because}.",
     "account.suspended.until": "{actor} suspended {member} until {until}{because}.",
     "account.suspension_lifted": "{actor} lifted {member}'s suspension{because}.",

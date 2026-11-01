@@ -101,6 +101,7 @@ test("the custodian changes a player's email, and the player confirms it from th
   // could only go to the new address by email.
   const p = player.page;
   await p.getByRole("link", { name: "chmail-player" }).click();
+  await p.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
   await expect(p.getByText(`You sign in with ${player.email}`)).toBeVisible();
   await expect(p.getByText("Horatio can't send email here, so ask the custodian to change your email.")).toBeVisible();
 
@@ -259,10 +260,11 @@ test("the custodian views Horatio as a player, read-only, and the player sees th
   await expect(c.getByRole("link", { name: "Custodian", exact: true })).toBeVisible();
   await expect(c.getByText(`Viewing as @${player.handle}, read-only.`)).toHaveCount(0);
 
-  // The player sees when, by whom and why on their account page; their bio is as it was.
+  // The player sees when, by whom and why in their account's settings; their bio is as it was.
   await p.reload();
   await p.getByRole("link", { name: "viewas-player" }).click();
   await expect(p.getByLabel("Bio")).toHaveValue("");
+  await p.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
   const visits = p.locator("section", { has: p.getByRole("heading", { name: "When the custodian viewed as you" }) });
   await expect(visits.getByText("Can't find her character")).toBeVisible();
   await expect(visits.getByText(/, by viewas-custodian$/)).toBeVisible();

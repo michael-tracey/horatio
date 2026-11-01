@@ -5,7 +5,7 @@ import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from horatio import suspensions
@@ -55,3 +55,13 @@ def end_session(db: Session, token: str) -> None:
     if session is not None and session.revoked_at is None:
         session.revoked_at = datetime.now(UTC)
         db.flush()
+
+
+def end_other_sessions(db: Session, user: User, keep: str | None) -> None:
+    """End every session `user` has but the one with the token `keep`: after they
+    change their password, so whoever else had it is signed out."""
+    others = [SignInSession.user_id == user.id, SignInSession.revoked_at.is_(None)]
+    if keep:
+        others.append(SignInSession.token_hash != hash_token(keep))
+    db.execute(update(SignInSession).where(*others).values(revoked_at=datetime.now(UTC)))
+    db.flush()

@@ -270,6 +270,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change Password
+         * @description Change your own password, giving the one you have now. Signs you out
+         *     everywhere else, and cancels any reset link you had, but not here.
+         */
+        post: operations["change_password_api_auth_password_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/reset": {
         parameters: {
             query?: never;
@@ -7005,7 +7026,8 @@ export interface paths {
         };
         /**
          * Read Waiting
-         * @description What is waiting on the viewer in this troupe, for its staff only.
+         * @description What is waiting on the viewer in this troupe, for its staff only: the open
+         *     cycle first, then each kind of work with its count.
          */
         get: operations["read_waiting_api_troupes__troupe_id__waiting_get"];
         put?: never;
@@ -14500,6 +14522,13 @@ export interface components {
             /** Submitted Late */
             submitted_late: boolean;
         };
+        /** PasswordChange */
+        PasswordChange: {
+            /** Current */
+            current: string;
+            /** Password */
+            password: string;
+        };
         /** PasswordResets */
         PasswordResets: {
             /** Live */
@@ -16971,6 +17000,11 @@ export interface components {
         RosterEntry: {
             /** Active Title */
             active_title?: string | null;
+            /**
+             * Backstory Waiting
+             * @default false
+             */
+            backstory_waiting: boolean;
             /**
              * Character Id
              * Format: uuid
@@ -19451,7 +19485,9 @@ export interface components {
         /** WaitingLine */
         WaitingLine: {
             /** Count */
-            count: number;
+            count: number | null;
+            /** Due At */
+            due_at?: string | null;
             /** Kind */
             kind: string;
             /** Label */
@@ -20400,6 +20436,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Me"];
+                };
+            };
+        };
+    };
+    change_password_api_auth_password_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

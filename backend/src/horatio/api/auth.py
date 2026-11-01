@@ -10,8 +10,15 @@ from horatio import handles, preferences, suspensions
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.passwords import MIN_PASSWORD_LENGTH, hash_password, verify_password
-from horatio.auth.resets import email_reset, limited, request_reset, use_reset, user_for_reset
-from horatio.auth.sessions import end_session, start_session
+from horatio.auth.resets import (
+    cancel_reset,
+    email_reset,
+    limited,
+    request_reset,
+    use_reset,
+    user_for_reset,
+)
+from horatio.auth.sessions import end_other_sessions, end_session, start_session
 from horatio.auth.viewing import allowed_while_viewing, viewing_for
 from horatio.auth.viewing import end as end_viewing
 from horatio.config import get_settings
@@ -39,6 +46,11 @@ class SignIn(BaseModel):
 
 class NewPassword(BaseModel):
     token: str
+    password: str = Field(min_length=MIN_PASSWORD_LENGTH)
+
+
+class PasswordChange(BaseModel):
+    current: str
     password: str = Field(min_length=MIN_PASSWORD_LENGTH)
 
 
@@ -169,6 +181,26 @@ def sign_out(request: Request, db: DbSession, response: Response) -> None:
 @router.get("/me")
 def who_am_i(user: CurrentUser) -> Me:
     return me(user)
+
+
+@router.post("/password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    body: PasswordChange, request: Request, db: DbSession, user: CurrentUser
+) -> None:
+    """Change your own password, giving the one you have now. Signs you out
+    everywhere else, and cancels any reset link you had, but not here."""
+    ok, _ = verify_password(body.current, user.password_hash)
+    if not ok:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "That's not your current password.")
+    if body.password == body.current:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "That's your password now. Choose a new one."
+        )
+    user.password_hash = hash_password(body.password)
+    end_other_sessions(db, user, request.cookies.get(get_settings().session_cookie_name))
+    cancel_reset(db, user)
+    record(db, user, "account.password_changed", member=user.display_name, user_id=user.id)
+    db.commit()
 
 
 def reset_user(db: DbSession, token: str) -> User:
