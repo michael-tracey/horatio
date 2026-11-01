@@ -10964,6 +10964,8 @@ export interface components {
              * Format: email
              */
             email: string;
+            /** Next */
+            next?: string | null;
         };
         /** ForgotAnswer */
         ForgotAnswer: {

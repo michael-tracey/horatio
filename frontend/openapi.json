@@ -10524,6 +10524,17 @@
             "format": "email",
             "title": "Email",
             "type": "string"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next"
           }
         },
         "required": [

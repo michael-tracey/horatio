@@ -618,6 +618,56 @@ test("a troupe's profile: storytellers fill it in, and people not signed in see 
   await expect(visitor.getByText(/only for people signed in, or there is no such troupe/)).toBeVisible();
 });
 
+test("a troupe's public page asks a newcomer to make an account, which brings them back to the troupe", async ({ browser }) => {
+  const custodian = await person(browser, "joinlink-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "joinlink-lead");
+  const troupeName = `Wardens of Whitby ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+  const l = lead.page;
+  await l.getByRole("link", { name: "Troupes" }).click();
+  await l.getByRole("link", { name: troupeName }).click();
+  await expect(l.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(l.url()).pathname.split("/")[2]!;
+  const next = encodeURIComponent(`/troupes/${troupeId}`);
+
+  // Signed-in only, the page still offers a way in.
+  const visitor = await (await browser.newContext()).newPage();
+  await visitor.goto(`/t/${troupeId}`);
+  await expect(visitor.getByText(/only for people signed in, or there is no such troupe/)).toBeVisible();
+  await expect(visitor.getByRole("link", { name: "Create an account to play here" })).toHaveAttribute("href", `/sign-up?next=${next}`);
+  await expect(visitor.getByRole("link", { name: "Sign in", exact: true })).toHaveAttribute("href", `/sign-in?next=${next}`);
+  await visitor.screenshot(shots("anon-private-troupe"));
+
+  // Public, the troupe's name leads, with the same two ways in.
+  await l.getByRole("link", { name: "Profile", exact: true }).click();
+  await l.getByRole("switch", { name: "Public" }).click();
+  await expect(l.getByRole("switch", { name: "Public" })).toBeChecked();
+  await visitor.reload();
+  await expect(visitor.getByRole("heading", { name: troupeName })).toBeVisible();
+  await expect(visitor.getByRole("link", { name: "Sign in", exact: true })).toHaveAttribute("href", `/sign-in?next=${next}`);
+  await visitor.screenshot(shots("anon-public-troupe"));
+
+  // They make an account, and land on the troupe's own page.
+  await visitor.getByRole("link", { name: "Create an account to play here" }).click();
+  await expect(visitor.getByRole("heading", { name: "Create an account" })).toBeVisible();
+  await expect(visitor.getByText("Character sheets and downtimes for Mind's Eye Theatre troupes.")).toBeVisible();
+  await visitor.screenshot(shots("signup"));
+  await visitor.getByLabel("Your name").fill("joinlink-newcomer");
+  await visitor.getByLabel("Handle").fill(`joinlink_${run.slice(-10)}`);
+  await visitor.getByLabel("Email").fill(`joinlink-newcomer-${run}@example.com`);
+  await visitor.getByLabel("Password").fill("a long enough password");
+  await visitor.getByRole("button", { name: "Create account" }).click();
+  await expect(visitor.getByRole("heading", { name: troupeName })).toBeVisible();
+  await expect(visitor).toHaveURL(new RegExp(`/troupes/${troupeId}$`));
+});
+
 test("a troupe's Profile tab switches it public at once, About sets its XP range, and Waiting on you leads to the work", async ({ browser }) => {
   const custodian = await person(browser, "tidy-custodian");
   makeCustodian(custodian.email);

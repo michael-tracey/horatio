@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { Navigate, Outlet, Route, Routes, useParams } from "react-router";
+import { Navigate, Outlet, Route, Routes, useLocation, useParams } from "react-router";
 import { Layout } from "./components/Layout";
 import { Loading } from "./components/ui";
 import { AboutPage } from "./pages/AboutPage";
@@ -9,6 +9,7 @@ import { ConfirmEmailPage } from "./pages/ConfirmEmailPage";
 import { ForgotPasswordPage, ResetPasswordPage, SignInPage, SignUpPage } from "./pages/SignIn";
 import { TroupesPage } from "./pages/TroupesPage";
 import { UnsubscribePage } from "./pages/UnsubscribePage";
+import { withNext } from "./next";
 import { LazyPages } from "./staleBuild";
 import { useTextSize } from "./textSize";
 
@@ -38,8 +39,13 @@ function ToScenes() {
 
 function RequireSignIn() {
   const me = useMe();
+  const location = useLocation();
   if (me.isPending) return <Loading />;
-  if (!me.data) return <Navigate to="/sign-in" replace />;
+  if (!me.data) {
+    // Sign in, then on to where they were going.
+    const here = location.pathname === "/" ? null : location.pathname + location.search + location.hash;
+    return <Navigate to={withNext("/sign-in", here)} replace />;
+  }
   return (
     <LazyPages>
       <Outlet />
