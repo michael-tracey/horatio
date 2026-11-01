@@ -884,6 +884,82 @@ test("a troupe's profile: storytellers fill it in, and people not signed in see 
   await expect(visitor.getByText(/only for people signed in, or there is no such troupe/)).toBeVisible();
 });
 
+test("members say whether they are coming to a game, staff see who, and a calendar link can be reset", async ({ browser }) => {
+  const custodian = await person(browser, "rsvp-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "rsvp-lead", { timezoneId: "Europe/London" });
+  const player = await person(browser, "rsvp-player", { timezoneId: "Europe/London" });
+  const troupeName = `Lanterns of Lincoln ${run}`;
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const { id: troupeId } = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  await send(lead.page, "POST", `/api/troupes/${troupeId}/games`, { starts_at: "2030-03-09T19:00:00Z", ends_at: "2030-03-10T00:00:00Z" });
+  // Rosalind visits the troupe, which makes her player a member.
+  const { id: rosalind } = await send(player.page, "POST", "/api/characters", { splat: "vampire", name: "Rosalind" });
+  await send(player.page, "POST", `/api/characters/${rosalind}/troupes`, { troupe_id: troupeId });
+
+  // The player says she's coming, on the troupe's About tab.
+  const p = player.page;
+  await p.goto(`/troupes/${troupeId}`);
+  const game = p.getByRole("list", { name: "Games to come" }).getByRole("listitem").filter({ hasText: "Sat 9 Mar 2030, 7 pm" });
+  await expect(game.getByText("No answers yet")).toBeVisible();
+  const choices = game.getByRole("group", { name: /^Are you coming on Sat 9 Mar 2030, 7 pm GMT/ });
+  await choices.getByRole("button", { name: "Coming", exact: true }).click();
+  await expect(p.getByText(/^Coming: Sat 9 Mar 2030, 7 pm GMT/)).toBeVisible();
+  await expect(choices.getByRole("button", { name: "Coming", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(game.getByText("1 coming")).toBeVisible();
+  // Players see how many, not who.
+  await expect(game.getByText("See who answered")).toHaveCount(0);
+  await p.screenshot(shots("troupe-games-rsvp"));
+
+  // The lead sees who is coming, with the character she plays here.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}`);
+  const leadGame = l.getByRole("list", { name: "Games to come" }).getByRole("listitem").filter({ hasText: "Sat 9 Mar 2030, 7 pm" });
+  await expect(leadGame.getByText("1 coming")).toBeVisible();
+  await leadGame.getByText("See who answered").click();
+  await expect(leadGame.getByRole("list", { name: "Coming" })).toContainText("rsvp-player");
+  await expect(leadGame.getByRole("list", { name: "Coming" })).toContainText("Rosalind");
+  await l.screenshot(shots("troupe-games-staff"));
+
+  // She changes her mind: one answer per person.
+  await choices.getByRole("button", { name: "Maybe" }).click();
+  await expect(game.getByText("1 maybe")).toBeVisible();
+  await expect(choices.getByRole("button", { name: "Coming", exact: true })).toHaveAttribute("aria-pressed", "false");
+
+  // Her calendar link: the feed has the game, and resetting it stops the old one.
+  await p.getByRole("button", { name: "Subscribe to the calendar" }).click();
+  const dialog = p.getByRole("dialog", { name: "Subscribe to the calendar" });
+  const only = dialog.getByRole("region", { name: `${troupeName} only` });
+  await only.getByRole("button", { name: "Get the link" }).click();
+  const address = only.locator(".font-mono");
+  await expect(address).toHaveText(/\/api\/calendar\/[\w-]+\.ics$/);
+  await expect(only.getByRole("link", { name: "Open in your calendar app" })).toHaveAttribute("href", /^webcal:\/\//);
+  await expect(dialog.getByText("Google Calendar")).toBeVisible();
+  await p.screenshot(shots("troupe-calendar-subscribe"));
+  const path = (url: string) => url.slice(url.indexOf("/api/"));
+  const old = path((await address.textContent())!);
+  const feed = await p.request.get(old);
+  expect(feed.status()).toBe(200);
+  expect(feed.headers()["content-type"]).toContain("text/calendar");
+  const ics = await feed.text();
+  expect(ics).toContain("BEGIN:VCALENDAR");
+  expect(ics).toContain(`SUMMARY:Game: ${troupeName}`);
+  expect(ics).toContain("DTSTART:20300309T190000Z");
+  expect(ics).not.toContain(player.email);
+  await only.getByRole("button", { name: "Reset the link…" }).click();
+  await only.getByRole("button", { name: "Reset the link", exact: true }).click();
+  await expect(only.getByRole("status")).toHaveText("New link made. The old one no longer works.");
+  await expect(address).not.toHaveText(new RegExp(old.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  expect((await p.request.get(old)).status()).toBe(404);
+  expect((await p.request.get(path((await address.textContent())!))).status()).toBe(200);
+});
+
 test("a troupe's public page asks a newcomer to make an account, which brings them back to the troupe", async ({ browser }) => {
   const custodian = await person(browser, "joinlink-cust");
   makeCustodian(custodian.email);

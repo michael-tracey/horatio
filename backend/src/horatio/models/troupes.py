@@ -135,6 +135,38 @@ class ScheduledGame(Record):
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
+class GameRsvp(Record):
+    """Whether a person means to come to one of their troupe's scheduled games
+    (horatio.api.games): "coming", "maybe" or "not_coming". One per person, not per
+    character. It is intent only: who came is a fact recorded at the game, apart
+    from this. It goes with its game when the game is taken off the schedule."""
+
+    __tablename__ = "game_rsvps"
+    __table_args__ = (
+        CheckConstraint("answer in ('coming', 'maybe', 'not_coming')", name="answer"),
+        UniqueConstraint("game_id", "user_id"),
+    )
+
+    game_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("scheduled_games.id", ondelete="CASCADE"))
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    answer: Mapped[str]
+
+
+class CalendarFeed(Record):
+    """A person's secret calendar link (horatio.api.calendar): one troupe's games
+    and downtime dates, or, with no troupe, those of every troupe they are in. The
+    token is the whole of the link's secret; resetting the link gives it a new one,
+    and the old link stops working."""
+
+    __tablename__ = "calendar_feeds"
+    __table_args__ = (UniqueConstraint("user_id", "troupe_id", postgresql_nulls_not_distinct=True),)
+
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    # None for the person's own feed of all their troupes.
+    troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"))
+    token: Mapped[str] = mapped_column(unique=True)
+
+
 class XpRangeEntry(Record):
     """One change to a troupe's XP floor and ceiling: a game's XP, a downtime
     cycle's XP for completing it, or staff setting either figure by hand. The

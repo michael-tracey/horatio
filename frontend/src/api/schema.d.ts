@@ -439,6 +439,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/calendar/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Links
+         * @description The caller's calendar links, for a member of the troupe.
+         */
+        get: operations["links_api_calendar_links_get"];
+        put?: never;
+        /**
+         * Make Link
+         * @description A new address for one of the caller's calendars: made the first time,
+         *     and after that reset, so the old address stops working.
+         */
+        post: operations["make_link_api_calendar_links_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calendar/{token}.ics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Feed
+         * @description The calendar itself, for a calendar app: no sign-in, only the address.
+         */
+        get: operations["feed_api_calendar__token__ics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters": {
         parameters: {
             query?: never;
@@ -5745,7 +5790,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List Games
+         * @description The troupe's games still to come (or under way), soonest first, with how
+         *     many are coming: for its members.
+         */
+        get: operations["list_games_api_troupes__troupe_id__games_get"];
         put?: never;
         /**
          * Add Game
@@ -5770,6 +5820,30 @@ export interface paths {
         post?: never;
         /** Remove Game */
         delete: operations["remove_game_api_troupes__troupe_id__games__game_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/games/{game_id}/rsvp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Answer
+         * @description Say whether you are coming, in place of any answer before.
+         */
+        put: operations["answer_api_troupes__troupe_id__games__game_id__rsvp_put"];
+        post?: never;
+        /**
+         * Take Back
+         * @description Take back your answer, saying nothing either way.
+         */
+        delete: operations["take_back_api_troupes__troupe_id__games__game_id__rsvp_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -8394,6 +8468,21 @@ export interface components {
             characters: number;
             /** Total */
             total: number;
+        };
+        /** CalendarLink */
+        CalendarLink: {
+            /** Url */
+            url: string;
+        };
+        /** CalendarLinkIn */
+        CalendarLinkIn: {
+            /** Troupe Id */
+            troupe_id: string | null;
+        };
+        /** CalendarLinks */
+        CalendarLinks: {
+            personal: components["schemas"]["CalendarLink"] | null;
+            troupe: components["schemas"]["CalendarLink"] | null;
         };
         /** CarriedOut */
         CarriedOut: {
@@ -11432,6 +11521,34 @@ export interface components {
             started_at: string;
             /** Taps */
             taps: number;
+        };
+        /** GameRsvpsOut */
+        GameRsvpsOut: {
+            /** Answers */
+            answers: components["schemas"]["RsvpOut"][] | null;
+            /** Coming */
+            coming: number;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Maybe */
+            maybe: number;
+            /** My Answer */
+            my_answer: ("coming" | "maybe" | "not_coming") | null;
+            /** Not Coming */
+            not_coming: number;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
         };
         /** GatheredOut */
         GatheredOut: {
@@ -17060,6 +17177,25 @@ export interface components {
             /** Waiting */
             waiting: boolean;
         };
+        /** RsvpIn */
+        RsvpIn: {
+            /**
+             * Answer
+             * @enum {string}
+             */
+            answer: "coming" | "maybe" | "not_coming";
+        };
+        /** RsvpOut */
+        RsvpOut: {
+            /**
+             * Answer
+             * @enum {string}
+             */
+            answer: "coming" | "maybe" | "not_coming";
+            /** Characters */
+            characters: string[];
+            person: components["schemas"]["ProfilePerson"];
+        };
         /** SampleOut */
         SampleOut: {
             /**
@@ -20719,6 +20855,99 @@ export interface operations {
             header?: never;
             path: {
                 name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    links_api_calendar_links_get: {
+        parameters: {
+            query: {
+                troupe_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarLinks"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    make_link_api_calendar_links_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CalendarLinkIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarLink"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    feed_api_calendar__token__ics_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
             };
             cookie?: never;
         };
@@ -31250,6 +31479,37 @@ export interface operations {
             };
         };
     };
+    list_games_api_troupes__troupe_id__games_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameRsvpsOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     add_game_api_troupes__troupe_id__games_post: {
         parameters: {
             query?: never;
@@ -31303,6 +31563,74 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    answer_api_troupes__troupe_id__games__game_id__rsvp_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                game_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RsvpIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameRsvpsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    take_back_api_troupes__troupe_id__games__game_id__rsvp_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                game_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameRsvpsOut"];
+                };
             };
             /** @description Validation Error */
             422: {

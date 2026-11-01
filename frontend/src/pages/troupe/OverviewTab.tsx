@@ -7,6 +7,7 @@ import { LogList } from "../../components/LogList";
 import { AtHandle } from "../../components/PersonPicker";
 import { Card, ErrorText, Loading } from "../../components/ui";
 import { useDates } from "../../dates";
+import { GamesCard } from "./GamesCard";
 import type { abilities } from "./roles";
 import { sectsText, useSplatsText } from "./SettingsTab";
 import { useWaiting, WaitingList } from "./WaitingList";
@@ -14,7 +15,8 @@ import { XpRangeCard } from "./XpRange";
 
 /**
  * The troupe at a glance, to read: for its staff, what is waiting on them first;
- * then what the troupe is, when it next plays and who leads it; who may join; its
+ * for its members, the games to come, to say whether they are coming, and its
+ * calendar to subscribe to; then what the troupe is, when it next plays and who leads it; who may join; its
  * XP floor and ceiling; and, for its running staff, the latest of its log. Nothing
  * here is a setting: those are under Customise, and the full profile is on the
  * Profile tab.
@@ -30,6 +32,8 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
   return (
     <div className="grid gap-6 md:grid-cols-2">
       {can.staff && !troupe.archived && <WaitingCard troupeId={troupe.id} />}
+      {/* For its members: the same people as see its Who's Who. */}
+      {troupe.whos_who && !troupe.archived && <GamesCard troupe={troupe} canAddGames={can.storyteller} />}
       <Summary troupe={troupe} />
       <JoinCard troupe={troupe} link={change && settings} />
       <div className="md:col-span-2">

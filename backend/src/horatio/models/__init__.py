@@ -90,7 +90,9 @@ from horatio.models.scenes import Scene, SceneCharacter
 from horatio.models.shared_backgrounds import SharedBackground, SharedBackgroundEntry
 from horatio.models.status import HeldStatus, StatusBanMark, StatusSuppression
 from horatio.models.troupes import (
+    CalendarFeed,
     CharacterTitle,
+    GameRsvp,
     ScheduledGame,
     Troupe,
     TroupeMembership,
@@ -170,6 +172,8 @@ __all__ = [
     "ReconciliationItem",
     "RuleSet",
     "ScheduledGame",
+    "GameRsvp",
+    "CalendarFeed",
     "Scene",
     "SceneCharacter",
     "Session",
