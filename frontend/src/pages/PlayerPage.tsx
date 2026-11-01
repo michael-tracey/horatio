@@ -129,7 +129,7 @@ function Boundaries({ player, mine }: { player: PlayerOut; mine: boolean }) {
         <LinesVeilsNote value={value} who={player.display_name} className="text-sm" />
       ) : (
         <Empty>
-          None yet. <Link to="/account" className="text-gold underline">Add them</Link>.
+          None yet. <Link to="/account/lines-veils" className="text-gold underline">Add them</Link>.
         </Empty>
       )}
     </Card>

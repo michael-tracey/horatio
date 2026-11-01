@@ -29,7 +29,7 @@ export function AccountEmail({ player }: { player: PlayerOut }) {
   const waiting = player.email_change;
 
   return (
-    <Card title="Email" className="mt-6">
+    <Card title="Email">
       <div className="flex flex-col gap-3 text-sm">
         <p>
           You sign in with {player.email}, and Horatio's emails go there. <span className="text-mist">Only you and the custodian see it.</span>

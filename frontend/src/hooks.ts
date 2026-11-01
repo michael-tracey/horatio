@@ -1,5 +1,5 @@
 import { useIsMutating, useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { api, ApiError, unwrap } from "./api/client";
 import type { Me, Preferences } from "./api/types";
 import type { components } from "./api/schema";
@@ -20,6 +20,20 @@ export function useMe() {
     },
     staleTime: 60_000,
   });
+}
+
+/** Ask before leaving the page (closing the tab, reloading) while `active`: there
+ * are changes not yet saved. */
+export function useLeaveWarning(active: boolean) {
+  useEffect(() => {
+    if (!active) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [active]);
 }
 
 /** Every setting's default, as the server has them, for before anyone signs in. */

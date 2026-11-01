@@ -1,37 +1,44 @@
 import { useState } from "react";
 import { api, unwrap } from "../api/client";
 import type { LinesVeils } from "../api/types";
-import { Button, Card, ErrorText, Input, Notice } from "../components/ui";
-import { useAction } from "../hooks";
+import { useToast } from "../components/Toast";
+import { Button, Card, ErrorText, Input } from "../components/ui";
+import { useAction, useLeaveWarning } from "../hooks";
 
 const MAX_ITEMS = 20;
 
+/** Blank boxes are not lines or veils, so they don't count as a change. */
+const filled = (items: string[]) => items.filter((i) => i.trim());
+
 /**
- * The player's own lines and veils, on Your account: what they don't want in their
- * games, in their own words, and whether other players in their troupes see them.
- * Saved on their own, so the profile form never wipes them.
+ * The player's own lines and veils, on their own tab of Your account: what they
+ * don't want in their games, in their own words, and whether other players in
+ * their troupes see them. Saved on their own, so the profile form never wipes
+ * them, and asks before the page is left with changes not saved.
  */
 export function LinesVeilsForm({ value }: { value: LinesVeils }) {
+  const toast = useToast();
+  const [kept, setKept] = useState(value);
   const [lines, setLines] = useState(value.lines);
   const [veils, setVeils] = useState(value.veils);
   const [shared, setShared] = useState(value.shared);
-  const [saved, setSaved] = useState(false);
   const save = useAction(async () => {
-    const kept = await unwrap(api.PUT("/api/profile/lines-veils", { body: { lines, veils, shared } }));
-    setLines(kept.lines);
-    setVeils(kept.veils);
-    setShared(kept.shared);
-    setSaved(true);
+    const now = await unwrap(api.PUT("/api/profile/lines-veils", { body: { lines, veils, shared } }));
+    setKept(now);
+    setLines(now.lines);
+    setVeils(now.veils);
+    setShared(now.shared);
+    toast({ message: "Lines and veils saved." });
   });
+  const unsaved = shared !== kept.shared || JSON.stringify([filled(lines), filled(veils)]) !== JSON.stringify([filled(kept.lines), filled(kept.veils)]);
+  useLeaveWarning(unsaved);
 
   return (
     <form
-      className="mt-6"
       onSubmit={(e) => {
         e.preventDefault();
         save.mutate(undefined);
       }}
-      onChange={() => setSaved(false)}
     >
       <Card title="Lines and veils">
         <div className="flex flex-col gap-4 text-sm">
@@ -69,10 +76,12 @@ export function LinesVeilsForm({ value }: { value: LinesVeils }) {
             </span>
           </label>
           <ErrorText error={save.error} />
-          {saved && <Notice>Saved.</Notice>}
-          <Button type="submit" disabled={save.isPending} className="self-start">
-            Save lines and veils
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="submit" disabled={save.isPending}>
+              Save lines and veils
+            </Button>
+            {unsaved && <span className="text-mist">Not saved yet</span>}
+          </div>
         </div>
       </Card>
     </form>

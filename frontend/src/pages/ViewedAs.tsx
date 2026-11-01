@@ -10,7 +10,7 @@ export function ViewedAs() {
   const dates = useDates();
   if (!visits.data?.length) return null;
   return (
-    <Card title="When the custodian viewed as you" className="mt-6">
+    <Card title="When the custodian viewed as you">
       <p className="mb-2 text-sm text-mist">To help with a question, the custodian can see Horatio as you see it, read-only, for up to 30 minutes.</p>
       <ul className="divide-y divide-ash/50 text-sm">
         {visits.data.map((v) => (

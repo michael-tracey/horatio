@@ -1,16 +1,17 @@
 import { expect, test } from "@playwright/test";
 import { closeContextsAfterEach, run, PASSWORD, shots, person, characterTab } from "./support";
 
-/** A person's settings: handle, dates, text size, notifications and the Play View. */
+/** A person's account and settings: handle, password, dates, text size, notifications and the Play View. */
 
 closeContextsAfterEach();
 
-test("settings are kept on the account, and the dark is not optional", async ({ browser }) => {
+test("settings are kept on the account, and each change says it is saved", async ({ browser }) => {
   const { page } = await person(browser, "settings-player");
   await page.getByRole("link", { name: "settings-player" }).click();
   await page.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" }).click();
   await expect(page.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByText("Show ratings as: Pips. Saved.")).toBeVisible();
   // While a change is saving, the other settings wait for it, so none is lost.
   await page.route("**/api/preferences", async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -30,10 +31,9 @@ test("settings are kept on the account, and the dark is not optional", async ({ 
   await expect(page.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: "Pips" })).toHaveAttribute("aria-checked", "true");
   await expect(page.getByRole("radiogroup", { name: "Paper" }).getByRole("radio", { name: "A4" })).toHaveAttribute("aria-checked", "true");
   await expect(clock24).toHaveAttribute("aria-checked", "true");
-  const mode = page.getByRole("radiogroup", { name: "Light mode or dark mode" });
-  await expect(mode.getByRole("radio", { name: "Light" })).toBeDisabled();
-  await expect(mode.getByRole("radio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
-  await expect(page.getByText("The World of Darkness is always dark.")).toBeVisible();
+  // The time zone box fits its words, and the hint names this device's zone.
+  await expect(page.getByLabel("Time zone")).toHaveAttribute("placeholder", "Follow this device");
+  await expect(page.getByText(/This device is on .+ time\./)).toBeVisible();
   await page.screenshot(shots("settings"));
 });
 
@@ -67,8 +67,8 @@ test("notifications by email: a choice per kind, once the server can send email"
 
 test("a handle to be found by, and to sign in with", async ({ browser }) => {
   const { page } = await person(browser, "handle-player");
+  // On the profile, with the rest of how others see you.
   await page.getByRole("link", { name: "handle-player" }).click();
-  await page.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
   await expect(page.getByLabel("Your handle")).toHaveValue(`handle-player_${run.slice(-10)}`);
   const handle = `Owl_${run.slice(-10)}`;
   await page.getByLabel("Your handle").fill(handle);
@@ -84,6 +84,56 @@ test("a handle to be found by, and to sign in with", async ({ browser }) => {
   await other.getByLabel("Password").fill(PASSWORD);
   await other.getByRole("button", { name: "Sign in" }).click();
   await expect(other.getByRole("heading", { name: "Your characters" })).toBeVisible();
+});
+
+test("a signed-in person changes their password, and signs in with the new one", async ({ browser }) => {
+  const { page, email } = await person(browser, "pwchange-player");
+  // Signed in on another device too, which the change signs out.
+  const other = await (await browser.newContext()).newPage();
+  await other.goto("/sign-in");
+  await other.getByLabel("Email or handle").fill(email);
+  await other.getByLabel("Password").fill(PASSWORD);
+  await other.getByRole("button", { name: "Sign in" }).click();
+  await expect(other.getByRole("heading", { name: "Your characters" })).toBeVisible();
+
+  await page.getByRole("link", { name: "Your account" }).click();
+  await page.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
+  const card = page.locator("section", { has: page.getByRole("heading", { name: "Password", exact: true }) });
+  const newPassword = "a much longer passphrase";
+  // The wrong current password is refused.
+  await card.getByLabel("Current password").fill("not my password");
+  await card.getByLabel("New password").fill(newPassword);
+  await card.getByRole("button", { name: "Change password" }).click();
+  await expect(card.getByText("That's not your current password.")).toBeVisible();
+  await card.getByLabel("Current password").fill(PASSWORD);
+  await card.getByRole("button", { name: "Change password" }).click();
+  await expect(page.getByText("Password changed. You're signed out everywhere else.")).toBeVisible();
+  await expect(card.getByLabel("New password")).toHaveValue("");
+  await page.screenshot(shots("settings-password"));
+
+  // Still signed in here; the other device is signed out.
+  await page.reload();
+  await expect(card.getByLabel("Current password")).toBeVisible();
+  await other.reload();
+  await expect(other.getByRole("button", { name: "Sign in" })).toBeVisible();
+
+  // The old password no longer signs in; the new one does.
+  await other.getByLabel("Email or handle").fill(email);
+  await other.getByLabel("Password").fill(PASSWORD);
+  await other.getByRole("button", { name: "Sign in" }).click();
+  await expect(other.getByText("Wrong email, handle or password.")).toBeVisible();
+  await other.getByLabel("Password").fill(newPassword);
+  await other.getByRole("button", { name: "Sign in" }).click();
+  await expect(other.getByRole("heading", { name: "Your characters" })).toBeVisible();
+});
+
+test("the bell links to the notification settings", async ({ browser }) => {
+  const { page } = await person(browser, "bellsettings-pl");
+  await page.getByRole("button", { name: /^Notifications/ }).click();
+  await page.getByRole("dialog", { name: "Notifications" }).getByRole("link", { name: "Notification settings" }).click();
+  await expect(page).toHaveURL(/\/account\/settings#notifications$/);
+  await expect(page.getByRole("heading", { name: "Notifications by email" })).toBeInViewport();
+  await expect(page.getByRole("dialog", { name: "Notifications" })).toHaveCount(0);
 });
 
 test("dates and times show in each person's zone and format", async ({ browser }) => {

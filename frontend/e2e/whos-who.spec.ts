@@ -292,6 +292,7 @@ test("lines and veils: a player adds them, staff see them, another player only o
   // Ana writes a line and a veil on her account, with sharing off as it starts.
   const a = ana.page;
   await a.goto("/account");
+  await a.locator("main").getByRole("link", { name: "Lines and veils" }).click();
   await expect(a.getByText("A veil can happen in the story, but off-screen")).toBeVisible();
   await expect(a.getByLabel("Line 1", { exact: true })).toHaveAttribute("placeholder", "e.g. spiders");
   await a.getByLabel("Line 1", { exact: true }).fill("Spiders in the dark");
@@ -302,7 +303,7 @@ test("lines and veils: a player adds them, staff see them, another player only o
   await expect(share).not.toBeChecked();
   await expect(a.getByText("Off: only the staff of the troupes you play in see them.")).toBeVisible();
   await a.getByRole("button", { name: "Save lines and veils" }).click();
-  await expect(a.getByText("Saved.")).toBeVisible();
+  await expect(a.getByText("Lines and veils saved.")).toBeVisible();
   await a.screenshot(shots("lines-veils-account"));
 
   // The lead sees them on the Who's Who, the Characters tab and the troupe's list.
@@ -344,7 +345,7 @@ test("lines and veils: a player adds them, staff see them, another player only o
   await share.check();
   await expect(a.getByText("On: the other players in your troupes see them on the Who’s Who, as well as the staff.")).toBeVisible();
   await a.getByRole("button", { name: "Save lines and veils" }).click();
-  await expect(a.getByText("Saved.")).toBeVisible();
+  await expect(a.getByText("Lines and veils saved.")).toBeVisible();
   await b.reload();
   await expect(b.getByRole("article", { name: "Odile" }).getByLabel("Lines and veils of lv-ana")).toContainText("Spiders in the dark");
 

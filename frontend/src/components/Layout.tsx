@@ -42,8 +42,12 @@ export function Layout() {
                 </NavLink>
               )}
               <NotificationBell />
-              <span className="hidden text-mist sm:inline">·</span>
-              <NavLink to="/account" className={link} title="Your account">
+              <NavLink to="/account" className={(state) => `inline-flex items-center gap-1.5 ${link(state)}`} title="Your account">
+                <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 21a8 8 0 0 1 16 0" strokeLinecap="round" />
+                </svg>
+                <span className="sr-only">Your account: </span>
                 {me.data.display_name}
                 <span className="hidden sm:inline">{me.data.is_custodian && " (custodian)"}</span>
               </NavLink>
