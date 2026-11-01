@@ -22,6 +22,8 @@ NARRATOR_CAN = {
     TroupeAction.ANSWER_ASSIGNED_RESPONSES,
     # Players' lines and veils, which every member of staff needs at a game (#266).
     TroupeAction.VIEW_LINES_VEILS,
+    # Who says they are coming to each game, which every member of staff plans for (#420).
+    TroupeAction.VIEW_RSVPS,
 }
 
 

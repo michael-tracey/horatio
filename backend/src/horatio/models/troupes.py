@@ -31,6 +31,7 @@ class Troupe(Imported, Record):
         CheckConstraint("badge_status in ('all', 'negative', 'none')", name="badge_status"),
         CheckConstraint("location_limit in ('refuse', 'note')", name="location_limit"),
         CheckConstraint("backstory_mode in ('free', 'either', 'wizard')", name="backstory_mode"),
+        CheckConstraint("feeding in ('off', 'book')", name="feeding"),
     )
 
     name: Mapped[str]
@@ -68,6 +69,19 @@ class Troupe(Imported, Record):
     # Golconda Seeker holds the innate status Enlightened (Vol. 2, p. 267). Off unless
     # switched on (horatio.rules.grants.HOUSE_OPTIONS).
     golconda_enlightened: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Feeding (horatio.feeding): "book", tracked in downtimes as the core book has it,
+    # or "off", left out of Horatio altogether. What was recorded while it was on is
+    # kept, and comes back when it is switched on again.
+    feeding: Mapped[str] = mapped_column(default="book", server_default="book")
+    # The optional rule Blood Resonance (Vol. 2, pp. 294-297), while feeding is
+    # tracked: a character hunts for blood of one humor, and staff answer with the
+    # Resonance it fed on and any Dyscrasia (horatio.resonance).
+    feeding_resonance: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # The optional rules Feeding Territories (Vol. 2, pp. 304-307) and Advanced
+    # Feeding, the Rack (pp. 298-303), while feeding is tracked; the Rack only with
+    # Blood Resonance, as its vessels each carry one (horatio.territories, horatio.rack).
+    feeding_territories: Mapped[bool] = mapped_column(default=False, server_default="false")
+    feeding_rack: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Status on sheets (horatio.sect_status): who adds and removes fleeting and
     # negative status on its characters' sheets: "players", each on their own, naming
     # the patron; or "staff", its running staff only. Running staff always can.
@@ -133,6 +147,38 @@ class ScheduledGame(Record):
     troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class GameRsvp(Record):
+    """Whether a person means to come to one of their troupe's scheduled games
+    (horatio.api.games): "coming", "maybe" or "not_coming". One per person, not per
+    character. It is intent only: who came is a fact recorded at the game, apart
+    from this. It goes with its game when the game is taken off the schedule."""
+
+    __tablename__ = "game_rsvps"
+    __table_args__ = (
+        CheckConstraint("answer in ('coming', 'maybe', 'not_coming')", name="answer"),
+        UniqueConstraint("game_id", "user_id"),
+    )
+
+    game_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("scheduled_games.id", ondelete="CASCADE"))
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    answer: Mapped[str]
+
+
+class CalendarFeed(Record):
+    """A person's secret calendar link (horatio.api.calendar): one troupe's games
+    and downtime dates, or, with no troupe, those of every troupe they are in. The
+    token is the whole of the link's secret; resetting the link gives it a new one,
+    and the old link stops working."""
+
+    __tablename__ = "calendar_feeds"
+    __table_args__ = (UniqueConstraint("user_id", "troupe_id", postgresql_nulls_not_distinct=True),)
+
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    # None for the person's own feed of all their troupes.
+    troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"))
+    token: Mapped[str] = mapped_column(unique=True)
 
 
 class XpRangeEntry(Record):

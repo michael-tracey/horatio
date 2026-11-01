@@ -1,34 +1,58 @@
-import type { FeedingIn, MyFeedingOut } from "../../api/types";
+import type { FeedingIn, MyDowntime, MyFeedingOut } from "../../api/types";
 import { Button, Card, Field, Input, Notice, Select } from "../../components/ui";
 import { herdShared, needText, tally } from "../../feeding";
+import { Patrols, RackFeeding, TerritoryChoice } from "./FeedingVessels";
 
 /**
  * The Feeding section of the downtime form: feeding actions out of the general
  * actions, and the character's Herd shared out (its own feeding, gifts to other
- * characters, saved for game, other), never more dots than it has. The tally is
- * advisory; storytellers decide.
+ * characters, saved for game, other), never more dots than it has; and with Blood
+ * Resonance, the humor the character hunts for; with feeding territories, the
+ * territory it feeds in and its patrols. With the Rack, a vessel taken from it stands
+ * in for the actions and Herd. The tally is advisory; storytellers decide.
  */
 export function FeedingCard({
   feeding,
   value,
   onChange,
   actionsLeft,
+  characterId,
+  onDowntime,
 }: {
   feeding: MyFeedingOut;
   value: FeedingIn;
   onChange: (value: FeedingIn) => void;
   /** General actions not spent elsewhere on the form. */
   actionsLeft: number;
+  characterId: string;
+  /** The downtime as taking a vessel left it. */
+  onDowntime: (saved: MyDowntime) => void;
 }) {
   const { needed, reasons } = needText(feeding.need);
-  const counted = tally(feeding.need, value, feeding.received);
+  const territory = feeding.territories.find((t) => t.id === value.territory);
+  const counted = tally(feeding.need, value, feeding.received, territory?.name);
   const shared = herdShared(value);
   const gifts = value.gifts ?? [];
   const locked = feeding.locked;
   const number = (n: string) => Math.max(0, Number(n) || 0);
   const setGift = (i: number, change: Partial<(typeof gifts)[number]>) =>
     onChange({ ...value, gifts: gifts.map((g, j) => (j === i ? { ...g, ...change } : g)) });
+  const hunted = feeding.humors.find((h) => h.key === value.resonance);
   const unchosen = feeding.recipients.filter((r) => !gifts.some((g) => g.character_id === r.character_id));
+
+  if (feeding.rack)
+    return (
+      <Card title="Feeding">
+        {locked && <Notice>A storyteller has answered your feeding, so it can no longer change.</Notice>}
+        <RackFeeding feeding={feeding} characterId={characterId} onDowntime={onDowntime} />
+        <div className="mt-3 sm:max-w-sm">
+          <Field label="Where and how">
+            <Input disabled={locked} value={value.where ?? ""} onChange={(e) => onChange({ ...value, where: e.target.value })} placeholder="Optional" />
+          </Field>
+        </div>
+        <Patrols feeding={feeding} value={value} onChange={onChange} actionsLeft={actionsLeft} />
+      </Card>
+    );
 
   return (
     <Card title="Feeding">
@@ -51,6 +75,25 @@ export function FeedingCard({
           <Input disabled={locked} value={value.where ?? ""} onChange={(e) => onChange({ ...value, where: e.target.value })} placeholder="Optional" />
         </Field>
       </div>
+      {feeding.humors.length > 0 && (
+        <div className="mt-3 sm:max-w-sm">
+          <Field
+          label="Resonance you hunt for"
+          hint={hunted ? `${hunted.name} blood brings ${hunted.feelings}. Staff say what you found.` : "Blood Resonance (Vol. 2, pp. 294-297): the humor you look for. Staff say what you found."}
+        >
+          <Select disabled={locked} value={value.resonance ?? ""} onChange={(e) => onChange({ ...value, resonance: e.target.value as FeedingIn["resonance"] })}>
+            <option value="">Any</option>
+            {feeding.humors.map((h) => (
+              <option key={h.key} value={h.key}>
+                {h.name}
+              </option>
+            ))}
+          </Select>
+          </Field>
+        </div>
+      )}
+      <TerritoryChoice feeding={feeding} value={value} onChange={onChange} />
+      <Patrols feeding={feeding} value={value} onChange={onChange} actionsLeft={actionsLeft} />
 
       {feeding.herd > 0 && (
         <fieldset className="mt-4 flex flex-col gap-3 border-t border-ash pt-3" disabled={locked}>

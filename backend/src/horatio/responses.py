@@ -18,8 +18,9 @@ import random
 import re
 import uuid
 from collections.abc import Collection, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
+from itertools import combinations
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -369,9 +370,21 @@ HEADING = "**Downtime results for "
 UPDATED_HEADING = "**Updated downtime results for "
 
 
-def compose(db: Session, cycle: DowntimeCycle, character: Character, submission: Submission) -> str:
-    """The message a player receives: the answer to their feeding, then each answered
-    question, what they did, and the result."""
+def feeding_shown(db: Session, cycle: DowntimeCycle) -> feeding.Shown:
+    return feeding.shown(db.get_one(Troupe, cycle.troupe_id))
+
+
+def compose(
+    db: Session,
+    cycle: DowntimeCycle,
+    character: Character,
+    submission: Submission,
+    *,
+    shown: feeding.Shown | None = None,
+) -> str:
+    """The message a player receives: the answer to their feeding, if the troupe
+    tracks it, then each answered question, what they did, and the result. `shown`
+    overrides the troupe's feeding setting."""
     rows = db.execute(
         select(Question, Answer, Response)
         .join(Answer, Answer.question_id == Question.id)
@@ -380,7 +393,7 @@ def compose(db: Session, cycle: DowntimeCycle, character: Character, submission:
         .order_by(Question.position, Answer.slot)
     )
     parts = [f"{HEADING}{character.name} ({cycle.name})**"]
-    fed = feeding.compose(db, submission)
+    fed = feeding.compose(db, submission, shown or feeding_shown(db, cycle))
     if fed is not None:
         parts.append(fed)
     for question, answer, response in rows:
@@ -388,6 +401,34 @@ def compose(db: Session, cycle: DowntimeCycle, character: Character, submission:
             f"**{question.prompt}**\n*Your action:* {answer.body}\n*Result:* {response.body}"
         )
     return "\n\n".join(parts)
+
+
+def same_results(
+    db: Session, cycle: DowntimeCycle, character: Character, submission: Submission, message: str
+) -> bool:
+    """Whether `message` is the submission's results as they stand. Feeding, or an
+    optional rule, switched off since hides what the player already has, which is no
+    news: results delivered with it still count as the same."""
+    now = feeding_shown(db, cycle)
+    return any(
+        compose(db, cycle, character, submission, shown=way) == message for way in shown_more(now)
+    )
+
+
+def shown_more(now: feeding.Shown) -> list[feeding.Shown]:
+    """`now`, then each way of showing more of feeding than it does, fewest changes
+    first: what results delivered before something was switched off may have shown."""
+    flags = ("tracked", "resonance", "territories", "rack")
+    off = [f for f in flags if not getattr(now, f)]
+    ways: list[feeding.Shown] = []
+    for raised in sorted((c for n in range(len(off) + 1) for c in combinations(off, n)), key=len):
+        way = replace(now, **dict.fromkeys(raised, True))
+        if way.rack and not way.resonance:
+            continue
+        if not way.tracked and way != now:
+            continue
+        ways.append(way)
+    return ways
 
 
 def as_update(message: str) -> str:
@@ -460,11 +501,15 @@ def readiness(db: Session, cycle: DowntimeCycle) -> list[Readiness]:
     ):
         assert d.submission_id is not None
         lasts[d.submission_id] = d
+    tracked = feeding.tracked(db.get_one(Troupe, cycle.troupe_id))
     found: list[Readiness] = []
     for submission, participant, character in rows:
         total, written = counts.get(submission.id, (0, 0))
-        fed = submission.feeding_result is not None
-        feeds = fed or feeding.participant_basis(db, participant, character, cycle).get("clan")
+        # Feeding counts only while the troupe tracks it.
+        fed = tracked and submission.feeding_result is not None
+        feeds = tracked and (
+            fed or feeding.participant_basis(db, participant, character, cycle).get("clan")
+        )
         last = lasts.get(submission.id)
         found.append(
             Readiness(
@@ -474,7 +519,7 @@ def readiness(db: Session, cycle: DowntimeCycle) -> list[Readiness]:
                 to_answer=total + bool(feeds),
                 last=last,
                 changed=last is not None
-                and compose(db, cycle, character, submission) != last.message,
+                and not same_results(db, cycle, character, submission, last.message),
             )
         )
     return found
@@ -485,7 +530,7 @@ def up_to_date(
 ) -> bool:
     """Whether the player has the submission's results as they stand."""
     last = last_delivery(db, submission.id)
-    return last is not None and last.message == compose(db, cycle, character, submission)
+    return last is not None and same_results(db, cycle, character, submission, last.message)
 
 
 @dataclass
@@ -518,7 +563,7 @@ def deliver_cycle(
             message = compose(db, cycle, character, submission)
             revision = last.revision + 1 if last is not None else 1
             # A feeding answer new to the player sets their Blood at the next game.
-            fed = feeding.compose(db, submission)
+            fed = feeding.compose(db, submission, feeding_shown(db, cycle))
             if fed is not None and (last is None or fed not in last.message):
                 feeding.mark_half_blood(db, character, submission)
             db.add(

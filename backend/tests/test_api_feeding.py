@@ -397,6 +397,209 @@ def test_an_other_answer_has_no_working(troupe: Troupe) -> None:
     assert troupe.player.client.get(f"/characters/{agnes}/play").json()["half_blood"] is False
 
 
+# --- the troupe's setting ---------------------------------------------------------------
+
+
+def set_feeding(troupe: Troupe, person: Person | None = None, **body: Any) -> Any:
+    return (person or troupe.storyteller).client.put(f"/troupes/{troupe.id}/feeding", json=body)
+
+
+def answer_url(troupe: Troupe, cycle_id: str, name: str) -> str:
+    participant = character_view(troupe, cycle_id, name)["participant_id"]
+    return f"/cycles/{cycle_id}/participants/{participant}/feeding-answer"
+
+
+def test_a_troupe_that_doesnt_track_feeding_leaves_it_out_and_keeps_what_it_had(
+    troupe: Troupe,
+) -> None:
+    agnes = vampire(troupe, troupe.player, "Agnes", "Toreador")
+    cycle = open_cycle(troupe, new_cycle(troupe))
+    general = question_id(my_downtime(troupe.player, agnes).json(), "Downtime action")
+    patrol = [{"question_id": general, "slot": 1, "body": "Patrol"}]
+    assert save_feeding(troupe.player, agnes, patrol, actions=1, where="The docks").status_code
+    submit(troupe.player, agnes)
+    url = answer_url(troupe, cycle["id"], "Agnes")
+    assert troupe.storyteller.client.put(url, json={"result": "half"}).status_code == 200
+    assert troupe.lead.client.get(f"/troupes/{troupe.id}").json()["feeding"] == "book"
+
+    # Only storytellers change it, as with the troupe's other house rules.
+    assert set_feeding(troupe, troupe.assistant, feeding="off").status_code == 403
+    off = set_feeding(troupe, feeding="off")
+    assert off.status_code == 200, off.text
+    assert (off.json()["feeding"], off.json()["feeding_resonance"]) == ("off", False)
+    log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
+    assert "storyteller set feeding to not tracked, with optional rules: none." in log
+
+    # No Feeding section, no Feeding tab, and nothing to answer.
+    assert my_downtime(troupe.player, agnes).json()["feeding"] is None
+    assert troupe.storyteller.client.get(f"/cycles/{cycle['id']}").json()["feeding"] is False
+    assert staff_view(troupe, cycle["id"]).status_code == 409
+    assert troupe.storyteller.client.put(url, json={"result": "full"}).status_code == 409
+    # Its feeding action no longer counts against the general actions; what the player
+    # sends for feeding is not saved over what they had.
+    three = [{"question_id": general, "slot": n, "body": f"Action {n}"} for n in (1, 2, 3)]
+    saved = save_feeding(troupe.player, agnes, three, actions=0, where="")
+    assert saved.status_code == 200, saved.text
+
+    # Delivered, the results have no feeding, and the next game starts at full Blood.
+    troupe.storyteller.client.post(f"/cycles/{cycle['id']}/close")
+    for r in troupe.assistant.client.get(f"/cycles/{cycle['id']}/responses").json():
+        troupe.assistant.client.put(f"/responses/{r['id']}", json={"body": "Quiet night."})
+    [ready] = troupe.assistant.client.get(f"/cycles/{cycle['id']}/deliveries").json()[
+        "participants"
+    ]
+    assert (ready["answered"], ready["to_answer"]) == (3, 3)
+    assert troupe.storyteller.client.post(f"/cycles/{cycle['id']}/deliver").json()["delivered"]
+    [result] = troupe.player.client.get(f"/characters/{agnes}/downtime/results").json()
+    assert "Feeding" not in result["message"]
+    assert troupe.player.client.get(f"/characters/{agnes}/play").json()["half_blood"] is False
+
+    # Switched back on, everything is as it was, and goes out as an update.
+    assert set_feeding(troupe, feeding="book").status_code == 200
+    view = character_view(troupe, cycle["id"], "Agnes")
+    assert (view["result"], view["summary"]) == ("half", "1 feeding action (The docks)")
+    [ready] = troupe.assistant.client.get(f"/cycles/{cycle['id']}/deliveries").json()[
+        "participants"
+    ]
+    assert (ready["answered"], ready["to_answer"], ready["changed"]) == (4, 4, True)
+    again = troupe.storyteller.client.post(f"/cycles/{cycle['id']}/deliver").json()
+    assert (again["delivered"], again["updated"]) == (1, 1)
+    results = troupe.player.client.get(f"/characters/{agnes}/downtime/results").json()
+    assert "*Result:* **Half Blood next game.**" in results[0]["message"]
+    assert troupe.player.client.get(f"/characters/{agnes}/play").json()["half_blood"] is True
+
+
+def test_switching_feeding_off_after_delivery_is_no_news(troupe: Troupe) -> None:
+    agnes = vampire(troupe, troupe.player, "Agnes", "Toreador")
+    cycle = open_cycle(troupe, new_cycle(troupe))
+    submit(troupe.player, agnes)
+    troupe.storyteller.client.put(answer_url(troupe, cycle["id"], "Agnes"), json={"result": "half"})
+    troupe.storyteller.client.post(f"/cycles/{cycle['id']}/close")
+    troupe.storyteller.client.post(f"/cycles/{cycle['id']}/deliver")
+
+    set_feeding(troupe, feeding="off")
+
+    # The player keeps the results they had; switching feeding off is not an update,
+    # and the half Blood they were told of no longer applies.
+    [ready] = troupe.assistant.client.get(f"/cycles/{cycle['id']}/deliveries").json()[
+        "participants"
+    ]
+    assert (ready["delivered"], ready["changed"], ready["due"]) == (True, False, False)
+    [result] = troupe.player.client.get(f"/characters/{agnes}/downtime/results").json()
+    assert "**Feeding**" in result["message"]
+    assert troupe.player.client.get(f"/characters/{agnes}/play").json()["half_blood"] is False
+    set_feeding(troupe, feeding="book")
+    assert troupe.player.client.get(f"/characters/{agnes}/play").json()["half_blood"] is True
+
+
+def test_the_setting_shows_in_the_troupes_house_rules(troupe: Troupe) -> None:
+    names = ("Feeding", "Blood Resonance", "Feeding territories", "Advanced feeding: the Rack")
+
+    def feeding_rules() -> list[dict[str, Any]]:
+        house = troupe.player.client.get(f"/troupes/{troupe.id}/house-rules").json()
+        return [o for o in house["other"] if o["name"] in names]
+
+    assert feeding_rules() == []
+    set_feeding(troupe, feeding="book", resonance=True)
+    [rule] = feeding_rules()
+    assert rule["name"] == "Blood Resonance"
+    assert "Vol. 2, pp. 294-297" in rule["text"]
+    set_feeding(troupe, feeding="book", resonance=True, territories=True, rack=True)
+    assert [r["name"] for r in feeding_rules()] == list(names[1:])
+    set_feeding(troupe, feeding="off", resonance=True)
+    [rule] = feeding_rules()
+    assert (rule["name"], rule["text"]) == (
+        "Feeding",
+        "Not tracked: no feeding in downtimes, results or at the next game",
+    )
+    # Resonance is kept for when feeding comes back.
+    assert troupe.lead.client.get(f"/troupes/{troupe.id}").json()["feeding_resonance"] is True
+    assert set_feeding(troupe, feeding="sometimes").status_code == 422
+
+
+# --- Blood Resonance --------------------------------------------------------------------
+
+
+def test_blood_resonance_from_the_form_to_the_results(troupe: Troupe) -> None:
+    agnes = vampire(troupe, troupe.player, "Agnes", "Toreador")
+    cycle = open_cycle(troupe, new_cycle(troupe))
+    assert feeding_form(troupe.player, agnes)["humors"] == []
+    set_feeding(troupe, feeding="book", resonance=True)
+
+    form = feeding_form(troupe.player, agnes)
+    assert [h["key"] for h in form["humors"]] == [
+        "choleric",
+        "melancholic",
+        "phlegmatic",
+        "sanguine",
+    ]
+    sanguine = form["humors"][3]
+    assert sanguine["feelings"] == "enthusiasm, vitality, excitement or joy"
+    assert "Manic High" in [d["name"] for d in sanguine["dyscrasias"]]
+    assert save_feeding(troupe.player, agnes, actions=1, resonance="bilious").status_code == 422
+    saved = save_feeding(troupe.player, agnes, actions=1, resonance="sanguine")
+    assert saved.status_code == 200, saved.text
+    submit(troupe.player, agnes)
+
+    view = character_view(troupe, cycle["id"], "Agnes")
+    assert view["summary"] == "1 feeding action · hunting sanguine blood"
+    url = answer_url(troupe, cycle["id"], "Agnes")
+    wrong = troupe.storyteller.client.put(
+        url, json={"result": "full", "resonance": "phlegmatic", "dyscrasia": "Manic High"}
+    )
+    assert wrong.status_code == 422  # Manic High is sanguine
+    answered = troupe.storyteller.client.put(
+        url, json={"result": "full", "resonance": "sanguine", "dyscrasia": "Manic High"}
+    )
+    assert answered.status_code == 200, answered.text
+    view = character_view(troupe, cycle["id"], "Agnes")
+    assert (view["resonance"], view["dyscrasia"]) == ("sanguine", "Manic High")
+
+    troupe.storyteller.client.post(f"/cycles/{cycle['id']}/close")
+    troupe.storyteller.client.post(f"/cycles/{cycle['id']}/deliver")
+    [result] = troupe.player.client.get(f"/characters/{agnes}/downtime/results").json()
+    assert (
+        "**Feeding**\n*Your feeding:* 1 feeding action · hunting sanguine blood\n"
+        "*Result:* **Full Blood next game.**\n\n"
+        "Fed on **sanguine** blood (enthusiasm, vitality, excitement or joy). "
+        "Dyscrasia: **Manic High**: +1 wild card if you won your last challenge, within the "
+        "last minute. Use it once, before the end of the next game (Vol. 2, pp. 296-297)."
+        "\n\n▸ How it was worked out:"
+    ) in result["message"]
+
+    # Switched off, the Resonance is kept but no longer shown, and is no news.
+    set_feeding(troupe, feeding="book", resonance=False)
+    view = character_view(troupe, cycle["id"], "Agnes")
+    assert (view["resonance"], view["summary"]) == (None, "1 feeding action")
+    [ready] = troupe.assistant.client.get(f"/cycles/{cycle['id']}/deliveries").json()[
+        "participants"
+    ]
+    assert ready["changed"] is False
+    set_feeding(troupe, feeding="book", resonance=True)
+    assert character_view(troupe, cycle["id"], "Agnes")["dyscrasia"] == "Manic High"
+
+
+def test_a_resonance_with_no_dyscrasia(troupe: Troupe) -> None:
+    agnes = vampire(troupe, troupe.player, "Agnes", "Toreador")
+    cycle = open_cycle(troupe, new_cycle(troupe))
+    set_feeding(troupe, feeding="book", resonance=True)
+    submit(troupe.player, agnes)
+    url = answer_url(troupe, cycle["id"], "Agnes")
+    troupe.storyteller.client.put(url, json={"result": "half", "resonance": "melancholic"})
+    troupe.storyteller.client.post(f"/cycles/{cycle['id']}/close")
+    troupe.storyteller.client.post(f"/cycles/{cycle['id']}/deliver")
+
+    [result] = troupe.player.client.get(f"/characters/{agnes}/downtime/results").json()
+    assert (
+        "Fed on **melancholic** blood (sadness, fear, awareness or melancholy). No Dyscrasia."
+    ) in result["message"]
+
+    # Taking the answer back takes its Resonance with it.
+    troupe.storyteller.client.put(url, json={"result": None})
+    view = character_view(troupe, cycle["id"], "Agnes")
+    assert (view["result"], view["resonance"]) == (None, None)
+
+
 # --- the rules --------------------------------------------------------------------------
 
 
@@ -448,3 +651,208 @@ def test_every_feeding_modifier_names_a_trait() -> None:
         rule_set = load_rule_set(path)
         for modifier in rule_set.feeding_modifiers:
             assert (modifier.category, modifier.trait) in rule_set.traits
+
+
+# --- feeding territories and the Rack -------------------------------------------------
+
+
+def territory(troupe: Troupe, name: str, size: str, *holders: str, **body: Any) -> str:
+    made = troupe.storyteller.client.post(
+        f"/troupes/{troupe.id}/feeding-territories",
+        json={"name": name, "size": size, "holder_ids": list(holders), **body},
+    )
+    assert made.status_code == 201, made.text
+    return str(made.json()["id"])
+
+
+def results_of(player: Person, character_id: str) -> str:
+    [result] = player.client.get(f"/characters/{character_id}/downtime/results").json()
+    return str(result["message"])
+
+
+def test_the_rack_needs_blood_resonance(troupe: Troupe) -> None:
+    refused = set_feeding(troupe, feeding="book", rack=True)
+    assert refused.status_code == 422
+    assert "builds on Blood Resonance" in refused.json()["detail"]
+    on = set_feeding(troupe, feeding="book", resonance=True, rack=True)
+    assert (on.json()["feeding_rack"], on.json()["feeding_resonance"]) == (True, True)
+
+
+def test_territories_with_book_feeding_poaching_and_patrols(troupe: Troupe) -> None:
+    other = sign_up(troupe.client_for, "other")
+    agnes = vampire(troupe, troupe.player, "Agnes", "Toreador")
+    bram = vampire(troupe, other, "Bram", "Brujah")
+    body = {"name": "Docks", "size": "small"}
+    url = f"/troupes/{troupe.id}/feeding-territories"
+    assert troupe.storyteller.client.post(url, json=body).status_code == 409  # rule off
+    set_feeding(troupe, feeding="book", territories=True)
+    assert troupe.narrator.client.post(url, json=body).status_code == 403
+    assert troupe.player.client.post(url, json=body).status_code == 403
+    docks = territory(troupe, "Docks", "small", agnes, held_by="Clan Toreador")
+    territory(troupe, "Gold Coast", "notable", area="Lakeside mansions")
+    assert troupe.storyteller.client.post(url, json=body).status_code == 409  # same name
+    listed = troupe.player.client.get(url).json()
+    assert [(t["name"], t["vessels"], t["holders"]) for t in listed] == [
+        ("Docks", 2, ["Agnes"]),
+        ("Gold Coast", 6, []),
+    ]
+    assert troupe.stranger.client.get(url).status_code == 404
+
+    cycle = open_cycle(troupe, new_cycle(troupe))
+    form = feeding_form(troupe.player, agnes)
+    assert [(t["name"], t["mine"]) for t in form["territories"]] == [
+        ("Docks", True),
+        ("Gold Coast", False),
+    ]
+    general = question_id(my_downtime(troupe.player, agnes).json(), "Downtime action")
+    three = [{"question_id": general, "slot": n, "body": f"Action {n}"} for n in (1, 2, 3)]
+    patrol = [{"territory_id": docks, "actions": 1}]
+    too_many = save_feeding(troupe.player, agnes, three, territory=docks, patrols=patrol)
+    assert too_many.status_code == 422
+    assert "spent feeding or patrolling" in too_many.json()["detail"]
+    saved = save_feeding(troupe.player, agnes, territory=docks, patrols=patrol)
+    assert saved.status_code == 200, saved.text
+    assert save_feeding(other, bram, patrols=patrol).status_code == 422  # not his to patrol
+    assert save_feeding(other, bram, territory=docks).status_code == 200
+    submit(troupe.player, agnes)
+    submit(other, bram)
+
+    # Feeding in a territory stands in for a feeding action; Bram poaches there.
+    agnes_view = character_view(troupe, cycle["id"], "Agnes")
+    assert (
+        agnes_view["summary"]
+        == "0 feeding actions · feeding in Docks · patrolling Docks (1 action)"
+    )
+    assert (agnes_view["tally"]["total"], agnes_view["tally"]["enough"]) == (1, True)
+    bram_view = character_view(troupe, cycle["id"], "Bram")
+    assert bram_view["poaching"] == "Docks"
+    assert [(p["character_name"], p["actions"]) for p in bram_view["patrols"]] == [("Agnes", 1)]
+    uses = staff_view(troupe, cycle["id"]).json()["territories"]
+    assert uses[0]["feeding"] == ["Agnes", "Bram"]
+
+    bram_url = answer_url(troupe, cycle["id"], "Bram")
+    wrong = troupe.storyteller.client.put(bram_url, json={"result": "half", "caught_by": [bram]})
+    assert wrong.status_code == 422
+    caught = troupe.storyteller.client.put(bram_url, json={"result": "half", "caught_by": [agnes]})
+    assert caught.status_code == 200, caught.text
+    troupe.storyteller.client.put(answer_url(troupe, cycle["id"], "Agnes"), json={"result": "full"})
+    troupe.storyteller.client.post(f"/cycles/{cycle['id']}/close")
+    assert troupe.storyteller.client.post(f"/cycles/{cycle['id']}/deliver").json()["delivered"] == 2
+
+    assert "You were caught poaching in Docks by Agnes." in results_of(other, bram)
+    assert "Patrolling Docks, you caught Bram poaching." in results_of(troupe.player, agnes)
+
+
+def test_the_rack_from_laying_it_out_to_the_results(troupe: Troupe) -> None:
+    other = sign_up(troupe.client_for, "other")
+    agnes = vampire(troupe, troupe.player, "Agnes", "Toreador", ("backgrounds", "Herd", 2))
+    bram = vampire(troupe, other, "Bram", "Ventrue")
+    set_feeding(troupe, feeding="book", resonance=True, territories=True, rack=True)
+    territory(troupe, "Docks", "small", agnes)
+    cycle = open_cycle(troupe, new_cycle(troupe))
+
+    rack_url = f"/cycles/{cycle['id']}/rack"
+    assert troupe.narrator.client.post(rack_url, json={"count": 3}).status_code == 403
+    dealt = troupe.storyteller.client.post(rack_url, json={"count": 3})
+    assert dealt.status_code == 200, dealt.text
+    laid = dealt.json()["rack"]
+    assert (laid["players"], laid["suggested"]) == (2, 3)
+    sources = sorted(c["source"] for c in laid["cards"])
+    assert sources == ["herd", "herd", "rack", "rack", "rack", "territory", "territory"]
+    assert len({c["number"] for c in laid["cards"]}) == 7
+    assert {c["dealt_to"] for c in laid["cards"] if c["source"] == "herd"} == {"Agnes"}
+    # Dealing again tops up the Rack, but never deals Herd or territory cards twice.
+    again = troupe.storyteller.client.post(rack_url, json={"count": 0}).json()["rack"]
+    assert len(again["cards"]) == 7
+
+    agnes_form = feeding_form(troupe.player, agnes)
+    bram_form = feeding_form(other, bram)
+    assert agnes_form["rack"] is True
+    assert len(agnes_form["cards"]) == 7
+    assert sorted(c["source"] for c in bram_form["cards"]) == [
+        "rack",
+        "rack",
+        "rack",
+        "territory",
+        "territory",
+    ]
+
+    # First come, first served: Agnes takes a card from the Rack, and Bram can't.
+    on_rack = [c for c in agnes_form["cards"] if c["source"] == "rack"]
+    take = "/characters/{}/downtime/vessel"
+    taken = troupe.player.client.post(take.format(agnes), json={"card_id": on_rack[0]["id"]})
+    assert taken.status_code == 200, taken.text
+    assert (
+        other.client.post(take.format(bram), json={"card_id": on_rack[0]["id"]}).status_code == 409
+    )
+    herd_card = next(c for c in agnes_form["cards"] if c["source"] == "herd")
+    assert (
+        other.client.post(take.format(bram), json={"card_id": herd_card["id"]}).status_code == 422
+    )
+    # Bram's Ventrue weakness: never a card ending as the second one does.
+    participant = character_view(troupe, cycle["id"], "Bram")["participant_id"]
+    restricted = troupe.storyteller.client.put(
+        f"/cycles/{cycle['id']}/participants/{participant}/feeding-numbers",
+        json={"rule": {"mode": "never", "endings": [on_rack[1]["number"] % 10]}},
+    )
+    assert restricted.status_code == 200, restricted.text
+    refused = other.client.post(take.format(bram), json={"card_id": on_rack[1]["id"]})
+    assert refused.status_code == 422
+    assert "never cards ending in" in refused.json()["detail"]
+    # Agnes changes her mind; the card she gave back is free again.
+    troupe.player.client.post(take.format(agnes), json={"card_id": herd_card["id"]})
+    docks_card = next(c for c in bram_form["cards"] if c["source"] == "territory")
+    took = other.client.post(take.format(bram), json={"card_id": docks_card["id"]})
+    assert took.status_code == 200, took.text
+
+    # Hunting outside the Rack deals 3, 2 or 1 cards, once a cycle.
+    hunted = other.client.post(f"/characters/{bram}/downtime/hunt")
+    assert hunted.status_code == 200, hunted.text
+    form = hunted.json()["feeding"]
+    hunt_cards = [c for c in form["cards"] if c["source"] == "hunt"]
+    assert len(hunt_cards) == {"win": 3, "tie": 2, "lose": 1}[form["hunt"]]
+    assert other.client.post(f"/characters/{bram}/downtime/hunt").status_code == 409
+    # With the Rack, feeding actions are not spent: all three actions are free.
+    general = question_id(my_downtime(other, bram).json(), "Downtime action")
+    three = [{"question_id": general, "slot": n, "body": f"Action {n}"} for n in (1, 2, 3)]
+    assert save_feeding(other, bram, three, actions=2).status_code == 200
+    assert feeding_form(other, bram)["hunt"] == form["hunt"]
+    submit(troupe.player, agnes)
+    submit(other, bram)
+
+    view = character_view(troupe, cycle["id"], "Bram")
+    assert view["vessel"]["id"] == docks_card["id"]
+    assert view["poaching"] == "Docks"
+    assert view["restriction"]["text"].startswith("Never cards ending in")
+    card_url = f"{rack_url}/{docks_card['id']}"
+    changed = troupe.storyteller.client.put(
+        card_url, json={"resonance": "choleric", "dyscrasia": "Bully", "descriptor": "a dock hand"}
+    )
+    assert changed.status_code == 200, changed.text
+    assert troupe.storyteller.client.delete(card_url).status_code == 409  # taken
+    answered = troupe.storyteller.client.put(
+        answer_url(troupe, cycle["id"], "Bram"),
+        json={"result": "full", "resonance": "choleric", "dyscrasia": "Bully"},
+    )
+    assert answered.status_code == 200, answered.text
+    locked = other.client.post(take.format(bram), json={"card_id": None})
+    assert locked.status_code == 409
+    troupe.storyteller.client.post(f"/cycles/{cycle['id']}/close")
+    # His actions are not answered yet; his feeding goes out with what there is.
+    troupe.storyteller.client.post(f"/cycles/{cycle['id']}/deliver", json={"partial": True})
+
+    message = results_of(other, bram)
+    number = docks_card["number"]
+    assert (
+        f"*Your feeding:* Feeding Card {number}, choleric, Bully (a dock hand), from Docks"
+    ) in message
+    assert "Poaching in Docks, you went unnoticed." in message
+    assert f"▸ How it was worked out: took Feeding Card {number}" in message
+
+
+def test_the_book_number_of_cards() -> None:
+    from horatio import rack
+
+    assert [rack.suggested(n) for n in (10, 20, 30, 40)] == [14, 28, 42, 56]
+    assert rack.suggested(20, masquerade="severe") == 20
+    assert rack.suggested(10, mood="very") == 19
