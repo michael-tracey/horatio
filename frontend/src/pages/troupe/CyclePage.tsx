@@ -2,16 +2,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, Route, Routes, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { CycleOut, ParticipantOut, QuestionIn, WorkItemOut } from "../../api/types";
-import { Avatar } from "../../components/Avatar";
+import type { CycleOut, QuestionIn, WorkItemOut } from "../../api/types";
 import { ResponseEditor } from "../../components/ResponseEditor";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, PageTitle, Select, Tabs, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { timeLeft } from "./cycles";
 import { closeFacts, completeFacts } from "./delivery";
 import { DeliveryTab } from "./DeliveryTab";
 import { FeedingTab } from "./FeedingTab";
-import { LogInfluenceButton } from "./LogInfluence";
+import { ParticipantsTab } from "./ParticipantsTab";
 
 export function CyclePage() {
   const { cycleId = "" } = useParams();
@@ -19,22 +19,36 @@ export function CyclePage() {
     queryKey: ["cycle", cycleId],
     queryFn: () => unwrap(api.GET("/api/cycles/{cycle_id}", { params: { path: { cycle_id: cycleId } } })),
   });
+  // For the way back: which troupe's cycle this is.
+  const troupeId = cycle.data?.troupe_id ?? "";
+  const troupe = useQuery({
+    queryKey: ["troupe", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupeId } } })),
+    enabled: !!troupeId,
+  });
   if (cycle.isPending) return <Loading />;
   if (cycle.error) return <ErrorText error={cycle.error} />;
   const c = cycle.data;
   const base = `/cycles/${c.id}`;
   return (
     <>
-      <PageTitle
-        subtitle={
-          <Link to={`/troupes/${c.troupe_id}/downtimes`} className="hover:underline">
-            ← All cycles
-          </Link>
-        }
-        actions={<Badge tone={c.status === "open" ? "gold" : "mist"}>{c.status}</Badge>}
-      >
-        {c.name}
-      </PageTitle>
+      <nav aria-label="Breadcrumb" className="mb-1 text-sm text-mist">
+        <ol className="flex flex-wrap items-center gap-x-1.5">
+          <li className="min-w-0">
+            <Link to={`/troupes/${c.troupe_id}`} className="block truncate hover:text-parchment hover:underline">
+              {troupe.data?.name ?? "Troupe"}
+            </Link>
+          </li>
+          <li aria-hidden="true">›</li>
+          <li>
+            <Link to={`/troupes/${c.troupe_id}/downtimes`} className="hover:text-parchment hover:underline">
+              Downtimes
+            </Link>
+          </li>
+          <li aria-hidden="true">›</li>
+        </ol>
+      </nav>
+      <PageTitle actions={<Badge tone={c.status === "open" ? "gold" : "mist"}>{c.status}</Badge>}>{c.name}</PageTitle>
       <Tabs
         tabs={[
           { to: base, label: "Overview", end: true },
@@ -48,7 +62,7 @@ export function CyclePage() {
       <Routes>
         <Route index element={<Overview cycle={c} />} />
         <Route path="form" element={<FormEditor cycle={c} />} />
-        <Route path="participants" element={<Participants cycle={c} />} />
+        <Route path="participants" element={<ParticipantsTab cycle={c} />} />
         <Route path="feeding" element={<FeedingTab cycle={c} />} />
         <Route path="responses" element={<Responses cycle={c} />} />
         <Route path="delivery" element={<DeliveryTab cycle={c} />} />
@@ -165,16 +179,40 @@ function Overview({ cycle }: { cycle: CycleOut }) {
       </Card>
       {p && (
         <Card title="Progress">
-          <p className="text-sm">
-            {p.submitted} of {p.participants} submitted · {p.written} of {p.responses} responses written
-          </p>
-          <div className="mt-2 h-2 overflow-hidden rounded bg-ash">
-            <div className="h-full bg-gold" style={{ width: `${p.responses ? (100 * p.written) / p.responses : 0}%` }} />
-          </div>
-          <h3 className="mt-4 mb-1 font-sans text-xs text-mist uppercase">By who</h3>
-          <ProgressRows rows={p.by_assignee} />
-          <h3 className="mt-4 mb-1 font-sans text-xs text-mist uppercase">By kind</h3>
-          <ProgressRows rows={p.by_action_kind} />
+          {cycle.status === "open" ? (
+            // While players are writing, what matters is who has submitted.
+            <>
+              <p className="text-sm">
+                {p.submitted} of {p.participants} submitted
+              </p>
+              <Bar label="Submitted" done={p.submitted} total={p.participants} />
+              <p className="mt-2 text-sm text-mist">{timeLeft(cycle.closes_at, cycle.grace_ends_at, (at) => dates.dueDay(at))}</p>
+              {p.submitted < p.participants && (
+                <Link to="participants?show=not-submitted" className="mt-2 inline-block text-sm text-gold hover:underline">
+                  See who hasn't submitted
+                </Link>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-sm">
+                {p.submitted} of {p.participants} submitted · {p.written} of {p.responses} responses written
+              </p>
+              <Bar label="Responses written" done={p.written} total={p.responses} />
+            </>
+          )}
+          {Object.keys(p.by_assignee).length > 0 && (
+            <>
+              <h3 className="mt-4 mb-1 font-sans text-xs text-mist uppercase">By who</h3>
+              <ProgressRows rows={p.by_assignee} />
+            </>
+          )}
+          {Object.keys(p.by_action_kind).length > 0 && (
+            <>
+              <h3 className="mt-4 mb-1 font-sans text-xs text-mist uppercase">By kind</h3>
+              <ProgressRows rows={p.by_action_kind} />
+            </>
+          )}
         </Card>
       )}
     </div>
@@ -227,6 +265,14 @@ function CompletionXp({ cycle }: { cycle: CycleOut }) {
       {cycle.status === "open" && <span className="w-full text-xs text-mist">Characters who have already submitted keep what they got.</span>}
       <ErrorText error={save.error} />
     </form>
+  );
+}
+
+function Bar({ label, done, total }: { label: string; done: number; total: number }) {
+  return (
+    <div role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} className="mt-2 h-2 overflow-hidden rounded bg-ash">
+      <div className="h-full bg-gold" style={{ width: `${total ? (100 * done) / total : 0}%` }} />
+    </div>
   );
 }
 
@@ -370,111 +416,6 @@ function FormEditor({ cycle }: { cycle: CycleOut }) {
       <ErrorText error={save.error} />
       {save.isSuccess && <Notice>Saved.</Notice>}
     </div>
-  );
-}
-
-function Participants({ cycle }: { cycle: CycleOut }) {
-  const participants = useQuery({
-    queryKey: ["participants", cycle.id],
-    queryFn: () => unwrap(api.GET("/api/cycles/{cycle_id}/participants", { params: { path: { cycle_id: cycle.id } } })),
-  });
-  if (cycle.status === "draft") return <Empty>Participants are fixed when the cycle opens.</Empty>;
-  if (participants.isPending) return <Loading />;
-  if (participants.error) return <ErrorText error={participants.error} />;
-  return (
-    <div className="flex flex-col gap-4">
-      {participants.data.length === 0 && <Empty>No participants.</Empty>}
-      {participants.data.map((p) => (
-        <ParticipantCard key={p.id} cycle={cycle} participant={p} />
-      ))}
-    </div>
-  );
-}
-
-function ParticipantCard({ cycle, participant }: { cycle: CycleOut; participant: ParticipantOut }) {
-  const path = { params: { path: { cycle_id: cycle.id, participant_id: participant.id } } };
-  const [adjust, setAdjust] = useState({ action_kind: "general", delta: 1, reason: "" });
-  const remove = useAction(() => unwrap(api.DELETE("/api/cycles/{cycle_id}/participants/{participant_id}", path)));
-  const late = useAction(() => unwrap(api.POST("/api/cycles/{cycle_id}/participants/{participant_id}/accept-late", path)));
-  const add = useAction(() => unwrap(api.POST("/api/cycles/{cycle_id}/participants/{participant_id}/adjustments", { ...path, body: adjust })));
-
-  return (
-    <Card
-      title={
-        <Link to={`/characters/${participant.character_id}`} className="inline-flex items-center gap-2 hover:underline">
-          <Avatar name={participant.character_name} picture={participant.picture} clan={participant.clan} size="xs" />
-          {participant.character_name}
-        </Link>
-      }
-      actions={
-        <span className="flex flex-wrap items-center gap-2">
-          {participant.removed ? (
-            <Badge tone="blood">removed</Badge>
-          ) : (
-            <Badge tone={participant.submission_status === "submitted" ? "gold" : "mist"}>
-              {participant.submission_status ?? "not started"}
-              {participant.submitted_late ? " (late)" : ""}
-            </Badge>
-          )}
-          {participant.completion_xp_awarded != null && <Badge tone="gold">+{participant.completion_xp_awarded} XP</Badge>}
-          {/* For actions the player reported outside the form. */}
-          <LogInfluenceButton
-            troupeId={cycle.troupe_id}
-            characterId={participant.character_id}
-            cycleId={cycle.id}
-            label={`Log influence for ${participant.character_name}`}
-          />
-        </span>
-      }
-    >
-      <p className="text-sm">
-        {Object.entries(participant.allowance)
-          .filter(([, n]) => n > 0)
-          .map(([k, n]) => `${n} ${k.replace(/_/g, " ")}`)
-          .join(" · ") || "No actions"}
-      </p>
-      {participant.adjustments.map((a, i) => (
-        <p key={i} className="text-xs text-mist">
-          {a.delta > 0 ? "+" : ""}
-          {a.delta} {a.action_kind}: {a.reason}
-        </p>
-      ))}
-      {Object.entries(participant.shortfall).map(([k, n]) => (
-        <p key={k} className="text-xs text-blood-bright">
-          Short {n} {k.replace(/_/g, " ")}: more was taken off than the allowance, which stops at 0.
-        </p>
-      ))}
-      {!participant.removed && cycle.status === "open" && (
-        <details className="mt-3 text-sm">
-          <summary className="cursor-pointer text-mist">Adjust, accept late, or remove</summary>
-          <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_5rem_2fr_auto]">
-            <Select aria-label="Action kind" value={adjust.action_kind} onChange={(e) => setAdjust({ ...adjust, action_kind: e.target.value })}>
-              {Object.keys(participant.allowance).map((k) => (
-                <option key={k} value={k}>
-                  {k.replace(/_/g, " ")}
-                </option>
-              ))}
-            </Select>
-            <Input aria-label="Change" type="number" value={adjust.delta} onChange={(e) => setAdjust({ ...adjust, delta: Number(e.target.value) })} />
-            <Input aria-label="Reason" placeholder="Reason" value={adjust.reason} onChange={(e) => setAdjust({ ...adjust, reason: e.target.value })} />
-            <Button variant="secondary" disabled={!adjust.reason} onClick={() => add.mutate(undefined)}>
-              Adjust
-            </Button>
-          </div>
-          <div className="mt-3 flex gap-2">
-            {!participant.late_accepted && (
-              <Button variant="secondary" onClick={() => late.mutate(undefined)}>
-                Accept late
-              </Button>
-            )}
-            <Button variant="danger" onClick={() => remove.mutate(undefined)}>
-              Remove from cycle
-            </Button>
-          </div>
-        </details>
-      )}
-      <ErrorText error={remove.error ?? late.error ?? add.error} />
-    </Card>
   );
 }
 

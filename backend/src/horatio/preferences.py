@@ -40,6 +40,7 @@ class Preferences(BaseModel):
     # Which notifications also come by email, not only to the bell: each is off
     # until the person turns it on (#106, horatio.notification_emails.TOPICS).
     email_downtime: bool = False
+    email_downtime_reminders: bool = False
     email_approvals: bool = False
     email_troupe_requests: bool = False
     email_renames: bool = False
