@@ -606,6 +606,114 @@ test("a player brings a character they have to a troupe from its page, and is to
   await expect(p.getByRole("link", { name: `Build a new character for ${troupeName}` })).toHaveCount(0);
 });
 
+test("the characters list and each Troupes tab say where a character stands: in creation, waiting, at home, or with no home yet (#368)", async ({ browser }) => {
+  const custodian = await person(browser, "whereami-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "whereami-lead");
+  const player = await person(browser, "whereami-play");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "GET" | "POST" | "PUT", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data: method === "GET" ? undefined : (data ?? {}) });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const hearths = `Court of Hearths ${run}`;
+  const farShores = `Court of Far Shores ${run}`;
+  const home = await send(custodian.page, "POST", "/api/troupes", { name: hearths, lead_handle: lead.handle });
+  const away = await send(custodian.page, "POST", "/api/troupes", { name: farShores, lead_handle: lead.handle });
+  for (const t of [home, away]) await backstoryOptional(custodian.page, t.id);
+  const p = player.page;
+  // Characters made through the API: one left in creation, three finished.
+  const make = async (name: string, finish: boolean) => {
+    const { id } = await send(p, "POST", "/api/characters", { splat: "vampire", name, building_troupe_id: home.id });
+    if (!finish) return id as string;
+    await send(p, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+      disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+    };
+    for (const [category, list] of Object.entries(picks))
+      await send(p, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+    await send(p, "POST", `/api/characters/${id}/creation/complete`);
+    return id as string;
+  };
+  const halfway = await make("Halfway Hester", false);
+  const asker = await make("Asking Aldous", true);
+  const settled = await make("Settled Seraphine", true);
+  const loner = await make("Lone Lucan", true);
+  await send(p, "POST", `/api/characters/${asker}/home-troupe`, { troupe_id: away.id });
+  const asked = await send(p, "POST", `/api/characters/${settled}/home-troupe`, { troupe_id: home.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+  const now = Date.now();
+  const cycle = await send(lead.page, "POST", `/api/troupes/${home.id}/cycles`, {
+    name: "Hearth month",
+    closes_at: new Date(now + 7 * 86400e3).toISOString(),
+    grace_ends_at: new Date(now + 9 * 86400e3).toISOString(),
+  });
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/open`);
+
+  // The list says where each stands, and the downtime due.
+  const row = (name: string) => p.getByRole("listitem").filter({ hasText: name });
+  await p.goto("/characters");
+  await expect(row("Halfway Hester")).toContainText("In creation");
+  await expect(row("Asking Aldous")).toContainText(`Waiting for ${farShores}`);
+  await expect(row("Settled Seraphine")).toContainText(`Home: ${hearths}`);
+  await expect(row("Settled Seraphine").getByText(/^Downtime due \w{3} /)).toBeVisible();
+  await expect(row("Lone Lucan")).toContainText("No home troupe yet");
+  await expect(p.getByText("active", { exact: true })).toHaveCount(0);
+  await p.screenshot(shots("characters-standing"));
+
+  // Submitted and answered, the results are new until the player opens them.
+  const form = await send(p, "GET", `/api/characters/${settled}/downtime`);
+  const question = form.questions.find((q: { prompt: string }) => q.prompt === "Downtime action");
+  await send(p, "PUT", `/api/characters/${settled}/downtime/answers`, { answers: [{ question_id: question.id, slot: 1, body: "Tend the hearth." }] });
+  await send(p, "POST", `/api/characters/${settled}/downtime/submit`);
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/close`, { add_to_ceiling: true });
+  const [response] = await send(lead.page, "GET", `/api/cycles/${cycle.id}/responses`);
+  await send(lead.page, "PUT", `/api/responses/${response.id}`, { body: "The fire holds." });
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/deliver`, { partial: true });
+  await p.reload();
+  await expect(row("Settled Seraphine")).toContainText("New results");
+  await expect(row("Settled Seraphine")).not.toContainText("Downtime due");
+  await p.goto(`/characters/${settled}`);
+  await characterTab(p, "Results");
+  await expect(p.getByText("The fire holds.")).toBeVisible();
+  await p.goto("/characters");
+  await expect(row("Settled Seraphine")).toContainText(`Home: ${hearths}`);
+  await expect(row("Settled Seraphine")).not.toContainText("New results");
+
+  // Each Troupes tab opens with the home troupe, or says there is none yet and how to get one.
+  const homeCard = p.locator("main section").filter({ has: p.getByRole("heading", { name: "Home troupe" }) });
+  await p.goto(`/characters/${settled}/troupes`);
+  await expect(homeCard).toContainText(`Home now: ${hearths}`);
+  await expect(homeCard.getByRole("link", { name: `${hearths}'s house rules` })).toBeVisible();
+  await p.screenshot(shots("troupes-home"));
+  await expect(homeCard.getByRole("combobox")).toHaveCount(0);
+  await homeCard.getByRole("button", { name: "Move to another troupe…" }).click();
+  await expect(homeCard.getByRole("combobox", { name: "New home troupe" })).toBeVisible();
+
+  await p.goto(`/characters/${asker}/troupes`);
+  await expect(homeCard).toContainText("No home troupe yet");
+  await expect(homeCard).toContainText(`Waiting for ${farShores}'s storytellers to accept this character.`);
+  await expect(homeCard).toContainText("Nothing for you to do until they decide.");
+
+  await p.goto(`/characters/${loner}/troupes`);
+  await expect(homeCard).toContainText("No home troupe yet");
+  await expect(homeCard.getByRole("combobox", { name: "Troupe", exact: true })).toBeVisible();
+
+  await p.goto(`/characters/${halfway}/troupes`);
+  await expect(homeCard).toContainText("No home troupe yet");
+  await expect(homeCard).toContainText(`then ask ${hearths} here`);
+  await homeCard.getByRole("link", { name: "Create tab" }).click();
+  await expect(p).toHaveURL(new RegExp(`/characters/${halfway}/create`));
+});
+
 test("a troupe's profile: storytellers fill it in, and people not signed in see it only when it is public", async ({ browser }) => {
   test.slow();
   const custodian = await person(browser, "profile-custodian");

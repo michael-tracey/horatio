@@ -7,6 +7,7 @@ import { Badge, Button, Card, Empty, ErrorText, Field, Loading, Select, Textarea
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { headings } from "../../markdown";
+import { backstoryStatus } from "./backstoryStatus";
 import { BackstoryWizard } from "./BackstoryWizard";
 
 /** The most a backstory holds (the API's cap), and how near it the editor starts counting down. */
@@ -61,7 +62,7 @@ export function BackstoryTab({ character }: { character: CharacterOut }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <ReviewStatus backstory={b} />
+      <ReviewStatus backstory={b} asking={!!b.troupe_id && character.asking_troupe_id === b.troupe_id} />
       {writer && b.state === "returned" && <Resubmit characterId={character.id} />}
       {choosing ? (
         <Card title="Backstory">
@@ -87,11 +88,16 @@ export function BackstoryTab({ character }: { character: CharacterOut }) {
       ) : (
         <BackstoryText
           backstory={b}
+          note={
+            asked &&
+            b.written &&
+            `Answering ${questions.data?.troupe_name ?? "the troupe"}'s questions again rebuilds the parts made from them; editing changes any of the text.`
+          }
           actions={
             writer && (
               <div className="flex flex-wrap gap-2">
                 {asked && (
-                  <Button variant="ghost" onClick={() => setAnswering(true)}>
+                  <Button variant="secondary" onClick={() => setAnswering(true)}>
                     Answer the troupe's questions
                   </Button>
                 )}
@@ -110,35 +116,36 @@ export function BackstoryTab({ character }: { character: CharacterOut }) {
   );
 }
 
-/** Where staff's reading of it stands, for the player and staff alike. */
-function ReviewStatus({ backstory: b }: { backstory: BackstoryOut }) {
+/** Where staff's reading of it stands, and what the person looking at it can do next. */
+function ReviewStatus({ backstory: b, asking }: { backstory: BackstoryOut; asking: boolean }) {
   const dates = useDates();
-  if (!b.troupe_name) return null;
-  const words =
-    b.changed_since_approval
-      ? `Changed since ${b.troupe_name} approved it.`
-      : b.approved
-        ? `Approved by ${b.troupe_name}${b.approved_by_name ? ` (${b.approved_by_name}` : ""}${b.approved_at ? `, ${dates.date(b.approved_at)})` : b.approved_by_name ? ")" : ""}.`
-        : b.state === "returned"
-          ? `${b.troupe_name} sent it back with feedback.`
-          : b.state === "resubmitted"
-            ? `Revised and back with ${b.troupe_name}'s storytellers.`
-            : b.required
-              ? `${b.troupe_name} needs it approved before accepting the character.`
-              : `${b.troupe_name}'s storytellers read it.`;
-  const tone = b.approved ? "mist" : b.state === "returned" || b.changed_since_approval ? "blood" : "gold";
+  const by = [b.approved_by_name, b.approved_at && dates.date(b.approved_at)].filter(Boolean).join(", ");
+  const status = backstoryStatus(b, by ? ` (${by})` : "", asking);
+  if (!status) return null;
   return (
     <p className="flex flex-wrap items-center gap-2 text-sm">
-      <Badge tone={tone}>{b.approved ? "approved" : b.changed_since_approval ? "changed" : b.state === "none" ? "not yet approved" : b.state}</Badge>
-      <span>{words}</span>
+      <Badge tone={status.tone}>{status.badge}</Badge>
+      <span>{status.words}</span>
     </p>
   );
 }
 
-export function BackstoryText({ backstory: b, actions, title = "Backstory" }: { backstory: BackstoryOut; actions?: ReactNode; title?: string }) {
+export function BackstoryText({
+  backstory: b,
+  actions,
+  note,
+  title = "Backstory",
+}: {
+  backstory: BackstoryOut;
+  actions?: ReactNode;
+  /** A line about the actions, under the title. */
+  note?: ReactNode;
+  title?: string;
+}) {
   const dates = useDates();
   return (
     <Card title={title} actions={actions}>
+      {note && <p className="mb-2 text-xs text-mist">{note}</p>}
       {b.changed_at && (
         <p className="mb-3 text-xs text-mist">
           Last changed {dates.date(b.changed_at)}

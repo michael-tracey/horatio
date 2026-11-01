@@ -61,6 +61,15 @@ describe("dates", () => {
     expect(datesFor(newYork).gameStart("2027-01-10T00:00:00Z", now)).toBe("Sat 9 Jan 2027, 7 pm EST");
   });
 
+  it("writes the day a deadline falls on, in the reader's zone", () => {
+    const now = new Date("2026-10-20T12:00:00Z");
+    const due = "2026-10-24T03:59:00Z";
+    expect(datesFor(newYork).dueDay(due, now)).toBe("Fri 23 Oct");
+    expect(datesFor({ ...newYork, time_zone: "Europe/London" }).dueDay(due, now)).toBe("Sat 24 Oct");
+    expect(datesFor({ ...newYork, date_format: "month_day" }).dueDay(due, now)).toBe("Fri 10/23");
+    expect(datesFor(newYork).dueDay("2027-01-09T04:59:00Z", now)).toBe("Fri 8 Jan 2027");
+  });
+
   it("writes a deadline with its weekday and zone", () => {
     const now = new Date("2026-10-20T12:00:00Z");
     const due = "2026-10-24T03:59:00Z";
