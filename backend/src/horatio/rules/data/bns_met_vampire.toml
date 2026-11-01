@@ -555,58 +555,62 @@ scheme = "free"
 # An entry such as "Thaumaturgy: Path of Blood" makes only that path in-clan.
 # A clan with `choices` has one more in-clan discipline, the one of those its
 # player chooses, kept as the clan's detail (horatio.rules.splats.clan_choice).
+# `weakness` is the clan's weakness in a line of our own words, for the creation
+# wizard, and `weakness_page` where the book has it in full. A bloodline with no
+# weakness of its own has its clan's (p. 42). Tremere's is Volume 2's, which
+# replaces the core book's (Vol. 2, p. 22).
 
 [[traits]]
 category = "clan"
 name = "Assamite"
-properties = { in_clan = ["Celerity", "Obfuscate", "Quietus"] }
+properties = { in_clan = ["Celerity", "Obfuscate", "Quietus"], weakness = "Vampire blood is addictive: drinking it gives 2 Beast traits for 10 minutes, and a frenzy then turns to diablerie.", weakness_page = "44" }
 
 [[traits]]
 category = "clan"
 name = "Assamite: Sorcerer"
-properties = { in_clan = ["Obfuscate", "Quietus", "Thaumaturgy: Lure of Flames"] }
+properties = { in_clan = ["Obfuscate", "Quietus", "Thaumaturgy: Lure of Flames"], weakness = "Instead of the Assamite weakness, their magic shows through Obfuscate: Auspex gets a +1 wild card against it.", weakness_page = "45" }
 
 [[traits]]
 category = "clan"
 name = "Assamite: Vizier"
-properties = { in_clan = ["Auspex", "Celerity", "Quietus"] }
+properties = { in_clan = ["Auspex", "Celerity", "Quietus"], weakness = "Instead of the Assamite weakness, an Obsessive derangement about unknown knowledge, with no XP for it.", weakness_page = "44" }
 
 [[traits]]
 category = "clan"
 name = "Baali"
-properties = { in_clan = ["Daimoinon", "Obfuscate", "Presence"] }
+properties = { in_clan = ["Daimoinon", "Obfuscate", "Presence"], weakness = "Can't look at or touch symbols of any faith (touching one does 1 aggravated damage), and True Faith hits them twice as hard.", weakness_page = "72" }
 
 # The third in-clan discipline is the player's choice of these (pp. 72, 246).
 [[traits]]
 category = "clan"
 name = "Baali: Angelis Ater"
 page_reference = "72"
-properties = { in_clan = ["Daimoinon", "Dominate"], choices = ["Potence", "Presence", "Obfuscate"] }
+properties = { in_clan = ["Daimoinon", "Dominate"], choices = ["Potence", "Presence", "Obfuscate"], weakness = "Both the Baali and the Lasombra weaknesses.", weakness_page = "72" }
 
 [[traits]]
 category = "clan"
 name = "Brujah"
-properties = { in_clan = ["Celerity", "Potence", "Presence"] }
+properties = { in_clan = ["Celerity", "Potence", "Presence"], weakness = "Quick to rage: resisting frenzy is 2 harder.", weakness_page = "45" }
 
 [[traits]]
 category = "clan"
 name = "Brujah: True Brujah"
-properties = { in_clan = ["Potence", "Presence", "Temporis"] }
+properties = { in_clan = ["Potence", "Presence", "Temporis"], weakness = "Instead of the Brujah weakness, they feel little: no Empathy, and Morality costs double XP.", weakness_page = "45" }
 
 [[traits]]
 category = "clan"
 name = "Caitiff"
-properties = { in_clan = [] }
+properties = { in_clan = [], weakness = "No more than 2 dots of Generation to start, and they can't teach their in-clan disciplines.", weakness_page = "69" }
 
 [[traits]]
 category = "clan"
 name = "Cappadocians"
-properties = { in_clan = ["Auspex", "Fortitude", "Necromancy: Mortis Path"] }
+properties = { in_clan = ["Auspex", "Fortitude", "Necromancy: Mortis Path"], weakness = "Corpse-pale skin, however much they feed.", weakness_page = "73" }
 
 [[traits]]
 category = "clan"
 name = "Cappadocians: Lamia"
-properties = { in_clan = ["Fortitude", "Potence", "Necromancy: Mortis Path"] }
+properties = { in_clan = ["Fortitude", "Potence", "Necromancy: Mortis Path"], weakness = "Instead of the Cappadocian weakness, their bite spreads a disease that can kill a mortal within a week.", weakness_page = "76" }
 
 [[traits]]
 category = "clan"
@@ -616,12 +620,12 @@ properties = { in_clan = ["Fortitude", "Obfuscate", "Thanatosis"] }
 [[traits]]
 category = "clan"
 name = "Daughters of Cacophony"
-properties = { in_clan = ["Fortitude", "Melpominee", "Presence"] }
+properties = { in_clan = ["Fortitude", "Melpominee", "Presence"], weakness = "Music always plays in their heads: -2 to Investigation tests.", weakness_page = "80" }
 
 [[traits]]
 category = "clan"
 name = "Followers of Set"
-properties = { in_clan = ["Obfuscate", "Presence", "Serpentis"] }
+properties = { in_clan = ["Obfuscate", "Presence", "Serpentis"], weakness = "Bright light: 1 more damage from sunlight, and -2 to tests other than defence in any bright light.", weakness_page = "48" }
 
 [[traits]]
 category = "clan"
@@ -636,7 +640,7 @@ properties = { in_clan = ["Potence", "Presence", "Serpentis"] }
 [[traits]]
 category = "clan"
 name = "Gangrel"
-properties = { in_clan = ["Animalism", "Fortitude", "Protean"] }
+properties = { in_clan = ["Animalism", "Fortitude", "Protean"], weakness = "One animal feature for good, and another, until they next sleep, each time they frenzy.", weakness_page = "49" }
 
 [[traits]]
 category = "clan"
@@ -647,7 +651,7 @@ properties = { in_clan = ["Animalism", "Presence", "Thaumaturgy: Path of Element
 [[traits]]
 category = "clan"
 name = "Gangrel: Anda"
-properties = { in_clan = ["Animalism", "Potence", "Protean"] }
+properties = { in_clan = ["Animalism", "Potence", "Protean"], weakness = "The Gangrel weakness, and they must keep moving: each day slept near the last place costs 1 more Blood to wake.", weakness_page = "Vol. 2, p. 33" }
 
 [[traits]]
 category = "clan"
@@ -662,12 +666,12 @@ properties = { in_clan = ["Animalism", "Auspex", "Protean"] }
 [[traits]]
 category = "clan"
 name = "Gargoyles"
-properties = { in_clan = ["Fortitude", "Potence", "Visceratika"] }
+properties = { in_clan = ["Fortitude", "Potence", "Visceratika"], weakness = "Monstrous, so they can't pass for human without powers, and -2 to resist Dominate.", weakness_page = "81" }
 
 [[traits]]
 category = "clan"
 name = "Giovanni"
-properties = { in_clan = ["Dominate", "Potence", "Necromancy: Sepulchre Path"] }
+properties = { in_clan = ["Dominate", "Potence", "Necromancy: Sepulchre Path"], weakness = "A painful bite: feeding does 3 damage to a mortal for each Blood, not 2.", weakness_page = "53" }
 
 [[traits]]
 category = "clan"
@@ -677,34 +681,34 @@ properties = { in_clan = ["Dominate", "Potence", "Necromancy: Sepulchre Path"] }
 [[traits]]
 category = "clan"
 name = "Lasombra"
-properties = { in_clan = ["Dominate", "Potence", "Obtenebration"] }
+properties = { in_clan = ["Dominate", "Potence", "Obtenebration"], weakness = "No reflection in mirrors, water or anything else.", weakness_page = "pp. 53, 56" }
 
 # Volume 2, p. 40.
 [[traits]]
 category = "clan"
 name = "Lasombra: Corsairs"
-properties = { in_clan = ["Celerity", "Obtenebration", "Presence"] }
+properties = { in_clan = ["Celerity", "Obtenebration", "Presence"], weakness = "The Lasombra weakness, and the Overconfident flaw, which XP can never remove.", weakness_page = "Vol. 2, p. 43" }
 
 [[traits]]
 category = "clan"
 name = "Lasombra: Kiasyd"
-properties = { in_clan = ["Dominate", "Mytherceria", "Obtenebration"] }
+properties = { in_clan = ["Dominate", "Mytherceria", "Obtenebration"], weakness = "The Lasombra weakness, and an unhuman look: very tall, chalk-white, with black eyes.", weakness_page = "56" }
 
 # An independent bloodline, rare (4 merit points); Volume 2, p. 50.
 [[traits]]
 category = "clan"
 name = "Lhiannan"
-properties = { in_clan = ["Animalism", "Presence", "Thaumaturgy: Green Path"] }
+properties = { in_clan = ["Animalism", "Presence", "Thaumaturgy: Green Path"], weakness = "Easier to see for what they are (-2 to Auspex difficulties), and -1 to all tests for each night in a city, until a night in the wild.", weakness_page = "Vol. 2, p. 53" }
 
 [[traits]]
 category = "clan"
 name = "Malkavian"
-properties = { in_clan = ["Auspex", "Dementation", "Obfuscate"] }
+properties = { in_clan = ["Auspex", "Dementation", "Obfuscate"], weakness = "One derangement that never goes away, with no flaw XP for it.", weakness_page = "57" }
 
 [[traits]]
 category = "clan"
 name = "Malkavian: Ananke"
-properties = { in_clan = ["Auspex", "Dementation", "Presence"] }
+properties = { in_clan = ["Auspex", "Dementation", "Presence"], weakness = "The Malkavian weakness, and a need for grisly trophies: with the collection lost, no Willpower comes back until a new one starts.", weakness_page = "57" }
 
 [[traits]]
 category = "clan"
@@ -715,23 +719,23 @@ properties = { in_clan = ["Auspex", "Dominate", "Obfuscate"] }
 [[traits]]
 category = "clan"
 name = "Nagaraja"
-properties = { in_clan = ["Auspex", "Dominate", "Necromancy: Ash Path"] }
+properties = { in_clan = ["Auspex", "Dominate", "Necromancy: Ash Path"], weakness = "Must eat human flesh too: -1 to all tests for each night without it, and no Herd.", weakness_page = "Vol. 2, p. 60" }
 
 [[traits]]
 category = "clan"
 name = "Nosferatu"
-properties = { in_clan = ["Animalism", "Obfuscate", "Potence"] }
+properties = { in_clan = ["Animalism", "Obfuscate", "Potence"], weakness = "Hideous: no Appearance focus.", weakness_page = "60" }
 
 # Volume 2, p. 45.
 [[traits]]
 category = "clan"
 name = "Nosferatu: Creeps"
-properties = { in_clan = ["Animalism", "Auspex", "Obfuscate"] }
+properties = { in_clan = ["Animalism", "Auspex", "Obfuscate"], weakness = "The Nosferatu weakness, and human blood barely feeds them, so no Herd; animal and vampire blood are fine.", weakness_page = "Vol. 2, p. 48" }
 
 [[traits]]
 category = "clan"
 name = "Ravnos"
-properties = { in_clan = ["Animalism", "Fortitude", "Chimerstry"] }
+properties = { in_clan = ["Animalism", "Fortitude", "Chimerstry"], weakness = "A Compulsion derangement for a vice, such as lying or theft, with no flaw XP for it.", weakness_page = "76" }
 
 [[traits]]
 category = "clan"
@@ -741,22 +745,22 @@ properties = { in_clan = ["Animalism", "Auspex", "Chimerstry"] }
 [[traits]]
 category = "clan"
 name = "Salubri"
-properties = { in_clan = ["Auspex", "Fortitude", "Valeren"] }
+properties = { in_clan = ["Auspex", "Fortitude", "Valeren"], weakness = "Can feed only during violence, so no Herd, theirs or anyone's.", weakness_page = "77" }
 
 [[traits]]
 category = "clan"
 name = "Salubri: Healer"
-properties = { in_clan = ["Auspex", "Fortitude", "Obeah"] }
+properties = { in_clan = ["Auspex", "Fortitude", "Obeah"], weakness = "Instead of the Salubri weakness, they can't feed on the unwilling: feeding takes an extra downtime action unless it comes from Herd.", weakness_page = "80" }
 
 [[traits]]
 category = "clan"
 name = "Toreador"
-properties = { in_clan = ["Auspex", "Celerity", "Presence"] }
+properties = { in_clan = ["Auspex", "Celerity", "Presence"], weakness = "Caught by beauty: something beautiful or new holds them for a scene, unless they spend 1 Willpower.", weakness_page = "61" }
 
 [[traits]]
 category = "clan"
 name = "Toreador: Ishtarri"
-properties = { in_clan = ["Celerity", "Fortitude", "Presence"] }
+properties = { in_clan = ["Celerity", "Fortitude", "Presence"], weakness = "Instead of the Toreador weakness, -2 to resist powers over emotion, such as Presence.", weakness_page = "61" }
 
 [[traits]]
 category = "clan"
@@ -766,7 +770,7 @@ properties = { in_clan = ["Auspex", "Celerity", "Presence"] }
 [[traits]]
 category = "clan"
 name = "Tremere"
-properties = { in_clan = ["Auspex", "Dominate", "Thaumaturgy: Path of Blood"] }
+properties = { in_clan = ["Auspex", "Dominate", "Thaumaturgy: Path of Blood"], weakness = "Their blood bonds other vampires only to the first stage; ghouls are bound as usual.", weakness_page = "Vol. 2, p. 22" }
 
 [[traits]]
 category = "clan"
@@ -776,13 +780,13 @@ properties = { in_clan = ["Auspex", "Presence", "Thaumaturgy: Path of Blood"] }
 [[traits]]
 category = "clan"
 name = "Tzimisce"
-properties = { in_clan = ["Animalism", "Auspex", "Vicissitude"] }
+properties = { in_clan = ["Animalism", "Auspex", "Vicissitude"], weakness = "Must rest by two handfuls of their native soil: each day without costs -1 to attacks, up to -5.", weakness_page = "65" }
 
 # Volume 2, p. 36.
 [[traits]]
 category = "clan"
 name = "Tzimisce: Bratovitch"
-properties = { in_clan = ["Animalism", "Potence", "Vicissitude"] }
+properties = { in_clan = ["Animalism", "Potence", "Vicissitude"], weakness = "Counted as having 1 more Beast trait when testing for frenzy, and for powers that count Beast traits.", weakness_page = "Vol. 2, p. 37" }
 
 [[traits]]
 category = "clan"
@@ -797,7 +801,7 @@ properties = { in_clan = ["Animalism", "Auspex", "Thaumaturgy: Path of Elemental
 [[traits]]
 category = "clan"
 name = "Ventrue"
-properties = { in_clan = ["Dominate", "Fortitude", "Presence"] }
+properties = { in_clan = ["Dominate", "Fortitude", "Presence"], weakness = "Feed on one narrow kind of mortal, agreed with the Storyteller; other mortal or animal blood gives nothing.", weakness_page = "68" }
 
 [[traits]]
 category = "clan"
