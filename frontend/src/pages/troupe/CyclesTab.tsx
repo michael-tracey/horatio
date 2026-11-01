@@ -2,10 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
+import { DateInput } from "../../components/DateInput";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading } from "../../components/ui";
 import { useDates, type Dates } from "../../dates";
 import { useAction } from "../../hooks";
-import { cycleLine } from "./cycles";
+import { cycleLine, cycleStatus } from "./cycles";
 
 /** A datetime input's value some days from now, on the storyteller's clock. */
 function inDays(days: number, dates: Dates): string {
@@ -62,7 +63,7 @@ export function CyclesTab({ troupeId }: { troupeId: string }) {
                     <span className="block group-hover:text-gold">{c.name}</span>
                     <span className="block text-xs text-mist">{cycleLine(c, (at) => dates.dueDay(at))}</span>
                   </span>
-                  <Badge tone={c.status === "open" ? "gold" : "mist"}>{c.status}</Badge>
+                  <Badge tone={c.status === "open" ? "gold" : "mist"}>{cycleStatus(c.status)}</Badge>
                 </Link>
               </li>
             ))}
@@ -85,10 +86,10 @@ export function CyclesTab({ troupeId }: { troupeId: string }) {
               <Input required placeholder="November 2026" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </Field>
             <Field label="Due" hint={`In your time zone (${dates.zoneName()}). Players see it in theirs.`}>
-              <Input type="datetime-local" required value={form.closes_at} onChange={(e) => setForm({ ...form, closes_at: e.target.value })} />
+              <DateInput type="datetime-local" required value={form.closes_at} onChange={(e) => setForm({ ...form, closes_at: e.target.value })} />
             </Field>
             <Field label="Accepted until" hint="The grace period: late downtimes are still taken until then.">
-              <Input type="datetime-local" required value={form.grace_ends_at} onChange={(e) => setForm({ ...form, grace_ends_at: e.target.value })} />
+              <DateInput type="datetime-local" required value={form.grace_ends_at} onChange={(e) => setForm({ ...form, grace_ends_at: e.target.value })} />
             </Field>
             <Field label="XP for completing" hint="Each character gets this when its downtime is submitted. The troupe's usual amount is on Starting points.">
               <Input type="number" min={0} max={100} required value={xp} onChange={(e) => setCompletionXp(Number(e.target.value))} className="w-24" />

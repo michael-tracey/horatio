@@ -138,7 +138,7 @@ test("staff read a joining character's backstory, send it back on one section, a
   const l = lead.page;
   await l.goto(`/troupes/${troupe.id}/approvals`);
   const card = l.locator("section").filter({ hasText: "Isolde" });
-  await expect(card.getByText("not yet approved")).toBeVisible();
+  await expect(card.getByText("Not yet approved")).toBeVisible();
   await expect(card.getByRole("button", { name: "Approve", exact: true })).toBeDisabled();
   await card.getByRole("button", { name: "Read the backstory" }).click();
   await expect(card.getByRole("heading", { name: "My sire" })).toBeVisible();
@@ -146,7 +146,7 @@ test("staff read a joining character's backstory, send it back on one section, a
   await card.getByLabel("Feedback for the player").fill("More about the sire, please");
   await l.screenshot(shots("backstory-feedback"));
   await card.getByRole("button", { name: "Send back with feedback" }).click();
-  await expect(card.getByText("sent back to the player")).toBeVisible();
+  await expect(card.getByText("Sent back to the player")).toBeVisible();
 
   // The player is told, sees the feedback on the Backstory tab, revises and resubmits.
   await p.reload();
@@ -169,12 +169,12 @@ test("staff read a joining character's backstory, send it back on one section, a
   const a = assistant.page;
   await a.goto(`/troupes/${troupe.id}/approvals`);
   const theirs = a.locator("section").filter({ hasText: "Isolde" });
-  await expect(theirs.getByText("revised and resubmitted")).toBeVisible();
+  await expect(theirs.getByText("Revised and resubmitted")).toBeVisible();
   await theirs.getByRole("button", { name: "Read the backstory" }).click();
   await expect(theirs.getByText("taught me to hunt the docks")).toBeVisible();
   await expect(theirs.getByRole("list", { name: "Feedback and replies" })).toContainText("Added the docks.");
   await theirs.getByRole("button", { name: "Approve the backstory" }).click();
-  await expect(theirs.getByText("approved", { exact: true })).toBeVisible();
+  await expect(theirs.getByText("Approved", { exact: true })).toBeVisible();
   await theirs.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(a.getByText("Nothing pending.")).toBeVisible();
 

@@ -116,7 +116,7 @@ function TroupeRow({ troupe: t, leadSuspended }: { troupe: TroupeOut; leadSuspen
               </>
             )}
             {newPlayers && <Badge tone={t.new_players === "welcoming" ? "gold" : "mist"}>{newPlayers}</Badge>}
-            {leadSuspended && <Badge tone="blood">lead suspended</Badge>}
+            {leadSuspended && <Badge tone="blood">Lead suspended</Badge>}
           </span>
         )}
       </span>

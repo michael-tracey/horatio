@@ -69,7 +69,7 @@ export function DeliveryTab({ cycle }: { cycle: CycleOut }) {
                     <td className="py-2.5 pr-4 align-top text-parchment">
                       <span className="flex flex-col items-start gap-1">
                         {p.character_name}
-                        {p.changed && <Badge tone="gold">changed since delivery</Badge>}
+                        {p.changed && <Badge tone="gold">Changed since delivery</Badge>}
                       </span>
                     </td>
                     <td className="py-2.5 pr-4 align-top whitespace-nowrap">
@@ -165,9 +165,9 @@ function DeliveryCell({ delivery, who, channel }: { delivery: DeliveryOut | unde
     <div className="flex flex-col items-start gap-1">
       <span className="flex flex-wrap items-center gap-1.5">
         <Badge tone={delivery.status === "sent" ? "mist" : delivery.status === "failed" ? "blood" : "gold"}>
-          {delivery.status === "sent" ? (delivery.marked_by ? "sent by hand" : "sent") : delivery.status === "failed" ? "failed" : "waiting"}
+          {delivery.status === "sent" ? (delivery.marked_by ? "Sent by hand" : "Sent") : delivery.status === "failed" ? "Failed" : "Waiting"}
         </Badge>
-        {delivery.test_mode && <Badge>test</Badge>}
+        {delivery.test_mode && <Badge>Test</Badge>}
       </span>
       {delivery.marked_by && <span className="text-xs text-mist">marked by {delivery.marked_by}</span>}
       {delivery.status === "pending" && delivery.attempts > 0 && (

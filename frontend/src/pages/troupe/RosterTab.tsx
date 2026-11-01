@@ -274,16 +274,16 @@ function RosterRow({
         {entry.clan ?? "No clan yet"} · {entry.social_age}
       </span>
       {!entry.seated && <span className="text-xs text-mist">Represented by: {entry.represented_by ?? "nobody yet"}</span>}
-      {entry.kind === "npc" ? <Badge>NPC</Badge> : entry.home ? <Badge tone="gold">home</Badge> : <Badge>visiting</Badge>}
-      {entry.player_suspended && <Badge tone="blood">player suspended</Badge>}
+      {entry.kind === "npc" ? <Badge>NPC</Badge> : entry.home ? <Badge tone="gold">Home</Badge> : <Badge>Visiting</Badge>}
+      {entry.player_suspended && <Badge tone="blood">Player suspended</Badge>}
       {entry.waiting && (
         <Link to={`/troupes/${troupeId}/approvals`} className="rounded-full hover:underline">
-          <Badge tone="blood">asking to make this home</Badge>
+          <Badge tone="blood">Asking to make this home</Badge>
         </Link>
       )}
       {entry.backstory_waiting && (
         <Link to={`/characters/${entry.character_id}/backstory?troupe=${troupeId}`}>
-          <Badge tone="blood">backstory to read</Badge>
+          <Badge tone="blood">Backstory to read</Badge>
         </Link>
       )}
       {entry.disciplines_waiting > 0 && (

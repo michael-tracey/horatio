@@ -56,7 +56,10 @@ export function FeedingCard({
         <fieldset className="mt-4 flex flex-col gap-3 border-t border-ash pt-3" disabled={locked}>
           <legend className="sr-only">Herd</legend>
           <p className="text-sm">
-            Herd {feeding.herd}: <span className={shared > feeding.herd ? "text-blood-bright" : "text-mist"}>{shared} of {feeding.herd} dots shared out</span>
+            Herd:{" "}
+            <span className={shared > feeding.herd ? "text-blood-bright" : "text-mist"}>
+              {shared} of your {feeding.herd} {feeding.herd === 1 ? "dot" : "dots"} shared out
+            </span>
             {feeding.need.herd_factor !== 1 && (
               <span className="text-mist"> · {feeding.need.herd_factor === 0 ? "your Herd doesn't count towards your own feeding" : `each dot counts ${feeding.need.herd_factor}×`}</span>
             )}

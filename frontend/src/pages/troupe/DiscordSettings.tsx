@@ -96,7 +96,7 @@ export function DiscordSettings({
           {characters.map((c) => (
             <li key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
               <span className="min-w-32 flex-1 text-parchment">{c.name}</span>
-              {chosen[c.id] && !channels.find((ch) => ch.id === chosen[c.id])?.private && <Badge tone="blood">not private</Badge>}
+              {chosen[c.id] && !channels.find((ch) => ch.id === chosen[c.id])?.private && <Badge tone="blood">Not private</Badge>}
               <Select
                 aria-label={`Discord channel for ${c.name}`}
                 value={chosen[c.id] ?? ""}

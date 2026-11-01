@@ -205,7 +205,7 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
             d.completion_xp > 0 && <p className="mt-2 text-sm">Submitting it earns {d.completion_xp} XP.</p>
           )}
           <div className="mt-3">
-            {d.status === "submitted" ? <Badge tone="gold">submitted{d.late ? " (late)" : ""}</Badge> : <Badge>draft</Badge>}
+            {d.status === "submitted" ? <Badge tone="gold">Submitted{d.late ? " (late)" : ""}</Badge> : <Badge>Draft</Badge>}
           </div>
         </Card>
         <Card title="Your actions">
@@ -224,7 +224,8 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
           <ul className="mt-3 border-t border-ash pt-2 text-xs text-mist">
             {d.breakdown.map((b, i) => (
               <li key={i}>
-                {signed(b.amount)} {b.action_kind.replace(/_/g, " ")} from {b.source}
+                {signed(b.amount)} {b.action_kind.replace(/_/g, " ")} {Math.abs(b.amount) === 1 ? "action" : "actions"}{" "}
+                {b.source === "Everyone" ? "(everyone gets these)" : `from ${b.source}`}
                 {b.note && <span className="block pl-3">{b.note}</span>}
               </li>
             ))}

@@ -231,12 +231,14 @@ def test_renames_are_logged_and_old_entries_keep_the_old_name(troupe: Troupe) ->
             "custodian renamed Agnes Duval to Agnes Lemaire (player).",
             "player renamed Agnes Moreau to Agnes Duval.",
         ]
-    assert "Agnes Moreau (player) joined the troupe." in troupe_log(troupe.stranger, elsewhere)
+    assert "Agnes Moreau (player) started visiting the troupe." in troupe_log(
+        troupe.stranger, elsewhere
+    )
     # Recorded in both troupes, it reads once in the character's own history.
     assert character_log(troupe.player, character_id)[:3] == [
         "custodian renamed Agnes Duval to Agnes Lemaire (player).",
         "player renamed Agnes Moreau to Agnes Duval.",
-        "Agnes Moreau (player) joined the troupe.",
+        "Agnes Moreau (player) started visiting the troupe.",
     ]
     roster = troupe.lead.client.get(f"/troupes/{troupe.id}/characters").json()
     assert [e["character_name"] for e in roster] == ["Agnes Lemaire"]

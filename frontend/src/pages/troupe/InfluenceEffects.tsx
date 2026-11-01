@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { InfluenceChoicesOut, InfluenceEffectOut, InfluenceEntryOut, InfluenceTargetIn } from "../../api/types";
+import { DateInput } from "../../components/DateInput";
 import { Dialog } from "../../components/Dialog";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useDates } from "../../dates";
@@ -245,7 +246,7 @@ export function EffectsCard({ troupeId }: { troupeId: string }) {
                 {e.defended > 0 && ` (${e.defended} defended)`}
               </span>
               <span className="text-mist">{e.upcoming ? `from ${dates.dateTime(e.starts_at)}` : lastsText(e, dates)}</span>
-              {e.kind === "block" && <Badge>strength {e.levels}</Badge>}
+              {e.kind === "block" && <Badge>Strength {e.levels}</Badge>}
               <Button
                 variant="ghost"
                 className="ml-auto px-2 py-0"
@@ -306,10 +307,10 @@ function BlockForm({ troupeId, onDone }: { troupeId: string; onDone: () => void 
           <Input type="number" min={1} value={form.strength} onChange={(e) => set({ strength: Number(e.target.value) })} />
         </Field>
         <Field label={`From (${dates.zoneName()})`}>
-          <Input type="datetime-local" value={form.starts_at} onChange={(e) => set({ starts_at: e.target.value })} />
+          <DateInput type="datetime-local" value={form.starts_at} onChange={(e) => set({ starts_at: e.target.value })} />
         </Field>
         <Field label="Until" hint="Left empty, to the end of the month.">
-          <Input type="datetime-local" value={form.ends_at} onChange={(e) => set({ ends_at: e.target.value })} />
+          <DateInput type="datetime-local" value={form.ends_at} onChange={(e) => set({ ends_at: e.target.value })} />
         </Field>
       </div>
       <ErrorText error={save.error} />

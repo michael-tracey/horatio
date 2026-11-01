@@ -25,45 +25,45 @@ export function backstoryStatus(b: Standing, approvedBy: string, asking: boolean
   const reader = b.review && !player;
   if (!t)
     return player
-      ? { badge: "no troupe yet", tone: "mist", words: "No troupe reads it yet: its storytellers will once the character asks a troupe to be its home." }
+      ? { badge: "No troupe yet", tone: "mist", words: "No troupe reads it yet: its storytellers will once the character asks a troupe to be its home." }
       : null;
   const holds = asking && b.required;
   if (b.changed_since_approval)
     return player
-      ? { badge: "changed", tone: "gold", words: `Changed since ${t} approved it. Waiting for its storytellers to read the changes: nothing for you to do yet.` }
+      ? { badge: "Changed", tone: "gold", words: `Changed since ${t} approved it. Waiting for its storytellers to read the changes: nothing for you to do yet.` }
       : reader
-        ? { badge: "changed", tone: "blood", words: `Changed since ${t} approved it. Read the changes, then approve it again or send it back.` }
-        : { badge: "changed", tone: "gold", words: `Changed since ${t} approved it.` };
-  if (b.approved) return { badge: "approved", tone: "mist", words: `Approved by ${t}${approvedBy}.${player ? " Nothing for you to do." : ""}` };
+        ? { badge: "Changed", tone: "blood", words: `Changed since ${t} approved it. Read the changes, then approve it again or send it back.` }
+        : { badge: "Changed", tone: "gold", words: `Changed since ${t} approved it.` };
+  if (b.approved) return { badge: "Approved", tone: "mist", words: `Approved by ${t}${approvedBy}.${player ? " Nothing for you to do." : ""}` };
   if (b.state === "returned")
     return player
-      ? { badge: "changes asked for", tone: "blood", words: `${t}'s storytellers asked for changes: see their feedback below, revise it, then resubmit it.` }
-      : { badge: "sent back", tone: "gold", words: `Sent back to the player with feedback. Waiting for them to revise it.` };
+      ? { badge: "Changes asked for", tone: "blood", words: `${t}'s storytellers asked for changes: see their feedback below, revise it, then resubmit it.` }
+      : { badge: "Sent back", tone: "gold", words: `Sent back to the player with feedback. Waiting for them to revise it.` };
   if (b.state === "resubmitted")
     return player
-      ? { badge: "revised", tone: "gold", words: `Revised and back with ${t}'s storytellers. Nothing for you to do yet.` }
+      ? { badge: "Revised", tone: "gold", words: `Revised and back with ${t}'s storytellers. Nothing for you to do yet.` }
       : reader
-        ? { badge: "revised", tone: "blood", words: "The player revised it. Read it, then approve it or send it back." }
-        : { badge: "revised", tone: "gold", words: `Revised and back with ${t}'s storytellers.` };
+        ? { badge: "Revised", tone: "blood", words: "The player revised it. Read it, then approve it or send it back." }
+        : { badge: "Revised", tone: "gold", words: `Revised and back with ${t}'s storytellers.` };
   if (!b.written)
     return player
       ? {
-          badge: "not written",
+          badge: "Not written",
           tone: holds ? "blood" : "gold",
           words: holds
             ? `${t} needs it approved before accepting the character. Write it so its storytellers can read it.`
             : `Nothing written yet. ${t}'s storytellers will read it once you write it.`,
         }
-      : { badge: "not written", tone: "gold", words: "Nothing written yet." };
+      : { badge: "Not written", tone: "gold", words: "Nothing written yet." };
   if (player)
     return {
-      badge: "waiting",
+      badge: "Waiting",
       tone: "gold",
       words: holds
         ? `Waiting for ${t}'s storytellers to approve it before they accept the character. Nothing for you to do yet.`
         : `Waiting for ${t}'s storytellers to approve it. Nothing for you to do yet.`,
     };
   return reader
-    ? { badge: "to read", tone: "blood", words: `Not yet approved. Read it, then approve it or send it back with feedback.` }
-    : { badge: "not yet approved", tone: "gold", words: `Not yet approved by ${t}.` };
+    ? { badge: "To read", tone: "blood", words: `Not yet approved. Read it, then approve it or send it back with feedback.` }
+    : { badge: "Not yet approved", tone: "gold", words: `Not yet approved by ${t}.` };
 }

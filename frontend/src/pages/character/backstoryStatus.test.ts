@@ -17,7 +17,7 @@ const reader = { write: false, review: true };
 describe("backstoryStatus", () => {
   it("tells the player there is nothing to do while the storytellers have it", () => {
     expect(backstoryStatus(standing(), "", false)).toEqual({
-      badge: "waiting",
+      badge: "Waiting",
       tone: "gold",
       words: "Waiting for Ashes's storytellers to approve it. Nothing for you to do yet.",
     });
@@ -45,7 +45,7 @@ describe("backstoryStatus", () => {
 
   it("tells the storytellers what is theirs to do", () => {
     expect(backstoryStatus(standing(reader), "", false)).toEqual({
-      badge: "to read",
+      badge: "To read",
       tone: "blood",
       words: "Not yet approved. Read it, then approve it or send it back with feedback.",
     });
@@ -54,7 +54,7 @@ describe("backstoryStatus", () => {
   });
 
   it("says no troupe reads it yet, to its player only", () => {
-    expect(backstoryStatus(standing({ troupe_name: null }), "", false)?.badge).toBe("no troupe yet");
+    expect(backstoryStatus(standing({ troupe_name: null }), "", false)?.badge).toBe("No troupe yet");
     expect(backstoryStatus(standing({ ...reader, troupe_name: null }), "", false)).toBeNull();
   });
 });

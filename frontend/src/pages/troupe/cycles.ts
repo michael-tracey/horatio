@@ -7,6 +7,16 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 /** Where a participant's downtime stands. */
 export type Standing = "submitted" | "started" | "not started" | "removed";
 
+/** A standing as a badge says it. */
+export const STANDING_NAMES: Record<Standing, string> = { submitted: "Submitted", started: "Started", "not started": "Not started", removed: "Removed" };
+
+const CYCLE_STATUS: Record<string, string> = { draft: "Draft", open: "Open", closed: "Closed", complete: "Complete" };
+
+/** A cycle's status as a badge says it: "Open". */
+export function cycleStatus(status: string): string {
+  return CYCLE_STATUS[status] ?? status;
+}
+
 export function standing(p: { removed: boolean; submission_status?: string | null }): Standing {
   if (p.removed) return "removed";
   if (p.submission_status === "submitted") return "submitted";

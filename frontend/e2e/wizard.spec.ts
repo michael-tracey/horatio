@@ -414,11 +414,11 @@ test("a Cappadocian takes Chosen of Cappadocius in the wizard and chooses its sp
   await p.getByRole("button", { name: "Save and continue" }).click();
   await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
   const settle = p.getByRole("region", { name: "Still to settle" });
-  await expect(settle).toContainText("Chosen of Cappadocius: choose the lore specializations, languages and academics specializations it gives.");
+  await expect(settle).toContainText("Chosen of Cappadocius: choose the lore specialisations, languages and academics specialisations it gives.");
   await settle.getByRole("link", { name: "Go to Skills" }).click();
 
   const chosen = p.getByRole("group", { name: "Free traits from Chosen of Cappadocius" });
-  for (const heading of ["Lore Specializations", "Languages", "Academics Specializations"]) {
+  for (const heading of ["Lore Specialisations", "Languages", "Academics Specialisations"]) {
     for (const choice of [1, 2]) await chosen.getByLabel(`${heading}, choice ${choice}`).selectOption({ index: choice });
   }
   await chosen.getByRole("button", { name: "Save choices" }).click();

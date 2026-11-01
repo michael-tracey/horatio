@@ -83,7 +83,7 @@ export function BackstoryWizard({
           {sets.map((s) => (
             <Button key={s.id} variant={s.id === current.id ? "secondary" : "ghost"} aria-pressed={s.id === current.id} onClick={() => setSetId(s.id)}>
               {s.name}
-              {s.built && <Badge>built</Badge>}
+              {s.built && <Badge>Built</Badge>}
             </Button>
           ))}
         </div>

@@ -37,7 +37,7 @@ export function PlayerPage() {
         }
       >
         {p.display_name}
-        <Pronouns pronouns={p.pronouns} className="text-base text-mist" /> {p.is_custodian && <Badge tone="gold">custodian</Badge>}
+        <Pronouns pronouns={p.pronouns} className="text-base text-mist" /> {p.is_custodian && <Badge tone="gold">Custodian</Badge>}
       </PageTitle>
       <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-6">
@@ -104,7 +104,7 @@ function Characters({ player }: { player: PlayerOut }) {
             </Link>
             <span className="flex items-center gap-2 text-mist">
               {c.home_troupe ?? "no home troupe"}
-              {c.retired && <Badge>retired</Badge>}
+              {c.retired && <Badge>Retired</Badge>}
             </span>
           </li>
         ))}

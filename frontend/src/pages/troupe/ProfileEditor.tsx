@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { TroupeProfileIn, TroupeProfileOut } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
+import { DateInput } from "../../components/DateInput";
 import { Dialog } from "../../components/Dialog";
 import { Button, Card, ErrorText, Field, Input, Notice, Select, Textarea } from "../../components/ui";
 import type { Crop } from "../../components/crop";
@@ -198,9 +199,10 @@ function Games({ profile }: { profile: TroupeProfileOut }) {
       ) : (
         <p className="text-sm text-mist">None yet.</p>
       )}
-      <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+      {/* Top-aligned, the button beside the inputs rather than the dates written under them. */}
+      <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-start">
         <Field label="Game starts">
-          <Input
+          <DateInput
             type="datetime-local"
             value={starts}
             onChange={(e) => {
@@ -212,9 +214,9 @@ function Games({ profile }: { profile: TroupeProfileOut }) {
           />
         </Field>
         <Field label="Game ends">
-          <Input type="datetime-local" value={ends} onChange={(e) => setEnds(e.target.value)} />
+          <DateInput type="datetime-local" value={ends} onChange={(e) => setEnds(e.target.value)} />
         </Field>
-        <Button type="button" variant="secondary" disabled={!starts || !ends || add.isPending} onClick={() => add.mutate(undefined)}>
+        <Button type="button" variant="secondary" className="sm:mt-6" disabled={!starts || !ends || add.isPending} onClick={() => add.mutate(undefined)}>
           Add game
         </Button>
       </div>

@@ -3,6 +3,7 @@ import { useDeferredValue, useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, EmbraceOut, EmbracePlanOut, EmbraceStepOut } from "../../api/types";
+import { DateInput } from "../../components/DateInput";
 import { Dialog } from "../../components/Dialog";
 import { Button, Card, ErrorText, Field, Input, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
@@ -224,7 +225,7 @@ function EmbraceForm({ character, catalogue, onClose }: { character: CharacterOu
           </fieldset>
           <div className="flex flex-wrap gap-3">
             <Field label="Date" hint="The night it happened.">
-              <Input type="date" required value={when} onChange={(e) => setWhen(e.target.value)} className="w-44" />
+              <DateInput required value={when} onChange={(e) => setWhen(e.target.value)} className="w-44" />
             </Field>
           </div>
           <Field label="Note" hint="For the log.">

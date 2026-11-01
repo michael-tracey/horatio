@@ -2,9 +2,11 @@
 
 import csv
 import io
+import re
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -12,6 +14,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
+import horatio
 from horatio.api.audit import GROUPS
 from horatio.api.roster import MESSAGES
 from horatio.models import AuditEvent
@@ -108,9 +111,9 @@ def test_every_event_for_one_character(troupe: Troupe) -> None:
 
     found = search(troupe.custodian, character_id=agnes)["entries"]
     assert [(e["troupe_name"], e["message"]) for e in found] == [
-        ("Court of Ash", "Agnes (player) joined the troupe."),
+        ("Court of Ash", "Agnes (player) started visiting the troupe."),
         (None, "player bought Brawl 1 for Agnes (1 XP)."),
-        ("Lords of the Night", "Agnes (player) joined the troupe."),
+        ("Lords of the Night", "Agnes (player) started visiting the troupe."),
     ]
     assert {e["character_id"] for e in found} == {agnes}
     assert len(messages(troupe.custodian, character_id=agnes, troupe_id=other)) == 1
@@ -127,7 +130,7 @@ def test_groups_and_words(troupe: Troupe) -> None:
     assert messages(troupe.custodian, group="sheets") == ["player bought Brawl 2 for Agnes (3 XP)."]
     assert messages(troupe.custodian, group="troupes") == [
         "lead renamed the troupe to Lords of 100% Night.",
-        "Agnes (player) joined the troupe.",
+        "Agnes (player) started visiting the troupe.",
     ]
     assert messages(troupe.custodian, group="titles") == []
     assert troupe.custodian.client.get("/audit", params={"group": "nonsense"}).status_code == 422
@@ -143,7 +146,9 @@ def test_groups_and_words(troupe: Troupe) -> None:
     assert messages(troupe.custodian, q="100%") == [
         "lead renamed the troupe to Lords of 100% Night."
     ]
-    assert messages(troupe.custodian, q="joined player") == ["Agnes (player) joined the troupe."]
+    assert messages(troupe.custodian, q="visiting player") == [
+        "Agnes (player) started visiting the troupe."
+    ]
     assert messages(troupe.custodian, q="bought Potence") == []
     assert messages(troupe.custodian, q="%") == ["lead renamed the troupe to Lords of 100% Night."]
 
@@ -239,3 +244,21 @@ def test_every_action_with_wording_is_in_a_group() -> None:
         assert any(action.startswith(start) for _, starts in GROUPS.values() for start in starts), (
             action
         )
+
+
+def test_every_logged_action_has_wording() -> None:
+    """A log line reads as a sentence, never as the action's code ("downtime: form changed")."""
+    source = Path(horatio.__file__).parent
+    recorded = {
+        match
+        for path in source.rglob("*.py")
+        for match in re.findall(
+            r'audit\.record\(\s*[^,]+,\s*[^,]+,\s*"([a-z_.]+)"', path.read_text()
+        )
+    }
+    worded = {*MESSAGES, "sheet.purchase"}
+    # An action worded only by its kind ("approval.request.review") counts as worded.
+    unworded = {
+        a for a in recorded if a not in worded and not any(w.startswith(f"{a}.") for w in worded)
+    }
+    assert not unworded

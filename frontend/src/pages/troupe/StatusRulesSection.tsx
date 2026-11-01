@@ -33,7 +33,7 @@ export function StatusRulesTab({ troupe }: { troupe: TroupeOut }) {
           {STATUS_TYPES.map((t) => (
             <div key={t.type} className="contents">
               <dt>
-                <Badge>{t.type.toLowerCase()}</Badge>
+                <Badge>{t.type}</Badge>
               </dt>
               <dd className="mb-1 text-mist sm:mb-0">
                 {t.meaning} {pageLabel(t.page)}.
@@ -87,8 +87,8 @@ function StatusRow({ rule }: { rule: StatusRuleOut }) {
     <li aria-label={rule.name} className="flex flex-col gap-0.5 py-2.5 text-sm">
       <span className="flex flex-wrap items-center gap-2">
         <span className="font-medium text-parchment">{rule.name}</span>
-        <Badge tone={rule.type === "Negative" ? "blood" : "mist"}>{rule.type.toLowerCase()}</Badge>
-        {rule.no_rules_yet && <Badge tone="gold">no rules yet</Badge>}
+        <Badge tone={rule.type === "Negative" ? "blood" : "mist"}>{rule.type}</Badge>
+        {rule.no_rules_yet && <Badge tone="gold">No rules yet</Badge>}
         {page && <span className="text-xs text-mist">{page}</span>}
       </span>
       <span className="flex flex-col text-xs text-mist">

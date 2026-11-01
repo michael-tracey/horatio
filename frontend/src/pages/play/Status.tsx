@@ -282,7 +282,7 @@ function StatusRow({ item, spend, undo }: { item: CarriedOut; spend: () => void;
           <span className="text-xs text-mist"> · {item.type === "Fleeting" || item.type === "Negative" ? `from ${item.source}` : item.source}</span>
           {item.suppressed && (
             <span className="ml-2">
-              <Badge tone="blood">suppressed</Badge>
+              <Badge tone="blood">Suppressed</Badge>
             </span>
           )}
         </p>

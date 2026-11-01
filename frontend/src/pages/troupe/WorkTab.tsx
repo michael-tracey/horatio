@@ -5,7 +5,7 @@ import { ResponseEditor } from "../../components/ResponseEditor";
 import { Badge, Button, Card, Empty, ErrorText, Loading } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction, useMe } from "../../hooks";
-import { workLine } from "./cycles";
+import { cycleStatus, workLine } from "./cycles";
 
 export function WorkTab({ troupeId }: { troupeId: string }) {
   const dates = useDates();
@@ -29,7 +29,7 @@ export function WorkTab({ troupeId }: { troupeId: string }) {
                   {workLine(c)}
                 </span>
               </span>
-              <Badge tone={c.status === "open" ? "gold" : "mist"}>{c.status}</Badge>
+              <Badge tone={c.status === "open" ? "gold" : "mist"}>{cycleStatus(c.status)}</Badge>
             </Link>
           </li>
         ))}

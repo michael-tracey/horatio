@@ -31,23 +31,38 @@ export function needText(need: FeedingNeedOut): { needed: number; reasons: strin
 export type Tally = { parts: string[]; total: number; needed: number; enough: boolean; text: string };
 
 /**
- * The advisory tally: "Feeding 1 + your Herd 1 + 2 from Bram = 4 of 2 needed ✓".
- * Herd counts as the character's traits say (twice, or not at all). Nothing is
- * blocked; storytellers decide.
+ * The advisory tally: "Enough feeding: 4 of the 2 needed (1 feeding action, 1 from
+ * your Herd, 2 from Bram) ✓", or "0 of the 1 feeding needed so far: you'll come to
+ * game at half Blood…". Herd counts as the character's traits say (twice, or not
+ * at all). Nothing is blocked; storytellers decide.
  */
 export function tally(need: FeedingNeedOut, answer: FeedingIn, received: Gift[]): Tally {
   const factor = need.herd_factor;
+  const actions = answer.actions ?? 0;
   const own = (answer.herd_own ?? 0) * factor;
-  const parts = [`Feeding ${answer.actions ?? 0}`];
-  if (answer.herd_own) parts.push(`your Herd ${own}`);
+  const parts: string[] = [];
+  if (actions) parts.push(actions === 1 ? "1 feeding action" : `${actions} feeding actions`);
+  if (answer.herd_own) parts.push(`${own} from your Herd`);
   for (const g of received) parts.push(`${g.amount * factor} from ${g.character_name}`);
-  const total = (answer.actions ?? 0) + own + received.reduce((n, g) => n + g.amount * factor, 0);
+  const total = actions + own + received.reduce((n, g) => n + g.amount * factor, 0);
   const enough = !need.always_half && total >= need.needed;
-  const sum = `${parts.join(" + ")} = ${total} of ${need.needed} needed`;
+  const from = parts.length ? ` (${parts.join(", ")})` : "";
   const text = enough
-    ? `${sum} ✓`
+    ? `Enough feeding: ${total} of the ${need.needed} needed${from} ✓`
     : need.always_half
-      ? `${sum}: no feeding brings you to full Blood, so you'll come to game at half Blood unless staff say otherwise.`
-      : `${sum}: you'll come to game at half Blood unless staff say otherwise.`;
+      ? `${total} of the ${need.needed} feeding needed${from}: no feeding brings you to full Blood, so you'll come to game at half Blood unless staff say otherwise.`
+      : `${total} of the ${need.needed} feeding needed so far${from}: you'll come to game at half Blood unless staff say otherwise.`;
   return { parts, total, needed: need.needed, enough, text };
+}
+
+/**
+ * The tally as staff read it on the cycle's Feeding tab: "Has 1 of the 2 feeding
+ * it needs, short 1: Herd from Agnes 1". Only what counts is listed.
+ */
+export function staffTallyText(t: { needed: number; total: number; enough: boolean; parts: { label: string; amount: number }[] }): string {
+  const counted = t.parts.filter((p) => p.amount > 0).map((p) => `${p.label === "your Herd" ? "own Herd" : p.label} ${p.amount}`);
+  const from = counted.length ? `: ${counted.join(", ")}` : "";
+  if (t.enough) return `Has ${t.total} feeding, enough for the ${t.needed} it needs${from} ✓`;
+  if (t.total < t.needed) return `Has ${t.total} of the ${t.needed} feeding it needs, short ${t.needed - t.total}${from}`;
+  return `Has ${t.total} feeding${from}, but no feeding brings it to full Blood`;
 }

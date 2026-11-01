@@ -6,7 +6,7 @@ import type { CycleOut, QuestionIn } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Notice, PageTitle, Select, Tabs, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { timeLeft } from "./cycles";
+import { cycleStatus, timeLeft } from "./cycles";
 import { closeFacts, completeFacts } from "./delivery";
 import { DeliveryTab } from "./DeliveryTab";
 import { FeedingTab } from "./FeedingTab";
@@ -48,7 +48,7 @@ export function CyclePage() {
           <li aria-hidden="true">›</li>
         </ol>
       </nav>
-      <PageTitle actions={<Badge tone={c.status === "open" ? "gold" : "mist"}>{c.status}</Badge>}>{c.name}</PageTitle>
+      <PageTitle actions={<Badge tone={c.status === "open" ? "gold" : "mist"}>{cycleStatus(c.status)}</Badge>}>{c.name}</PageTitle>
       <Tabs
         tabs={[
           { to: base, label: "Overview", end: true },

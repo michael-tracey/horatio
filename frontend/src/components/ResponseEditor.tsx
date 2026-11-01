@@ -6,6 +6,7 @@ import type { QuestActionOut, WorkItemOut } from "../api/types";
 import { useAction } from "../hooks";
 import { DISCOVERY_BLOCK, LOOKUP_LEVEL } from "../influenceLookups";
 import { questType } from "../pages/quests/quests";
+import { STATUS_NAMES } from "../pages/troupe/responsesList";
 import { CombinedAnswers, DiscoveryBlock, LookupFill, type Combined } from "./InfluenceLookupTools";
 import { Badge, Button, ErrorText, Field, Input, Select, Textarea } from "./ui";
 
@@ -59,7 +60,7 @@ export function ResponseEditor({
             </span>
           )}
         </span>
-        <Badge tone={item.status === "written" ? "gold" : "mist"}>{item.status}</Badge>
+        <Badge tone={item.status === "written" ? "gold" : "mist"}>{STATUS_NAMES[item.status as keyof typeof STATUS_NAMES] ?? item.status}</Badge>
       </div>
       <p className="text-sm whitespace-pre-line">{item.answer}</p>
       {item.quest && <QuestAction item={item} quest={item.quest} troupeId={troupeId} link={canLog} />}

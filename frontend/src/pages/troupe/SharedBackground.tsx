@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { SharedBackgroundOut, SharedChoicesOut, SharedEntryOut } from "../../api/types";
+import { DateInput } from "../../components/DateInput";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
@@ -122,7 +123,7 @@ function EntryRow({ entry, onDelete }: { entry: SharedEntryOut; onDelete: () => 
       {entry.purpose && <p>{entry.purpose}</p>}
       {entry.note && <p className="text-mist">{entry.note}</p>}
       <div className="flex flex-wrap items-center gap-2 text-xs text-mist">
-        {entry.kind === "use" ? <Badge>use</Badge> : <Badge tone="gold">{entry.kind === "contribution" ? "dots in" : "dots out"}</Badge>}
+        {entry.kind === "use" ? <Badge>Use</Badge> : <Badge tone="gold">{entry.kind === "contribution" ? "Dots in" : "Dots out"}</Badge>}
         {entry.logged_by_name && (
           <span>
             logged by {entry.logged_by_name}, {dates.date(entry.logged_at)}
@@ -177,7 +178,7 @@ function UseForm({ shared, onDone }: { shared: SharedBackgroundOut; onDone: () =
           </Select>
         </Field>
         <Field label={`When (${dates.zoneName()})`}>
-          <Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
+          <DateInput type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
         </Field>
       </div>
       <Field label="What for">
@@ -257,7 +258,7 @@ function DotsForm({ shared, choices, onDone }: { shared: SharedBackgroundOut; ch
           <Input type="number" min={1} max={10} value={dots} onChange={(e) => setDots(Number(e.target.value))} />
         </Field>
         <Field label={`When (${dates.zoneName()})`}>
-          <Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
+          <DateInput type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
         </Field>
       </div>
       <Field label="Note (optional)">

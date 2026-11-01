@@ -102,8 +102,8 @@ function HeldRow({ character, titles, held }: { character: CharacterOut; titles:
           <span className={held.active ? "font-medium text-gold" : "text-parchment"}>{held.name}</span>
           {(held.sect ?? held.clan) && <span className="text-xs text-mist">{held.sect ?? held.clan}</span>}
           {held.alias_of && <span className="text-xs text-mist">{aliasText(held)}</span>}
-          {held.active ? <Badge tone="gold">active</Badge> : <Badge>not active</Badge>}
-          {held.out_of_sect && <Badge tone="blood">out of sect</Badge>}
+          {held.active ? <Badge tone="gold">Active</Badge> : <Badge>Not active</Badge>}
+          {held.out_of_sect && <Badge tone="blood">Out of sect</Badge>}
         </span>
         {!asking && (
           <span className="flex flex-wrap gap-1">
@@ -250,6 +250,9 @@ function ChoiceRow({ character, titles, choice, active }: { character: Character
   );
 }
 
+/** A ban's level as a badge says it: "Lesser". */
+const banLevel = (level: string) => (level === "greater" ? "Greater" : level === "lesser" ? "Lesser" : level);
+
 /** Whether a ban holds, in a word or two. */
 function holds(ban: BanOut): string {
   if (ban.marked === false) return "exempt";
@@ -276,11 +279,11 @@ function Bans({ character }: { character: CharacterOut }) {
             <li key={b.applies_to}>
               <button
                 type="button"
-                aria-label={`${b.level} ban: ${b.applies_to}`}
+                aria-label={`${banLevel(b.level)} ban: ${b.applies_to}`}
                 onClick={() => setOpen(b.applies_to)}
                 className="flex min-h-9 w-full items-center gap-2 rounded-md px-1.5 text-left hover:bg-night"
               >
-                <Badge tone={b.applies ? "blood" : "mist"}>{b.level}</Badge>
+                <Badge tone={b.applies ? "blood" : "mist"}>{banLevel(b.level)}</Badge>
                 <span className={`min-w-0 flex-1 truncate text-sm ${b.applies ? "text-parchment" : "text-mist"}`}>{b.applies_to}</span>
                 <span className="shrink-0 text-xs text-mist">{holds(b)}</span>
               </button>
@@ -316,7 +319,7 @@ function BanPanel({ character, status, ban }: { character: CharacterOut; status:
   return (
     <div className="flex flex-col gap-3 text-sm">
       <p className="text-parchment">
-        <Badge tone={ban.applies ? "blood" : "mist"}>{ban.level}</Badge> {ban.applies_to}
+        <Badge tone={ban.applies ? "blood" : "mist"}>{banLevel(ban.level)}</Badge> {ban.applies_to}
       </p>
       <p className="text-mist">
         A lesser ban cuts fleeting status to 3, a greater to 1 (MET: VTM p. 312).{page && ` ${page}.`}

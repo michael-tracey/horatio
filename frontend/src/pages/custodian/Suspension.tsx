@@ -3,8 +3,9 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { Suspended } from "../../api/types";
+import { DateInput } from "../../components/DateInput";
 import { LogList } from "../../components/LogList";
-import { Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, Textarea } from "../../components/ui";
+import { Button, Card, Empty, ErrorText, Field, Loading, Notice, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 
@@ -67,7 +68,7 @@ export function SuspendPerson({ person }: { person: Person }) {
       </Field>
       {!person.suspended && (
         <Field label="Until" hint={`Optional: leave it empty to lift it by hand. Times are in ${dates.zone.replace(/_/g, " ")}.`}>
-          <Input type="datetime-local" value={until} onChange={(e) => setUntil(e.target.value)} />
+          <DateInput type="datetime-local" value={until} onChange={(e) => setUntil(e.target.value)} />
         </Field>
       )}
       {emailError && <ErrorText error={`They could not be emailed: ${emailError}`} />}

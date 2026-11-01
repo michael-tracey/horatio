@@ -196,7 +196,7 @@ export function NpcsTab({ troupeId }: { troupeId: string }) {
                 Quick build
               </Button>
               <Button type="button" variant="secondary" disabled={!ready} onClick={() => create.mutate(true)}>
-                Use the creation wizard
+                Use step-by-step creation
               </Button>
               <p className="text-xs text-mist">Quick build sets ratings directly, with a running tally of what the NPC is worth.</p>
             </>
@@ -237,7 +237,7 @@ function CustomKindFields({ custom, onChange }: { custom: Custom; onChange: (c: 
       <Field label="Mortal or supernatural">
         <Select value={custom.nature} onChange={(e) => onChange({ ...custom, nature: e.target.value as Custom["nature"] })}>
           <option value="supernatural">Supernatural</option>
-          <option value="mortal">Mortal: skill specializations only</option>
+          <option value="mortal">Mortal: skill specialisations only</option>
         </Select>
       </Field>
       <div className="grid grid-cols-3 gap-2">

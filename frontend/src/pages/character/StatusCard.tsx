@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, HeldOut, StatusAbout, StatusIn, StatusOut, SuppressionOut } from "../../api/types";
+import { DateInput } from "../../components/DateInput";
 import { EmptyState } from "../../components/EmptyState";
 import { InfoButton } from "../../components/InfoButton";
 import { PatronPicker } from "../../components/PatronPicker";
@@ -83,10 +84,10 @@ export function WithReason({
   );
 }
 
-/** A status's type as a badge: "abiding", "negative". */
+/** A status's type as a badge: "Abiding", "Negative". */
 function TypeBadge({ type }: { type: string }) {
   const tone = type === "Negative" ? "blood" : type === "Fleeting" ? "mist" : "gold";
-  return <Badge tone={tone}>{type.toLowerCase()}</Badge>;
+  return <Badge tone={tone}>{type}</Badge>;
 }
 
 /**
@@ -320,7 +321,7 @@ export function AddStatus({
             <Input value={place} placeholder={status.troupe_name ?? "The troupe or domain"} onChange={(e) => setPlace(e.target.value)} />
           </Field>
           <Field label="When">
-            <Input type="date" value={givenOn} onChange={(e) => setGivenOn(e.target.value)} />
+            <DateInput value={givenOn} onChange={(e) => setGivenOn(e.target.value)} />
           </Field>
         </div>
       )}

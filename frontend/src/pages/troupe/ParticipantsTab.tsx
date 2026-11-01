@@ -9,7 +9,7 @@ import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { chaseSummary, nameList, notSubmitted, playersToRemind, standing } from "./cycles";
+import { chaseSummary, nameList, notSubmitted, playersToRemind, standing, STANDING_NAMES } from "./cycles";
 import { LogInfluenceButton } from "./LogInfluence";
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
@@ -130,7 +130,7 @@ function StandingBadge({ participant: p }: { participant: ParticipantOut }) {
   const s = standing(p);
   return (
     <Badge tone={s === "submitted" ? "gold" : s === "removed" ? "blood" : "mist"}>
-      {s}
+      {STANDING_NAMES[s]}
       {p.submitted_late ? " (late)" : ""}
     </Badge>
   );

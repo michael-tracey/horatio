@@ -137,19 +137,19 @@ usual_max = 5
 
 [[categories]]
 key = "lore_specializations"
-name = "Lore Specializations"
+name = "Lore Specialisations"
 group = "Skills"
 specializes = { category = "skills", name = "Lore" }
 
 [[categories]]
 key = "academics_specializations"
-name = "Academics Specializations"
+name = "Academics Specialisations"
 group = "Skills"
 specializes = { category = "skills", name = "Academics" }
 
 [[categories]]
 key = "drive_specializations"
-name = "Drive Specializations"
+name = "Drive Specialisations"
 group = "Skills"
 specializes = { category = "skills", name = "Drive" }
 
@@ -190,19 +190,19 @@ usual_max = 5
 
 [[categories]]
 key = "haven_specializations"
-name = "Haven Specializations"
+name = "Haven Specialisations"
 group = "Backgrounds"
 specializes = { category = "backgrounds", name = "Haven" }
 
 [[categories]]
 key = "contacts_specializations"
-name = "Contacts Specializations"
+name = "Contacts Specialisations"
 group = "Backgrounds"
 specializes = { category = "backgrounds", name = "Contacts" }
 
 [[categories]]
 key = "allies_specializations"
-name = "Allies Specializations"
+name = "Allies Specialisations"
 group = "Backgrounds"
 specializes = { category = "backgrounds", name = "Allies" }
 

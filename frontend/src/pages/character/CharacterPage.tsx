@@ -171,7 +171,7 @@ export function CharacterPage() {
           subtitle={<Identity character={c} lead={c.splat} />}
           actions={
             <div className="flex flex-wrap items-center gap-3">
-              {c.status === "retired" && <Badge>retired</Badge>}
+              {c.status === "retired" && <Badge>Retired</Badge>}
               {creating ? primaryLink(`${base}/create`, "Continue creating") : play}
               {c.status === "active" && <GiveEquipment character={c} />}
               <CharacterMenu

@@ -458,8 +458,8 @@ test("a player asks staff for an elder power the rules refuse, free, and a story
   // In the cart it is an exception line, with the rule it breaks, and nothing to pay.
   const cart = p.getByRole("list", { name: "Changes in the cart" });
   const line = cart.getByRole("listitem").filter({ hasText: "Add Celerity: Zephyr" });
-  await expect(line.getByText("exception", { exact: true })).toBeVisible();
-  await expect(line.getByText("needs approval")).toBeVisible();
+  await expect(line.getByText("Exception", { exact: true })).toBeVisible();
+  await expect(line.getByText("Needs approval")).toBeVisible();
   await expect(line).toContainText("Asked of staff, free: A gift of the Methuselah's blood");
   await expect(line).toContainText("Against the rules: An elder power needs all 5 dots of its discipline first.");
   await p.screenshot(shots("exception-cart"));
@@ -473,7 +473,7 @@ test("a player asks staff for an elder power the rules refuse, free, and a story
   await l.goto(`/troupes/${troupeId}/approvals`);
   await l.getByLabel("Kind", { exact: true }).selectOption({ label: "Exceptions" });
   const card = l.locator("section").filter({ hasText: "Wren" });
-  await expect(card.getByText("exception, free")).toBeVisible();
+  await expect(card.getByText("Exception, free")).toBeVisible();
   await expect(card).toContainText("Celerity: Zephyr 0 → 1, asked for free");
   await expect(card).toContainText("Against the rules: An elder power needs all 5 dots of its discipline first.");
   await expect(card).toContainText("A gift of the Methuselah's blood");
@@ -669,13 +669,13 @@ test("a skill's specialisations sit in its own list item, in the sheet's two col
     await p.setViewportSize({ width, height: 900 });
     // Name one specialisation for Academics.
     if (width === 1280) {
-      await academics.getByRole("button", { name: "Add to Academics Specializations" }).click();
-      await academics.getByLabel("Name a Academics Specializations").fill("Medieval");
+      await academics.getByRole("button", { name: "Add to Academics Specialisations" }).click();
+      await academics.getByLabel("Name a Academics Specialisations").fill("Medieval");
       await academics.getByRole("button", { name: "Add", exact: true }).click();
     }
     // The skill, its specialisations and their Add button all sit in the one item.
     await expect(academics.getByText("Academics", { exact: true }).first()).toBeVisible();
-    await expect(academics.getByText("Academics Specializations 1/1")).toBeVisible();
+    await expect(academics.getByText("Academics Specialisations 1/1")).toBeVisible();
     await expect(academics.getByRole("button", { name: "Remove Medieval" })).toBeVisible();
     await expect(academics.getByRole("listitem")).toHaveCount(0); // one item for the whole trait
     // And the item is kept whole across a column break.

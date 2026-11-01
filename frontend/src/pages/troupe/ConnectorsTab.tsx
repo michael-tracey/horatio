@@ -46,7 +46,7 @@ export function ConnectorsTab({ troupeId, canEdit }: { troupeId: string; canEdit
               : `Discord could not be connected: ${discordOutcome}`}
         </Notice>
       )}
-      <Card title="In Horatio" actions={<Badge tone="gold">always on</Badge>}>
+      <Card title="In Horatio" actions={<Badge tone="gold">Always on</Badge>}>
         <p className="text-sm">
           Delivered results always appear on the character's Results tab, and the player's bell says they are ready.
         </p>
@@ -85,7 +85,7 @@ function ConnectorCard({ troupeId, connector, canEdit }: { troupeId: string; con
     ),
   );
   const Editor = SETTINGS_EDITORS[connector.kind];
-  const state = connector.enabled ? (connector.test_mode ? "on, test mode" : "on") : connector.unavailable ? "not set up" : "off";
+  const state = connector.enabled ? (connector.test_mode ? "On, test mode" : "On") : connector.unavailable ? "Not set up" : "Off";
 
   // Not set up on this server: nothing here would work, so there is nothing to fill in;
   // unless it was switched on before, when it can still be switched off.

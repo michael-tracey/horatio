@@ -4,7 +4,7 @@ officer or a pack of werewolves in a hurry (issue #215).
 
 - The rating, 1 to 5 (higher where the kind allows), is the NPC's test pool
   halved: its pool in most challenges is rating × 2.
-- It has as many specializations as its rating. A skill specialization adds 5 to
+- It has as many specialisations as its rating. A skill specialization adds 5 to
   that skill's pool; a discipline specialization gives that discipline's dots up
   to the rating. Mortals take skill specializations only, but for the numina or
   powers their kind lists (a hunter's True Faith or Hedge Magic).
@@ -114,17 +114,17 @@ def check(
         raise StockError(f"{kind.label} Stock NPCs are rated 1 to {kind.rating_max} (p. 489).")
     if len(specializations) > rating:
         raise StockError(
-            f"A Stock NPC has as many specializations as its rating: {rating} at most (p. 489)."
+            f"A Stock NPC has as many specialisations as its rating: {rating} at most (p. 489)."
         )
     seen: set[tuple[str, str]] = set()
     for s in specializations:
         if (s.type, s.name) in seen:
-            raise StockError(f"{s.name} is already one of its specializations.")
+            raise StockError(f"{s.name} is already one of its specialisations.")
         seen.add((s.type, s.name))
         if s.type == "skill":
             if s.name not in skills:
                 raise StockError(f"{s.name} is not a skill.")
         elif not kind.may_specialize(s.name, disciplines):
             if kind.mortal and not kind.numina and not kind.specializations:
-                raise StockError("A mortal Stock NPC takes skill specializations only (p. 489).")
-            raise StockError(f"{kind.label} Stock NPCs cannot specialize in {s.name}.")
+                raise StockError("A mortal Stock NPC takes skill specialisations only (p. 489).")
+            raise StockError(f"{kind.label} Stock NPCs cannot specialise in {s.name}.")

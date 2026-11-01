@@ -1,9 +1,9 @@
 import type { Role } from "../../api/types";
 
 const LABELS: Record<Role, string> = {
-  lead_storyteller: "Lead Storyteller",
+  lead_storyteller: "Lead storyteller",
   storyteller: "Storyteller",
-  assistant_storyteller: "Assistant Storyteller",
+  assistant_storyteller: "Assistant storyteller",
   narrator: "Narrator",
 };
 

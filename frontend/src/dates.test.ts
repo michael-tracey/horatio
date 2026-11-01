@@ -112,4 +112,13 @@ describe("dates", () => {
     expect(dates.fromInput("2026-11-01T12:00").toISOString()).toBe("2026-11-01T17:00:00.000Z");
     expect(dates.fromInput("2026-03-08T12:00").toISOString()).toBe("2026-03-08T16:00:00.000Z");
   });
+
+  it("writes what a date input holds the app's way", () => {
+    const dates = datesFor(newYork);
+    expect(dates.inputText("")).toBe("");
+    expect(dates.inputText("2026-10-20")).toBe("Tue 20 Oct 2026");
+    expect(dates.inputText("2026-10-20T21:30")).toBe("Tue 20 Oct 2026, 9:30 pm EDT");
+    expect(datesFor({ ...newYork, date_format: "month_day", clock: "24" }).inputText("2026-10-20T21:30")).toBe("Tue 10/20/2026, 21:30 EDT");
+    expect(datesFor({ ...newYork, time_zone: "Asia/Tokyo" }).inputText("2026-10-21T10:30")).toBe("Wed 21 Oct 2026, 10:30 am GMT+9");
+  });
 });

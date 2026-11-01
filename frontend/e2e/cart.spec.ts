@@ -209,14 +209,14 @@ test("once accepted, a merit or flaw is asked of the home troupe: one declined, 
   const rugged = cart.getByRole("listitem").filter({ hasText: "Rugged" });
   // Each line is tried on the sheet as it is priced, which takes a while on a busy server.
   await expect(rugged).toContainText("Asked of the home troupe: 3 XP held until they decide.", { timeout: 15_000 });
-  await expect(rugged).toContainText("needs approval");
+  await expect(rugged).toContainText("Needs approval");
   await expect(cart.getByRole("listitem").filter({ hasText: "Low Pain Threshold" })).toContainText("buying it off costs 6 XP, twice what it gave");
   await p.screenshot(shots("merit-flaw-asked"));
   await p.getByRole("button", { name: "Spend XP" }).click();
   await expect(p.getByText("Some of it waits for the home troupe's approval.")).toBeVisible();
   // Nothing has changed on the sheet yet: both wait, marked.
-  await expect(trait("Rugged")).toContainText("awaiting approval");
-  await expect(trait("Low Pain Threshold")).toContainText("removal awaiting approval");
+  await expect(trait("Rugged")).toContainText("Awaiting approval");
+  await expect(trait("Low Pain Threshold")).toContainText("Removal awaiting approval");
   await expect(part("Health Levels").getByRole("img", { name: "Injured: 2 boxes" })).toBeVisible();
 
   // The lead has both in the bell, and declines Rugged.

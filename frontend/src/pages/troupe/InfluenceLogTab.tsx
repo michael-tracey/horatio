@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, Route, Routes, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { InfluenceChoicesOut, InfluenceEntryIn, InfluenceEntryOut } from "../../api/types";
+import { DateInput } from "../../components/DateInput";
 import { EmptyState, FilterBar } from "../../components/EmptyState";
 import { InfoButton } from "../../components/InfoButton";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, PageTabs, Select } from "../../components/ui";
@@ -145,10 +146,10 @@ function Log({ troupeId }: { troupeId: string }) {
               </Select>
             </Field>
             <Field label="From">
-              <Input type="date" value={filters.from} onChange={(e) => set({ from: e.target.value })} />
+              <DateInput value={filters.from} onChange={(e) => set({ from: e.target.value })} />
             </Field>
             <Field label="To">
-              <Input type="date" value={filters.to} onChange={(e) => set({ to: e.target.value })} />
+              <DateInput value={filters.to} onChange={(e) => set({ to: e.target.value })} />
             </Field>
           </div>
           <label className="mt-3 flex items-center gap-2 text-sm">
@@ -249,9 +250,9 @@ function EntryRow({
       {entry.purpose && <p>{entry.purpose}</p>}
       <BlockSources entry={entry} />
       <div className="flex flex-wrap items-center gap-2 text-xs text-mist">
-        {entry.times > 1 && <Badge tone="gold">logged {entry.times} times</Badge>}
+        {entry.times > 1 && <Badge tone="gold">Logged {entry.times} times</Badge>}
         {entry.blocks > 0 && <Badge>{entry.blocks === 1 ? "1 block" : `${entry.blocks} blocks`}</Badge>}
-        {entry.needs_details && <Badge tone="blood">needs details</Badge>}
+        {entry.needs_details && <Badge tone="blood">Needs details</Badge>}
         {entry.effect && <Badge tone={entry.effect.active ? "gold" : "mist"}>{entry.effect.active ? entry.effect.text : `${entry.effect.text}, over`}</Badge>}
         {entry.cycle_id && entry.source === "downtime" ? (
           <Link to={`/cycles/${entry.cycle_id}`} className="hover:text-gold">
@@ -437,7 +438,7 @@ export function EntryForm({
           onChange={(change) => setTarget({ ...target, ...change })}
         />
         <Field label={`When (${dates.zoneName()})`}>
-          <Input type="datetime-local" value={form.happened_at} onChange={(e) => set({ happened_at: e.target.value })} />
+          <DateInput type="datetime-local" value={form.happened_at} onChange={(e) => set({ happened_at: e.target.value })} />
         </Field>
         {(choices.cycles.length > 0 || choices.games.length > 0) && (
           <Field label="Or date it by">

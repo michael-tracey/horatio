@@ -60,9 +60,9 @@ describe("a character's influence history", () => {
 
   it("says only the character's own blocks", () => {
     expect(blocksText(0)).toBeNull();
-    expect(blocksText(1)).toBe("you blocked it once");
-    expect(blocksText(2)).toBe("you blocked it twice");
-    expect(blocksText(3)).toBe("you blocked it 3 times");
+    expect(blocksText(1)).toBe("You blocked it once");
+    expect(blocksText(2)).toBe("You blocked it twice");
+    expect(blocksText(3)).toBe("You blocked it 3 times");
   });
 
   it("says where it came from", () => {

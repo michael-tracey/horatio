@@ -437,7 +437,7 @@ function StockCard({ pin, back, onRemove }: { pin: SceneOut["stock"][number]; ba
           {stats.pool} in most challenges
         </p>
         <p>
-          <span className="text-gold">Specializations </span>
+          <span className="text-gold">Specialisations </span>
           {specializations.length > 0 ? specializations.join(" · ") : <span className="text-mist">none</span>}
         </p>
         <p className="text-xs text-mist">No Willpower: no retests unless it overbids</p>

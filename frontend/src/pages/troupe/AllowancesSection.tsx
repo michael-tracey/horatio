@@ -73,7 +73,7 @@ export function AllowancesSection({ troupeId, canEdit }: { troupeId: string; can
                     </span>
                     <span className="flex shrink-0 items-center gap-2">
                       {r.house && <Badge tone="gold">House rule</Badge>}
-                      {r.replaced && <Badge>replaced here</Badge>}
+                      {r.replaced && <Badge>Replaced here</Badge>}
                       {canEdit && r.house && r.id && (
                         <>
                           <Button variant="secondary" className="min-h-8 px-3" aria-label={`Change actions for ${r.who}`} onClick={() => setEditing({ kind: "change", rule: r })}>

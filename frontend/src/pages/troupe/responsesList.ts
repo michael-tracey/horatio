@@ -4,6 +4,9 @@ type Item = Pick<WorkItemOut, "id" | "character_id" | "character_name" | "questi
 
 export type Status = "all" | "unassigned" | "assigned" | "written";
 
+/** A status as a filter button or a badge says it. */
+export const STATUS_NAMES: Record<Status, string> = { all: "All", unassigned: "Unassigned", assigned: "Assigned", written: "Written" };
+
 /** Who a response is with: "none", "any" (any narrator) or a staff member's id. */
 export function assigneeOf(item: Item): string {
   if (item.assigned_to_any_narrator) return "any";

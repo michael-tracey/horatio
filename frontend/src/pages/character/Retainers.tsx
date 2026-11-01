@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, RetainerOut } from "../../api/types";
+import { DateInput } from "../../components/DateInput";
 import { Button, ErrorText, Input, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
@@ -251,7 +252,7 @@ export function RetainersPanel({ character, merits }: { character: CharacterOut;
                     <option value="released">Released</option>
                     <option value="killed">Killed</option>
                   </Select>
-                  {d.lost && <Input type="date" aria-label={`Lost on, ${label}`} value={d.lost_on} onChange={(e) => change(i, { lost_on: e.target.value })} className="min-h-7 w-40 py-0.5 text-xs" />}
+                  {d.lost && <DateInput aria-label={`Lost on, ${label}`} value={d.lost_on} onChange={(e) => change(i, { lost_on: e.target.value })} className="min-h-7 w-40 py-0.5 text-xs" />}
                   {can_link && (
                     <Select aria-label={`NPC for ${label}`} value={d.npc_id} onChange={(e) => change(i, { npc_id: e.target.value })} className="min-h-7 w-48 py-0.5 text-xs">
                       <option value="">No NPC linked</option>
