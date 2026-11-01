@@ -152,6 +152,66 @@ test("a troupe's players read its house rules: a price the lead changes shows th
   await p.screenshot(shots("house-rules"));
 });
 
+test("a player looks up the rules: a power by name and by its summary, then as played in a troupe, a house price shown and a banned merit hidden (#422)", async ({ browser }) => {
+  const custodian = await person(browser, "rulebook-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "rulebook-lead");
+  const player = await person(browser, "rulebook-player");
+  const troupeName = `Hall of Statutes ${run}`;
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  // The troupe sells Absent Sway for 2 points rather than 3, and bans Calm Heart.
+  for (const data of [
+    { category: "merits", trait: "Absent Sway", scheme: "fixed", rate: 2 },
+    { category: "merits", trait: "Calm Heart", scheme: "not_allowed", text: "No one keeps calm here" },
+  ]) {
+    const priced = await lead.page.request.post(`/api/troupes/${troupeId}/costs`, { headers: { "X-Horatio": "1" }, data });
+    expect(priced.status(), await priced.text()).toBe(201);
+  }
+
+  // From the main nav, the book's rules: a power found by its name, and by a word of its summary.
+  const p = player.page;
+  await p.getByRole("link", { name: "Rules reference" }).click();
+  const search = p.getByRole("searchbox", { name: "Search the rules" });
+  const entry = (name: string) => p.getByTestId("rules-entry").filter({ has: p.getByRole("heading", { name, exact: true }) });
+  await search.fill("majesty");
+  await expect(entry("Majesty")).toContainText("Presence 5");
+  await search.fill("act against you");
+  await expect(entry("Majesty")).toBeVisible();
+
+  // The merits a clan needs, and Calm Heart as the book has it.
+  await search.fill("");
+  await p.getByRole("button", { name: /^Merits/ }).click();
+  await p.getByLabel("Clan").selectOption("Toreador");
+  await expect(entry("Absent Sway")).toContainText("3 points");
+  await p.getByLabel("Clan").selectOption("");
+  await search.fill("calm heart");
+  await expect(entry("Calm Heart")).toBeVisible();
+
+  // As played in the troupe: Calm Heart is gone, unless asked for, marked as not allowed.
+  await p.getByLabel("As played in").selectOption({ label: troupeName });
+  await expect(p.getByText(`Nothing matches “calm heart”.`)).toBeVisible();
+  await p.getByLabel(`Show the 1 not allowed in ${troupeName}`).check();
+  await expect(entry("Calm Heart")).toContainText(`Not allowed in ${troupeName}`);
+  await expect(entry("Calm Heart")).toContainText("House rule: No one keeps calm here");
+
+  // Absent Sway at the troupe's price, beside the book's.
+  await search.fill("absent sway");
+  const sway = entry("Absent Sway");
+  await expect(sway).toContainText("2 points");
+  await expect(sway.getByText("House rule", { exact: true })).toBeVisible();
+  await expect(sway).toContainText("By the book: 3 points");
+  await p.screenshot(shots("rules-browser"));
+
+  // The troupe's House rules page leads back here, the troupe chosen.
+  await p.getByRole("link", { name: "What it changes" }).click();
+  await expect(p).toHaveURL(new RegExp(`/troupes/${troupeId}/house-rules$`));
+  await p.getByRole("link", { name: "Browse every rule as played here" }).click();
+  await expect(p.getByLabel("As played in")).toHaveValue(troupeId);
+});
+
 test("a troupe's XP floor and ceiling: new characters start at the floor, and staff settle a joiner's XP", async ({ browser }) => {
   // A whole character creation, then a home troupe request.
   test.slow();

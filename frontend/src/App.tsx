@@ -24,6 +24,7 @@ const PlayPage = lazy(() => import("./pages/play/PlayPage").then((m) => ({ defau
 const ScenePage = lazy(() => import("./pages/play/ScenePage").then((m) => ({ default: m.ScenePage })));
 const ScenesPage = lazy(() => import("./pages/play/ScenesPage").then((m) => ({ default: m.ScenesPage })));
 const PlayerPage = lazy(() => import("./pages/PlayerPage").then((m) => ({ default: m.PlayerPage })));
+const RulesPage = lazy(() => import("./pages/rules/RulesPage").then((m) => ({ default: m.RulesPage })));
 const PublicTroupePage = lazy(() => import("./pages/PublicTroupePage").then((m) => ({ default: m.PublicTroupePage })));
 const PrintPage = lazy(() => import("./pages/PrintPage").then((m) => ({ default: m.PrintPage })));
 const TroupePage = lazy(() => import("./pages/troupe/TroupePage").then((m) => ({ default: m.TroupePage })));
@@ -98,6 +99,7 @@ export function App() {
           <Route path="/check-in/:code" element={<CheckInPage />} />
           <Route path="/troupes" element={<TroupesPage />} />
           <Route path="/troupes/:troupeId/*" element={<TroupePage />} />
+          <Route path="/rules" element={<RulesPage />} />
           <Route path="/cycles/:cycleId/*" element={<CyclePage />} />
           <Route path="/players/:userId" element={<PlayerPage />} />
           <Route path="/account/*" element={<AccountPage />} />

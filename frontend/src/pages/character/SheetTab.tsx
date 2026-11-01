@@ -32,6 +32,7 @@ import { useAction } from "../../hooks";
 import { pipsOf } from "../../ratings";
 import { PowerList } from "../play/ReferenceTabs";
 import { useReference } from "../play/useReference";
+import { rulesLink } from "../rules/rulesBrowser";
 import { AddTraitPanel } from "./AddTraitPanel";
 import { openToYou, useChoices } from "./choices";
 import { PrintAndBadge } from "./Badge";
@@ -422,7 +423,17 @@ export function SheetTab({
               dense
               className={wide(group) ? "md:col-span-2" : undefined}
               title={group}
-              info={<PartInfo part={group} catalogue={catalogue.data} />}
+              info={
+                <PartInfo
+                  part={group}
+                  catalogue={catalogue.data}
+                  rules={rulesLink(
+                    (catalogue.data?.categories ?? []).filter((c) => c.group === group).map((c) => c.key),
+                    rulesTroupe(character),
+                    character.splat,
+                  )}
+                />
+              }
               actions={
                 canAdd && (addable.get(group)?.length ?? 0) > 0 ? (
                   <Button
