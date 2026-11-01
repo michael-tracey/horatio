@@ -60,7 +60,8 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
 
   // An NPC the lead runs at game, made straight through the API: Generation 2 (12
-  // blood, 2 a turn), Herd 2, Physical 5, Mental 3, Dodge 2 and Celerity 2.
+  // blood, 2 a turn), Herd 2, Physical 5, Social 4, Mental 3, Dodge 2, Intimidation 3
+  // and Celerity 2.
   const p = lead.page;
   await p.getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
@@ -75,8 +76,10 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
     ["backgrounds", "Generation", 2],
     ["backgrounds", "Herd", 2],
     ["attributes", "Physical", 5],
+    ["attributes", "Social", 4],
     ["attributes", "Mental", 3],
     ["skills", "Dodge", 2],
+    ["skills", "Intimidation", 3],
     ["disciplines", "Celerity", 2],
     ["disciplines", "Potence", 2],
   ] as const) {
@@ -170,8 +173,9 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(p.getByText("Alacrity", { exact: true })).toBeVisible();
   // Each attack shows what a hit does, with Potence's Might in the breakdown.
   const unarmed = p.getByRole("listitem").filter({ hasText: /^Unarmed attack/ });
-  await expect(unarmed.getByText("2 damage: 1 (unarmed) + 1 (Might)")).toBeVisible();
-  await expect(unarmed.getByText("An exceptional success adds 1 damage, 3 in all.")).toBeVisible();
+  await expect(unarmed.getByText("Damage 2 (1 unarmed + 1 Might) · exceptional 3")).toBeVisible();
+  // The Blood rule is said once, over Combat, not under every attack.
+  await expect(p.getByText("Spend Blood for +1 Physical each, up to 2 a turn.")).toHaveCount(1);
   // The player's own modifier: Social pools go up while it is on, with Fame in the breakdown.
   const social = p.getByRole("listitem").filter({ hasText: /^Resisting Social powers/ });
   await expect(social).not.toContainText("Fame");
@@ -195,6 +199,20 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(p.getByRole("heading", { name: "Switched off" })).toBeVisible();
   await p.getByLabel("Fame on").click();
   await expect(social).toContainText("Fame 2");
+  await p.keyboard.press("Escape");
+  // Other tests (issue #371): attribute + skill, with the player's own modifiers; the
+  // storyteller may name another attribute, and one tap counts it.
+  const others = p.locator("section").filter({ has: p.getByRole("heading", { name: "Other tests" }) });
+  const intimidation = others.getByRole("listitem").filter({ hasText: /^Intimidation/ });
+  await expect(intimidation).toContainText("Social 4 + Intimidation 3 + Fame 2");
+  await expect(intimidation.getByText("9", { exact: true })).toBeVisible();
+  await others.getByRole("button", { name: "Mental", exact: true }).click();
+  await expect(intimidation).toContainText("Mental 3 + Intimidation 3");
+  await expect(intimidation.getByText("6", { exact: true })).toBeVisible();
+  await others.getByRole("button", { name: "As listed" }).click();
+  await expect(intimidation.getByText("9", { exact: true })).toBeVisible();
+  // Dodge is in Combat, not again here.
+  await expect(others.getByRole("listitem").filter({ hasText: /^Dodge/ })).toHaveCount(0);
   await p.screenshot(shots("play-pools"));
   await p.getByRole("tab", { name: "Sheet" }).click();
   await expect(p.getByRole("heading", { name: "Attributes" })).toBeVisible();
@@ -339,13 +357,13 @@ test("Shape of the Beast on the Play View: a Huge fight form adds Healthy levels
   await expect(fight).not.toBeChecked();
   const unarmed = p.getByRole("listitem").filter({ hasText: /^Unarmed attack/ });
   await expect(unarmed.getByText("8", { exact: true })).toBeVisible();
-  await expect(unarmed.getByText("1 damage: 1 (unarmed)")).toBeVisible();
+  await expect(unarmed.getByText("Damage 1 (unarmed) · exceptional 2")).toBeVisible();
 
   // Into the fight form: Brawl +2 with the reason, aggravated, and Feral Claws alongside.
   await fight.check();
   await expect(unarmed.getByText("10", { exact: true })).toBeVisible();
   await expect(unarmed).toContainText("Physical 5 + Brawl 3 + Shape of the Beast 2");
-  await expect(unarmed.getByText("1 aggravated damage: 1 (unarmed), aggravated by Shape of the Beast")).toBeVisible();
+  await expect(unarmed.getByText("Damage 1 (unarmed), aggravated by Shape of the Beast · exceptional 2")).toBeVisible();
   await p.getByLabel("Feral Claws on").check();
   await expect(fight).toBeChecked();
   await expect(p.getByRole("region", { name: "Switched on now" })).toContainText("In Shape of the Beast: fight form (bear, Huge)");
@@ -740,7 +758,7 @@ test("Derangement traits on the Play View: a temporary derangement added, warnin
   await expect(other.getByRole("heading", { name: "Derangement traits" })).toHaveCount(0);
 });
 
-test("Beast traits on the Play View warn what each one brings, and the Frenzy rules open on request", async ({ browser }) => {
+test("Beast traits on the Play View warn what each one brings, and the Frenzy rules open on request with the player's numbers", async ({ browser }) => {
   const custodian = await person(browser, "frenzy-custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "frenzy-lead");
@@ -765,10 +783,16 @@ test("Beast traits on the Play View warn what each one brings, and the Frenzy ru
   const npc = (await made.json()).id;
   const rated = await p.request.put(`/api/characters/${npc}/npc/ratings`, { headers, data: { category: "clan", name: "Brujah", rating: null, detail: "" } });
   expect(rated.status(), await rated.text()).toBe(200);
+  const mental = await p.request.put(`/api/characters/${npc}/npc/ratings`, { headers, data: { category: "attributes", name: "Mental", rating: 4, detail: "" } });
+  expect(mental.status(), await mental.text()).toBe(200);
 
   await p.goto(`/play/characters/${npc}`);
   await expect(p.getByLabel("Beast traits: 0 of 5")).toBeVisible();
   await expect(p.getByRole("note")).toHaveCount(0);
+  // With no Beast traits, the closed Frenzy panel shows no numbers.
+  const frenzyPanel = p.locator("section").filter({ has: p.getByRole("button", { name: /^Frenzy/ }) });
+  await expect(frenzyPanel.getByText(/^You: \d+ against \d+$/)).toHaveCount(0);
+  const willpower = Number((await p.getByLabel(/^Willpower: \d+ of \d+$/).getAttribute("aria-label"))!.match(/^Willpower: (\d+)/)![1]);
 
   // Each Beast trait says what now makes a frenzy test, and how to play it.
   const gain = p.getByRole("button", { name: "Gain a Beast traits point" });
@@ -776,6 +800,13 @@ test("Beast traits on the Play View warn what each one brings, and the Frenzy ru
   const foothold = p.getByRole("note", { name: "The Beast has a foothold" });
   await expect(foothold).toContainText("You can frenzy now.");
   await expect(foothold).toContainText("against 11");
+  // Once there is a Beast trait, the player's own numbers show even with the panel closed (issue #371).
+  await expect(frenzyPanel.getByText(/^You: \d+ against \d+$/)).toHaveText(`You: ${4 + willpower} against 11`);
+  await expect(frenzyPanel).toContainText(`Mental 4 + Willpower ${willpower}, against 10 + Beast traits 1`);
+  // They follow Willpower.
+  await p.getByRole("button", { name: "Spend Willpower", exact: true }).first().click();
+  await expect(frenzyPanel.getByText(/^You: \d+ against \d+$/)).toHaveText(`You: ${3 + willpower} against 11`);
+  await p.getByRole("button", { name: "Restore Willpower", exact: true }).first().click();
   await expect(foothold).toContainText("MET: VtM core, pp. 301–302; Vol. II Issue 1 update, pp. 97–98");
   await gain.click();
   await expect(p.getByRole("note", { name: "The Beast is awake" })).toContainText("a single blow of 3 or more damage (rage)");
@@ -798,6 +829,8 @@ test("Beast traits on the Play View warn what each one brings, and the Frenzy ru
   await expect(frenzy).toHaveAttribute("aria-expanded", "true");
   await expect(p.getByRole("heading", { name: /Riding the wave/ })).toBeVisible();
   await expect(p.getByText("Fear ends once you've escaped and hidden quietly for 10 minutes.", { exact: false })).toBeVisible();
+  // Resisting has them too, at five Beast traits.
+  await expect(frenzyPanel.getByText(/^You: \d+ against \d+$/)).toHaveText(`You: ${4 + willpower} against 15`);
   await p.screenshot(shots("play-frenzy"));
   await frenzy.click();
   await expect(frenzy).toHaveAttribute("aria-expanded", "false");

@@ -15,6 +15,7 @@ import { Derangements, showsDerangements } from "./Derangements";
 import { EquipmentTab } from "./Equipment";
 import { Feed, FeedButton } from "./Feed";
 import { Frenzy } from "./Frenzy";
+import { frenzyNumbers } from "./frenzy";
 import { KindBadge } from "../character/NpcKindBadge";
 import { bloodPerTurn, boxes, healthMost } from "./powers";
 import { PowersBanner } from "./Powers";
@@ -182,12 +183,12 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
                   value={shown.beast.value}
                   most={shown.beast.most}
                   spendIsUp
-                  warning={<ShownWarning warning={beastWarning(shown.beast.value, shown.beast.most, shown.morality)} />}
+                  warning={<ShownWarning warning={beastWarning(shown.beast.value, shown.beast.most, shown.morality, reference && frenzyNumbers(reference.frenzy, shown.willpower.value, shown.beast.value, shown.morality).against)} />}
                   record={record}
                   small
                 />
               )}
-              {shown.panels.frenzy && <Frenzy />}
+              {shown.panels.frenzy && <Frenzy resist={reference?.frenzy} willpower={shown.willpower.value} beast={shown.beast.value} morality={shown.morality} />}
               <Derangements view={shown} record={record} tap={tap} />
             </div>
           </div>

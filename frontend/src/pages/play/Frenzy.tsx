@@ -1,14 +1,40 @@
 import { useId, useState, type ReactNode } from "react";
+import type { PlayReference } from "../../api/types";
+import { frenzyNumbers } from "./frenzy";
 import { FRENZY_TRIGGERS } from "./warnings";
 
 /**
  * The frenzy rules a player needs at the table, in our own words with the
  * pages: what makes a frenzy test, resisting it, riding the wave, the three
  * frenzies, and coming out of one. Closed until asked for, behind a chevron.
+ * The player's own numbers to resist (issue #371) follow Willpower, Beast traits
+ * and Humanity, and show even while it is closed once there is a Beast trait.
  */
-export function Frenzy() {
+export function Frenzy({
+  resist,
+  willpower,
+  beast,
+  morality,
+}: {
+  /** Mental and what changes it, from the sheet; none until the reference loads. */
+  resist?: PlayReference["frenzy"];
+  willpower: number;
+  beast: number;
+  morality: { name: string; value: number } | null;
+}) {
   const [open, setOpen] = useState(false);
   const panel = useId();
+  const you = resist ? frenzyNumbers(resist, willpower, beast, morality) : null;
+  const line = you && (
+    <p className="text-sm">
+      <span className="text-parchment">
+        You: <strong className="font-display text-lg text-gold">{you.pool}</strong> against <strong className="font-display text-lg text-gold">{you.against}</strong>
+      </span>
+      <span className="block text-xs text-mist">
+        {you.poolParts}, against {you.againstParts}
+      </span>
+    </p>
+  );
   return (
     <section className="rounded-lg border border-ash bg-dusk p-3">
       <h2>
@@ -24,6 +50,7 @@ export function Frenzy() {
           <span className="ml-auto text-xs text-mist">{open ? "Hide" : "The rules at the table"}</span>
         </button>
       </h2>
+      {!open && beast > 0 && line}
       {open && (
         <div id={panel} className="mt-2 flex flex-col gap-3 text-sm">
           <Part title="When you test" page="core, pp. 301–302">
@@ -38,6 +65,7 @@ export function Frenzy() {
           </Part>
           <Part title="Resisting" page="core, pp. 302–303">
             <p>Mental + Willpower against 10 + your Beast traits (+5 more at Humanity 2 or less). Or spend a Willpower to hold it off for the scene, or three turns in combat.</p>
+            {line}
           </Part>
           <Part title="Riding the wave" page="Vol. II Issue 1 update, pp. 94–95">
             <p>

@@ -10852,6 +10852,31 @@
         "title": "FreePickOut",
         "type": "object"
       },
+      "Frenzy": {
+        "description": "Resisting frenzy (core p. 302): Mental and what merits and flaws add, to\nwhich the Play View adds current Willpower, against 10 + Beast traits.",
+        "properties": {
+          "beast": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PoolPart"
+            },
+            "title": "Beast",
+            "type": "array"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/PoolPart"
+            },
+            "title": "Parts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "parts"
+        ],
+        "title": "Frenzy",
+        "type": "object"
+      },
       "GameChoice": {
         "description": "A game on the troupe's schedule, which dates an entry when it started.",
         "properties": {
@@ -19478,6 +19503,9 @@
               }
             ]
           },
+          "frenzy": {
+            "$ref": "#/components/schemas/Frenzy"
+          },
           "identities": {
             "default": [],
             "items": {
@@ -19534,6 +19562,7 @@
         },
         "required": [
           "pools",
+          "frenzy",
           "disciplines",
           "other_powers",
           "notes",

@@ -5,7 +5,14 @@ Pools follow MET: VTM (pp. 271-275): an attack or a static challenge is
 attribute + skill; Physical defence is Physical + Dodge; Mental and Social
 defence is the attribute + current Willpower, which the Play View's tracker
 holds, so those pools are sent without it and the page adds it. Initiative is
-the higher of Physical and Mental (p. 271).
+the higher of Physical and Mental (p. 276).
+
+Every other skill the character has is an "Other tests" pool (issue #371): a static
+challenge is attribute + skill (p. 272), the attribute being the storyteller's call,
+so each starts with the one the catalogue lists the skill under and carries what a
+switch does to any attribute, for the Play View to change it. Resisting frenzy is
+Mental + Willpower against 10 + Beast traits (p. 302): `frenzy` is its Mental side,
+with what merits and flaws add or count as Beast traits.
 
 Disciplines, focuses, merits and flaws change pools through `pools` entries in
 the rules data: on a discipline or power in bns_met_vampire_powers.toml, and on
@@ -32,7 +39,7 @@ read here like a book merit's.
 
 import tomllib
 from collections import defaultdict
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from pathlib import Path
@@ -54,6 +61,8 @@ ATTACKS = (
     # Athletics throws a weapon, or shoots a bow or crossbow (MET: VTM p. 279).
     ("Athletics", "Thrown or bow"),
 )
+# Skills with pools of their own in Combat, left out of "Other tests".
+COMBAT_SKILLS = ("Brawl", "Dodge", "Firearms", "Melee")
 # Categories whose traits are powers of a discipline, named "Discipline: Power".
 POWER_CATEGORIES = ("elder_disciplines", "luminary_disciplines")
 BOOK = "core"
@@ -208,11 +217,21 @@ class Switch(BaseModel):
     blood_half: bool = False
 
 
+class Frenzy(BaseModel):
+    """Resisting frenzy (core p. 302): Mental and what merits and flaws add, to
+    which the Play View adds current Willpower, against 10 + Beast traits."""
+
+    parts: list[PoolPart]
+    # Beast traits the character counts as having more (or fewer) for it: Short Fuse.
+    beast: list[PoolPart] = []
+
+
 class Reference(BaseModel):
     pools: list[TestPool]
+    frenzy: Frenzy
     disciplines: list[DisciplinePowers]
     other_powers: list[OtherPower]
-    # Modifiers that change no pool shown here: "Tech Junkie: +2 to Computers".
+    # Modifiers that change no pool shown here: "Hard of Hearing: -2 to Awareness".
     notes: list[str]
     blood_per_turn: int
 
@@ -267,6 +286,8 @@ class Effect:
     instead_of: tuple[str, ...] = ()
     # The focus it needs, for working out what a switch's focus gives.
     focus: str | None = None
+    # For frenzy: Beast traits it counts as more (or fewer, below 0).
+    beast: int = 0
 
 
 @dataclass
@@ -295,6 +316,9 @@ class Sheet:
     traits: list[tuple[str, str, Mapping[str, Any]]] = field(default_factory=list)
     # What was chosen when buying powers, by discipline and power (horatio.api.power_choices).
     choices: dict[str, Mapping[str, Mapping[str, str]]] = field(default_factory=dict)
+    # Each skill held, by name and detail ("Crafts", "Painting"): its rating, and the
+    # attribute the catalogue lists it under.
+    skills: dict[tuple[str, str], tuple[int, str | None]] = field(default_factory=dict)
 
     def rating(self, category: str, name: str) -> int:
         return self.ratings.get((category, name), 0)
@@ -324,6 +348,7 @@ class Sheet:
             others=self.others,
             traits=self.traits,
             choices=self.choices,
+            skills=self.skills,
         )
 
     @classmethod
@@ -337,6 +362,7 @@ class Sheet:
                 row.trait.rating,
                 rule_set,
                 row.trait.power_choices,
+                row.trait.detail,
             )
         return sheet
 
@@ -348,7 +374,12 @@ class Sheet:
         for t in traits:
             category = rule_set.categories.get(t.category)
             sheet.add(
-                t.category, category.name if category else t.category, t.name, t.rating, rule_set
+                t.category,
+                category.name if category else t.category,
+                t.name,
+                t.rating,
+                rule_set,
+                detail=t.detail,
             )
         return sheet
 
@@ -360,6 +391,7 @@ class Sheet:
         rating: int | None,
         rule_set: RuleSetData,
         power_choices: Mapping[str, Mapping[str, str]] | None = None,
+        detail: str = "",
     ) -> None:
         rating = rating if rating is not None else 1
         if rating <= 0:
@@ -377,6 +409,9 @@ class Sheet:
         properties = rule_set.trait_properties(category, name)
         if properties:
             self.traits.append((category, name, properties))
+        if category == "skills":
+            held = self.skills.get((name, detail), (0, None))[0]
+            self.skills[(name, detail)] = (max(held, rating), (properties or {}).get("attribute"))
 
 
 def technique_bases(rule_set: RuleSetData) -> dict[str, set[str]]:
@@ -502,6 +537,7 @@ def effects(sheet: Sheet, bases: Mapping[str, set[str]]) -> list[Effect]:
                     willpower_floor=e.get("willpower_floor", 0),
                     instead_of=tuple(e.get("instead_of", ())),
                     focus=e.get("focus"),
+                    beast=e.get("beast", 0),
                 )
             )
 
@@ -595,6 +631,9 @@ def _applies(effect: Effect, key: str) -> bool:
         return True
     if effect.pool.startswith("discipline:") and key.startswith("discipline:"):
         return key.removeprefix("discipline:").startswith(effect.pool.removeprefix("discipline:"))
+    # A skill's covers each of its fields: "skill:Crafts" covers "skill:Crafts:Painting".
+    if effect.pool.startswith("skill:"):
+        return key.startswith(f"{effect.pool}:")
     return False
 
 
@@ -664,16 +703,17 @@ def _covers(which: str | None, key: str) -> bool:
 def pools(
     sheet: Sheet,
     found: Sequence[Effect],
-    blood_per_turn: int,
     hurts: Sequence[DamageEffect] = (),
     switched: Sequence["Switch"] = (),
 ) -> list[TestPool]:
     attrs = {a: sheet.rating("attributes", a) for a in ATTRIBUTES}
 
-    def skill(name: str) -> PoolPart:
+    def skill(name: str, rating: int | None = None) -> PoolPart:
         """A skill, or another the character may use in its place (Preternatural
         Awareness), whichever is higher."""
-        best = PoolPart(label=name, value=sheet.rating("skills", name))
+        best = PoolPart(
+            label=name, value=sheet.rating("skills", name) if rating is None else rating
+        )
         for e in found:
             if name in e.instead_of:
                 other = e.pool.removeprefix("skill:")
@@ -691,7 +731,7 @@ def pools(
         (e.attribute for e in found if e.pool == "initiative" and e.attribute), None
     ) or ("Mental" if attrs["Mental"] > attrs["Physical"] else "Physical")
     out.append(_pool("initiative", "Initiative", "Combat", [attr(initiative_attr)], found, keys))
-    blood = f"Spend Blood for +1 Physical each, up to {blood_per_turn} a turn."
+    # Spending Blood for Physical is said once, over the Combat pools (issue #371).
     out.append(
         _pool(
             "dodge",
@@ -700,7 +740,7 @@ def pools(
             [attr("Physical"), skill("Dodge")],
             found,
             keys,
-            notes=["Give up your standard action for +2 to one Dodge pool this round.", blood],
+            notes=["Give up your standard action for +2 to one Dodge pool this round."],
         )
     )
     for name, label in ATTACKS:
@@ -715,7 +755,6 @@ def pools(
                     found,
                     keys,
                     versus="Physical + Dodge",
-                    notes=[blood],
                     damage=damage(name, hurts, keys),
                 )
             )
@@ -750,12 +789,32 @@ def pools(
                 versus=spec.get("versus"),
             )
         )
+    for (name, detail), (rating, attribute) in sorted(sheet.skills.items()):
+        if name in COMBAT_SKILLS:
+            continue
+        # A house skill with no attribute listed is the skill alone.
+        base = [attr(attribute)] if attribute is not None and attribute in attrs else []
+        out.append(
+            _pool(
+                f"skill:{name}:{detail}" if detail else f"skill:{name}",
+                f"{name}: {detail}" if detail else name,
+                "Other tests",
+                [*base, skill(name, rating)],
+                found,
+                keys,
+            )
+        )
     for pool in out:
         for variant in pool.variants:
             variant.when = _when_label(variant.when)
+        # Another test's attribute is the storyteller's call, so it carries what a
+        # switch does to any of them, and the Play View counts the one in use.
+        other = pool.group == "Other tests"
         for switch in switched:
             for change in switch.attributes:
-                if pool.parts[0].label == change.attribute and _covers(change.pools, pool.key):
+                if (other and change.pools is None) or (
+                    pool.parts[0].label == change.attribute and _covers(change.pools, pool.key)
+                ):
                     pool.switched.append(
                         SwitchedPart(
                             switch=switch.key,
@@ -948,10 +1007,29 @@ def disciplines(sheet: Sheet) -> list[DisciplinePowers]:
     return found
 
 
-def other_notes(found: Sequence[Effect]) -> list[str]:
-    """Modifiers for pools not shown (skills, frenzy), and those on every pool."""
+def frenzy(sheet: Sheet, found: Sequence[Effect]) -> Frenzy:
+    return Frenzy(
+        parts=[
+            PoolPart(label="Mental", value=sheet.rating("attributes", "Mental")),
+            *(
+                PoolPart(label=e.source, value=e.amount)
+                for e in found
+                if e.pool == "frenzy" and e.amount
+            ),
+        ],
+        beast=[
+            PoolPart(label=e.source, value=e.beast) for e in found if e.pool == "frenzy" and e.beast
+        ],
+    )
+
+
+def other_notes(found: Sequence[Effect], shown: Collection[str] = ()) -> list[str]:
+    """Modifiers for pools not shown (skills, frenzy), and those on every pool. A
+    skill's that a pool `shown` already counts is left out."""
     notes: list[str] = []
     for e in found:
+        if e.pool in shown and not e.instead_of:
+            continue
         if e.pool.startswith("skill:") and not e.instead_of and e.amount:
             when = f" {e.when}" if e.when else ""
             notes.append(
@@ -971,8 +1049,10 @@ def reference(rows: Sequence[SheetRow], rule_set: RuleSetData, blood_per_turn: i
     sheet = Sheet.read(rows, rule_set)
     worked = work_out(sheet, technique_bases(rule_set))
     found = worked.effects
+    made = pools(sheet, found, worked.hurts, worked.switches)
     return Reference(
-        pools=pools(sheet, found, blood_per_turn, worked.hurts, worked.switches),
+        pools=made,
+        frenzy=frenzy(sheet, found),
         disciplines=disciplines(sheet),
         other_powers=[
             OtherPower(
@@ -984,6 +1064,6 @@ def reference(rows: Sequence[SheetRow], rule_set: RuleSetData, blood_per_turn: i
             )
             for category, category_name, name in sorted(sheet.others)
         ],
-        notes=other_notes(found),
+        notes=other_notes(found, {p.key for p in made}),
         blood_per_turn=blood_per_turn,
     )

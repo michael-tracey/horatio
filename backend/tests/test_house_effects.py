@@ -572,7 +572,7 @@ def play_of(
     """The Play View's pools for the sheet, by key, and the switches."""
     sheet = reference.Sheet.of(traits, rules.rule_set)
     worked = reference.work_out(sheet, reference.technique_bases(rules.rule_set))
-    found = reference.pools(sheet, worked.effects, 1, worked.hurts, worked.switches)
+    found = reference.pools(sheet, worked.effects, worked.hurts, worked.switches)
     return {p.key: p for p in found}, worked
 
 

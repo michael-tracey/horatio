@@ -10,7 +10,8 @@
 #   adds to that power.
 # `pools` (on either) changes a pool on the Pools tab while the character has
 #   it: { pool, amount, when?, focus? }. `pool` is initiative, dodge, attack,
-#   attack:<Skill>, defense, defense:<Attribute> or discipline:<Name>; `amount`
+#   attack:<Skill>, defense, defense:<Attribute>, discipline:<Name>, skill:<Name>
+#   or frenzy (where `beast` counts that many more Beast traits, or fewer); `amount`
 #   is a number, "powers:<Discipline>" for how many powers of it the character
 #   has, or "rating:<category>/<Name>"; a `when` naming a switch (see `active`)
 #   makes it hold only while that switch is on, and any other `when` makes it a
@@ -1504,9 +1505,9 @@ focus = { Perception = "Up to 10 tons." }
 
 [[disciplines]]
 name = "Thaumaturgy: Path of Technomancy"
-pool = "Mental + Computers"
-versus = "Mental + Computers"
-note = "Blood magic over machines; its pool uses Computers."
+pool = "Mental + Computer"
+versus = "Mental + Computer"
+note = "Blood magic over machines; its pool uses Computer."
 
 [[powers]]
 discipline = "Thaumaturgy: Path of Technomancy"
