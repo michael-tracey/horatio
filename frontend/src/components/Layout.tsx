@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet, useNavigate } from "react-router";
+import { Link, NavLink, Outlet, useMatch, useNavigate } from "react-router";
 import { api, unwrap } from "../api/client";
 import { useAction, useMe } from "../hooks";
 import { NotificationBell } from "./NotificationBell";
@@ -14,6 +14,8 @@ export function Layout() {
 
   const link = ({ isActive }: { isActive: boolean }) =>
     isActive ? "text-parchment" : "text-mist hover:text-parchment";
+  // A downtime cycle's pages belong to its troupe.
+  const inCycle = !!useMatch("/cycles/*");
 
   // Until we know who is signed in, carry on the loading screen from index.html.
   if (me.isPending) return <Splash />;
@@ -31,7 +33,7 @@ export function Layout() {
               <NavLink to="/characters" className={link}>
                 Characters
               </NavLink>
-              <NavLink to="/troupes" className={link}>
+              <NavLink to="/troupes" className={({ isActive }) => link({ isActive: isActive || inCycle })}>
                 Troupes
               </NavLink>
               {me.data.is_custodian && (

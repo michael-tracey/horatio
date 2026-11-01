@@ -179,6 +179,63 @@ def test_only_running_staff_assign_and_only_to_staff(scene: Scene) -> None:
     assert scene.assign("Feed at the docks", user_id=troupe.lead.id).status_code == 200
 
 
+def bulk_assign(scene: Scene, client: TestClient, ids: list[str], **assignment: Any) -> Any:
+    return client.put(
+        f"/cycles/{scene.cycle['id']}/responses/assignment",
+        json={"response_ids": ids, **assignment},
+    )
+
+
+def test_several_responses_are_assigned_in_one_go(scene: Scene) -> None:
+    troupe = scene.troupe
+    ids = [scene.response_for(a)["id"] for a in ("Feed at the docks", "Patrol the park")]
+    troupe.assistant.client.put(f"/responses/{ids[1]}", json={"body": "Quiet night."})
+
+    done = bulk_assign(scene, troupe.assistant.client, ids, user_id=troupe.narrator.id)
+
+    assert done.status_code == 200, done.text
+    assert done.json() == {"assigned": 2}
+    by_answer = {r["answer"]: r for r in scene.responses()}
+    assert by_answer["Feed at the docks"]["assigned_to_user_id"] == troupe.narrator.id
+    assert by_answer["Feed at the docks"]["status"] == "assigned"
+    # A written response keeps its status, as with one at a time.
+    assert by_answer["Patrol the park"]["status"] == "written"
+    assert by_answer["Lean on the mayor"]["status"] == "unassigned"
+
+    # And back to any narrator, or to no one.
+    bulk_assign(scene, troupe.assistant.client, ids, any_narrator=True)
+    assert scene.response_for("Feed at the docks")["assigned_to_any_narrator"] is True
+    bulk_assign(scene, troupe.assistant.client, ids)
+    assert scene.response_for("Feed at the docks")["status"] == "unassigned"
+
+
+def test_bulk_assignment_checks_as_one_at_a_time_does(scene: Scene) -> None:
+    troupe = scene.troupe
+    ids = [scene.response_for(a)["id"] for a in ("Feed at the docks", "Patrol the park")]
+
+    # Narrators don't assign; responses go only to staff, and to one of them or any narrator.
+    assert bulk_assign(scene, troupe.narrator.client, ids, any_narrator=True).status_code == 403
+    assert bulk_assign(scene, troupe.player.client, ids, any_narrator=True).status_code == 403
+    assert (
+        bulk_assign(scene, troupe.assistant.client, ids, user_id=troupe.player.id).status_code
+        == 422
+    )
+    assert (
+        bulk_assign(
+            scene, troupe.assistant.client, ids, user_id=troupe.lead.id, any_narrator=True
+        ).status_code
+        == 422
+    )
+    assert bulk_assign(scene, troupe.assistant.client, []).status_code == 422
+    # A response from elsewhere fails the lot: nothing is assigned.
+    stray = "00000000-0000-0000-0000-000000000000"
+    assert (
+        bulk_assign(scene, troupe.assistant.client, [*ids, stray], any_narrator=True).status_code
+        == 404
+    )
+    assert {r["status"] for r in scene.responses()} == {"unassigned"}
+
+
 def test_answers_with_written_responses_are_locked(scene: Scene) -> None:
     troupe = scene.troupe
     feed = scene.response_for("Feed at the docks")["id"]
@@ -223,6 +280,20 @@ def test_progress(scene: Scene) -> None:
         "Unassigned": {"written": 0, "total": 2},
     }
     assert progress["by_action_kind"]["general"] == {"written": 1, "total": 2}
+    # The troupe's list of cycles says as much, for every cycle at once.
+    [listed] = troupe.assistant.client.get(f"/troupes/{troupe.id}/cycles").json()
+    assert (
+        listed["participants"],
+        listed["submitted"],
+        listed["responses"],
+        listed["written"],
+    ) == (
+        1,
+        1,
+        4,
+        1,
+    )
+    assert listed["closes_at"] == scene.cycle["closes_at"]
 
 
 def deliveries(scene: Scene) -> list[dict[str, Any]]:
@@ -421,8 +492,16 @@ def test_staff_from_other_troupes_see_nothing(scene: Scene) -> None:
 def test_narrators_find_the_cycles_they_work_on(scene: Scene) -> None:
     troupe = scene.troupe
     new_cycle(troupe)  # a draft, which nobody works on yet
+    scene.assign("Feed at the docks", user_id=troupe.narrator.id)
+    scene.assign("Patrol the park", any_narrator=True)
+    scene.assign("Lean on the mayor", user_id=troupe.narrator.id)
+    mayor = scene.response_for("Lean on the mayor")["id"]
+    troupe.narrator.client.put(f"/responses/{mayor}", json={"body": "He owes you."})
 
     cycles = troupe.narrator.client.get(f"/troupes/{troupe.id}/work-cycles").json()
 
     assert [(c["name"], c["status"]) for c in cycles] == [("October 2026", "open")]
+    # What is still to write: one of the narrator's two, and one open to any narrator.
+    assert (cycles[0]["to_write"], cycles[0]["open_to_narrators"]) == (1, 1)
+    assert cycles[0]["closes_at"] == scene.cycle["closes_at"]
     assert troupe.player.client.get(f"/troupes/{troupe.id}/work-cycles").status_code == 403

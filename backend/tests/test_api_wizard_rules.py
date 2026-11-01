@@ -78,6 +78,25 @@ def test_a_troupe_that_switches_the_check_off_needs_nothing(troupe: Troupe) -> N
     assert creation(troupe.player, character_id)["needs"] == []
 
 
+# --- the clan card on Concept ----------------------------------------------------------------
+
+
+def test_every_clan_says_its_weakness_and_where_the_book_has_it(troupe: Troupe) -> None:
+    traits = catalogue(troupe)["traits"]
+    clans = {t["name"]: t for t in traits if t["category"] == "clan"}
+
+    assert all(c["weakness"] and c["weakness_page"] for c in clans.values())
+    assert clans["Brujah"]["weakness"] == "Quick to rage: resisting frenzy is 2 harder."
+    assert clans["Brujah"]["weakness_page"] == "45"
+    # A bloodline with no weakness of its own has its clan's; one with its own says so.
+    assert clans["Gangrel: Coyote"]["weakness"] == clans["Gangrel"]["weakness"]
+    assert clans["Gangrel: Coyote"]["weakness_page"] == "49"
+    assert clans["Toreador: Ishtarri"]["weakness"].startswith("Instead of the Toreador weakness")
+    assert clans["Toreador: Ishtarri"]["weakness_page"] == "61"
+    # Only clans have one.
+    assert all(t["weakness"] is None for t in traits if t["category"] != "clan")
+
+
 # --- traits for one sect -----------------------------------------------------------------------
 
 

@@ -3,9 +3,12 @@ import { Link, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { ResponseEditor } from "../../components/ResponseEditor";
 import { Badge, Button, Card, Empty, ErrorText, Loading } from "../../components/ui";
+import { useDates } from "../../dates";
 import { useAction, useMe } from "../../hooks";
+import { workLine } from "./cycles";
 
 export function WorkTab({ troupeId }: { troupeId: string }) {
+  const dates = useDates();
   const cycles = useQuery({
     queryKey: ["work-cycles", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/work-cycles", { params: { path: { troupe_id: troupeId } } })),
@@ -18,8 +21,14 @@ export function WorkTab({ troupeId }: { troupeId: string }) {
       <ul className="divide-y divide-ash">
         {cycles.data.map((c) => (
           <li key={c.id}>
-            <Link to={c.id} className="flex items-center justify-between py-3 hover:text-gold">
-              <span>{c.name}</span>
+            <Link to={c.id} className="group flex items-center justify-between gap-2 py-3">
+              <span className="min-w-0">
+                <span className="block group-hover:text-gold">{c.name}</span>
+                <span className="block text-xs text-mist">
+                  {c.status === "open" && `Due ${dates.dueDay(c.closes_at)} · `}
+                  {workLine(c)}
+                </span>
+              </span>
               <Badge tone={c.status === "open" ? "gold" : "mist"}>{c.status}</Badge>
             </Link>
           </li>
