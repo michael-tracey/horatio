@@ -36,7 +36,8 @@ export function Layout() {
               <NavLink to="/troupes" className={({ isActive }) => link({ isActive: isActive || inCycle })}>
                 Troupes
               </NavLink>
-              <NavLink to="/rules" className={link}>
+              {/* Named apart from a troupe's own Rules tab under Customise. */}
+              <NavLink to="/rules" className={link} aria-label="Rules reference">
                 Rules
               </NavLink>
               {me.data.is_custodian && (
