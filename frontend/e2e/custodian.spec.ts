@@ -101,6 +101,7 @@ test("the custodian changes a player's email, and the player confirms it from th
   // could only go to the new address by email.
   const p = player.page;
   await p.getByRole("link", { name: "chmail-player" }).click();
+  await p.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
   await expect(p.getByText(`You sign in with ${player.email}`)).toBeVisible();
   await expect(p.getByText("Horatio can't send email here, so ask the custodian to change your email.")).toBeVisible();
 
