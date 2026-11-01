@@ -143,6 +143,11 @@ def test_staff_see_them_on_the_characters_tab_and_play_view(troupe: Troupe) -> N
     )
     reference = troupe.storyteller.client.get(f"/characters/{thug}/play/reference").json()
     assert reference["lines_veils"] is None
+    # And on the troupe's At game list.
+    at_game = troupe.storyteller.client.get(f"/troupes/{troupe.id}/play").json()
+    by_name = {e["character_name"]: e["lines_veils"] for e in at_game}
+    assert by_name["Agnes"]["veils"] == MINE["veils"]
+    assert by_name["Nameless Thug"] is None
 
 
 def test_staff_see_the_whole_troupes_list_named_only_where_shared(

@@ -179,6 +179,63 @@ def test_only_running_staff_assign_and_only_to_staff(scene: Scene) -> None:
     assert scene.assign("Feed at the docks", user_id=troupe.lead.id).status_code == 200
 
 
+def bulk_assign(scene: Scene, client: TestClient, ids: list[str], **assignment: Any) -> Any:
+    return client.put(
+        f"/cycles/{scene.cycle['id']}/responses/assignment",
+        json={"response_ids": ids, **assignment},
+    )
+
+
+def test_several_responses_are_assigned_in_one_go(scene: Scene) -> None:
+    troupe = scene.troupe
+    ids = [scene.response_for(a)["id"] for a in ("Feed at the docks", "Patrol the park")]
+    troupe.assistant.client.put(f"/responses/{ids[1]}", json={"body": "Quiet night."})
+
+    done = bulk_assign(scene, troupe.assistant.client, ids, user_id=troupe.narrator.id)
+
+    assert done.status_code == 200, done.text
+    assert done.json() == {"assigned": 2}
+    by_answer = {r["answer"]: r for r in scene.responses()}
+    assert by_answer["Feed at the docks"]["assigned_to_user_id"] == troupe.narrator.id
+    assert by_answer["Feed at the docks"]["status"] == "assigned"
+    # A written response keeps its status, as with one at a time.
+    assert by_answer["Patrol the park"]["status"] == "written"
+    assert by_answer["Lean on the mayor"]["status"] == "unassigned"
+
+    # And back to any narrator, or to no one.
+    bulk_assign(scene, troupe.assistant.client, ids, any_narrator=True)
+    assert scene.response_for("Feed at the docks")["assigned_to_any_narrator"] is True
+    bulk_assign(scene, troupe.assistant.client, ids)
+    assert scene.response_for("Feed at the docks")["status"] == "unassigned"
+
+
+def test_bulk_assignment_checks_as_one_at_a_time_does(scene: Scene) -> None:
+    troupe = scene.troupe
+    ids = [scene.response_for(a)["id"] for a in ("Feed at the docks", "Patrol the park")]
+
+    # Narrators don't assign; responses go only to staff, and to one of them or any narrator.
+    assert bulk_assign(scene, troupe.narrator.client, ids, any_narrator=True).status_code == 403
+    assert bulk_assign(scene, troupe.player.client, ids, any_narrator=True).status_code == 403
+    assert (
+        bulk_assign(scene, troupe.assistant.client, ids, user_id=troupe.player.id).status_code
+        == 422
+    )
+    assert (
+        bulk_assign(
+            scene, troupe.assistant.client, ids, user_id=troupe.lead.id, any_narrator=True
+        ).status_code
+        == 422
+    )
+    assert bulk_assign(scene, troupe.assistant.client, []).status_code == 422
+    # A response from elsewhere fails the lot: nothing is assigned.
+    stray = "00000000-0000-0000-0000-000000000000"
+    assert (
+        bulk_assign(scene, troupe.assistant.client, [*ids, stray], any_narrator=True).status_code
+        == 404
+    )
+    assert {r["status"] for r in scene.responses()} == {"unassigned"}
+
+
 def test_answers_with_written_responses_are_locked(scene: Scene) -> None:
     troupe = scene.troupe
     feed = scene.response_for("Feed at the docks")["id"]

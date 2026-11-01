@@ -51,6 +51,8 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
   const [query, setQuery] = useState("");
   const [building, setBuilding] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Printing sheets and badges, folded behind one button so the list starts near the top on a phone.
+  const [printing, setPrinting] = useState(false);
   if (roster.isPending) return <Loading />;
   if (roster.error) return <ErrorText error={roster.error} />;
   if (!roster.data.length) return <Empty>No characters have joined this troupe yet.</Empty>;
@@ -101,28 +103,36 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
     <Card
       title="Characters"
       actions={
-        <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" disabled={!ticked.length} onClick={() => print(ticked.map((e) => e.character_id))}>
-            Print selected ({ticked.length})
-          </Button>
-          <Button variant="secondary" disabled={!shown.length} onClick={() => print(narrowed ? shown.map((e) => e.character_id) : undefined)}>
-            Print all {shown.length}
-          </Button>
-        </div>
+        <Button variant="secondary" aria-expanded={printing} onClick={() => setPrinting(!printing)}>
+          Print…{ticked.length > 0 && ` (${ticked.length} selected)`}
+        </Button>
       }
     >
-      <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
-        <span className="text-mist">Game badges:</span>
-        <Button variant="secondary" disabled={!ticked.length} onClick={() => badges(ticked.map((e) => e.character_id))}>
-          Badges for selected ({ticked.length})
-        </Button>
-        <Button variant="secondary" disabled={!shown.length} onClick={() => badges(narrowed ? shown.map((e) => e.character_id) : undefined)}>
-          Badges for all {shown.length}
-        </Button>
-        <Button variant="ghost" onClick={() => window.open(`/print/troupes/${troupeId}/staff-badges`, "_blank", "noopener")}>
-          Storyteller badges
-        </Button>
-      </div>
+      {printing && (
+        <div className="mb-3 flex flex-col gap-2 rounded-md border border-ash p-3 text-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="w-full text-mist sm:w-auto">Sheets:</span>
+            <Button variant="secondary" disabled={!ticked.length} onClick={() => print(ticked.map((e) => e.character_id))}>
+              Print selected ({ticked.length})
+            </Button>
+            <Button variant="secondary" disabled={!shown.length} onClick={() => print(narrowed ? shown.map((e) => e.character_id) : undefined)}>
+              Print all {shown.length}
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="w-full text-mist sm:w-auto">Game badges:</span>
+            <Button variant="secondary" disabled={!ticked.length} onClick={() => badges(ticked.map((e) => e.character_id))}>
+              Badges for selected ({ticked.length})
+            </Button>
+            <Button variant="secondary" disabled={!shown.length} onClick={() => badges(narrowed ? shown.map((e) => e.character_id) : undefined)}>
+              Badges for all {shown.length}
+            </Button>
+            <Button variant="ghost" onClick={() => window.open(`/print/troupes/${troupeId}/staff-badges`, "_blank", "noopener")}>
+              Storyteller badges
+            </Button>
+          </div>
+        </div>
+      )}
       <div className="mb-3 flex flex-col gap-2">
         <div className="flex flex-wrap gap-2">
           <Input
@@ -223,7 +233,7 @@ function titleList(titles: TitlesOut | undefined): string[] {
 }
 
 /** One line per character: who it is, its clan and social age, how it stands
- * here, and its titles, with + to give another. */
+ * here, and its titles, with + Title to give another. */
 function RosterRow({
   troupeId,
   entry,
@@ -245,13 +255,16 @@ function RosterRow({
     <li className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
       <input type="checkbox" aria-label={`Select ${entry.character_name}`} checked={selected} onChange={onSelect} />
       <Avatar name={entry.character_name} picture={entry.picture} clan={entry.clan} />
-      <span className="flex min-w-0 items-baseline gap-2">
-        <Link to={`/characters/${entry.character_id}`} className="truncate font-medium hover:text-gold">
-          {entry.character_name}
-        </Link>
-        <Pronouns pronouns={entry.pronouns} />
+      {/* The name wraps rather than being cut short; on a phone the player goes on a line of their own. */}
+      <span className="flex min-w-0 flex-1 basis-40 flex-col sm:flex-none sm:basis-auto sm:flex-row sm:items-baseline sm:gap-2">
+        <span className="flex flex-wrap items-baseline gap-x-2">
+          <Link to={`/characters/${entry.character_id}`} className="font-medium break-words hover:text-gold">
+            {entry.character_name}
+          </Link>
+          <Pronouns pronouns={entry.pronouns} />
+        </span>
         {entry.player_id && (
-          <Link to={`/players/${entry.player_id}`} className="truncate text-xs text-mist hover:text-gold">
+          <Link to={`/players/${entry.player_id}`} className="text-xs text-mist break-words hover:text-gold">
             {entry.player_name} {entry.player_handle && <AtHandle handle={entry.player_handle} />}
             <Pronouns pronouns={entry.player_pronouns} className="" />
           </Link>
@@ -263,7 +276,11 @@ function RosterRow({
       {!entry.seated && <span className="text-xs text-mist">Represented by: {entry.represented_by ?? "nobody yet"}</span>}
       {entry.kind === "npc" ? <Badge>NPC</Badge> : entry.home ? <Badge tone="gold">home</Badge> : <Badge>visiting</Badge>}
       {entry.player_suspended && <Badge tone="blood">player suspended</Badge>}
-      {entry.waiting && <Badge tone="blood">asking to make this home</Badge>}
+      {entry.waiting && (
+        <Link to={`/troupes/${troupeId}/approvals`} className="rounded-full hover:underline">
+          <Badge tone="blood">asking to make this home</Badge>
+        </Link>
+      )}
       {entry.disciplines_waiting > 0 && (
         <Badge tone="blood">
           {entry.disciplines_waiting} discipline{entry.disciplines_waiting > 1 ? "s" : ""} to approve
@@ -315,14 +332,13 @@ function AwardXp({ troupeId, entry }: { troupeId: string; entry: RosterEntry }) 
       <button
         type="button"
         aria-label={`Award XP to ${entry.character_name}`}
-        title="Award XP"
-        className="h-6 rounded border border-ash px-1.5 text-xs text-mist hover:border-mist hover:text-parchment"
+        className="h-6 rounded border border-ash px-1.5 text-xs text-mist hover:border-mist hover:text-parchment pointer-coarse:h-9 pointer-coarse:px-2.5"
         onClick={() => {
           setAmount(sessionXp);
           setOpen(true);
         }}
       >
-        +XP
+        + XP
       </button>
       <Dialog title={`Award XP to ${entry.character_name}`} open={open} onClose={() => setOpen(false)}>
         <form
@@ -366,8 +382,8 @@ function AwardXp({ troupeId, entry }: { troupeId: string; entry: RosterEntry }) 
   );
 }
 
-/** The character's titles here as pills, each with × to take it away, and a +
- * square that opens a dialog to give another. */
+/** The character's titles here as pills, each with × to take it away, and a
+ * + Title button that opens a dialog to give another. */
 function Titles({ troupeId, entry }: { troupeId: string; entry: RosterEntry }) {
   const [open, setOpen] = useState(false);
   const save = useAction((names: string[]) =>
@@ -413,11 +429,10 @@ function Titles({ troupeId, entry }: { troupeId: string; entry: RosterEntry }) {
       <button
         type="button"
         aria-label={`Give ${entry.character_name} a title`}
-        title="Give a title"
-        className="grid h-6 w-6 place-items-center rounded border border-ash text-sm leading-none text-mist hover:border-gold hover:text-gold"
+        className="h-6 rounded border border-ash px-1.5 text-xs text-mist hover:border-gold hover:text-gold pointer-coarse:h-9 pointer-coarse:px-2.5"
         onClick={() => setOpen(true)}
       >
-        +
+        + Title
       </button>
       <ErrorText error={save.error} />
       <Dialog title={`Give ${entry.character_name} a title`} open={open} onClose={() => setOpen(false)}>
