@@ -264,6 +264,11 @@ function RosterRow({
       {entry.kind === "npc" ? <Badge>NPC</Badge> : entry.home ? <Badge tone="gold">home</Badge> : <Badge>visiting</Badge>}
       {entry.player_suspended && <Badge tone="blood">player suspended</Badge>}
       {entry.waiting && <Badge tone="blood">asking to make this home</Badge>}
+      {entry.backstory_waiting && (
+        <Link to={`/characters/${entry.character_id}/backstory?troupe=${troupeId}`}>
+          <Badge tone="blood">backstory to read</Badge>
+        </Link>
+      )}
       {entry.disciplines_waiting > 0 && (
         <Badge tone="blood">
           {entry.disciplines_waiting} discipline{entry.disciplines_waiting > 1 ? "s" : ""} to approve

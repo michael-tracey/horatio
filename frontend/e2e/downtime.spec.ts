@@ -428,7 +428,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.screenshot(shots("specializations"));
 
   // The lead runs a cycle.
-  await lead.page.getByRole("link", { name: "Downtimes", exact: true }).click();
+  await lead.page.getByRole("link", { name: /^Downtimes( \d+ waiting)?$/ }).click();
   await expect(lead.page.getByRole("heading", { name: "New cycle" })).toBeVisible();
   await lead.page.getByLabel("Name").fill("November");
   await lead.page.getByRole("button", { name: "Create draft" }).click();
@@ -467,7 +467,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(lead.page.getByLabel("Assign to").first()).toHaveValue(/.+/);
   await narrator.page.getByRole("link", { name: "Troupes" }).click();
   await narrator.page.getByRole("link", { name: troupeName }).click();
-  await narrator.page.getByRole("link", { name: "Downtimes", exact: true }).click();
+  await narrator.page.getByRole("link", { name: /^Downtimes( \d+ waiting)?$/ }).click();
   await narrator.page.getByRole("link", { name: "My work" }).click();
   await narrator.page.getByRole("link", { name: "November" }).click();
   await narrator.page.getByLabel("Response to Agnes").fill("The docks are crowded tonight; you feed well and unseen.");
@@ -550,8 +550,8 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(lead.page.getByText(/Email is not set up on this server/)).toBeVisible();
 
   // The troupe's influence log: the logged answer, and an NPC's action logged by hand.
-  await lead.page.getByRole("link", { name: "Downtimes", exact: true }).click();
-  await lead.page.getByRole("link", { name: "Influence log", exact: true }).click();
+  await lead.page.getByRole("link", { name: /^Downtimes( \d+ waiting)?$/ }).click();
+  await lead.page.getByRole("link", { name: /^Influence log( \d+ waiting)?$/ }).click();
   const e1 = lead.page.getByRole("listitem", { name: "Entry E1" });
   await expect(e1.getByText("To hear about the missing ledger")).toBeVisible();
   await expect(e1.getByText("Elite, Police · 2: Gossip and Insider Trading")).toBeVisible();

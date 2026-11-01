@@ -1008,3 +1008,72 @@ test("a troupe's Profile tab switches it public at once, About shows its XP rang
   await expect(p.getByRole("heading", { name: "Waiting on you" })).toHaveCount(0);
   await expect(p.getByRole("button", { name: "Set by hand" })).toHaveCount(0);
 });
+
+test("Waiting on you shows the open cycle, a quest request and a backstory waiting, the tabs count them, and staff land on their troupes", async ({ browser }) => {
+  const custodian = await person(browser, "bells-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "bells-lead");
+  const player = await person(browser, "bells-player");
+  const troupeName = `Court of Waiting Bells ${run}`;
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const { id: troupeId } = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  const l = lead.page;
+  await send(l, "PUT", `/api/troupes/${troupeId}/backstory-settings`, { mode: "free", required: false });
+  await send(l, "PUT", `/api/troupes/${troupeId}/quest-settings`, { enabled: true, requests_per_cycle: 1 });
+
+  // The player's character joins, writes a backstory and asks for a quest; a cycle is open.
+  const p = player.page;
+  const id = await builtVampire(p, "Ilka Varga", "Toreador", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Auspex", 2], ["Celerity", 1], ["Presence", 1]],
+  });
+  const asked = await send(p, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+  await send(l, "POST", `/api/approvals/${asked.id}/approve`);
+  await send(p, "PUT", `/api/characters/${id}/backstory`, { text: "Embraced in a Budapest opera house, 1911.", version: 0 });
+  const now = Date.now();
+  const cycle = await send(l, "POST", `/api/troupes/${troupeId}/cycles`, {
+    name: "November downtime",
+    closes_at: new Date(now + 7 * 86400e3).toISOString(),
+    grace_ends_at: new Date(now + 9 * 86400e3).toISOString(),
+  });
+  await send(l, "POST", `/api/cycles/${cycle.id}/open`);
+  await send(p, "POST", `/api/characters/${id}/quest-requests`, { objective: "Find the lost libretto", reason: "Her sire wrote it", companions: "" });
+
+  // The lead, with no characters of their own, lands on their troupes, with what waits on them in each.
+  await l.goto("/");
+  await expect(l.getByRole("heading", { name: "Your troupes" })).toBeVisible();
+  const home = l.getByRole("list", { name: `Waiting on you in ${troupeName}` });
+  await expect(home.getByRole("link", { name: /^November downtime: 0 of 1 submitted · due in \d+ days$/ })).toBeVisible();
+  await expect(l.getByRole("link", { name: troupeName }).getByLabel("2 waiting")).toBeVisible();
+  await expect(l.getByText("No characters of your own yet.", { exact: false })).toBeVisible();
+  await l.screenshot(shots("characters-home-staff"));
+
+  // About's Waiting on you: the open cycle first, then the backstory and the quest request.
+  await l.getByRole("link", { name: troupeName }).click();
+  const waiting = l.getByRole("list", { name: "Waiting on you" });
+  await expect(waiting.getByRole("link")).toHaveText([/^November downtime: 0 of 1 submitted · due in \d+ days$/, /^Backstories to read\s*1$/, /^Quest requests to answer\s*1$/]);
+  await l.screenshot(shots("troupe-about-waiting"));
+  // The tabs count the same: the backstory on the roster, the request on Quests.
+  const sections = l.getByRole("navigation", { name: "Troupe sections" });
+  await expect(sections.getByRole("link", { name: /^Characters/ }).getByLabel("1 waiting")).toBeVisible();
+  await expect(sections.getByRole("link", { name: /^Downtimes/ }).getByLabel("1 waiting")).toBeVisible();
+  await sections.getByRole("link", { name: /^Characters/ }).click();
+  const characterTabs = l.getByRole("navigation", { name: "Characters", exact: true });
+  await expect(characterTabs.getByRole("link", { name: /^Characters/ }).getByLabel("1 waiting")).toBeVisible();
+  // The roster marks the backstory, and the mark opens it.
+  await l.getByRole("link", { name: "backstory to read" }).click();
+  await expect(l).toHaveURL(new RegExp(`/characters/${id}/backstory`));
+  await expect(l.getByText("Embraced in a Budapest opera house, 1911.")).toBeVisible();
+  // The line itself goes straight to the backstory too, and the quest request's to Quests.
+  await l.goto(`/troupes/${troupeId}`);
+  await waiting.getByRole("link", { name: /^Quest requests to answer/ }).click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/quests$`));
+  await expect(l.getByText("Find the lost libretto")).toBeVisible();
+  await expect(sections.getByRole("link", { name: /^Downtimes/ }).getByLabel("1 waiting")).toBeVisible();
+});

@@ -6920,7 +6920,8 @@ export interface paths {
         };
         /**
          * Read Waiting
-         * @description What is waiting on the viewer in this troupe, for its staff only.
+         * @description What is waiting on the viewer in this troupe, for its staff only: the open
+         *     cycle first, then each kind of work with its count.
          */
         get: operations["read_waiting_api_troupes__troupe_id__waiting_get"];
         put?: never;
@@ -16778,6 +16779,11 @@ export interface components {
             /** Active Title */
             active_title?: string | null;
             /**
+             * Backstory Waiting
+             * @default false
+             */
+            backstory_waiting: boolean;
+            /**
              * Character Id
              * Format: uuid
              */
@@ -19213,7 +19219,9 @@ export interface components {
         /** WaitingLine */
         WaitingLine: {
             /** Count */
-            count: number;
+            count: number | null;
+            /** Due At */
+            due_at?: string | null;
             /** Kind */
             kind: string;
             /** Label */

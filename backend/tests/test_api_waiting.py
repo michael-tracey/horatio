@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from horatio.models import DowntimeCycle
 from tests.api_helpers import Person, Troupe, new_character
 from tests.test_api_downtimes import member_character, new_cycle, open_cycle, question_id, save
+from tests.test_api_quests import ask, quests_on
 from tests.test_api_responses import Scene
 
 NOW = datetime.now(UTC)
@@ -28,8 +29,16 @@ def waiting(troupe: Troupe, person: Person) -> dict[str, dict[str, Any]]:
     return {line["kind"]: line for line in response.json()}
 
 
-def counts(troupe: Troupe, person: Person) -> dict[str, int]:
+def counts(troupe: Troupe, person: Person) -> dict[str, int | None]:
     return {kind: line["count"] for kind, line in waiting(troupe, person).items()}
+
+
+def write(player: Person, character_id: str, text: str) -> None:
+    version = player.client.get(f"/characters/{character_id}/backstory").json()["version"]
+    saved = player.client.put(
+        f"/characters/{character_id}/backstory", json={"text": text, "version": version}
+    )
+    assert saved.status_code == 200, saved.text
 
 
 def test_nothing_waiting_is_no_lines(troupe: Troupe) -> None:
@@ -59,18 +68,43 @@ def test_approvals_count_every_pending_approval_and_link_to_the_tab(troupe: Trou
     assert "approvals" not in waiting(troupe, troupe.narrator)
 
 
+def test_the_open_cycle_always_shows_first_with_its_due_date(troupe: Troupe) -> None:
+    member_character(troupe, troupe.player, "Agnes")
+    cycle = open_cycle(troupe, new_cycle(troupe))
+
+    response = troupe.storyteller.client.get(f"/troupes/{troupe.id}/waiting").json()
+    # Nothing submitted yet, and still shown, without a count.
+    assert [line["kind"] for line in response] == ["cycle_open"]
+    [line] = response
+    assert line["label"] == "October 2026: 0 of 1 submitted"
+    assert line["count"] is None
+    assert line["link"] == f"/cycles/{cycle['id']}/participants"
+    assert line["due_at"] == cycle["closes_at"]
+    # Before the rest of the work.
+    character_id = new_character(troupe, troupe.player, "Bea")
+    asked = troupe.player.client.post(
+        f"/characters/{character_id}/home-troupe", json={"troupe_id": troupe.id}
+    )
+    assert asked.status_code == 201, asked.text
+    kinds = [
+        line["kind"] for line in troupe.lead.client.get(f"/troupes/{troupe.id}/waiting").json()
+    ]
+    assert kinds == ["cycle_open", "approvals"]
+    # Narrators don't run the cycle.
+    assert "cycle_open" not in counts(troupe, troupe.narrator)
+
+
 def test_the_cycle_under_way_shows_submitted_unassigned_and_unwritten(troupe: Troupe) -> None:
     scene = Scene(troupe)
     cycle_id = scene.cycle["id"]
 
     lines = waiting(troupe, troupe.storyteller)
     assert {k: v["count"] for k, v in lines.items()} == {
-        "cycle_submitted": 1,
+        "cycle_open": None,
         "cycle_unassigned": 4,
         "cycle_unwritten": 4,
     }
-    assert lines["cycle_submitted"]["label"] == "October 2026: downtimes submitted, of 1"
-    assert lines["cycle_submitted"]["link"] == f"/cycles/{cycle_id}/participants"
+    assert lines["cycle_open"]["label"] == "October 2026: 1 of 1 submitted"
     assert lines["cycle_unwritten"]["link"] == f"/cycles/{cycle_id}/responses"
     # The same figures as the cycle's progress.
     progress = troupe.storyteller.client.get(f"/cycles/{cycle_id}/progress").json()
@@ -88,6 +122,83 @@ def test_the_cycle_under_way_shows_submitted_unassigned_and_unwritten(troupe: Tr
     assert (after["cycle_unassigned"], after["cycle_unwritten"]) == (3, 3)
     # A narrator sees none of the cycle's own lines.
     assert counts(troupe, troupe.narrator) == {}
+
+
+def test_backstories_to_read_link_to_the_one_or_to_the_roster(troupe: Troupe) -> None:
+    agnes = member_character(troupe, troupe.player, "Agnes")
+    bea = member_character(troupe, troupe.player, "Bea")
+    # Nothing written is nothing to read.
+    assert "backstories" not in counts(troupe, troupe.assistant)
+
+    write(troupe.player, agnes, "Born in 1890.")
+    line = waiting(troupe, troupe.assistant)["backstories"]
+    assert (line["count"], line["label"]) == (1, "Backstories to read")
+    assert line["link"] == f"/characters/{agnes}/backstory?troupe={troupe.id}"
+    write(troupe.player, bea, "Born in 1920.")
+    line = waiting(troupe, troupe.assistant)["backstories"]
+    assert (line["count"], line["link"]) == (2, f"/troupes/{troupe.id}/characters")
+    # The roster marks each.
+    roster = troupe.lead.client.get(f"/troupes/{troupe.id}/characters").json()
+    assert {r["character_name"]: r["backstory_waiting"] for r in roster} == {
+        "Agnes": True,
+        "Bea": True,
+    }
+    # Narrators never read backstories.
+    assert "backstories" not in counts(troupe, troupe.narrator)
+
+    # Sent back, it waits on the player; approved, on no one.
+    sent = troupe.lead.client.post(
+        f"/characters/{agnes}/backstory/feedback", json={"body": "More, please"}
+    )
+    assert sent.status_code == 200, sent.text
+    version = troupe.lead.client.get(f"/characters/{bea}/backstory").json()["version"]
+    approved = troupe.lead.client.post(
+        f"/characters/{bea}/backstory/approve", json={"version": version}
+    )
+    assert approved.status_code == 200, approved.text
+    assert "backstories" not in counts(troupe, troupe.assistant)
+
+    # Changed since it was approved, it waits again.
+    write(troupe.player, bea, "Born in 1920, in Chicago.")
+    assert counts(troupe, troupe.assistant)["backstories"] == 1
+    roster = troupe.lead.client.get(f"/troupes/{troupe.id}/characters").json()
+    assert {r["character_name"]: r["backstory_waiting"] for r in roster} == {
+        "Agnes": False,
+        "Bea": True,
+    }
+
+
+def test_a_backstory_waits_on_the_troupe_the_character_asks_to_join(troupe: Troupe) -> None:
+    agnes = new_character(troupe, troupe.player, "Agnes")
+    write(troupe.player, agnes, "Born in 1890.")
+    # In no troupe yet: no one reads it.
+    assert "backstories" not in counts(troupe, troupe.lead)
+    asked = troupe.player.client.post(
+        f"/characters/{agnes}/home-troupe", json={"troupe_id": troupe.id}
+    )
+    assert asked.status_code == 201, asked.text
+    assert counts(troupe, troupe.lead)["backstories"] == 1
+
+
+def test_quest_requests_to_answer(troupe: Troupe) -> None:
+    agnes = member_character(troupe, troupe.player, "Agnes")
+    assert "quest_requests" not in counts(troupe, troupe.storyteller)
+    quests_on(troupe)
+    assert ask(troupe.player, agnes).status_code == 201
+
+    line = waiting(troupe, troupe.assistant)["quest_requests"]
+    assert (line["count"], line["label"]) == (1, "Quest requests to answer")
+    assert line["link"] == f"/troupes/{troupe.id}/quests"
+    # The same as the Quests tab's To answer.
+    assert len(troupe.assistant.client.get(f"/troupes/{troupe.id}/quest-requests").json()) == 1
+    # A narrator, only once it is assigned to them.
+    assert "quest_requests" not in counts(troupe, troupe.narrator)
+    [request] = troupe.lead.client.get(f"/troupes/{troupe.id}/quest-requests").json()
+    assigned = troupe.lead.client.put(
+        f"/quest-requests/{request['id']}/assignment", json={"user_id": troupe.narrator.id}
+    )
+    assert assigned.status_code == 200, assigned.text
+    assert counts(troupe, troupe.narrator)["quest_requests"] == 1
 
 
 def test_staff_see_responses_for_them_to_write(troupe: Troupe) -> None:

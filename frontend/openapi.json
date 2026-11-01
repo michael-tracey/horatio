@@ -25423,6 +25423,11 @@
             ],
             "title": "Active Title"
           },
+          "backstory_waiting": {
+            "default": false,
+            "title": "Backstory Waiting",
+            "type": "boolean"
+          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -31984,8 +31989,27 @@
       "WaitingLine": {
         "properties": {
           "count": {
-            "title": "Count",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Count"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
           },
           "kind": {
             "title": "Kind",
@@ -55049,7 +55073,7 @@
     },
     "/api/troupes/{troupe_id}/waiting": {
       "get": {
-        "description": "What is waiting on the viewer in this troupe, for its staff only.",
+        "description": "What is waiting on the viewer in this troupe, for its staff only: the open\ncycle first, then each kind of work with its count.",
         "operationId": "read_waiting_api_troupes__troupe_id__waiting_get",
         "parameters": [
           {

@@ -548,15 +548,20 @@ def effective_allowance(db: Session, participant: CycleParticipant) -> dict[str,
     return {k: max(0, v) for k, v in allowance_totals(db, participant).items()}
 
 
-def shortfall(db: Session, participant: CycleParticipant) -> dict[str, int]:
+def shortfall(
+    db: Session,
+    participant: CycleParticipant,
+    adjusted: Sequence[AllowanceAdjustment] | None = None,
+) -> dict[str, int]:
     """Actions taken off beyond the allowance, such as more influence spent at
     games than the character's rating allows a month (MET: VtM core, p. 510), or
     flaws taking more than the character has (Hunted's two, from an allowance of
-    one): counted from the breakdown, before the allowance stopped at zero."""
+    one): counted from the breakdown, before the allowance stopped at zero.
+    `adjusted` is its adjustments, when already loaded."""
     totals: dict[str, int] = {}
     for line in participant.allowance_breakdown:
         totals[line["action_kind"]] = totals.get(line["action_kind"], 0) + line["amount"]
-    for adjustment in adjustments(db, participant):
+    for adjustment in adjustments(db, participant) if adjusted is None else adjusted:
         totals[adjustment.action_kind] = totals.get(adjustment.action_kind, 0) + adjustment.delta
     return {kind: -total for kind, total in totals.items() if total < 0}
 

@@ -9,6 +9,7 @@ import { Card, ErrorText, Loading } from "../../components/ui";
 import { useDates } from "../../dates";
 import type { abilities } from "./roles";
 import { sectsText, useSplatsText } from "./SettingsTab";
+import { useWaiting, WaitingList } from "./WaitingList";
 import { XpRangeCard } from "./XpRange";
 
 /**
@@ -54,11 +55,7 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
 
 /** What waits on this staff member, one line per kind of work, each a link straight to it. */
 function WaitingCard({ troupeId }: { troupeId: string }) {
-  const waiting = useQuery({
-    queryKey: ["waiting", troupeId],
-    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/waiting", { params: { path: { troupe_id: troupeId } } })),
-    refetchInterval: 60_000,
-  });
+  const waiting = useWaiting(troupeId);
   return (
     <Card title="Waiting on you" className="md:col-span-2">
       {waiting.isPending ? (
@@ -68,16 +65,7 @@ function WaitingCard({ troupeId }: { troupeId: string }) {
       ) : waiting.data.length === 0 ? (
         <p className="text-sm text-mist">Nothing waiting.</p>
       ) : (
-        <ul className="divide-y divide-ash" aria-label="Waiting on you">
-          {waiting.data.map((line) => (
-            <li key={`${line.kind} ${line.link}`}>
-              <Link to={line.link} className="flex items-center justify-between gap-3 py-2 text-sm hover:text-gold">
-                <span>{line.label}</span>
-                <span className="min-w-8 rounded-full border border-gold/50 px-2 py-0.5 text-center text-xs text-gold tabular-nums">{line.count}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <WaitingList lines={waiting.data} label="Waiting on you" />
       )}
     </Card>
   );
