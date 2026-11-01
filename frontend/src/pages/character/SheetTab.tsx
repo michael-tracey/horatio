@@ -616,6 +616,18 @@ export function SheetTab({
               <dd className="text-lg">{s.xp.spent}</dd>
             </div>
           </dl>
+          {s.xp.lost > 0 && (
+            <p className="mt-3 flex items-center justify-between gap-2 border-t border-ash pt-2 text-sm text-mist">
+              <span>Lost when accepted: {s.xp.lost}</span>
+              <InfoButton label="About XP lost when accepted">
+                <span className="block">
+                  Creation XP left unspent past what a character may keep was lost when its first home troupe accepted it. It was never spent, so it
+                  isn't counted as Spent. The Experience tab has the line.
+                </span>
+                <span className="mt-1 block text-mist">MET: VTM p. 107</span>
+              </InfoButton>
+            </p>
+          )}
           {s.xp.debt > 0 && (
             <p className="mt-3 rounded-md border border-blood/60 bg-blood/10 px-2 py-1 text-sm text-blood-bright">
               XP debt: {s.xp.debt}. The XP {character.name} earns pays it off first, and nothing new can be bought until it has.

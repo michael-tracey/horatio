@@ -500,6 +500,11 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(lead.page.getByRole("row", { name: /Agnes.*sent/ })).toBeVisible();
   await characterTab(p, "Results");
   await expect(p.getByText("you feed well and unseen")).toBeVisible();
+  // New to the player, with the response under the action it answers.
+  await expect(p.getByText("New", { exact: true })).toBeVisible();
+  const answered = p.locator("section").filter({ hasText: "you feed well and unseen" }).last();
+  await expect(answered.getByText("Your action")).toBeVisible();
+  await expect(answered.getByText("Hunt along the river docks.")).toBeVisible();
   await p.screenshot(shots("results"));
 
   // The rest is answered after delivery: the downtime shows as changed, and goes again as an update.
@@ -522,7 +527,9 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.reload();
   await expect(p.getByText("The desk sergeant owes you a favour.")).toBeVisible();
   await expect(p.getByText("you feed well and unseen")).toBeVisible();
-  await expect(p.getByText("updated", { exact: true })).toBeVisible();
+  // The update is new again, and says when it came.
+  await expect(p.getByText(/^Updated \d/)).toBeVisible();
+  await expect(p.getByText("New", { exact: true })).toBeVisible();
 
   // Marking the cycle complete says first that nothing is left.
   await lead.page.getByRole("link", { name: "Overview" }).click();
@@ -594,6 +601,10 @@ test("a troupe's month, from new character to downtime results", async ({ browse
     await expect(page.getByRole("heading", { name: /Specializations|Influence: Elite/ })).toHaveCount(0);
   };
   await specialised(p);
+  // The whole page shows, scaled down on a phone to fit it; the paper size links to its setting.
+  const paper = await p.locator("article").first().boundingBox();
+  expect(paper!.width).toBeLessThanOrEqual(p.viewportSize()!.width);
+  await expect(p.getByRole("link", { name: "For US Letter" })).toHaveAttribute("href", "/account/settings");
   await p.screenshot(shots("print"));
   if (test.info().project.name === "desktop") {
     await p.emulateMedia({ media: "print" });

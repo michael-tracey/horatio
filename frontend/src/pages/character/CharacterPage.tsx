@@ -179,7 +179,7 @@ export function CharacterPage() {
                 onRename={() => setRenaming(true)}
                 canRetire={mine && c.status === "active"}
                 onPronouns={mine && c.status === "active" && !saying ? () => setSaying(true) : undefined}
-                canDelete={mine || custodian}
+                canDelete={mine}
                 canMove={custodian}
               />
             </div>

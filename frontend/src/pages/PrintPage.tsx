@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useLayoutEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { PrintedSheet, TestPool } from "../api/types";
@@ -83,12 +83,33 @@ export function TroupePrintPage() {
   );
 }
 
+/** How far to shrink a page this many inches wide to fit a screen this many CSS
+ * pixels wide (96 to the inch), with a little room either side; never enlarged. */
+export function fitScale(screenWidth: number, paperInches: number): number {
+  return Math.min(1, (screenWidth - 16) / (paperInches * 96));
+}
+
+/** `fitScale` for the window, kept up to date as it changes size. */
+function useFitScale(paperInches: number): number {
+  const [scale, setScale] = useState(1);
+  useLayoutEffect(() => {
+    const measure = () => setScale(fitScale(document.documentElement.clientWidth, paperInches));
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [paperInches]);
+  return scale;
+}
+
 /** The grey desk the paper sits on, with Back and Print above it; only the paper
  * prints, on the person's paper size. Back is a link to where the sheets came
  * from, since they often open in a tab of their own, with no history to go back
- * through. */
+ * through. On a screen narrower than the paper (a phone), the paper is shown
+ * whole, scaled down to fit, as it will print; printing isn't scaled. The paper
+ * size links to the setting that changes it. */
 function PrintShell({ back, count, children }: { back: string; count?: number; children: ReactNode }) {
   const paper = usePreferences().paper;
+  const scale = useFitScale(PAPERS[paper].width);
   return (
     <div className="min-h-screen bg-neutral-200 py-6 text-black print:min-h-0 print:bg-white print:py-0">
       <style>{pageRule(paper, "0.45in")}</style>
@@ -98,13 +119,17 @@ function PrintShell({ back, count, children }: { back: string; count?: number; c
         </Link>
         {count !== undefined && <span className="text-sm">{count === 1 ? "1 sheet" : `${count} sheets`}</span>}
         <span className="flex items-center gap-3">
-          <span className="text-sm text-neutral-600">For {PAPERS[paper].name}</span>
+          <Link to="/account/settings" className="text-sm text-neutral-600 underline" title="Change the paper in Settings">
+            For {PAPERS[paper].name}
+          </Link>
           <button onClick={() => window.print()} className="rounded bg-black px-4 py-1.5 text-sm text-white">
             Print
           </button>
         </span>
       </div>
-      {children}
+      <div style={{ "--fit": scale } as CSSProperties} className="[zoom:var(--fit)] print:[zoom:1]">
+        {children}
+      </div>
     </div>
   );
 }
@@ -323,8 +348,8 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
 
   return (
     <article
-      className="mx-auto flex flex-col gap-3 bg-white p-[0.45in] font-serif shadow print:p-0 print:shadow-none"
-      style={{ maxWidth: `${PAPERS[paper].width}in` }}
+      className="mx-auto flex w-(--paper) flex-col gap-3 bg-white p-[0.45in] font-serif shadow print:w-auto print:p-0 print:shadow-none"
+      style={{ "--paper": `${PAPERS[paper].width}in` } as CSSProperties}
     >
       <header className="grid grid-cols-[1fr_auto] items-start gap-4 border-b-2 border-black pb-2">
         <dl className="grid grid-cols-[auto_1fr_auto_1fr] gap-x-2 text-[12px]">

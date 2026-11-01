@@ -1,6 +1,7 @@
 """A troupe's characters and log, for its storytellers and assistant storytellers."""
 
 import uuid
+from collections.abc import Mapping
 from dataclasses import replace
 from datetime import datetime
 from typing import Annotated, Any, Literal
@@ -14,7 +15,15 @@ from horatio.api.downtimes import staff_troupe
 from horatio.api.lines_veils import LinesVeils, lines_veils_of
 from horatio.api.printing import PrintedSheet, print_sheet
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Approval, AuditEvent, Character, RuleSet, TroupeMembership, User
+from horatio.models import (
+    Approval,
+    AuditEvent,
+    Character,
+    RuleSet,
+    TraitCategory,
+    TroupeMembership,
+    User,
+)
 from horatio.permissions import TroupeAction, allows, troupe_role
 from horatio.rules.model import RuleSetData
 from horatio.rules.store import read_troupe_rules
@@ -318,6 +327,8 @@ MESSAGES: dict[str, str] = {
     "downtime.cycle_opened": "{actor} opened a downtime cycle ({participants} taking part).",
     "downtime.cycle_closed": "{actor} closed a downtime cycle.",
     "downtime.submitted": "{character} submitted a downtime.",
+    "xp.downtime_completed": "{character} earned {amount} XP for submitting a downtime.",
+    "response.written": "{actor} wrote a downtime response for {character}.",
     "downtime.delivered": "{actor} delivered {count} downtime results.",
     "connector.changed": "{actor} turned the {connector} connector {state}.",
     "connector.discord_connected": "{actor} connected the Discord server {server}.",
@@ -604,19 +615,25 @@ def message(
     *,
     player: str | None = None,
     by_player: bool = False,
+    categories: Mapping[str, str] | None = None,
 ) -> str:
     """The event as a sentence. A PC is followed by its player, "Agnes (Jane)", unless
-    the player is named already as the one who did it."""
+    the player is named already as the one who did it. A category is named as the
+    rules data names it (`categories`, by key), "social focus" for focus_socials."""
     values = {**data, "actor": actor or "Someone", "character": character or "A character"}
-    if isinstance(values.get("category"), str):
-        values["category"] = values["category"].replace("_", " ")
+    category = values.get("category")
+    if isinstance(category, str):
+        named = (categories or {}).get(category)
+        values["category"] = named.lower() if named else category.replace("_", " ")
     # A reason given, as the end of a sentence: " (the Prince's order)".
     values["because"] = f" ({data['reason']})" if data.get("reason") else ""
     # Given at a Play View game: " at game 3".
     values["at_game"] = f" at game {data['game']}" if data.get("game") else ""
     if isinstance(values.get("picks"), dict):
         picks: dict[str, Any] = values["picks"]
-        values["picks"] = ", ".join(f"{n} {r}" for n, r in picks.items()) or "none"
+        # A focus is held or not; its rating of 1 says nothing.
+        focus = isinstance(category, str) and category.startswith("focus_")
+        values["picks"] = ", ".join(n if focus else f"{n} {r}" for n, r in picks.items()) or "none"
     try:
         if action == "sheet.purchase":
             template = purchase_message(data)
@@ -657,6 +674,12 @@ def log(
 def log_entries(db: DbSession, query: Select[AuditEvent, str]) -> list[LogEntry]:
     """Read the events `query` selects, with their actors' names, as log entries."""
     events = [(event, actor) for event, actor in db.execute(query)]
+    # Every rule set names a category alike, so any of their names will do.
+    categories = (
+        {key: name for key, name in db.execute(select(TraitCategory.key, TraitCategory.name))}
+        if any(isinstance(e.data.get("category"), str) for e, _ in events)
+        else {}
+    )
     character_ids = {e.character_id for e, _ in events} - {None}
     # Each PC's player as they are named now, not when the event happened.
     players: dict[uuid.UUID | None, tuple[uuid.UUID, str]] = {
@@ -683,6 +706,7 @@ def log_entries(db: DbSession, query: Select[AuditEvent, str]) -> list[LogEntry]
                     event.data,
                     player=player,
                     by_player=player_id is not None and event.actor_id == player_id,
+                    categories=categories,
                 ),
                 actor_id=event.actor_id,
                 actor_name=actor,

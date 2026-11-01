@@ -64,6 +64,7 @@ def test_a_correction_leaves_the_award_and_adds_the_difference(
         "balance": 33,
         "earned": 33,
         "spent": 0,
+        "lost": 0,
         "unbanked": 0,
         "debt": 0,
     }

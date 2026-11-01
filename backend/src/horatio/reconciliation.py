@@ -576,16 +576,19 @@ def unbanked_xp(db: Session, character: Character) -> int:
     return max(0, xp_balance(db, character) - limit)
 
 
-def bank_creation_xp(db: Session, staff: User, character: Character) -> None:
-    """On a first acceptance, unspent creation XP past the bank is lost (MET: VTM p. 107)."""
+def bank_creation_xp(db: Session, staff: User, character: Character, troupe: Troupe) -> None:
+    """On a first acceptance, unspent creation XP past the bank is lost (MET: VTM p. 107).
+    It is a line of its own, "lost": the character never spent it."""
     lost = unbanked_xp(db, character)
     if lost:
+        kept = read_troupe_rules(db, character.splat, None).rule_set.banked_xp
         db.add(
             XpEntry(
                 character_id=character.id,
-                kind="fee",
+                kind="lost",
                 amount=-lost,
-                reason="Unspent creation XP past the bank is lost on acceptance",
+                reason=f"Creation XP over the {kept} that can be kept, lost when {troupe.name}"
+                f" accepted {character.name}",
                 entered_by=staff.id,
             )
         )
@@ -678,7 +681,7 @@ def approve_change(
     )
     old_troupe = change.from_troupe_id
     if old_troupe is None:
-        bank_creation_xp(db, staff, character)
+        bank_creation_xp(db, staff, character, troupe)
     xp_range.top_up(db, staff, character, troupe, plan.topped_up, review.floor)
     xp_range.give_extra(db, staff, character, troupe, plan.extra, decision.extra_reason)
     if character.kind == "pc":

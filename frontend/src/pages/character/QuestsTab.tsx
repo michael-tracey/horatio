@@ -3,13 +3,14 @@ import { useState } from "react";
 import { Link, Route, Routes, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CharacterQuestsOut, PlayerQuestOut } from "../../api/types";
+import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, RichText, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { NEGATIVES, REQUEST_KINDS, type RequestKind } from "../quests/locationQuests";
 import { outcomeText, questStatus, questType, requestStatus, resultText, roleText } from "../quests/quests";
 
-/** The character's quests: asking for one, following requests, and the quests it can see. */
+/** The character's quests: the ones under way, requests, past quests, and asking for one. */
 export function QuestsTab({ characterId }: { characterId: string }) {
   const quests = useQuery({
     queryKey: ["character-quests", characterId],
@@ -25,14 +26,46 @@ export function QuestsTab({ characterId }: { characterId: string }) {
   );
 }
 
+/** The quests come first, as that is what a player comes back for; asking for one
+ * waits behind a button. The form stays mounted while closed, so nothing typed in
+ * it is lost. */
 function Overview({ characterId, found }: { characterId: string; found: CharacterQuestsOut }) {
   const dates = useDates();
+  const [asking, setAsking] = useState(false);
   const withdraw = useAction((id: string) => unwrap(api.POST("/api/quest-requests/{request_id}/withdraw", { params: { path: { request_id: id } } })));
   const ongoing = found.quests.filter((q) => q.status === "active");
   const past = found.quests.filter((q) => q.status !== "active");
+  const canAsk = found.limit > 0 || found.requests.length > 0;
   return (
     <div className="flex flex-col gap-4">
-      {found.limit > 0 || found.requests.length > 0 ? <Ask characterId={characterId} found={found} /> : null}
+      {canAsk &&
+        (found.refusal ? (
+          <Notice>{found.refusal}</Notice>
+        ) : (
+          !asking && (
+            <div>
+              <Button variant="secondary" onClick={() => setAsking(true)}>
+                Ask for a quest ({found.limit - found.used} of {found.limit} left)
+              </Button>
+            </div>
+          )
+        ))}
+      {canAsk && !found.refusal && (
+        <div hidden={!asking}>
+          <Ask characterId={characterId} found={found} onClose={() => setAsking(false)} />
+        </div>
+      )}
+      <Card title="Quests">
+        {ongoing.length === 0 ? (
+          <Empty>{past.length ? "No quests under way." : "No quests yet."}</Empty>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {ongoing.map((q) => (
+              <QuestRow key={q.id} quest={q} />
+            ))}
+          </ul>
+        )}
+      </Card>
       {found.requests.length > 0 && (
         <Card title="Your requests">
           <ul className="flex flex-col gap-3">
@@ -67,17 +100,15 @@ function Overview({ characterId, found }: { characterId: string; found: Characte
           <ErrorText error={withdraw.error} />
         </Card>
       )}
-      <Card title="Quests">
-        {found.quests.length === 0 ? (
-          <Empty>No quests yet.</Empty>
-        ) : (
+      {past.length > 0 && (
+        <Card title="Past quests">
           <ul className="flex flex-col gap-2">
-            {[...ongoing, ...past].map((q) => (
+            {past.map((q) => (
               <QuestRow key={q.id} quest={q} />
             ))}
           </ul>
-        )}
-      </Card>
+        </Card>
+      )}
     </div>
   );
 }
@@ -95,7 +126,8 @@ function QuestRow({ quest: q }: { quest: PlayerQuestOut }) {
   );
 }
 
-function Ask({ characterId, found }: { characterId: string; found: CharacterQuestsOut }) {
+function Ask({ characterId, found, onClose }: { characterId: string; found: CharacterQuestsOut; onClose: () => void }) {
+  const toast = useToast();
   const [kind, setKind] = useState<RequestKind>("custom");
   const [objective, setObjective] = useState("");
   const [reason, setReason] = useState("");
@@ -148,6 +180,8 @@ function Ask({ characterId, found }: { characterId: string; found: CharacterQues
       );
     }
     reset();
+    onClose();
+    toast({ message: "Quest request sent to the storytellers" });
   });
   const when = found.cycle_name ? ` in ${found.cycle_name}` : " until the next downtime cycle";
   const own = held.data?.locations ?? [];
@@ -174,105 +208,104 @@ function Ask({ characterId, found }: { characterId: string; found: CharacterQues
       <p className="mb-3 text-sm text-mist">
         {found.used} of {found.limit} {found.limit === 1 ? "request" : "requests"} made{when}. A request the storytellers answer as not needed doesn't count.
       </p>
-      {found.refusal ? (
-        <Notice>{found.refusal}</Notice>
-      ) : (
-        <form
-          className="flex flex-col gap-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            ask.mutate(undefined);
-          }}
-        >
-          <Field label="What kind of request">
-            <Select value={kind} onChange={(e) => setKind(e.target.value as RequestKind)}>
-              {REQUEST_KINDS.filter((k) => (k.value === "quality" || k.value === "repair" ? own.length > 0 : true)).map((k) => (
-                <option key={k.value} value={k.value}>
-                  {k.label}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          {kind === "custom" && (
-            <>
-              <Field label="What do you want to achieve?">
-                <Textarea rows={3} required value={objective} onChange={(e) => setObjective(e.target.value)} />
-              </Field>
-              {why}
-              <Field label="Characters you want to bring (optional)">
-                <Textarea rows={1} value={companions} onChange={(e) => setCompanions(e.target.value)} />
-              </Field>
-            </>
-          )}
-          {(kind === "acquire" || kind === "undermine") && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Name of the place">
-                <Input required value={place.name} onChange={(e) => setPlace({ ...place, name: e.target.value })} />
-              </Field>
-              <Field label="Address" hint={kind === "undermine" ? "Your character must know it: have been there, or have its address." : undefined}>
-                <Input value={place.address} onChange={(e) => setPlace({ ...place, address: e.target.value })} />
-              </Field>
-              {kind === "acquire" && (
-                <Field label="Map link (optional)">
-                  <Input type="url" value={place.map_link} onChange={(e) => setPlace({ ...place, map_link: e.target.value })} />
-                </Field>
-              )}
-            </div>
-          )}
-          {kind === "quality" && (
-            <>
-              {ownLocation}
-              <Field label="The quality you want" hint={wanted?.text}>
-                <Select required value={quality} onChange={(e) => setQuality(e.target.value)}>
-                  <option value="">Choose a quality</option>
-                  {held.data?.qualities.map((q) => (
-                    <option key={q.name} value={q.name}>
-                      {q.name}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              {wanted?.detail && (
-                <Field label={wanted.detail}>
-                  <Input value={detail} onChange={(e) => setDetail(e.target.value)} />
-                </Field>
-              )}
-            </>
-          )}
-          {kind === "undermine" && (
-            <>
-              <Field label="What you want to do to it">
-                <Select required value={harm} onChange={(e) => setHarm(e.target.value)}>
-                  <option value="">Choose</option>
-                  {NEGATIVES.map((n) => (
-                    <option key={n} value={n}>
-                      Make it {n}
-                    </option>
-                  ))}
-                  <option value="infiltrate">Infiltrate it</option>
-                </Select>
-              </Field>
-              {harm === "infiltrate" && (
-                <Field label="What getting in is for" hint="One goal: steal something, plant something, or rescue someone.">
-                  <Input required value={victory} onChange={(e) => setVictory(e.target.value)} />
-                </Field>
-              )}
-            </>
-          )}
-          {kind === "repair" && ownLocation}
-          {kind === "whose" && (
-            <Field label="Whose locations" hint="It expends a dot of your character's Contacts.">
-              <Input required value={target} onChange={(e) => setTarget(e.target.value)} placeholder="A character's name" />
+      <form
+        className="flex flex-col gap-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          ask.mutate(undefined);
+        }}
+      >
+        <Field label="What kind of request">
+          <Select value={kind} onChange={(e) => setKind(e.target.value as RequestKind)}>
+            {REQUEST_KINDS.filter((k) => (k.value === "quality" || k.value === "repair" ? own.length > 0 : true)).map((k) => (
+              <option key={k.value} value={k.value}>
+                {k.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        {kind === "custom" && (
+          <>
+            <Field label="What do you want to achieve?">
+              <Textarea rows={3} required value={objective} onChange={(e) => setObjective(e.target.value)} />
             </Field>
-          )}
-          {kind !== "custom" && kind !== "whose" && why}
-          <div>
-            <Button type="submit" disabled={ask.isPending}>
-              Ask for this quest
-            </Button>
+            {why}
+            <Field label="Characters you want to bring (optional)">
+              <Textarea rows={1} value={companions} onChange={(e) => setCompanions(e.target.value)} />
+            </Field>
+          </>
+        )}
+        {(kind === "acquire" || kind === "undermine") && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Name of the place">
+              <Input required value={place.name} onChange={(e) => setPlace({ ...place, name: e.target.value })} />
+            </Field>
+            <Field label="Address" hint={kind === "undermine" ? "Your character must know it: have been there, or have its address." : undefined}>
+              <Input value={place.address} onChange={(e) => setPlace({ ...place, address: e.target.value })} />
+            </Field>
+            {kind === "acquire" && (
+              <Field label="Map link (optional)">
+                <Input type="url" value={place.map_link} onChange={(e) => setPlace({ ...place, map_link: e.target.value })} />
+              </Field>
+            )}
           </div>
-        </form>
-      )}
+        )}
+        {kind === "quality" && (
+          <>
+            {ownLocation}
+            <Field label="The quality you want" hint={wanted?.text}>
+              <Select required value={quality} onChange={(e) => setQuality(e.target.value)}>
+                <option value="">Choose a quality</option>
+                {held.data?.qualities.map((q) => (
+                  <option key={q.name} value={q.name}>
+                    {q.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            {wanted?.detail && (
+              <Field label={wanted.detail}>
+                <Input value={detail} onChange={(e) => setDetail(e.target.value)} />
+              </Field>
+            )}
+          </>
+        )}
+        {kind === "undermine" && (
+          <>
+            <Field label="What you want to do to it">
+              <Select required value={harm} onChange={(e) => setHarm(e.target.value)}>
+                <option value="">Choose</option>
+                {NEGATIVES.map((n) => (
+                  <option key={n} value={n}>
+                    Make it {n}
+                  </option>
+                ))}
+                <option value="infiltrate">Infiltrate it</option>
+              </Select>
+            </Field>
+            {harm === "infiltrate" && (
+              <Field label="What getting in is for" hint="One goal: steal something, plant something, or rescue someone.">
+                <Input required value={victory} onChange={(e) => setVictory(e.target.value)} />
+              </Field>
+            )}
+          </>
+        )}
+        {kind === "repair" && ownLocation}
+        {kind === "whose" && (
+          <Field label="Whose locations" hint="It expends a dot of your character's Contacts.">
+            <Input required value={target} onChange={(e) => setTarget(e.target.value)} placeholder="A character's name" />
+          </Field>
+        )}
+        {kind !== "custom" && kind !== "whose" && why}
+        <div className="flex gap-2">
+          <Button type="submit" disabled={ask.isPending}>
+            Ask for this quest
+          </Button>
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Not now
+          </Button>
+        </div>
+      </form>
       <ErrorText error={ask.error} />
     </Card>
   );

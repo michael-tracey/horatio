@@ -7,6 +7,8 @@ import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 
 const KINDS: Record<string, string> = { self_entered: "self-entered", cap: "above a ceiling", reprice: "repriced", debt: "XP debt" };
+// Lines whose reason says all there is: a purchase, and creation XP lost when accepted.
+const UNLABELLED = new Set(["purchase", "lost"]);
 
 /** The character's XP history. `selfEntering`: its player, while it has no home
  * troupe, may add XP to it themselves; the troupe it joins accepts or removes it. */
@@ -44,7 +46,7 @@ export function XpTab({ characterId, selfEntering = false }: { characterId: stri
                   </td>
                   <td className="py-2 pr-3">
                     {e.reason}
-                    {e.kind !== "purchase" && <span className="ml-2 text-xs text-mist">{KINDS[e.kind] ?? e.kind}</span>}
+                    {!UNLABELLED.has(e.kind) && <span className="ml-2 text-xs text-mist">{KINDS[e.kind] ?? e.kind}</span>}
                     {e.kind === "correction" && e.corrects_id && <span className="block text-xs text-mist">Corrects “{reasons.get(e.corrects_id)}”</span>}
                     {e.corrected_to != null && <span className="block text-xs text-gold">Corrected: now gives {e.corrected_to} XP</span>}
                     {e.to_debt > 0 && (

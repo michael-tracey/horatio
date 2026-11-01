@@ -123,14 +123,14 @@ def facts(db: Session, troupe_id: uuid.UUID, character: Character, *, items: boo
             select(XpEntry.kind, XpEntry.amount).where(XpEntry.character_id == character.id)
         )
     ]
-    earned, spent = earned_and_spent(entries)
+    earned, spent, lost = earned_and_spent(entries)
     return Facts(
         character_id=character.id,
         player_id=character.player_id if character.kind == "pc" else None,
         statuses=statuses,
         traits=traits,
         titles=set(titles.held(db, troupe_id, character.id)),
-        xp={"earned": earned, "unspent": earned - spent},
+        xp={"earned": earned, "unspent": earned - spent - lost},
         items=(
             equipment.items_of(db, character)
             if items and equipment.home_of(character) == troupe_id

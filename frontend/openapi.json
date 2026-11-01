@@ -33045,6 +33045,11 @@
             "title": "Earned",
             "type": "integer"
           },
+          "lost": {
+            "default": 0,
+            "title": "Lost",
+            "type": "integer"
+          },
           "spent": {
             "title": "Spent",
             "type": "integer"

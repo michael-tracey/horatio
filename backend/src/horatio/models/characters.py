@@ -271,10 +271,12 @@ class XpEntry(Record):
         # A reprice is the difference in what a purchase costs when Generation
         # changes before acceptance (horatio.repricing), or at a ghoul's Embrace
         # (horatio.embrace). A debt line is XP debt staff add (negative) or forgive
-        # (positive), with their reason (horatio.xp_debt).
+        # (positive), with their reason (horatio.xp_debt). Lost is unspent creation
+        # XP over the bank, gone when a first home troupe accepts the character
+        # (horatio.reconciliation): neither earned nor spent.
         CheckConstraint(
             "kind in ('award', 'purchase', 'settlement', 'fee', 'correction',"
-            " 'self_entered', 'cap', 'reprice', 'debt')",
+            " 'self_entered', 'cap', 'reprice', 'debt', 'lost')",
             name="kind",
         ),
         CheckConstraint(

@@ -49,9 +49,11 @@ test("quests: a player asks for one, staff build it Complex 2 and send it, it is
   await l.getByRole("button", { name: "Save" }).click();
   await expect(l.getByText("On: 1 request per character each downtime cycle.")).toBeVisible();
 
-  // The player asks for a quest; a second is refused with the reason.
+  // The player asks for a quest, from behind a button below their quests; a second is refused with the reason.
   await p.reload();
   await characterTab(p, "Quests");
+  await expect(p.getByLabel("What do you want to achieve?")).toBeHidden();
+  await p.getByRole("button", { name: "Ask for a quest (1 of 1 left)" }).click();
   await p.getByLabel("What do you want to achieve?").fill("Find Miles' journal");
   await p.getByLabel("Why (optional)").fill("It names his sire");
   await p.getByRole("button", { name: "Ask for this quest" }).click();
@@ -59,6 +61,8 @@ test("quests: a player asks for one, staff build it Complex 2 and send it, it is
   await expect(request.getByText("Waiting")).toBeVisible();
   await expect(p.getByText("Agnes has made 1 of 1 quest request until the next downtime cycle.")).toBeVisible();
   await expect(p.getByRole("button", { name: "Ask for this quest" })).toHaveCount(0);
+  // The character's quests come first, then its requests.
+  await expect(p.locator("main").getByRole("heading", { level: 2 })).toHaveText(["Quests", "Your requests"]);
 
   // The lead's bell has it as a task; the queue shows it as new, and the lead takes it on.
   await l.reload();
@@ -553,6 +557,7 @@ test("location quests: a player acquires Ruby's Bar, adds Profitable, a rival ma
   const l = lead.page;
   const ask = async (p: Page, characterId: string, kind: string, fill: () => Promise<void>) => {
     await p.goto(`/characters/${characterId}/quests`);
+    await p.getByRole("button", { name: /^Ask for a quest/ }).click();
     await p.getByLabel("What kind of request").selectOption({ label: kind });
     await fill();
     await p.getByRole("button", { name: "Ask for this quest" }).click();
