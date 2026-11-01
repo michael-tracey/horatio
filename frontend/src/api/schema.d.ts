@@ -18708,6 +18708,10 @@ export interface components {
             page_reference: string | null;
             /** Requirement */
             requirement?: string | null;
+            /** Weakness */
+            weakness?: string | null;
+            /** Weakness Page */
+            weakness_page?: string | null;
         };
         /** TraitRefOut */
         TraitRefOut: {
