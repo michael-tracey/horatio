@@ -8,7 +8,7 @@ import { Badge, Button, Card, ErrorText, Field, Input, Loading, PageTitle, Selec
 import { useAction } from "../../hooks";
 import { CharacterPicture } from "../character/Picture";
 import { type NpcKind, groupedKinds, kindPages, resourceText } from "./npcKinds";
-import { allowedPowers, expandPower } from "./stockNpcs";
+import { allowedPowers, expandPower, INFERNAL_INVESTMENT } from "./stockNpcs";
 
 type StockNpc = components["schemas"]["StockNpcOut"];
 type Specialization = components["schemas"]["Specialization"];
@@ -214,6 +214,9 @@ function Builder({
                           ))}
                         </optgroup>
                       )}
+                      <optgroup label="Infernal (V20 LARP SRD)">
+                        <option value={`power:${INFERNAL_INVESTMENT}`}>{INFERNAL_INVESTMENT}: every Dark Thaumaturgy ritual</option>
+                      </optgroup>
                       <optgroup label="Other disciplines (not on the list)">
                         {others.map((n) => (
                           <option key={n} value={`power:${n}`}>

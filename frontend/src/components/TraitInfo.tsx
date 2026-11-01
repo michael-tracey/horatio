@@ -1,12 +1,28 @@
 import { useId, useState } from "react";
 import type { ReactNode } from "react";
+import { isSrdPage, SRD_NAME } from "../pages/troupe/bookPage";
 
-/** How a rules page reference reads: "p. 86" in the core book, or as the data gives it ("Vol. 2, p. 281"). */
+/** How a rules page reference reads: "p. 86" in the core book, as the data gives it ("Vol. 2, p. 281"), or the SRD's name for a link to it. */
 export function pageLabel(page: string | null | undefined): string | null {
   const p = page?.trim();
   if (!p || p.toLowerCase() === "unknown") return null;
+  if (isSrdPage(p)) return SRD_NAME;
   if (!/^\d/.test(p)) return p;
   return `MET: VTM ${/[-&]/.test(p) ? "pp." : "p."} ${p}`;
+}
+
+/** A page reference as `text` reads it, or, for a page of the V20 LARP SRD, a link to it named for the SRD. */
+export function PageRef({ page, text = pageLabel }: { page: string | null | undefined; text?: (page: string) => string | null }) {
+  const p = page?.trim();
+  if (!p) return null;
+  if (isSrdPage(p)) {
+    return (
+      <a href={p} target="_blank" rel="noreferrer" className="text-gold underline hover:text-parchment">
+        {SRD_NAME}
+      </a>
+    );
+  }
+  return <>{text(p)}</>;
 }
 
 function Chevron({ open }: { open: boolean }) {
@@ -72,7 +88,11 @@ export function TraitInfo({
           {description && <p>{description}</p>}
           {summary && <p className="text-gold">What it does: {summary}</p>}
           {more}
-          {pageText && <p className="mt-0.5">{pageText}</p>}
+          {pageText && (
+            <p className="mt-0.5">
+              <PageRef page={page} />
+            </p>
+          )}
         </div>
       )}
     </>

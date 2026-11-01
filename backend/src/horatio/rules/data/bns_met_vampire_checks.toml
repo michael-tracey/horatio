@@ -2652,6 +2652,151 @@ forbids = { self = { rating = 5 }, not = { has = { category = "disciplines", nam
 message = "A level 5 Abyss Mysticism ritual needs Obtenebration 5 or more."
 page = "Vol. 2, p. 99"
 
+# Dark Thaumaturgy (issue #414; the V20 LARP SRD, not one of our books): infernal
+# rituals, bought as Thaumaturgy rituals are. They need a path of Thaumaturgy and
+# a qualifying morality merit, or Infernal Power. The SRD leaves its list of morality
+# merits empty; we take the Path of Evil Revelations, and Infernal Heritage, which
+# includes it and Infernal Power both. We set no limit on how many: the SRD does
+# not plainly count them against the Thaumaturgy rituals' one per dot.
+[[checks]]
+category = "rituals"
+name_prefix = "Dark Thaumaturgy: "
+requires = { any_of = [
+  { count = { category = "disciplines", name_prefix = "Thaumaturgy: ", gte = 1 }, has = { category = "merits", name = "Path of Evil Revelations" } },
+  { has = { category = "merits", name = "Infernal Power" } },
+  { has = { category = "merits", name = "Infernal Heritage" } },
+] }
+message = "Dark Thaumaturgy needs a path of Thaumaturgy and the Path of Evil Revelations, or Infernal Power."
+page = "https://www.oneworldofdarkness.com/srd-v20/thaumaturgy/dark-thaumaturgy"
+
+# A level 2 or higher ritual needs a Thaumaturgy ritual, of either kind, one level
+# lower.
+[[checks]]
+category = "rituals"
+name_prefix = "Dark Thaumaturgy: "
+forbids = { self = { rating = { gte = 2 } }, not = { any_of = [
+  { one_below = { category = "rituals", name_prefix = "Thaumaturgy: " } },
+  { one_below = { category = "rituals", name_prefix = "Dark Thaumaturgy: " } },
+] } }
+message = "Above level 1, a Dark Thaumaturgy ritual needs a Thaumaturgy ritual, of either kind, one level lower."
+page = "https://www.oneworldofdarkness.com/srd-v20/thaumaturgy/dark-thaumaturgy"
+
+# No higher than a path of Thaumaturgy, unless it comes through Infernal Power. That
+# merit's Black Magic gift gives rituals of levels 1 to 4, so a level 5 ritual always
+# needs the path at 5.
+[[checks]]
+category = "rituals"
+name_prefix = "Dark Thaumaturgy: "
+forbids = { self = { rating = 1 }, not = { any_of = [
+  { has_any = [
+    { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 1 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 1 },
+  ] },
+  { has = { category = "merits", name = "Infernal Power" } },
+  { has = { category = "merits", name = "Infernal Heritage" } },
+] } }
+message = "A level 1 Dark Thaumaturgy ritual needs a path of Thaumaturgy at 1 or more, or Infernal Power."
+page = "https://www.oneworldofdarkness.com/srd-v20/thaumaturgy/dark-thaumaturgy"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Dark Thaumaturgy: "
+forbids = { self = { rating = 2 }, not = { any_of = [
+  { has_any = [
+    { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 2 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 2 },
+  ] },
+  { has = { category = "merits", name = "Infernal Power" } },
+  { has = { category = "merits", name = "Infernal Heritage" } },
+] } }
+message = "A level 2 Dark Thaumaturgy ritual needs a path of Thaumaturgy at 2 or more, or Infernal Power."
+page = "https://www.oneworldofdarkness.com/srd-v20/thaumaturgy/dark-thaumaturgy"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Dark Thaumaturgy: "
+forbids = { self = { rating = 3 }, not = { any_of = [
+  { has_any = [
+    { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 3 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 3 },
+  ] },
+  { has = { category = "merits", name = "Infernal Power" } },
+  { has = { category = "merits", name = "Infernal Heritage" } },
+] } }
+message = "A level 3 Dark Thaumaturgy ritual needs a path of Thaumaturgy at 3 or more, or Infernal Power."
+page = "https://www.oneworldofdarkness.com/srd-v20/thaumaturgy/dark-thaumaturgy"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Dark Thaumaturgy: "
+forbids = { self = { rating = 4 }, not = { any_of = [
+  { has_any = [
+    { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 4 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 4 },
+  ] },
+  { has = { category = "merits", name = "Infernal Power" } },
+  { has = { category = "merits", name = "Infernal Heritage" } },
+] } }
+message = "A level 4 Dark Thaumaturgy ritual needs a path of Thaumaturgy at 4 or more, or Infernal Power."
+page = "https://www.oneworldofdarkness.com/srd-v20/thaumaturgy/dark-thaumaturgy"
+
+[[checks]]
+category = "rituals"
+name_prefix = "Dark Thaumaturgy: "
+forbids = { self = { rating = 5 }, not = { any_of = [
+  { has_any = [
+    { category = "disciplines", name = "Thaumaturgy: Green Path", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Lure of Flames", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Movement of the Mind", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Blood", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Caelestikinesis", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Conjuring", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Corruption", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Elemental Mastery", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Neptune's Might", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Technomancy", rating = 5 },
+    { category = "disciplines", name = "Thaumaturgy: Path of Weather Mastery", rating = 5 },
+  ] },
+] } }
+message = "A level 5 Dark Thaumaturgy ritual needs a path of Thaumaturgy at 5 or more."
+page = "https://www.oneworldofdarkness.com/srd-v20/thaumaturgy/dark-thaumaturgy"
+
 # One Lore specialisation per dot of Lore; Loremaster gives two (pp. 96, 251).
 [[checks]]
 category = "lore_specializations"

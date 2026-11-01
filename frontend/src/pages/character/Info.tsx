@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import type { CatalogueOut } from "../../api/types";
 import { InfoButton } from "../../components/InfoButton";
-import { pageLabel } from "../../components/TraitInfo";
+import { PageRef, pageLabel } from "../../components/TraitInfo";
 import { categoryInfo, choiceInfo, partInfo } from "./categoryInfo";
 
 function Lines({ about, facts }: { about: string; facts: string[] }) {
@@ -64,7 +64,8 @@ export function ChoiceInfo({
 }) {
   const what = choiceInfo(choice.category);
   const inClan = about?.in_clan?.length ? `In-clan disciplines: ${about.in_clan.join(", ")}.` : null;
-  const lines: ReactNode[] = [about?.description, inClan, choice.note, pageLabel(about?.page_reference)].filter(Boolean);
+  const page = pageLabel(about?.page_reference) && <PageRef page={about?.page_reference} />;
+  const lines: ReactNode[] = [about?.description, inClan, choice.note, page].filter(Boolean);
   if (!what && lines.length === 0) return null;
   return (
     <InfoButton label={`About ${shown}`} className="ml-1">
