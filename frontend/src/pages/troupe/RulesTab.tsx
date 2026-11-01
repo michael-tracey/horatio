@@ -225,7 +225,7 @@ function ChecksSection({ troupeId, canEdit }: { troupeId: string; canEdit: boole
             Every check plays as the book has it. Search, or show all checks, to play one differently.
           </EmptyState>
         ))}
-      <div className="flex flex-col gap-3">
+      <div role="group" aria-label="Checks by kind" className="flex flex-col gap-3">
         {[...groups].map(([group, rules]) => {
           const open = folded.get(group) ?? opens;
           const all = totals.get(group) ?? rules;

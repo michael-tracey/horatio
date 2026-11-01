@@ -81,7 +81,7 @@ test("Customise opens on Overview, a setup checklist and the house settings, and
   await l.screenshot(shots("customise-overview"));
 
   // Checks open on the troupe's house rules, of which there are none yet.
-  await steps.getByRole("link", { name: /^House rules: to do/ }).click();
+  await steps.getByRole("link", { name: /^House rules\W+to do/ }).click();
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/rules$`));
   await expect(l.getByText("No house rules yet.")).toBeVisible();
   // All of them come in groups, folded, each with its count.
@@ -96,7 +96,8 @@ test("Customise opens on Overview, a setup checklist and the house settings, and
 
   // A search looks through them all, and opens the group it finds the check in.
   await l.getByLabel("Search checks").fill("Calm Heart");
-  await expect(l.locator("details")).toHaveCount(1);
+  await expect(l.getByRole("group", { name: "Checks by kind" }).locator("details")).toHaveCount(1);
+  await expect(l.locator("details").filter({ has: l.getByRole("heading", { name: "Merits", exact: true }) })).toContainText("1 of 29 checks");
   await l.getByLabel(/Setting for: Brujah cannot take Calm Heart/).selectOption({ label: "Off" });
   await expect(l.getByText("Saved: Calm Heart is now Off")).toBeVisible();
   await expect(l.getByRole("button", { name: "House rules (1)" })).toBeVisible();
@@ -104,7 +105,7 @@ test("Customise opens on Overview, a setup checklist and the house settings, and
 
   // Overview counts it.
   await l.getByRole("link", { name: "Overview", exact: true }).click();
-  await expect(steps.getByRole("link", { name: /^House rules: done/ })).toBeVisible();
+  await expect(steps.getByRole("link", { name: /^House rules\W+done/ })).toBeVisible();
   await expect(glance.getByText(/^1 of \d+ played differently$/)).toBeVisible();
 });
 

@@ -111,10 +111,8 @@ function Checklist({ troupe, setup: s }: { troupe: TroupeOut; setup: SetupOut })
   );
 }
 
-const WHO: Record<string, string> = {
-  players: "players keep their own",
-  staff: "staff only",
-};
+const STATUS_BY: Record<string, string> = { players: "players keep their own", staff: "staff only" };
+const TITLES_BY: Record<string, string> = { players: "players choose their own", staff: "staff give them" };
 const CONNECTOR_STATE: Record<SetupOut["connectors"][number]["state"], string> = {
   on: "on",
   test: "on, in test mode",
@@ -140,7 +138,7 @@ function AtAGlance({ troupe, setup: s, canEdit }: { troupe: TroupeOut; setup: Se
           {troupe.xp_ceiling}.
         </SettingRow>
         <SettingRow action={action} label="Status and titles" to={`${base}/settings`}>
-          Status on sheets: {WHO[troupe.status_by] ?? troupe.status_by}. Titles: {WHO[troupe.titles_by] ?? troupe.titles_by}.
+          Status on sheets: {STATUS_BY[troupe.status_by] ?? troupe.status_by}. Titles: {TITLES_BY[troupe.titles_by] ?? troupe.titles_by}.
         </SettingRow>
         <SettingRow action={action} label="Checks" to={`${base}/rules`}>
           {s.checks} of {s.checks_total} played differently
