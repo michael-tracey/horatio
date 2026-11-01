@@ -19194,6 +19194,25 @@
         "title": "ParticipantOut",
         "type": "object"
       },
+      "PasswordChange": {
+        "properties": {
+          "current": {
+            "title": "Current",
+            "type": "string"
+          },
+          "password": {
+            "minLength": 10,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "current",
+          "password"
+        ],
+        "title": "PasswordChange",
+        "type": "object"
+      },
       "PasswordResets": {
         "properties": {
           "live": {
@@ -34268,6 +34287,41 @@
           }
         },
         "summary": "Who Am I",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/password": {
+      "post": {
+        "description": "Change your own password, giving the one you have now. Signs you out\neverywhere else, and cancels any reset link you had, but not here.",
+        "operationId": "change_password_api_auth_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Password",
         "tags": [
           "auth"
         ]
