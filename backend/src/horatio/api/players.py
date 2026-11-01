@@ -150,7 +150,7 @@ class LiveReset(BaseModel):
 
 class PasswordResets(BaseModel):
     live: list[LiveReset]
-    # Links made, emailed, asked for, cancelled and used, newest first.
+    # Links made, emailed, asked for, cancelled and used, and passwords changed, newest first.
     log: list[LogEntry]
 
 
@@ -162,6 +162,7 @@ ACCOUNT_ACTIONS = (
     "account.reset_requested",
     "account.reset_cancelled",
     "account.password_reset",
+    "account.password_changed",
 )
 
 

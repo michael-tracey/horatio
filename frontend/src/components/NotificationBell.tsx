@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { NotificationOut } from "../api/types";
 import { useDates } from "../dates";
@@ -99,6 +99,11 @@ export function NotificationBell() {
               }
             />
           )}
+          <div className="px-4 py-2.5 text-right">
+            <Link to="/account/settings#notifications" onClick={() => setOpen(false)} className="text-xs text-mist underline hover:text-parchment">
+              Notification settings
+            </Link>
+          </div>
         </div>
       )}
     </div>
