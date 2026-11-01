@@ -337,6 +337,8 @@ MESSAGES: dict[str, str] = {
     "delivery.marked_sent": "{actor} marked {character}'s {channel} delivery as sent by hand.",
     "downtime.participant_added": "{actor} added {character} to a downtime cycle.",
     "downtime.participant_removed": "{actor} removed {character} from a downtime cycle.",
+    "downtime.reminded": "{actor} reminded the players of {characters} downtimes not yet"
+    " submitted.",
     "downtime.allowance_adjusted": "{actor} adjusted {character}'s actions: {reason}",
     "downtime.feeding_difficulty_set": "{actor} set {clan} feeding to {amount} this cycle:"
     " {reason}",

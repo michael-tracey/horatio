@@ -1,6 +1,7 @@
 """Downtime cycles for staff, and downtime forms for players."""
 
 import uuid
+from dataclasses import asdict
 from datetime import datetime
 from typing import Any, Literal
 
@@ -95,6 +96,20 @@ class CycleOut(BaseModel):
     quests_enabled: bool = False
 
 
+class CycleSummaryOut(BaseModel):
+    """A cycle in the troupe's list: when it is due and how far it has got."""
+
+    id: uuid.UUID
+    name: str
+    status: str
+    closes_at: datetime
+    grace_ends_at: datetime
+    participants: int
+    submitted: int
+    responses: int
+    written: int
+
+
 class AllowanceLineOut(BaseModel):
     action_kind: str
     source: str
@@ -117,6 +132,9 @@ class ParticipantOut(BaseModel):
     # The character's picture (horatio.pictures) and clan, for its placeholder.
     picture: str | None
     clan: str | None
+    # Who plays it, to chase.
+    player_id: uuid.UUID
+    player_handle: str
     allowance: dict[str, int]
     breakdown: list[AllowanceLineOut]
     adjustments: list[AdjustmentOut]
@@ -127,12 +145,37 @@ class ParticipantOut(BaseModel):
     late_accepted: bool
     submission_status: str | None
     submitted_late: bool
+    # When the player last saved the form, and when they submitted it.
+    saved_at: datetime | None
+    submitted_at: datetime | None
     # The XP given for completing this downtime, once submitted.
     completion_xp_awarded: int | None
 
 
 class CharacterChoice(BaseModel):
     character_id: uuid.UUID
+
+
+class ParticipantChoiceOut(BaseModel):
+    """A character staff can add to an open cycle."""
+
+    character_id: uuid.UUID
+    name: str
+    player_handle: str
+    # Taken out of this cycle earlier: adding it puts it back.
+    removed: bool
+
+
+class RemindedOut(BaseModel):
+    players: int
+    characters: int
+
+
+class ReminderOut(BaseModel):
+    at: datetime
+    by: str
+    # How many players it reached.
+    players: int
 
 
 class AdjustmentIn(BaseModel):
@@ -339,15 +382,25 @@ def completion_awarded(db: DbSession, p: CycleParticipant) -> int | None:
     return db.get_one(XpEntry, p.completion_xp_entry_id).amount
 
 
-def participant_out(db: DbSession, p: CycleParticipant) -> ParticipantOut:
-    character = db.get_one(Character, p.character_id)
-    submission = downtimes.submission_for(db, p)
+def participant_out(
+    db: DbSession,
+    p: CycleParticipant,
+    found: tuple[Character, User, Submission | None] | None = None,
+) -> ParticipantOut:
+    """`found`, when the caller has them already: the character, its player and the
+    submission."""
+    if found is None:
+        character = db.get_one(Character, p.character_id)
+        found = (character, db.get_one(User, character.player_id), downtimes.submission_for(db, p))
+    character, player, submission = found
     return ParticipantOut(
         id=p.id,
         character_id=p.character_id,
         character_name=character.name,
         picture=pictures.picture_url(character.id, character.picture_id),
         clan=social_age.standings(db, [character.id])[character.id].clan,
+        player_id=player.id,
+        player_handle=player.handle,
         allowance=downtimes.effective_allowance(db, p),
         breakdown=[AllowanceLineOut(**line) for line in p.allowance_breakdown],
         adjustments=[
@@ -359,6 +412,8 @@ def participant_out(db: DbSession, p: CycleParticipant) -> ParticipantOut:
         late_accepted=p.late_accepted_by is not None,
         submission_status=submission.status if submission else None,
         submitted_late=submission.late if submission else False,
+        saved_at=submission.updated_at if submission else None,
+        submitted_at=submission.submitted_at if submission else None,
         completion_xp_awarded=completion_awarded(db, p),
     )
 
@@ -475,14 +530,27 @@ def cycle_participant(
 
 
 @router.get("/troupes/{troupe_id}/cycles")
-def list_cycles(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[CycleOut]:
+def list_cycles(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[CycleSummaryOut]:
     staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_CYCLES)
-    cycles = db.scalars(
-        select(DowntimeCycle)
-        .where(DowntimeCycle.troupe_id == troupe_id)
-        .order_by(DowntimeCycle.id.desc())
+    cycles = list(
+        db.scalars(
+            select(DowntimeCycle)
+            .where(DowntimeCycle.troupe_id == troupe_id)
+            .order_by(DowntimeCycle.id.desc())
+        )
     )
-    return [cycle_out(db, c) for c in cycles]
+    counts = downtimes.counts(db, [c.id for c in cycles])
+    return [
+        CycleSummaryOut(
+            id=c.id,
+            name=c.name,
+            status=c.status,
+            closes_at=c.closes_at,
+            grace_ends_at=c.grace_ends_at,
+            **asdict(counts.get(c.id, downtimes.Counts())),
+        )
+        for c in cycles
+    ]
 
 
 @router.post("/troupes/{troupe_id}/cycles", status_code=status.HTTP_201_CREATED)
@@ -554,13 +622,36 @@ def list_participants(
     cycle_id: uuid.UUID, db: DbSession, user: CurrentUser
 ) -> list[ParticipantOut]:
     cycle, _ = staff_cycle(db, user, cycle_id)
-    participants = db.scalars(
-        select(CycleParticipant)
+    rows = db.execute(
+        select(CycleParticipant, Character, User, Submission)
         .join(Character, CycleParticipant.character_id == Character.id)
+        .join(User, Character.player_id == User.id)
+        .outerjoin(Submission, Submission.participant_id == CycleParticipant.id)
         .where(CycleParticipant.cycle_id == cycle.id)
         .order_by(Character.name)
     )
-    return [participant_out(db, p) for p in participants]
+    return [participant_out(db, p, (c, u, s)) for p, c, u, s in rows]
+
+
+@router.get("/cycles/{cycle_id}/participant-choices")
+def participant_choices(
+    cycle_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> list[ParticipantChoiceOut]:
+    """The characters that could be added to the cycle."""
+    cycle, _ = staff_cycle(db, user, cycle_id)
+    removed = set(
+        db.scalars(
+            select(CycleParticipant.character_id).where(
+                CycleParticipant.cycle_id == cycle.id, CycleParticipant.removed_at.is_not(None)
+            )
+        )
+    )
+    return [
+        ParticipantChoiceOut(
+            character_id=c.id, name=c.name, player_handle=u.handle, removed=c.id in removed
+        )
+        for c, u in downtimes.addable(db, cycle)
+    ]
 
 
 @router.post("/cycles/{cycle_id}/participants", status_code=status.HTTP_201_CREATED)
@@ -616,6 +707,24 @@ def accept_late(
     downtimes.accept_late(db, user, participant, troupe)
     db.commit()
     return participant_out(db, participant)
+
+
+@router.post("/cycles/{cycle_id}/reminders")
+def remind(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> RemindedOut:
+    """Remind the players whose downtimes are not submitted."""
+    cycle, troupe = staff_cycle(db, user, cycle_id)
+    reminded = downtimes.remind(db, user, cycle, troupe)
+    db.commit()
+    return RemindedOut(players=reminded.players, characters=reminded.characters)
+
+
+@router.get("/cycles/{cycle_id}/reminders")
+def list_reminders(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[ReminderOut]:
+    """When staff reminded players to submit, newest first."""
+    cycle, _ = staff_cycle(db, user, cycle_id)
+    return [
+        ReminderOut(at=r.at, by=r.by, players=r.players) for r in downtimes.reminders(db, cycle)
+    ]
 
 
 # --- players ----------------------------------------------------------------------------

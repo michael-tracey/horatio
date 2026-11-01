@@ -35,6 +35,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   play_tab: "tracker",
   text_size: "normal",
   email_downtime: false,
+  email_downtime_reminders: false,
   email_approvals: false,
   email_troupe_requests: false,
   email_renames: false,

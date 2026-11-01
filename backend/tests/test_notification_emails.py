@@ -76,6 +76,7 @@ def test_each_kind_is_off_until_chosen(client_for: Callable[[], TestClient]) -> 
     shown = person.client.get("/preferences").json()
     assert {name for name in shown if name.startswith("email_")} == {
         "email_downtime",
+        "email_downtime_reminders",
         "email_approvals",
         "email_troupe_requests",
         "email_renames",

@@ -3141,6 +3141,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cycles/{cycle_id}/participant-choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Participant Choices
+         * @description The characters that could be added to the cycle.
+         */
+        get: operations["participant_choices_api_cycles__cycle_id__participant_choices_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cycles/{cycle_id}/participants": {
         parameters: {
             query?: never;
@@ -3278,6 +3298,30 @@ export interface paths {
         /** Replace Questions */
         put: operations["replace_questions_api_cycles__cycle_id__questions_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cycles/{cycle_id}/reminders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Reminders
+         * @description When staff reminded players to submit, newest first.
+         */
+        get: operations["list_reminders_api_cycles__cycle_id__reminders_get"];
+        put?: never;
+        /**
+         * Remind
+         * @description Remind the players whose downtimes are not submitted.
+         */
+        post: operations["remind_api_cycles__cycle_id__reminders_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9373,6 +9417,39 @@ export interface components {
              */
             troupe_id: string;
         };
+        /**
+         * CycleSummaryOut
+         * @description A cycle in the troupe's list: when it is due and how far it has got.
+         */
+        CycleSummaryOut: {
+            /**
+             * Closes At
+             * Format: date-time
+             */
+            closes_at: string;
+            /**
+             * Grace Ends At
+             * Format: date-time
+             */
+            grace_ends_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Participants */
+            participants: number;
+            /** Responses */
+            responses: number;
+            /** Status */
+            status: string;
+            /** Submitted */
+            submitted: number;
+            /** Written */
+            written: number;
+        };
         /** CycleUseOut */
         CycleUseOut: {
             /** Allowance */
@@ -14265,6 +14342,23 @@ export interface components {
             /** Morality */
             morality: boolean;
         };
+        /**
+         * ParticipantChoiceOut
+         * @description A character staff can add to an open cycle.
+         */
+        ParticipantChoiceOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Name */
+            name: string;
+            /** Player Handle */
+            player_handle: string;
+            /** Removed */
+            removed: boolean;
+        };
         /** ParticipantDeliveries */
         ParticipantDeliveries: {
             /** Answered */
@@ -14319,14 +14413,25 @@ export interface components {
             late_accepted: boolean;
             /** Picture */
             picture: string | null;
+            /** Player Handle */
+            player_handle: string;
+            /**
+             * Player Id
+             * Format: uuid
+             */
+            player_id: string;
             /** Removed */
             removed: boolean;
+            /** Saved At */
+            saved_at: string | null;
             /** Shortfall */
             shortfall: {
                 [key: string]: number;
             };
             /** Submission Status */
             submission_status: string | null;
+            /** Submitted At */
+            submitted_at: string | null;
             /** Submitted Late */
             submitted_late: boolean;
         };
@@ -15263,6 +15368,11 @@ export interface components {
              * @default false
              */
             email_downtime: boolean;
+            /**
+             * Email Downtime Reminders
+             * @default false
+             */
+            email_downtime_reminders: boolean;
             /**
              * Email Pictures
              * @default false
@@ -16297,6 +16407,25 @@ export interface components {
             because: components["schemas"]["TraitRefOut"][];
             /** Message */
             message: string;
+        };
+        /** RemindedOut */
+        RemindedOut: {
+            /** Characters */
+            characters: number;
+            /** Players */
+            players: number;
+        };
+        /** ReminderOut */
+        ReminderOut: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** By */
+            by: string;
+            /** Players */
+            players: number;
         };
         /** RemoveIn */
         RemoveIn: {
@@ -19345,14 +19474,29 @@ export interface components {
         /** WorkCycle */
         WorkCycle: {
             /**
+             * Closes At
+             * Format: date-time
+             */
+            closes_at: string;
+            /**
              * Id
              * Format: uuid
              */
             id: string;
             /** Name */
             name: string;
+            /**
+             * Open To Narrators
+             * @default 0
+             */
+            open_to_narrators: number;
             /** Status */
             status: string;
+            /**
+             * To Write
+             * @default 0
+             */
+            to_write: number;
         };
         /**
          * WorkItemOut
@@ -25699,6 +25843,37 @@ export interface operations {
             };
         };
     };
+    participant_choices_api_cycles__cycle_id__participant_choices_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParticipantChoiceOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_participants_api_cycles__cycle_id__participants_get: {
         parameters: {
             query?: never;
@@ -25988,6 +26163,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CycleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_reminders_api_cycles__cycle_id__reminders_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReminderOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remind_api_cycles__cycle_id__reminders_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemindedOut"];
                 };
             };
             /** @description Validation Error */
@@ -30317,7 +30554,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CycleOut"][];
+                    "application/json": components["schemas"]["CycleSummaryOut"][];
                 };
             };
             /** @description Validation Error */

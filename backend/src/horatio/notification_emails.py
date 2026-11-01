@@ -60,6 +60,7 @@ class Topic:
 
 TOPICS = (
     Topic("downtime", "Downtime results", ("downtime.delivered",)),
+    Topic("downtime_reminders", "Downtime reminders", ("downtime.reminder",)),
     Topic("approvals", "Approvals waiting", ("approval",)),
     Topic("troupe_requests", "Troupe requests", ("troupe_request",)),
     Topic("renames", "Character renames", ("character.renamed",)),

@@ -469,6 +469,8 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await narrator.page.getByRole("link", { name: troupeName }).click();
   await narrator.page.getByRole("link", { name: "Downtimes", exact: true }).click();
   await narrator.page.getByRole("link", { name: "My work" }).click();
+  // Each cycle says when it is due and what is left to write.
+  await expect(narrator.page.getByRole("link", { name: "November" }).getByText(/^Due .* · 1 for you to write$/)).toBeVisible();
   await narrator.page.getByRole("link", { name: "November" }).click();
   await narrator.page.getByLabel("Response to Agnes").fill("The docks are crowded tonight; you feed well and unseen.");
   await narrator.page.getByRole("button", { name: "Save response" }).click();
@@ -663,6 +665,119 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   }
   await expect(troupeSheets.getByRole("img", { name: /dots$/ })).toHaveCount(0);
   await troupeSheets.close();
+});
+
+/**
+ * Running a cycle: staff add a character accepted after it opened, find who
+ * hasn't submitted, and remind them, which their player sees in the bell.
+ */
+test("staff add a character to an open cycle, filter to those not submitted, and remind them", async ({ browser }) => {
+  const custodian = await person(browser, "dtchase-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "dtchase-lead");
+  const ivy = await person(browser, "dtchase-ivy");
+  const wren = await person(browser, "dtchase-wren");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "GET" | "POST" | "PUT", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data: method === "GET" ? undefined : (data ?? {}) });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupeName = `Chasing Court ${run}`;
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  /** A finished character whose home troupe this is. */
+  const member = async (page: Page, name: string) => {
+    const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+      disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+    };
+    for (const [category, list] of Object.entries(picks))
+      await send(page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+    await send(page, "POST", `/api/characters/${id}/creation/complete`);
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    return id as string;
+  };
+  const ivyThorne = await member(ivy.page, "Ivy Thorne");
+  const now = Date.now();
+  const cycle = await send(lead.page, "POST", `/api/troupes/${troupe.id}/cycles`, {
+    name: "Chase month",
+    closes_at: new Date(now + 7.5 * 86400e3).toISOString(),
+    grace_ends_at: new Date(now + 9.5 * 86400e3).toISOString(),
+  });
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/open`);
+  await send(ivy.page, "POST", `/api/characters/${ivyThorne}/downtime/submit`);
+  // Tobias is accepted after the cycle opened, so he isn't taking part yet.
+  const tobias = await member(wren.page, "Tobias Wren");
+
+  // The list of cycles says when each is due and how far it has got; the form
+  // for the next waits behind a button while this one runs.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}/downtimes`);
+  const row = l.getByRole("link", { name: /Chase month/ });
+  await expect(row.getByText(/^Due [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}( \d{4})? · 1 of 1 submitted$/)).toBeVisible();
+  await expect(l.getByRole("heading", { name: "New cycle" })).toHaveCount(0);
+  await expect(l.getByRole("button", { name: "New cycle" })).toBeVisible();
+  await l.screenshot(shots("troupe-cycles"));
+  await row.click();
+
+  // The cycle keeps its troupe in view, and while open its progress is who has submitted.
+  const trail = l.getByRole("navigation", { name: "Breadcrumb" });
+  await expect(trail.getByRole("link", { name: troupeName })).toBeVisible();
+  await expect(trail.getByRole("link", { name: "Downtimes" })).toHaveAttribute("href", `/troupes/${troupe.id}/downtimes`);
+  await expect(l.getByText("1 of 1 submitted")).toBeVisible();
+  await expect(l.getByRole("progressbar", { name: "Submitted" })).toBeVisible();
+  await expect(l.getByText(/^7 days left · grace to [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}/)).toBeVisible();
+  await expect(l.getByText("By who")).toHaveCount(0);
+  await l.screenshot(shots("cycle-overview-open"));
+
+  // Staff add Tobias from Participants.
+  await l.getByRole("link", { name: "Participants" }).click();
+  await expect(l.getByText("1 submitted", { exact: true })).toBeVisible();
+  await l.getByRole("button", { name: "Add a character" }).click();
+  const adding = l.getByRole("region", { name: "Add a character" });
+  await adding.getByLabel("Character").selectOption({ label: `Tobias Wren (@${wren.handle})` });
+  await adding.getByRole("button", { name: "Add to the cycle" }).click();
+  await expect(l.getByText("Added Tobias Wren to Chase month.")).toBeVisible();
+  await expect(l.getByText("1 submitted · 1 not started")).toBeVisible();
+  await expect(l.getByRole("row", { name: new RegExp(`Tobias Wren.*@${wren.handle}.*not started`) })).toBeVisible();
+
+  // Filtered to those not submitted, only Tobias is left; the overview links straight here.
+  await l.getByRole("button", { name: "Not submitted (1)" }).click();
+  await expect(l).toHaveURL(/participants\?show=not-submitted$/);
+  await expect(l.getByRole("row", { name: /Tobias Wren/ })).toBeVisible();
+  await expect(l.getByRole("row", { name: /Ivy Thorne/ })).toHaveCount(0);
+  await l.getByRole("link", { name: "Overview" }).click();
+  await l.getByRole("link", { name: "See who hasn't submitted" }).click();
+  await expect(l.getByRole("button", { name: "Not submitted (1)" })).toHaveAttribute("aria-pressed", "true");
+
+  // Reminding says first who it reaches.
+  await l.getByRole("button", { name: "Remind those not submitted" }).click();
+  const reminding = l.getByRole("region", { name: "Remind players?" });
+  await expect(reminding.getByText("Remind 1 player?")).toBeVisible();
+  await expect(reminding.getByText("Tobias Wren isn't submitted.")).toBeVisible();
+  await l.screenshot(shots("cycle-participants-remind"));
+  await reminding.getByRole("button", { name: "Yes, remind 1 player" }).click();
+  await expect(l.getByText("Reminded 1 player.")).toBeVisible();
+  await expect(l.getByText(/^Last reminded .* by dtchase-lead, 1 player\.$/)).toBeVisible();
+  await l.getByRole("button", { name: "All (2)" }).click();
+  await l.screenshot(shots("cycle-participants"));
+
+  // Tobias's player has it in the bell, and it leads to his downtime.
+  const w = wren.page;
+  await w.reload();
+  await w.getByRole("button", { name: "Notifications, 1 waiting" }).click();
+  await w.getByRole("button", { name: /Tobias Wren's downtime for Chase month isn't submitted yet/ }).click();
+  await expect(w).toHaveURL(new RegExp(`/characters/${tobias}/downtime$`));
 });
 
 /**
