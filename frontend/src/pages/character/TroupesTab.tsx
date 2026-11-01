@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, DifferenceOut, XpStandingOut } from "../../api/types";
@@ -47,14 +47,25 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
   const visits = memberships.data?.filter((m) => !m.home) ?? [];
   const pendingHome = sheet.data?.pending_approvals.find((a) => a.kind === "home_troupe_change") ?? null;
   const pendingTroupe = troupes.data?.find((t) => t.id === pendingHome?.troupe_id);
+  const homeName = memberships.data?.find((m) => m.home)?.troupe_name ?? troupes.data?.find((t) => t.id === character.home_troupe_id)?.name ?? null;
+  const buildingFor = troupes.data?.find((t) => t.id === character.building_troupe_id)?.name;
+  // The card opens with where the character's home is now, whatever else it holds.
+  const homeNow =
+    character.home_troupe_id && homeName ? (
+      <HomeNow troupeId={character.home_troupe_id} name={homeName} />
+    ) : (
+      <p className="mb-2 text-lg text-parchment">No home troupe yet</p>
+    );
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
       {pendingHome ? (
         <Card title="Home troupe" info={homeInfo}>
+          {homeNow}
           <p className="text-sm">
             Waiting for {pendingTroupe?.name ?? "the troupe"}'s storytellers to accept this character.
           </p>
+          <p className="mt-1 text-sm text-mist">Nothing for you to do until they decide.</p>
           <Button variant="secondary" className="mt-3" onClick={() => withdraw.mutate(undefined)}>
             Withdraw the request
           </Button>
@@ -66,12 +77,19 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
             character={character}
             troupes={troupes.data ?? []}
             currentHome={character.home_troupe_id}
-            homeName={memberships.data?.find((m) => m.home)?.troupe_name ?? null}
+            homeNow={homeNow}
             unbanked={sheet.data?.xp.unbanked ?? 0}
           />
         ) : (
           <Card title="Home troupe" info={homeInfo}>
-            <Notice>Finish character creation on the Sheet tab before choosing a home troupe.</Notice>
+            {homeNow}
+            <p className="text-sm text-mist">
+              Finish creating {character.name} on the{" "}
+              <Link to={`/characters/${character.id}/create`} className="text-gold underline">
+                Create tab
+              </Link>{" "}
+              first, then ask {buildingFor ?? "a troupe"} here to make it {character.name}'s home.
+            </p>
           </Card>
         )
       )}
@@ -128,17 +146,30 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
   );
 }
 
+/** Where the character's home is now, first in the card, with what it plays differently. */
+function HomeNow({ troupeId, name }: { troupeId: string; name: string }) {
+  return (
+    <p className="mb-2 flex flex-wrap items-baseline gap-x-2">
+      <span className="text-lg text-parchment">
+        <span className="text-mist">Home now:</span> {name}
+      </span>
+      <HouseRulesLink troupeId={troupeId} name={name} />
+    </p>
+  );
+}
+
 function HomeTroupe({
   character,
   troupes,
   currentHome,
-  homeName,
+  homeNow,
   unbanked,
 }: {
   character: CharacterOut;
   troupes: { id: string; name: string }[];
   currentHome: string | null;
-  homeName: string | null;
+  /** Where its home is now, which the card opens with. */
+  homeNow: ReactNode;
   /** Creation XP lost if a first home troupe accepts the character now. */
   unbanked: number;
 }) {
@@ -147,6 +178,8 @@ function HomeTroupe({
   const [params] = useSearchParams();
   const asked = params.get("home");
   const [troupeId, setTroupeId] = useState(troupes.some((t) => t.id === asked && t.id !== currentHome) ? asked! : "");
+  // With a home already, choosing another waits behind a button: most visits here are to see where it is.
+  const [moving, setMoving] = useState(!currentHome || !!troupeId);
   const [differences, setDifferences] = useState<DifferenceOut[] | null>(null);
   const [settlements, setSettlements] = useState<Record<string, string>>({});
   const [note, setNote] = useState("");
@@ -188,17 +221,23 @@ function HomeTroupe({
     ),
   );
 
+  if (!moving)
+    return (
+      <Card title="Home troupe" info={homeInfo}>
+        {homeNow}
+        <Button variant="secondary" onClick={() => setMoving(true)}>
+          Move to another troupe…
+        </Button>
+      </Card>
+    );
+
   return (
     <Card title="Home troupe" info={homeInfo}>
-      {currentHome && homeName && (
-        <p className="mb-3 flex flex-wrap items-center gap-x-2 text-sm">
-          <span>
-            Home now: <span className="text-parchment">{homeName}</span>
-          </span>
-          <HouseRulesLink troupeId={currentHome} name={homeName} />
-        </p>
+      {homeNow}
+      {!currentHome && (
+        <p className="mb-3 text-sm text-mist">Choose the troupe {character.name} will play in. Its storytellers decide whether to accept it.</p>
       )}
-      <Field label="Troupe">
+      <Field label={currentHome ? "New home troupe" : "Troupe"}>
         <Select
           value={troupeId}
           onChange={(e) => {

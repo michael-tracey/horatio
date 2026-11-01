@@ -132,6 +132,12 @@ export function datesFor(settings: DateSettings) {
       const withYear = settings.date_format === "iso" || p.year !== partsIn(now, zone).year;
       return `${weekday(p)} ${dayText(p, settings, withYear)}, ${timeText(p, settings)} ${zoneName(when, zone)}`;
     },
+    /** The day a deadline falls on, for a short note: "Sat 7 Nov" (with the year when it isn't this one). */
+    dueDay: (at: Date | string, now: Date = new Date()) => {
+      const p = partsIn(moment(at), zone);
+      const withYear = settings.date_format === "iso" || p.year !== partsIn(now, zone).year;
+      return `${weekday(p)} ${dayText(p, settings, withYear)}`;
+    },
     /**
      * A game, from its start to its end, with the weekday and the zone: "Sat 14
      * Nov, 7 pm to 11:30 pm EST", or "Sat 14 Nov, 7 pm to Sun 15 Nov, 1 am EST"
