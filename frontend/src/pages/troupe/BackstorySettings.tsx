@@ -70,7 +70,7 @@ export function BackstorySettings({ troupeId }: { troupeId: string }) {
         actions={
           s.can_edit &&
           draft === null && (
-            <Button variant="ghost" className="min-h-8 px-2" aria-label="Change backstory settings" onClick={() => setDraft(now)}>
+            <Button variant="secondary" className="min-h-8 px-3" aria-label="Change backstory settings" onClick={() => setDraft(now)}>
               Change
             </Button>
           )

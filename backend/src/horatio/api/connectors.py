@@ -31,8 +31,11 @@ router = APIRouter(tags=["connectors"])
 class ConnectorOut(BaseModel):
     kind: str
     name: str
-    # Why this server cannot use it (it is not set up), or None.
+    # Why this server cannot use it (it is not set up), in plain words, or None.
     unavailable: str | None
+    # The server settings it still needs, named only to the custodian, who can set
+    # them; empty for anyone else, and once it is set up.
+    needs: list[str]
     enabled: bool
     mode: Literal["full", "alert"]
     test_mode: bool
@@ -54,15 +57,17 @@ def connector_row(db: DbSession, troupe_id: uuid.UUID, kind: str) -> TroupeConne
     )
 
 
-def connectors_out(db: DbSession, troupe_id: uuid.UUID) -> list[ConnectorOut]:
+def connectors_out(db: DbSession, troupe_id: uuid.UUID, user: User) -> list[ConnectorOut]:
     found: list[ConnectorOut] = []
     for kind, connector in sorted(CONNECTORS.items()):
         row = connector_row(db, troupe_id, kind)
+        unavailable = connector.unavailable()
         found.append(
             ConnectorOut(
                 kind=kind,
                 name=connector.name,
-                unavailable=connector.unavailable(),
+                unavailable=unavailable,
+                needs=list(connector.needs) if unavailable and user.is_custodian else [],
                 enabled=row.enabled if row else False,
                 mode=row.mode if row else "alert",  # type: ignore[arg-type]  # checked by the database
                 test_mode=row.test_mode if row else False,
@@ -77,7 +82,7 @@ def list_connectors(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> l
     """The connectors this server offers, as the troupe has set them up. In-app
     delivery is always on and is not listed."""
     staff_troupe(db, user, troupe_id, TroupeAction.DELIVER_RESPONSES)
-    return connectors_out(db, troupe_id)
+    return connectors_out(db, troupe_id, user)
 
 
 @router.put("/troupes/{troupe_id}/connectors/{kind}")
@@ -111,7 +116,7 @@ def change_connector(
         state=("on, in test mode" if body.test_mode else "on") if body.enabled else "off",
     )
     db.commit()
-    return next(c for c in connectors_out(db, troupe.id) if c.kind == kind)
+    return next(c for c in connectors_out(db, troupe.id, user) if c.kind == kind)
 
 
 # --- delivery status ---------------------------------------------------------------------

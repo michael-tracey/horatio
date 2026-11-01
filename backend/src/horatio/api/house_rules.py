@@ -20,6 +20,7 @@ from horatio.creation import RESTRICTION_TEXT
 from horatio.models import Character, HouseTrait, Troupe, User
 from horatio.permissions import TroupeAction
 from horatio.rules import checks, conditions, pricing
+from horatio.rules.checks import REQUIREMENT_KEY, CheckData
 from horatio.rules.files import EVERYWHERE
 from horatio.rules.model import (
     ActionKindData,
@@ -58,6 +59,9 @@ class CheckOut(BaseModel):
     key: str
     # What it is about: a trait, a category, or names starting with a prefix.
     category: str
+    # The kind of check it is, as Customise groups them: "Techniques", or "Clan
+    # merits, only for their clan or bloodline" (CHECK_GROUPS).
+    group: str
     about: str
     message: str
     page: str | None
@@ -71,9 +75,60 @@ class CheckChange(BaseModel):
     strength: Strength | None
 
 
+# The groups of checks, in the order Customise shows them: those the rule set
+# writes, by what they are about, then those that follow from the catalogue's
+# requirements (horatio.rules.files.derived_checks), the most numerous.
+CHECK_GROUPS = [
+    "Clan",
+    "Attributes and skills",
+    "Focuses",
+    "Specialisations",
+    "Backgrounds",
+    "Disciplines",
+    "Techniques",
+    "Rituals",
+    "Morality",
+    "Merits",
+    "Flaws",
+    "Clan merits, only for their clan or bloodline",
+    "Clan flaws, only for their clan or bloodline",
+    "Merits and flaws for one generation",
+    "Other",
+]
+GROUP_OF_CATEGORY = {
+    "clan": "Clan",
+    "attributes": "Attributes and skills",
+    "skills": "Attributes and skills",
+    "backgrounds": "Backgrounds",
+    "disciplines": "Disciplines",
+    "extra_in_clan_disciplines": "Disciplines",
+    "elder_disciplines": "Disciplines",
+    "techniques": "Techniques",
+    "rituals": "Rituals",
+    "sabbat_rituals": "Rituals",
+    "paths": "Morality",
+    "merits": "Merits",
+    "flaws": "Flaws",
+}
+
+
+def check_group(check: CheckData) -> str:
+    """Which of CHECK_GROUPS a check is in."""
+    if check.key.endswith(REQUIREMENT_KEY):
+        if "generation" in (check.requires or {}):
+            return "Merits and flaws for one generation"
+        return f"Clan {check.category}, only for their clan or bloodline"
+    if check.category.startswith("focus_"):
+        return "Focuses"
+    if check.category.endswith("_specializations"):
+        return "Specialisations"
+    return GROUP_OF_CATEGORY.get(check.category, "Other")
+
+
 def checks_out(db: DbSession, troupe_id: uuid.UUID) -> list[CheckOut]:
     """The checks of every splat the troupe takes, each once: a vampire's, then those
-    only a ghoul's rules have. A house strength is the troupe's for every splat."""
+    only a ghoul's rules have, in CHECK_GROUPS' order. A house strength is the
+    troupe's for every splat."""
     troupe = db.get_one(Troupe, troupe_id)
     found: dict[str, CheckOut] = {}
     for splat in ["vampire", *(s for s in troupe.allowed_splats if s != "vampire")]:
@@ -84,6 +139,7 @@ def checks_out(db: DbSession, troupe_id: uuid.UUID) -> list[CheckOut]:
                 CheckOut(
                     key=c.key,
                     category=c.category,
+                    group=check_group(c),
                     about=c.name or (f"{c.name_prefix}…" if c.name_prefix else "any"),
                     message=c.message,
                     page=c.page,
@@ -91,7 +147,7 @@ def checks_out(db: DbSession, troupe_id: uuid.UUID) -> list[CheckOut]:
                     house=rules.check_overrides.get(c.key),
                 ),
             )
-    return list(found.values())
+    return sorted(found.values(), key=lambda c: CHECK_GROUPS.index(c.group))
 
 
 @router.get("/checks")

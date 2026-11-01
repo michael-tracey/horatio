@@ -26,12 +26,15 @@ import { abilities, roleLabel } from "./roles";
 import { RosterTab } from "./RosterTab";
 import { RulesTab } from "./RulesTab";
 import { SettingsTab } from "./SettingsTab";
+import { SetupTab } from "./SetupTab";
 import { SharedBackgroundsTab } from "./SharedBackgroundsTab";
 import { SpecializationsTab } from "./SpecializationsTab";
 import { StaffTab } from "./StaffTab";
 import { StatusRulesTab } from "./StatusRulesSection";
 import { TablesTab } from "./TablesTab";
 import { TitlesTab } from "./TitlesTab";
+import { useWaiting } from "./WaitingList";
+import { tabCounts } from "./waiting";
 import { WhosWhoTab } from "./WhosWhoTab";
 import { XpAwardsTab } from "./XpAwardsTab";
 
@@ -42,23 +45,11 @@ export function TroupePage() {
     queryKey: ["troupe", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupeId } } })),
   });
-  // What waits on the Approvals tab; shares the tab's own query, so they agree.
-  const running = troupe.data ? abilities(troupe.data.my_role, me.data?.is_custodian ?? false).running : false;
-  const waiting = useQuery({
-    queryKey: ["approvals", troupeId, "pending"],
-    queryFn: () =>
-      unwrap(api.GET("/api/troupes/{troupe_id}/approvals", { params: { path: { troupe_id: troupeId }, query: { state: "pending" } } })),
-    enabled: running,
-    refetchInterval: 60_000,
-  });
-  // New quest requests, beside the other counts.
-  const newQuests = useQuery({
-    queryKey: ["quest-requests", troupeId, "new"],
-    queryFn: () =>
-      unwrap(api.GET("/api/troupes/{troupe_id}/quest-requests", { params: { path: { troupe_id: troupeId }, query: { show: "new" } } })),
-    enabled: running && !!troupe.data?.quests_enabled,
-    refetchInterval: 60_000,
-  });
+  // What waits on the staff member, for the tab counts: the same lines as About's
+  // Waiting on you, so the two agree.
+  const staff = troupe.data ? abilities(troupe.data.my_role, me.data?.is_custodian ?? false).staff : false;
+  const waiting = useWaiting(troupeId, staff && !troupe.data?.archived);
+  const counts = tabCounts(waiting.data);
 
   if (troupe.isPending) return <Loading />;
   if (troupe.error) return <ErrorText error={troupe.error} />;
@@ -103,8 +94,8 @@ export function TroupePage() {
             label: "Characters",
             to: `${base}/characters`,
             tabs: [
-              ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals", count: waiting.data?.length ?? 0 }] : []),
-              ...(can.running ? [{ to: `${base}/characters`, label: "Characters" }] : []),
+              ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals", count: counts.approvals }] : []),
+              ...(can.running ? [{ to: `${base}/characters`, label: "Characters", count: counts.characters }] : []),
               ...(can.running ? [{ to: `${base}/npcs`, label: "NPCs" }] : []),
               ...(can.running ? [{ to: `${base}/play`, label: "At game" }] : []),
               ...(can.running ? [{ to: `${base}/xp`, label: "Award XP" }] : []),
@@ -130,16 +121,17 @@ export function TroupePage() {
           {
             label: "Downtimes",
             tabs: [
-              ...(can.running ? [{ to: `${base}/downtimes`, label: "Cycles" }] : []),
-              ...(can.staff ? [{ to: `${base}/work`, label: "My work" }] : []),
+              ...(can.running ? [{ to: `${base}/downtimes`, label: "Cycles", count: counts.downtimes }] : []),
+              ...(can.staff ? [{ to: `${base}/work`, label: "My work", count: counts.work }] : []),
               ...(can.staff ? [{ to: `${base}/tables`, label: "Fill tables" }] : []),
-              ...(can.running ? [{ to: `${base}/influence`, label: "Influence log" }] : []),
-              ...(can.staff && t.quests_enabled ? [{ to: `${base}/quests`, label: "Quests", count: newQuests.data?.length ?? 0 }] : []),
+              ...(can.running ? [{ to: `${base}/influence`, label: "Influence log", count: counts.influence }] : []),
+              ...(can.staff && t.quests_enabled ? [{ to: `${base}/quests`, label: "Quests", count: counts.quests }] : []),
             ],
           },
           {
             label: "Customise",
             tabs: [
+              ...(can.running ? [{ to: `${base}/customise`, label: "Overview" }] : []),
               ...(can.running ? [{ to: `${base}/settings`, label: "Troupe settings" }] : []),
               ...(can.running ? [{ to: `${base}/rules`, label: "Rules" }] : []),
               ...(can.running ? [{ to: `${base}/specializations`, label: "Specialisations" }] : []),
@@ -168,6 +160,7 @@ export function TroupePage() {
         {can.running && <Route path="locations/*" element={<LocationsTab troupeId={t.id} questsOn={t.quests_enabled} />} />}
         {can.running && <Route path="equipment" element={<EquipmentTab troupeId={t.id} troupeName={t.name} />} />}
         {can.running && <Route path="approvals" element={<ApprovalsTab troupeId={t.id} />} />}
+        {can.running && <Route path="customise" element={<SetupTab troupe={t} canEdit={can.storyteller && !t.archived} />} />}
         {can.running && <Route path="settings" element={<SettingsTab troupe={t} canEdit={can.storyteller && !t.archived} />} />}
         {/* The status reference was a part of Rules until it moved to the Troupe group. */}
         <Route path="rules/status" element={<Navigate to={`${base}/status`} replace />} />

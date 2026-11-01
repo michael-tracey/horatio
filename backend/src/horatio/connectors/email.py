@@ -135,13 +135,12 @@ def new_message(to: str, subject: str) -> EmailMessage:
 class EmailConnector(Connector):
     kind = "email"
     name = "Email"
+    needs = ("HORATIO_SMTP_HOST", "HORATIO_MAIL_FROM")
 
     def unavailable(self) -> str | None:
         if configured():
             return None
-        return (
-            "Email is not set up on this server. It needs HORATIO_SMTP_HOST and HORATIO_MAIL_FROM."
-        )
+        return "Email isn't set up on this server yet."
 
     def check_settings(
         self, settings: Mapping[str, Any], current: Mapping[str, Any]

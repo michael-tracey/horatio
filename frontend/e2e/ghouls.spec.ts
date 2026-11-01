@@ -37,6 +37,7 @@ test("a troupe takes ghouls once its storytellers tick Ghoul on About, and a gho
 
   // The lead ticks Ghoul, in Customise's Troupe settings. Vampire, the only splat ticked until then, could not be unticked.
   await l.getByRole("link", { name: "Customise", exact: true }).click();
+  await l.getByRole("link", { name: "Troupe settings", exact: true }).click();
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/settings$`));
   const splats = l.locator("section").filter({ has: l.getByRole("heading", { name: "Splats", exact: true }) });
   await expect(splats.getByRole("checkbox", { name: "Vampire" })).toBeChecked();

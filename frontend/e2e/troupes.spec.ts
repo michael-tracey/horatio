@@ -57,6 +57,58 @@ test("a troupe changes what new characters start with and their downtime actions
   await expect(p.getByText("0 of 9 points")).toBeVisible();
 });
 
+test("Customise opens on Overview, a setup checklist and the house settings, and Checks come in folded groups that a search looks through (#377)", async ({ browser }) => {
+  const custodian = await person(browser, "tally-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "tally-lead");
+  const troupeName = `House of Tallies ${run}`;
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+
+  // Customise opens on Overview: nothing is set up yet, and every rule plays as the book has it.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}`);
+  await l.getByRole("link", { name: "Customise", exact: true }).click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/customise$`));
+  const steps = l.getByRole("list", { name: "Setting up" });
+  await expect(steps.getByRole("listitem")).toHaveCount(4);
+  await expect(l.getByText("0 of 4 done")).toBeVisible();
+  const glance = l.locator("section").filter({ has: l.getByRole("heading", { name: "House settings at a glance" }) });
+  await expect(glance.getByText(/^0 of \d+ played differently$/)).toBeVisible();
+  await expect(glance.getByText(/Discord: not set up on this server/)).toBeVisible();
+  await l.screenshot(shots("customise-overview"));
+
+  // Checks open on the troupe's house rules, of which there are none yet.
+  await steps.getByRole("link", { name: /^House rules\W+to do/ }).click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/rules$`));
+  await expect(l.getByText("No house rules yet.")).toBeVisible();
+  // All of them come in groups, folded, each with its count.
+  await l.getByRole("button", { name: /^All checks/ }).click();
+  const clanMerits = l.locator("details").filter({ hasText: "Clan merits, only for their clan or bloodline" });
+  await expect(clanMerits).toContainText(/\d{3} checks/);
+  await expect(clanMerits).toHaveJSProperty("open", false);
+  await expect(l.getByLabel(/^Setting for:/)).toHaveCount(0);
+  const techniques = l.locator("details").filter({ has: l.getByRole("heading", { name: "Techniques", exact: true }) });
+  await techniques.getByRole("heading", { name: "Techniques", exact: true }).click();
+  await expect(techniques.getByLabel(/^Setting for: Animal Swarm needs/)).toBeVisible();
+
+  // A search looks through them all, and opens the group it finds the check in.
+  await l.getByLabel("Search checks").fill("Calm Heart");
+  await expect(l.getByRole("group", { name: "Checks by kind" }).locator("details")).toHaveCount(1);
+  await expect(l.locator("details").filter({ has: l.getByRole("heading", { name: "Merits", exact: true }) })).toContainText("1 of 29 checks");
+  await l.getByLabel(/Setting for: Brujah cannot take Calm Heart/).selectOption({ label: "Off" });
+  await expect(l.getByText("Saved: Calm Heart is now Off")).toBeVisible();
+  await expect(l.getByRole("button", { name: "House rules (1)" })).toBeVisible();
+  await l.screenshot(shots("customise-checks"));
+
+  // Overview counts it.
+  await l.getByRole("link", { name: "Overview", exact: true }).click();
+  await expect(steps.getByRole("link", { name: /^House rules\W+done/ })).toBeVisible();
+  await expect(glance.getByText(/^1 of \d+ played differently$/)).toBeVisible();
+});
+
 test("a troupe's players read its house rules: a price the lead changes shows there beside the book's", async ({ browser }) => {
   const custodian = await person(browser, "lantern-custodian");
   makeCustodian(custodian.email);
@@ -122,6 +174,7 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   await l.getByRole("link", { name: "Troupes" }).click();
   await l.getByRole("link", { name: troupeName }).click();
   await l.getByRole("link", { name: "Customise", exact: true }).click();
+  await l.getByRole("link", { name: "Troupe settings", exact: true }).click();
   await l.getByRole("button", { name: "Set by hand" }).click();
   await l.getByLabel("Floor", { exact: true }).fill("100");
   await l.getByLabel("Ceiling", { exact: true }).fill("120");
@@ -270,6 +323,7 @@ test("storytellers filter the troupe's characters and print what they find", asy
   await expect(p.getByText("2 of 3 characters")).toBeVisible();
 
   // Print all prints what the filter shows.
+  await p.getByRole("button", { name: "Print…" }).click();
   const printTab = p.context().waitForEvent("page");
   await p.getByRole("button", { name: "Print all 2" }).click();
   const printed = await printTab;
@@ -557,11 +611,12 @@ test("a new player goes from a troupe's page to building a character for it, the
   expect(made.status(), await made.text()).toBe(201);
   const troupeId: string = (await made.json()).id;
 
-  // A new player is welcomed with the steps to a first game; staff, with no characters either, are not.
+  // A new player is welcomed with the steps to a first game; staff, with no characters either, land on their troupes.
   const p = player.page;
   await expect(p.getByRole("heading", { name: "Welcome to Horatio" })).toBeVisible();
   await lead.page.reload();
-  await expect(lead.page.getByText("No characters yet.")).toBeVisible();
+  await expect(lead.page.getByRole("heading", { name: "Your troupes" })).toBeVisible();
+  await expect(lead.page.getByText("No characters of your own yet.", { exact: false })).toBeVisible();
   await expect(lead.page.getByRole("heading", { name: "Welcome to Horatio" })).toHaveCount(0);
 
   // The troupe's page says how to play there: one click to a character built for it.
@@ -1007,4 +1062,73 @@ test("a troupe's Profile tab switches it public at once, About shows its XP rang
   await expect(p.getByText("60 XP", { exact: true })).toBeVisible();
   await expect(p.getByRole("heading", { name: "Waiting on you" })).toHaveCount(0);
   await expect(p.getByRole("button", { name: "Set by hand" })).toHaveCount(0);
+});
+
+test("Waiting on you shows the open cycle, a quest request and a backstory waiting, the tabs count them, and staff land on their troupes", async ({ browser }) => {
+  const custodian = await person(browser, "bells-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "bells-lead");
+  const player = await person(browser, "bells-player");
+  const troupeName = `Court of Waiting Bells ${run}`;
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const { id: troupeId } = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  const l = lead.page;
+  await send(l, "PUT", `/api/troupes/${troupeId}/backstory-settings`, { mode: "free", required: false });
+  await send(l, "PUT", `/api/troupes/${troupeId}/quest-settings`, { enabled: true, requests_per_cycle: 1 });
+
+  // The player's character joins, writes a backstory and asks for a quest; a cycle is open.
+  const p = player.page;
+  const id = await builtVampire(p, "Ilka Varga", "Toreador", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Auspex", 2], ["Celerity", 1], ["Presence", 1]],
+  });
+  const asked = await send(p, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+  await send(l, "POST", `/api/approvals/${asked.id}/approve`);
+  await send(p, "PUT", `/api/characters/${id}/backstory`, { text: "Embraced in a Budapest opera house, 1911.", version: 0 });
+  const now = Date.now();
+  const cycle = await send(l, "POST", `/api/troupes/${troupeId}/cycles`, {
+    name: "November downtime",
+    closes_at: new Date(now + 7 * 86400e3).toISOString(),
+    grace_ends_at: new Date(now + 9 * 86400e3).toISOString(),
+  });
+  await send(l, "POST", `/api/cycles/${cycle.id}/open`);
+  await send(p, "POST", `/api/characters/${id}/quest-requests`, { objective: "Find the lost libretto", reason: "Her sire wrote it", companions: "" });
+
+  // The lead, with no characters of their own, lands on their troupes, with what waits on them in each.
+  await l.goto("/");
+  await expect(l.getByRole("heading", { name: "Your troupes" })).toBeVisible();
+  const home = l.getByRole("list", { name: `Waiting on you in ${troupeName}` });
+  await expect(home.getByRole("link", { name: /^November downtime: 0 of 1 submitted · due in \d+ days$/ })).toBeVisible();
+  await expect(l.getByRole("link", { name: troupeName }).getByLabel("2 waiting")).toBeVisible();
+  await expect(l.getByText("No characters of your own yet.", { exact: false })).toBeVisible();
+  await l.screenshot(shots("characters-home-staff"));
+
+  // About's Waiting on you: the open cycle first, then the backstory and the quest request.
+  await l.getByRole("link", { name: troupeName }).click();
+  const waiting = l.getByRole("list", { name: "Waiting on you" });
+  await expect(waiting.getByRole("link")).toHaveText([/^November downtime: 0 of 1 submitted · due in \d+ days$/, /^Backstories to read\s*1$/, /^Quest requests to answer\s*1$/]);
+  await l.screenshot(shots("troupe-about-waiting"));
+  // The tabs count the same: the backstory on the roster, the request on Quests.
+  const sections = l.getByRole("navigation", { name: "Troupe sections" });
+  await expect(sections.getByRole("link", { name: /^Characters/ }).getByLabel("1 waiting")).toBeVisible();
+  await expect(sections.getByRole("link", { name: /^Downtimes/ }).getByLabel("1 waiting")).toBeVisible();
+  await sections.getByRole("link", { name: /^Characters/ }).click();
+  const characterTabs = l.getByRole("navigation", { name: "Characters", exact: true });
+  await expect(characterTabs.getByRole("link", { name: /^Characters/ }).getByLabel("1 waiting")).toBeVisible();
+  // The roster marks the backstory, and the mark opens it.
+  await l.getByRole("link", { name: "backstory to read" }).click();
+  await expect(l).toHaveURL(new RegExp(`/characters/${id}/backstory`));
+  await expect(l.getByText("Embraced in a Budapest opera house, 1911.")).toBeVisible();
+  // The line itself goes straight to the backstory too, and the quest request's to Quests.
+  await l.goto(`/troupes/${troupeId}`);
+  await waiting.getByRole("link", { name: /^Quest requests to answer/ }).click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/quests$`));
+  await expect(l.getByText("Find the lost libretto")).toBeVisible();
+  await expect(sections.getByRole("link", { name: /^Downtimes/ }).getByLabel("1 waiting")).toBeVisible();
 });

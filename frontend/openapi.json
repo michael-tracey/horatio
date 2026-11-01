@@ -2983,6 +2983,56 @@
         "title": "BuiltInPowerOut",
         "type": "object"
       },
+      "BulkAssigned": {
+        "properties": {
+          "assigned": {
+            "title": "Assigned",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "assigned"
+        ],
+        "title": "BulkAssigned",
+        "type": "object"
+      },
+      "BulkAssignment": {
+        "description": "Several of a cycle's responses, assigned in one go.",
+        "properties": {
+          "any_narrator": {
+            "default": false,
+            "title": "Any Narrator",
+            "type": "boolean"
+          },
+          "response_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Response Ids",
+            "type": "array"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          }
+        },
+        "required": [
+          "response_ids"
+        ],
+        "title": "BulkAssignment",
+        "type": "object"
+      },
       "BulkAward": {
         "properties": {
           "awards": {
@@ -4641,6 +4691,10 @@
             "title": "Category",
             "type": "string"
           },
+          "group": {
+            "title": "Group",
+            "type": "string"
+          },
           "house": {
             "anyOf": [
               {
@@ -4679,6 +4733,7 @@
         "required": [
           "key",
           "category",
+          "group",
           "about",
           "message",
           "page",
@@ -5367,6 +5422,13 @@
             "title": "Name",
             "type": "string"
           },
+          "needs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Needs",
+            "type": "array"
+          },
           "settings": {
             "additionalProperties": true,
             "title": "Settings",
@@ -5392,6 +5454,7 @@
           "kind",
           "name",
           "unavailable",
+          "needs",
           "enabled",
           "mode",
           "test_mode",
@@ -25613,6 +25676,11 @@
             ],
             "title": "Active Title"
           },
+          "backstory_waiting": {
+            "default": false,
+            "title": "Backstory Waiting",
+            "type": "boolean"
+          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -26822,6 +26890,106 @@
           "settlement"
         ],
         "title": "SettlementOverride",
+        "type": "object"
+      },
+      "SetupConnector": {
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "on",
+              "test",
+              "off",
+              "unavailable"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "state"
+        ],
+        "title": "SetupConnector",
+        "type": "object"
+      },
+      "SetupOut": {
+        "properties": {
+          "actions": {
+            "title": "Actions",
+            "type": "integer"
+          },
+          "checks": {
+            "title": "Checks",
+            "type": "integer"
+          },
+          "checks_total": {
+            "title": "Checks Total",
+            "type": "integer"
+          },
+          "connectors": {
+            "items": {
+              "$ref": "#/components/schemas/SetupConnector"
+            },
+            "title": "Connectors",
+            "type": "array"
+          },
+          "costs": {
+            "title": "Costs",
+            "type": "integer"
+          },
+          "cycles": {
+            "title": "Cycles",
+            "type": "integer"
+          },
+          "described": {
+            "title": "Described",
+            "type": "boolean"
+          },
+          "house_traits": {
+            "title": "House Traits",
+            "type": "integer"
+          },
+          "other": {
+            "title": "Other",
+            "type": "integer"
+          },
+          "profile": {
+            "title": "Profile",
+            "type": "boolean"
+          },
+          "staff": {
+            "title": "Staff",
+            "type": "integer"
+          },
+          "starting": {
+            "title": "Starting",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "described",
+          "profile",
+          "staff",
+          "cycles",
+          "checks",
+          "checks_total",
+          "costs",
+          "starting",
+          "actions",
+          "house_traits",
+          "other",
+          "connectors"
+        ],
+        "title": "SetupOut",
         "type": "object"
       },
       "ShareIn": {
@@ -31379,6 +31547,16 @@
             ],
             "title": "Last Tap At"
           },
+          "lines_veils": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LinesVeils"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "player_name": {
             "title": "Player Name",
             "type": "string"
@@ -32196,8 +32374,27 @@
       "WaitingLine": {
         "properties": {
           "count": {
-            "title": "Count",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Count"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
           },
           "kind": {
             "title": "Kind",
@@ -43651,6 +43848,60 @@
         ]
       }
     },
+    "/api/cycles/{cycle_id}/responses/assignment": {
+      "put": {
+        "description": "Assign several of the cycle's responses to one staff member, to any narrator,\nor back to no one, all or none of them.",
+        "operationId": "assign_many_api_cycles__cycle_id__responses_assignment_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkAssignment"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkAssigned"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Assign Many",
+        "tags": [
+          "responses"
+        ]
+      }
+    },
     "/api/cycles/{cycle_id}/responses/mine": {
       "get": {
         "description": "Responses assigned to me, and for narrators the any-narrator pool.",
@@ -54694,6 +54945,50 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/setup": {
+      "get": {
+        "description": "What a new lead sets up first, for the troupe's running staff.",
+        "operationId": "troupe_setup_api_troupes__troupe_id__setup_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Setup",
+        "tags": [
+          "troupes"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/shared-backgrounds": {
       "get": {
         "description": "Every shared background in the troupe, by name, for its staff.",
@@ -55450,7 +55745,7 @@
     },
     "/api/troupes/{troupe_id}/waiting": {
       "get": {
-        "description": "What is waiting on the viewer in this troupe, for its staff only.",
+        "description": "What is waiting on the viewer in this troupe, for its staff only: the open\ncycle first, then each kind of work with its count.",
         "operationId": "read_waiting_api_troupes__troupe_id__waiting_get",
         "parameters": [
           {

@@ -75,7 +75,14 @@ def test_without_server_configuration_email_is_unavailable(scene: Scene) -> None
     listed = troupe.storyteller.client.get(f"/troupes/{troupe.id}/connectors").json()
 
     found = next(c for c in listed if c["kind"] == "email")
-    assert "HORATIO_SMTP_HOST" in found["unavailable"]
+    # In plain words for a storyteller; the server settings it needs only for the custodian.
+    assert found["unavailable"] == "Email isn't set up on this server yet."
+    assert found["needs"] == []
+    as_custodian = troupe.custodian.client.get(f"/troupes/{troupe.id}/connectors").json()
+    assert next(c for c in as_custodian if c["kind"] == "email")["needs"] == [
+        "HORATIO_SMTP_HOST",
+        "HORATIO_MAIL_FROM",
+    ]
     assert set_up(scene).status_code == 409
 
 

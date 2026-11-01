@@ -314,6 +314,12 @@ test("lines and veils: a player adds them, staff see them, another player only o
   await expect(odile.getByRole("definition").filter({ hasText: "Needles" })).toBeVisible();
   await l.goto(`/troupes/${troupeId}/characters`);
   await expect(l.getByLabel("Lines and veils of lv-ana")).toContainText("Spiders in the dark");
+  // At game they show under her character, and the troupe's whole list is a tap away.
+  await l.goto(`/troupes/${troupeId}/play`);
+  await expect(l.getByLabel("Lines and veils of lv-ana")).toContainText("Needles");
+  const atGame = l.locator("section").filter({ has: l.getByRole("heading", { name: "At game", exact: true }) });
+  await atGame.getByRole("link", { name: "Lines and veils" }).click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/lines-veils$`));
   await l.goto(`/troupes/${troupeId}/players`);
   await l.getByRole("link", { name: "Lines and veils" }).click();
   await expect(l.getByRole("list", { name: "Lines" })).toContainText("Spiders in the dark");

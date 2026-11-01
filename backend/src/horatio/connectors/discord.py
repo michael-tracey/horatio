@@ -228,13 +228,16 @@ class DiscordConnector(Connector):
     kind = "discord"
     name = "Discord"
 
+    needs = (
+        "HORATIO_DISCORD_CLIENT_ID",
+        "HORATIO_DISCORD_CLIENT_SECRET",
+        "HORATIO_DISCORD_BOT_TOKEN",
+    )
+
     def unavailable(self) -> str | None:
         if configured():
             return None
-        return (
-            "Discord is not set up on this server. It needs HORATIO_DISCORD_CLIENT_ID, "
-            "HORATIO_DISCORD_CLIENT_SECRET and HORATIO_DISCORD_BOT_TOKEN."
-        )
+        return "Discord isn't set up on this server yet."
 
     def check_settings(
         self, settings: Mapping[str, Any], current: Mapping[str, Any]

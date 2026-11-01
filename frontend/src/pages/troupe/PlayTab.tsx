@@ -2,12 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
+import { LinesVeilsNote } from "../../components/LinesVeils";
 import { Badge, Button, Card, Empty, ErrorText, Loading, Notice } from "../../components/ui";
 import { useAction } from "../../hooks";
 
 /**
  * The troupe at a game: each character's blood, Willpower and health as their
- * Play View has them, a way into each one (and its log), the troupe's scenes for
+ * Play View has them, with their player's lines and veils, a way into each one (and its log), the troupe's scenes for
  * running several at once, and one reset for everyone after the game.
  */
 export function PlayTab({ troupeId }: { troupeId: string }) {
@@ -40,9 +41,17 @@ export function PlayTab({ troupeId }: { troupeId: string }) {
           Open the scenes
         </Link>
       </Card>
-      <Card title="At game">
+      <Card
+        title="At game"
+        actions={
+          <Link to={`/troupes/${troupeId}/lines-veils`} className="text-sm text-parchment underline decoration-line underline-offset-4 hover:decoration-parchment">
+            Lines and veils
+          </Link>
+        }
+      >
         <p className="mb-3 text-sm text-mist">
-          What each character has spent this game, from their Play View. Open one to tap for them, run an NPC, or read what they spent and why.
+          What each character has spent this game, from their Play View. Open one to tap for them, run an NPC, or read what they spent and why. Each player's
+          lines and veils show under their character.
         </p>
         {list.data.length === 0 ? (
           <Empty>No characters in the troupe yet.</Empty>
@@ -79,6 +88,7 @@ export function PlayTab({ troupeId }: { troupeId: string }) {
                     Health {c.health_marked}/{c.health_boxes} marked
                   </Badge>
                 </span>
+                <LinesVeilsNote value={c.lines_veils} who={c.player_name} className="basis-full text-xs text-parchment/80" />
               </li>
             ))}
           </ul>

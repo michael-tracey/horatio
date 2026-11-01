@@ -211,7 +211,8 @@ def test_without_server_configuration_discord_is_unavailable(scene: Scene) -> No
     )
 
     assert listed["kind"] == "discord"
-    assert "HORATIO_DISCORD_BOT_TOKEN" in listed["unavailable"]
+    assert listed["unavailable"] == "Discord isn't set up on this server yet."
+    assert "HORATIO_DISCORD_BOT_TOKEN" not in str(listed)
     assert troupe.storyteller.client.post(f"/troupes/{troupe.id}/discord/invite").status_code == 409
 
 

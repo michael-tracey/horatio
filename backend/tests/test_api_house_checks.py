@@ -52,6 +52,21 @@ def test_storytellers_set_checks_and_others_see_them(troupe: Troupe) -> None:
     assert troupe.narrator.client.get(f"/troupes/{troupe.id}/checks").status_code == 403
 
 
+def test_checks_come_in_groups_by_kind(troupe: Troupe) -> None:
+    listed = troupe.storyteller.client.get(f"/troupes/{troupe.id}/checks").json()
+    group = {c["key"]: c["group"] for c in listed}
+
+    assert group[CALM_HEART] == "Merits"
+    assert (
+        group["merits/Absent Sway/requirement"] == "Clan merits, only for their clan or bloodline"
+    )
+    assert group["flaws/Thin Blooded/requirement"] == "Merits and flaws for one generation"
+    assert "Other" not in group.values()
+    # Each group once, in order: the written checks, then the many from the catalogue.
+    order = list(dict.fromkeys(c["group"] for c in listed))
+    assert order.index("Merits") < order.index("Clan merits, only for their clan or bloodline")
+
+
 def test_a_check_switched_off_no_longer_refuses(troupe: Troupe) -> None:
     character_id = accepted_brujah(troupe)
     assert take(troupe.player, character_id, "Calm Heart", 1).status_code == 409
