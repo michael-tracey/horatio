@@ -30299,6 +30299,13 @@
             "title": "Lead User Id",
             "type": "string"
           },
+          "my_characters": {
+            "items": {
+              "type": "string"
+            },
+            "title": "My Characters",
+            "type": "array"
+          },
           "my_role": {
             "anyOf": [
               {
@@ -30311,6 +30318,25 @@
           },
           "name": {
             "title": "Name",
+            "type": "string"
+          },
+          "new_players": {
+            "anyOf": [
+              {
+                "enum": [
+                  "welcoming",
+                  "closed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Players"
+          },
+          "place": {
+            "title": "Place",
             "type": "string"
           },
           "portrait": {
@@ -30408,7 +30434,10 @@
           "portrait",
           "banner",
           "public",
-          "my_role"
+          "new_players",
+          "place",
+          "my_role",
+          "my_characters"
         ],
         "title": "TroupeOut",
         "type": "object"

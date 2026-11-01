@@ -18588,9 +18588,15 @@ export interface components {
              * Format: uuid
              */
             lead_user_id: string;
+            /** My Characters */
+            my_characters: string[];
             my_role: components["schemas"]["Role"] | null;
             /** Name */
             name: string;
+            /** New Players */
+            new_players: ("welcoming" | "closed") | null;
+            /** Place */
+            place: string;
             /** Portrait */
             portrait: string | null;
             /** Public */
