@@ -49,8 +49,10 @@ export function ScenePage() {
     refetchInterval: SCENE_REFRESH,
     refetchOnWindowFocus: true,
   });
-  // Unpinning shows at once, and the server's answer settles it.
+  // Unpinning shows at once, and the server's answer settles it. Pins go one at a
+  // time, so two picked quickly stay in the order they were picked.
   const pinning = useMutation({
+    scope: { id: `scene-${sceneId}` },
     mutationFn: ({ id, on }: { id: string; on: boolean }) => {
       const where = { params: { path: { troupe_id: troupeId, scene_id: sceneId, character_id: id } } };
       return unwrap(on ? api.PUT("/api/troupes/{troupe_id}/scenes/{scene_id}/characters/{character_id}", where) : api.DELETE("/api/troupes/{troupe_id}/scenes/{scene_id}/characters/{character_id}", where));
