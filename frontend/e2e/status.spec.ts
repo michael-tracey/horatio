@@ -414,8 +414,9 @@ test("titles say what they give, or why not, and the troupe's rules list every s
   await p.goto(`/characters/${ilse}/status`);
   await expect(choice("Actuary")).toContainText("No rules yet: no book describes it, so it gives no status");
 
-  // The troupe's Titles page says the same.
+  // The troupe's Titles page says the same, once its vacant titles are shown.
   await p.goto(`/troupes/${troupeId}/titles`);
+  await p.getByRole("button", { name: /^Show vacant \(\d+\)$/ }).click();
   const title = (name: string) => p.getByRole("listitem", { name, exact: true });
   await expect(title("Abbot")).toContainText("An Abbot gains no abiding status for the office · MET: VTM p. 421");
   await expect(title("Paladin")).toContainText("another name for Templar");
@@ -759,8 +760,12 @@ test("titles by sect: a Camarilla troupe gives Camarilla titles only to its own,
   await npc("Elena Varga", "Camarilla");
   const tomas = await npc("Tomas Reyes", "Anarch");
 
-  // The Titles tab: the Camarilla's titles and those of any sect, with the status each gives.
+  // The Titles tab: no one holds a title yet, and the vacant ones are folded away. Shown,
+  // they are the Camarilla's titles and those of any sect, with the status each gives.
   await p.goto(`/troupes/${troupeId}/titles`);
+  await expect(p.getByText("No one holds a title yet.")).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Camarilla titles" })).toHaveCount(0);
+  await p.getByRole("button", { name: /^Show vacant \(\d+\)$/ }).click();
   await expect(p.getByRole("heading", { name: "Camarilla titles" })).toBeVisible();
   await expect(p.getByRole("heading", { name: "Titles of any sect" })).toBeVisible();
   await expect(p.getByRole("heading", { name: "Sabbat titles" })).toHaveCount(0);
@@ -795,8 +800,15 @@ test("titles by sect: a Camarilla troupe gives Camarilla titles only to its own,
   expect(refused.status()).toBe(409);
   expect((await refused.json()).detail).toBe("Prince is a Camarilla title, and Tomas Reyes is Anarch.");
 
-  // Who holds what; and changing what the house title gives changes it for its holders.
+  // Held titles come first, and only those: the vacant ones stay folded away below.
   await p.goto(`/troupes/${troupeId}/titles`);
+  const held = p.getByRole("list", { name: "Held titles" });
+  await expect(held.getByRole("listitem")).toHaveCount(1);
+  await expect(held.getByRole("listitem", { name: "Master of Elysium" })).toContainText("Camarilla");
+  await expect(p.getByRole("listitem", { name: "Prince", exact: true })).toHaveCount(0);
+  const showVacant = p.getByRole("button", { name: /^Show vacant \(\d+\)$/ });
+  expect((await held.boundingBox())!.y).toBeLessThan((await showVacant.boundingBox())!.y);
+  // Who holds what; and changing what the house title gives changes it for its holders.
   await expect(master.getByRole("link", { name: "Elena Varga" })).toBeVisible();
   await master.getByRole("button", { name: "Change the title Master of Elysium" }).click();
   await dialog.getByLabel("Prominent").check();

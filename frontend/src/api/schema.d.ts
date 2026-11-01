@@ -3304,6 +3304,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cycles/{cycle_id}/responses/assignment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Assign Many
+         * @description Assign several of the cycle's responses to one staff member, to any narrator,
+         *     or back to no one, all or none of them.
+         */
+        put: operations["assign_many_api_cycles__cycle_id__responses_assignment_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cycles/{cycle_id}/responses/mine": {
         parameters: {
             query?: never;
@@ -8249,6 +8270,26 @@ export interface components {
             name: string;
             /** Note */
             note: string;
+        };
+        /** BulkAssigned */
+        BulkAssigned: {
+            /** Assigned */
+            assigned: number;
+        };
+        /**
+         * BulkAssignment
+         * @description Several of a cycle's responses, assigned in one go.
+         */
+        BulkAssignment: {
+            /**
+             * Any Narrator
+             * @default false
+             */
+            any_narrator: boolean;
+            /** Response Ids */
+            response_ids: string[];
+            /** User Id */
+            user_id?: string | null;
         };
         /** BulkAward */
         BulkAward: {
@@ -18889,6 +18930,7 @@ export interface components {
             kind: string;
             /** Last Tap At */
             last_tap_at: string | null;
+            lines_veils?: components["schemas"]["LinesVeils"] | null;
             /** Player Name */
             player_name: string;
             /** Taps */
@@ -26017,6 +26059,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkItemOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assign_many_api_cycles__cycle_id__responses_assignment_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkAssignment"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkAssigned"];
                 };
             };
             /** @description Validation Error */

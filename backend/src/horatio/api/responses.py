@@ -127,6 +127,16 @@ class Assignment(BaseModel):
     any_narrator: bool = False
 
 
+class BulkAssignment(Assignment):
+    """Several of a cycle's responses, assigned in one go."""
+
+    response_ids: list[uuid.UUID] = Field(min_length=1, max_length=1000)
+
+
+class BulkAssigned(BaseModel):
+    assigned: int
+
+
 class Writing(BaseModel):
     body: str
 
@@ -365,6 +375,22 @@ def assign(
     responses.assign(db, user, item, troupe, body.user_id, body.any_narrator)
     db.commit()
     return item_out(db, item)
+
+
+@router.put("/cycles/{cycle_id}/responses/assignment")
+def assign_many(
+    cycle_id: uuid.UUID, body: BulkAssignment, db: DbSession, user: CurrentUser
+) -> BulkAssigned:
+    """Assign several of the cycle's responses to one staff member, to any narrator,
+    or back to no one, all or none of them."""
+    cycle, troupe = staff_cycle(db, user, cycle_id, TroupeAction.ASSIGN_RESPONSES)
+    wanted = set(body.response_ids)
+    items = responses.work_items(db, cycle, wanted)
+    if len(items) != len(wanted):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such response in this cycle.")
+    responses.assign_many(db, user, items, troupe, body.user_id, body.any_narrator)
+    db.commit()
+    return BulkAssigned(assigned=len(items))
 
 
 @router.post("/responses/{response_id}/accept")

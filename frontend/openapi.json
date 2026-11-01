@@ -2983,6 +2983,56 @@
         "title": "BuiltInPowerOut",
         "type": "object"
       },
+      "BulkAssigned": {
+        "properties": {
+          "assigned": {
+            "title": "Assigned",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "assigned"
+        ],
+        "title": "BulkAssigned",
+        "type": "object"
+      },
+      "BulkAssignment": {
+        "description": "Several of a cycle's responses, assigned in one go.",
+        "properties": {
+          "any_narrator": {
+            "default": false,
+            "title": "Any Narrator",
+            "type": "boolean"
+          },
+          "response_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Response Ids",
+            "type": "array"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          }
+        },
+        "required": [
+          "response_ids"
+        ],
+        "title": "BulkAssignment",
+        "type": "object"
+      },
       "BulkAward": {
         "properties": {
           "awards": {
@@ -31167,6 +31217,16 @@
             ],
             "title": "Last Tap At"
           },
+          "lines_veils": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LinesVeils"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "player_name": {
             "title": "Player Name",
             "type": "string"
@@ -43245,6 +43305,60 @@
           }
         },
         "summary": "All Responses",
+        "tags": [
+          "responses"
+        ]
+      }
+    },
+    "/api/cycles/{cycle_id}/responses/assignment": {
+      "put": {
+        "description": "Assign several of the cycle's responses to one staff member, to any narrator,\nor back to no one, all or none of them.",
+        "operationId": "assign_many_api_cycles__cycle_id__responses_assignment_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkAssignment"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkAssigned"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Assign Many",
         "tags": [
           "responses"
         ]

@@ -2,9 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, Route, Routes, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { CycleOut, ParticipantOut, QuestionIn, WorkItemOut } from "../../api/types";
+import type { CycleOut, ParticipantOut, QuestionIn } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
-import { ResponseEditor } from "../../components/ResponseEditor";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, PageTitle, Select, Tabs, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
@@ -12,6 +11,7 @@ import { closeFacts, completeFacts } from "./delivery";
 import { DeliveryTab } from "./DeliveryTab";
 import { FeedingTab } from "./FeedingTab";
 import { LogInfluenceButton } from "./LogInfluence";
+import { ResponsesTab } from "./ResponsesTab";
 
 export function CyclePage() {
   const { cycleId = "" } = useParams();
@@ -50,7 +50,7 @@ export function CyclePage() {
         <Route path="form" element={<FormEditor cycle={c} />} />
         <Route path="participants" element={<Participants cycle={c} />} />
         <Route path="feeding" element={<FeedingTab cycle={c} />} />
-        <Route path="responses" element={<Responses cycle={c} />} />
+        <Route path="responses" element={<ResponsesTab cycle={c} />} />
         <Route path="delivery" element={<DeliveryTab cycle={c} />} />
       </Routes>
     </>
@@ -475,62 +475,5 @@ function ParticipantCard({ cycle, participant }: { cycle: CycleOut; participant:
       )}
       <ErrorText error={remove.error ?? late.error ?? add.error} />
     </Card>
-  );
-}
-
-function Responses({ cycle }: { cycle: CycleOut }) {
-  const [filter, setFilter] = useState<"all" | "unassigned" | "assigned" | "written">("all");
-  const items = useQuery({
-    queryKey: ["responses", cycle.id],
-    queryFn: () => unwrap(api.GET("/api/cycles/{cycle_id}/responses", { params: { path: { cycle_id: cycle.id } } })),
-  });
-  const staff = useQuery({
-    queryKey: ["staff", cycle.troupe_id],
-    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/staff", { params: { path: { troupe_id: cycle.troupe_id } } })),
-  });
-  if (items.isPending) return <Loading />;
-  if (items.error) return <ErrorText error={items.error} />;
-  const shown = items.data.filter((i) => filter === "all" || i.status === filter);
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap gap-2">
-        {(["all", "unassigned", "assigned", "written"] as const).map((f) => (
-          <Button key={f} variant={f === filter ? "secondary" : "ghost"} className="capitalize" onClick={() => setFilter(f)}>
-            {f} ({f === "all" ? items.data.length : items.data.filter((i) => i.status === f).length})
-          </Button>
-        ))}
-      </div>
-      {shown.length === 0 && <Empty>Nothing here.</Empty>}
-      {shown.map((item) => (
-        <ResponseEditor key={item.id} item={item} troupeId={cycle.troupe_id} canLog extra={<AssignSelect item={item} staff={staff.data ?? []} />} />
-      ))}
-    </div>
-  );
-}
-
-function AssignSelect({ item, staff }: { item: WorkItemOut; staff: { user_id: string; display_name: string }[] }) {
-  const assign = useAction((value: string) =>
-    unwrap(
-      api.PUT("/api/responses/{response_id}/assignment", {
-        params: { path: { response_id: item.id } },
-        body: value === "any" ? { any_narrator: true } : { any_narrator: false, user_id: value || null },
-      }),
-    ),
-  );
-  const value = item.assigned_to_any_narrator ? "any" : (item.assigned_to_user_id ?? "");
-  return (
-    <>
-      <Select aria-label="Assign to" className="w-auto" value={value} onChange={(e) => assign.mutate(e.target.value)}>
-        <option value="">Unassigned</option>
-        <option value="any">Any narrator</option>
-        {staff.map((s) => (
-          <option key={s.user_id} value={s.user_id}>
-            {s.display_name}
-          </option>
-        ))}
-      </Select>
-      {assign.error && <ErrorText error={assign.error} />}
-    </>
   );
 }

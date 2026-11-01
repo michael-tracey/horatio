@@ -269,6 +269,7 @@ test("storytellers filter the troupe's characters and print what they find", asy
   await expect(p.getByText("2 of 3 characters")).toBeVisible();
 
   // Print all prints what the filter shows.
+  await p.getByRole("button", { name: "Print…" }).click();
   const printTab = p.context().waitForEvent("page");
   await p.getByRole("button", { name: "Print all 2" }).click();
   const printed = await printTab;

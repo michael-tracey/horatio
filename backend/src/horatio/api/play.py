@@ -451,6 +451,8 @@ class TroupePlayEntry(BaseModel):
     willpower: Tracker
     health_marked: int
     health_boxes: int
+    # The player's lines and veils, as the roster shows them to staff.
+    lines_veils: LinesVeils | None = None
 
 
 class TroupeReset(BaseModel):
@@ -1104,6 +1106,7 @@ def troupe_play(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[
                 ),
                 health_marked=len(state["health"]),
                 health_boxes=len(limits.boxes(state["on"])),
+                lines_veils=entry.lines_veils,
             )
         )
     return found
