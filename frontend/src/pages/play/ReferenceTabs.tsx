@@ -11,6 +11,7 @@ import { equipmentModifiers } from "./equipped";
 import { breakdown, damageText, exceptionalText, grouped, situations, switchedDamage, total, type Modifier } from "./pools";
 import { SwitchesDrawer } from "./SwitchesDrawer";
 import type { makeTap } from "./tracker";
+import { UseButtons, type UseTaps } from "./UsePower";
 import { useModifiers } from "./useModifiers";
 
 type Trait = PlayReference["traits"][number];
@@ -199,19 +200,30 @@ export function PoolRow({ pool, willpower, modifiers, on }: { pool: TestPool; wi
   );
 }
 
-function Discipline({ discipline }: { discipline: DisciplinePowers }) {
+/** Using a power from the Pools tab: the Play View as it stands, and the taps (issue #370). */
+export type Using = { view: Parameters<typeof UseButtons>[0]["view"]; use: UseTaps };
+
+function Discipline({ discipline, using }: { discipline: DisciplinePowers; using?: Using }) {
   return (
     <Panel title={discipline.name} aside={<Rating value={discipline.rating} className="font-display text-lg text-gold" />}>
       <p className="mb-2 text-xs text-mist">
         {discipline.pool ? `${discipline.pool} against ${discipline.versus}.` : null} {discipline.note}
       </p>
+      {using && discipline.cost && (
+        <div className="mb-2 flex justify-end">
+          <UseButtons costed={discipline} view={using.view} use={using.use} />
+        </div>
+      )}
       {discipline.focus && <p className="mb-2 text-xs text-gold">Your focus: {discipline.focus}</p>}
       <ol className="flex flex-col gap-2 text-sm">
         {discipline.powers.map((p) => (
           <li key={p.level}>
-            <p>
-              <Rating value={p.level} of={p.level} className="min-w-5 text-gold" /> <strong className="font-semibold">{p.name}</strong>
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <p>
+                <Rating value={p.level} of={p.level} className="min-w-5 text-gold" /> <strong className="font-semibold">{p.name}</strong>
+              </p>
+              {using && p.cost && <UseButtons costed={p} view={using.view} use={using.use} />}
+            </div>
             <p className="text-mist">{p.note}</p>
             {p.focus && <p className="text-xs text-gold">Your focus: {p.focus}</p>}
           </li>
@@ -236,6 +248,7 @@ export function PoolsTab({
   items = [],
   equipped = [],
   tap,
+  using,
 }: {
   reference: PlayReference;
   willpower: number;
@@ -244,6 +257,8 @@ export function PoolsTab({
   items?: PlayItem[];
   equipped?: string[];
   tap: (what: Parameters<typeof makeTap>[0]) => void;
+  /** A "Use" button on each power with a plain cost. */
+  using?: Using;
 }) {
   const modifiers = useModifiers(characterId);
   const on = powers.filter((p) => p.on).map((p) => p.key);
@@ -274,7 +289,7 @@ export function PoolsTab({
       {reference.disciplines.length > 0 && <h2 className="mt-2 text-lg text-gold">Powers</h2>}
       <div className="grid gap-3 md:grid-cols-2">
         {reference.disciplines.map((d) => (
-          <Discipline key={d.name} discipline={d} />
+          <Discipline key={d.name} discipline={d} using={using} />
         ))}
       </div>
       {reference.other_powers.length > 0 && (

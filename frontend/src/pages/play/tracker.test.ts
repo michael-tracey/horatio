@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PlayView } from "../../api/types";
-import { afterSending, incapacitated, itemsGoing, latestUndoable, loadQueue, makeTap, saveQueue, tapId, tapToast, withPending, type Tap } from "./tracker";
+import { afterSending, incapacitated, itemsGoing, latestUndoable, loadQueue, makeTap, saveQueue, tapId, tapsToast, tapToast, withPending, type Tap } from "./tracker";
+import { usingTaps } from "./UsePower";
 
 function view(overrides: Partial<PlayView> = {}): PlayView {
   return {
@@ -267,6 +268,64 @@ describe("tapToast (#358)", () => {
     const { pending: _, ...entry } = waiting.log[0]!;
     const saved = view({ blood: { value: 9, most: 10, start: 10 }, log: [entry] });
     expect(tapToast(withPending(saved, []), makeTap({ kind: "undo", undoes: spend.id }, "g1", at(2)))).toBe("Undone · Blood 10/10");
+  });
+});
+
+describe("a power's Use (#370)", () => {
+  const celerity = {
+    key: "Celerity",
+    name: "Celerity",
+    origin: "Celerity",
+    form: false,
+    combines: [],
+    page: "p. 121",
+    changes: [],
+    notes: [],
+    health: [],
+    attributes: [],
+    focuses: [],
+    blood_per_turn: 0,
+    blood_half: false,
+    on: false,
+  };
+  const blood = { tracker: "blood" as const, amount: 1 };
+  const made = (whats: ReturnType<typeof usingTaps>) => whats.map((w, i) => makeTap(w, "g1", at(i + 1)));
+
+  it("spends the cost and turns the switch on, told in one toast", () => {
+    const v = view({ powers: [celerity] });
+    const taps = made(usingTaps(v, blood, "Celerity", "Celerity"));
+
+    expect(taps.map((t) => [t.tracker, t.amount])).toEqual([
+      ["blood", -1],
+      ["power:Celerity", 1],
+    ]);
+    expect(tapsToast(withPending(v, []), taps)).toBe("Spent 1 Blood · 9/10 · Celerity switched on");
+    const after = withPending(v, taps);
+    expect(after.blood.value).toBe(9);
+    expect(after.powers[0]!.on).toBe(true);
+  });
+
+  it("names the power when there is no switch to turn on, or it is on already", () => {
+    const v = view({ powers: [{ ...celerity, on: true }] });
+    const awe = made(usingTaps(v, blood, "Awe"));
+    expect(awe).toHaveLength(1);
+    expect(tapsToast(withPending(v, []), awe)).toBe("Spent 1 Blood on Awe · 9/10");
+    expect(withPending(v, awe).log[0]!.note).toBe("Awe");
+
+    const again = made(usingTaps(v, { tracker: "willpower", amount: 1 }, "Celerity", "Celerity"));
+    expect(tapsToast(withPending(v, []), again)).toBe("Spent 1 Willpower on Celerity · 5/6");
+  });
+
+  it("says Undone once when its Undo takes both back", () => {
+    const v = view({ powers: [celerity] });
+    const taps = made(usingTaps(v, blood, "Celerity", "Celerity"));
+    const waiting = withPending(v, taps);
+    const undos = [...taps].reverse().map((t, i) => makeTap({ kind: "undo", undoes: t.id }, "g1", at(5 + i)));
+
+    expect(tapsToast(waiting, undos)).toBe("Undone · Blood 10/10");
+    const back = withPending(v, [...taps, ...undos]);
+    expect(back.blood.value).toBe(10);
+    expect(back.powers[0]!.on).toBe(false);
   });
 });
 

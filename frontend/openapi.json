@@ -5175,6 +5175,29 @@
         "title": "ContributionIn",
         "type": "object"
       },
+      "Cost": {
+        "description": "What using a power costs, for its Use button on the Pools tab (issue #370).",
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "tracker": {
+            "enum": [
+              "blood",
+              "willpower"
+            ],
+            "title": "Tracker",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tracker",
+          "amount"
+        ],
+        "title": "Cost",
+        "type": "object"
+      },
       "CostCategoryOut": {
         "properties": {
           "group": {
@@ -7092,6 +7115,16 @@
       },
       "DisciplinePowers": {
         "properties": {
+          "cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Cost"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "focus": {
             "anyOf": [
               {
@@ -7139,6 +7172,14 @@
           "rating": {
             "title": "Rating",
             "type": "integer"
+          },
+          "switches": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Switches",
+            "type": "array"
           },
           "versus": {
             "anyOf": [
@@ -20936,6 +20977,16 @@
       },
       "PowerNote": {
         "properties": {
+          "cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Cost"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "focus": {
             "anyOf": [
               {
@@ -20958,6 +21009,14 @@
           "note": {
             "title": "Note",
             "type": "string"
+          },
+          "switches": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Switches",
+            "type": "array"
           }
         },
         "required": [

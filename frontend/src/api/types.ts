@@ -119,6 +119,7 @@ export type EquipmentModifier = Schemas["EquipmentModifierOut"];
 export type SwitchedPart = Schemas["SwitchedPart"];
 export type PowerChoices = Schemas["PowerChoicesOut"];
 export type DisciplinePowers = Schemas["DisciplinePowers"];
+export type Cost = Schemas["Cost"];
 export type XpRangeOut = Schemas["XpRangeOut"];
 export type XpReviewOut = Schemas["XpReviewOut"];
 export type XpStandingOut = Schemas["XpStandingOut"];
