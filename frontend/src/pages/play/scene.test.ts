@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deviceScene, findPins, forgetDeviceScene, loadOpen, pin, saveOpen, toggleOpen, unpin } from "./scene";
+import { byInitiative, deviceScene, findPins, forgetDeviceScene, loadOpen, loadSorted, pin, saveOpen, saveSorted, toggleOpen, unpin, type Rank } from "./scene";
 
 function memory(): Storage {
   const data = new Map<string, string>();
@@ -65,5 +65,30 @@ describe("the scene's pins", () => {
   it("opens a section, or closes it if open", () => {
     expect(toggleOpen(["pools"], "powers")).toEqual(["pools", "powers"]);
     expect(toggleOpen(["pools", "powers"], "pools")).toEqual(["powers"]);
+  });
+});
+
+describe("sorting the scene by initiative", () => {
+  const rank = (initiative: number, mental = 0, physical = 0, social = 0): Rank => ({ initiative, mental, physical, social });
+
+  it("puts the highest initiative first, ties going to Mental, then Physical, then Social, then the first pinned", () => {
+    const ranks = { a: rank(6, 3), b: rank(9), c: rank(6, 5), d: rank(6, 5, 2), e: rank(6, 5, 2, 1), f: rank(6, 5, 2, 1) };
+    expect(byInitiative(["a", "b", "c", "d", "e", "f"], ranks)).toEqual(["b", "e", "f", "d", "c", "a"]);
+  });
+
+  it("puts cards with no initiative, loading or Stock NPCs, last in the order they were added", () => {
+    expect(byInitiative(["stock", "a", "loading", "b"], { a: rank(4), b: rank(8) })).toEqual(["b", "a", "stock", "loading"]);
+  });
+
+  it("keeps the choice on the device, and nothing when storage throws", () => {
+    const storage = memory();
+    expect(loadSorted(storage)).toBe(false);
+    saveSorted(true, storage);
+    expect(loadSorted(storage)).toBe(true);
+    saveSorted(false, storage);
+    expect(loadSorted(storage)).toBe(false);
+    const broken = { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); }, removeItem: () => { throw new Error("blocked"); } } as unknown as Storage;
+    expect(loadSorted(broken)).toBe(false);
+    expect(() => saveSorted(true, broken)).not.toThrow();
   });
 });

@@ -61,6 +61,8 @@ describe("beastWarning", () => {
   it("adds 5 to resist at Humanity 2 or less", () => {
     expect(beastWarning(2, 5, { name: "Humanity", value: 2 })!.lines.join(" ")).toContain("against 17 (+5 at Humanity 2 or less)");
     expect(beastWarning(2, 5, { name: "Path of Caine", value: 2 })!.lines.join(" ")).toContain("against 12,");
+    // The character's own number, counting a merit like Calm Heart, once the sheet is read.
+    expect(beastWarning(2, 5, { name: "Humanity", value: 5 }, 10)!.lines.join(" ")).toContain("against 10,");
   });
 
   it("lists the triggers of the highest count past 4", () => {

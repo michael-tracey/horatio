@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { DisciplinePowers, PlayItem, PlayReference, PowerSwitch, TestPool } from "../../api/types";
 import { HouseMark } from "../../components/HouseMark";
 import { TraitInfo } from "../../components/TraitInfo";
@@ -8,7 +8,7 @@ import { IdentityNote } from "../character/Identities";
 import { RetainerLines } from "../character/Retainers";
 import { givingMerits } from "../character/retainers";
 import { equipmentModifiers } from "./equipped";
-import { breakdown, damageText, exceptionalText, grouped, situations, switchedDamage, total, type Modifier } from "./pools";
+import { bloodNote, breakdown, damageText, grouped, OTHER_TESTS, situations, switchedDamage, total, withAttribute, type Modifier } from "./pools";
 import { SwitchesDrawer } from "./SwitchesDrawer";
 import type { makeTap } from "./tracker";
 import { UseButtons, type UseTaps } from "./UsePower";
@@ -170,7 +170,6 @@ export function PoolRow({ pool, willpower, modifiers, on }: { pool: TestPool; wi
       {pool.damage && (
         <p className="mt-0.5 text-sm text-parchment">
           {damageText(pool.damage, hurt)}
-          <span className="block text-xs text-mist">{exceptionalText(pool.damage, hurt)}</span>
           {pool.damage.notes.map((n) => (
             <span key={n} className="block text-xs text-mist">
               {n}
@@ -197,6 +196,42 @@ export function PoolRow({ pool, willpower, modifiers, on }: { pool: TestPool; wi
         </p>
       ))}
     </li>
+  );
+}
+
+const ATTRIBUTES = ["Physical", "Social", "Mental"] as const;
+
+/**
+ * Every other skill the character has, as attribute + skill (MET: VtM core p. 272;
+ * issue #371). The storyteller names the attribute, so each starts with the one the
+ * skill is listed under, and one tap counts them all on another.
+ */
+function OtherTests({ pools, reference, willpower, modifiers, on }: { pools: TestPool[]; reference: PlayReference; willpower: number; modifiers: Modifier[]; on: string[] }) {
+  const [attribute, setAttribute] = useState<string | null>(null);
+  const rating = (name: string) => reference.traits.find((t) => t.category === "attributes" && t.name === name)?.rating ?? 0;
+  const shown = attribute ? pools.map((p) => withAttribute(p, attribute, rating(attribute))) : pools;
+  return (
+    <Panel title={OTHER_TESTS}>
+      <p className="text-xs text-mist">Attribute + skill. Your storyteller names the attribute; each skill starts with the one it's listed under.</p>
+      <div className="mt-2 flex flex-wrap gap-1" role="group" aria-label="Attribute for other tests">
+        {[null, ...ATTRIBUTES].map((a) => (
+          <button
+            key={a ?? "listed"}
+            type="button"
+            aria-pressed={attribute === a}
+            onClick={() => setAttribute(a)}
+            className={`min-h-9 rounded-full border px-3 text-xs pointer-coarse:min-h-11 ${attribute === a ? "border-gold/60 bg-gold/10 text-gold" : "border-line text-mist hover:text-parchment"}`}
+          >
+            {a ?? "As listed"}
+          </button>
+        ))}
+      </div>
+      <ul>
+        {shown.map((p) => (
+          <PoolRow key={p.key} pool={p} willpower={willpower} modifiers={modifiers} on={on} />
+        ))}
+      </ul>
+    </Panel>
   );
 }
 
@@ -267,15 +302,20 @@ export function PoolsTab({
   return (
     <div className="flex flex-col gap-3 pb-20">
       <div className="grid gap-3 md:grid-cols-2">
-        {grouped(reference.pools).map(([group, pools]) => (
-          <Panel key={group} title={group} aside={group === "Defence" ? <span className="text-xs text-mist">Willpower now: {willpower}</span> : undefined}>
-            <ul>
-              {pools.map((p) => (
-                <PoolRow key={p.key} pool={p} willpower={willpower} modifiers={counting} on={on} />
-              ))}
-            </ul>
-          </Panel>
-        ))}
+        {grouped(reference.pools).map(([group, pools]) =>
+          group === OTHER_TESTS ? (
+            <OtherTests key={group} pools={pools} reference={reference} willpower={willpower} modifiers={counting} on={on} />
+          ) : (
+            <Panel key={group} title={group} aside={group === "Defence" ? <span className="text-xs text-mist">Willpower now: {willpower}</span> : undefined}>
+              {group === "Combat" && reference.blood_per_turn > 0 && <p className="text-xs text-mist">{bloodNote(reference.blood_per_turn)}</p>}
+              <ul>
+                {pools.map((p) => (
+                  <PoolRow key={p.key} pool={p} willpower={willpower} modifiers={counting} on={on} />
+                ))}
+              </ul>
+            </Panel>
+          ),
+        )}
       </div>
       {reference.notes.length > 0 && (
         <Panel title="Also">

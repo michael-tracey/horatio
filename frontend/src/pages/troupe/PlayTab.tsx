@@ -31,7 +31,7 @@ export function PlayTab({ troupeId }: { troupeId: string }) {
     <div className="flex flex-col gap-6">
       <Card title="Scenes">
         <p className="mb-3 text-sm text-mist">
-          Put several NPCs on one page, side by side, to run a scene: tap Blood, Willpower, health and Beast traits for each, with Undo and the log. Name as many scenes as you need; they are kept for the troupe, and the other staff running it can open them too.
+          Put several characters on one page, side by side, to run a scene: tap Blood, Willpower, health and Beast traits for each, with Undo and the log. Name as many scenes as you need; they are kept for the troupe, and the other staff running it can open them too.
         </p>
         <Link
           to={`/play/troupes/${troupeId}/scenes`}
@@ -51,8 +51,15 @@ export function PlayTab({ troupeId }: { troupeId: string }) {
             {list.data.map((c) => (
               <li key={c.character_id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
                 <span className="min-w-40 flex-1">
-                  <Link to={`/play/characters/${c.character_id}`} className="text-parchment underline-offset-2 hover:underline">
+                  {/* Underlined with a chevron, so it reads as a link on a phone, where nothing hovers. */}
+                  <Link
+                    to={`/play/characters/${c.character_id}`}
+                    className="text-parchment underline decoration-line underline-offset-4 hover:decoration-parchment"
+                  >
                     {c.character_name}
+                    <span aria-hidden="true" className="ml-1 inline-block text-mist">
+                      ›
+                    </span>
                   </Link>{" "}
                   <span className="text-xs text-mist">
                     {c.player_name}
@@ -67,8 +74,9 @@ export function PlayTab({ troupeId }: { troupeId: string }) {
                   <Badge tone={c.willpower.value < c.willpower.most ? "gold" : "mist"}>
                     Willpower {c.willpower.value}/{c.willpower.most}
                   </Badge>
+                  {/* Counted as the Play View and Scene cards do: the levels marked with damage. */}
                   <Badge tone={c.health_marked ? "blood" : "mist"}>
-                    Health {c.health_boxes - c.health_marked}/{c.health_boxes}
+                    Health {c.health_marked}/{c.health_boxes} marked
                   </Badge>
                 </span>
               </li>

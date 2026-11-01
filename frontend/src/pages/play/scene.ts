@@ -74,3 +74,45 @@ export function saveOpen(characterId: string, open: Section[], storage: Storage 
 export function toggleOpen(open: Section[], section: Section): Section[] {
   return open.includes(section) ? open.filter((s) => s !== section) : [...open, section];
 }
+
+/** What a card's turn order is worked out from: its initiative now, then the attributes that break a tie. */
+export type Rank = { initiative: number; mental: number; physical: number; social: number };
+
+/**
+ * The pins in turn order (MET: VtM core p. 276; issue #371): the highest initiative
+ * first, a tie going to the higher Mental, then Physical, then Social, and then to
+ * whoever was put in the scene first. A card with no initiative yet, still loading
+ * or a Stock NPC, which the book gives none, goes after them in the order they were added.
+ */
+export function byInitiative(ids: string[], ranks: Record<string, Rank | undefined>): string[] {
+  const order = (r: Rank) => [r.initiative, r.mental, r.physical, r.social];
+  return ids
+    .map((id, at) => ({ id, at, rank: ranks[id] }))
+    .sort((a, b) => {
+      if (!a.rank || !b.rank) return Number(!a.rank) - Number(!b.rank) || a.at - b.at;
+      const [x, y] = [order(a.rank), order(b.rank)];
+      const first = x.findIndex((v, i) => v !== y[i]);
+      return first < 0 ? a.at - b.at : y[first]! - x[first]!;
+    })
+    .map((p) => p.id);
+}
+
+const sortKey = "horatio.scene.sort";
+
+/** Whether this device sorts scene cards by initiative; it stays as the storyteller left it. */
+export function loadSorted(storage: Storage | undefined = globalThis.localStorage): boolean {
+  try {
+    return storage?.getItem(sortKey) === "initiative";
+  } catch {
+    return false;
+  }
+}
+
+export function saveSorted(sorted: boolean, storage: Storage | undefined = globalThis.localStorage): void {
+  try {
+    if (sorted) storage?.setItem(sortKey, "initiative");
+    else storage?.removeItem(sortKey);
+  } catch {
+    // Kept for this visit only.
+  }
+}

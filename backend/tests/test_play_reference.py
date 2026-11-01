@@ -249,7 +249,7 @@ def test_substitutes_and_replacements(troupe: Troupe) -> None:
     assert dodge["parts"][1] == {"label": "Awareness (for Dodge)", "value": 4}
     # Potence with the Strength focus: +2 to Brawl and Melee.
     assert pool(found, "attack:Brawl")["total"] == 3 + 2 + 2
-    assert "Tech Junkie: +2 to Computers" in found["notes"]
+    assert "Tech Junkie: +2 to Computer" in found["notes"]
 
 
 def test_flat_flaws_and_merits_change_the_pools_they_name(troupe: Troupe) -> None:
@@ -277,6 +277,92 @@ def test_flat_flaws_and_merits_change_the_pools_they_name(troupe: Troupe) -> Non
     assert "Hard of Hearing: -2 to Awareness based on hearing" in found["notes"]
     assert "Executioner: +1 to Streetwise" in found["notes"]
     assert any(n.startswith("Short Fuse: counts 1 more Beast trait") for n in found["notes"])
+
+
+def test_other_tests_are_attribute_and_skill(troupe: Troupe) -> None:
+    """Each skill held but the Combat ones is an Other test (issue #371): the attribute
+    it is listed under + the skill + what merits and flaws add, which is then not
+    repeated under Also."""
+    talker = created(
+        troupe,
+        "Talker",
+        ("attributes", "Physical", 4),
+        ("attributes", "Social", 6),
+        ("attributes", "Mental", 3),
+        ("skills", "Intimidation", 3),
+        ("skills", "Investigation", 2),
+        ("skills", "Brawl", 2),
+        ("skills", "Athletics", 1),
+        ("merits", "Executioner", None),
+        ("flaws", "Hard of Hearing", None),
+    )
+    found = reference(troupe, talker)
+
+    others = [p for p in found["pools"] if p["group"] == "Other tests"]
+    assert [p["name"] for p in others] == ["Athletics", "Intimidation", "Investigation"]
+    intimidation = pool(found, "skill:Intimidation")
+    assert [(p["label"], p["value"]) for p in intimidation["parts"]] == [
+        ("Social", 6),
+        ("Intimidation", 3),
+        ("Executioner", 1),
+    ]
+    assert intimidation["total"] == 10
+    investigation = pool(found, "skill:Investigation")
+    assert investigation["total"] == 3 + 2
+    assert variants(investigation) == {"Based on hearing": 3}
+    # Said under Also only for a skill with no test shown.
+    assert "Executioner: +1 to Intimidation" not in found["notes"]
+    assert "Executioner: +1 to Streetwise" in found["notes"]
+    assert "Hard of Hearing: -2 to Investigation based on hearing" not in found["notes"]
+    # The Blood rule is said once over Combat, not under each pool.
+    assert not any("Spend Blood" in n for p in found["pools"] for n in p["notes"])
+
+
+def test_a_skill_with_fields_has_a_test_for_each() -> None:
+    sheet = Sheet(
+        ratings={("attributes", "Mental"): 5},
+        skills={("Crafts", "Painting"): (3, "Mental"), ("Crafts", "Carpentry"): (1, "Mental")},
+    )
+    found = {p.key: p for p in pools(sheet, [])}
+
+    assert (found["skill:Crafts:Carpentry"].name, found["skill:Crafts:Carpentry"].total) == (
+        "Crafts: Carpentry",
+        6,
+    )
+    assert found["skill:Crafts:Painting"].total == 8
+
+
+def test_another_tests_attribute_carries_every_switch_change() -> None:
+    """The Play View may count another attribute, so an Other test carries what a
+    form does to each, and the page counts the one in use."""
+    sheet = Sheet(
+        ratings={("attributes", "Physical"): 4, ("attributes", "Mental"): 4},
+        disciplines={"Vicissitude": 4},
+        skills={("Occult", ""): (2, "Mental")},
+    )
+    worked = work_out(sheet, {})
+    occult = next(
+        p
+        for p in pools(sheet, worked.effects, worked.hurts, worked.switches)
+        if p.key == "skill:Occult"
+    )
+    assert ("Mental", -3) in [(s.attribute, s.value) for s in occult.switched]
+
+
+def test_frenzy_counts_mental_and_what_changes_it(troupe: Troupe) -> None:
+    calm = created(
+        troupe,
+        "Calm",
+        ("attributes", "Mental", 4),
+        ("merits", "Calm Heart", None),
+    )
+    frenzy = reference(troupe, calm)["frenzy"]
+
+    assert frenzy["parts"] == [
+        {"label": "Mental", "value": 4},
+        {"label": "Calm Heart", "value": 3},
+    ]
+    assert frenzy["beast"] == [{"label": "Calm Heart", "value": -2}]
 
 
 def test_strangers_cannot_read_it(troupe: Troupe, swift: str) -> None:
@@ -314,7 +400,7 @@ def attack_damage(disciplines: dict[str, int], **skills: int) -> dict[str, Any]:
         ratings={("attributes", "Physical"): 3, **{("skills", k): v for k, v in skills.items()}},
         disciplines=disciplines,
     )
-    found = pools(sheet, effects(sheet, {}), 1, damage_effects(sheet))
+    found = pools(sheet, effects(sheet, {}), damage_effects(sheet))
     return {p.key: p.damage for p in found if p.damage}
 
 
@@ -441,7 +527,7 @@ def test_a_template_changes_only_the_fight_form() -> None:
 
     vicious = work_out(beast(template="Vicious"), {})
     brawl = next(
-        p for p in pools(beast(), vicious.effects, 2, vicious.hurts) if p.key == "attack:Brawl"
+        p for p in pools(beast(), vicious.effects, vicious.hurts) if p.key == "attack:Brawl"
     )
     assert [(s.switch, s.value) for s in brawl.switched] == [("fight form", 2), ("fight form", 1)]
 
@@ -454,7 +540,7 @@ def test_a_template_changes_only_the_fight_form() -> None:
 def test_pools_say_what_each_switch_changes() -> None:
     sheet = beast(template="Huge")
     worked = work_out(sheet, {})
-    found = {p.key: p for p in pools(sheet, worked.effects, 2, worked.hurts, worked.switches)}
+    found = {p.key: p for p in pools(sheet, worked.effects, worked.hurts, worked.switches)}
 
     brawl = found["attack:Brawl"]
     assert brawl.total == 8  # Physical 5 + Brawl 3, with nothing on
@@ -485,7 +571,7 @@ def test_a_form_can_give_a_focus_and_change_attributes() -> None:
     # Horrid Form gives the Strength focus, and Potence's focus adds +2 with it.
     assert "+2 Brawl attacks (Potence, Strength focus)" in horrid.changes
     assert "-3 Mental" in horrid.changes and horrid.form
-    found = {p.key: p for p in pools(sheet, worked.effects, 1, worked.hurts, worked.switches)}
+    found = {p.key: p for p in pools(sheet, worked.effects, worked.hurts, worked.switches)}
     assert [(s.attribute, s.value) for s in found["defense:Mental"].switched] == [("Mental", -3)]
 
 

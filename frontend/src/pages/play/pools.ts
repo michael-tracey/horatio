@@ -129,22 +129,41 @@ const exceptionalOf = (damage: Damage, extra: ExtraDamage[]) => damage.exception
 const kindOf = (damage: Damage, extra: ExtraDamage[]) =>
   damage.type === "aggravated" || extra.some((e) => e.type === "aggravated") ? "aggravated damage" : "damage";
 
-/** "2 damage: 1 (melee) + 1 (Might)", or "2 aggravated damage: …" where a power makes it so. */
+/**
+ * One line for what a hit does, then an exceptional success (issue #371): "Damage 1
+ * (unarmed) · exceptional 2", "Damage 2 (1 melee + 1 Might) · exceptional 3",
+ * "Aggravated damage 1 (unarmed) · …", or "…, aggravated by Feral Claws · …".
+ */
 export function damageText(damage: Damage, extra: ExtraDamage[] = []): string {
-  const parts = [...damage.parts, ...extra.filter((e) => e.value)].map((p) => `${p.value} (${p.label})`).join(" + ");
+  const all = [...damage.parts, ...extra.filter((e) => e.value)];
+  const parts = all.length === 1 ? all[0]!.label : all.map((p) => `${p.value} ${p.label}`).join(" + ");
   const by = extra.filter((e) => e.type === "aggravated").map((e) => e.label);
-  return `${damageTotal(damage, extra)} ${kindOf(damage, extra)}: ${parts}${by.length && damage.type !== "aggravated" ? `, aggravated by ${by.join(" and ")}` : ""}`;
-}
-
-/** What an exceptional success does: the usual extra point, or more with a power like Intensity. */
-export function exceptionalText(damage: Damage, extra: ExtraDamage[] = []): string {
-  const more = exceptionalOf(damage, extra);
-  return `An exceptional success adds ${more} damage, ${damageTotal(damage, extra) + more} in all.`;
+  const now = damageTotal(damage, extra);
+  const kind = damage.type === "aggravated" ? "Aggravated damage" : "Damage";
+  return `${kind} ${now} (${parts})${by.length && damage.type !== "aggravated" ? `, aggravated by ${by.join(" and ")}` : ""} · exceptional ${now + exceptionalOf(damage, extra)}`;
 }
 
 /** The short form for the printed sheet: "2 damage (4 on an exceptional success)". */
 export function damageShort(damage: Damage, extra: ExtraDamage[] = []): string {
   return `${damageTotal(damage, extra)} ${kindOf(damage, extra)} (${damageTotal(damage, extra) + exceptionalOf(damage, extra)} exceptional)`;
+}
+
+/** Spending Blood for Physical, said once over the Combat pools rather than under each (MET: VtM core p. 294). */
+export function bloodNote(perTurn: number): string {
+  return `Spend Blood for +1 Physical each, up to ${perTurn} a turn.`;
+}
+
+export const OTHER_TESTS = "Other tests";
+
+/**
+ * An Other test made on another attribute (issue #371): the storyteller names the
+ * attribute, so the pool's first part becomes that one. What a form does to it
+ * comes with the pool for every attribute, and counts by the part's name.
+ */
+export function withAttribute(pool: TestPool, attribute: string, rating: number): TestPool {
+  const [first, ...rest] = pool.parts;
+  if (!first || !["Physical", "Social", "Mental"].includes(first.label) || first.label === attribute) return pool;
+  return { ...pool, parts: [{ label: attribute, value: rating }, ...rest], total: pool.total - first.value + rating };
 }
 
 /** The groups with the fight first (Combat, whose attacks and Dodge a scene needs, then Defence), then the rest as they came. */

@@ -11204,6 +11204,20 @@ export interface components {
             name: string;
         };
         /**
+         * Frenzy
+         * @description Resisting frenzy (core p. 302): Mental and what merits and flaws add, to
+         *     which the Play View adds current Willpower, against 10 + Beast traits.
+         */
+        Frenzy: {
+            /**
+             * Beast
+             * @default []
+             */
+            beast: components["schemas"]["PoolPart"][];
+            /** Parts */
+            parts: components["schemas"]["PoolPart"][];
+        };
+        /**
          * GameChoice
          * @description A game on the troupe's schedule, which dates an entry when it started.
          */
@@ -14625,6 +14639,7 @@ export interface components {
             /** Disciplines */
             disciplines: components["schemas"]["DisciplinePowers"][];
             domitor?: components["schemas"]["DomitorLine"] | null;
+            frenzy: components["schemas"]["Frenzy"];
             /**
              * Identities
              * @default []

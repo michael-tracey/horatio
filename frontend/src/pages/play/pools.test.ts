@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PoolModifier, TestPool } from "../../api/types";
-import { appliesTo, attackGlance, breakdown, damageShort, damageText, damageTotal, describe as describeModifier, defenceGlance, describePools, exceptionalText, fightFirst, grouped, switchedDamage, topAttacks, total } from "./pools";
+import { appliesTo, attackGlance, breakdown, damageShort, damageText, damageTotal, describe as describeModifier, defenceGlance, describePools, fightFirst, grouped, switchedDamage, topAttacks, total, withAttribute } from "./pools";
 
 const pool = (over: Partial<TestPool>): TestPool => ({
   key: "dodge",
@@ -99,22 +99,21 @@ describe("damage", () => {
   });
 
   it("shows the base for the attack type and its exceptional success", () => {
-    expect(damageText(melee())).toBe("1 damage: 1 (melee)");
-    expect(exceptionalText(melee())).toBe("An exceptional success adds 1 damage, 2 in all.");
-    expect(damageText(melee({ kind: "firearms", parts: [{ label: "firearms", value: 2 }], total: 2 }))).toBe("2 damage: 2 (firearms)");
+    expect(damageText(melee())).toBe("Damage 1 (melee) · exceptional 2");
+    expect(damageText(melee({ kind: "firearms", parts: [{ label: "firearms", value: 2 }], total: 2 }))).toBe("Damage 2 (firearms) · exceptional 3");
   });
 
   it("shows what Potence adds, and aggravated damage where a power makes it so", () => {
     const might = melee({ total: 2, parts: [{ label: "melee", value: 1 }, { label: "Might", value: 1 }] });
-    expect(damageText(might)).toBe("2 damage: 1 (melee) + 1 (Might)");
+    expect(damageText(might)).toBe("Damage 2 (1 melee + 1 Might) · exceptional 3");
     const intensity = { ...might, exceptional: 2 };
-    expect(exceptionalText(intensity)).toBe("An exceptional success adds 2 damage, 4 in all.");
+    expect(damageText(intensity)).toBe("Damage 2 (1 melee + 1 Might) · exceptional 4");
     expect(damageShort(intensity)).toBe("2 damage (4 exceptional)");
-    expect(damageText(melee({ type: "aggravated" }))).toBe("1 aggravated damage: 1 (melee)");
+    expect(damageText(melee({ type: "aggravated" }))).toBe("Aggravated damage 1 (melee) · exceptional 2");
   });
 
   it("leaves a seam for damage a modifier adds", () => {
-    expect(damageText(melee(), [{ label: "brass knuckles", value: 1 }])).toBe("2 damage: 1 (melee) + 1 (brass knuckles)");
+    expect(damageText(melee(), [{ label: "brass knuckles", value: 1 }])).toBe("Damage 2 (1 melee + 1 brass knuckles) · exceptional 3");
     expect(damageTotal(melee(), [{ label: "brass knuckles", value: 1 }])).toBe(2);
   });
 });
@@ -167,11 +166,39 @@ describe("forms and powers switched on", () => {
         { switch: "The Fourth Horseman", label: "The Fourth Horseman", amount: 1, exceptional: 0, type: "normal" as const },
       ],
     };
-    expect(damageText(damage, switchedDamage(damage, []))).toBe("1 damage: 1 (unarmed)");
-    expect(damageText(damage, switchedDamage(damage, ["Feral Claws"]))).toBe("1 aggravated damage: 1 (unarmed), aggravated by Feral Claws");
+    expect(damageText(damage, switchedDamage(damage, []))).toBe("Damage 1 (unarmed) · exceptional 2");
+    expect(damageText(damage, switchedDamage(damage, ["Feral Claws"]))).toBe("Damage 1 (unarmed), aggravated by Feral Claws · exceptional 2");
     const both = switchedDamage(damage, ["Feral Claws", "The Fourth Horseman"]);
-    expect(damageText(damage, both)).toBe("2 aggravated damage: 1 (unarmed) + 1 (The Fourth Horseman), aggravated by Feral Claws");
-    expect(exceptionalText(damage, both)).toBe("An exceptional success adds 1 damage, 3 in all.");
+    expect(damageText(damage, both)).toBe("Damage 2 (1 unarmed + 1 The Fourth Horseman), aggravated by Feral Claws · exceptional 3");
+  });
+});
+
+describe("other tests", () => {
+  const intimidation = pool({
+    key: "skill:Intimidation",
+    name: "Intimidation",
+    group: "Other tests",
+    parts: [
+      { label: "Social", value: 6 },
+      { label: "Intimidation", value: 3 },
+      { label: "Executioner", value: 1 },
+    ],
+    total: 10,
+    switched: [{ switch: "Horrid Form", label: "Mental (Horrid Form)", value: -3, attribute: "Mental", most: null }],
+  });
+
+  it("computes attribute + skill + what changes it, with its arithmetic", () => {
+    expect(total(intimidation, 4)).toBe(10);
+    expect(breakdown(intimidation, 4)).toBe("Social 6 + Intimidation 3 + Executioner 1");
+  });
+
+  it("counts another attribute when the storyteller names one, with the modifiers on it", () => {
+    const mental = withAttribute(intimidation, "Mental", 4);
+    expect(total(mental, 0)).toBe(8);
+    expect(breakdown(mental, 0)).toBe("Mental 4 + Intimidation 3 + Executioner 1");
+    expect(total(mental, 0, [], ["Horrid Form"])).toBe(5);
+    expect(total(mental, 0, [{ id: "m", label: "Sharp", amount: 2, pools: "Mental", when: "", on: true }])).toBe(10);
+    expect(withAttribute(intimidation, "Social", 6)).toBe(intimidation);
   });
 });
 
