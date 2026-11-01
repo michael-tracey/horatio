@@ -610,7 +610,7 @@ description = "Necromancy that binds wraiths, the souls of the dead, and draws o
 # describes its powers: staff record them by hand.
 [[traits]]
 category = "disciplines"
-name = "Necromancy: Path of the Graveborne"
+name = "Necromancy: Path of the Graveborn"
 description = "A Nagaraja path of Necromancy, in-clan with Blight of the Ever-Hungry. Its powers are in no book Horatio draws on, so staff record them by hand."
 page_reference = "Vol. 2, p. 62"
 
@@ -811,10 +811,6 @@ name = "Auspex: Clairvoyance"
 
 [[traits]]
 category = "elder_disciplines"
-name = "Auspex: Collective Cognizance"
-
-[[traits]]
-category = "elder_disciplines"
 name = "Auspex: Fog of War"
 
 [[traits]]
@@ -875,7 +871,7 @@ name = "Dementation: Deny"
 
 [[traits]]
 category = "elder_disciplines"
-name = "Dementation: La Llorana's Lament"
+name = "Dementation: La Llorona's Lament"
 
 [[traits]]
 category = "elder_disciplines"
@@ -947,7 +943,7 @@ name = "Mytherceria: Steal the Mind"
 
 [[traits]]
 category = "elder_disciplines"
-name = "Obeah: Rayzeel's Gaze"
+name = "Obeah: Rayzeel's Grace"
 
 [[traits]]
 category = "elder_disciplines"
@@ -955,7 +951,7 @@ name = "Obeah: Revocation of Caine's Grace"
 
 [[traits]]
 category = "elder_disciplines"
-name = "Obeah: Unburden the Beastial Soul"
+name = "Obeah: Unburden the Bestial Soul"
 
 [[traits]]
 category = "elder_disciplines"
@@ -1003,7 +999,7 @@ name = "Potence: Force"
 
 [[traits]]
 category = "elder_disciplines"
-name = "Potence: Relentess Fury"
+name = "Potence: Relentless Fury"
 
 [[traits]]
 category = "elder_disciplines"
@@ -1071,7 +1067,7 @@ name = "Serpentis: Spewing Venom"
 
 [[traits]]
 category = "elder_disciplines"
-name = "Spiritus: Killer Instinct"
+name = "Spiritus: Killer Instincts"
 
 [[traits]]
 category = "elder_disciplines"
@@ -2805,7 +2801,7 @@ name = "Protean: Mythic Form"
 
 [[traits]]
 category = "luminary_disciplines"
-name = "Quietus: Awaken the Heartblood"
+name = "Quietus: Awaken the Heartsblood"
 
 [[traits]]
 category = "luminary_disciplines"
@@ -5155,7 +5151,7 @@ properties = { rating = 5 }
 
 [[traits]]
 category = "rituals"
-name = "Abyssal: Bend the Shadow"
+name = "Abyssal: Bind the Shadow"
 properties = { rating = 4 }
 
 [[traits]]
@@ -5175,7 +5171,7 @@ properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
-name = "Abyssal: Dark Hands that Feeds"
+name = "Abyssal: Dark Hand that Feeds"
 properties = { rating = 1 }
 
 [[traits]]
@@ -5440,7 +5436,7 @@ properties = { rating = 4 }
 
 [[traits]]
 category = "rituals"
-name = "Necromancy: Letter from Beyond"
+name = "Necromancy: Letters from Beyond"
 properties = { rating = 5 }
 
 [[traits]]
@@ -5490,7 +5486,7 @@ properties = { rating = 3 }
 
 [[traits]]
 category = "rituals"
-name = "Necromancy: Stained Night"
+name = "Necromancy: Stained Sight"
 properties = { rating = 2 }
 
 [[traits]]
@@ -5690,7 +5686,7 @@ properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"
-name = "Thaumaturgy: Hand of Path (Setite)"
+name = "Thaumaturgy: Hand of Ptah (Setite)"
 properties = { rating = 3 }
 
 [[traits]]
@@ -5895,7 +5891,7 @@ properties = { rating = 2 }
 
 [[traits]]
 category = "rituals"
-name = "Thaumaturgy: Thaumaturgical Metabolism"
+name = "Thaumaturgy: Thaumaturgic Metabolism"
 properties = { rating = 3 }
 
 [[traits]]
@@ -6000,12 +5996,12 @@ properties = { type = "Auctoritas", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
-name = "Irad's Will"
+name = "Irad's Wall"
 properties = { type = "Faction", sect = "Sabbat" }
 
 [[traits]]
 category = "sabbat_rituals"
-name = "Monomancy"
+name = "Monomacy"
 properties = { type = "Auctoritas", sect = "Sabbat" }
 
 [[traits]]
@@ -6319,7 +6315,7 @@ name = "Beast's Vigor"
 
 [[traits]]
 category = "techniques"
-name = "Beastial Allure"
+name = "Bestial Allure"
 
 [[traits]]
 category = "techniques"
@@ -6571,7 +6567,7 @@ name = "Ominous Premonition"
 
 [[traits]]
 category = "techniques"
-name = "Perfected Insticts"
+name = "Perfected Instincts"
 
 [[traits]]
 category = "techniques"
@@ -6644,7 +6640,7 @@ name = "Retain the Quick Blood"
 
 [[traits]]
 category = "techniques"
-name = "Saguinary Expulsion"
+name = "Sanguinary Expulsion"
 
 [[traits]]
 category = "techniques"
@@ -6668,7 +6664,7 @@ name = "Shadowcrafting"
 
 [[traits]]
 category = "techniques"
-name = "Shedding the Serpent's Skin"
+name = "Sloughing the Serpent's Skin"
 properties = { uses_per_game = 1 }
 
 [[traits]]
@@ -6697,7 +6693,7 @@ name = "Suck It Up"
 
 [[traits]]
 category = "techniques"
-name = "Symbolic Possession"
+name = "Symbiotic Possession"
 
 [[traits]]
 category = "techniques"
@@ -7062,7 +7058,7 @@ properties = { rating = 3, type = "Clan", requirement = "Baali: Angelis Ater" }
 [[traits]]
 category = "merits"
 name = "Blight of the Ever-Hungry"
-description = "In-clan disciplines become Auspex, Potence and Necromancy: Path of the Graveborne; a serrated maw bites without a grapple. Creation only."
+description = "In-clan disciplines become Auspex, Potence and Necromancy: Path of the Graveborn; a serrated maw bites without a grapple. Creation only."
 page_reference = "Vol. 2, p. 62"
 properties = { rating = 3, type = "Clan", requirement = "Nagaraja" }
 

@@ -1080,7 +1080,7 @@ active = { key = "Stone Strength", form = true, page = 171, notes = ["No damage 
 # In-clan with Blight of the Ever-Hungry (Vol. 2, p. 62), but no book we use gives its
 # powers: `unwritten`, so it has none here, and staff record them by hand.
 [[disciplines]]
-name = "Necromancy: Path of the Graveborne"
+name = "Necromancy: Path of the Graveborn"
 note = "The Nagaraja path Blight of the Ever-Hungry makes in-clan. Its powers are in no book Horatio draws on: ask your storyteller."
 unwritten = true
 

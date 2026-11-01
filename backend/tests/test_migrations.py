@@ -1,8 +1,11 @@
+import json
+import uuid
+
 from alembic import command
 from alembic.autogenerate import compare_metadata
 from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
-from sqlalchemy import Engine, select, text
+from sqlalchemy import Connection, Engine, select, text
 from sqlalchemy.orm import Session
 
 from horatio.models import Base, TraitCategory, TraitDefinition
@@ -109,4 +112,153 @@ def test_the_spelling_migration_renames_in_place_and_folds_in_the_misspelt_twin(
         assert moved == expertise
     finally:
         command.upgrade(alembic_config, "head")
+        load_rules(engine)
+
+
+def trait_definition(connection: Connection, category: str, name: str) -> object:
+    return connection.scalar(
+        text(
+            "select d.id from trait_definitions d join trait_categories c"
+            " on c.id = d.category_id where c.key = :category and d.name = :name"
+            " and d.troupe_id is null"
+        ),
+        {"category": category, "name": name},
+    )
+
+
+def held(connection: Connection, character: uuid.UUID) -> list[tuple[str, str]]:
+    rows = connection.execute(
+        text(
+            "select c.key, d.name from character_traits t"
+            " join trait_definitions d on d.id = t.trait_definition_id"
+            " join trait_categories c on c.id = d.category_id"
+            " where t.character_id = :id order by c.key, d.name"
+        ),
+        {"id": character},
+    ).all()
+    return [(r[0], r[1]) for r in rows]
+
+
+def test_the_power_spelling_migration_renames_held_traits_and_moves_collective_cognizance(
+    engine: Engine, alembic_config: Config
+) -> None:
+    """Migration 0122 (#410): a character holding a misspelt power keeps it under the
+    book's name, the same definition, and its name in a troupe's house strength and
+    an approved sheet follows. Collective Cognizance held as an elder power becomes
+    the luminary power, once."""
+    elder, luminary = "elder_disciplines", "luminary_disciplines"
+    cognizance = "Auspex: Collective Cognizance"
+    with engine.connect() as connection:
+        instincts = trait_definition(connection, elder, "Spiritus: Killer Instincts")
+        luminary_cognizance = trait_definition(connection, luminary, cognizance)
+    assert instincts is not None and luminary_cognizance is not None
+
+    command.downgrade(alembic_config, "0121")
+    user, troupe = uuid.uuid4(), uuid.uuid4()
+    alone, both = uuid.uuid4(), uuid.uuid4()
+    try:
+        with engine.begin() as connection:
+            assert trait_definition(connection, elder, "Spiritus: Killer Instinct") == instincts
+            connection.execute(
+                text(
+                    "insert into users (id, email, display_name, handle)"
+                    " values (:id, 'spelling@example.com', 'Speller', 'speller')"
+                ),
+                {"id": user},
+            )
+            connection.execute(
+                text("insert into troupes (id, name, lead_user_id) values (:id, 'Lexicon', :lead)"),
+                {"id": troupe, "lead": user},
+            )
+            for character, name in ((alone, "Only Elder"), (both, "Both Kinds")):
+                connection.execute(
+                    text(
+                        "insert into characters (id, player_id, splat, name, home_troupe_id)"
+                        " values (:id, :player, 'vampire', :name, :troupe)"
+                    ),
+                    {"id": character, "player": user, "name": name, "troupe": troupe},
+                )
+            elder_cognizance = connection.scalar(
+                text(
+                    "insert into trait_definitions (category_id, name)"
+                    " select category_id, :name from trait_definitions where id = :instincts"
+                    " returning id"
+                ),
+                {"name": cognizance, "instincts": instincts},
+            )
+            for character, definition in (
+                (alone, instincts),
+                (alone, elder_cognizance),
+                (both, elder_cognizance),
+                (both, luminary_cognizance),
+            ):
+                connection.execute(
+                    text(
+                        "insert into character_traits (character_id, trait_definition_id)"
+                        " values (:character, :definition)"
+                    ),
+                    {"character": character, "definition": definition},
+                )
+            connection.execute(
+                text(
+                    "insert into check_overrides (troupe_id, check_key, strength)"
+                    " values (:troupe, 'techniques/Perfected Insticts/1', 'off')"
+                ),
+                {"troupe": troupe},
+            )
+            snapshot = [
+                {"category": elder, "name": "Spiritus: Killer Instinct", "detail": ""},
+                {"category": elder, "name": cognizance, "detail": ""},
+            ]
+            connection.execute(
+                text(
+                    "insert into sheet_versions (character_id, troupe_id, number, snapshot,"
+                    " approved_by) values (:character, :troupe, 1, cast(:snapshot as jsonb),"
+                    " :user)"
+                ),
+                {
+                    "character": alone,
+                    "troupe": troupe,
+                    "snapshot": json.dumps(snapshot),
+                    "user": user,
+                },
+            )
+
+        command.upgrade(alembic_config, "head")
+
+        with engine.connect() as connection:
+            assert trait_definition(connection, elder, "Spiritus: Killer Instincts") == instincts
+            assert trait_definition(connection, elder, "Spiritus: Killer Instinct") is None
+            assert trait_definition(connection, elder, cognizance) is None
+            assert held(connection, alone) == [
+                (elder, "Spiritus: Killer Instincts"),
+                (luminary, cognizance),
+            ]
+            assert held(connection, both) == [(luminary, cognizance)]
+            assert connection.scalars(
+                text("select check_key from check_overrides where troupe_id = :id"),
+                {"id": troupe},
+            ).all() == ["techniques/Perfected Instincts/1"]
+            approved = connection.scalar(
+                text("select snapshot from sheet_versions where character_id = :id"),
+                {"id": alone},
+            )
+        assert approved == [
+            {"category": elder, "name": "Spiritus: Killer Instincts", "detail": ""},
+            {"category": luminary, "name": cognizance, "detail": ""},
+        ]
+    finally:
+        command.upgrade(alembic_config, "head")
+        with engine.begin() as connection:
+            for table, column, value in (
+                ("check_overrides", "troupe_id", troupe),
+                ("sheet_versions", "troupe_id", troupe),
+                ("character_traits", "character_id", alone),
+                ("character_traits", "character_id", both),
+                ("characters", "id", alone),
+                ("characters", "id", both),
+                ("troupes", "id", troupe),
+                ("users", "id", user),
+            ):
+                connection.execute(text(f"delete from {table} where {column} = :id"), {"id": value})
         load_rules(engine)

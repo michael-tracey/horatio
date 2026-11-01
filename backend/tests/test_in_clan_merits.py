@@ -68,10 +68,10 @@ def test_a_nagaraja_is_in_clan_for_auspex_dominate_and_the_ash_path() -> None:
     assert in_clan(sheet_of("Nagaraja")) == {"Auspex", "Dominate", "Necromancy: Ash Path"}
 
 
-def test_blight_makes_the_in_clan_disciplines_auspex_potence_and_the_graveborne() -> None:
+def test_blight_makes_the_in_clan_disciplines_auspex_potence_and_the_graveborn() -> None:
     sheet = sheet_of("Nagaraja", t("merits", "Blight of the Ever-Hungry", 3))
 
-    assert in_clan(sheet) == {"Auspex", "Potence", "Necromancy: Path of the Graveborne"}
+    assert in_clan(sheet) == {"Auspex", "Potence", "Necromancy: Path of the Graveborn"}
 
 
 def test_blight_prices_potence_in_clan_and_dominate_out_of_it() -> None:
@@ -477,7 +477,7 @@ def test_the_starting_disciplines_follow_merits_that_change_what_is_in_clan(
     blight = pick(player, character_id, "merits", "Blight of the Ever-Hungry", 3)
     assert blight.status_code == 200, blight.text
 
-    assert at(2)["options"] == ["Auspex", "Necromancy: Path of the Graveborne", "Potence"]
+    assert at(2)["options"] == ["Auspex", "Necromancy: Path of the Graveborn", "Potence"]
     assert at(2)["traits"] == [
         {"name": "Dominate", "detail": "", "pick": 2, "fits": False, "because": [], "freed_by": []}
     ]

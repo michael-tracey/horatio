@@ -175,17 +175,17 @@ def test_an_angelis_ater_ghoul_has_its_domitors_choice(troupe: Troupe) -> None:
 # --- 3. Blight of the Ever-Hungry ---------------------------------------------------
 
 
-def test_a_nagaraja_with_blight_places_the_graveborne_path_and_finishes(troupe: Troupe) -> None:
+def test_a_nagaraja_with_blight_places_the_graveborn_path_and_finishes(troupe: Troupe) -> None:
     character_id = creating(troupe, "Nagaraja")
     player = troupe.player
     build_but_disciplines(player, character_id)
     assert merits(player, character_id, [("Blight of the Ever-Hungry", "")]).status_code == 200
 
-    graveborne = "Necromancy: Path of the Graveborne"
+    graveborn = "Necromancy: Path of the Graveborn"
     state = creation(player, character_id)
-    assert in_clan_options(state) == ["Auspex", graveborne, "Potence"]
+    assert in_clan_options(state) == ["Auspex", graveborn, "Potence"]
     assert state["shortfalls"] == []
-    place_disciplines(player, character_id, ["Potence", "Auspex", graveborne])
+    place_disciplines(player, character_id, ["Potence", "Auspex", graveborn])
 
     finished = finish(player, character_id)
     assert finished.status_code == 200, finished.text

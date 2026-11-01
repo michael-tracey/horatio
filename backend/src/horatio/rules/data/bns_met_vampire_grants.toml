@@ -399,12 +399,12 @@ page = "Vol. 2 Issue 1, p. 36"
 # --- in-clan disciplines replaced ----------------------------------------------------
 
 # The merit sets all of the character's in-clan disciplines, in place of the clan's.
-# Nagaraja lose Dominate and the Ash Path. No book we use describes the Graveborne
+# Nagaraja lose Dominate and the Ash Path. No book we use describes the Graveborn
 # path's powers, so the catalogue lists it without them.
 [[grants]]
 source = { category = "merits", name = "Blight of the Ever-Hungry" }
 kind = "replace_in_clan"
-target = { category = "disciplines", names = ["Auspex", "Potence", "Necromancy: Path of the Graveborne"] }
+target = { category = "disciplines", names = ["Auspex", "Potence", "Necromancy: Path of the Graveborn"] }
 amount = 0
 page = "Vol. 2, p. 62"
 

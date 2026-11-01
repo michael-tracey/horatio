@@ -1025,7 +1025,7 @@ requires = { any_of = [
   { has = { category = "merits", name = "Voudoun Master" }, not = { self = { names = ["Necromancy: Mortis Path"] } }, count = { category = "disciplines", names = [
     "Necromancy: Ash Path", "Necromancy: Mortis Path", "Necromancy: Path of Grief",
     "Necromancy: Path of Soul Bonding", "Necromancy: Sepulchre Path",
-    "Necromancy: Path of the Graveborne",
+    "Necromancy: Path of the Graveborn",
   ], lte = 1 } },
 ] }
 message = "A path of Necromancy needs Necromantic Training, a merit that grants the path, or a clan that has it in-clan."
@@ -1454,7 +1454,7 @@ page = "Vol. 2 Issue 1, p. 58"
 
 [[checks]]
 category = "techniques"
-name = "Beastial Allure"
+name = "Bestial Allure"
 requires = { has_all = [
   { category = "disciplines", name = "Animalism", rating = 2 },
   { category = "disciplines", name = "Presence", rating = 3 },
@@ -1886,7 +1886,7 @@ page = "Vol. 2 Issue 1, p. 73"
 
 [[checks]]
 category = "techniques"
-name = "Perfected Insticts"
+name = "Perfected Instincts"
 requires = { has_all = [
   { category = "disciplines", name = "Spiritus", rating = 2 },
   { category = "disciplines", name = "Animalism", rating = 4 },
@@ -2018,7 +2018,7 @@ page = "Vol. 2 Issue 1, p. 76"
 
 [[checks]]
 category = "techniques"
-name = "Saguinary Expulsion"
+name = "Sanguinary Expulsion"
 requires = { has_all = [
   { category = "disciplines", name = "Potence", rating = 1 },
   { category = "disciplines", name = "Fortitude", rating = 2 },
@@ -2068,7 +2068,7 @@ page = "Vol. 2 Issue 1, p. 80"
 
 [[checks]]
 category = "techniques"
-name = "Shedding the Serpent's Skin"
+name = "Sloughing the Serpent's Skin"
 requires = { has_all = [
   { category = "disciplines", name = "Serpentis", rating = 3 },
   { category = "disciplines", name = "Fortitude", rating = 2 },
@@ -2139,7 +2139,7 @@ page = "Vol. 2, p. 89"
 
 [[checks]]
 category = "techniques"
-name = "Symbolic Possession"
+name = "Symbiotic Possession"
 requires = { has_all = [
   { category = "disciplines", name = "Daimoinon", rating = 3 },
   { category = "disciplines", name = "Dominate", rating = 2 },
