@@ -36,6 +36,7 @@ export type CatalogueOut = Schemas["CatalogueOut"];
 export type TraitOut = Schemas["TraitOut"];
 export type CategoryOut = Schemas["CategoryOut"];
 export type TroupeOut = Schemas["TroupeOut"];
+export type WaitingLine = Schemas["WaitingLine"];
 export type StaffMember = Schemas["StaffMember"];
 export type MembershipOut = Schemas["MembershipOut"];
 export type DifferenceOut = Schemas["DifferenceOut"];

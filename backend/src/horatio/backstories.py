@@ -46,7 +46,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, not_, or_, select
 from sqlalchemy.orm import Session
 
 from horatio import audit, social_age
@@ -388,6 +388,41 @@ def ensure_approved(db: Session, character: Character, troupe: Troupe) -> None:
         )
     raise conflict(
         f"{troupe.name} needs {character.name}'s backstory approved before accepting the character."
+    )
+
+
+def waiting(db: Session, troupe: Troupe) -> list[uuid.UUID]:
+    """The PCs whose backstory waits for `troupe`'s storytellers to read (issue #373),
+    in one query, longest waiting first: active ones it reads (`review_troupe`), with
+    something written, neither approved there as it stands nor sent back to the
+    player."""
+    asking = select(Approval.character_id).where(
+        Approval.kind == "home_troupe_change", Approval.status == "pending"
+    )
+    reads_here = or_(
+        Character.id.in_(asking.where(Approval.troupe_id == troupe.id)),
+        and_(Character.home_troupe_id == troupe.id, Character.id.not_in(asking)),
+    )
+    settled_here = and_(
+        Backstory.review_troupe_id == troupe.id,
+        or_(
+            Backstory.review == "returned",
+            and_(Backstory.review == "approved", Backstory.approved_text == Backstory.text),
+        ),
+    )
+    return list(
+        db.scalars(
+            select(Character.id)
+            .join(Backstory, Backstory.character_id == Character.id)
+            .where(
+                Character.kind == "pc",
+                Character.status == "active",
+                reads_here,
+                Backstory.text.regexp_match(r"\S"),
+                not_(settled_here),
+            )
+            .order_by(Backstory.changed_at, Character.id)
+        )
     )
 
 
