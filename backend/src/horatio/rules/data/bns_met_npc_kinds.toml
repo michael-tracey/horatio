@@ -70,7 +70,7 @@ group = "mortal"
 nature = "mortal"
 page = 489
 notes = [
-  "Skill specializations only (p. 489).",
+  "Skill specialisations only (p. 489).",
   "5 Blood, which it cannot spend (p. 490).",
   "A plain vampire hunter is a mortal, such as Douglas Houston, rating 3 (p. 493).",
 ]
@@ -84,7 +84,7 @@ page = 491
 to_page = 493
 notes = [
   "The Society of Leopold: trained to fight and destroy vampires, sometimes with True Faith.",
-  "A True Faith specialization gives 1 dot of True Faith per NPC rating.",
+  "A True Faith specialisation gives 1 dot of True Faith per NPC rating.",
   "Someone with True Faith cannot be Embraced: they die instead.",
   "Can pray for a miracle: dramatic, rare, at most one a story.",
 ]
@@ -118,7 +118,7 @@ specializations = [
 resource = { name = "Mana", size = 5, per_turn = 1, regains = "1 for each hour of meditation" }
 notes = [
   "Occult scholars who would rather watch, and pass what they learn to other hunters.",
-  "Hedge Magic is shown as specializations in set Thaumaturgy and Necromancy paths, fuelled by mana.",
+  "Hedge Magic is shown as specialisations in set Thaumaturgy and Necromancy paths, fuelled by mana.",
 ]
 
 [[kinds]]
@@ -138,7 +138,7 @@ specializations = [
 resource = { name = "Focus", size = 5, per_turn = 1, regains = "1 for each hour of meditation" }
 notes = [
   "A US government agency with wide powers of surveillance.",
-  "Psychic Numina are shown as specializations in Auspex, Dominate and set Thaumaturgy paths, fuelled by focus.",
+  "Psychic Numina are shown as specialisations in Auspex, Dominate and set Thaumaturgy paths, fuelled by focus.",
   "Uses its Thaumaturgy paths with the mind alone: no words or gestures.",
 ]
 
@@ -263,7 +263,7 @@ notes = [
   "Uses Pathos as a vampire uses Blood: for its disciplines and to heal.",
   "Lives in the Shadowlands: it sees the living world but cannot touch it, or use powers on it but its first 2 dots of Dementation, unless it manifests.",
   "Spends Pathos to manifest for an hour: its health levels while manifested are the Pathos spent, at most 5, and cannot be raised after.",
-  "A Dementation specialization takes it above its first 2 dots.",
+  "A Dementation specialisation takes it above its first 2 dots.",
 ]
 
 [[kinds.powers]]

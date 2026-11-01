@@ -423,9 +423,9 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByRole("button", { name: /^Contacts/ }).click();
   await p.getByRole("button", { name: "Add to cart" }).click();
   await p.getByRole("button", { name: "Spend XP" }).click();
-  await p.getByRole("button", { name: "Add to Contacts Specializations" }).click();
-  const contact = p.getByRole("listitem").filter({ has: p.getByLabel("Name a Contacts Specializations") });
-  await contact.getByLabel("Name a Contacts Specializations").fill("Reyes");
+  await p.getByRole("button", { name: "Add to Contacts Specialisations" }).click();
+  const contact = p.getByRole("listitem").filter({ has: p.getByLabel("Name a Contacts Specialisations") });
+  await contact.getByLabel("Name a Contacts Specialisations").fill("Reyes");
   await contact.getByRole("button", { name: "Add", exact: true }).click();
   await expect(p.getByRole("button", { name: "Remove Reyes" })).toBeVisible();
   await p.screenshot(shots("specializations"));
@@ -606,7 +606,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
     await expect(page.getByText("Contacts (Reyes)", { exact: true })).toBeVisible();
     await expect(page.getByText("Influences: The Elite", { exact: true })).toBeVisible();
     await expect(page.getByText("(Police)", { exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /Specializations|Influence: Elite/ })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: /Speciali[sz]ations|Influence: Elite/ })).toHaveCount(0);
   };
   await specialised(p);
   // The whole page shows, scaled down on a phone to fit it; the paper size links to its setting.
@@ -1116,7 +1116,7 @@ test("feeding in a downtime: Herd given to another character, both answered, and
   await l.getByLabel("Feeding for Brujah").fill("2");
   await l.getByLabel("Reason for Brujah").fill("riots downtown");
   await l.getByRole("listitem").filter({ hasText: "Brujah" }).getByRole("button", { name: "Save" }).click();
-  await expect(l.getByText("Needs 2: Brujah 2 (riots downtown)")).toBeVisible();
+  await expect(l.getByText("Needs 2 feeding: Brujah 2 (riots downtown).")).toBeVisible();
 
   // Agnes keeps one dot of Herd for her own feeding and gives the other to Bram.
   const a = giver.page;
@@ -1126,8 +1126,8 @@ test("feeding in a downtime: Herd given to another character, both answered, and
   await feeding.getByLabel("Use for my feeding").fill("1");
   await feeding.getByRole("button", { name: "Give Herd to another character" }).click();
   await expect(feeding.getByLabel("Give to…")).toHaveValue(bram);
-  await expect(feeding.getByText("2 of 2 dots shared out")).toBeVisible();
-  await expect(feeding.getByRole("status")).toHaveText("Feeding 0 + your Herd 1 = 1 of 1 needed ✓");
+  await expect(feeding.getByText("2 of your 2 dots shared out")).toBeVisible();
+  await expect(feeding.getByRole("status")).toHaveText("Enough feeding: 1 of the 1 needed (1 from your Herd) ✓");
   await a.screenshot(shots("downtime-feeding"));
   await a.getByRole("button", { name: "Submit downtime" }).click();
   await expect(a.getByText("Submitted", { exact: true })).toBeVisible();
@@ -1138,7 +1138,7 @@ test("feeding in a downtime: Herd given to another character, both answered, and
   const his = b.locator("section").filter({ has: b.getByRole("heading", { name: "Feeding" }) });
   await expect(his.getByText("You need 2 feeding this cycle: Brujah 2 (riots downtown).")).toBeVisible();
   await expect(his.getByText("Agnes gave you 1 Herd.")).toBeVisible();
-  await expect(his.getByRole("status")).toHaveText("Feeding 0 + 1 from Agnes = 1 of 2 needed: you'll come to game at half Blood unless staff say otherwise.");
+  await expect(his.getByRole("status")).toHaveText("1 of the 2 feeding needed so far (1 from Agnes): you'll come to game at half Blood unless staff say otherwise.");
   await his.getByLabel("Where and how").fill("The back rooms of the Rack");
   await b.getByRole("button", { name: "Submit downtime" }).click();
   await expect(b.getByText("Submitted", { exact: true })).toBeVisible();

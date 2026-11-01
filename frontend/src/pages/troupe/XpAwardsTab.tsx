@@ -85,7 +85,7 @@ export function XpAwardsTab({ troupeId }: { troupeId: string }) {
               <Input
                 required
                 maxLength={500}
-                placeholder="Game, 18 October"
+                placeholder="e.g. Game, 18 October"
                 value={reason}
                 onChange={(e) => {
                   setReason(e.target.value);

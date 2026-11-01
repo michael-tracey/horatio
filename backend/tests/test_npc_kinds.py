@@ -189,7 +189,7 @@ def test_the_rating_is_1_to_5_or_higher_where_the_kind_allows() -> None:
 
 def test_mortals_cannot_take_discipline_specializations() -> None:
     assert allowed("mortal", 3, power("Potence")) == (
-        "A mortal Stock NPC takes skill specializations only (p. 489)."
+        "A mortal Stock NPC takes skill specialisations only (p. 489)."
     )
     assert allowed("ghoul", 3, power("Potence")) is None
     assert allowed("vampire", 3, power("Thaumaturgy: Path of Blood")) is None
@@ -208,7 +208,7 @@ def test_hunters_take_only_their_own_numina_and_powers() -> None:
 
 def test_supernaturals_take_the_disciplines_their_kind_lists() -> None:
     assert allowed("werewolf", 3, power("Obeah")) is None
-    assert "cannot specialize in Dominate" in str(allowed("werewolf", 3, power("Dominate")))
+    assert "cannot specialise in Dominate" in str(allowed("werewolf", 3, power("Dominate")))
     # A mage may take any path of Necromancy or Thaumaturgy (p. 496).
     assert allowed("mage", 2, power("Necromancy: Mortis Path")) is None
     assert allowed("mage", 2, power("Thaumaturgy: Path of Blood")) is None
@@ -225,7 +225,7 @@ def test_a_custom_kind_is_set_up_by_the_storyteller() -> None:
     assert (angel.label, angel.resource.name) == ("Angel", "Grace")
     assert stat_block(angel, 3, []).resource == Resource("Grace", 7, 2, "at dawn")
     check(angel, 3, [power("Presence")], SKILLS, DISCIPLINES)
-    with pytest.raises(StockError, match="skill specializations only"):
+    with pytest.raises(StockError, match="skill specialisations only"):
         check(hermit, 3, [power("Presence")], SKILLS, DISCIPLINES)
 
 

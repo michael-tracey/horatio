@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FeedingNeedOut } from "./api/types";
-import { emptyFeeding, herdShared, needText, tally } from "./feeding";
+import { emptyFeeding, herdShared, needText, staffTallyText, tally } from "./feeding";
 
 const need: FeedingNeedOut = {
   needed: 2,
@@ -20,13 +20,14 @@ describe("feeding", () => {
   it("counts feeding actions, the character's Herd and gifts", () => {
     const answer = { ...emptyFeeding(), actions: 1, herd_own: 1 };
     const t = tally(need, answer, [{ character_name: "Bram", amount: 2, submitted: true }]);
-    expect(t.text).toBe("Feeding 1 + your Herd 1 + 2 from Bram = 4 of 2 needed ✓");
+    expect(t.text).toBe("Enough feeding: 4 of the 2 needed (1 feeding action, 1 from your Herd, 2 from Bram) ✓");
     expect(t.enough).toBe(true);
   });
 
   it("says when it falls short, without blocking", () => {
     const t = tally(need, { ...emptyFeeding(), actions: 1 }, []);
-    expect(t.text).toBe("Feeding 1 = 1 of 2 needed: you'll come to game at half Blood unless staff say otherwise.");
+    expect(t.text).toBe("1 of the 2 feeding needed so far (1 feeding action): you'll come to game at half Blood unless staff say otherwise.");
+    expect(tally(need, emptyFeeding(), []).text).toBe("0 of the 2 feeding needed so far: you'll come to game at half Blood unless staff say otherwise.");
     expect(t.enough).toBe(false);
   });
 
@@ -36,6 +37,15 @@ describe("feeding", () => {
     const none = tally({ ...need, herd_factor: 0, always_half: true }, { ...emptyFeeding(), actions: 3, herd_own: 2 }, []);
     expect(none.total).toBe(3);
     expect(none.enough).toBe(false);
+  });
+
+  it("says it for staff, with only what counts", () => {
+    const parts = [{ label: "Feeding actions", amount: 0 }, { label: "your Herd", amount: 1 }];
+    expect(staffTallyText({ needed: 1, total: 1, enough: true, parts })).toBe("Has 1 feeding, enough for the 1 it needs: own Herd 1 ✓");
+    expect(staffTallyText({ needed: 2, total: 0, enough: false, parts: parts.slice(0, 1) })).toBe("Has 0 of the 2 feeding it needs, short 2");
+    expect(staffTallyText({ needed: 1, total: 3, enough: false, parts: [{ label: "Feeding actions", amount: 3 }] })).toBe(
+      "Has 3 feeding: Feeding actions 3, but no feeding brings it to full Blood",
+    );
   });
 
   it("adds up the Herd shared out", () => {

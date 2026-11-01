@@ -565,7 +565,7 @@ def test_experience_waits_until_creation_is_finished(troupe: Troupe) -> None:
         json={"category": "skills", "name": "Brawl", "rating": 1},
     )
     assert early.status_code == 409
-    assert "creation wizard" in early.json()["detail"]
+    assert "step-by-step creation" in early.json()["detail"]
 
     build(troupe.player, character_id)
     later = troupe.player.client.put(

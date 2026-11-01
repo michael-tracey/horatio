@@ -100,7 +100,7 @@ ASKED_KIND = "merit_flaw"
 PURCHASE_KINDS = (*HELD_KINDS, ASKED_KIND)
 
 FINISH_CREATION_FIRST = (
-    "Build the character in the creation wizard first; "
+    "Build the character in step-by-step creation first; "
     + "experience can be spent once it is finished."
 )
 
@@ -2277,7 +2277,7 @@ def change_choice(
     XP spent."""
     ensure_unlocked(db, character)
     if character.creation_completed_at is None:
-        raise conflict("During creation, change it in the creation wizard; it is free there.")
+        raise conflict("During creation, change it in step-by-step creation; it is free there.")
     old_definition, category = find_definition(db, character, category_key, from_name)
     new_definition, _ = find_definition(db, character, category_key, to_name)
     if category.change_cost is None:

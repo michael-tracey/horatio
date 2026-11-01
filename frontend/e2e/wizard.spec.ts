@@ -418,7 +418,7 @@ test("a Cappadocian takes Chosen of Cappadocius in the wizard and chooses its sp
   await settle.getByRole("link", { name: "Go to Skills" }).click();
 
   const chosen = p.getByRole("group", { name: "Free traits from Chosen of Cappadocius" });
-  for (const heading of ["Lore Specializations", "Languages", "Academics Specializations"]) {
+  for (const heading of ["Lore Specialisations", "Languages", "Academics Specialisations"]) {
     for (const choice of [1, 2]) await chosen.getByLabel(`${heading}, choice ${choice}`).selectOption({ index: choice });
   }
   await chosen.getByRole("button", { name: "Save choices" }).click();

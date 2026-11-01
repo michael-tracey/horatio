@@ -3,6 +3,7 @@ import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CharacterFeedingOut, CycleOut, CycleFeedingOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
+import { staffTallyText } from "../../feeding";
 import { useAction } from "../../hooks";
 
 type Clan = CycleFeedingOut["clans"][number];
@@ -116,7 +117,6 @@ function CharacterFeeding({ cycle, character: c }: { cycle: CycleOut; character:
   });
   const submitted = c.submission_status === "submitted";
   const answerable = submitted && cycle.status !== "complete";
-  const tallyText = `${c.tally.parts.map((p) => `${p.label} ${p.amount}`).join(" + ")} = ${c.tally.total} of ${c.tally.needed}`;
 
   return (
     <Card
@@ -129,8 +129,8 @@ function CharacterFeeding({ cycle, character: c }: { cycle: CycleOut; character:
       }
     >
       <p className="text-sm">
-        Needs <strong className="text-gold">{c.need.needed}</strong>: {c.need.lines.map((l) => l.text).join(" · ")}
-        {c.herd > 0 && <span className="text-mist"> · Herd {c.herd}</span>}
+        Needs <strong className="text-gold">{c.need.needed}</strong> feeding: {c.need.lines.map((l) => l.text).join(" · ")}.
+        {c.herd > 0 && <span className="text-mist"> Has Herd {c.herd}.</span>}
       </p>
       <p className="mt-1 text-sm">{c.summary || <span className="text-mist">No feeding entered.</span>}</p>
       {c.received.map((r) => (
@@ -139,7 +139,7 @@ function CharacterFeeding({ cycle, character: c }: { cycle: CycleOut; character:
         </p>
       ))}
       <p className={`mt-1 text-sm ${c.tally.enough ? "text-gold" : "text-mist"}`} aria-label={`${c.character_name}'s tally`}>
-        {tallyText} {c.tally.enough ? "✓" : "· short"}
+        {staffTallyText(c.tally)}
       </p>
 
       {c.result && c.working && <p className="mt-2 text-xs text-mist">How it was worked out: {c.working}</p>}

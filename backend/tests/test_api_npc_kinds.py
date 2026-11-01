@@ -146,7 +146,7 @@ def test_a_stock_npc_is_changed_as_the_rules_allow(troupe: Troupe) -> None:
 
     refused = stock(st, npc_id, npc_kind="mortal", rating=3, specializations=specs("+Potence"))
     assert refused.status_code == 422
-    assert "skill specializations only" in refused.json()["detail"]
+    assert "skill specialisations only" in refused.json()["detail"]
     too_many = stock(
         st, npc_id, npc_kind="mortal", rating=1, specializations=specs("Brawl", "Dodge")
     )

@@ -265,7 +265,7 @@ def print_characters(
 
 # What each logged action reads as. `{character}` and `{actor}` are filled in.
 MESSAGES: dict[str, str] = {
-    "troupe.join": "{character} joined the troupe.",
+    "troupe.join": "{character} started visiting the troupe.",
     "troupe.leave": "{character} left the troupe.",
     "character.deleted": "{character} was deleted by its player.",
     "approval.request": "{actor} asked for {character} to be approved.",
@@ -309,6 +309,8 @@ MESSAGES: dict[str, str] = {
     " {extra} extra, {self_entered_removed} self-entered and {above_ceiling_removed} above"
     " the ceiling taken away.",
     "troupe.starting_xp": "{actor} set the troupe's starting XP to {starting_xp}.",
+    "troupe.xp_defaults": "{actor} set the troupe's XP to {session_xp} for a game and"
+    " {downtime_xp} for a downtime.",
     "troupe.xp_range_game": "{actor} added a game's {amount} XP to the floor and ceiling.",
     "troupe.xp_range_downtime": "{actor} added a downtime's {amount} XP to the ceiling.",
     "troupe.xp_range_set": "{actor} set the XP floor to {floor} and the ceiling to {ceiling}:"
@@ -323,6 +325,10 @@ MESSAGES: dict[str, str] = {
     "troupe.settled.visit": "{character}'s visit to {troupe} ended as it was archived{because}.",
     "troupe.settled_later": "{actor} settled what the archived troupe still held{because}.",
     "troupe.reopened": "{actor} reopened the troupe{because}.",
+    "troupe_request.made": "{actor} asked the custodian for a new troupe, {name}.",
+    "troupe_request.approved": "{actor} made the troupe {name} that {member} asked for.",
+    "troupe_request.declined": "{actor} declined the request for the troupe {name}.",
+    "troupe_request.withdrawn": "{actor} withdrew the request for the troupe {name}.",
     "downtime.cycle_ended": "{actor} ended the downtime cycle {name} unanswered, as the troupe"
     " was archived.",
     "troupe.profile_changed": "{actor} changed the troupe's profile.",
@@ -338,9 +344,16 @@ MESSAGES: dict[str, str] = {
     "downtime.cycle_created": "{actor} created a downtime cycle.",
     "downtime.cycle_opened": "{actor} opened a downtime cycle ({participants} taking part).",
     "downtime.cycle_closed": "{actor} closed a downtime cycle.",
+    "downtime.cycle_completed": "{actor} marked a downtime cycle complete.",
+    "downtime.form_changed": "{actor} changed the downtime form ({questions} questions).",
+    "downtime.completion_xp_set": "{actor} set the XP for submitting a downtime to {amount}.",
+    "downtime.late_accepted": "{actor} accepted {character}'s late downtime.",
     "downtime.submitted": "{character} submitted a downtime.",
     "xp.downtime_completed": "{character} earned {amount} XP for submitting a downtime.",
     "response.written": "{actor} wrote a downtime response for {character}.",
+    "response.assigned": "{actor} assigned {character}'s downtime response.",
+    "response.accepted": "{actor} took on {character}'s downtime response.",
+    "response.declined": "{actor} handed back {character}'s downtime response.",
     "downtime.delivered": "{actor} delivered {count} downtime results.",
     "connector.changed": "{actor} turned the {connector} connector {state}.",
     "connector.discord_connected": "{actor} connected the Discord server {server}.",
@@ -383,6 +396,7 @@ MESSAGES: dict[str, str] = {
     " rated {rating}; specializations: {specializations}; left off the sheet: {left_out})."
     " Its notes: {notes}",
     "npc.deleted": "{actor} deleted the NPC {character}.",
+    "npc.stock_changed": "{actor} changed the Stock NPC {character}.",
     "title.given": "{actor} gave {character} the title {title}.",
     "title.taken": "{actor} took the title {title} from {character}.",
     "title.chosen": "{actor} chose the title {title} for {character} ({what}).",
@@ -455,6 +469,7 @@ MESSAGES: dict[str, str] = {
     " Blooded: it {setting}.",
     "house.clan_rarity": "{actor} set how rare clans are here: {rarities}.",
     "sheet.give": "{actor} gave {character} {name} {rating} by exception ({cost} XP): {reason}",
+    "sheet.power_choices": "{actor} changed {character}'s choices for {power}.",
     "creation.pick": "{actor} picked {name} {rating} for {character}.",
     "creation.unpick": "{actor} took back {character}'s creation pick of {name}.",
     "creation.set_category": "{actor} set {character}'s starting {category}: {picks}.",
@@ -523,6 +538,7 @@ MESSAGES: dict[str, str] = {
     "xp.debt_added": "{actor} added {amount} XP of debt to {character}, now owing {debt}: {reason}",
     "xp.debt_forgiven": "{actor} forgave {amount} XP of {character}'s debt, now owing {debt}:"
     " {reason}",
+    "xp.corrected": "{actor} corrected {character}'s XP for {award} from {was} to {now}{because}.",
     "picture.uploaded": "{actor} gave {character} a picture.",
     "picture.replaced": "{actor} gave {character} a new picture.",
     "picture.cropped": "{actor} moved the crop of {character}'s picture.",
@@ -542,6 +558,9 @@ MESSAGES: dict[str, str] = {
     "clan_logo.removed": "{actor} removed the logo for {clan}.",
     "audit.exported": "{actor} exported {count} events from the audit log.",
     "play.reset": "{actor} reset {character} for the next game (game {game} kept).",
+    "play.modifier_added": "{actor} added the modifier {label} to {character}.",
+    "play.modifier_changed": "{actor} changed {character}'s modifier {label}.",
+    "play.modifier_removed": "{actor} removed {character}'s modifier {label}.",
     "play.status_chosen": "{actor} chose {character}'s status for game {game}: {choice}.",
     "play.troupe_reset": "{actor} reset {count} characters for the next game.",
     "play.counter_added": "{actor} added a counter to {character}'s Play View: {name} ({uses}).",

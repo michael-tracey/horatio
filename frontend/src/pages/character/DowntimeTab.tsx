@@ -224,7 +224,8 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
           <ul className="mt-3 border-t border-ash pt-2 text-xs text-mist">
             {d.breakdown.map((b, i) => (
               <li key={i}>
-                {signed(b.amount)} {b.action_kind.replace(/_/g, " ")} from {b.source}
+                {signed(b.amount)} {b.action_kind.replace(/_/g, " ")} {Math.abs(b.amount) === 1 ? "action" : "actions"}{" "}
+                {b.source === "Everyone" ? "(everyone gets these)" : `from ${b.source}`}
                 {b.note && <span className="block pl-3">{b.note}</span>}
               </li>
             ))}

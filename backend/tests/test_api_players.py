@@ -55,7 +55,7 @@ def test_the_log_names_a_characters_player(troupe: Troupe) -> None:
     messages = [e["message"] for e in troupe_log(troupe)]
     assert messages[:2] == [
         "Mr. Carbuncle (player) left the troupe.",
-        "Mr. Carbuncle (player) joined the troupe.",
+        "Mr. Carbuncle (player) started visiting the troupe.",
     ]
     entry = troupe_log(troupe)[0]
     assert (entry["player_id"], entry["player_name"]) == (troupe.player.id, "player")
@@ -79,7 +79,9 @@ def test_the_log_uses_the_players_name_as_it_is_now(troupe: Troupe) -> None:
     member(troupe)
     assert edit(troupe.player, display_name="Jane Doe").status_code == 200
 
-    assert troupe_log(troupe)[0]["message"] == "Mr. Carbuncle (Jane Doe) joined the troupe."
+    assert (
+        troupe_log(troupe)[0]["message"] == "Mr. Carbuncle (Jane Doe) started visiting the troupe."
+    )
 
 
 def test_an_npc_has_no_player_in_the_log(troupe: Troupe) -> None:

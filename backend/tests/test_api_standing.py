@@ -400,7 +400,7 @@ def test_the_log_reads_newest_first(troupe: Troupe) -> None:
 
     assert messages[:2] == [
         "player asked to make this Agnes's home.",
-        "Agnes (player) joined the troupe.",
+        "Agnes (player) started visiting the troupe.",
     ]
     # Staff changes from setting the troupe up are there too.
     assert "lead made narrator narrator." in messages

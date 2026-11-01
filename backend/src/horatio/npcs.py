@@ -95,7 +95,7 @@ def create_npc(
     starts at rating 1 with no specializations, for `set_stock` to fill in."""
     resolve_kind(npc_kind, custom)
     if npc_form == "stock" and wizard:
-        raise unprocessable("A Stock NPC has no sheet to build in the creation wizard.")
+        raise unprocessable("A Stock NPC has no sheet to build step by step.")
     npc = Character(
         player_id=staff.id,
         splat=splat,
@@ -202,7 +202,7 @@ def set_rating(
     if npc.kind != "npc":
         raise conflict("Only an NPC's ratings can be set directly.")
     if npc.npc_form == "stock":
-        raise conflict("A Stock NPC has no sheet: change its rating and specializations instead.")
+        raise conflict("A Stock NPC has no sheet: change its rating and specialisations instead.")
     definition, category = find_definition(db, npc, category_key, name)
     if not category.rated:
         if rating is not None:

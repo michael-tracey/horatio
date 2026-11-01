@@ -1177,12 +1177,12 @@ function CreationPanel({
       title="Character creation"
       actions={
         <Link to={`/characters/${character.id}/create`}>
-          <Button tabIndex={-1}>Open the creation wizard</Button>
+          <Button tabIndex={-1}>Open step-by-step creation</Button>
         </Link>
       }
     >
       <p className="mb-3 text-sm text-mist">
-        Characters are built in the creation wizard, one step at a time.
+        Characters are built in step-by-step creation.
         Picks placed or taken back here wait in the cart until you apply them.
         Experience can be spent once creation is finished.
       </p>

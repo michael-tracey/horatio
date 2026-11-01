@@ -161,7 +161,7 @@ function Builder({
               <ErrorText error={save.error} />
             </div>
           </Card>
-          <Card title={`Specializations (${stock.specializations.length} of ${stock.rating})`}>
+          <Card title={`Specialisations (${stock.specializations.length} of ${stock.rating})`}>
             <div className="flex flex-col gap-3">
               {stock.specializations.length ? (
                 <ul className="divide-y divide-ash">
@@ -193,7 +193,7 @@ function Builder({
               >
                 <div className="flex-1">
                   <Field
-                    label="Add a specialization"
+                    label="Add a specialisation"
                     hint={kind.specialization_label ? `${kind.specialization_label}: a skill, or one of the kind's list.` : "A skill, or a power from the kind's list."}
                   >
                     <Select value={pick} onChange={(e) => setPick(e.target.value)}>

@@ -177,7 +177,7 @@ test("storytellers build a Stock NPC from the NPCs tab and see the book's stat b
   await expect(p.getByRole("heading", { name: "Gnashes-the-Moon" })).toBeVisible();
 
   const add = async (choice: string) => {
-    await p.getByLabel("Add a specialization").selectOption(choice);
+    await p.getByLabel("Add a specialisation").selectOption(choice);
     await p.getByRole("button", { name: "Add", exact: true }).click();
   };
   await add("skill:Brawl");
@@ -194,12 +194,12 @@ test("storytellers build a Stock NPC from the NPCs tab and see the book's stat b
 
   // The rating holds the count; a discipline off the werewolf's list is refused.
   await add("power:Dominate");
-  await expect(p.getByText("Werewolf Stock NPCs cannot specialize in Dominate.")).toBeVisible();
+  await expect(p.getByText("Werewolf Stock NPCs cannot specialise in Dominate.")).toBeVisible();
   await expect(p.getByRole("listitem", { name: "Dominate" })).toHaveCount(0);
   await add("skill:Stealth");
-  await expect(p.getByRole("heading", { name: "Specializations (3 of 3)" })).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Specialisations (3 of 3)" })).toBeVisible();
   await add("skill:Melee");
-  await expect(p.getByText("as many specializations as its rating")).toBeVisible();
+  await expect(p.getByText("as many specialisations as its rating")).toBeVisible();
   await expect(p.getByRole("listitem", { name: "Melee" })).toHaveCount(0);
 });
 

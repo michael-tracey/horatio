@@ -27,7 +27,7 @@ export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEd
     <div className="flex flex-col gap-6">
       <Explainer id="rules-starting" title="How starting points work">
         <p className="text-sm">
-          A new character places these in the creation wizard: picks give a trait that many free dots, and a budget of points
+          A new character places these during step-by-step creation: picks give a trait that many free dots, and a budget of points
           buys merits (or is paid back by flaws) at their value.{" "}
           {canEdit ? "Change a category to play it differently here; going back uses the rule set's again." : ""}
         </p>
