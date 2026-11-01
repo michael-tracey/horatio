@@ -47,6 +47,24 @@ def test_the_log_says_who_did_what(troupe: Troupe) -> None:
     assert entry["at"]
 
 
+def test_the_log_names_categories_as_the_rules_do(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player, finished=False)
+    client = troupe.player.client
+    for category, picks in (
+        ("focus_socials", [{"name": "Charisma", "rating": 1}]),
+        ("skills", [{"name": "Brawl", "rating": 4}]),
+    ):
+        placed = client.put(
+            f"/characters/{character_id}/creation/categories/{category}", json={"picks": picks}
+        )
+        assert placed.status_code == 200, placed.text
+
+    assert [m for _, m in log(troupe.player, character_id)[:2]] == [
+        "player set Agnes's starting skills: Brawl 4.",
+        "player set Agnes's starting social focus: Charisma.",
+    ]
+
+
 def test_staff_see_their_own_troupes_part(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
     troupe.player.client.post(f"/characters/{character_id}/troupes", json={"troupe_id": troupe.id})

@@ -35,10 +35,15 @@ export function markSeen(characterId: string, deliveredAt: string, storage: Stor
   for (const listener of listeners) listener();
 }
 
+/** Whether a delivery is new to the player: after the newest they have seen here, or
+ * without a record on this device, delivered lately. */
+export function isNew(delivered: string, seen: string | null, now: number = Date.now()): boolean {
+  return Date.parse(delivered) > (seen ? Date.parse(seen) : now - NEW_FOR_MS);
+}
+
 /** How many of the deliveries (one time per cycle) are new to the player. */
 export function newResults(delivered: string[], seen: string | null, now: number = Date.now()): number {
-  const after = seen ? Date.parse(seen) : now - NEW_FOR_MS;
-  return delivered.filter((d) => Date.parse(d) > after).length;
+  return delivered.filter((d) => isNew(d, seen, now)).length;
 }
 
 /** `seenUpTo`, kept up to date as the Results tab marks results seen. */

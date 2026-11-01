@@ -577,6 +577,15 @@ test("a player says they committed diablerie, staff approve it, and then record 
   await p.getByRole("button", { name: "More for Sable" }).click();
   await expect(p.getByRole("menuitem", { name: "Retire…" })).toBeVisible();
   await expect(p.getByRole("menuitem", { name: /diablerie/ })).toHaveCount(0);
+  // Sable is in a troupe, so Delete is greyed, and a tap says why rather than opening a dead end.
+  const del = p.getByRole("menuitem", { name: "Delete…" });
+  await expect(del).toHaveAttribute("aria-disabled", "true");
+  const why = `It can be deleted once it has left every troupe. It is in Court of Sorrows ${run}: leave from the Troupes tab, or retire it instead.`;
+  await expect(p.getByText(why)).toBeHidden();
+  // Playwright waits on aria-disabled; a person's tap goes through.
+  await del.click({ force: true });
+  await expect(p.getByText(why)).toBeVisible();
+  await expect(p.getByRole("dialog")).toHaveCount(0);
   await p.keyboard.press("Escape");
   await p.getByRole("button", { name: "Withdraw", exact: true }).click();
   await expect(waiting).toHaveCount(0);

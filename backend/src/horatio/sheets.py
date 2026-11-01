@@ -2599,20 +2599,24 @@ def withdraw(db: Session, player: User, approval: Approval) -> Approval:
     return approval
 
 
-def earned_and_spent(entries: Iterable[tuple[str, int]]) -> tuple[int, int]:
-    """XP earned and spent from (kind, amount) pairs. A correction changes what an
-    award gave, and a cap what was earned before joining a troupe, so they count
+def earned_and_spent(entries: Iterable[tuple[str, int]]) -> tuple[int, int, int]:
+    """XP earned, spent and lost from (kind, amount) pairs. A correction changes what
+    an award gave, and a cap what was earned before joining a troupe, so they count
     toward earned whichever way they go; a reprice changes what a purchase cost,
-    and a debt line what is owed (horatio.xp_debt), so they count toward spent."""
-    earned = spent = 0
+    and a debt line what is owed (horatio.xp_debt), so they count toward spent.
+    Creation XP lost on a first acceptance was never spent, so it is apart: the
+    balance is earned less spent less lost."""
+    earned = spent = lost = 0
     for kind, amount in entries:
-        if kind in ("reprice", "debt"):
+        if kind == "lost":
+            lost -= amount
+        elif kind in ("reprice", "debt"):
             spent -= amount
         elif kind in ("correction", "cap") or amount > 0:
             earned += amount
         else:
             spent -= amount
-    return earned, spent
+    return earned, spent, lost
 
 
 # XP entries a correction can put right: XP given, by staff or (in the vault) by the player.

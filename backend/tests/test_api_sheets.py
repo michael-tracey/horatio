@@ -59,6 +59,7 @@ def test_new_characters_start_with_30_xp(troupe: Troupe) -> None:
         "balance": 30,
         "earned": 30,
         "spent": 0,
+        "lost": 0,
         # All but 5 would be lost if a home troupe accepted it now.
         "unbanked": 25,
         "debt": 0,

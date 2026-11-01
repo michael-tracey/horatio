@@ -19560,6 +19560,11 @@ export interface components {
             debt: number;
             /** Earned */
             earned: number;
+            /**
+             * Lost
+             * @default 0
+             */
+            lost: number;
             /** Spent */
             spent: number;
             /**

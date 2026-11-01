@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { markSeen, NEW_FOR_MS, newResults, seenUpTo } from "./resultsSeen";
+import { isNew, markSeen, NEW_FOR_MS, newResults, seenUpTo } from "./resultsSeen";
 
 function memory(): Storage {
   const data = new Map<string, string>();
@@ -29,6 +29,13 @@ describe("new downtime results", () => {
     const now = Date.parse(november) + 1000;
     expect(newResults([november, october], null, now)).toBe(1);
     expect(newResults([november], null, Date.parse(november) + NEW_FOR_MS + 1)).toBe(0);
+  });
+
+  it("marks one result new by the same rule the count uses", () => {
+    expect(isNew(november, october)).toBe(true);
+    expect(isNew(october, october)).toBe(false);
+    expect(isNew(october, null, Date.parse(october) + 1000)).toBe(true);
+    expect(isNew(october, null, Date.parse(october) + NEW_FOR_MS + 1)).toBe(false);
   });
 
   it("remembers the newest result seen for each character, never going back", () => {

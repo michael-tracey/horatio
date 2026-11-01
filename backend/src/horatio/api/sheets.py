@@ -159,6 +159,8 @@ class XpSummary(BaseModel):
     balance: int
     earned: int
     spent: int
+    # Creation XP lost when a first home troupe accepted it: neither earned nor spent.
+    lost: int = 0
     # XP debt: what the balance is below 0.
     debt: int = 0
     # Creation XP that would be lost if a first home troupe accepted it now.
@@ -497,7 +499,7 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
             select(XpEntry.kind, XpEntry.amount).where(XpEntry.character_id == character.id)
         )
     ]
-    earned, spent = sheets.earned_and_spent(entries)
+    earned, spent, lost = sheets.earned_and_spent(entries)
     pending = sheets.pending_approvals(db, character)
     held = sheets.pending_purchases(db, character)
     held_from = {
@@ -586,10 +588,11 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
             for r in rows
         ],
         xp=XpSummary(
-            balance=earned - spent,
+            balance=earned - spent - lost,
             earned=earned,
             spent=spent,
-            debt=xp_debt.owed(earned - spent),
+            lost=lost,
+            debt=xp_debt.owed(earned - spent - lost),
             unbanked=unbanked_xp(db, character) if character.kind == "pc" else 0,
         ),
         pending_approvals=[approval_out(a) for a in pending],

@@ -273,8 +273,11 @@ def test_unspent_creation_xp_past_five_is_lost_on_first_acceptance(troupe: Troup
 
     after = troupe.player.client.get(f"/characters/{character_id}/sheet").json()["xp"]
     assert (after["balance"], after["unbanked"]) == (5, 0)
+    # Lost, not spent: only the 3 for Brawl counts as spent.
+    assert (after["earned"], after["spent"], after["lost"]) == (30, 3, 22)
     history = troupe.player.client.get(f"/characters/{character_id}/xp").json()
-    assert (history[-1]["kind"], history[-1]["amount"]) == ("fee", -22)
+    assert (history[-1]["kind"], history[-1]["amount"]) == ("lost", -22)
+    assert history[-1]["reason"].startswith("Creation XP over the 5 that can be kept, lost when")
 
 
 def test_crafts_performance_and_science_need_a_field(troupe: Troupe) -> None:
