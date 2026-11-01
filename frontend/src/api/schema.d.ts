@@ -6682,6 +6682,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Troupe Setup
+         * @description What a new lead sets up first, for the troupe's running staff.
+         */
+        get: operations["troupe_setup_api_troupes__troupe_id__setup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/shared-backgrounds": {
         parameters: {
             query?: never;
@@ -8811,6 +8831,8 @@ export interface components {
             about: string;
             /** Category */
             category: string;
+            /** Group */
+            group: string;
             /** House */
             house: string | null;
             /** Key */
@@ -9080,6 +9102,8 @@ export interface components {
             mode: "full" | "alert";
             /** Name */
             name: string;
+            /** Needs */
+            needs: string[];
             /** Settings */
             settings: {
                 [key: string]: unknown;
@@ -17232,6 +17256,45 @@ export interface components {
              * @enum {string}
              */
             settlement: "keep_price" | "pay_difference" | "refund_difference" | "remove_and_refund" | "pay_for_dots" | "remove_dots" | "add_free_dots";
+        };
+        /** SetupConnector */
+        SetupConnector: {
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "on" | "test" | "off" | "unavailable";
+        };
+        /** SetupOut */
+        SetupOut: {
+            /** Actions */
+            actions: number;
+            /** Checks */
+            checks: number;
+            /** Checks Total */
+            checks_total: number;
+            /** Connectors */
+            connectors: components["schemas"]["SetupConnector"][];
+            /** Costs */
+            costs: number;
+            /** Cycles */
+            cycles: number;
+            /** Described */
+            described: boolean;
+            /** House Traits */
+            house_traits: number;
+            /** Other */
+            other: number;
+            /** Profile */
+            profile: boolean;
+            /** Staff */
+            staff: number;
+            /** Starting */
+            starting: number;
         };
         /** ShareIn */
         ShareIn: {
@@ -32938,6 +33001,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClosingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    troupe_setup_api_troupes__troupe_id__setup_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupOut"];
                 };
             };
             /** @description Validation Error */

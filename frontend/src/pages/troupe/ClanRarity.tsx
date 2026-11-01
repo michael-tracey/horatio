@@ -47,7 +47,7 @@ export function ClanRarity({ troupeId, canEdit }: { troupeId: string; canEdit: b
       actions={
         canEdit &&
         editing === null && (
-          <Button variant="ghost" className="min-h-8 px-2" aria-label="Change clan rarity" onClick={() => setEditing(own)}>
+          <Button variant="secondary" className="min-h-8 px-3" aria-label="Change clan rarity" onClick={() => setEditing(own)}>
             Change
           </Button>
         )

@@ -365,9 +365,9 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   // The troupe's rules: the lead can play a check differently.
   await lead.page.getByRole("link", { name: "Customise", exact: true }).click();
   await lead.page.getByRole("link", { name: "Rules", exact: true }).click();
-  await lead.page.getByLabel("Search rules").fill("Calm Heart");
+  await lead.page.getByLabel("Search checks").fill("Calm Heart");
   await lead.page.getByLabel(/Setting for: Brujah cannot take Calm Heart/).selectOption({ label: "Allow, for our review" });
-  await expect(lead.page.getByText("Only house rules (1)")).toBeVisible();
+  await expect(lead.page.getByRole("button", { name: "House rules (1)" })).toBeVisible();
   await lead.page.screenshot(shots("rules"));
   // …and set its own price: Generation 1 skills at a flat 1 XP a dot, which Agnes pays.
   await lead.page.getByRole("link", { name: "Costs", exact: true }).click();
@@ -546,8 +546,11 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("link", { name: "Customise", exact: true }).click();
   await lead.page.getByRole("link", { name: "Connectors", exact: true }).click();
   await expect(lead.page.getByText("always on")).toBeVisible();
-  await expect(lead.page.getByText(/Discord is not set up on this server/)).toBeVisible();
-  await expect(lead.page.getByText(/Email is not set up on this server/)).toBeVisible();
+  // In plain words, with no server settings named and nothing to fill in.
+  await expect(lead.page.getByText(/Discord isn't set up on this server yet. Ask the custodian/)).toBeVisible();
+  await expect(lead.page.getByText(/Email isn't set up on this server yet/)).toBeVisible();
+  await expect(lead.page.getByText(/HORATIO_/)).toHaveCount(0);
+  await expect(lead.page.getByRole("button", { name: "Save" })).toHaveCount(0);
 
   // The troupe's influence log: the logged answer, and an NPC's action logged by hand.
   await lead.page.getByRole("link", { name: "Downtimes", exact: true }).click();

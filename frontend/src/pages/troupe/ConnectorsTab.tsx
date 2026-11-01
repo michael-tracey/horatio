@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { ConnectorOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Loading, Notice, Select } from "../../components/ui";
+import { useToast } from "../../components/Toast";
 import { useAction } from "../../hooks";
 import { DiscordSettings } from "./DiscordSettings";
 import { EmailSettings } from "./EmailSettings";
@@ -62,7 +63,15 @@ export function ConnectorsTab({ troupeId, canEdit }: { troupeId: string; canEdit
   );
 }
 
+/** Where test mode sends everything, by kind. */
+const TEST_TARGET: Record<string, string> = { discord: "the test channel", email: "the test address" };
+
+/**
+ * One connector, in a clear state: not set up on this server (nothing to fill in,
+ * and who can set it up), off, or on. Its choices save together, with Save.
+ */
 function ConnectorCard({ troupeId, connector, canEdit }: { troupeId: string; connector: ConnectorOut; canEdit: boolean }) {
+  const toast = useToast();
   const [enabled, setEnabled] = useState(connector.enabled);
   const [mode, setMode] = useState(connector.mode);
   const [testMode, setTestMode] = useState(connector.test_mode);
@@ -76,17 +85,45 @@ function ConnectorCard({ troupeId, connector, canEdit }: { troupeId: string; con
     ),
   );
   const Editor = SETTINGS_EDITORS[connector.kind];
+  const state = connector.enabled ? (connector.test_mode ? "on, test mode" : "on") : connector.unavailable ? "not set up" : "off";
+
+  // Not set up on this server: nothing here would work, so there is nothing to fill in;
+  // unless it was switched on before, when it can still be switched off.
+  if (connector.unavailable && !connector.enabled) {
+    return (
+      <Card title={connector.name} actions={<Badge>{state}</Badge>}>
+        <p className="text-sm">
+          {connector.unavailable}{" "}
+          {connector.needs.length > 0
+            ? "As the custodian, you set it up on the server with these settings:"
+            : "Ask the custodian if you would like to use it."}
+        </p>
+        {connector.needs.length > 0 && (
+          <ul className="mt-2 flex flex-wrap gap-2 text-xs">
+            {connector.needs.map((name) => (
+              <li key={name}>
+                <code className="rounded border border-ash bg-night px-1.5 py-0.5">{name}</code>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    );
+  }
+
   return (
-    <Card
-      title={connector.name}
-      actions={connector.enabled ? <Badge tone="gold">{connector.test_mode ? "on, test mode" : "on"}</Badge> : <Badge>off</Badge>}
-    >
-      {connector.unavailable && <Notice>{connector.unavailable}</Notice>}
+    <Card title={connector.name} actions={<Badge tone={connector.enabled ? "gold" : "mist"}>{state}</Badge>}>
+      {connector.unavailable && (
+        <Notice>
+          {connector.unavailable} Nothing reaches players through {connector.name} until it is. Switch it off, or ask the custodian.
+        </Notice>
+      )}
+      {!connector.enabled && !connector.unavailable && <p className="text-sm text-mist">Off: results reach players only in Horatio.</p>}
       <form
         className="mt-3 flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
-          save.mutate(undefined);
+          save.mutate(undefined, { onSuccess: () => toast({ message: `Saved ${connector.name}` }) });
         }}
       >
         <fieldset disabled={!canEdit} className="flex flex-col gap-4">
@@ -94,23 +131,28 @@ function ConnectorCard({ troupeId, connector, canEdit }: { troupeId: string; con
             <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} disabled={!!connector.unavailable && !enabled} />
             Send downtime results through {connector.name}
           </label>
-          <Field
-            label="What to send"
-            hint={
-              mode === "alert"
-                ? "Only that results are ready, with a link to the character's Results tab. The results stay in Horatio, where storytellers can still correct them."
-                : "The whole result, as players see it in Horatio."
-            }
-          >
-            <Select value={mode} onChange={(e) => setMode(e.target.value as ConnectorOut["mode"])}>
-              <option value="alert">An alert with a link</option>
-              <option value="full">The full results</option>
-            </Select>
-          </Field>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={testMode} onChange={(e) => setTestMode(e.target.checked)} />
-            Test mode: send everything to the test target below, not to players
-          </label>
+          {/* What to send and test mode matter only once it is on. */}
+          {enabled && (
+            <>
+              <Field
+                label="What to send"
+                hint={
+                  mode === "alert"
+                    ? "Only that results are ready, with a link to the character's Results tab. The results stay in Horatio, where storytellers can still correct them."
+                    : "The whole result, as players see it in Horatio."
+                }
+              >
+                <Select value={mode} onChange={(e) => setMode(e.target.value as ConnectorOut["mode"])}>
+                  <option value="alert">An alert with a link</option>
+                  <option value="full">The full results</option>
+                </Select>
+              </Field>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={testMode} onChange={(e) => setTestMode(e.target.checked)} />
+                Test mode: send everything to {TEST_TARGET[connector.kind] ?? "the test target"}, not to players
+              </label>
+            </>
+          )}
           {Editor && <Editor troupeId={troupeId} settings={settings} onChange={setSettings} canEdit={canEdit} />}
         </fieldset>
         <ErrorText error={save.error} />

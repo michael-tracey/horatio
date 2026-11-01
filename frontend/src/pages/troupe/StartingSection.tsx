@@ -74,8 +74,8 @@ export function ExperienceDefaults({ troupeId, canEdit }: { troupeId: string; ca
         canEdit &&
         !editing && (
           <Button
-            variant="ghost"
-            className="min-h-8 px-2"
+            variant="secondary"
+            className="min-h-8 px-3"
             onClick={() => {
               setForm({ starting_xp: t.starting_xp, session_xp: t.session_xp, downtime_xp: t.downtime_xp });
               setEditing(true);
@@ -153,8 +153,8 @@ export function StartingBlood({ troupeId, canEdit }: { troupeId: string; canEdit
         canEdit &&
         !editing && (
           <Button
-            variant="ghost"
-            className="min-h-8 px-2"
+            variant="secondary"
+            className="min-h-8 px-3"
             aria-label="Change starting blood"
             onClick={() => {
               setFull(t.starting_blood === null);
@@ -223,7 +223,7 @@ function CategoryRow({ troupeId, splat, category, canEdit }: { troupeId: string;
         <span className="flex shrink-0 items-center gap-2">
           {category.house && <Badge tone="gold">House rule</Badge>}
           {canEdit && !editing && (
-            <Button variant="ghost" className="min-h-8 px-2" aria-label={`Change starting ${category.name}`} onClick={() => setEditing(true)}>
+            <Button variant="secondary" className="min-h-8 px-3" aria-label={`Change starting ${category.name}`} onClick={() => setEditing(true)}>
               Change
             </Button>
           )}

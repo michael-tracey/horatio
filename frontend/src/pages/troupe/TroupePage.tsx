@@ -26,6 +26,7 @@ import { abilities, roleLabel } from "./roles";
 import { RosterTab } from "./RosterTab";
 import { RulesTab } from "./RulesTab";
 import { SettingsTab } from "./SettingsTab";
+import { SetupTab } from "./SetupTab";
 import { SharedBackgroundsTab } from "./SharedBackgroundsTab";
 import { SpecializationsTab } from "./SpecializationsTab";
 import { StaffTab } from "./StaffTab";
@@ -140,6 +141,7 @@ export function TroupePage() {
           {
             label: "Customise",
             tabs: [
+              ...(can.running ? [{ to: `${base}/customise`, label: "Overview" }] : []),
               ...(can.running ? [{ to: `${base}/settings`, label: "Troupe settings" }] : []),
               ...(can.running ? [{ to: `${base}/rules`, label: "Rules" }] : []),
               ...(can.running ? [{ to: `${base}/specializations`, label: "Specialisations" }] : []),
@@ -168,6 +170,7 @@ export function TroupePage() {
         {can.running && <Route path="locations/*" element={<LocationsTab troupeId={t.id} questsOn={t.quests_enabled} />} />}
         {can.running && <Route path="equipment" element={<EquipmentTab troupeId={t.id} troupeName={t.name} />} />}
         {can.running && <Route path="approvals" element={<ApprovalsTab troupeId={t.id} />} />}
+        {can.running && <Route path="customise" element={<SetupTab troupe={t} canEdit={can.storyteller && !t.archived} />} />}
         {can.running && <Route path="settings" element={<SettingsTab troupe={t} canEdit={can.storyteller && !t.archived} />} />}
         {/* The status reference was a part of Rules until it moved to the Troupe group. */}
         <Route path="rules/status" element={<Navigate to={`${base}/status`} replace />} />
