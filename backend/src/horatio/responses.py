@@ -17,7 +17,7 @@ delivery sends it again as an update.
 import random
 import re
 import uuid
-from collections.abc import Collection
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -140,6 +140,31 @@ def mine(db: Session, user: User, cycle: DowntimeCycle) -> list[WorkItem]:
         if item.response.assigned_to_user_id == user.id
         or (narrator and item.response.assigned_to_any_narrator)
     ]
+
+
+def unwritten(
+    db: Session, user: User, cycle_ids: Sequence[uuid.UUID]
+) -> dict[uuid.UUID, tuple[int, int]]:
+    """For each cycle, the responses still to write: assigned to `user`, and open
+    to any narrator. One query for all of them; a cycle with neither is left out."""
+    rows = db.execute(
+        select(
+            CycleParticipant.cycle_id,
+            func.count(Response.id).filter(Response.assigned_to_user_id == user.id),
+            func.count(Response.id).filter(Response.assigned_to_any_narrator),
+        )
+        .select_from(Response)
+        .join(Answer, Response.answer_id == Answer.id)
+        .join(Submission, Answer.submission_id == Submission.id)
+        .join(CycleParticipant, Submission.participant_id == CycleParticipant.id)
+        .where(
+            CycleParticipant.cycle_id.in_(cycle_ids),
+            CycleParticipant.removed_at.is_(None),
+            Response.status != "written",
+        )
+        .group_by(CycleParticipant.cycle_id)
+    )
+    return {cycle_id: (yours, pool) for cycle_id, yours, pool in rows if yours or pool}
 
 
 # --- assigning and writing --------------------------------------------------------------

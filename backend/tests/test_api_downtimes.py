@@ -256,6 +256,97 @@ def test_staff_add_and_remove_participants(troupe: Troupe) -> None:
     assert listed[0]["removed"] is True
 
 
+def choices(troupe: Troupe, cycle: dict[str, Any]) -> list[tuple[str, bool]]:
+    found = troupe.assistant.client.get(f"/cycles/{cycle['id']}/participant-choices")
+    assert found.status_code == 200, found.text
+    return [(c["name"], c["removed"]) for c in found.json()]
+
+
+def test_staff_are_offered_the_characters_they_can_add(troupe: Troupe) -> None:
+    member_character(troupe, troupe.player, "Agnes")
+    cycle = open_cycle(troupe, new_cycle(troupe))
+    late_joiner = member_character(troupe, troupe.player, "Late Joiner")
+    troupe.stranger.client.post("/characters", json={"splat": "vampire", "name": "Outsider"})
+
+    # Agnes takes part already, and the outsider's home is elsewhere.
+    assert choices(troupe, cycle) == [("Late Joiner", False)]
+    [offered] = troupe.assistant.client.get(f"/cycles/{cycle['id']}/participant-choices").json()
+    assert offered["player_handle"] == troupe.player.handle
+    added = troupe.assistant.client.post(
+        f"/cycles/{cycle['id']}/participants", json={"character_id": late_joiner}
+    ).json()
+    assert choices(troupe, cycle) == []
+    # Taken out again, it can be put back.
+    troupe.assistant.client.delete(f"/cycles/{cycle['id']}/participants/{added['id']}")
+    assert choices(troupe, cycle) == [("Late Joiner", True)]
+    assert (
+        troupe.narrator.client.get(f"/cycles/{cycle['id']}/participant-choices").status_code == 403
+    )
+
+
+def test_staff_remind_the_players_who_have_not_submitted(troupe: Troupe) -> None:
+    agnes = member_character(troupe, troupe.player, "Agnes")
+    bram = member_character(troupe, troupe.player, "Bram")
+    corin = member_character(troupe, troupe.stranger, "Corin")
+    dora = member_character(troupe, troupe.stranger, "Dora")
+    draft = new_cycle(troupe)
+    assert troupe.assistant.client.post(f"/cycles/{draft['id']}/reminders").status_code == 409
+    cycle = open_cycle(troupe, draft)
+    action = question_id(my_downtime(troupe.player, agnes).json(), "Downtime action")
+    assert save(troupe.player, agnes, [{"question_id": action, "body": "Hunt"}]).status_code == 200
+    assert troupe.stranger.client.post(f"/characters/{dora}/downtime/submit").status_code == 200
+
+    # Staff see who plays each, and when each last saved or submitted.
+    listed = {
+        p["character_name"]: p
+        for p in troupe.assistant.client.get(f"/cycles/{cycle['id']}/participants").json()
+    }
+    assert listed["Agnes"]["player_handle"] == troupe.player.handle
+    assert (listed["Agnes"]["submission_status"], listed["Bram"]["submission_status"]) == (
+        "draft",
+        None,
+    )
+    assert listed["Agnes"]["saved_at"] is not None
+    assert listed["Bram"]["saved_at"] is None
+    assert listed["Dora"]["submitted_at"] is not None
+
+    assert troupe.narrator.client.post(f"/cycles/{cycle['id']}/reminders").status_code == 403
+    reminded = troupe.assistant.client.post(f"/cycles/{cycle['id']}/reminders")
+    assert reminded.status_code == 200, reminded.text
+    # Agnes, Bram and Corin are not submitted: two players between them.
+    assert reminded.json() == {"players": 2, "characters": 3}
+
+    def reminders(person: Person) -> list[dict[str, Any]]:
+        items = person.client.get("/notifications").json()["items"]
+        return [i for i in items if i["kind"] == "downtime.reminder"]
+
+    assert sorted((i["kind"], i["summary"], i["link"]) for i in reminders(troupe.player)) == [
+        (
+            "downtime.reminder",
+            "Agnes's downtime for October 2026 isn't submitted yet",
+            f"/characters/{agnes}/downtime",
+        ),
+        (
+            "downtime.reminder",
+            "Bram's downtime for October 2026 isn't submitted yet",
+            f"/characters/{bram}/downtime",
+        ),
+    ]
+    assert [i["link"] for i in reminders(troupe.stranger)] == [f"/characters/{corin}/downtime"]
+
+    [last] = troupe.storyteller.client.get(f"/cycles/{cycle['id']}/reminders").json()
+    assert (last["by"], last["players"]) == ("assistant", 2)
+
+    # Once everyone has submitted, there is no one left to remind.
+    for person, character in (
+        (troupe.player, agnes),
+        (troupe.player, bram),
+        (troupe.stranger, corin),
+    ):
+        assert person.client.post(f"/characters/{character}/downtime/submit").status_code == 200
+    assert troupe.assistant.client.post(f"/cycles/{cycle['id']}/reminders").status_code == 409
+
+
 def test_adjusting_an_allowance(troupe: Troupe) -> None:
     agnes = member_character(troupe, troupe.player, "Agnes")
     cycle = open_cycle(troupe, new_cycle(troupe))

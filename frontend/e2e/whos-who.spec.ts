@@ -422,7 +422,7 @@ test("pronouns: a player gives their own and their character's, the Who's Who sh
   const badge = l.getByRole("article", { name: "Badge for Ines" });
   await expect(badge.getByText("Neonate", { exact: false })).toBeVisible();
   await expect(badge.getByText("she/her")).toHaveCount(0);
-  await l.goto(`/troupes/${troupeId}`);
+  await l.goto(`/troupes/${troupeId}/settings`);
   const setting = l.locator("section").filter({ has: l.getByRole("heading", { name: "Badges", exact: true }) });
   await expect(setting.getByLabel(/^Print character pronouns/)).not.toBeChecked();
   await setting.getByLabel(/^Print character pronouns/).click();

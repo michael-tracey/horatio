@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
-import { Link, Route, Routes, useMatch, useParams } from "react-router";
+import { Link, Route, Routes, useMatch, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut } from "../../api/types";
 import { Badge, ErrorText, GroupedTabs, Loading, PageTitle, Tabs } from "../../components/ui";
@@ -8,7 +8,7 @@ import { useMe } from "../../hooks";
 import { BackstoryTab, useBackstoryStanding } from "./BackstoryTab";
 import { CreationWizard } from "./creation/Wizard";
 import { choiceName } from "./creation/logic";
-import { abilities } from "../troupe/roles";
+import { abilities, roleLabel } from "../troupe/roles";
 import { DowntimeTab } from "./DowntimeTab";
 import { EquipmentTab } from "./EquipmentTab";
 import { GiveEquipment } from "./GiveEquipment";
@@ -21,6 +21,7 @@ import { LeavingCard } from "./Leaving";
 import { RenameCharacter } from "./Rename";
 import { CharacterPronouns } from "./Pronouns";
 import { Pronouns } from "../../components/PronounsInput";
+import { AtHandle } from "../../components/PersonPicker";
 import { CharacterPicture } from "./Picture";
 import { QuestsTab } from "./QuestsTab";
 import { ResultsTab } from "./ResultsTab";
@@ -164,6 +165,7 @@ export function CharacterPage() {
 
   return (
     <>
+      {!mine && <StaffView character={c} />}
       <Header character={c}>
         <PageTitle
           subtitle={<Identity character={c} lead={c.splat} />}
@@ -258,6 +260,55 @@ export function CharacterPage() {
         )}
       </Routes>
     </>
+  );
+}
+
+/**
+ * For staff on another player's character: whose it is, as whom they are looking,
+ * and the way back to the troupe they came from (named by `?troupe=`, as the log
+ * links), or else to its home troupe, or the troupe it is asking to join.
+ */
+function StaffView({ character: c }: { character: CharacterOut }) {
+  const [params] = useSearchParams();
+  const me = useMe();
+  const troupeId = params.get("troupe") ?? c.home_troupe_id ?? c.asking_troupe_id;
+  const troupe = useQuery({
+    queryKey: ["troupe", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupeId! } } })),
+    enabled: !!troupeId,
+  });
+  const player = useQuery({
+    queryKey: ["player", c.player_id],
+    queryFn: () => unwrap(api.GET("/api/players/{user_id}", { params: { path: { user_id: c.player_id } } })),
+  });
+  const t = troupe.data;
+  const custodian = !!me.data?.is_custodian;
+  if (!t || (!t.my_role && !custodian)) return null;
+  // A character asking to make the troupe its home is waiting on Approvals; otherwise it is on the roster.
+  const back = c.home_troupe_id !== t.id && c.asking_troupe_id === t.id ? "approvals" : "characters";
+  return (
+    <div
+      role="note"
+      aria-label="Viewing as staff"
+      className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-md border border-gold/40 bg-gold/5 px-3 py-2 text-sm text-mist"
+    >
+      <span>
+        <span className="text-parchment">Viewing as {t.my_role ? roleLabel(t.my_role).toLowerCase() : "custodian"}</span>
+        {player.data && (
+          <>
+            {" "}
+            · played by{" "}
+            <Link to={`/players/${c.player_id}`} className="text-parchment hover:text-gold">
+              {player.data.display_name}
+            </Link>{" "}
+            <AtHandle handle={player.data.handle} />
+          </>
+        )}
+      </span>
+      <Link to={`/troupes/${t.id}/${back}`} className="text-gold underline hover:text-parchment">
+        ← back to {t.name}
+      </Link>
+    </div>
   );
 }
 

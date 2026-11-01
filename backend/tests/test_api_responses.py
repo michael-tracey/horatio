@@ -280,6 +280,20 @@ def test_progress(scene: Scene) -> None:
         "Unassigned": {"written": 0, "total": 2},
     }
     assert progress["by_action_kind"]["general"] == {"written": 1, "total": 2}
+    # The troupe's list of cycles says as much, for every cycle at once.
+    [listed] = troupe.assistant.client.get(f"/troupes/{troupe.id}/cycles").json()
+    assert (
+        listed["participants"],
+        listed["submitted"],
+        listed["responses"],
+        listed["written"],
+    ) == (
+        1,
+        1,
+        4,
+        1,
+    )
+    assert listed["closes_at"] == scene.cycle["closes_at"]
 
 
 def deliveries(scene: Scene) -> list[dict[str, Any]]:
@@ -478,8 +492,16 @@ def test_staff_from_other_troupes_see_nothing(scene: Scene) -> None:
 def test_narrators_find_the_cycles_they_work_on(scene: Scene) -> None:
     troupe = scene.troupe
     new_cycle(troupe)  # a draft, which nobody works on yet
+    scene.assign("Feed at the docks", user_id=troupe.narrator.id)
+    scene.assign("Patrol the park", any_narrator=True)
+    scene.assign("Lean on the mayor", user_id=troupe.narrator.id)
+    mayor = scene.response_for("Lean on the mayor")["id"]
+    troupe.narrator.client.put(f"/responses/{mayor}", json={"body": "He owes you."})
 
     cycles = troupe.narrator.client.get(f"/troupes/{troupe.id}/work-cycles").json()
 
     assert [(c["name"], c["status"]) for c in cycles] == [("October 2026", "open")]
+    # What is still to write: one of the narrator's two, and one open to any narrator.
+    assert (cycles[0]["to_write"], cycles[0]["open_to_narrators"]) == (1, 1)
+    assert cycles[0]["closes_at"] == scene.cycle["closes_at"]
     assert troupe.player.client.get(f"/troupes/{troupe.id}/work-cycles").status_code == 403

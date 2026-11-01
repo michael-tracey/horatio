@@ -120,6 +120,10 @@ class WorkCycle(BaseModel):
     id: uuid.UUID
     name: str
     status: str
+    closes_at: datetime
+    # Responses still to write: assigned to me, and open to any narrator.
+    to_write: int = 0
+    open_to_narrators: int = 0
 
 
 class Assignment(BaseModel):
@@ -286,12 +290,25 @@ def response_item(
 def work_cycles(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[WorkCycle]:
     """Cycles with downtimes to answer, for any staff member, narrators included."""
     staff_troupe(db, user, troupe_id, TroupeAction.ANSWER_ASSIGNED_RESPONSES)
-    cycles = db.scalars(
-        select(DowntimeCycle)
-        .where(DowntimeCycle.troupe_id == troupe_id, DowntimeCycle.status != "draft")
-        .order_by(DowntimeCycle.id.desc())
+    cycles = list(
+        db.scalars(
+            select(DowntimeCycle)
+            .where(DowntimeCycle.troupe_id == troupe_id, DowntimeCycle.status != "draft")
+            .order_by(DowntimeCycle.id.desc())
+        )
     )
-    return [WorkCycle(id=c.id, name=c.name, status=c.status) for c in cycles]
+    unwritten = responses.unwritten(db, user, [c.id for c in cycles])
+    return [
+        WorkCycle(
+            id=c.id,
+            name=c.name,
+            status=c.status,
+            closes_at=c.closes_at,
+            to_write=unwritten.get(c.id, (0, 0))[0],
+            open_to_narrators=unwritten.get(c.id, (0, 0))[1],
+        )
+        for c in cycles
+    ]
 
 
 @router.get("/cycles/{cycle_id}/responses")

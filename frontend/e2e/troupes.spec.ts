@@ -23,7 +23,7 @@ test("a troupe changes what new characters start with and their downtime actions
   const l = lead.page;
   await l.getByRole("link", { name: "Troupes" }).click();
   await l.getByRole("link", { name: troupeName }).click();
-  await l.getByRole("link", { name: "Customize", exact: true }).click();
+  await l.getByRole("link", { name: "Customise", exact: true }).click();
   await l.getByRole("link", { name: "Rules", exact: true }).click();
   await l.getByRole("link", { name: "Starting points", exact: true }).click();
   await l.getByRole("button", { name: "Change starting Merits" }).click();
@@ -117,10 +117,11 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
   await backstoryOptional(custodian.page, troupeName);
 
-  // The chronicle began before Horatio: the lead sets the floor and ceiling by hand, on About.
+  // The chronicle began before Horatio: the lead sets the floor and ceiling by hand, in Customise.
   const l = lead.page;
   await l.getByRole("link", { name: "Troupes" }).click();
   await l.getByRole("link", { name: troupeName }).click();
+  await l.getByRole("link", { name: "Customise", exact: true }).click();
   await l.getByRole("button", { name: "Set by hand" }).click();
   await l.getByLabel("Floor", { exact: true }).fill("100");
   await l.getByLabel("Ceiling", { exact: true }).fill("120");
@@ -524,7 +525,11 @@ test("a lead adds staff by picking from a list of people, the troupe's own playe
   await lead.page.screenshot(shots("staff-picker"));
   await people.getByRole("option", { name: `@${player.handle}` }).click();
   await expect(lead.page.getByLabel("Person")).toHaveValue(player.handle);
-  await lead.page.getByRole("button", { name: "Save" }).click();
+  // Each role says in a line what it may do.
+  const roles = lead.page.locator("section").filter({ has: lead.page.getByRole("heading", { name: "Roles", exact: true }) });
+  await expect(roles.getByText("Never sees character sheets.")).toBeVisible();
+  await expect(roles.getByText(/^Everything a storyteller does except manage staff/)).toBeVisible();
+  await lead.page.getByRole("button", { name: "Add to staff" }).click();
   await expect(lead.page.getByText(`@${player.handle} · Narrator`)).toBeVisible();
 
   // Now on the staff, they are greyed out with their role.
@@ -872,7 +877,7 @@ test("a troupe's public page asks a newcomer to make an account, which brings th
   await expect(visitor).toHaveURL(new RegExp(`/troupes/${troupeId}$`));
 });
 
-test("a troupe's Profile tab switches it public at once, About sets its XP range, and Waiting on you leads to the work", async ({ browser }) => {
+test("a troupe's Profile tab switches it public at once, About shows its XP range, and Waiting on you leads to the work", async ({ browser }) => {
   const custodian = await person(browser, "tidy-custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "tidy-lead");
@@ -919,13 +924,20 @@ test("a troupe's Profile tab switches it public at once, About sets its XP range
   await expect(l.getByRole("heading", { name: "Archive the troupe" })).toBeVisible();
   await l.screenshot(shots("troupe-profile-tab"));
 
-  // About: the lead sets the XP floor and ceiling by hand, with Award XP beside them.
+  // About is to read: the XP floor and ceiling with Award XP beside them, and no settings.
   await l.getByRole("link", { name: "About", exact: true }).click();
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}$`));
   // The Profile tab's form can linger a moment after the URL changes, with the description in it.
   await expect(l.getByRole("textbox", { name: "Description" })).toHaveCount(0);
   await expect(l.getByText("A court that meets where the roads cross.")).toBeVisible();
   await expect(l.locator("main").getByRole("link", { name: "Award XP", exact: true })).toBeVisible();
+  await expect(l.getByText("Player characters from any sect may join.")).toBeVisible();
+  await expect(l.getByRole("checkbox")).toHaveCount(0);
+  await expect(l.getByRole("button", { name: "Set by hand" })).toHaveCount(0);
+  // The lead sets them by hand in Customise's Troupe settings, with the rest of the troupe's settings.
+  await l.getByRole("link", { name: "Change in Customise" }).first().click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/settings$`));
+  for (const group of ["Who may join", "XP", "Status and titles", "At game"]) await expect(l.getByRole("group", { name: group, exact: true })).toBeVisible();
   await l.getByRole("button", { name: "Set by hand" }).click();
   await l.getByLabel("Floor", { exact: true }).fill("60");
   await l.getByLabel("Ceiling", { exact: true }).fill("75");
@@ -933,12 +945,13 @@ test("a troupe's Profile tab switches it public at once, About sets its XP range
   await l.getByRole("button", { name: "Save", exact: true }).click();
   await expect(l.getByText("(30 starting + 30 set by hand)")).toBeVisible();
   await expect(l.getByText("(30 starting + 45 set by hand)")).toBeVisible();
-  // Starting points keeps a copy to read, which leads back to About.
+  // Starting points leads there for them, and the log on About has the change.
   await l.goto(`/troupes/${troupeId}/rules/starting`);
-  await expect(l.getByText("60 XP", { exact: true })).toBeVisible();
-  await expect(l.getByRole("button", { name: "Set by hand" })).toHaveCount(0);
-  await l.getByRole("link", { name: "Set them on About" }).click();
+  await expect(l.getByRole("heading", { name: "XP floor and ceiling" })).toHaveCount(0);
+  await expect(l.getByRole("link", { name: "Troupe settings", exact: true }).last()).toHaveAttribute("href", `/troupes/${troupeId}/settings`);
+  await l.goto(`/troupes/${troupeId}`);
   await expect(waiting).toBeVisible();
+  await expect(l.getByRole("heading", { name: "Latest in the log" })).toBeVisible();
 
   // A player asks for the troupe to be their character's home: an approval waits.
   const p = player.page;
@@ -971,6 +984,23 @@ test("a troupe's Profile tab switches it public at once, About sets its XP range
   await approvals.click();
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/approvals$`));
   await expect(l.getByText("Hollis").first()).toBeVisible();
+  // Approvals comes first of the Characters tabs, with its count; the group itself opens on the roster.
+  const characterTabs = l.getByRole("navigation", { name: "Characters", exact: true });
+  await expect(characterTabs.getByRole("link").first()).toHaveText(/^Approvals/);
+  await expect(characterTabs.getByRole("link", { name: /Approvals/ }).getByLabel("1 waiting")).toBeVisible();
+  const sections = l.getByRole("navigation", { name: "Troupe sections" });
+  await sections.getByRole("link", { name: /^Characters/ }).click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/characters$`));
+  // The troupe's catalogues are a group of their own.
+  await sections.getByRole("link", { name: "World", exact: true }).click();
+  await expect(l.getByRole("navigation", { name: "World", exact: true }).getByRole("link")).toHaveText(["Locations", "Equipment", "Shared backgrounds"]);
+  // On Hollis's sheet the lead is told whose it is and as whom they look, with the way back.
+  await l.goto(`/characters/${id}`);
+  const viewing = l.getByLabel("Viewing as staff");
+  await expect(viewing).toContainText("Viewing as lead storyteller");
+  await expect(viewing.getByRole("link", { name: "tidy-player" })).toBeVisible();
+  await viewing.getByRole("link", { name: `back to ${troupeName}` }).click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/approvals$`));
 
   // The player sees About without the box, and the XP range only to read.
   await p.goto(`/troupes/${troupeId}`);

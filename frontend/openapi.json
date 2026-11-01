@@ -6221,6 +6221,63 @@
         "title": "CycleOut",
         "type": "object"
       },
+      "CycleSummaryOut": {
+        "description": "A cycle in the troupe's list: when it is due and how far it has got.",
+        "properties": {
+          "closes_at": {
+            "format": "date-time",
+            "title": "Closes At",
+            "type": "string"
+          },
+          "grace_ends_at": {
+            "format": "date-time",
+            "title": "Grace Ends At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "participants": {
+            "title": "Participants",
+            "type": "integer"
+          },
+          "responses": {
+            "title": "Responses",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted": {
+            "title": "Submitted",
+            "type": "integer"
+          },
+          "written": {
+            "title": "Written",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "closes_at",
+          "grace_ends_at",
+          "participants",
+          "submitted",
+          "responses",
+          "written"
+        ],
+        "title": "CycleSummaryOut",
+        "type": "object"
+      },
       "CycleUseOut": {
         "properties": {
           "allowance": {
@@ -18948,6 +19005,36 @@
         "title": "PanelsOut",
         "type": "object"
       },
+      "ParticipantChoiceOut": {
+        "description": "A character staff can add to an open cycle.",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "player_handle": {
+            "title": "Player Handle",
+            "type": "string"
+          },
+          "removed": {
+            "title": "Removed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "player_handle",
+          "removed"
+        ],
+        "title": "ParticipantChoiceOut",
+        "type": "object"
+      },
       "ParticipantDeliveries": {
         "properties": {
           "answered": {
@@ -19074,9 +19161,30 @@
             ],
             "title": "Picture"
           },
+          "player_handle": {
+            "title": "Player Handle",
+            "type": "string"
+          },
+          "player_id": {
+            "format": "uuid",
+            "title": "Player Id",
+            "type": "string"
+          },
           "removed": {
             "title": "Removed",
             "type": "boolean"
+          },
+          "saved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saved At"
           },
           "shortfall": {
             "additionalProperties": {
@@ -19096,6 +19204,18 @@
             ],
             "title": "Submission Status"
           },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
           "submitted_late": {
             "title": "Submitted Late",
             "type": "boolean"
@@ -19107,6 +19227,8 @@
           "character_name",
           "picture",
           "clan",
+          "player_id",
+          "player_handle",
           "allowance",
           "breakdown",
           "adjustments",
@@ -19115,6 +19237,8 @@
           "late_accepted",
           "submission_status",
           "submitted_late",
+          "saved_at",
+          "submitted_at",
           "completion_xp_awarded"
         ],
         "title": "ParticipantOut",
@@ -21498,6 +21622,11 @@
           "email_downtime": {
             "default": false,
             "title": "Email Downtime",
+            "type": "boolean"
+          },
+          "email_downtime_reminders": {
+            "default": false,
+            "title": "Email Downtime Reminders",
             "type": "boolean"
           },
           "email_pictures": {
@@ -24281,6 +24410,48 @@
           "because"
         ],
         "title": "RefusalOut",
+        "type": "object"
+      },
+      "RemindedOut": {
+        "properties": {
+          "characters": {
+            "title": "Characters",
+            "type": "integer"
+          },
+          "players": {
+            "title": "Players",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "players",
+          "characters"
+        ],
+        "title": "RemindedOut",
+        "type": "object"
+      },
+      "ReminderOut": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "by": {
+            "title": "By",
+            "type": "string"
+          },
+          "players": {
+            "title": "Players",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "at",
+          "by",
+          "players"
+        ],
+        "title": "ReminderOut",
         "type": "object"
       },
       "RemoveIn": {
@@ -32467,6 +32638,11 @@
       },
       "WorkCycle": {
         "properties": {
+          "closes_at": {
+            "format": "date-time",
+            "title": "Closes At",
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -32476,15 +32652,26 @@
             "title": "Name",
             "type": "string"
           },
+          "open_to_narrators": {
+            "default": 0,
+            "title": "Open To Narrators",
+            "type": "integer"
+          },
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "to_write": {
+            "default": 0,
+            "title": "To Write",
+            "type": "integer"
           }
         },
         "required": [
           "id",
           "name",
-          "status"
+          "status",
+          "closes_at"
         ],
         "title": "WorkCycle",
         "type": "object"
@@ -42774,6 +42961,54 @@
         ]
       }
     },
+    "/api/cycles/{cycle_id}/participant-choices": {
+      "get": {
+        "description": "The characters that could be added to the cycle.",
+        "operationId": "participant_choices_api_cycles__cycle_id__participant_choices_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ParticipantChoiceOut"
+                  },
+                  "title": "Response Participant Choices Api Cycles  Cycle Id  Participant Choices Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Participant Choices",
+        "tags": [
+          "downtimes"
+        ]
+      }
+    },
     "/api/cycles/{cycle_id}/participants": {
       "get": {
         "operationId": "list_participants_api_cycles__cycle_id__participants_get",
@@ -43257,6 +43492,96 @@
           }
         },
         "summary": "Replace Questions",
+        "tags": [
+          "downtimes"
+        ]
+      }
+    },
+    "/api/cycles/{cycle_id}/reminders": {
+      "get": {
+        "description": "When staff reminded players to submit, newest first.",
+        "operationId": "list_reminders_api_cycles__cycle_id__reminders_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReminderOut"
+                  },
+                  "title": "Response List Reminders Api Cycles  Cycle Id  Reminders Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Reminders",
+        "tags": [
+          "downtimes"
+        ]
+      },
+      "post": {
+        "description": "Remind the players whose downtimes are not submitted.",
+        "operationId": "remind_api_cycles__cycle_id__reminders_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemindedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remind",
         "tags": [
           "downtimes"
         ]
@@ -49867,7 +50192,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/CycleOut"
+                    "$ref": "#/components/schemas/CycleSummaryOut"
                   },
                   "title": "Response List Cycles Api Troupes  Troupe Id  Cycles Get",
                   "type": "array"
@@ -54911,7 +55236,7 @@
     },
     "/api/troupes/{troupe_id}/status-rules": {
       "get": {
-        "description": "Every status of the troupe's sects, and the general status, by sect: its type,\nwhat it does, and where it comes from here.",
+        "description": "Every status of the troupe's sects, and the general status, by sect: its type,\nwhat it does, and where it comes from here. Anyone signed in may read it, as\nthey may the troupe's house rules: it is the book's rules and the troupe's titles,\nnever who holds them.",
         "operationId": "status_rules_api_troupes__troupe_id__status_rules_get",
         "parameters": [
           {

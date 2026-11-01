@@ -555,7 +555,7 @@ test("a player says they committed diablerie, staff approve it, and then record 
 
   // The troupe's setting for a Lesser Generation holder starts at leaving the flaw.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/rules/starting`);
+  await l.goto(`/troupes/${troupeId}/settings`);
   await expect(l.getByText("Leave the flaw.")).toBeVisible();
 
   // The sheet has no Diablerie card: the player asks from the ⋯ menu, with the date and a note.

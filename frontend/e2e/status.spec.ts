@@ -79,9 +79,9 @@ test("a player keeps their own sect status, naming its patron from the home trou
   await expect(p.getByText("status-player gave Celestine the fleeting status Loyal, from Prince Aurelio (Prince at the time).")).toBeVisible();
   await expect(p.getByText("status-player removed Celestine's Loyal (from Prince Aurelio (Prince at the time)).")).toBeVisible();
 
-  // The lead gives status to staff only, on the troupe's About tab.
+  // The lead gives status to staff only, in the troupe's settings.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}`);
+  await l.goto(`/troupes/${troupeId}/settings`);
   const setting = l.locator("section").filter({ has: l.getByRole("heading", { name: "Status on sheets" }) });
   await expect(setting.getByText("Players keep their own.")).toBeVisible();
   await setting.getByRole("button", { name: "Change who keeps status on sheets" }).click();
@@ -150,8 +150,11 @@ test("a blood hunt: staff give a Primogen Bloodhunted, which brings Forsaken, lo
   await expect(card.getByRole("listitem", { name: "Forsaken" })).toBeVisible();
   await expect(card.getByText("Fleeting: 0 of 3")).toBeVisible();
 
-  // The status rules page says what it does and where it comes from; no title gives it.
+  // The status reference says what it does and where it comes from; no title gives it.
+  // Its old place under Rules leads there, and each sect opens to read.
   await l.goto(`/troupes/${troupeId}/rules/status`);
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/status$`));
+  await l.getByRole("heading", { name: "Camarilla status", exact: true }).click();
   const hunted = l.getByRole("listitem", { name: "Bloodhunted", exact: true });
   await expect(hunted.getByText("negative", { exact: true })).toBeVisible();
   await expect(hunted).toContainText("Censure: Lose all abiding, innate and fleeting status for good, and gain Forsaken.");
@@ -197,8 +200,8 @@ test("Enlightened: a Sabbat follower of an Accepted path holds it, and a Camaril
   await expect(card.getByRole("listitem", { name: "Acknowledged" })).toBeVisible();
   await expect(card.getByRole("listitem", { name: "Enlightened" })).toHaveCount(0);
 
-  // The lead switches on the optional rule, on the house rules' Starting points page.
-  await l.goto(`/troupes/${troupeId}/rules/starting`);
+  // The lead switches on the optional rule, in the troupe's settings.
+  await l.goto(`/troupes/${troupeId}/settings`);
   const golconda = l.locator("section").filter({ has: l.getByRole("heading", { name: "Golconda and Enlightened" }) });
   await expect(golconda.getByLabel(/Golconda Seekers are Enlightened/)).not.toBeChecked();
   // It saves as it is clicked, and shows once saved.
@@ -209,8 +212,9 @@ test("Enlightened: a Sabbat follower of an Accepted path holds it, and a Camaril
   await l.goto(`/characters/${seraphine}/status`);
   await expect(card.getByRole("listitem", { name: "Enlightened" })).toContainText("from Golconda Seeker");
 
-  // The status rules page lists the merits that give it here, Golconda Seeker among them.
-  await l.goto(`/troupes/${troupeId}/rules/status`);
+  // The status reference lists the merits that give it here, Golconda Seeker among them.
+  await l.goto(`/troupes/${troupeId}/status`);
+  await l.getByRole("heading", { name: "General status", exact: true }).click();
   const rule = l.getByRole("listitem", { name: "Enlightened", exact: true });
   await expect(rule.getByText("innate", { exact: true })).toBeVisible();
   await expect(rule).toContainText("Given here by the merits Golconda Seeker, Path of Caine, Path of Cathari");
@@ -423,12 +427,14 @@ test("titles say what they give, or why not, and the troupe's rules list every s
   await expect(title("Trustee").getByText("no rules yet", { exact: true })).toBeVisible();
   await expect(title("Pontifex")).toContainText("A Tremere title: it gives no sect status");
 
-  // The rules page, from there: every status by sect, its type, what it does, and
-  // what gives it in this troupe.
-  await p.getByRole("link", { name: "Rules tab, under Status" }).click();
-  await expect(p).toHaveURL(new RegExp(`/troupes/${troupeId}/rules/status$`));
+  // The status reference, from there: every status by sect, its type, what it does, and
+  // what gives it in this troupe. Each sect is folded away until opened.
+  await p.getByRole("link", { name: "Status tab" }).click();
+  await expect(p).toHaveURL(new RegExp(`/troupes/${troupeId}/status$`));
+  await expect(p.getByText(/^A reference, with nothing to set/)).toBeVisible();
+  await expect(p.getByRole("listitem", { name: "Noble", exact: true })).toBeHidden();
   for (const sect of ["General", "Anarch", "Camarilla", "Independent Alliance", "Sabbat"])
-    await expect(p.getByRole("heading", { name: `${sect} status`, exact: true })).toBeVisible();
+    await p.getByRole("heading", { name: `${sect} status`, exact: true }).click();
   const rule = (name: string) => p.getByRole("listitem", { name, exact: true });
   await expect(rule("Noble").getByText("abiding", { exact: true })).toBeVisible();
   await expect(rule("Noble")).toContainText("Held: ");
@@ -481,8 +487,8 @@ test("a troupe chooses whether its badges print titles and status: by default al
   await expect(warned.getByLabel("Negative status: Warned")).toBeVisible();
   await l.screenshot(shots("badges-status"));
 
-  // On About, the lead turns titles off and prints negative status only.
-  await l.goto(`/troupes/${troupeId}`);
+  // In the troupe's settings, the lead turns titles off and prints negative status only.
+  await l.goto(`/troupes/${troupeId}/settings`);
   const setting = l.locator("section").filter({ has: l.getByRole("heading", { name: "Badges", exact: true }) });
   await expect(setting.getByLabel("Print titles")).toBeChecked();
   await expect(setting.getByLabel(/^All/)).toBeChecked();

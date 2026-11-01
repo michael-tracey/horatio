@@ -1,48 +1,53 @@
 import { useQuery } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { TroupeOut } from "../../api/types";
+import { LogList } from "../../components/LogList";
 import { AtHandle } from "../../components/PersonPicker";
 import { Card, ErrorText, Loading } from "../../components/ui";
 import { useDates } from "../../dates";
-import { useAction } from "../../hooks";
-import { BadgeSetting } from "./BadgeSetting";
 import type { abilities } from "./roles";
-import { StatusSetting, TitlesSetting } from "./StatusSetting";
-import { WhosWhoSetting } from "./WhosWhoSetting";
+import { sectsText, useSplatsText } from "./SettingsTab";
 import { XpRangeCard } from "./XpRange";
 
 /**
- * The troupe at a glance: what it is, when it next plays, who leads it, which
- * splats and sects may join, who keeps status on sheets, what its badges print,
- * and its XP floor and ceiling; for its staff, what is waiting on them. The full profile is on the
+ * The troupe at a glance, to read: for its staff, what is waiting on them first;
+ * then what the troupe is, when it next plays and who leads it; who may join; its
+ * XP floor and ceiling; and, for its running staff, the latest of its log. Nothing
+ * here is a setting: those are under Customise, and the full profile is on the
  * Profile tab.
  */
 export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnType<typeof abilities> }) {
   const base = `/troupes/${troupe.id}`;
+  const change = can.storyteller && !troupe.archived;
+  const settings = (
+    <Link to={`${base}/settings`} className="text-sm text-mist underline hover:text-parchment">
+      Change in Customise
+    </Link>
+  );
   return (
     <div className="grid gap-6 md:grid-cols-2">
       {can.staff && !troupe.archived && <WaitingCard troupeId={troupe.id} />}
       <Summary troupe={troupe} />
-      <SplatsCard troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
-      <SectsCard troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
-      <StatusSetting troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
-      <TitlesSetting troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
-      <BadgeSetting troupe={troupe} canEdit={can.storyteller && !troupe.archived} />
-      {troupe.whos_who && <WhosWhoSetting troupe={troupe} canEdit={can.storyteller && !troupe.archived} />}
+      <JoinCard troupe={troupe} link={change && settings} />
       <div className="md:col-span-2">
         <XpRangeCard
           troupeId={troupe.id}
-          canEdit={can.storyteller && !troupe.archived}
+          canEdit={false}
           link={
-            can.running && (
-              <Link to={`${base}/xp`} className="text-sm text-mist underline hover:text-parchment">
-                Award XP
-              </Link>
-            )
+            <>
+              {can.running && (
+                <Link to={`${base}/xp`} className="text-sm text-mist underline hover:text-parchment">
+                  Award XP
+                </Link>
+              )}
+              {change && settings}
+            </>
           }
         />
       </div>
+      {can.running && <RecentLog troupeId={troupe.id} />}
     </div>
   );
 }
@@ -126,82 +131,51 @@ function Summary({ troupe }: { troupe: TroupeOut }) {
   );
 }
 
-/** Which sects' player characters may join. None ticked means any may. */
-function SectsCard({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
-  const catalogue = useQuery({
-    queryKey: ["catalogue", "vampire", null],
-    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: "vampire" }, query: {} } })),
-    staleTime: 5 * 60_000,
-    enabled: canEdit,
-  });
-  const save = useAction((allowed_sects: string[]) =>
-    unwrap(api.PATCH("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupe.id } }, body: { allowed_sects } })),
-  );
-  const allowed = troupe.allowed_sects;
-  const sects = (catalogue.data?.traits ?? []).filter((t) => t.category === "sect").map((t) => t.name);
-
+/** Who may join, in two lines: the splats and the sects the troupe takes. */
+function JoinCard({ troupe, link }: { troupe: TroupeOut; link: ReactNode }) {
+  const { text } = useSplatsText(troupe);
   return (
-    <Card title="Sects">
-      {!canEdit ? (
-        <p className="text-sm">{allowed.length ? `Player characters from ${allowed.join(", ")} may join.` : "Player characters from any sect may join."}</p>
-      ) : (
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-2 text-sm text-mist">Which sects may player characters join from? Leave all unticked to take any sect. NPCs are not limited.</legend>
-          {sects.map((sect) => (
-            <label key={sect} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={allowed.includes(sect)}
-                disabled={save.isPending}
-                onChange={(e) => save.mutate(e.target.checked ? [...allowed, sect] : allowed.filter((s) => s !== sect))}
-              />
-              {sect}
-            </label>
-          ))}
-          <ErrorText error={save.error ?? catalogue.error} />
-        </fieldset>
-      )}
+    <Card title="Who may join" actions={link}>
+      <div className="flex flex-col gap-1 text-sm">
+        <p>{text} player characters may join.</p>
+        <p>{sectsText(troupe.allowed_sects)}</p>
+        <p className="text-mist">
+          Their house rules are on{" "}
+          <Link to={`/troupes/${troupe.id}/house-rules`} className="underline hover:text-parchment">
+            House rules
+          </Link>
+          .
+        </p>
+      </div>
     </Card>
   );
 }
 
-/** Which splats' player characters may join, and be built for the troupe: Vampire, Ghoul. At least one. */
-function SplatsCard({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
-  const splats = useQuery({
-    queryKey: ["splats"],
-    queryFn: () => unwrap(api.GET("/api/rules")),
-    staleTime: 5 * 60_000,
+/** The last few lines of the troupe's log, with the way to the rest. */
+function RecentLog({ troupeId }: { troupeId: string }) {
+  const log = useQuery({
+    queryKey: ["log", troupeId, "recent"],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/log", { params: { path: { troupe_id: troupeId }, query: { limit: 5 } } })),
+    refetchInterval: 60_000,
   });
-  const save = useAction((allowed_splats: string[]) =>
-    unwrap(api.PATCH("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupe.id } }, body: { allowed_splats } })),
-  );
-  const allowed = troupe.allowed_splats;
-  const label = (splat: string) => splats.data?.find((s) => s.splat === splat)?.label ?? splat;
-  const named = allowed.map(label);
-  const listed = named.length > 1 ? `${named.slice(0, -1).join(", ")} and ${named[named.length - 1]}` : named[0];
-
   return (
-    <Card title="Splats">
-      {!canEdit ? (
-        <p className="text-sm">{listed} player characters may join.</p>
+    <Card
+      title="Latest in the log"
+      className="md:col-span-2"
+      actions={
+        <Link to={`/troupes/${troupeId}/log`} className="text-sm text-mist underline hover:text-parchment">
+          See the whole log
+        </Link>
+      }
+    >
+      {log.isPending ? (
+        <Loading />
+      ) : log.error ? (
+        <ErrorText error={log.error} />
+      ) : log.data.length === 0 ? (
+        <p className="text-sm text-mist">Nothing has happened yet.</p>
       ) : (
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-2 text-sm text-mist">
-            Which splats may player characters be? Tick at least one: new characters built for the troupe, and those joining it, must be one of these. NPCs are not limited.
-          </legend>
-          {(splats.data ?? []).map(({ splat, label }) => (
-            <label key={splat} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={allowed.includes(splat)}
-                disabled={save.isPending || (allowed.length === 1 && allowed.includes(splat))}
-                onChange={(e) => save.mutate(e.target.checked ? [...allowed, splat] : allowed.filter((s) => s !== splat))}
-              />
-              {label}
-            </label>
-          ))}
-          <ErrorText error={save.error ?? splats.error} />
-        </fieldset>
+        <LogList entries={log.data} linkTo={(e) => (e.character_id ? `/characters/${e.character_id}?troupe=${troupeId}` : null)} />
       )}
     </Card>
   );

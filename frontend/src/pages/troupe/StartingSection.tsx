@@ -7,14 +7,11 @@ import { Explainer } from "../../components/Explainer";
 import { Badge, Button, Card, ErrorText, Input, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { ClanRarity } from "./ClanRarity";
-import { DiablerieFlaws } from "./DiablerieFlaws";
-import { GolcondaSetting } from "./GolcondaSetting";
 import { useHouseSplat } from "./HouseSplat";
-import { XpRangeCard } from "./XpRange";
 
 /**
  * What new characters get free in each category: picks at a rating, or a budget
- * of points. A troupe's rules for a category replace all the rule set's for it,
+ * of points, and how rare each clan is. A troupe's rules for a category replace all the rule set's for it,
  * for characters built for this troupe or homed in it while still being built.
  */
 export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
@@ -47,27 +44,19 @@ export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEd
         </ul>
       </Card>
       <ClanRarity troupeId={troupeId} canEdit={canEdit} />
-      <ExperienceDefaults troupeId={troupeId} canEdit={canEdit} />
-      <XpRangeCard
-        troupeId={troupeId}
-        canEdit={false}
-        link={
-          canEdit && (
-            <Link to={`/troupes/${troupeId}`} className="text-sm text-mist underline hover:text-parchment">
-              Set them on About
-            </Link>
-          )
-        }
-      />
-      <StartingBlood troupeId={troupeId} canEdit={canEdit} />
-      <DiablerieFlaws troupeId={troupeId} canEdit={canEdit} />
-      <GolcondaSetting troupeId={troupeId} canEdit={canEdit} />
+      <p className="text-sm text-mist">
+        Starting XP, the XP floor and ceiling, blood at the start of a game, diablerie and Golconda are under{" "}
+        <Link to={`/troupes/${troupeId}/settings`} className="underline hover:text-parchment">
+          Troupe settings
+        </Link>
+        .
+      </p>
     </div>
   );
 }
 
 /** The XP this troupe usually gives: what awarding and new downtime cycles start at. */
-function ExperienceDefaults({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
+export function ExperienceDefaults({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
   const path = { params: { path: { troupe_id: troupeId } } };
   const troupe = useQuery({ queryKey: ["troupe", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", path)) });
   const [editing, setEditing] = useState(false);
@@ -144,7 +133,7 @@ function ExperienceDefaults({ troupeId, canEdit }: { troupeId: string; canEdit: 
 }
 
 /** House rule: the blood a reset for the next game gives each character. */
-function StartingBlood({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
+export function StartingBlood({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
   const path = { params: { path: { troupe_id: troupeId } } };
   const troupe = useQuery({ queryKey: ["troupe", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", path)) });
   const [editing, setEditing] = useState(false);

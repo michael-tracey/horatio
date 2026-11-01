@@ -1,21 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "../../api/client";
-import type { StatusRuleOut } from "../../api/types";
+import type { StatusRuleOut, TroupeOut } from "../../api/types";
 import { Explainer } from "../../components/Explainer";
 import { pageLabel } from "../../components/TraitInfo";
-import { Badge, Card, ErrorText, Loading } from "../../components/ui";
+import { Badge, ErrorText, Loading } from "../../components/ui";
 import { NO_RULES_YET } from "../character/status";
 import { givenByText, STATUS_TYPES } from "./statusRules";
 
 /**
  * Every status of the sects the troupe takes, and the general status, by sect: its
  * type, what it does, and where it comes from (the troupe's titles, social ages,
- * factions and merits). The rule set's; read only.
+ * factions and merits). The rule set's, as a reference for anyone in the troupe:
+ * there is nothing to set here. Each sect folds away, as the whole runs long.
  */
-export function StatusRulesSection({ troupeId }: { troupeId: string }) {
+export function StatusRulesTab({ troupe }: { troupe: TroupeOut }) {
   const rules = useQuery({
-    queryKey: ["status-rules", troupeId],
-    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/status-rules", { params: { path: { troupe_id: troupeId } } })),
+    queryKey: ["status-rules", troupe.id],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/status-rules", { params: { path: { troupe_id: troupe.id } } })),
   });
   if (rules.isPending) return <Loading />;
   if (rules.error) return <ErrorText error={rules.error} />;
@@ -23,6 +24,10 @@ export function StatusRulesSection({ troupeId }: { troupeId: string }) {
   const capsPage = pageLabel(caps.page);
   return (
     <div className="flex flex-col gap-6">
+      <p className="text-sm text-mist">
+        A reference, with nothing to set: every status of the sects {troupe.name} takes, what it does, and what gives it here. Open a sect to read its
+        status.
+      </p>
       <Explainer id="rules-status" title="How status works">
         <dl className="grid gap-x-4 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
           {STATUS_TYPES.map((t) => (
@@ -45,19 +50,30 @@ export function StatusRulesSection({ troupeId }: { troupeId: string }) {
       {sects.map((s) => {
         const page = pageLabel(s.page);
         return (
-          <Card key={s.sect} title={s.sect === "General" ? "General status" : `${s.sect} status`}>
-            <p className="mb-2 text-sm text-mist">
-              {s.sect === "General"
-                ? "Every sect's: a character Accepted by any sect can hold it."
-                : `A character Accepted by the ${s.sect} is ${s.accepted ?? "Accepted"}, and holds its status as well as the general status.`}
-              {page && ` ${page}.`}
-            </p>
-            <ul className="divide-y divide-ash">
-              {s.statuses.map((r) => (
-                <StatusRow key={r.name} rule={r} />
-              ))}
-            </ul>
-          </Card>
+          <details key={s.sect} className="group rounded-lg border border-ash bg-dusk">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 sm:p-5 [&::-webkit-details-marker]:hidden">
+              <h2 className="text-lg text-gold">{s.sect === "General" ? "General status" : `${s.sect} status`}</h2>
+              <span className="flex items-center gap-2 text-sm text-mist">
+                {s.statuses.length} {s.statuses.length === 1 ? "status" : "statuses"}
+                <span aria-hidden className="transition-transform group-open:rotate-90">
+                  ›
+                </span>
+              </span>
+            </summary>
+            <div className="px-4 pb-4 sm:px-5 sm:pb-5">
+              <p className="mb-2 text-sm text-mist">
+                {s.sect === "General"
+                  ? "Every sect's: a character Accepted by any sect can hold it."
+                  : `A character Accepted by the ${s.sect} is ${s.accepted ?? "Accepted"}, and holds its status as well as the general status.`}
+                {page && ` ${page}.`}
+              </p>
+              <ul className="divide-y divide-ash">
+                {s.statuses.map((r) => (
+                  <StatusRow key={r.name} rule={r} />
+                ))}
+              </ul>
+            </div>
+          </details>
         );
       })}
     </div>
