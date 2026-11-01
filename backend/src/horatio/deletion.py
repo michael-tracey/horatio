@@ -5,8 +5,8 @@ every troupe, and each of those troupes' logs records that it left. Deletion
 then records one last entry in every troupe the character was ever in, and
 removes the character and everything that is only about it: its sheet, XP,
 approvals, diableries, equipment, backstory, its downtime submissions and their
-responses, and its games on the Play View with their taps, counters, modifiers and
-derangements.
+responses, the scheduled games it checked in to, and its games on the Play View
+with their taps, counters, modifiers and derangements.
 The troupe logs keep their entries, with the character's name.
 """
 
@@ -35,6 +35,7 @@ from horatio.models import (
     EquipmentItem,
     FeedingAdjustment,
     FeedingCard,
+    GameAttendance,
     HomeTroupeChange,
     Location,
     PlayCounter,
@@ -128,7 +129,9 @@ def delete_character(db: Session, player: User, character: Character) -> None:
     # Its own Embrace goes with it; a childe it sired keeps its sire by name.
     db.execute(delete(Embrace).where(Embrace.character_id == cid))
     db.execute(update(Embrace).where(Embrace.sire_id == cid).values(sire_id=None))
-    # Its games on the Play View, with their taps, and what the player kept there.
+    # The scheduled games it checked in to, then its games on the Play View, with
+    # their taps, and what the player kept there.
+    db.execute(delete(GameAttendance).where(GameAttendance.character_id == cid))
     games = select(PlayGame.id).where(PlayGame.character_id == cid)
     db.execute(delete(PlayEvent).where(PlayEvent.game_id.in_(games)))
     db.execute(delete(PlayGame).where(PlayGame.character_id == cid))
