@@ -7,6 +7,8 @@
 # the book, and a `page_reference`: a bare number for MET: VTM, otherwise the
 # book first ("Vol. 2, p. 269", "Vol. 2 Issue 1, p. 46"). One that no book we
 # have describes says why in `unsourced` instead (tests/test_catalogue_descriptions.py).
+# The Dark Thaumaturgy rituals come from the V20 LARP SRD, not a book, so their
+# `page_reference` is their page there, a link.
 #
 # A trait whose rules limit how often it can be used at a game has
 # `uses_per_game`, which gives it a counter on the Play View (horatio.play): a
@@ -5278,6 +5280,151 @@ properties = { rating = 2 }
 category = "rituals"
 name = "Abyssal: Whispers in the Dark"
 properties = { rating = 3 }
+
+# Dark Thaumaturgy (issue #414): infernal rituals a thaumaturge may take as
+# Thaumaturgy rituals, from the V20 LARP SRD, not one of our books. Each cites its
+# page on the SRD; the summaries are our own words. Their checks are in
+# bns_met_vampire_checks.toml, at "Dark Thaumaturgy".
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Allies Below"
+description = "Bury a finger and whisper your plan: tonight, the first retest you win with Willpower on that plan gives the Willpower back, and your aura shows infernal taint for 5 minutes. Win none, and you wake without your hand."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/allies-below"
+properties = { rating = 2 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Apport Object"
+description = "Mark a small object of yours, no bigger than a sword, with an infernal sigil and hide it; saying its secret phrase later brings it to your hand. Up to your Occult dots of objects at once, and your aura shows infernal taint for a moment each time one comes."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/apport-object"
+properties = { rating = 1 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Blade of the Forgotten"
+description = "Sheathe a blade in a ritual scabbard; for 30 minutes after you draw it, a hit and a Dark Thaumaturgy challenge make the target forget your part in the fight once you escape, for a month. The blade shows infernal taint only in your hand."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/blade-of-the-forgotten"
+properties = { rating = 3 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Call Forth the Host"
+description = "Alone or with other infernalists, summon a demon you can neither command nor banish: a Stock NPC of rating 5, and more with more casters, up to 30. Once every six months; each caster's aura shows infernal taint for a year."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/call-forth-the-host"
+properties = { rating = 5 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Fires of the Inferno"
+description = "Burn your hand, taking 1 aggravated damage that will not heal meanwhile: for the night your Conflagration does 1 more aggravated damage, and your fire ignores immunity to fire. Your aura shows infernal taint while you cast it."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/fires-of-the-inferno"
+properties = { rating = 2 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Fool the Heart's Eye"
+description = "For six days, a disguise as someone you know cannot be seen through by Heightened Senses and the like, and Entrancement gets +2 and the Appearance focus on anyone expecting them. Your aura shows infernal taint while you cast it."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/fool-the-heart-s-eye"
+properties = { rating = 4 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Fragments of the Forgotten"
+description = "Burn one written source and read another by its light: whatever is plainly missing from it is whispered to you, though not always truly. Your aura shows infernal taint while the fire burns."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/fragments-of-the-forgotten"
+properties = { rating = 1 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Horrifying Spectacle"
+description = "Paint hidden sigils on your skin; once that night, light them as you act with open horror, and onlookers must beat your Dark Thaumaturgy pool or spend Willpower, or stand paralysed for 5 minutes. Your aura shows infernal taint when they glow."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/horrifying-spectacle"
+properties = { rating = 2 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: House the Maeljin"
+description = "Sacrifice a sinner to let one of the Maeljin possess you for the night, with a focus, a flaw and a gift of its sin. Casting it out takes Dark Thaumaturgy tests against 15, each loss costing Willpower, and your aura shows infernal taint until it is gone."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/house-the-maeljin"
+properties = { rating = 5 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Knotted Chord"
+description = "Knot a cord around your target's name, or a piece of them, and win a Dark Thaumaturgy challenge; untie it, and for the rest of the night any accusation they make against you names someone else. The cord shows infernal taint while it is whole."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/knotted-chord"
+properties = { rating = 1 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Learn the Heart's Pain"
+description = "Cut your chest (1 normal damage) and confess a regret of your own; win a Dark Thaumaturgy challenge against someone you know to learn one of their greatest regrets. Once a month; your aura shows infernal taint while you cast it."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/learn-the-heart-s-pain"
+properties = { rating = 2 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Mutual Damnation"
+description = "After 15 minutes' talk with someone, learn all their flaws and take one of them, for no XP, for this game and the next. Your aura shows infernal taint while you cast it."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/mutual-damnation"
+properties = { rating = 3 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Nightmares of the Subconscious"
+description = "Breathe the smoke of a tragic death into a waking nightmare for someone you know: if they have a derangement they gain a derangement trait, or two if you guessed its type; if they have none, you take Nightmares. Your aura shows infernal taint while you cast it."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/nightmares-of-the-subconscious"
+properties = { rating = 3 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Recrimination"
+description = "For the night, while you stay out of the spotlight, you can change who is shown in a picture or record you touch out of sight. Unlike other infernal powers, neither you nor the altered evidence shows infernal taint."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/recrimination"
+properties = { rating = 2 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Scribing the Unknown"
+description = "Cut your palm and touch a book, drive or phone to copy out what it holds, whatever its language or ordinary encryption; magical protection takes Mental + Occult against 15. Your aura shows infernal taint while you write."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/scribing-the-unknown"
+properties = { rating = 1 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Suppression of the Outward Soul"
+description = "Feed your blood to an object of innocence: until sunrise, while you carry it, you show no outward sign of your morality merit, but gain a Beast trait you cannot lose meanwhile. Your aura shows infernal taint while you cast it."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/suppression-of-the-outward-soul"
+properties = { rating = 4 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Terrorize"
+description = "Take the Nightmares flaw, for no XP, for a month: meanwhile a fear power used on anyone in your sight gets its exceptional success. Your aura shows infernal taint for 10 minutes each time."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/terrorize"
+properties = { rating = 1 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Vile Swarm"
+description = "Swallow a swarm of carrion insects, losing a Blood an hour while they feed; later, burst into the swarm for up to an hour, flying at double speed, taking only 1 damage from each attack and +3 to dodge. Your aura shows infernal taint only as the swarm."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/vile-swarm"
+properties = { rating = 4 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Waves of Agony"
+description = "Glass under your skin (1 normal damage) lets you, while wounded, spend a simple action to give a target an incapacitated wound penalty for 5 minutes, which nothing lets them ignore. Your aura shows infernal taint for 5 minutes after each use."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/waves-of-agony"
+properties = { rating = 3 }
+
+[[traits]]
+category = "rituals"
+name = "Dark Thaumaturgy: Whispers of Chaos"
+description = "Blind yourself, taking 1 unsoakable aggravated damage, to make a Lore check without the specialisation, starting from a clue you already have. Once a game; your aura shows infernal taint while you listen."
+page_reference = "https://www.oneworldofdarkness.com/srd-v20/rituals/whispers-of-chaos"
+properties = { rating = 1 }
 
 [[traits]]
 category = "rituals"

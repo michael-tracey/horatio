@@ -5,6 +5,7 @@ import { api, unwrap } from "../../api/client";
 import type { PriceOut, RulesBrowserOut, TraitCheckOut } from "../../api/types";
 import { EmptyState, FilterBar } from "../../components/EmptyState";
 import { HouseMark, HouseSummary } from "../../components/HouseMark";
+import { PageRef } from "../../components/TraitInfo";
 import { Badge, Button, Card, ErrorText, Input, Loading, PageTitle, Select } from "../../components/ui";
 import { useSplats } from "../character/splats";
 import { pageText } from "../troupe/bookPage";
@@ -273,7 +274,11 @@ function EntryRow({ entry: e, troupe }: { entry: Entry; troupe: string | null })
             <Badge tone="gold">House rule</Badge>
           </>
         )}
-        {e.page && <span className="text-xs text-mist">{pageText(e.page)}</span>}
+        {e.page && (
+          <span className="text-xs text-mist">
+            <PageRef page={e.page} text={pageText} />
+          </span>
+        )}
       </div>
       {e.summary && <p className="text-mist">{e.summary}</p>}
       {t?.house && (
@@ -351,7 +356,12 @@ function Checks({ checks }: { checks: TraitCheckOut[] }) {
       {checks.map((c) => (
         <li key={c.key} className={c.house === "off" ? "line-through decoration-mist/60" : undefined}>
           {c.message}
-          {c.page && ` ${pageText(c.page)}`}
+          {c.page && (
+            <>
+              {" "}
+              <PageRef page={c.page} text={pageText} />
+            </>
+          )}
           {c.house && (
             <span className="no-underline">
               {" "}

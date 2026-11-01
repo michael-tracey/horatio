@@ -10,6 +10,9 @@ officer or a pack of werewolves in a hurry (issue #215).
   powers their kind lists (a hunter's True Faith or Hedge Magic).
 - No Willpower, so no retests, unless it can overbid; health levels equal to its
   rating (twice that for some kinds); Blood or its kind's resource.
+- An infernal Stock NPC of any kind may take the Infernal Investment
+  specialisation, which opens every Dark Thaumaturgy ritual to it (the V20 LARP
+  SRD, issue #414): the one way a Stock NPC has rituals.
 
 Nothing here reads the database: horatio.npcs keeps Stock NPCs and asks these
 rules what they make.
@@ -32,6 +35,12 @@ STOCK_RULES = (
     "No attribute focuses, so no focus effects for its powers.",
     "Out of the fight at no health levels left, but not necessarily dead.",
 )
+# The V20 LARP SRD's specialisation for an infernal Stock NPC, open to every kind: it
+# gives no dots, but every Dark Thaumaturgy ritual (its Infernal Power page).
+INFERNAL_INVESTMENT = BuiltInPower(
+    name="Infernal Investment",
+    note="Every Dark Thaumaturgy ritual; its aura shows infernal taint while it casts one",
+)
 
 
 @dataclass(frozen=True)
@@ -52,7 +61,8 @@ class StatBlock:
     # The dots it reaches in each discipline, path or numina: from its
     # specializations and from its kind.
     powers: tuple[tuple[str, int], ...]
-    # Single powers and merits its kind gives it at its rating.
+    # Single powers and merits its kind gives it at its rating, and Infernal
+    # Investment if it specializes in that.
     built_in: tuple[BuiltInPower, ...]
     health: int
     resource: Resource
@@ -83,10 +93,11 @@ def stat_block(kind: NpcKind, rating: int, specializations: Sequence[Specializat
         if power.dots is not None and (power.from_rating or 0) <= rating:
             dots[power.name] = max(dots.get(power.name, 0), power.dots_at(rating))
     for s in specializations:
-        if s.type == "power":
+        if s.type == "power" and s.name != INFERNAL_INVESTMENT.name:
             # The discipline's dots up to the rating, above any its kind gives (a
             # wraith's Dementation, p. 500).
             dots[s.name] = max(dots.get(s.name, 0), min(rating, MAX_DOTS))
+    infernal = any(s == Specialization("power", INFERNAL_INVESTMENT.name) for s in specializations)
     return StatBlock(
         rating=rating,
         pool=pool(rating),
@@ -94,7 +105,8 @@ def stat_block(kind: NpcKind, rating: int, specializations: Sequence[Specializat
             (s.name, skill_pool(rating)) for s in specializations if s.type == "skill"
         ),
         powers=tuple(dots.items()),
-        built_in=tuple(p for p in kind.powers if p.dots is None and (p.from_rating or 0) <= rating),
+        built_in=tuple(p for p in kind.powers if p.dots is None and (p.from_rating or 0) <= rating)
+        + ((INFERNAL_INVESTMENT,) if infernal else ()),
         health=health(kind, rating),
         resource=kind.resource,
     )
@@ -124,7 +136,7 @@ def check(
         if s.type == "skill":
             if s.name not in skills:
                 raise StockError(f"{s.name} is not a skill.")
-        elif not kind.may_specialize(s.name, disciplines):
+        elif s.name != INFERNAL_INVESTMENT.name and not kind.may_specialize(s.name, disciplines):
             if kind.mortal and not kind.numina and not kind.specializations:
                 raise StockError("A mortal Stock NPC takes skill specialisations only (p. 489).")
             raise StockError(f"{kind.label} Stock NPCs cannot specialise in {s.name}.")

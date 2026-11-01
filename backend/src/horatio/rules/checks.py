@@ -237,9 +237,18 @@ class Violation:
         return (self.check.key, self.subject.category, self.subject.name, self.subject.detail)
 
 
+# Where the V20 LARP SRD's pages are, for the rules taken from it rather than a book
+# (Dark Thaumaturgy): their page reference is a link there.
+SRD_PAGES = "https://www.oneworldofdarkness.com/srd-v20/"
+SRD_NAME = "V20 LARP SRD"
+
+
 def page_text(page: str) -> str:
-    """A page reference as written: "p. 225" for the core book, or the reference
-    as given for a supplement ("Vol. 2, p. 98")."""
+    """A page reference as written: "p. 225" for the core book, the reference as
+    given for a supplement ("Vol. 2, p. 98"), or the SRD's name for a link to one
+    of its pages, as a message is plain text."""
+    if page.startswith(SRD_PAGES):
+        return SRD_NAME
     return f"p. {page}" if page[:1].isdigit() else page
 
 
