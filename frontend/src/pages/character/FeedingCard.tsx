@@ -5,8 +5,9 @@ import { herdShared, needText, tally } from "../../feeding";
 /**
  * The Feeding section of the downtime form: feeding actions out of the general
  * actions, and the character's Herd shared out (its own feeding, gifts to other
- * characters, saved for game, other), never more dots than it has. The tally is
- * advisory; storytellers decide.
+ * characters, saved for game, other), never more dots than it has; and with Blood
+ * Resonance, the humor the character hunts for. The tally is advisory; storytellers
+ * decide.
  */
 export function FeedingCard({
   feeding,
@@ -28,6 +29,7 @@ export function FeedingCard({
   const number = (n: string) => Math.max(0, Number(n) || 0);
   const setGift = (i: number, change: Partial<(typeof gifts)[number]>) =>
     onChange({ ...value, gifts: gifts.map((g, j) => (j === i ? { ...g, ...change } : g)) });
+  const hunted = feeding.humors.find((h) => h.key === value.resonance);
   const unchosen = feeding.recipients.filter((r) => !gifts.some((g) => g.character_id === r.character_id));
 
   return (
@@ -51,6 +53,23 @@ export function FeedingCard({
           <Input disabled={locked} value={value.where ?? ""} onChange={(e) => onChange({ ...value, where: e.target.value })} placeholder="Optional" />
         </Field>
       </div>
+      {feeding.humors.length > 0 && (
+        <div className="mt-3 sm:max-w-sm">
+          <Field
+          label="Resonance you hunt for"
+          hint={hunted ? `${hunted.name} blood brings ${hunted.feelings}. Staff say what you found.` : "Blood Resonance (Vol. 2, pp. 294-297): the humor you look for. Staff say what you found."}
+        >
+          <Select disabled={locked} value={value.resonance ?? ""} onChange={(e) => onChange({ ...value, resonance: e.target.value as FeedingIn["resonance"] })}>
+            <option value="">Any</option>
+            {feeding.humors.map((h) => (
+              <option key={h.key} value={h.key}>
+                {h.name}
+              </option>
+            ))}
+          </Select>
+          </Field>
+        </div>
+      )}
 
       {feeding.herd > 0 && (
         <fieldset className="mt-4 flex flex-col gap-3 border-t border-ash pt-3" disabled={locked}>

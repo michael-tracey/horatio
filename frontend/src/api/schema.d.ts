@@ -3281,7 +3281,8 @@ export interface paths {
         get?: never;
         /**
          * Answer Feeding
-         * @description Full Blood next game, half Blood, or something else.
+         * @description Full Blood next game, half Blood, or something else; with Blood Resonance, the
+         *     Resonance it fed on and any Dyscrasia.
          */
         put: operations["answer_feeding_api_cycles__cycle_id__participants__participant_id__feeding_answer_put"];
         post?: never;
@@ -5732,6 +5733,27 @@ export interface paths {
          * @description Take an item away from its holder, with a reason its player is told.
          */
         post: operations["take_back_api_troupes__troupe_id__equipment__item_id__take_back_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/feeding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Feeding
+         * @description How far Horatio handles feeding for this troupe: not at all, as the book has it,
+         *     or with the optional Vol. 2 rules.
+         */
+        put: operations["set_feeding_api_troupes__troupe_id__feeding_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8736,6 +8758,11 @@ export interface components {
             clan: string;
             /** Delivered */
             delivered: boolean;
+            /**
+             * Dyscrasia
+             * @default
+             */
+            dyscrasia: string;
             /** Herd */
             herd: number;
             need: components["schemas"]["FeedingNeedOut"];
@@ -8748,6 +8775,8 @@ export interface components {
             received: components["schemas"]["ReceivedOut"][];
             /** Reply */
             reply: string;
+            /** Resonance */
+            resonance?: ("choleric" | "melancholic" | "phlegmatic" | "sanguine") | null;
             /** Result */
             result: ("full" | "half" | "other") | null;
             /** Submission Status */
@@ -9456,6 +9485,11 @@ export interface components {
             characters: components["schemas"]["CharacterFeedingOut"][];
             /** Clans */
             clans: components["schemas"]["ClanFeedingOut"][];
+            /**
+             * Humors
+             * @default []
+             */
+            humors: components["schemas"]["HumorOut"][];
         };
         /** CycleOut */
         CycleOut: {
@@ -9475,6 +9509,11 @@ export interface components {
             closes_at: string;
             /** Completion Xp */
             completion_xp: number;
+            /**
+             * Feeding
+             * @default true
+             */
+            feeding: boolean;
             /**
              * Grace Ends At
              * Format: date-time
@@ -10108,6 +10147,13 @@ export interface components {
             delivered: string[];
             /** Due */
             due: boolean;
+        };
+        /** DyscrasiaOut */
+        DyscrasiaOut: {
+            /** Name */
+            name: string;
+            /** Summary */
+            summary: string;
         };
         /**
          * EffectBlock
@@ -11098,10 +11144,17 @@ export interface components {
         /** FeedingAnswerIn */
         FeedingAnswerIn: {
             /**
+             * Dyscrasia
+             * @default
+             */
+            dyscrasia: string;
+            /**
              * Reply
              * @default
              */
             reply: string;
+            /** Resonance */
+            resonance?: ("choleric" | "melancholic" | "phlegmatic" | "sanguine") | null;
             /** Result */
             result: ("full" | "half" | "other") | null;
         };
@@ -11141,6 +11194,11 @@ export interface components {
              */
             herd_saved: number;
             /**
+             * Resonance
+             * @default
+             */
+            resonance: ("choleric" | "melancholic" | "phlegmatic" | "sanguine") | "";
+            /**
              * Where
              * @default
              */
@@ -11156,6 +11214,19 @@ export interface components {
             lines: components["schemas"]["NeedLineOut"][];
             /** Needed */
             needed: number;
+        };
+        /** FeedingSettingIn */
+        FeedingSettingIn: {
+            /**
+             * Feeding
+             * @enum {string}
+             */
+            feeding: "off" | "book";
+            /**
+             * Resonance
+             * @default false
+             */
+            resonance: boolean;
         };
         /**
          * FilterCondition
@@ -12113,6 +12184,23 @@ export interface components {
              * Format: uuid
              */
             troupe_id: string;
+        };
+        /**
+         * HumorOut
+         * @description One of Blood Resonance's four humors (horatio.resonance).
+         */
+        HumorOut: {
+            /** Dyscrasias */
+            dyscrasias: components["schemas"]["DyscrasiaOut"][];
+            /** Feelings */
+            feelings: string;
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "choleric" | "melancholic" | "phlegmatic" | "sanguine";
+            /** Name */
+            name: string;
         };
         /** IdentitiesIn */
         IdentitiesIn: {
@@ -13900,6 +13988,11 @@ export interface components {
             answer: components["schemas"]["FeedingIn"];
             /** Herd */
             herd: number;
+            /**
+             * Humors
+             * @default []
+             */
+            humors: components["schemas"]["HumorOut"][];
             /** Locked */
             locked: boolean;
             need: components["schemas"]["FeedingNeedOut"];
@@ -19085,6 +19178,17 @@ export interface components {
             diablerie_flaws: string;
             /** Downtime Xp */
             downtime_xp: number;
+            /**
+             * Feeding
+             * @default book
+             * @enum {string}
+             */
+            feeding: "off" | "book";
+            /**
+             * Feeding Resonance
+             * @default false
+             */
+            feeding_resonance: boolean;
             /**
              * Golconda Enlightened
              * @default false
@@ -31237,6 +31341,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EquipmentItemDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_feeding_api_troupes__troupe_id__feeding_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedingSettingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
                 };
             };
             /** @description Validation Error */

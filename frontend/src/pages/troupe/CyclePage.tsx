@@ -54,7 +54,8 @@ export function CyclePage() {
           { to: base, label: "Overview", end: true },
           { to: `${base}/form`, label: "Form" },
           { to: `${base}/participants`, label: "Participants" },
-          { to: `${base}/feeding`, label: "Feeding" },
+          // A troupe that doesn't track feeding has no Feeding tab.
+          ...(c.feeding ? [{ to: `${base}/feeding`, label: "Feeding" }] : []),
           { to: `${base}/responses`, label: "Responses" },
           { to: `${base}/delivery`, label: "Delivery" },
         ]}

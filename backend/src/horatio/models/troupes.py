@@ -31,6 +31,7 @@ class Troupe(Imported, Record):
         CheckConstraint("badge_status in ('all', 'negative', 'none')", name="badge_status"),
         CheckConstraint("location_limit in ('refuse', 'note')", name="location_limit"),
         CheckConstraint("backstory_mode in ('free', 'either', 'wizard')", name="backstory_mode"),
+        CheckConstraint("feeding in ('off', 'book')", name="feeding"),
     )
 
     name: Mapped[str]
@@ -68,6 +69,14 @@ class Troupe(Imported, Record):
     # Golconda Seeker holds the innate status Enlightened (Vol. 2, p. 267). Off unless
     # switched on (horatio.rules.grants.HOUSE_OPTIONS).
     golconda_enlightened: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Feeding (horatio.feeding): "book", tracked in downtimes as the core book has it,
+    # or "off", left out of Horatio altogether. What was recorded while it was on is
+    # kept, and comes back when it is switched on again.
+    feeding: Mapped[str] = mapped_column(default="book", server_default="book")
+    # The optional rule Blood Resonance (Vol. 2, pp. 294-297), while feeding is
+    # tracked: a character hunts for blood of one humor, and staff answer with the
+    # Resonance it fed on and any Dyscrasia (horatio.resonance).
+    feeding_resonance: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Status on sheets (horatio.sect_status): who adds and removes fleeting and
     # negative status on its characters' sheets: "players", each on their own, naming
     # the patron; or "staff", its running staff only. Running staff always can.

@@ -3906,6 +3906,11 @@
             "title": "Delivered",
             "type": "boolean"
           },
+          "dyscrasia": {
+            "default": "",
+            "title": "Dyscrasia",
+            "type": "string"
+          },
           "herd": {
             "title": "Herd",
             "type": "integer"
@@ -3928,6 +3933,23 @@
           "reply": {
             "title": "Reply",
             "type": "string"
+          },
+          "resonance": {
+            "anyOf": [
+              {
+                "enum": [
+                  "choleric",
+                  "melancholic",
+                  "phlegmatic",
+                  "sanguine"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resonance"
           },
           "result": {
             "anyOf": [
@@ -6131,6 +6153,14 @@
             },
             "title": "Clans",
             "type": "array"
+          },
+          "humors": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/HumorOut"
+            },
+            "title": "Humors",
+            "type": "array"
           }
         },
         "required": [
@@ -6170,6 +6200,11 @@
           "completion_xp": {
             "title": "Completion Xp",
             "type": "integer"
+          },
+          "feeding": {
+            "default": true,
+            "title": "Feeding",
+            "type": "boolean"
           },
           "grace_ends_at": {
             "format": "date-time",
@@ -7881,6 +7916,24 @@
           "delivered"
         ],
         "title": "DowntimeWaiting",
+        "type": "object"
+      },
+      "DyscrasiaOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "summary"
+        ],
+        "title": "DyscrasiaOut",
         "type": "object"
       },
       "EffectBlock": {
@@ -10633,11 +10686,34 @@
       },
       "FeedingAnswerIn": {
         "properties": {
+          "dyscrasia": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Dyscrasia",
+            "type": "string"
+          },
           "reply": {
             "default": "",
             "maxLength": 2000,
             "title": "Reply",
             "type": "string"
+          },
+          "resonance": {
+            "anyOf": [
+              {
+                "enum": [
+                  "choleric",
+                  "melancholic",
+                  "phlegmatic",
+                  "sanguine"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resonance"
           },
           "result": {
             "anyOf": [
@@ -10707,6 +10783,25 @@
             "title": "Herd Saved",
             "type": "integer"
           },
+          "resonance": {
+            "anyOf": [
+              {
+                "enum": [
+                  "choleric",
+                  "melancholic",
+                  "phlegmatic",
+                  "sanguine"
+                ],
+                "type": "string"
+              },
+              {
+                "const": "",
+                "type": "string"
+              }
+            ],
+            "default": "",
+            "title": "Resonance"
+          },
           "where": {
             "default": "",
             "maxLength": 500,
@@ -10746,6 +10841,28 @@
           "always_half"
         ],
         "title": "FeedingNeedOut",
+        "type": "object"
+      },
+      "FeedingSettingIn": {
+        "properties": {
+          "feeding": {
+            "enum": [
+              "off",
+              "book"
+            ],
+            "title": "Feeding",
+            "type": "string"
+          },
+          "resonance": {
+            "default": false,
+            "title": "Resonance",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "feeding"
+        ],
+        "title": "FeedingSettingIn",
         "type": "object"
       },
       "FilterCondition": {
@@ -12987,6 +13104,44 @@
           "summary"
         ],
         "title": "HouseTraitOut",
+        "type": "object"
+      },
+      "HumorOut": {
+        "description": "One of Blood Resonance's four humors (horatio.resonance).",
+        "properties": {
+          "dyscrasias": {
+            "items": {
+              "$ref": "#/components/schemas/DyscrasiaOut"
+            },
+            "title": "Dyscrasias",
+            "type": "array"
+          },
+          "feelings": {
+            "title": "Feelings",
+            "type": "string"
+          },
+          "key": {
+            "enum": [
+              "choleric",
+              "melancholic",
+              "phlegmatic",
+              "sanguine"
+            ],
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "feelings",
+          "dyscrasias"
+        ],
+        "title": "HumorOut",
         "type": "object"
       },
       "IdentitiesIn": {
@@ -17595,6 +17750,14 @@
           "herd": {
             "title": "Herd",
             "type": "integer"
+          },
+          "humors": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/HumorOut"
+            },
+            "title": "Humors",
+            "type": "array"
           },
           "locked": {
             "title": "Locked",
@@ -31321,6 +31484,20 @@
             "title": "Downtime Xp",
             "type": "integer"
           },
+          "feeding": {
+            "default": "book",
+            "enum": [
+              "off",
+              "book"
+            ],
+            "title": "Feeding",
+            "type": "string"
+          },
+          "feeding_resonance": {
+            "default": false,
+            "title": "Feeding Resonance",
+            "type": "boolean"
+          },
           "golconda_enlightened": {
             "default": false,
             "title": "Golconda Enlightened",
@@ -43548,7 +43725,7 @@
     },
     "/api/cycles/{cycle_id}/participants/{participant_id}/feeding-answer": {
       "put": {
-        "description": "Full Blood next game, half Blood, or something else.",
+        "description": "Full Blood next game, half Blood, or something else; with Blood Resonance, the\nResonance it fed on and any Dyscrasia.",
         "operationId": "answer_feeding_api_cycles__cycle_id__participants__participant_id__feeding_answer_put",
         "parameters": [
           {
@@ -51324,6 +51501,60 @@
         "summary": "Take Back",
         "tags": [
           "equipment"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/feeding": {
+      "put": {
+        "description": "How far Horatio handles feeding for this troupe: not at all, as the book has it,\nor with the optional Vol. 2 rules.",
+        "operationId": "set_feeding_api_troupes__troupe_id__feeding_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedingSettingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Feeding",
+        "tags": [
+          "house rules"
         ]
       }
     },

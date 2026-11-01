@@ -397,6 +397,205 @@ def test_an_other_answer_has_no_working(troupe: Troupe) -> None:
     assert troupe.player.client.get(f"/characters/{agnes}/play").json()["half_blood"] is False
 
 
+# --- the troupe's setting ---------------------------------------------------------------
+
+
+def set_feeding(troupe: Troupe, person: Person | None = None, **body: Any) -> Any:
+    return (person or troupe.storyteller).client.put(f"/troupes/{troupe.id}/feeding", json=body)
+
+
+def answer_url(troupe: Troupe, cycle_id: str, name: str) -> str:
+    participant = character_view(troupe, cycle_id, name)["participant_id"]
+    return f"/cycles/{cycle_id}/participants/{participant}/feeding-answer"
+
+
+def test_a_troupe_that_doesnt_track_feeding_leaves_it_out_and_keeps_what_it_had(
+    troupe: Troupe,
+) -> None:
+    agnes = vampire(troupe, troupe.player, "Agnes", "Toreador")
+    cycle = open_cycle(troupe, new_cycle(troupe))
+    general = question_id(my_downtime(troupe.player, agnes).json(), "Downtime action")
+    patrol = [{"question_id": general, "slot": 1, "body": "Patrol"}]
+    assert save_feeding(troupe.player, agnes, patrol, actions=1, where="The docks").status_code
+    submit(troupe.player, agnes)
+    url = answer_url(troupe, cycle["id"], "Agnes")
+    assert troupe.storyteller.client.put(url, json={"result": "half"}).status_code == 200
+    assert troupe.lead.client.get(f"/troupes/{troupe.id}").json()["feeding"] == "book"
+
+    # Only storytellers change it, as with the troupe's other house rules.
+    assert set_feeding(troupe, troupe.assistant, feeding="off").status_code == 403
+    off = set_feeding(troupe, feeding="off")
+    assert off.status_code == 200, off.text
+    assert (off.json()["feeding"], off.json()["feeding_resonance"]) == ("off", False)
+    log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
+    assert "storyteller set feeding to not tracked, Blood Resonance off." in log
+
+    # No Feeding section, no Feeding tab, and nothing to answer.
+    assert my_downtime(troupe.player, agnes).json()["feeding"] is None
+    assert troupe.storyteller.client.get(f"/cycles/{cycle['id']}").json()["feeding"] is False
+    assert staff_view(troupe, cycle["id"]).status_code == 409
+    assert troupe.storyteller.client.put(url, json={"result": "full"}).status_code == 409
+    # Its feeding action no longer counts against the general actions; what the player
+    # sends for feeding is not saved over what they had.
+    three = [{"question_id": general, "slot": n, "body": f"Action {n}"} for n in (1, 2, 3)]
+    saved = save_feeding(troupe.player, agnes, three, actions=0, where="")
+    assert saved.status_code == 200, saved.text
+
+    # Delivered, the results have no feeding, and the next game starts at full Blood.
+    troupe.storyteller.client.post(f"/cycles/{cycle['id']}/close")
+    for r in troupe.assistant.client.get(f"/cycles/{cycle['id']}/responses").json():
+        troupe.assistant.client.put(f"/responses/{r['id']}", json={"body": "Quiet night."})
+    [ready] = troupe.assistant.client.get(f"/cycles/{cycle['id']}/deliveries").json()[
+        "participants"
+    ]
+    assert (ready["answered"], ready["to_answer"]) == (3, 3)
+    assert troupe.storyteller.client.post(f"/cycles/{cycle['id']}/deliver").json()["delivered"]
+    [result] = troupe.player.client.get(f"/characters/{agnes}/downtime/results").json()
+    assert "Feeding" not in result["message"]
+    assert troupe.player.client.get(f"/characters/{agnes}/play").json()["half_blood"] is False
+
+    # Switched back on, everything is as it was, and goes out as an update.
+    assert set_feeding(troupe, feeding="book").status_code == 200
+    view = character_view(troupe, cycle["id"], "Agnes")
+    assert (view["result"], view["summary"]) == ("half", "1 feeding action (The docks)")
+    [ready] = troupe.assistant.client.get(f"/cycles/{cycle['id']}/deliveries").json()[
+        "participants"
+    ]
+    assert (ready["answered"], ready["to_answer"], ready["changed"]) == (4, 4, True)
+    again = troupe.storyteller.client.post(f"/cycles/{cycle['id']}/deliver").json()
+    assert (again["delivered"], again["updated"]) == (1, 1)
+    results = troupe.player.client.get(f"/characters/{agnes}/downtime/results").json()
+    assert "*Result:* **Half Blood next game.**" in results[0]["message"]
+    assert troupe.player.client.get(f"/characters/{agnes}/play").json()["half_blood"] is True
+
+
+def test_switching_feeding_off_after_delivery_is_no_news(troupe: Troupe) -> None:
+    agnes = vampire(troupe, troupe.player, "Agnes", "Toreador")
+    cycle = open_cycle(troupe, new_cycle(troupe))
+    submit(troupe.player, agnes)
+    troupe.storyteller.client.put(answer_url(troupe, cycle["id"], "Agnes"), json={"result": "half"})
+    troupe.storyteller.client.post(f"/cycles/{cycle['id']}/close")
+    troupe.storyteller.client.post(f"/cycles/{cycle['id']}/deliver")
+
+    set_feeding(troupe, feeding="off")
+
+    # The player keeps the results they had; switching feeding off is not an update,
+    # and the half Blood they were told of no longer applies.
+    [ready] = troupe.assistant.client.get(f"/cycles/{cycle['id']}/deliveries").json()[
+        "participants"
+    ]
+    assert (ready["delivered"], ready["changed"], ready["due"]) == (True, False, False)
+    [result] = troupe.player.client.get(f"/characters/{agnes}/downtime/results").json()
+    assert "**Feeding**" in result["message"]
+    assert troupe.player.client.get(f"/characters/{agnes}/play").json()["half_blood"] is False
+    set_feeding(troupe, feeding="book")
+    assert troupe.player.client.get(f"/characters/{agnes}/play").json()["half_blood"] is True
+
+
+def test_the_setting_shows_in_the_troupes_house_rules(troupe: Troupe) -> None:
+    def feeding_rules() -> list[dict[str, Any]]:
+        house = troupe.player.client.get(f"/troupes/{troupe.id}/house-rules").json()
+        return [o for o in house["other"] if o["name"] in ("Feeding", "Blood Resonance")]
+
+    assert feeding_rules() == []
+    set_feeding(troupe, feeding="book", resonance=True)
+    [rule] = feeding_rules()
+    assert rule["name"] == "Blood Resonance"
+    assert "Vol. 2, pp. 294-297" in rule["text"]
+    set_feeding(troupe, feeding="off", resonance=True)
+    [rule] = feeding_rules()
+    assert (rule["name"], rule["text"]) == (
+        "Feeding",
+        "Not tracked: no feeding in downtimes, results or at the next game",
+    )
+    # Resonance is kept for when feeding comes back.
+    assert troupe.lead.client.get(f"/troupes/{troupe.id}").json()["feeding_resonance"] is True
+    assert set_feeding(troupe, feeding="sometimes").status_code == 422
+
+
+# --- Blood Resonance --------------------------------------------------------------------
+
+
+def test_blood_resonance_from_the_form_to_the_results(troupe: Troupe) -> None:
+    agnes = vampire(troupe, troupe.player, "Agnes", "Toreador")
+    cycle = open_cycle(troupe, new_cycle(troupe))
+    assert feeding_form(troupe.player, agnes)["humors"] == []
+    set_feeding(troupe, feeding="book", resonance=True)
+
+    form = feeding_form(troupe.player, agnes)
+    assert [h["key"] for h in form["humors"]] == [
+        "choleric",
+        "melancholic",
+        "phlegmatic",
+        "sanguine",
+    ]
+    sanguine = form["humors"][3]
+    assert sanguine["feelings"] == "enthusiasm, vitality, excitement or joy"
+    assert "Manic High" in [d["name"] for d in sanguine["dyscrasias"]]
+    assert save_feeding(troupe.player, agnes, actions=1, resonance="bilious").status_code == 422
+    saved = save_feeding(troupe.player, agnes, actions=1, resonance="sanguine")
+    assert saved.status_code == 200, saved.text
+    submit(troupe.player, agnes)
+
+    view = character_view(troupe, cycle["id"], "Agnes")
+    assert view["summary"] == "1 feeding action · hunting sanguine blood"
+    url = answer_url(troupe, cycle["id"], "Agnes")
+    wrong = troupe.storyteller.client.put(
+        url, json={"result": "full", "resonance": "phlegmatic", "dyscrasia": "Manic High"}
+    )
+    assert wrong.status_code == 422  # Manic High is sanguine
+    answered = troupe.storyteller.client.put(
+        url, json={"result": "full", "resonance": "sanguine", "dyscrasia": "Manic High"}
+    )
+    assert answered.status_code == 200, answered.text
+    view = character_view(troupe, cycle["id"], "Agnes")
+    assert (view["resonance"], view["dyscrasia"]) == ("sanguine", "Manic High")
+
+    troupe.storyteller.client.post(f"/cycles/{cycle['id']}/close")
+    troupe.storyteller.client.post(f"/cycles/{cycle['id']}/deliver")
+    [result] = troupe.player.client.get(f"/characters/{agnes}/downtime/results").json()
+    assert (
+        "**Feeding**\n*Your feeding:* 1 feeding action · hunting sanguine blood\n"
+        "*Result:* **Full Blood next game.**\n\n"
+        "Fed on **sanguine** blood (enthusiasm, vitality, excitement or joy). "
+        "Dyscrasia: **Manic High**: +1 wild card if you won your last challenge, within the "
+        "last minute. Use it once, before the end of the next game (Vol. 2, pp. 296-297)."
+        "\n\n▸ How it was worked out:"
+    ) in result["message"]
+
+    # Switched off, the Resonance is kept but no longer shown, and is no news.
+    set_feeding(troupe, feeding="book", resonance=False)
+    view = character_view(troupe, cycle["id"], "Agnes")
+    assert (view["resonance"], view["summary"]) == (None, "1 feeding action")
+    [ready] = troupe.assistant.client.get(f"/cycles/{cycle['id']}/deliveries").json()[
+        "participants"
+    ]
+    assert ready["changed"] is False
+    set_feeding(troupe, feeding="book", resonance=True)
+    assert character_view(troupe, cycle["id"], "Agnes")["dyscrasia"] == "Manic High"
+
+
+def test_a_resonance_with_no_dyscrasia(troupe: Troupe) -> None:
+    agnes = vampire(troupe, troupe.player, "Agnes", "Toreador")
+    cycle = open_cycle(troupe, new_cycle(troupe))
+    set_feeding(troupe, feeding="book", resonance=True)
+    submit(troupe.player, agnes)
+    url = answer_url(troupe, cycle["id"], "Agnes")
+    troupe.storyteller.client.put(url, json={"result": "half", "resonance": "melancholic"})
+    troupe.storyteller.client.post(f"/cycles/{cycle['id']}/close")
+    troupe.storyteller.client.post(f"/cycles/{cycle['id']}/deliver")
+
+    [result] = troupe.player.client.get(f"/characters/{agnes}/downtime/results").json()
+    assert (
+        "Fed on **melancholic** blood (sadness, fear, awareness or melancholy). No Dyscrasia."
+    ) in result["message"]
+
+    # Taking the answer back takes its Resonance with it.
+    troupe.storyteller.client.put(url, json={"result": None})
+    view = character_view(troupe, cycle["id"], "Agnes")
+    assert (view["result"], view["resonance"]) == (None, None)
+
+
 # --- the rules --------------------------------------------------------------------------
 
 

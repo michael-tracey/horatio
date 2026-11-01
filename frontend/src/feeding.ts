@@ -11,6 +11,7 @@ export const emptyFeeding = (): FeedingIn => ({
   herd_saved: 0,
   herd_other: 0,
   herd_other_text: "",
+  resonance: "",
 });
 
 /** The Herd dots the answer shares out, which can't be more than the rating. */

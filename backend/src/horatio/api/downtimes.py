@@ -16,6 +16,7 @@ from horatio import (
     pictures,
     quest_actions,
     quests,
+    resonance,
     social_age,
     xp_range,
 )
@@ -39,6 +40,7 @@ from horatio.rules import feeding as feeding_rules
 router = APIRouter(tags=["downtimes"])
 
 AnswerType = Literal["long_text", "short_text", "choice", "number", "yes_no"]
+Humor = Literal["choleric", "melancholic", "phlegmatic", "sanguine"]
 
 
 class QuestionIn(BaseModel):
@@ -94,6 +96,8 @@ class CycleOut(BaseModel):
     action_kinds: dict[str, str] = {}
     # The troupe runs quests, so its form may have the Quest action.
     quests_enabled: bool = False
+    # The troupe tracks feeding (horatio.feeding), so the cycle has its Feeding tab.
+    feeding: bool = True
 
 
 class CycleSummaryOut(BaseModel):
@@ -223,6 +227,24 @@ class FeedingIn(BaseModel):
     herd_saved: int = Field(default=0, ge=0, le=20)
     herd_other: int = Field(default=0, ge=0, le=20)
     herd_other_text: str = Field(default="", max_length=500)
+    # With Blood Resonance: the humor the character hunts for, "" for any.
+    resonance: Humor | Literal[""] = ""
+
+
+class DyscrasiaOut(BaseModel):
+    name: str
+    # What it does, in a line.
+    summary: str
+
+
+class HumorOut(BaseModel):
+    """One of Blood Resonance's four humors (horatio.resonance)."""
+
+    key: Humor
+    name: str
+    # The feelings its blood brings: "anger, violence, passion, envy or aggression".
+    feelings: str
+    dyscrasias: list[DyscrasiaOut]
 
 
 class ReceivedOut(BaseModel):
@@ -248,6 +270,8 @@ class MyFeedingOut(BaseModel):
     recipients: list[RecipientOut]
     # A storyteller has answered it, so it can no longer change.
     locked: bool
+    # With Blood Resonance on, the humors to hunt for; empty while it is off.
+    humors: list[HumorOut] = []
 
 
 class AnswerIn(BaseModel):
@@ -342,6 +366,7 @@ def cycle_out(db: DbSession, cycle: DowntimeCycle) -> CycleOut:
         questions=[question_out(q) for q in downtimes.questions(db, cycle)],
         action_kinds=downtimes.troupe_action_kinds(db, troupe),
         quests_enabled=troupe.quests_enabled,
+        feeding=feeding.tracked(troupe),
     )
 
 
@@ -446,7 +471,20 @@ def feeding_in(answer: feeding.FeedingAnswer) -> FeedingIn:
         herd_saved=answer.herd_saved,
         herd_other=answer.herd_other,
         herd_other_text=answer.herd_other_text,
+        resonance=answer.resonance,  # type: ignore[arg-type]  # checked when saved
     )
+
+
+def humors_out() -> list[HumorOut]:
+    return [
+        HumorOut(
+            key=h.key,  # type: ignore[arg-type]  # one of the four
+            name=h.name,
+            feelings=h.feelings,
+            dyscrasias=[DyscrasiaOut(name=d.name, summary=d.summary) for d in h.dyscrasias],
+        )
+        for h in resonance.HUMORS.values()
+    ]
 
 
 def feeding_answer(body: FeedingIn) -> feeding.FeedingAnswer:
@@ -458,6 +496,7 @@ def feeding_answer(body: FeedingIn) -> feeding.FeedingAnswer:
         herd_saved=body.herd_saved,
         herd_other=body.herd_other,
         herd_other_text=body.herd_other_text,
+        resonance=body.resonance,
     )
 
 
@@ -480,6 +519,9 @@ def my_feeding_out(
     participant: CycleParticipant,
     submission: Submission | None,
 ) -> MyFeedingOut | None:
+    troupe = db.get_one(Troupe, cycle.troupe_id)
+    if not feeding.tracked(troupe):
+        return None
     basis = feeding.participant_basis(db, participant, character, cycle)
     need = feeding.need(db, cycle, participant, basis)
     if need is None:
@@ -494,6 +536,7 @@ def my_feeding_out(
             for i, n in feeding.recipients(db, cycle, character)
         ],
         locked=submission is not None and submission.feeding_result is not None,
+        humors=humors_out() if feeding.resonance_on(troupe) else [],
     )
 
 

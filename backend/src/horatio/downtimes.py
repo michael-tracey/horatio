@@ -868,9 +868,15 @@ def save_answers(
     standings: dict[influence.InfluenceType, influence.Standing] | None = None
 
     feeding_before = feeding.answer_of(submission)
-    if feeding_answer is None:
+    troupe = db.get_one(Troupe, cycle.troupe_id)
+    tracked = feeding.tracked(troupe)
+    if feeding_answer is None or not tracked:
+        # A troupe that doesn't track feeding keeps what was entered before, for when
+        # it switches feeding on again, and its actions count for nothing.
         feeding_answer = feeding_before
     else:
+        if not feeding.resonance_on(troupe):
+            feeding_answer.resonance = feeding_before.resonance
         feeding.check_answer(
             db,
             cycle,
@@ -878,8 +884,9 @@ def save_answers(
             feeding.participant_basis(db, participant, character, cycle),
             feeding_answer,
         )
-    used: dict[str, int] = {"general": feeding_answer.actions}
-    if feeding_answer.actions > allowance_now.get("general", 0):
+    fed = feeding_answer.actions if tracked else 0
+    used: dict[str, int] = {"general": fed}
+    if fed > allowance_now.get("general", 0):
         raise unprocessable(
             f"That is more feeding actions than the {allowance_now.get('general', 0)} "
             "downtime actions this character has."
@@ -934,11 +941,11 @@ def save_answers(
                 )
             used[kind] = used.get(kind, 0) + 1
             if used[kind] > allowance_now.get(kind, 0):
-                fed = feeding_answer.actions if kind == "general" else 0
+                feeding_spent = fed if kind == "general" else 0
                 raise unprocessable(
                     f"That is more {kind.replace('_', ' ')} actions than the "
                     f"{allowance_now.get(kind, 0)} this character has"
-                    + (f", with {fed} spent feeding." if fed else ".")
+                    + (f", with {feeding_spent} spent feeding." if feeding_spent else ".")
                 )
 
     if submission is None:

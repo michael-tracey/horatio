@@ -166,6 +166,11 @@ class Submission(Record):
             "feeding_result is null or feeding_result in ('full', 'half', 'other')",
             name="feeding_result",
         ),
+        CheckConstraint(
+            "feeding_resonance is null or feeding_resonance in"
+            " ('choleric', 'melancholic', 'phlegmatic', 'sanguine')",
+            name="feeding_resonance",
+        ),
     )
 
     participant_id: Mapped[uuid.UUID] = mapped_column(
@@ -185,6 +190,10 @@ class Submission(Record):
     feeding_working: Mapped[str] = mapped_column(default="", server_default="")
     feeding_answered_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     feeding_answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # With Blood Resonance (horatio.resonance): the humor of the blood the character
+    # fed on, and the Dyscrasia it carried, by name ("" for none).
+    feeding_resonance: Mapped[str | None]
+    feeding_dyscrasia: Mapped[str] = mapped_column(default="", server_default="")
 
 
 class Answer(Record):

@@ -7,6 +7,7 @@ import { Card, ErrorText } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { BadgeSetting } from "./BadgeSetting";
 import { DiablerieFlaws } from "./DiablerieFlaws";
+import { FeedingSetting } from "./FeedingSetting";
 import { GolcondaSetting } from "./GolcondaSetting";
 import { ExperienceDefaults, StartingBlood } from "./StartingSection";
 import { StatusSetting, TitlesSetting } from "./StatusSetting";
@@ -15,7 +16,7 @@ import { XpRangeCard } from "./XpRange";
 
 /**
  * The settings for the whole troupe, set once a season or so, by what they are
- * for: who may join, XP, status and titles, and what happens at game. Its
+ * for: who may join, XP, status and titles, what happens at game, and feeding. Its
  * storytellers change them; the troupe's other running staff read them. The
  * troupe's rules for traits are on the Rules tab beside it.
  */
@@ -53,6 +54,9 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
         <BadgeSetting troupe={troupe} canEdit={canEdit} />
         <StartingBlood troupeId={troupe.id} canEdit={canEdit} />
         <DiablerieFlaws troupeId={troupe.id} canEdit={canEdit} />
+      </Group>
+      <Group title="Feeding">
+        <FeedingSetting troupeId={troupe.id} canEdit={canEdit} />
       </Group>
     </div>
   );
