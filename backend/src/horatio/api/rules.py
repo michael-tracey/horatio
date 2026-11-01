@@ -9,8 +9,9 @@ from sqlalchemy.exc import NoResultFound
 
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import RuleSet, Troupe
+from horatio.rules.feeding import clan_family
 from horatio.rules.grants import choices
-from horatio.rules.model import HouseTraitData
+from horatio.rules.model import HouseTraitData, RuleSetData, TraitData
 from horatio.rules.splats import SPLATS, splat_order
 from horatio.rules.status import GENERAL
 from horatio.rules.store import read_troupe_rules
@@ -67,6 +68,10 @@ class TraitOut(BaseModel):
     house_rule: str | None
     # For a clan: its in-clan disciplines.
     in_clan: list[str] | None
+    # For a clan: its weakness in a line, and the book's page for it. A bloodline with
+    # none of its own has its clan's.
+    weakness: str | None = None
+    weakness_page: str | None = None
     # For a skill: the attribute it generally goes with (Physical, Social or Mental).
     attribute: str | None
     # For a trait that grants something the player picks (Personal Cult: which
@@ -175,6 +180,7 @@ def catalogue(
                 fixed_rating=rules.fixed_rating(t.category, t.name),
                 house_rule=house_text.get((t.category, t.name)),
                 in_clan=t.properties.get("in_clan"),
+                **clan_weakness(rules.rule_set, t),
                 attribute=t.properties.get("attribute"),
                 choices=chooses.get((t.category, t.name)) or t.properties.get("choices"),
                 kind=t.properties.get("type"),
@@ -190,6 +196,17 @@ def catalogue(
             if category is None or t.category == category
         ],
     )
+
+
+def clan_weakness(rule_set: RuleSetData, trait: TraitData) -> dict[str, str | None]:
+    """A clan's weakness and its page: its own, or for a bloodline with none, its
+    clan's (MET: VtM p. 42). Nothing for any other trait."""
+    if trait.category != "clan":
+        return {}
+    found = trait.properties
+    if "weakness" not in found:
+        found = rule_set.trait_properties("clan", clan_family(trait.name))
+    return {"weakness": found.get("weakness"), "weakness_page": found.get("weakness_page")}
 
 
 def house_out(house: HouseTraitData | None) -> HouseOut | None:

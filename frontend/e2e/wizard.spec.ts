@@ -504,6 +504,67 @@ test("a merit taken in the creation wizard gives the traits it grants", async ({
   await expect(p.getByRole("button", { name: "Remove Acute Sense" })).toHaveCount(0);
 });
 
+test("a new player picks the clan first and sees its disciplines and weakness, and a phone shows the step reached (#372)", async ({ browser }) => {
+  const { page: p } = await person(browser, "clan-first");
+  await p.getByLabel("Name").fill("First Fangs");
+  await p.getByRole("button", { name: "Create" }).click();
+  await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
+  const phone = test.info().project.name === "phone";
+  const steps = p.getByRole("navigation", { name: "Creation steps" });
+  const bar = steps.getByRole("progressbar", { name: "Creation progress" });
+  // On a phone the step reached is said in words over a bar; a wide screen has the whole list.
+  const reached = async (text: string) => {
+    await expect(steps.getByText(text, { exact: true })).toBeVisible();
+    await expect(bar).toHaveAttribute("aria-valuetext", text.replace(" · ", ": "));
+  };
+  if (phone) await reached("Step 1 of 8 · Concept");
+  else await expect(bar).toBeHidden();
+
+  // The clan comes before the troupe question, and its card says what it brings.
+  const top = async (label: string) => (await p.getByLabel(label).boundingBox())!.y;
+  expect(await top("Clan")).toBeLessThan(await top("Which troupe will you play in?"));
+  await p.getByLabel("Clan").selectOption("Brujah");
+  const card = p.getByRole("region", { name: "About Brujah" });
+  await expect(card).toContainText("In-clan now: Celerity, Potence and Presence.");
+  await expect(card).toContainText("Weakness: Quick to rage: resisting frenzy is 2 harder. (p. 45)");
+  // A bloodline with no weakness of its own has its clan's.
+  await p.getByLabel("Clan").selectOption("Gangrel: Coyote");
+  const coyote = p.getByRole("region", { name: "About Gangrel: Coyote" });
+  await expect(coyote).toContainText("Weakness: One animal feature for good");
+  await expect(coyote).toContainText("The clan takes Bloodline: Coyote (2 points) from your merit points.");
+  await p.getByLabel("Clan").selectOption("Brujah");
+  await expect(card).toContainText("In-clan now: Celerity, Potence and Presence.");
+  await expect(card).not.toContainText("Bloodline: Coyote");
+
+  // The in-clan merits are folded away as optional until opened.
+  const fromMerits = p.getByRole("region", { name: "From merits" });
+  await expect(fromMerits).toBeHidden();
+  await p.getByText("Optional: in-clan disciplines from merits").click();
+  await expect(fromMerits.getByRole("switch", { name: /^Additional Common Discipline/ })).toBeVisible();
+  await p.screenshot(shots("creation-clan-card"));
+
+  // Further on, the phone says which step of how many, and how many wait on Generation.
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Attributes", exact: true })).toBeVisible();
+  if (phone) {
+    await reached("Step 2 of 8 · Attributes");
+    await expect(steps.getByText("3 locked", { exact: true })).toBeVisible();
+  }
+  await steps.getByRole("link", { name: /Backgrounds/ }).click();
+  await expect(p.getByRole("heading", { name: "Backgrounds", exact: true })).toBeVisible();
+  await expect(p.getByText(/^Generation is a background too, and a vampire needs at least 1 dot of it to go on\..*\(pp\. 100-101\)\.$/)).toBeVisible();
+  if (phone) await reached("Step 5 of 8 · Backgrounds");
+  await expect(steps.getByText(/^Finish Backgrounds to open the steps after it/)).toBeVisible();
+  await p.screenshot(shots("creation-progress"));
+
+  // Review lists what is still to place, each with the way to its step.
+  await p.goto(p.url().replace(/backgrounds$/, "review"));
+  const left = p.getByRole("region", { name: "Picks left" });
+  await expect(left).toContainText("Attributes at 7: 1 left. Go to Attributes");
+  await left.getByRole("link", { name: "Go to Attributes" }).first().click();
+  await expect(p.getByRole("heading", { name: "Attributes", exact: true })).toBeVisible();
+});
+
 test("each step keeps its picks as they are made, through the step list and a reload, and Finish creation asks first (#357)", async ({ browser }) => {
   const { page: p } = await person(browser, "keeps-picks");
   const id = await creatingVampire(p, "Kept Taps", "Brujah", [], {
@@ -539,8 +600,20 @@ test("each step keeps its picks as they are made, through the step list and a re
   await p.reload();
   for (const dot of ["Brawl 4", "Athletics 3", "Melee 1"]) await expect(p.getByRole("button", { name: dot, exact: true })).toHaveAttribute("aria-pressed", "true");
 
-  // Finishing asks first and says what changes; Not yet leaves her in creation.
+  // Review sums her up before finishing (#372).
   await steps.getByRole("link", { name: /Review/ }).click();
+  const summary = p.getByRole("region", { name: "Summary" });
+  await expect(summary).toContainText("Kept Taps so far");
+  await expect(summary).toContainText("Brujah. In-clan: Celerity, Potence and Presence.");
+  await expect(summary).toContainText("Physical 7 (Strength), Social 5 (Charisma), Mental 3 (Wits)");
+  await expect(summary).toContainText("Brawl 4, Athletics 3, Dodge 3, Awareness 2, Empathy 2, and 5 more");
+  await expect(summary).toContainText("Celerity 2, Potence 1, Presence 1");
+  await expect(summary).toContainText("Fame 3, Resources 2, Generation background ●");
+  await expect(summary).toContainText("None (0 of 7 points)");
+  await expect(p.getByRole("region", { name: "Picks left" })).toHaveCount(0);
+  await p.screenshot(shots("creation-review"));
+
+  // Finishing asks first and says what changes; Not yet leaves her in creation.
   await p.getByRole("button", { name: "Finish creation" }).click();
   await expect(p.getByText("Finish creating Kept Taps? After this, the starting picks are fixed and new dots cost XP.")).toBeVisible();
   await p.screenshot(shots("creation-finish-asks"));
@@ -645,14 +718,14 @@ test("Crafts, Performance and Science take a field in the wizard, kept through B
   const placed = await p.request.put(`/api/characters/${id}/creation/categories/skills`, { headers: { "X-Horatio": "1" }, data: { picks: skills } });
   expect(placed.status(), await placed.text()).toBe(200);
   await p.goto(`/characters/${id}/create/review`);
-  await expect(p.getByText(/Performance: Singing, Science: Chemistry/)).toBeVisible();
+  await expect(p.getByRole("region", { name: "Summary" })).toContainText("Brawl 4, Performance: Singing 3, Science: Chemistry 3");
   await expect(p.getByText("Crafts needs a field:")).toBeVisible();
   await expect(p.getByRole("link", { name: "Back to Skills" })).toBeVisible();
   await expect(p.getByRole("button", { name: "Finish creation" })).toBeDisabled();
   await p.getByLabel("Crafts field").fill("Woodwork");
   await p.getByRole("button", { name: "Set" }).click();
   await expect(p.getByText("Crafts needs a field:")).toHaveCount(0);
-  await expect(p.getByText(/Crafts: Woodwork/)).toBeVisible();
+  await expect(p.getByRole("button", { name: "Finish creation" })).toBeEnabled();
   await p.getByRole("button", { name: "Finish creation" }).click();
   await p.getByRole("button", { name: "Yes, finish creation" }).click();
   await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();

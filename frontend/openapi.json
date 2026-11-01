@@ -30704,6 +30704,28 @@
               }
             ],
             "title": "Requirement"
+          },
+          "weakness": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weakness"
+          },
+          "weakness_page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weakness Page"
           }
         },
         "required": [
