@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Iterable
-from datetime import date
+from datetime import date, datetime
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, status
@@ -12,6 +12,7 @@ from horatio import (
     clan_merits,
     deletion,
     domitors,
+    downtimes,
     leaving,
     pictures,
     pronouns,
@@ -75,6 +76,18 @@ class CharacterOut(BaseModel):
     left_reason: str | None
     # Its troupes' Who's Who lists it under "No longer with us".
     left_listed: bool
+
+
+class CharacterListOut(CharacterOut):
+    """A character in its player's list, with where it stands and what waits for them."""
+
+    home_troupe_name: str | None
+    asking_troupe_name: str | None
+    # When the downtime it has yet to submit is due; None for none.
+    downtime_due: datetime | None
+    # When each cycle's results last reached the player, newest first; the page judges
+    # which are new to them.
+    delivered: list[datetime]
 
 
 class PlacedDots(BaseModel):
@@ -203,13 +216,38 @@ def editable_character(db: DbSession, user: CurrentUser, character_id: uuid.UUID
 
 
 @router.get("")
-def my_characters(db: DbSession, user: CurrentUser) -> list[CharacterOut]:
-    characters = db.scalars(
-        select(Character)
-        .where(Character.player_id == user.id, Character.kind == "pc")
-        .order_by(Character.name)
+def my_characters(db: DbSession, user: CurrentUser) -> list[CharacterListOut]:
+    """The player's characters, each with its troupes' names and its downtime, in a few
+    queries for the whole list."""
+    found = characters_out(
+        db,
+        db.scalars(
+            select(Character)
+            .where(Character.player_id == user.id, Character.kind == "pc")
+            .order_by(Character.name)
+        ),
     )
-    return characters_out(db, characters)
+    troupe_ids = {t for c in found for t in (c.home_troupe_id, c.asking_troupe_id) if t}
+    names = {
+        troupe_id: name
+        for troupe_id, name in db.execute(
+            select(Troupe.id, Troupe.name).where(Troupe.id.in_(troupe_ids))
+        )
+    }
+    waiting = downtimes.waiting(db, [c.id for c in found])
+    listed: list[CharacterListOut] = []
+    for c in found:
+        due = waiting.get(c.id, downtimes.Waiting())
+        listed.append(
+            CharacterListOut(
+                **c.model_dump(),
+                home_troupe_name=names.get(c.home_troupe_id) if c.home_troupe_id else None,
+                asking_troupe_name=names.get(c.asking_troupe_id) if c.asking_troupe_id else None,
+                downtime_due=due.due,
+                delivered=list(due.delivered),
+            )
+        )
+    return listed
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

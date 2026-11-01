@@ -5,6 +5,7 @@ type Schemas = components["schemas"];
 export type Me = Schemas["Me"];
 export type Preferences = Schemas["Preferences"];
 export type CharacterOut = Schemas["CharacterOut"];
+export type CharacterListOut = Schemas["CharacterListOut"];
 export type SplatOut = Schemas["SplatOut"];
 export type DomitorOut = Schemas["DomitorOut"];
 export type DomitorIn = Schemas["DomitorIn"];

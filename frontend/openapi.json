@@ -3940,6 +3940,252 @@
         "title": "CharacterFeedingOut",
         "type": "object"
       },
+      "CharacterListOut": {
+        "description": "A character in its player's list, with where it stands and what waits for them.",
+        "properties": {
+          "asking_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asking Troupe Id"
+          },
+          "asking_troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asking Troupe Name"
+          },
+          "building_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Building Troupe Id"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "creation_complete": {
+            "title": "Creation Complete",
+            "type": "boolean"
+          },
+          "delivered": {
+            "items": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "title": "Delivered",
+            "type": "array"
+          },
+          "downtime_due": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Downtime Due"
+          },
+          "home_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home Troupe Id"
+          },
+          "home_troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home Troupe Name"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "left_listed": {
+            "title": "Left Listed",
+            "type": "boolean"
+          },
+          "left_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left Reason"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "next_rename_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Rename On"
+          },
+          "npc_form": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Form"
+          },
+          "npc_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Kind"
+          },
+          "npc_kind_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Kind Name"
+          },
+          "owner_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Troupe Id"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "player_id": {
+            "format": "uuid",
+            "title": "Player Id",
+            "type": "string"
+          },
+          "pronouns": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
+          },
+          "splat": {
+            "title": "Splat",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "player_id",
+          "splat",
+          "name",
+          "pronouns",
+          "status",
+          "home_troupe_id",
+          "building_troupe_id",
+          "asking_troupe_id",
+          "creation_complete",
+          "kind",
+          "owner_troupe_id",
+          "next_rename_on",
+          "picture",
+          "clan",
+          "npc_kind",
+          "npc_kind_name",
+          "npc_form",
+          "left_reason",
+          "left_listed",
+          "home_troupe_name",
+          "asking_troupe_name",
+          "downtime_due",
+          "delivered"
+        ],
+        "title": "CharacterListOut",
+        "type": "object"
+      },
       "CharacterOut": {
         "properties": {
           "asking_troupe_id": {
@@ -34147,6 +34393,7 @@
     },
     "/api/characters": {
       "get": {
+        "description": "The player's characters, each with its troupes' names and its downtime, in a few\nqueries for the whole list.",
         "operationId": "my_characters_api_characters_get",
         "responses": {
           "200": {
@@ -34154,7 +34401,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/CharacterOut"
+                    "$ref": "#/components/schemas/CharacterListOut"
                   },
                   "title": "Response My Characters Api Characters Get",
                   "type": "array"
