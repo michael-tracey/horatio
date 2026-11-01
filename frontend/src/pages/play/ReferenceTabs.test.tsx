@@ -14,6 +14,7 @@ function trait(category: string, category_name: string, group: string, name: str
 
 const reference: PlayReference = {
   pools: [],
+  frenzy: { parts: [{ label: "Mental", value: 3 }], beast: [] },
   other_powers: [],
   notes: [],
   blood_per_turn: 1,
@@ -35,7 +36,8 @@ const reference: PlayReference = {
       versus: null,
       note: "Speed, in steps and actions.",
       focus: null,
-      powers: [{ level: 1, name: "Alacrity", note: "Win ties on initiative.", focus: null }],
+      switches: [],
+      powers: [{ level: 1, name: "Alacrity", note: "Win ties on initiative.", focus: null, switches: [] }],
     },
   ],
 };

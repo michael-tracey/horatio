@@ -15,13 +15,15 @@ import { Derangements, showsDerangements } from "./Derangements";
 import { EquipmentTab } from "./Equipment";
 import { Feed, FeedButton } from "./Feed";
 import { Frenzy } from "./Frenzy";
+import { frenzyNumbers } from "./frenzy";
 import { KindBadge } from "../character/NpcKindBadge";
 import { bloodPerTurn, boxes, healthMost } from "./powers";
 import { PowersBanner } from "./Powers";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { RetainerPools } from "./RetainerPools";
 import { StatusTab } from "./Status";
-import { DRANK, incapacitated, influenceStanding, latestUndoable, tapToast, type Damage, type Shown, type ShownEntry, type Tap } from "./tracker";
+import { DRANK, incapacitated, influenceStanding, latestUndoable, tapsToast, type Damage, type Shown, type ShownEntry, type Tap } from "./tracker";
+import { TrackerStrip } from "./TrackerStrip";
 import { usePlay, type Play, type Sync } from "./usePlay";
 import { useEquipment } from "./useEquipment";
 import { useReference } from "./useReference";
@@ -57,7 +59,9 @@ const UNNOTED = new Set(["blood", "willpower", "health"]);
  * the Sheet to look things up in; the Tracker, with blood, Willpower, health,
  * Morality and Beast traits as boxes with big buttons to tap, the character's
  * limited uses and the game's log; and Pools, its test pools and powers; with
- * Status for a character with sect status, and Equipment. Each tap says what it
+ * Status for a character with sect status, and Equipment. On every tab but the
+ * Tracker, a strip under the tabs shows Blood, Willpower and health, with "−" to
+ * spend, and the Pools tab's powers have Use buttons. Each tap says what it
  * did in a toast with Undo, and Undo for the last tap is in the header on every
  * tab. Taps are kept on the phone when there is no signal and sent when it
  * returns. The Sheet, Pools and Equipment load when the page opens, so the tabs
@@ -78,6 +82,8 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
   const tab: Tab = TABS.find((t) => t.key === params.get("tab"))?.key ?? prefs.play_tab;
   const { view, shown, sync, accept } = play;
   const tap = useToldTap(play);
+  // A power's Use: its cost and its switch, with one Undo.
+  const taps = useToldTaps(play);
   const { reference, error: referenceError } = useReference(characterId);
   // Asked now, so the Equipment tab opens at once and is kept on the phone for a game with no signal.
   useEquipment(characterId);
@@ -100,7 +106,13 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
       },
       { replace: true },
     );
-  const tabs = <TabBar tab={tab} onChange={choose} status={!!view.data?.status} />;
+  const tabs = (
+    <>
+      <TabBar tab={tab} onChange={choose} status={!!view.data?.status} />
+      {/* Blood, Willpower and health on every other tab, where powers are read and paid for. */}
+      {shown && tab !== "tracker" && <TrackerStrip view={shown} tap={tap} open={() => choose("tracker")} />}
+    </>
+  );
   // Opened from a Scene view's card: the way back is to that scene. A link from
   // before scenes were named gives only the troupe, whose old scene is its list.
   const scene = params.get("scene");
@@ -128,7 +140,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
       <Identity view={shown} />
       <PowersBanner powers={shown.powers} tap={tap} />
       {tab === "sheet" && lookup((r) => <SheetTab reference={r} />)}
-      {tab === "pools" && lookup((r) => <PoolsTab reference={r} willpower={shown.willpower.value} characterId={characterId} powers={shown.powers} items={shown.equipment} equipped={shown.equipped} tap={tap} />)}
+      {tab === "pools" && lookup((r) => <PoolsTab reference={r} willpower={shown.willpower.value} characterId={characterId} powers={shown.powers} items={shown.equipment} equipped={shown.equipped} tap={tap} using={{ view: shown, use: taps }} />)}
       {tab === "status" && (
         <StatusTab
           view={shown}
@@ -182,20 +194,20 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
                   value={shown.beast.value}
                   most={shown.beast.most}
                   spendIsUp
-                  warning={<ShownWarning warning={beastWarning(shown.beast.value, shown.beast.most, shown.morality)} />}
+                  warning={<ShownWarning warning={beastWarning(shown.beast.value, shown.beast.most, shown.morality, reference && frenzyNumbers(reference.frenzy, shown.willpower.value, shown.beast.value, shown.morality).against)} />}
                   record={record}
                   small
                 />
               )}
-              {shown.panels.frenzy && <Frenzy />}
+              {shown.panels.frenzy && <Frenzy resist={reference?.frenzy} willpower={shown.willpower.value} beast={shown.beast.value} morality={shown.morality} />}
               <Derangements view={shown} record={record} tap={tap} />
             </div>
           </div>
           {reference && <RetainerPools retainers={reference.retainers} tracks={shown.retainers} tap={record} />}
           <Expendables view={shown} record={record} quickNotes={quickNotes} setQuickNotes={setQuickNotes} online={sync.online} onChange={accept} />
-          <Notes add={(note) => tap({ kind: "note", note })} />
           {/* Its Undo is the header's, on every tab. */}
           <GameLog view={shown} onDetails={sync.online ? setDetailing : undefined} />
+          <Notes add={(note) => tap({ kind: "note", note })} />
           <ResetGame view={shown} sync={sync} onReset={accept} />
           <PastGames characterId={characterId} current={shown.game?.id} />
         </>
@@ -334,26 +346,40 @@ export function UndoLast({ last, undo }: { last: ShownEntry | undefined; undo: (
  * waits on the phone with the rest when there is no signal.
  */
 export function useToldTap(play: Play): Play["tap"] {
+  const told = useToldTaps(play);
+  return useCallback((what: Parameters<Play["tap"]>[0]): Tap => told([what])[0]!, [told]);
+}
+
+type ToldTaps = (whats: Parameters<Play["tap"]>[0][]) => Tap[];
+
+/**
+ * Taps made together (a power's Use: its Blood, and its switch on), told in one
+ * toast whose Undo takes them all back: "Spent 1 Blood · 9/10 · Celerity
+ * switched on · Undo". The header's Undo still takes back one tap at a time.
+ */
+export function useToldTaps(play: Play): ToldTaps {
   const toast = useToast();
   const { tap } = play;
   // The screen as it is now, read when a tap is made rather than when this was.
   const shown = useRef(play.shown);
   shown.current = play.shown;
   const told = useCallback(
-    (what: Parameters<Play["tap"]>[0]): Tap => {
+    (whats: Parameters<Play["tap"]>[0][]): Tap[] => {
       const before = shown.current;
-      const made = tap(what);
-      if (!before) return made;
+      const made = whats.map((what) => tap(what));
+      if (!before || made.length === 0) return made;
+      const undoable = made.filter((t) => t.kind !== "undo");
       toast({
-        message: tapToast(before, made),
+        message: tapsToast(before, made),
         action:
-          made.kind === "undo"
+          undoable.length === 0
             ? undefined
             : {
                 label: "Undo",
                 onClick: () => {
-                  // Not if it was undone another way meanwhile.
-                  if (shown.current?.log.some((e) => e.id === made.id && !e.undone)) told({ kind: "undo", undoes: made.id });
+                  // Not those undone another way meanwhile; the newest first.
+                  const live = undoable.filter((t) => shown.current?.log.some((e) => e.id === t.id && !e.undone)).reverse();
+                  if (live.length > 0) told(live.map((t) => ({ kind: "undo", undoes: t.id })));
                 },
               },
       });
@@ -474,13 +500,14 @@ function Panel({ title, actions, children }: { title: ReactNode; actions?: React
   );
 }
 
-/** A big round button for one thumb. */
-function TapButton({
+/** A big round button for one thumb; a smaller one in the strip under the tabs. */
+export function TapButton({
   label,
   children,
   onClick,
   disabled,
   tone = "plain",
+  small,
 }: {
   label: string;
   children: ReactNode;
@@ -488,6 +515,7 @@ function TapButton({
   disabled?: boolean;
   /** Filled red only for spending Blood and Willpower; outlined red for a rare, serious change. */
   tone?: "plain" | "blood" | "outline";
+  small?: boolean;
 }) {
   return (
     <button
@@ -496,7 +524,8 @@ function TapButton({
       onClick={onClick}
       disabled={disabled}
       className={cx(
-        "grid h-12 min-w-12 place-items-center rounded-full border px-3 text-lg font-semibold transition-colors active:scale-95 tap-off",
+        "grid place-items-center rounded-full border px-3 font-semibold transition-colors active:scale-95 tap-off",
+        small ? "h-10 min-w-10 text-base" : "h-12 min-w-12 text-lg",
         tone === "blood"
           ? "border-blood bg-blood text-parchment hover:bg-blood-bright"
           : tone === "outline"
@@ -652,7 +681,7 @@ export function HealthTracker({ view, record }: { view: PlayView; record: Record
   );
 }
 
-/** Uses a game: backgrounds, merits and powers the rules limit, and the player's own counters. */
+/** Uses a game: backgrounds, merits and powers the rules limit, and the player's own counters, added from a form kept folded. */
 function Expendables({
   view,
   record,
@@ -670,9 +699,11 @@ function Expendables({
 }) {
   const path = { params: { path: { character_id: view.character_id } } };
   const [form, setForm] = useState({ name: "", uses: 3 });
+  const [adding, setAdding] = useState(false);
   const add = useAction(async () => {
     await onChange(await unwrap(api.POST("/api/characters/{character_id}/play/counters", { ...path, body: form })));
     setForm({ name: "", uses: 3 });
+    setAdding(false);
   });
   const remove = useAction(async (counterId: string) =>
     onChange(
@@ -699,26 +730,36 @@ function Expendables({
           <ExpendableRow key={e.key} item={e} record={record} onRemove={e.counter_id && online ? () => remove.mutate(e.counter_id!) : undefined} />
         ))}
       </ul>
-      <form
-        className="mt-3 flex flex-wrap items-end gap-2 border-t border-ash pt-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          add.mutate(undefined);
-        }}
-      >
-        <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-mist">
-          Your own counter
-          <Input placeholder="Fetish charges" value={form.name} required maxLength={80} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-mist">
-          Uses
-          <Input type="number" min={1} max={99} required value={form.uses} onChange={(e) => setForm({ ...form, uses: Number(e.target.value) })} className="w-20" />
-        </label>
-        <Button type="submit" variant="secondary" disabled={!online || add.isPending}>
-          Add counter
+      {!adding && (
+        <Button variant="ghost" className="mt-1 min-h-10 px-0" onClick={() => setAdding(true)}>
+          + Add a counter
         </Button>
-        {!online && <span className="w-full text-xs text-mist">Adding a counter needs a connection.</span>}
-      </form>
+      )}
+      {adding && (
+        <form
+          className="mt-3 flex flex-wrap items-end gap-2 border-t border-ash pt-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            add.mutate(undefined);
+          }}
+        >
+          <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-mist">
+            Your own counter
+            <Input placeholder="Fetish charges" value={form.name} required maxLength={80} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-mist">
+            Uses
+            <Input type="number" min={1} max={99} required value={form.uses} onChange={(e) => setForm({ ...form, uses: Number(e.target.value) })} className="w-20" />
+          </label>
+          <Button type="submit" variant="secondary" disabled={!online || add.isPending}>
+            Add counter
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => setAdding(false)}>
+            Cancel
+          </Button>
+          {!online && <span className="w-full text-xs text-mist">Adding a counter needs a connection.</span>}
+        </form>
+      )}
       <ErrorText error={add.error ?? remove.error} />
     </Panel>
   );

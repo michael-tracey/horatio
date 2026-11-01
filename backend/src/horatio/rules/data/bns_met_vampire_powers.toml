@@ -10,7 +10,8 @@
 #   adds to that power.
 # `pools` (on either) changes a pool on the Pools tab while the character has
 #   it: { pool, amount, when?, focus? }. `pool` is initiative, dodge, attack,
-#   attack:<Skill>, defense, defense:<Attribute> or discipline:<Name>; `amount`
+#   attack:<Skill>, defense, defense:<Attribute>, discipline:<Name>, skill:<Name>
+#   or frenzy (where `beast` counts that many more Beast traits, or fewer); `amount`
 #   is a number, "powers:<Discipline>" for how many powers of it the character
 #   has, or "rating:<category>/<Name>"; a `when` naming a switch (see `active`)
 #   makes it hold only while that switch is on, and any other `when` makes it a
@@ -39,6 +40,11 @@
 # `choices` (on a power): what the player chooses when buying it, kept on the
 #   discipline's trait and fixed afterwards: [{ key, label, default?, options? }].
 #   `choice = { key = value }` on an entry makes it hold only for that choice.
+# `cost` (on a discipline or power): what using it costs, for its Use button on
+#   the Play View (issue #370): { blood = n } or { willpower = n }, with
+#   `unless_focus` for a focus that makes it free. Leave it out where the `note`
+#   starts with the cost ("1 Blood, standard action: …"), which is read instead;
+#   a power whose cost comes later in its note gets no Use button.
 # [[others]]: techniques, elder and luminary powers and merits with `pools`,
 #   `damage` or `active`, by `category` and `name`; `needs = { discipline, level }`
 #   when it works only with a power of a discipline.
@@ -168,6 +174,7 @@ note = "No standard test pool. 1 Blood activates it for the turn."
 focus = { Dexterity = "+2 to Dodge pools while Celerity is active." }
 pools = [{ pool = "dodge", amount = 2, when = "Celerity", focus = "Dexterity" }]
 # Core pp. 121-122: 1 Blood activates every Celerity power for the turn.
+cost = { blood = 1 }
 active = { key = "Celerity", page = 121, notes = ["For the turn: 1 Blood activates every Celerity power you have."] }
 
 [[powers]]
@@ -699,6 +706,7 @@ level = 1
 name = "Eyes of the Beast"
 note = "1 Blood, simple action: for an hour your eyes glow red and you see, and fight, perfectly in the dark."
 focus = { Perception = "Always on and free, and your eyes glow only if you want." }
+cost = { blood = 1, unless_focus = "Perception" }
 
 [[powers]]
 discipline = "Protean"
@@ -1439,6 +1447,7 @@ level = 2
 name = "Flame Bolt"
 note = "1 Blood, standard action, opposed test within 20 steps: 2 aggravated fire damage."
 focus = { Wits = "No Blood needed." }
+cost = { blood = 1, unless_focus = "Wits" }
 
 [[powers]]
 discipline = "Thaumaturgy: Lure of Flames"
@@ -1504,9 +1513,9 @@ focus = { Perception = "Up to 10 tons." }
 
 [[disciplines]]
 name = "Thaumaturgy: Path of Technomancy"
-pool = "Mental + Computers"
-versus = "Mental + Computers"
-note = "Blood magic over machines; its pool uses Computers."
+pool = "Mental + Computer"
+versus = "Mental + Computer"
+note = "Blood magic over machines; its pool uses Computer."
 
 [[powers]]
 discipline = "Thaumaturgy: Path of Technomancy"

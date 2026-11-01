@@ -106,7 +106,7 @@ export function ScenesPage() {
           </ul>
         )}
         <ErrorText error={changes.rename.error ?? changes.remove.error} />
-        {lead && <ClearOldScenes troupeId={troupeId} />}
+        {lead && <ClearOldScenes troupeId={troupeId} mine={mine} />}
       </main>
     </div>
   );
@@ -218,10 +218,16 @@ export function RenameScene({ name, pending, onSave, onCancel, className }: { na
   );
 }
 
-/** For the lead storyteller: clear out scenes from past games. */
-function ClearOldScenes({ troupeId }: { troupeId: string }) {
+/** For the lead storyteller: clear out scenes from past games; not shown while the troupe has none. */
+function ClearOldScenes({ troupeId, mine }: { troupeId: string; mine: boolean }) {
   const client = useQueryClient();
   const dates = useDates();
+  // Every scene in the troupe, as the All list asks, whichever list is open.
+  const all = useQuery({
+    queryKey: ["scenes", troupeId, false],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/scenes", { params: { path: { troupe_id: troupeId }, query: { mine: false } } })),
+    refetchInterval: mine ? false : SCENE_REFRESH,
+  });
   const [day, setDay] = useState("");
   const [asking, setAsking] = useState(false);
   const clear = useMutation({
@@ -236,9 +242,10 @@ function ClearOldScenes({ troupeId }: { troupeId: string }) {
       await client.invalidateQueries({ queryKey: ["scenes", troupeId] });
     },
   });
+  if (!all.data?.length && !clear.data) return null;
   return (
     <Card title="Old scenes">
-      <p className="mb-3 text-sm text-mist">Remove every scene in the troupe, whoever made it, that nobody has opened or changed since a day. Their characters stay as they are.</p>
+      <p className="mb-3 text-sm text-mist">Remove every scene in the troupe, whoever made it, that nobody has opened or changed since the date you choose. Their characters stay as they are.</p>
       <div className="flex flex-wrap items-end gap-2">
         <div className="w-44">
           <Field label="Not used since">

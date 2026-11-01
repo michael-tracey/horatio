@@ -26,16 +26,25 @@ test("a storyteller pins three NPCs in a Scene view, taps for two, and each full
   const troupeId = new URL(p.url()).pathname.split("/")[2]!;
   const headers = { "X-Horatio": "1" };
   const npcs: Record<string, string> = {};
-  for (const name of ["Alder", "Brant", "Cassia"]) {
+  // Initiative is the higher of Physical and Mental: Alder 3, Brant 7, Cassia 5.
+  for (const [name, attribute, rating] of [
+    ["Alder", "Physical", 3],
+    ["Brant", "Physical", 7],
+    ["Cassia", "Mental", 5],
+  ] as const) {
     const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name, wizard: false } });
     expect(made.status(), await made.text()).toBe(201);
     npcs[name] = (await made.json()).id;
+    const rated = await p.request.put(`/api/characters/${npcs[name]}/npc/ratings`, { headers, data: { category: "attributes", name: attribute, rating, detail: "" } });
+    expect(rated.status(), await rated.text()).toBe(200);
   }
   const state = async (name: string) => (await p.request.get(`/api/characters/${npcs[name]}/play`)).json();
 
   // From the At game tab, through the troupe's scenes, to a new empty one.
   await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
   await p.getByRole("link", { name: "At game" }).click();
+  // Health is counted as the Scene cards count it: the levels marked.
+  await expect(p.getByText(/^Health 0\/\d+ marked$/)).toHaveCount(3);
   await p.getByRole("link", { name: "Open the scenes" }).click();
   await expect(p.getByRole("heading", { name: "Scenes", exact: true })).toBeVisible();
   await p.getByLabel("Name of a new scene").fill("Masked ball");
@@ -64,6 +73,22 @@ test("a storyteller pins three NPCs in a Scene view, taps for two, and each full
   await p.reload();
   await expect(p.getByRole("article")).toHaveCount(3);
   await expect(card("Brant")).toBeVisible();
+
+  // Each card's glance has its initiative, and the scene sorts by it, kept on this device (issue #371).
+  await expect(card("Brant").getByText("Initiative 7", { exact: true })).toBeVisible();
+  await expect(card("Alder").getByText("Initiative 3", { exact: true })).toBeVisible();
+  const order = () => p.getByRole("article").evaluateAll((cards) => cards.map((c) => c.getAttribute("aria-label")));
+  await expect.poll(order).toEqual(["Alder", "Brant", "Cassia"]);
+  const sort = p.getByRole("button", { name: "Sort by initiative" });
+  await sort.click();
+  await expect(sort).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(order).toEqual(["Brant", "Cassia", "Alder"]);
+  await p.reload();
+  await expect(card("Cassia").getByText("Initiative 5", { exact: true })).toBeVisible();
+  await expect.poll(order).toEqual(["Brant", "Cassia", "Alder"]);
+  await sort.click();
+  await expect(sort).toHaveAttribute("aria-pressed", "false");
+  await expect.poll(order).toEqual(["Alder", "Brant", "Cassia"]);
 
   // Taps for two of them: Blood and Health.
   const alder = card("Alder");

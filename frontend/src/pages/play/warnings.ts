@@ -87,12 +87,13 @@ const ROLEPLAY = [
  * character test to resist frenzy, and five cost a dot of permanent Morality.
  * From the first, what now makes a frenzy test and how to play it.
  */
-export function beastWarning(value: number, most: number, morality: { name: string; value: number } | null): Warning | null {
+export function beastWarning(value: number, most: number, morality: { name: string; value: number } | null, against?: number): Warning | null {
   if (value <= 0) return null;
   const name = morality?.name ?? "Humanity";
   // Humanity 2 or less: +5 to resist every frenzy (p. 303).
   const low = morality?.name === "Humanity" && morality.value <= 2 ? 5 : 0;
-  const resist = `Resist with Mental + Willpower against ${10 + Math.min(value, most) + low}${low ? " (+5 at Humanity 2 or less)" : ""}, or spend a Willpower to hold frenzy off for a scene, three turns in combat.`;
+  // `against` is the character's own, with what merits and flaws count (horatio.reference), once known.
+  const resist = `Resist with Mental + Willpower against ${against ?? 10 + Math.min(value, most) + low}${low ? " (+5 at Humanity 2 or less)" : ""}, or spend a Willpower to hold frenzy off for a scene, three turns in combat.`;
   if (value >= most)
     return {
       level: "at",

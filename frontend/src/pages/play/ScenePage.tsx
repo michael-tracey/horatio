@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { RosterEntry, SceneOut, TestPool } from "../../api/types";
+import type { PlayReference, RosterEntry, SceneOut, TestPool } from "../../api/types";
 import { LinesVeilsNote } from "../../components/LinesVeils";
 import { Button, ErrorText, Input } from "../../components/ui";
 import { usePreferences } from "../../hooks";
@@ -10,11 +10,11 @@ import { LogEntries, ResetGame, SyncStatus } from "./PlayPage";
 import { EquipmentSwitches } from "./EquipmentSwitches";
 import { equipmentModifiers } from "./equipped";
 import { ModifiersPanel } from "./Modifiers";
-import { attackGlance, defenceGlance, fightFirst, grouped, topAttacks, type Modifier } from "./pools";
+import { attackGlance, bloodNote, defenceGlance, fightFirst, grouped, topAttacks, total, type Modifier } from "./pools";
 import { PowersList } from "./Powers";
 import { formsOn, healthMost } from "./powers";
 import { PoolRow } from "./ReferenceTabs";
-import { findPins, loadOpen, saveOpen, toggleOpen, unpin, type Section } from "./scene";
+import { byInitiative, findPins, loadOpen, loadSorted, saveOpen, saveSorted, toggleOpen, unpin, type Rank, type Section } from "./scene";
 import { RenameScene, SCENE_REFRESH, useSceneChanges } from "./ScenesPage";
 import { incapacitated, latestUndoable, type Damage, type Shown } from "./tracker";
 import { useModifiers } from "./useModifiers";
@@ -67,6 +67,15 @@ export function ScenePage() {
   });
   const changes = useSceneChanges(troupeId);
   const [renaming, setRenaming] = useState(false);
+  // Turn order (issue #371): each card says its initiative, and the choice to sort by it stays on the device.
+  const [sorted, setSorted] = useState(loadSorted);
+  useEffect(() => saveSorted(sorted), [sorted]);
+  const [ranks, setRanks] = useState<Record<string, Rank | undefined>>({});
+  const ranked = useCallback(
+    (id: string, rank: Rank | undefined) =>
+      setRanks((now) => (now[id] === rank ? now : { ...now, [id]: rank })),
+    [],
+  );
 
   const troupe = useQuery({
     queryKey: ["troupe", troupeId],
@@ -78,6 +87,7 @@ export function ScenePage() {
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/characters", { params: { path: { troupe_id: troupeId } } })),
   });
   const pinned = scene.data?.characters ?? [];
+  const shown = sorted ? byInitiative(pinned, ranks) : pinned;
   const stock = new Map((scene.data?.stock ?? []).map((s) => [s.character_id, s]));
   const list = `/play/troupes/${troupeId}/scenes`;
   // Full view comes back here.
@@ -135,16 +145,29 @@ export function ScenePage() {
             )}
             <ErrorText error={changes.rename.error} />
             <AddToScene roster={roster.data ?? []} pinned={pinned} onPin={(id) => pinning.mutate({ id, on: true })} error={roster.error ?? pinning.error} />
+            {pinned.length > 1 && (
+              <button
+                type="button"
+                aria-pressed={sorted}
+                onClick={() => setSorted(!sorted)}
+                className={cx(
+                  "inline-flex min-h-10 items-center self-start rounded-full border px-3 text-sm",
+                  sorted ? "border-gold/60 bg-gold/10 text-gold" : "border-line text-mist hover:text-parchment",
+                )}
+              >
+                Sort by initiative
+              </button>
+            )}
             {pinned.length === 0 ? (
-              <p className="py-8 text-center text-mist">Nobody is in the scene yet. Find an NPC above to put them here.</p>
+              <p className="py-8 text-center text-mist">Nobody is in the scene yet. Find a character above to put them here.</p>
             ) : (
-              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {pinned.map((id) => {
+              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="In the scene">
+                {shown.map((id) => {
                   const remove = () => pinning.mutate({ id, on: false });
                   const stocked = stock.get(id);
                   return (
                     <li key={id} className="min-w-0">
-                      {stocked ? <StockCard pin={stocked} back={back} onRemove={remove} /> : <SceneCard characterId={id} back={back} onRemove={remove} />}
+                      {stocked ? <StockCard pin={stocked} back={back} onRemove={remove} /> : <SceneCard characterId={id} back={back} onRemove={remove} onRank={ranked} />}
                     </li>
                   );
                 })}
@@ -339,11 +362,18 @@ const SECTIONS = [
   ["reset", "Reset"],
 ] as const;
 
-/** The top three attacks and the defences, a line each, as the Pools tab works them out. */
+/** Initiative, the top three attacks and the defences, a line each, as the Pools tab works them out. */
 function PoolsGlance({ pools, willpower, modifiers, on }: { pools: TestPool[]; willpower: number; modifiers: Modifier[]; on: string[] }) {
   const attacks = topAttacks(pools, willpower, modifiers, on).map((p) => attackGlance(p, willpower, modifiers, on));
+  const initiative = pools.find((p) => p.key === "initiative");
   return (
     <div className="flex flex-col gap-0.5 text-sm">
+      {initiative && (
+        <p>
+          <span className="text-gold">Initiative </span>
+          {total(initiative, willpower, modifiers, on)}
+        </p>
+      )}
       <p>
         <span className="text-gold">Attack </span>
         {attacks.length > 0 ? attacks.join(" · ") : <span className="text-mist">none</span>}
@@ -437,15 +467,33 @@ function StockCard({ pin, back, onRemove }: { pin: SceneOut["stock"][number]; ba
   );
 }
 
+/** A card's initiative now, with what the Pools tab counts, and the attributes that break a tie. */
+function rankOf(reference: PlayReference, shown: Shown, own: Modifier[]): Rank | undefined {
+  const initiative = reference.pools.find((p) => p.key === "initiative");
+  if (!initiative) return undefined;
+  const on = shown.powers.filter((p) => p.on).map((p) => p.key);
+  const counting = [...own, ...equipmentModifiers(shown.equipment, shown.equipped)];
+  const rating = (name: string) => reference.traits.find((t) => t.category === "attributes" && t.name === name)?.rating ?? 0;
+  return { initiative: total(initiative, shown.willpower.value, counting, on), mental: rating("Mental"), physical: rating("Physical"), social: rating("Social") };
+}
+
 /**
  * One character in the scene: the same `usePlay` as the full Play View (so its
  * one query, its refresh and its queue of unsent taps are the same), with the
  * trackers a scene needs.
  */
-function SceneCard({ characterId, back, onRemove }: { characterId: string; back: string; onRemove: () => void }) {
+function SceneCard({ characterId, back, onRemove, onRank }: { characterId: string; back: string; onRemove: () => void; onRank: (id: string, rank: Rank | undefined) => void }) {
   const { view, shown, tap, sync, accept } = usePlay(characterId);
   const { reference } = useReference(characterId);
   const modifiers = useModifiers(characterId);
+  const rank = shown && reference ? rankOf(reference, shown, modifiers.modifiers) : undefined;
+  const [initiative, mental, physical, social] = rank ? [rank.initiative, rank.mental, rank.physical, rank.social] : [];
+  // Its turn order, for the scene to sort by; said again only when it changes.
+  useEffect(
+    () => onRank(characterId, initiative === undefined ? undefined : { initiative, mental: mental ?? 0, physical: physical ?? 0, social: social ?? 0 }),
+    [characterId, initiative, mental, physical, social, onRank],
+  );
+  useEffect(() => () => onRank(characterId, undefined), [characterId, onRank]);
   // Which sections are open is kept on this device, per card: it is about one screen.
   const [open, setOpen] = useState(() => loadOpen(characterId));
   useEffect(() => saveOpen(characterId, open), [characterId, open]);
@@ -520,6 +568,7 @@ function SceneCard({ characterId, back, onRemove }: { characterId: string; back:
             {fightFirst(grouped(reference.pools)).map(([group, pools]) => (
               <section key={group} aria-label={group}>
                 <h3 className="text-xs tracking-wide text-mist uppercase">{group}</h3>
+                {group === "Combat" && reference.blood_per_turn > 0 && <p className="text-xs text-mist">{bloodNote(reference.blood_per_turn)}</p>}
                 <ul>
                   {pools.map((p) => (
                     <PoolRow key={p.key} pool={p} willpower={willpower} modifiers={counting} on={on} />

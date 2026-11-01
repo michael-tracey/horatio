@@ -2154,7 +2154,7 @@ category = "flaws"
 name = "Short Fuse"
 description = "Considered as having +1 Beast trait when determining frenzy. Cannot be taken by Brujah."
 page_reference = "265"
-properties = { rating = 2, type = "General", pools = [{ pool = "frenzy", note = "counts 1 more Beast trait for whether to test for frenzy, and how hard" }] }
+properties = { rating = 2, type = "General", pools = [{ pool = "frenzy", beast = 1, note = "counts 1 more Beast trait for whether to test for frenzy, and how hard" }] }
 tags = ["vampire_only"]
 
 [[traits]]
@@ -3345,7 +3345,7 @@ category = "merits"
 name = "Calm Heart"
 description = "Considered as having -2 Beast Traits when resisting frenzy. Gain +3 to test pool to resist frenzy. Brujah cannot take this merit. Restriction does not apply to True Brujah."
 page_reference = "249"
-properties = { rating = 1, type = "General", pools = [{ pool = "frenzy", amount = 3, note = "+3 to resist frenzy, counting 2 fewer Beast traits" }] }
+properties = { rating = 1, type = "General", pools = [{ pool = "frenzy", amount = 3, beast = -2, note = "+3 to resist frenzy, counting 2 fewer Beast traits" }] }
 tags = ["vampire_only"]
 
 [[traits]]
@@ -4773,7 +4773,7 @@ category = "merits"
 name = "Tech Junkie"
 description = "+2 to test pools with Computer or Science, and a downtime action adds the Stylish or Nondescript quality to an item, beyond its two-quality limit."
 page_reference = "487"
-properties = { rating = 2, type = "Anarch", pools = [{ pool = "skill:Computers", amount = 2 }, { pool = "skill:Science", amount = 2 }] }
+properties = { rating = 2, type = "Anarch", pools = [{ pool = "skill:Computer", amount = 2 }, { pool = "skill:Science", amount = 2 }] }
 
 [[traits]]
 category = "merits"

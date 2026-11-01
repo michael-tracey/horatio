@@ -5421,6 +5421,29 @@
         "title": "ContributionIn",
         "type": "object"
       },
+      "Cost": {
+        "description": "What using a power costs, for its Use button on the Pools tab (issue #370).",
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "tracker": {
+            "enum": [
+              "blood",
+              "willpower"
+            ],
+            "title": "Tracker",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tracker",
+          "amount"
+        ],
+        "title": "Cost",
+        "type": "object"
+      },
       "CostCategoryOut": {
         "properties": {
           "group": {
@@ -7338,6 +7361,16 @@
       },
       "DisciplinePowers": {
         "properties": {
+          "cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Cost"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "focus": {
             "anyOf": [
               {
@@ -7385,6 +7418,14 @@
           "rating": {
             "title": "Rating",
             "type": "integer"
+          },
+          "switches": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Switches",
+            "type": "array"
           },
           "versus": {
             "anyOf": [
@@ -11096,6 +11137,31 @@
           "amount"
         ],
         "title": "FreePickOut",
+        "type": "object"
+      },
+      "Frenzy": {
+        "description": "Resisting frenzy (core p. 302): Mental and what merits and flaws add, to\nwhich the Play View adds current Willpower, against 10 + Beast traits.",
+        "properties": {
+          "beast": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PoolPart"
+            },
+            "title": "Beast",
+            "type": "array"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/PoolPart"
+            },
+            "title": "Parts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "parts"
+        ],
+        "title": "Frenzy",
         "type": "object"
       },
       "GameChoice": {
@@ -19724,6 +19790,9 @@
               }
             ]
           },
+          "frenzy": {
+            "$ref": "#/components/schemas/Frenzy"
+          },
           "identities": {
             "default": [],
             "items": {
@@ -19780,6 +19849,7 @@
         },
         "required": [
           "pools",
+          "frenzy",
           "disciplines",
           "other_powers",
           "notes",
@@ -21182,6 +21252,16 @@
       },
       "PowerNote": {
         "properties": {
+          "cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Cost"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "focus": {
             "anyOf": [
               {
@@ -21204,6 +21284,14 @@
           "note": {
             "title": "Note",
             "type": "string"
+          },
+          "switches": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Switches",
+            "type": "array"
           }
         },
         "required": [

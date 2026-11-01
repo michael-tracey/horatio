@@ -328,7 +328,7 @@ def pools_of(
     """The Play View's pools for the sheet, by key, and what changes them."""
     made = reference.Sheet.of(sheet, rule_set)
     worked = reference.work_out(made, reference.technique_bases(rule_set))
-    found = reference.pools(made, worked.effects, 1, worked.hurts, worked.switches)
+    found = reference.pools(made, worked.effects, worked.hurts, worked.switches)
     return {p.key: p for p in found}, worked
 
 
@@ -374,8 +374,11 @@ def at_a_game(
             if variant.when not in had:
                 when = variant.when[:1].lower() + variant.when[1:]
                 found.append(f"{pool.name}: {variant.total} {when}{also}.")
-    notes = set(reference.other_notes(was.effects))
-    found += [f"{n}." for n in reference.other_notes(worked.effects) if n not in notes]
+    # A skill's change a pool above already shows is not said again.
+    notes = set(reference.other_notes(was.effects, before.keys()))
+    found += [
+        f"{n}." for n in reference.other_notes(worked.effects, after.keys()) if n not in notes
+    ]
     active = properties.get("active")
     switch = next((s for s in worked.switches if active and s.key == active["key"]), None)
     if switch is not None:
