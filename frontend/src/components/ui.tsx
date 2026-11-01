@@ -254,10 +254,11 @@ export function Tabs({ tabs }: { tabs: Tab[] }) {
 /**
  * Tabs in groups, for a page with too many to fit one row: the groups in a row,
  * and under it the open group's own tabs. On a phone each row scrolls sideways,
- * with the open tab kept in view. A group opens its first tab; a group of one
- * is a plain tab. Counts add up on their group, so what waits is seen from anywhere.
+ * with the open tab kept in view. A group opens its first tab, or the one its
+ * `to` names; a group of one is a plain tab. Counts add up on their group, so
+ * what waits is seen from anywhere.
  */
-export function GroupedTabs({ label, groups }: { label: string; groups: { label: string; tabs: Tab[] }[] }) {
+export function GroupedTabs({ label, groups }: { label: string; groups: { label: string; tabs: Tab[]; to?: string }[] }) {
   const { pathname } = useLocation();
   const here = pathname.replace(/\/$/, "");
   const opens = (t: Tab) => (t.end ? here === t.to : here === t.to || here.startsWith(`${t.to}/`));
@@ -274,7 +275,7 @@ export function GroupedTabs({ label, groups }: { label: string; groups: { label:
           return (
             <Link
               key={g.label}
-              to={g.tabs[0]!.to}
+              to={g.to && g.tabs.some((t) => t.to === g.to) ? g.to : g.tabs[0]!.to}
               aria-current={active ? "true" : undefined}
               className={cx(
                 "shrink-0 border-b-2 px-3 py-2 text-sm whitespace-nowrap",

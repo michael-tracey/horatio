@@ -231,8 +231,12 @@ def list_titles(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Title
 @router.get("/status-rules")
 def status_rules(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> StatusRulesOut:
     """Every status of the troupe's sects, and the general status, by sect: its type,
-    what it does, and where it comes from here."""
-    troupe = staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
+    what it does, and where it comes from here. Anyone signed in may read it, as
+    they may the troupe's house rules: it is the book's rules and the troupe's titles,
+    never who holds them."""
+    troupe = db.get(Troupe, troupe_id)
+    if troupe is None or (troupe.archived_at is not None and not user.is_custodian):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
     caps, sects = sect_status.status_rules(db, troupe)
     return StatusRulesOut(
         caps=StatusCapsOut(

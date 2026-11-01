@@ -136,8 +136,8 @@ def test_enlightened_comes_from_the_paths_the_troupes_sects_accept(troupe: Troup
     assert given_by(statuses(rules_of(troupe))["Enlightened"]) == [("merit", "Golconda Seeker", "")]
 
 
-def test_only_running_staff_see_the_status_rules(troupe: Troupe) -> None:
-    for person in (troupe.player, troupe.stranger, troupe.narrator):
+def test_anyone_signed_in_reads_the_status_rules(troupe: Troupe) -> None:
+    # A reference, like the house rules: players read it too (#375).
+    for person in (troupe.player, troupe.stranger, troupe.narrator, troupe.storyteller):
         response = person.client.get(f"/troupes/{troupe.id}/status-rules")
-        assert response.status_code in (403, 404), (person, response.text)
-    assert troupe.storyteller.client.get(f"/troupes/{troupe.id}/status-rules").status_code == 200
+        assert response.status_code == 200, (person, response.text)
