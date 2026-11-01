@@ -50,6 +50,7 @@ export type FeedingIn = Schemas["FeedingIn"];
 export type FeedingNeedOut = Schemas["FeedingNeedOut"];
 export type CycleFeedingOut = Schemas["CycleFeedingOut"];
 export type CharacterFeedingOut = Schemas["CharacterFeedingOut"];
+export type HumorOut = Schemas["HumorOut"];
 export type AnswerIn = Schemas["AnswerIn"];
 export type WorkItemOut = Schemas["WorkItemOut"];
 export type WorkCycle = Schemas["WorkCycle"];

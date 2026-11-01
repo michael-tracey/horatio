@@ -85,6 +85,7 @@ from horatio import (
     sheets,
     suspensions,
 )
+from horatio.feeding import tracked as feeding_tracked
 from horatio.models import (
     Character,
     PlayCounter,
@@ -713,10 +714,12 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
     ]
     # Attacks and Boosts holding on the character move its Influences counters.
     expendables = influence_effects.play_uses(db, character, expendables)
-    # A game not started yet starts at half if the last downtime said so.
+    # A game not started yet starts at half if the last downtime said so, unless its
+    # troupe has since stopped tracking feeding (the mark is kept for if it starts again).
     half = game.half_blood if game is not None else character.half_blood_next_game
     beast = game.beast_start if game is not None else character.beast_next_game
-    half, beast = half and panels.feed, beast if panels.beast else 0
+    half = half and panels.feed and feeding_tracked(troupe)
+    beast = beast if panels.beast else 0
     usual = blood if house is None else min(house, blood)
     starting = -(-blood // 2) if half else usual
     if vitae is not None:

@@ -13,9 +13,12 @@ from horatio import downtimes, feeding
 from horatio.api.downtimes import (
     FeedingIn,
     FeedingNeedOut,
+    Humor,
+    HumorOut,
     ReceivedOut,
     cycle_participant,
     feeding_in,
+    humors_out,
     need_out,
     received_out,
     staff_cycle,
@@ -79,6 +82,10 @@ class CharacterFeedingOut(BaseModel):
     result: Result | None
     reply: str
     working: str
+    # With Blood Resonance: the humor of the blood it fed on, and its Dyscrasia ("" for
+    # none).
+    resonance: Humor | None = None
+    dyscrasia: str = ""
     answered_at: datetime | None
     delivered: bool
 
@@ -86,6 +93,9 @@ class CharacterFeedingOut(BaseModel):
 class CycleFeedingOut(BaseModel):
     clans: list[ClanFeedingOut]
     characters: list[CharacterFeedingOut]
+    # With Blood Resonance on, the humors and their Dyscrasias to answer with; empty
+    # while it is off.
+    humors: list[HumorOut] = []
 
 
 class FeedingAdjustmentIn(BaseModel):
@@ -98,10 +108,18 @@ class FeedingAnswerIn(BaseModel):
     result: Result | None
     # Flavour with a full or half answer; with other, the answer itself.
     reply: str = Field(default="", max_length=2000)
+    # With Blood Resonance: the humor of the blood it fed on, and the Dyscrasia it
+    # carried, one of that humor's by name ("" for none).
+    resonance: Humor | None = None
+    dyscrasia: str = Field(default="", max_length=100)
 
 
 def character_out(
-    db: DbSession, cycle: DowntimeCycle, participant: CycleParticipant, character: Character
+    db: DbSession,
+    cycle: DowntimeCycle,
+    participant: CycleParticipant,
+    character: Character,
+    with_resonance: bool = False,
 ) -> CharacterFeedingOut | None:
     from horatio.responses import delivered
 
@@ -125,7 +143,9 @@ def character_out(
         ],
         submission_status=submission.status if submission else None,
         answer=feeding_in(answer),
-        summary=feeding.summary(db, answer) if not answer.empty else "",
+        summary=feeding.summary(db, answer, with_resonance=with_resonance)
+        if not answer.empty
+        else "",
         received=received_out(feeding.received(db, cycle, character.id)),
         tally=TallyOut(
             needed=counted.needed,
@@ -136,19 +156,24 @@ def character_out(
         result=submission.feeding_result if submission else None,  # type: ignore[arg-type]
         reply=submission.feeding_reply if submission else "",
         working=submission.feeding_working if submission else "",
+        resonance=submission.feeding_resonance if submission and with_resonance else None,  # type: ignore[arg-type]
+        dyscrasia=submission.feeding_dyscrasia if submission and with_resonance else "",
         answered_at=submission.feeding_answered_at if submission else None,
         delivered=submission is not None and delivered(db, submission.id),
     )
 
 
 def cycle_feeding(db: DbSession, cycle: DowntimeCycle, troupe: Troupe) -> CycleFeedingOut:
+    with_resonance = feeding.resonance_on(troupe)
     rows = db.execute(
         select(CycleParticipant, Character)
         .join(Character, CycleParticipant.character_id == Character.id)
         .where(CycleParticipant.cycle_id == cycle.id, CycleParticipant.removed_at.is_(None))
         .order_by(Character.name)
     )
-    characters = [c for p, ch in rows if (c := character_out(db, cycle, p, ch)) is not None]
+    characters = [
+        c for p, ch in rows if (c := character_out(db, cycle, p, ch, with_resonance)) is not None
+    ]
     counts: dict[str, int] = {}
     for c in characters:
         counts[c.clan] = counts.get(c.clan, 0) + 1
@@ -158,12 +183,27 @@ def cycle_feeding(db: DbSession, cycle: DowntimeCycle, troupe: Troupe) -> CycleF
         clans.append(
             ClanFeedingOut(clan=clan, amount=amount, reason=reason, characters=counts.get(clan, 0))
         )
-    return CycleFeedingOut(clans=clans, characters=characters)
+    return CycleFeedingOut(
+        clans=clans, characters=characters, humors=humors_out() if with_resonance else []
+    )
+
+
+def feeding_cycle(
+    db: DbSession,
+    user: CurrentUser,
+    cycle_id: uuid.UUID,
+    action: TroupeAction = TroupeAction.MANAGE_CYCLES,
+) -> tuple[DowntimeCycle, Troupe]:
+    """The cycle and its troupe, for its staff, while the troupe tracks feeding."""
+    cycle, troupe = staff_cycle(db, user, cycle_id, action)
+    if not feeding.tracked(troupe):
+        raise feeding.not_tracked()
+    return cycle, troupe
 
 
 @router.get("/cycles/{cycle_id}/feeding")
 def read_feeding(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> CycleFeedingOut:
-    cycle, troupe = staff_cycle(db, user, cycle_id)
+    cycle, troupe = feeding_cycle(db, user, cycle_id)
     return cycle_feeding(db, cycle, troupe)
 
 
@@ -172,7 +212,7 @@ def set_clan_feeding(
     cycle_id: uuid.UUID, clan: str, body: ClanFeedingIn, db: DbSession, user: CurrentUser
 ) -> CycleFeedingOut:
     """Set how many feeding actions a clan needs this cycle, with the reason."""
-    cycle, troupe = staff_cycle(db, user, cycle_id)
+    cycle, troupe = feeding_cycle(db, user, cycle_id)
     feeding.set_difficulty(db, user, cycle, troupe, clan, body.amount, body.reason)
     db.commit()
     return cycle_feeding(db, cycle, troupe)
@@ -187,7 +227,7 @@ def adjust_feeding(
     user: CurrentUser,
 ) -> CycleFeedingOut:
     """Change one character's feeding number for this cycle, with a reason."""
-    cycle, troupe = staff_cycle(db, user, cycle_id, TroupeAction.ADJUST_ALLOWANCES)
+    cycle, troupe = feeding_cycle(db, user, cycle_id, TroupeAction.ADJUST_ALLOWANCES)
     participant = cycle_participant(db, cycle, participant_id)
     feeding.adjust(db, user, participant, troupe, body.delta, body.reason)
     db.commit()
@@ -202,10 +242,22 @@ def answer_feeding(
     db: DbSession,
     user: CurrentUser,
 ) -> CycleFeedingOut:
-    """Full Blood next game, half Blood, or something else."""
-    cycle, troupe = staff_cycle(db, user, cycle_id, TroupeAction.ASSIGN_RESPONSES)
+    """Full Blood next game, half Blood, or something else; with Blood Resonance, the
+    Resonance it fed on and any Dyscrasia."""
+    cycle, troupe = feeding_cycle(db, user, cycle_id, TroupeAction.ASSIGN_RESPONSES)
     participant = cycle_participant(db, cycle, participant_id)
     character = db.get_one(Character, participant.character_id)
-    feeding.write_answer(db, user, cycle, troupe, participant, character, body.result, body.reply)
+    feeding.write_answer(
+        db,
+        user,
+        cycle,
+        troupe,
+        participant,
+        character,
+        body.result,
+        body.reply,
+        body.resonance,
+        body.dyscrasia,
+    )
     db.commit()
     return cycle_feeding(db, cycle, troupe)

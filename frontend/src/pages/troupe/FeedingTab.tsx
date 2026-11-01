@@ -1,13 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { CharacterFeedingOut, CycleOut, CycleFeedingOut } from "../../api/types";
+import type { CharacterFeedingOut, CycleOut, CycleFeedingOut, HumorOut } from "../../api/types";
+import { EmptyState } from "../../components/EmptyState";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { staffTallyText } from "../../feeding";
 import { useAction } from "../../hooks";
 
 type Clan = CycleFeedingOut["clans"][number];
 type Result = "full" | "half" | "other";
+type Humor = HumorOut["key"];
 
 const RESULTS: [Result, string][] = [
   ["full", "Full Blood next game"],
@@ -24,7 +27,21 @@ export function FeedingTab({ cycle }: { cycle: CycleOut }) {
   const feeding = useQuery({
     queryKey: ["feeding", cycle.id],
     queryFn: () => unwrap(api.GET("/api/cycles/{cycle_id}/feeding", { params: { path: { cycle_id: cycle.id } } })),
+    enabled: cycle.feeding !== false,
   });
+  if (cycle.feeding === false)
+    return (
+      <EmptyState
+        title="This troupe doesn't track feeding."
+        action={
+          <Link to={`/troupes/${cycle.troupe_id}/settings`} className="text-sm text-mist underline hover:text-parchment">
+            Troupe settings
+          </Link>
+        }
+      >
+        Its storytellers can switch it on in Troupe settings. What was recorded before is kept.
+      </EmptyState>
+    );
   if (feeding.isPending) return <Loading />;
   if (feeding.error) return <ErrorText error={feeding.error} />;
   const { clans, characters } = feeding.data;
@@ -51,7 +68,7 @@ export function FeedingTab({ cycle }: { cycle: CycleOut }) {
       ) : characters.length === 0 ? (
         <Empty>No one taking part feeds.</Empty>
       ) : (
-        characters.map((c) => <CharacterFeeding key={c.participant_id} cycle={cycle} character={c} />)
+        characters.map((c) => <CharacterFeeding key={c.participant_id} cycle={cycle} character={c} humors={feeding.data.humors ?? []} />)
       )}
     </div>
   );
@@ -96,10 +113,15 @@ function ClanRow({ clan, cycleId, editable }: { clan: Clan; cycleId: string; edi
   );
 }
 
-function CharacterFeeding({ cycle, character: c }: { cycle: CycleOut; character: CharacterFeedingOut }) {
+function CharacterFeeding({ cycle, character: c, humors }: { cycle: CycleOut; character: CharacterFeedingOut; humors: HumorOut[] }) {
   const path = { params: { path: { cycle_id: cycle.id, participant_id: c.participant_id } } };
   const [result, setResult] = useState<Result>(c.result ?? (c.tally.enough ? "full" : "half"));
   const [reply, setReply] = useState(c.reply);
+  // With Blood Resonance: what it fed on, starting from what the player hunted for.
+  const [humor, setHumor] = useState<Humor | "">(c.result ? (c.resonance ?? "") : c.answer.resonance || "");
+  const [dyscrasia, setDyscrasia] = useState(c.dyscrasia ?? "");
+  const chosen = humors.find((h) => h.key === humor);
+  const carried = chosen?.dyscrasias.find((d) => d.name === dyscrasia);
   const [adjust, setAdjust] = useState({ delta: 1, reason: "" });
   const [table, setTable] = useState("");
   const tables = useQuery({
@@ -108,7 +130,13 @@ function CharacterFeeding({ cycle, character: c }: { cycle: CycleOut; character:
     staleTime: 60_000,
   });
   const answer = useAction((value: Result | null) =>
-    unwrap(api.PUT("/api/cycles/{cycle_id}/participants/{participant_id}/feeding-answer", { ...path, body: { result: value, reply } })),
+    unwrap(
+      api.PUT("/api/cycles/{cycle_id}/participants/{participant_id}/feeding-answer", {
+        ...path,
+        // Without Blood Resonance, the answer leaves any Resonance given before as it was.
+        body: { result: value, reply, resonance: humor || null, dyscrasia: humor ? dyscrasia : "" },
+      }),
+    ),
   );
   const adjustment = useAction(() => unwrap(api.POST("/api/cycles/{cycle_id}/participants/{participant_id}/feeding-adjustments", { ...path, body: adjust })));
   const roll = useAction(async (name: string) => {
@@ -142,6 +170,11 @@ function CharacterFeeding({ cycle, character: c }: { cycle: CycleOut; character:
         {staffTallyText(c.tally)}
       </p>
 
+      {c.result && c.resonance && (
+        <p className="mt-2 text-sm">
+          Fed on {c.resonance} blood{c.dyscrasia ? `, with the Dyscrasia ${c.dyscrasia}` : ", with no Dyscrasia"}.
+        </p>
+      )}
       {c.result && c.working && <p className="mt-2 text-xs text-mist">How it was worked out: {c.working}</p>}
       {answerable ? (
         <form
@@ -159,6 +192,36 @@ function CharacterFeeding({ cycle, character: c }: { cycle: CycleOut; character:
               </label>
             ))}
           </div>
+          {humors.length > 0 && (
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Field label="Resonance fed on">
+                <Select
+                  value={humor}
+                  onChange={(e) => {
+                    setHumor(e.target.value as Humor | "");
+                    setDyscrasia("");
+                  }}
+                >
+                  <option value="">None given</option>
+                  {humors.map((h) => (
+                    <option key={h.key} value={h.key}>
+                      {h.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Dyscrasia" hint={carried ? carried.summary : chosen ? "A one-time benefit for the next game, if the vessel had one (Vol. 2, pp. 296-297)." : undefined}>
+                <Select value={dyscrasia} disabled={!chosen} onChange={(e) => setDyscrasia(e.target.value)}>
+                  <option value="">None</option>
+                  {chosen?.dyscrasias.map((d) => (
+                    <option key={d.name} value={d.name}>
+                      {d.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+          )}
           <Field label={result === "other" ? "What happens instead" : "Flavour (optional)"}>
             <Input value={reply} onChange={(e) => setReply(e.target.value)} />
           </Field>

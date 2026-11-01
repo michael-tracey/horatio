@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import audit, clan_merits, diablerie
+from horatio import audit, clan_merits, diablerie, feeding, resonance
 from horatio.api.downtimes import staff_troupe
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
@@ -907,6 +907,30 @@ def set_golconda(
     return troupe_out(db, user, troupe)
 
 
+# --- Feeding ------------------------------------------------------------------------
+
+
+class FeedingSettingIn(BaseModel):
+    # "book", feeding tracked in downtimes as the core book has it, or "off", left out
+    # of Horatio; what was recorded is kept either way (horatio.feeding).
+    feeding: Literal["off", "book"]
+    # The optional rule Blood Resonance (Vol. 2, pp. 294-297), played while feeding is
+    # tracked; kept as set while it is off.
+    resonance: bool = False
+
+
+@router.put("/feeding")
+def set_feeding(
+    troupe_id: uuid.UUID, body: FeedingSettingIn, db: DbSession, user: CurrentUser
+) -> TroupeOut:
+    """How far Horatio handles feeding for this troupe: not at all, as the book has it,
+    or with the optional Vol. 2 rules."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    feeding.set_setting(db, user, troupe, body.feeding, body.resonance)
+    db.commit()
+    return troupe_out(db, user, troupe)
+
+
 # --- Clan rarity ------------------------------------------------------------------
 
 Rarity = Literal["common", "uncommon", "rare", "restricted"]
@@ -1166,6 +1190,23 @@ def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
                 name="Golconda and Enlightened",
                 text="Golconda Seekers hold the innate status Enlightened (Vol. 2, p. 267)",
                 book_text="An optional rule, off unless the troupe's sect recognises Golconda",
+            )
+        )
+    if not feeding.tracked(troupe):
+        found.append(
+            HouseSettingOut(
+                name="Feeding",
+                text=feeding.SETTING_TEXT["off"],
+                book_text=feeding.SETTING_TEXT["book"],
+            )
+        )
+    elif troupe.feeding_resonance:
+        found.append(
+            HouseSettingOut(
+                name="Blood Resonance",
+                text="Played: a character hunts for blood of one humor, and its feeding answer"
+                f" gives the Resonance and any Dyscrasia ({resonance.PAGES})",
+                book_text="An optional rule, off unless the troupe switches it on",
             )
         )
     if troupe.influence_lookback_days != 90:

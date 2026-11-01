@@ -13,6 +13,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from horatio import house_traits, reference, sheets
+from horatio.feeding import tracked
 from horatio.models import Character, HouseTrait, Troupe
 from horatio.rules.allowance import allowance
 from horatio.rules.checks import Context, violations
@@ -148,7 +149,7 @@ def preview(
     with_it = [t for _, t in now.values()]
     held_before = [t for _, t in was.values()]
     changes += at_a_game(trial, held_before, with_it, compiled) + between_games(
-        trial, held_before, with_it, compiled
+        trial, held_before, with_it, compiled, feeding_tracked=tracked(troupe)
     )
     native = frozenset(SPLATS[spec.splat].in_clan(trial.with_it, with_it))
     context = Context(
@@ -401,8 +402,11 @@ def between_games(
     sheet: Sequence[SheetTrait],
     with_it: Sequence[SheetTrait],
     compiled: Compiled,
+    *,
+    feeding_tracked: bool = True,
 ) -> list[str]:
-    """What it changes in a downtime: actions of each kind, and feeding."""
+    """What it changes in a downtime: actions of each kind, and feeding, if the troupe
+    tracks it."""
     found: list[str] = []
     if compiled.allowance_rules:
         was, _ = allowance(trial.without, sheet)
@@ -411,7 +415,9 @@ def between_games(
         for kind in dict.fromkeys(r.action_kind for r in compiled.allowance_rules):
             name = kinds[kind].name
             found.append(f"{name}s each downtime: {was.get(kind, 0)} → {now.get(kind, 0)}.")
-    if compiled.feeding_modifiers:
+    if compiled.feeding_modifiers and not feeding_tracked:
+        found.append("Nothing when feeding: this troupe doesn't track feeding.")
+    elif compiled.feeding_modifiers:
         before, after = basis(trial.without, sheet), basis(trial.with_it, with_it)
         if after["clan"] is None and not after["modifiers"]:
             found.append("Nothing when feeding: this sheet does not feed between games.")

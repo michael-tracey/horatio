@@ -15,6 +15,12 @@ Storytellers answer full Blood, half Blood, or something else; a full or half
 answer goes to the player with how it was worked out. A half answer, once
 delivered, starts the character's next Play View game at half Blood
 (horatio.play).
+
+A troupe may leave feeding out altogether (Troupe.feeding "off"): no Feeding section
+on the form, no Feeding tab, nothing in the results or at the next game. Whatever was
+recorded stays, and comes back when feeding is switched on again. With the optional
+rule Blood Resonance on, the player names the humor they hunt for and the answer
+gives the Resonance and any Dyscrasia (horatio.resonance).
 """
 
 import uuid
@@ -25,7 +31,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit
+from horatio import audit, resonance
 from horatio.models import (
     Character,
     CycleParticipant,
@@ -45,6 +51,50 @@ from horatio.sheets import conflict, unprocessable
 
 RESULTS = ("full", "half", "other")
 RESULT_WORDS = {"full": "Full Blood next game.", "half": "Half Blood next game."}
+SETTINGS = ("off", "book")
+SETTING_TEXT = {
+    "off": "Not tracked: no feeding in downtimes, results or at the next game",
+    "book": "Tracked in downtimes, as the book has it",
+}
+
+
+# --- the troupe's setting ---------------------------------------------------------------
+
+
+def tracked(troupe: Troupe | None) -> bool:
+    """Whether Horatio handles feeding for the troupe's characters. A character with
+    no home troupe goes by the book."""
+    return troupe is None or troupe.feeding != "off"
+
+
+def resonance_on(troupe: Troupe | None) -> bool:
+    """Blood Resonance is played: switched on, with feeding tracked."""
+    return troupe is not None and tracked(troupe) and troupe.feeding_resonance
+
+
+def not_tracked() -> Exception:
+    return conflict("This troupe doesn't track feeding. Its storytellers can switch it on.")
+
+
+def set_setting(
+    db: Session, staff: User, troupe: Troupe, setting: str, resonance_rule: bool
+) -> None:
+    """Change how far Horatio handles the troupe's feeding. Nothing recorded is lost:
+    switching feeding off only hides it."""
+    if setting not in SETTINGS:
+        raise unprocessable(f"Feeding is one of {', '.join(SETTINGS)}.")
+    if (troupe.feeding, troupe.feeding_resonance) == (setting, resonance_rule):
+        return
+    troupe.feeding, troupe.feeding_resonance = setting, resonance_rule
+    db.flush()
+    audit.record(
+        db,
+        staff,
+        "house.feeding",
+        troupe_id=troupe.id,
+        feeding="not tracked" if setting == "off" else "tracked as the book has it",
+        resonance="on" if resonance_rule else "off",
+    )
 
 
 # --- the difficulty by clan -------------------------------------------------------------
@@ -190,6 +240,8 @@ class FeedingAnswer:
     herd_saved: int = 0
     herd_other: int = 0
     herd_other_text: str = ""
+    # With Blood Resonance: the humor the character hunts for, "" for any.
+    resonance: str = ""
 
     @property
     def herd_shared(self) -> int:
@@ -197,7 +249,7 @@ class FeedingAnswer:
 
     @property
     def empty(self) -> bool:
-        return not (self.actions or self.where.strip() or self.herd_shared)
+        return not (self.actions or self.where.strip() or self.herd_shared or self.resonance)
 
     def stored(self) -> dict[str, Any]:
         return {
@@ -212,6 +264,7 @@ class FeedingAnswer:
             "herd_saved": self.herd_saved,
             "herd_other": self.herd_other,
             "herd_other_text": self.herd_other_text.strip(),
+            "resonance": self.resonance,
         }
 
 
@@ -225,6 +278,7 @@ def answer_of(submission: Submission | None) -> FeedingAnswer:
         herd_saved=int(raw.get("herd_saved", 0)),
         herd_other=int(raw.get("herd_other", 0)),
         herd_other_text=str(raw.get("herd_other_text", "")),
+        resonance=str(raw.get("resonance", "")),
     )
 
 
@@ -259,6 +313,8 @@ def check_answer(
     numbers = [answer.actions, answer.herd_own, answer.herd_saved, answer.herd_other]
     if any(n < 0 for n in numbers) or any(g.amount < 0 for g in answer.gifts):
         raise unprocessable("Feeding numbers cannot be negative.")
+    if answer.resonance and answer.resonance not in resonance.HUMORS:
+        raise unprocessable(f"No humor {answer.resonance!r}.")
     if basis.get("clan") is None and not answer.empty:
         raise unprocessable("This character does not feed.")
     allowed = {i for i, _ in recipients(db, cycle, character)}
@@ -322,8 +378,9 @@ def tally(
     return rules.tally(feeding_need, answer.actions, answer.herd_own, gifts)
 
 
-def summary(db: Session, answer: FeedingAnswer) -> str:
-    """The player's Feeding section in one line, for staff and for the results."""
+def summary(db: Session, answer: FeedingAnswer, *, with_resonance: bool = False) -> str:
+    """The player's Feeding section in one line, for staff and for the results; with
+    Blood Resonance, the humor hunted for too."""
     names = dict(
         db.execute(
             select(Character.id, Character.name).where(
@@ -347,6 +404,8 @@ def summary(db: Session, answer: FeedingAnswer) -> str:
         herd.append(other)
     if herd:
         parts.append("Herd: " + ", ".join(herd))
+    if with_resonance and answer.resonance in resonance.HUMORS:
+        parts.append(f"hunting {resonance.HUMORS[answer.resonance].name.lower()} blood")
     return " · ".join(parts)
 
 
@@ -362,12 +421,17 @@ def write_answer(
     character: Character,
     result: str | None,
     reply: str,
+    humor: str | None = None,
+    dyscrasia: str = "",
 ) -> Submission:
     """Answer the character's feeding: full or half Blood next game, with the
-    working kept as it stood, or something else in the reply's own words. No
-    result takes the answer back."""
+    working kept as it stood, or something else in the reply's own words; with
+    Blood Resonance, the Resonance it fed on and any Dyscrasia. No result takes the
+    answer back."""
     from horatio.downtimes import submission_for
 
+    if not tracked(troupe):
+        raise not_tracked()
     if cycle.status == "complete":
         raise conflict("This cycle is complete.")
     submission = submission_for(db, participant)
@@ -378,6 +442,10 @@ def write_answer(
     reply = reply.strip()
     if result == "other" and not reply:
         raise unprocessable("Say what happens instead.")
+    if humor is not None and humor not in resonance.HUMORS:
+        raise unprocessable(f"No humor {humor!r}.")
+    if dyscrasia and (humor is None or resonance.dyscrasia(humor, dyscrasia) is None):
+        raise unprocessable(f"No Dyscrasia {dyscrasia!r} for that Resonance.")
     basis = participant_basis(db, participant, character, cycle)
     feeding_need = need(db, cycle, participant, basis)
     if feeding_need is None:
@@ -388,6 +456,12 @@ def write_answer(
     if result in ("full", "half"):
         counted = tally(db, cycle, character, feeding_need, submission, submitted_only=True)
         submission.feeding_working = rules.working(feeding_need, counted)
+    if result is None:
+        submission.feeding_resonance, submission.feeding_dyscrasia = None, ""
+    elif resonance_on(troupe):
+        # With the rule off, an answer leaves the Resonance it gave before, kept for
+        # when the rule comes back.
+        submission.feeding_resonance, submission.feeding_dyscrasia = humor, dyscrasia
     submission.feeding_answered_by = staff.id if result else None
     submission.feeding_answered_at = datetime.now(UTC) if result else None
     db.flush()
@@ -403,29 +477,39 @@ def write_answer(
     return submission
 
 
-def result_text(submission: Submission) -> str | None:
+def result_text(submission: Submission, *, with_resonance: bool = False) -> str | None:
     """The Feeding part of the delivered results, or None if it is unanswered."""
     if submission.feeding_result is None:
         return None
     if submission.feeding_result == "other":
-        return f"*Result:* {submission.feeding_reply}"
-    text = f"*Result:* **{RESULT_WORDS[submission.feeding_result]}**"
-    if submission.feeding_reply:
-        text += f" {submission.feeding_reply}"
+        text = f"*Result:* {submission.feeding_reply}"
+    else:
+        text = f"*Result:* **{RESULT_WORDS[submission.feeding_result]}**"
+        if submission.feeding_reply:
+            text += f" {submission.feeding_reply}"
+    fed_on = resonance.answer_text(submission.feeding_resonance, submission.feeding_dyscrasia)
+    if with_resonance and fed_on:
+        text += f"\n\n{fed_on}"
     if submission.feeding_working:
         # Its own paragraph, so Horatio shows it folded away.
         text += f"\n\n▸ How it was worked out: {submission.feeding_working}"
     return text
 
 
-def compose(db: Session, submission: Submission) -> str | None:
-    found = result_text(submission)
+def compose(
+    db: Session, submission: Submission, *, shown: bool = True, with_resonance: bool = False
+) -> str | None:
+    """The Feeding part of the results: None while it is unanswered, or when it is
+    not `shown`, the troupe not tracking feeding."""
+    if not shown:
+        return None
+    found = result_text(submission, with_resonance=with_resonance)
     if found is None:
         return None
     answer = answer_of(submission)
     lines = ["**Feeding**"]
     if not answer.empty:
-        lines.append(f"*Your feeding:* {summary(db, answer)}")
+        lines.append(f"*Your feeding:* {summary(db, answer, with_resonance=with_resonance)}")
     return "\n".join(lines) + "\n" + found
 
 
