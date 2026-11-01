@@ -147,6 +147,15 @@ class ScheduledGame(Record):
     troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    # Check-in at the door (horatio.checkin): the short code players scan or type,
+    # while staff have check-in open; None while it is closed. It works only until
+    # the game ends, and a new one stops the old one working.
+    checkin_code: Mapped[str | None] = mapped_column(unique=True)
+    # The game's XP, once staff award it to everyone checked in: how much, when and
+    # by whom. A game's XP is awarded once.
+    xp_awarded: Mapped[int | None]
+    xp_awarded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    xp_awarded_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
 
 
 class GameRsvp(Record):
@@ -164,6 +173,26 @@ class GameRsvp(Record):
     game_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("scheduled_games.id", ondelete="CASCADE"))
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     answer: Mapped[str]
+
+
+class GameAttendance(Record):
+    """A character at one of its troupe's scheduled games (horatio.checkin): checked
+    in at the door by its player, or by staff by hand. It is fact, apart from the
+    RSVP, which is intent. A game someone came to stays on the schedule as the
+    record."""
+
+    __tablename__ = "game_attendances"
+    __table_args__ = (UniqueConstraint("game_id", "character_id"),)
+
+    game_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("scheduled_games.id"))
+    character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
+    checked_in_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    # Staff checked the character in by hand, rather than its player.
+    by_staff: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # The Play View game check-in started or joined; None when the game was over.
+    play_game_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("play_games.id"))
+    # Whether its player said it had a full day's rest; None when no night started.
+    rested: Mapped[bool | None]
 
 
 class CalendarFeed(Record):

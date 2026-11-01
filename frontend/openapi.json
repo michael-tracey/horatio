@@ -33,6 +33,30 @@
         "title": "AbidingSourceOut",
         "type": "object"
       },
+      "Absentee": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "player_name"
+        ],
+        "title": "Absentee",
+        "type": "object"
+      },
       "ActionKindChoiceOut": {
         "properties": {
           "key": {
@@ -965,6 +989,111 @@
           }
         },
         "title": "AssignmentIn",
+        "type": "object"
+      },
+      "AttendedGame": {
+        "properties": {
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "game_id": {
+            "format": "uuid",
+            "title": "Game Id",
+            "type": "string"
+          },
+          "play_game_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Play Game Number"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "game_id",
+          "troupe_id",
+          "troupe_name",
+          "starts_at",
+          "ends_at",
+          "play_game_number"
+        ],
+        "title": "AttendedGame",
+        "type": "object"
+      },
+      "Attendee": {
+        "properties": {
+          "by_staff": {
+            "title": "By Staff",
+            "type": "boolean"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "checked_in_at": {
+            "format": "date-time",
+            "title": "Checked In At",
+            "type": "string"
+          },
+          "home": {
+            "title": "Home",
+            "type": "boolean"
+          },
+          "month_xp": {
+            "title": "Month Xp",
+            "type": "integer"
+          },
+          "player": {
+            "$ref": "#/components/schemas/ProfilePerson"
+          },
+          "rested": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rested"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "player",
+          "home",
+          "checked_in_at",
+          "by_staff",
+          "rested",
+          "month_xp"
+        ],
+        "title": "Attendee",
         "type": "object"
       },
       "AttributeChange": {
@@ -4846,6 +4975,131 @@
         "title": "CheckChange",
         "type": "object"
       },
+      "CheckInCharacter": {
+        "properties": {
+          "checked_in": {
+            "title": "Checked In",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "checked_in"
+        ],
+        "title": "CheckInCharacter",
+        "type": "object"
+      },
+      "CheckInIn": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "rested": {
+            "default": true,
+            "title": "Rested",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character_id"
+        ],
+        "title": "CheckInIn",
+        "type": "object"
+      },
+      "CheckInOffer": {
+        "description": "A game whose check-in is open, and the caller's characters who can check in.",
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CheckInCharacter"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "game_id": {
+            "format": "uuid",
+            "title": "Game Id",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "game_id",
+          "starts_at",
+          "ends_at",
+          "characters"
+        ],
+        "title": "CheckInOffer",
+        "type": "object"
+      },
+      "CheckInState": {
+        "properties": {
+          "can_open": {
+            "title": "Can Open",
+            "type": "boolean"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "open": {
+            "title": "Open",
+            "type": "boolean"
+          },
+          "opens_at": {
+            "format": "date-time",
+            "title": "Opens At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "open",
+          "code",
+          "can_open",
+          "opens_at"
+        ],
+        "title": "CheckInState",
+        "type": "object"
+      },
       "CheckOut": {
         "properties": {
           "about": {
@@ -4929,6 +5183,35 @@
           "strength"
         ],
         "title": "CheckPreviewOut",
+        "type": "object"
+      },
+      "CheckedIn": {
+        "properties": {
+          "already": {
+            "title": "Already",
+            "type": "boolean"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "play_started": {
+            "title": "Play Started",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "already",
+          "play_started"
+        ],
+        "title": "CheckedIn",
         "type": "object"
       },
       "ChoiceChange": {
@@ -11859,6 +12142,87 @@
         "title": "GameLog",
         "type": "object"
       },
+      "GameNight": {
+        "properties": {
+          "attendees": {
+            "items": {
+              "$ref": "#/components/schemas/Attendee"
+            },
+            "title": "Attendees",
+            "type": "array"
+          },
+          "can_award": {
+            "title": "Can Award",
+            "type": "boolean"
+          },
+          "checkin": {
+            "$ref": "#/components/schemas/CheckInState"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "game_xp_high": {
+            "title": "Game Xp High",
+            "type": "integer"
+          },
+          "game_xp_low": {
+            "title": "Game Xp Low",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "monthly_xp": {
+            "title": "Monthly Xp",
+            "type": "integer"
+          },
+          "others": {
+            "items": {
+              "$ref": "#/components/schemas/Absentee"
+            },
+            "title": "Others",
+            "type": "array"
+          },
+          "session_xp": {
+            "title": "Session Xp",
+            "type": "integer"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "xp": {
+            "$ref": "#/components/schemas/GameXp"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "starts_at",
+          "ends_at",
+          "checkin",
+          "attendees",
+          "others",
+          "session_xp",
+          "xp",
+          "can_award",
+          "game_xp_low",
+          "game_xp_high",
+          "monthly_xp"
+        ],
+        "title": "GameNight",
+        "type": "object"
+      },
       "GameOut": {
         "properties": {
           "ended_at": {
@@ -11935,6 +12299,14 @@
             ],
             "title": "Answers"
           },
+          "checked_in": {
+            "title": "Checked In",
+            "type": "integer"
+          },
+          "checkin_open": {
+            "title": "Checkin Open",
+            "type": "boolean"
+          },
           "coming": {
             "title": "Coming",
             "type": "integer"
@@ -11969,6 +12341,13 @@
             ],
             "title": "My Answer"
           },
+          "my_checked_in": {
+            "items": {
+              "type": "string"
+            },
+            "title": "My Checked In",
+            "type": "array"
+          },
           "not_coming": {
             "title": "Not Coming",
             "type": "integer"
@@ -11987,9 +12366,109 @@
           "coming",
           "maybe",
           "not_coming",
-          "answers"
+          "answers",
+          "checkin_open",
+          "checked_in",
+          "my_checked_in"
         ],
         "title": "GameRsvpsOut",
+        "type": "object"
+      },
+      "GameXp": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "awarded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Awarded At"
+          },
+          "awarded_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProfilePerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "amount",
+          "awarded_at",
+          "awarded_by"
+        ],
+        "title": "GameXp",
+        "type": "object"
+      },
+      "GameXpAwarded": {
+        "properties": {
+          "characters": {
+            "title": "Characters",
+            "type": "integer"
+          },
+          "past_monthly": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Past Monthly",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "characters",
+          "total",
+          "past_monthly"
+        ],
+        "title": "GameXpAwarded",
+        "type": "object"
+      },
+      "GameXpIn": {
+        "properties": {
+          "amount": {
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "to_range": {
+            "default": true,
+            "title": "To Range",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "amount",
+          "reason"
+        ],
+        "title": "GameXpIn",
         "type": "object"
       },
       "GatheredOut": {
@@ -20007,6 +20486,49 @@
           "log"
         ],
         "title": "PasswordResets",
+        "type": "object"
+      },
+      "PastGame": {
+        "properties": {
+          "attended": {
+            "title": "Attended",
+            "type": "integer"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          },
+          "xp_awarded": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Xp Awarded"
+          }
+        },
+        "required": [
+          "id",
+          "starts_at",
+          "ends_at",
+          "attended",
+          "xp_awarded"
+        ],
+        "title": "PastGame",
         "type": "object"
       },
       "PathStart": {
@@ -36531,6 +37053,54 @@
         ]
       }
     },
+    "/api/characters/{character_id}/attendance": {
+      "get": {
+        "description": "The games the character came to, newest first.",
+        "operationId": "attended_api_characters__character_id__attendance_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AttendedGame"
+                  },
+                  "title": "Response Attended Api Characters  Character Id  Attendance Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Attended",
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
     "/api/characters/{character_id}/backstory": {
       "get": {
         "operationId": "get_backstory_api_characters__character_id__backstory_get",
@@ -44125,6 +44695,49 @@
         "summary": "Correct Xp",
         "tags": [
           "sheets"
+        ]
+      }
+    },
+    "/api/checkin/{code}": {
+      "get": {
+        "description": "The game a door's code is for, while its check-in is open, with the caller's\ncharacters there.",
+        "operationId": "read_code_api_checkin__code__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInOffer"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Code",
+        "tags": [
+          "check-in"
         ]
       }
     },
@@ -53529,6 +54142,54 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/games/past": {
+      "get": {
+        "description": "The troupe's latest games already over, newest first, with how many came: for\nits staff, to see who came and award the XP.",
+        "operationId": "past_games_api_troupes__troupe_id__games_past_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PastGame"
+                  },
+                  "title": "Response Past Games Api Troupes  Troupe Id  Games Past Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Past Games",
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/games/{game_id}": {
       "delete": {
         "operationId": "remove_game_api_troupes__troupe_id__games__game_id__delete",
@@ -53572,6 +54233,346 @@
         "summary": "Remove Game",
         "tags": [
           "troupe profiles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/games/{game_id}/attendance": {
+      "post": {
+        "description": "Check a character in: its player, while check-in is open, or the troupe's\nrunning staff by hand. It starts the character's night on the Play View.",
+        "operationId": "check_in_api_troupes__troupe_id__games__game_id__attendance_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "game_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Game Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckInIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckedIn"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Check In",
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/games/{game_id}/attendance/{character_id}": {
+      "delete": {
+        "description": "Take a character off the game's attendance, by hand. Its Play View stays as it is.",
+        "operationId": "check_out_api_troupes__troupe_id__games__game_id__attendance__character_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "game_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Game Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameNight"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Check Out",
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/games/{game_id}/checkin": {
+      "delete": {
+        "description": "Close check-in: the code stops working. Staff can still check people in by hand.",
+        "operationId": "close_checkin_api_troupes__troupe_id__games__game_id__checkin_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "game_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Game Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameNight"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Close Checkin",
+        "tags": [
+          "check-in"
+        ]
+      },
+      "get": {
+        "description": "The game, while its check-in is open, with the caller's characters there.",
+        "operationId": "read_checkin_api_troupes__troupe_id__games__game_id__checkin_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "game_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Game Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInOffer"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Checkin",
+        "tags": [
+          "check-in"
+        ]
+      },
+      "put": {
+        "description": "Open check-in with a new code for the door; any code before stops working.",
+        "operationId": "open_checkin_api_troupes__troupe_id__games__game_id__checkin_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "game_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Game Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameNight"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Open Checkin",
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/games/{game_id}/night": {
+      "get": {
+        "description": "The game's check-in, who came, and its XP: for the troupe's running staff.",
+        "operationId": "read_night_api_troupes__troupe_id__games__game_id__night_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "game_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Game Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameNight"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Night",
+        "tags": [
+          "check-in"
         ]
       }
     },
@@ -53688,6 +54689,70 @@
         "summary": "Answer",
         "tags": [
           "games"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/games/{game_id}/xp": {
+      "post": {
+        "description": "The game's XP to every character checked in whose home is this troupe, all at\nonce, and once a game. Visitors are awarded by their own home troupes.",
+        "operationId": "award_game_xp_api_troupes__troupe_id__games__game_id__xp_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "game_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Game Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GameXpIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameXpAwarded"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Award Game Xp",
+        "tags": [
+          "check-in"
         ]
       }
     },

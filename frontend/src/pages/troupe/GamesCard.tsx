@@ -10,14 +10,18 @@ import { useToast } from "../../components/Toast";
 import { Button, Card, ErrorText, Loading } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { CheckInForm } from "../CheckInPage";
+import { checkedInText } from "./checkin";
 import { ANSWERS, answeredText, byAnswer, countsText, webcal, type Answer } from "./games";
 
 /**
  * The troupe's games still to come, for its members: each says whether they are
  * coming, and sees how many are; its staff also see who (issue #420). And the way
- * to put the troupe's games and downtime dates in their own calendar.
+ * to put the troupe's games and downtime dates in their own calendar. While a
+ * game's check-in is open, players check in from here; its running staff open each
+ * game's night, and the games just played, to see who came and award the XP (#421).
  */
-export function GamesCard({ troupe, canAddGames }: { troupe: TroupeOut; canAddGames: boolean }) {
+export function GamesCard({ troupe, canAddGames, running }: { troupe: TroupeOut; canAddGames: boolean; running: boolean }) {
   const [subscribing, setSubscribing] = useState(false);
   const games = useQuery({
     queryKey: ["troupe-games", troupe.id],
@@ -53,10 +57,11 @@ export function GamesCard({ troupe, canAddGames }: { troupe: TroupeOut; canAddGa
       ) : (
         <ul className="flex flex-col divide-y divide-ash" aria-label="Games to come">
           {games.data.map((g) => (
-            <GameRow key={g.id} troupeId={troupe.id} game={g} />
+            <GameRow key={g.id} troupeId={troupe.id} game={g} running={running} />
           ))}
         </ul>
       )}
+      {running && <PastGames troupeId={troupe.id} />}
       <Dialog title="Subscribe to the calendar" open={subscribing} onClose={() => setSubscribing(false)} phoneFull>
         <Subscribe troupe={troupe} />
       </Dialog>
@@ -65,9 +70,10 @@ export function GamesCard({ troupe, canAddGames }: { troupe: TroupeOut; canAddGa
 }
 
 /** One game: when, your answer, how many said each, and for staff, who. */
-function GameRow({ troupeId, game }: { troupeId: string; game: GameRsvpsOut }) {
+function GameRow({ troupeId, game, running }: { troupeId: string; game: GameRsvpsOut; running: boolean }) {
   const dates = useDates();
   const toast = useToast();
+  const [checkingIn, setCheckingIn] = useState(false);
   const when = dates.gameStart(game.starts_at);
   const path = { params: { path: { troupe_id: troupeId, game_id: game.id } } };
   const answer = useAction(
@@ -113,8 +119,75 @@ function GameRow({ troupeId, game }: { troupeId: string; game: GameRsvpsOut }) {
         })}
       </div>
       <ErrorText error={answer.error} />
+      {(game.checkin_open || game.my_checked_in.length > 0) && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          {game.checkin_open && (
+            <Button type="button" onClick={() => setCheckingIn(true)}>
+              Check in
+            </Button>
+          )}
+          {game.my_checked_in.length > 0 && <span className="text-sm text-gold">Checked in: {game.my_checked_in.join(", ")}</span>}
+        </div>
+      )}
+      {running && (
+        <p className="text-sm">
+          <Link to={`/troupes/${troupeId}/games/${game.id}`} className="text-gold underline">
+            Check-in and attendance
+          </Link>
+          <span className="text-mist">
+            {" "}
+            · {checkedInText(game.checked_in)}
+            {game.checkin_open && " · check-in open"}
+          </span>
+        </p>
+      )}
       {game.answers && game.answers.length > 0 && <WhoIsComing game={game} />}
+      <Dialog title={`Check in: ${when}`} open={checkingIn} onClose={() => setCheckingIn(false)} phoneFull>
+        <CheckInHere troupeId={troupeId} gameId={game.id} />
+      </Dialog>
     </li>
+  );
+}
+
+/** The check-in form for a game whose check-in is open, from the game's own row. */
+function CheckInHere({ troupeId, gameId }: { troupeId: string; gameId: string }) {
+  const offer = useQuery({
+    queryKey: ["check-in", troupeId, gameId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/games/{game_id}/checkin", { params: { path: { troupe_id: troupeId, game_id: gameId } } })),
+    retry: false,
+  });
+  if (offer.isPending) return <Loading />;
+  if (offer.error) return <ErrorText error={offer.error} />;
+  return <CheckInForm offer={offer.data} />;
+}
+
+/** For running staff: the latest games already over, to see who came and award the XP. */
+function PastGames({ troupeId }: { troupeId: string }) {
+  const dates = useDates();
+  const past = useQuery({
+    queryKey: ["troupe-games-past", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/games/past", { params: { path: { troupe_id: troupeId } } })),
+  });
+  if (!past.data?.length) return null;
+  return (
+    <section aria-labelledby="past-games" className="mt-4 border-t border-ash pt-3">
+      <h3 id="past-games" className="text-sm text-mist">
+        Games played
+      </h3>
+      <ul aria-label="Games played" className="mt-1 flex flex-col gap-1 text-sm">
+        {past.data.map((g) => (
+          <li key={g.id}>
+            <Link to={`/troupes/${troupeId}/games/${g.id}`} className="text-parchment hover:text-gold">
+              {dates.gameStart(g.starts_at)}
+            </Link>
+            <span className="text-mist">
+              {" "}
+              · {checkedInText(g.attended)} · {g.xp_awarded === null ? "XP not awarded yet" : `${g.xp_awarded} XP awarded`}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

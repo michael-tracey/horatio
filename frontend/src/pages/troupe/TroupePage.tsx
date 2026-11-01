@@ -8,6 +8,7 @@ import { ApprovalsTab } from "./ApprovalsTab";
 import { ConnectorsTab } from "./ConnectorsTab";
 import { CyclesTab } from "./CyclesTab";
 import { EquipmentTab } from "./EquipmentTab";
+import { GameNightPage } from "./GameNight";
 import { HouseRulesTab } from "./HouseRulesTab";
 import { InfluenceLogTab } from "./InfluenceLogTab";
 import { LinesVeilsTab } from "./LinesVeilsTab";
@@ -153,6 +154,7 @@ export function TroupePage() {
         {can.staff && <Route path="lines-veils" element={<LinesVeilsTab troupeId={t.id} />} />}
         {can.running && <Route path="play" element={<PlayTab troupeId={t.id} />} />}
         {can.running && <Route path="xp" element={<XpAwardsTab troupeId={t.id} />} />}
+        {can.running && <Route path="games/:gameId" element={<GameNightPage troupeId={t.id} />} />}
         {can.running && <Route path="npcs" element={<NpcsTab troupeId={t.id} />} />}
         {can.running && <Route path="npcs/:characterId" element={<StockNpcBuilder troupeId={t.id} />} />}
         {can.running && <Route path="titles" element={<TitlesTab troupeId={t.id} />} />}

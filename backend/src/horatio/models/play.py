@@ -37,6 +37,10 @@ class PlayGame(Record):
     half_blood: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Beast traits the game starts with: a diablerie added them (horatio.diablerie).
     beast_start: Mapped[int] = mapped_column(default=0, server_default="0")
+    # Willpower the game starts with, when its player said at check-in that the
+    # character had no full day's rest (horatio.checkin): where the game before left
+    # it. None for full, as after a day's rest (MET: VtM core, p. 288).
+    willpower_start: Mapped[int | None]
     # The character's sect status at this game (horatio.play_status): its source of
     # abiding status, a title's status chosen for it, the titles whose holders are
     # away, and the titles it held as the game began.

@@ -11,8 +11,10 @@ Willpower) shows at once.
 A reset ends the game, keeping it and its log, and starts the next one, in
 which every tracker is back where the sheet starts it: blood full (or the
 home troupe's starting amount, a house rule, or half if the character fed
-short last downtime: horatio.feeding), Willpower at its rating, health
-clear, Morality at the sheet's, no Beast traits, and each limited use back.
+short last downtime: horatio.feeding), Willpower at its rating (or where the
+last game left it, if its player said at check-in that the character had no
+full day's rest: horatio.checkin), health clear, Morality at the sheet's, no
+Beast traits, and each limited use back.
 Derangement traits are the exception: nothing in the rules clears them between
 games, so each game starts them where the last one left them. So are temporary
 derangements, which the player adds and removes themselves.
@@ -215,6 +217,9 @@ class Limits:
     half_blood: bool = False
     # Beast traits the game starts with: a diablerie added them (horatio.diablerie).
     beast_start: int = 0
+    # Willpower the game starts with, if not full: the character had no full day's
+    # rest before it (horatio.checkin).
+    willpower_start: int | None = None
     # Names for counters since removed, so old logs still read.
     removed: Mapping[str, str] = field(default_factory=dict[str, str])
     # Derangement traits where the game starts (where the last one ended), and
@@ -341,6 +346,13 @@ class Limits:
     def least(self, tracker: str) -> int:
         return self.derangements_least if tracker == "derangements" else 0
 
+    def starting_willpower(self) -> int:
+        """Full after a day's rest (MET: VtM core, p. 288), else where the last game
+        left it, never above the sheet's."""
+        if self.willpower_start is None:
+            return self.willpower
+        return max(0, min(self.willpower_start, self.willpower))
+
     def human_start(self) -> int:
         """A ghoul's human Blood as a game starts: the rest of its pool."""
         return self.vitae.pool - self.starting_blood if self.vitae else 0
@@ -349,7 +361,7 @@ class Limits:
         return {
             "blood": self.starting_blood,
             "human": self.human_start(),
-            "willpower": self.willpower,
+            "willpower": self.starting_willpower(),
             "health": [],
             "morality": self.morality,
             "beast": self.beast_start,
@@ -736,6 +748,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         half_blood=half,
         beast_start=min(beast, BEAST_TRAITS),
         willpower=ratings.get(("willpower_sources", "Willpower"), 0),
+        willpower_start=game.willpower_start if game is not None else None,
         health=tuple((level, ratings.get(("health_levels", level), 0)) for level in HEALTH_LEVELS),
         morality=(path.trait.rating or 0) if path and panels.morality else 0,
         morality_name=path.definition.name if path and panels.morality else None,

@@ -25,7 +25,7 @@ from horatio.api.pictures import CropIn, as_fractions, uploads
 from horatio.api.players import web_address
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession, MaybeUser
-from horatio.models import ScheduledGame, Troupe, TroupeStaff, User
+from horatio.models import GameAttendance, ScheduledGame, Troupe, TroupeStaff, User
 from horatio.permissions import TroupeAction, allows, require_troupe_action, troupe_role
 
 router = APIRouter(prefix="/troupes/{troupe_id}", tags=["troupe profiles"])
@@ -350,6 +350,12 @@ def remove_game(troupe_id: uuid.UUID, game_id: uuid.UUID, db: DbSession, user: C
     game = db.get(ScheduledGame, game_id)
     if game is None or game.troupe_id != troupe.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such game.")
+    # Who came is the record (horatio.checkin), so a game someone came to stays.
+    if db.scalar(select(GameAttendance.id).where(GameAttendance.game_id == game.id).limit(1)):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Characters have checked in to this game, so it stays as the record of who came.",
+        )
     db.delete(game)
     record(db, user, "troupe.game_removed", troupe_id=troupe.id)
     db.commit()

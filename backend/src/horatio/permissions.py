@@ -66,6 +66,7 @@ class TroupeAction(StrEnum):
     MANAGE_LOCATIONS = "manage_locations"
     MANAGE_QUESTS = "manage_quests"
     VIEW_RSVPS = "view_rsvps"
+    RUN_CHECKIN = "run_checkin"
 
 
 _LEAD = {Role.LEAD_STORYTELLER}
@@ -127,6 +128,10 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     # Who says they are coming to each scheduled game, by name: every member of staff
     # plans for a game. Players see only how many (horatio.api.games).
     TroupeAction.VIEW_RSVPS: frozenset(_ALL_STAFF),
+    # Opening a game's check-in at the door, checking characters in and out by hand,
+    # and seeing who came. Checking in starts a character's night on its Play View,
+    # as resetting games does (horatio.checkin).
+    TroupeAction.RUN_CHECKIN: frozenset(_RUNNING),
 }
 
 
