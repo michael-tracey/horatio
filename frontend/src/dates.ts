@@ -109,6 +109,16 @@ function offset(at: Date, zone: string): number {
 /** Dates and times written with these settings. */
 export function datesFor(settings: DateSettings) {
   const zone = settings.time_zone ?? deviceZone();
+  const fromInput = (value: string) => {
+    const [day = "", clock = ""] = value.split("T");
+    const d = parseDay(day);
+    const [hour = 0, minute = 0] = clock.split(":").map(Number);
+    const wall = Date.UTC(d.year, d.month - 1, d.day, hour, minute);
+    // The offset at the wall time, then again at the moment that gives, which
+    // settles it across a change to or from summer time.
+    const first = wall - offset(new Date(wall), zone);
+    return new Date(wall - offset(new Date(first), zone));
+  };
   return {
     /** The zone times are shown in, such as "America/New_York". */
     zone,
@@ -180,15 +190,22 @@ export function datesFor(settings: DateSettings) {
       return `${p.year}-${pad(p.month)}-${pad(p.day)}T${pad(p.hour)}:${pad(p.minute)}`;
     },
     /** A datetime-local input's value, read on this zone's clock, as the moment it means. */
-    fromInput: (value: string) => {
-      const [day = "", clock = ""] = value.split("T");
-      const d = parseDay(day);
-      const [hour = 0, minute = 0] = clock.split(":").map(Number);
-      const wall = Date.UTC(d.year, d.month - 1, d.day, hour, minute);
-      // The offset at the wall time, then again at the moment that gives, which
-      // settles it across a change to or from summer time.
-      const first = wall - offset(new Date(wall), zone);
-      return new Date(wall - offset(new Date(first), zone));
+    fromInput,
+    /**
+     * What a date or datetime-local input holds, written as everywhere else in
+     * Horatio, for under the input (the browser draws the input itself, in its
+     * own locale's order): "Tue 20 Oct 2026", or "Tue 20 Oct 2026, 9:30 pm EDT".
+     * Empty while the input is.
+     */
+    inputText: (value: string) => {
+      if (!value) return "";
+      if (!value.includes("T")) {
+        const d = parseDay(value);
+        return `${weekday(d)} ${dayText(d, settings)}`;
+      }
+      const when = fromInput(value);
+      const p = partsIn(when, zone);
+      return `${weekday(p)} ${dayText(p, settings)}, ${timeText(p, settings)} ${zoneName(when, zone)}`;
     },
   };
 }

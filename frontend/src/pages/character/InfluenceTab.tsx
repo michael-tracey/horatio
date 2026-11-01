@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, HistoryEntryOut, InfluenceStandingOut } from "../../api/types";
+import { DateInput } from "../../components/DateInput";
 import { EmptyState, FilterBar } from "../../components/EmptyState";
 import { InfoButton } from "../../components/InfoButton";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
@@ -86,10 +87,10 @@ export function InfluenceTab({ character, mine }: { character: CharacterOut; min
             </Select>
           </Field>
           <Field label="From">
-            <Input type="date" value={filters.from} onChange={(e) => set({ from: e.target.value })} />
+            <DateInput value={filters.from} onChange={(e) => set({ from: e.target.value })} />
           </Field>
           <Field label="To">
-            <Input type="date" value={filters.to} onChange={(e) => set({ to: e.target.value })} />
+            <DateInput value={filters.to} onChange={(e) => set({ to: e.target.value })} />
           </Field>
           <label className="flex items-center gap-2 self-end pb-2 text-sm" title="What a Gossip or Word on the Street could still turn up">
             <input type="checkbox" checked={filters.findable} onChange={(e) => set({ findable: e.target.checked })} />

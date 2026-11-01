@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, Route, Routes, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { InfluenceChoicesOut, InfluenceEntryIn, InfluenceEntryOut } from "../../api/types";
+import { DateInput } from "../../components/DateInput";
 import { EmptyState, FilterBar } from "../../components/EmptyState";
 import { InfoButton } from "../../components/InfoButton";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, PageTabs, Select } from "../../components/ui";
@@ -145,10 +146,10 @@ function Log({ troupeId }: { troupeId: string }) {
               </Select>
             </Field>
             <Field label="From">
-              <Input type="date" value={filters.from} onChange={(e) => set({ from: e.target.value })} />
+              <DateInput value={filters.from} onChange={(e) => set({ from: e.target.value })} />
             </Field>
             <Field label="To">
-              <Input type="date" value={filters.to} onChange={(e) => set({ to: e.target.value })} />
+              <DateInput value={filters.to} onChange={(e) => set({ to: e.target.value })} />
             </Field>
           </div>
           <label className="mt-3 flex items-center gap-2 text-sm">
@@ -437,7 +438,7 @@ export function EntryForm({
           onChange={(change) => setTarget({ ...target, ...change })}
         />
         <Field label={`When (${dates.zoneName()})`}>
-          <Input type="datetime-local" value={form.happened_at} onChange={(e) => set({ happened_at: e.target.value })} />
+          <DateInput type="datetime-local" value={form.happened_at} onChange={(e) => set({ happened_at: e.target.value })} />
         </Field>
         {(choices.cycles.length > 0 || choices.games.length > 0) && (
           <Field label="Or date it by">

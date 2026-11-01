@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, DiablerieEffectsOut, DiablerieEffectsPlanOut, DiablerieListOut } from "../../api/types";
+import { DateInput } from "../../components/DateInput";
 import { Button, ErrorText, Field, Input, Notice, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
@@ -231,7 +232,7 @@ function RecordForm({ character, onClose }: { character: CharacterOut; onClose: 
       </p>
       <div className="flex flex-wrap gap-3">
         <Field label="Date" hint="The night it happened.">
-          <Input type="date" required value={when} onChange={(e) => setWhen(e.target.value)} className="w-44" />
+          <DateInput required value={when} onChange={(e) => setWhen(e.target.value)} className="w-44" />
         </Field>
         <div className="min-w-48 flex-1">
           <Field label="Who was diablerized" hint="Optional. Only staff see it.">
@@ -290,7 +291,7 @@ function AskForm({ character, onClose }: { character: CharacterOut; onClose: () 
         the rest follows p. 306.
       </p>
       <Field label="Date" hint="The night it happened.">
-        <Input type="date" required value={when} onChange={(e) => setWhen(e.target.value)} className="w-44" />
+        <DateInput required value={when} onChange={(e) => setWhen(e.target.value)} className="w-44" />
       </Field>
       <Field label="Note">
         <Textarea rows={2} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} />

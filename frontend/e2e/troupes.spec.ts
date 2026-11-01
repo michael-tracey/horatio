@@ -813,6 +813,9 @@ test("a troupe's profile: storytellers fill it in, and people not signed in see 
   // A game: its end starts five hours on.
   await l.getByLabel("Game starts").fill("2030-01-12T19:00");
   await expect(l.getByLabel("Game ends")).toHaveValue("2030-01-13T00:00");
+  // The browser draws each input in its own order; under it, the date the app's way.
+  await expect(l.getByText("Sat 12 Jan 2030, 7:00 pm EST")).toBeVisible();
+  await expect(l.getByText("Sun 13 Jan 2030, 12:00 am EST")).toBeVisible();
   await l.getByRole("button", { name: "Add game" }).click();
   await expect(l.getByRole("list", { name: "Upcoming games to edit" }).getByText("Sat 12 Jan 2030, 7 pm to Sun 13 Jan 2030, 12 am EST")).toBeVisible();
   await l.getByLabel("City or region").fill("Leeds");

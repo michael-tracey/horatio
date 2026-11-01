@@ -2,6 +2,7 @@ import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-qu
 import { useDeferredValue, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
+import { DateInput } from "../../components/DateInput";
 import { PersonPicker } from "../../components/PersonPicker";
 import { Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useDates } from "../../dates";
@@ -106,10 +107,10 @@ function SearchForm({ applied, onSearch }: { applied: AuditFilters; onSearch: (f
             </Select>
           </Field>
           <Field label="From">
-            <Input type="date" value={draft.from} max={draft.to || undefined} onChange={(e) => set({ from: e.target.value })} />
+            <DateInput value={draft.from} max={draft.to || undefined} onChange={(e) => set({ from: e.target.value })} />
           </Field>
           <Field label="To">
-            <Input type="date" value={draft.to} min={draft.from || undefined} onChange={(e) => set({ to: e.target.value })} />
+            <DateInput value={draft.to} min={draft.from || undefined} onChange={(e) => set({ to: e.target.value })} />
           </Field>
         </div>
         <Field label="Words" hint="Each word somewhere in what the change says, such as a name, a trait or a reason.">

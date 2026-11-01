@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { SceneOut, SceneSummary } from "../../api/types";
+import { DateInput } from "../../components/DateInput";
 import { Button, Card, Empty, ErrorText, Field, Input, Loading, Notice } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useMe } from "../../hooks";
@@ -249,7 +250,7 @@ function ClearOldScenes({ troupeId, mine }: { troupeId: string; mine: boolean })
       <div className="flex flex-wrap items-end gap-2">
         <div className="w-44">
           <Field label="Not used since">
-            <Input type="date" value={day} onChange={(e) => setDay(e.target.value)} />
+            <DateInput value={day} onChange={(e) => setDay(e.target.value)} />
           </Field>
         </div>
         {asking ? (

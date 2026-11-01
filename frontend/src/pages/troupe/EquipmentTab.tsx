@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { EquipmentItemOut, EquipmentOut, EquipmentHolderOut } from "../../api/types";
+import { DateInput } from "../../components/DateInput";
 import { EmptyState, showFilters } from "../../components/EmptyState";
 import { InfoButton } from "../../components/InfoButton";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, Select } from "../../components/ui";
@@ -224,12 +225,12 @@ function SearchForm({
           </div>
           <div className={narrow}>
             <Field label="Given from">
-              <Input type="date" value={search.from} onChange={(e) => update({ from: e.target.value })} />
+              <DateInput value={search.from} onChange={(e) => update({ from: e.target.value })} />
             </Field>
           </div>
           <div className={narrow}>
             <Field label="Given until">
-              <Input type="date" value={search.to} onChange={(e) => update({ to: e.target.value })} />
+              <DateInput value={search.to} onChange={(e) => update({ to: e.target.value })} />
             </Field>
           </div>
           <div className={narrow}>
