@@ -14,8 +14,8 @@ import { RemoveNegative } from "./RemoveNegative";
 
 type Show = "open" | "new" | "mine" | "any_narrator" | "to_send" | "answered";
 const SHOWS: { value: Show; label: string }[] = [
-  { value: "open", label: "Open" },
-  { value: "new", label: "New" },
+  { value: "open", label: "To answer" },
+  { value: "new", label: "Unassigned" },
   { value: "mine", label: "Assigned to me" },
   { value: "any_narrator", label: "Any narrator" },
   { value: "to_send", label: "Waiting to send" },
@@ -28,16 +28,25 @@ const SHOWS: { value: Show; label: string }[] = [
  */
 export function QuestsTab({ troupeId, running }: { troupeId: string; running: boolean }) {
   const base = `/troupes/${troupeId}/quests`;
+  const navigate = useNavigate();
   return (
     <>
-      <PageTabs
-        label="Quests"
-        tabs={[
-          { to: base, label: "Requests", end: true },
-          { to: `${base}/all`, label: "Quests" },
-          ...(running ? [{ to: `${base}/new`, label: "New quest" }] : []),
-        ]}
-      />
+      {/* New quest is something to do, so a button beside the parts of the page, not one of them. */}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <PageTabs
+          label="Quests"
+          className="mb-0"
+          tabs={[
+            { to: base, label: "Requests", end: true },
+            { to: `${base}/all`, label: "Quests" },
+          ]}
+        />
+        {running && (
+          <Button variant="secondary" onClick={() => navigate(`${base}/new`)}>
+            New quest
+          </Button>
+        )}
+      </div>
       <Routes>
         <Route index element={<Requests troupeId={troupeId} running={running} />} />
         <Route path="all" element={<QuestList troupeId={troupeId} />} />

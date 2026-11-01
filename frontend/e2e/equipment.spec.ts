@@ -62,7 +62,7 @@ test("a troupe gives equipment: a dagger from a template, a rifle by hand, refus
   // The lead gives Agnes the book's Silver Dagger from the troupe's Equipment tab.
   const l = lead.page;
   await l.goto(`/troupes/${troupe.id}`);
-  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "World", exact: true }).click();
   await l.getByRole("link", { name: "Equipment", exact: true }).click();
   await l.getByRole("button", { name: "Give equipment" }).click();
   let form = l.getByRole("form", { name: "Give equipment" });
@@ -435,7 +435,7 @@ test("players give equipment to each other in their home troupe and discard it, 
   // The troupe's Equipment tab says a discarded item isn't shown; the lead shows it, with the note and its history, and restores it.
   const l = lead.page;
   await l.goto(`/troupes/${troupe.id}`);
-  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "World", exact: true }).click();
   await l.getByRole("link", { name: "Equipment", exact: true }).click();
   const found = l.getByRole("list", { name: "Equipment", exact: true });
   await expect(found.getByRole("listitem", { name: "Silver Dagger, held by Corwin" })).toHaveCount(0);
@@ -528,7 +528,7 @@ test("a storyteller gives the Book of Nod from a character's page, its player pa
 
   // The troupe's Equipment tab finds it by its kind, and its history shows both.
   await l.goto(`/troupes/${troupe.id}`);
-  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "World", exact: true }).click();
   await l.getByRole("link", { name: "Equipment", exact: true }).click();
   await l.getByLabel("Kind", { exact: true }).selectOption({ label: "Vampiric texts" });
   const held = l.getByRole("list", { name: "Equipment", exact: true });

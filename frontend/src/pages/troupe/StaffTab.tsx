@@ -6,7 +6,7 @@ import type { Role, TroupeOut } from "../../api/types";
 import { AtHandle, PersonPicker } from "../../components/PersonPicker";
 import { Button, Card, ErrorText, Field, Loading, Select } from "../../components/ui";
 import { useAction, useMe } from "../../hooks";
-import { roleLabel } from "./roles";
+import { ROLE_LINES, roleLabel } from "./roles";
 
 const ASSIGNABLE: Role[] = ["storyteller", "assistant_storyteller", "narrator"];
 
@@ -80,7 +80,7 @@ export function StaffTab({ troupe, canManage }: { troupe: TroupeOut; canManage: 
             <Field label="Person" hint="Pick them from the list, or type a name or handle to find them. They need an account already.">
               <PersonPicker required troupeId={troupe.id} value={handle} onChange={setHandle} />
             </Field>
-            <Field label="Role">
+            <Field label="Role" hint={ROLE_LINES[role]}>
               <Select value={role} onChange={(e) => setRole(e.target.value as Role)}>
                 {ASSIGNABLE.map((r) => (
                   <option key={r} value={r}>
@@ -91,11 +91,21 @@ export function StaffTab({ troupe, canManage }: { troupe: TroupeOut; canManage: 
             </Field>
             <ErrorText error={assign.error} />
             <Button type="submit" disabled={assign.isPending}>
-              Save
+              Add to staff
             </Button>
           </form>
         </Card>
       )}
+      <Card title="Roles" className="md:col-span-2">
+        <dl className="grid gap-x-4 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
+          {(["lead_storyteller", ...ASSIGNABLE] as Role[]).map((r) => (
+            <div key={r} className="contents">
+              <dt className="text-parchment">{roleLabel(r)}</dt>
+              <dd className="mb-1 text-mist sm:mb-0">{ROLE_LINES[r]}</dd>
+            </div>
+          ))}
+        </dl>
+      </Card>
       {me.data?.is_custodian && <AppointLead troupe={troupe} />}
     </div>
   );

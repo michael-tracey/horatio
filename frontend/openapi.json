@@ -54819,7 +54819,7 @@
     },
     "/api/troupes/{troupe_id}/status-rules": {
       "get": {
-        "description": "Every status of the troupe's sects, and the general status, by sect: its type,\nwhat it does, and where it comes from here.",
+        "description": "Every status of the troupe's sects, and the general status, by sect: its type,\nwhat it does, and where it comes from here. Anyone signed in may read it, as\nthey may the troupe's house rules: it is the book's rules and the troupe's titles,\nnever who holds them.",
         "operationId": "status_rules_api_troupes__troupe_id__status_rules_get",
         "parameters": [
           {
