@@ -68,6 +68,10 @@ class TroupeOut(BaseModel):
     # Horatio; and the optional rule Blood Resonance, played while it is tracked.
     feeding: Literal["off", "book"] = "book"
     feeding_resonance: bool = False
+    # Feeding territories, and the Rack (which needs Blood Resonance), played while
+    # feeding is tracked.
+    feeding_territories: bool = False
+    feeding_rack: bool = False
     # Status on sheets (horatio.sect_status): "players" keep their own fleeting and
     # negative status, naming the patron, or only "staff" add and remove it.
     status_by: str
@@ -292,6 +296,8 @@ def one_out(
         golconda_enlightened=troupe.golconda_enlightened,
         feeding=troupe.feeding,  # type: ignore[arg-type]  # checked by the database
         feeding_resonance=troupe.feeding_resonance,
+        feeding_territories=troupe.feeding_territories,
+        feeding_rack=troupe.feeding_rack,
         status_by=troupe.status_by,
         titles_by=troupe.titles_by,
         badge_titles=troupe.badge_titles,

@@ -4,6 +4,7 @@ import { api, ApiError, unwrap } from "../../api/client";
 import type { AnswerIn, FeedingIn, InfluenceStandingOut, MyDowntime, QuestChoiceOut, QuestionOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
+import { feedingActionsSpent } from "../../feeding";
 import { useAction } from "../../hooks";
 import { chosenAction, offered, reachable, reachNote } from "../../influence";
 import { DISCOVERY_BLOCK, LOOKUP_LEVEL, LOOKUP_NOTE } from "../../influenceLookups";
@@ -112,8 +113,8 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
   if (!d) return <Empty>There is no open downtime for this character. Downtimes come from its home troupe.</Empty>;
 
   const { draft, feeding } = form;
-  // Feeding actions come out of the general actions.
-  const fed = d.feeding && feeding ? (feeding.actions ?? 0) : 0;
+  // Feeding actions and patrols come out of the general actions.
+  const fed = d.feeding && feeding ? feedingActionsSpent(feeding, d.feeding.rack ?? false, (d.feeding.territories ?? []).length > 0) : 0;
   const used = (kind: string) =>
     d.questions.filter((q) => q.action_kind === kind).reduce((n, q) => n + (draft[q.id]?.length ?? 0), 0) + (kind === "general" ? fed : 0);
   const setAnswers = (question: string, answers: Answers) => change({ type: "answers", question, answers });
@@ -156,6 +157,8 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
             value={feeding}
             onChange={(value) => change({ type: "feeding", feeding: value })}
             actionsLeft={(d.allowance.general ?? 0) - used("general")}
+            characterId={characterId}
+            onDowntime={(saved) => client.setQueryData(key, saved)}
           />
         )}
         {d.questions.map((q) => {

@@ -3,7 +3,7 @@ import type { FeedingIn, MyDowntime, QuestionOut } from "../../api/types";
 import { EMPTY_FORM, type Form, formReducer, toAnswers, unsaved } from "./downtimeForm";
 
 const question = (id: string, kind = "action"): QuestionOut => ({ id, kind, action_kind: kind === "action" ? "general" : null }) as QuestionOut;
-const feeding = (where: string): FeedingIn => ({ actions: 0, where, gifts: [], herd_own: 0, herd_saved: 0, herd_other: 0, herd_other_text: "", resonance: "" });
+const feeding = (where: string): FeedingIn => ({ actions: 0, where, gifts: [], herd_own: 0, herd_saved: 0, herd_other: 0, herd_other_text: "", resonance: "", territory: "", patrols: [] });
 
 /** The downtime as the server sends it, with these answers by question. */
 function server(answers: Record<string, string[]>, where = ""): MyDowntime {

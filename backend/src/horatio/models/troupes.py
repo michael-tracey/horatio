@@ -77,6 +77,11 @@ class Troupe(Imported, Record):
     # tracked: a character hunts for blood of one humor, and staff answer with the
     # Resonance it fed on and any Dyscrasia (horatio.resonance).
     feeding_resonance: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # The optional rules Feeding Territories (Vol. 2, pp. 304-307) and Advanced
+    # Feeding, the Rack (pp. 298-303), while feeding is tracked; the Rack only with
+    # Blood Resonance, as its vessels each carry one (horatio.territories, horatio.rack).
+    feeding_territories: Mapped[bool] = mapped_column(default=False, server_default="false")
+    feeding_rack: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Status on sheets (horatio.sect_status): who adds and removes fleeting and
     # negative status on its characters' sheets: "players", each on their own, naming
     # the patron; or "staff", its running staff only. Running staff always can.

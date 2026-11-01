@@ -18,8 +18,9 @@ import random
 import re
 import uuid
 from collections.abc import Collection, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
+from itertools import combinations
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -369,13 +370,8 @@ HEADING = "**Downtime results for "
 UPDATED_HEADING = "**Updated downtime results for "
 
 
-# Whether the results show feeding, and with it Blood Resonance.
-FeedingShown = tuple[bool, bool]
-
-
-def feeding_shown(db: Session, cycle: DowntimeCycle) -> FeedingShown:
-    troupe = db.get_one(Troupe, cycle.troupe_id)
-    return feeding.tracked(troupe), feeding.resonance_on(troupe)
+def feeding_shown(db: Session, cycle: DowntimeCycle) -> feeding.Shown:
+    return feeding.shown(db.get_one(Troupe, cycle.troupe_id))
 
 
 def compose(
@@ -384,7 +380,7 @@ def compose(
     character: Character,
     submission: Submission,
     *,
-    shown: FeedingShown | None = None,
+    shown: feeding.Shown | None = None,
 ) -> str:
     """The message a player receives: the answer to their feeding, if the troupe
     tracks it, then each answered question, what they did, and the result. `shown`
@@ -397,8 +393,7 @@ def compose(
         .order_by(Question.position, Answer.slot)
     )
     parts = [f"{HEADING}{character.name} ({cycle.name})**"]
-    tracked, with_resonance = shown or feeding_shown(db, cycle)
-    fed = feeding.compose(db, submission, shown=tracked, with_resonance=with_resonance)
+    fed = feeding.compose(db, submission, shown or feeding_shown(db, cycle))
     if fed is not None:
         parts.append(fed)
     for question, answer, response in rows:
@@ -411,17 +406,29 @@ def compose(
 def same_results(
     db: Session, cycle: DowntimeCycle, character: Character, submission: Submission, message: str
 ) -> bool:
-    """Whether `message` is the submission's results as they stand. Feeding, or Blood
-    Resonance, switched off since hides what the player already has, which is no
+    """Whether `message` is the submission's results as they stand. Feeding, or an
+    optional rule, switched off since hides what the player already has, which is no
     news: results delivered with it still count as the same."""
     now = feeding_shown(db, cycle)
-    if not now[0]:
-        ways = [now, (True, False), (True, True)]
-    elif not now[1]:
-        ways = [now, (True, True)]
-    else:
-        ways = [now]
-    return any(compose(db, cycle, character, submission, shown=way) == message for way in ways)
+    return any(
+        compose(db, cycle, character, submission, shown=way) == message for way in shown_more(now)
+    )
+
+
+def shown_more(now: feeding.Shown) -> list[feeding.Shown]:
+    """`now`, then each way of showing more of feeding than it does, fewest changes
+    first: what results delivered before something was switched off may have shown."""
+    flags = ("tracked", "resonance", "territories", "rack")
+    off = [f for f in flags if not getattr(now, f)]
+    ways: list[feeding.Shown] = []
+    for raised in sorted((c for n in range(len(off) + 1) for c in combinations(off, n)), key=len):
+        way = replace(now, **dict.fromkeys(raised, True))
+        if way.rack and not way.resonance:
+            continue
+        if not way.tracked and way != now:
+            continue
+        ways.append(way)
+    return ways
 
 
 def as_update(message: str) -> str:
@@ -556,8 +563,7 @@ def deliver_cycle(
             message = compose(db, cycle, character, submission)
             revision = last.revision + 1 if last is not None else 1
             # A feeding answer new to the player sets their Blood at the next game.
-            shown, with_resonance = feeding_shown(db, cycle)
-            fed = feeding.compose(db, submission, shown=shown, with_resonance=with_resonance)
+            fed = feeding.compose(db, submission, feeding_shown(db, cycle))
             if fed is not None and (last is None or fed not in last.message):
                 feeding.mark_half_blood(db, character, submission)
             db.add(

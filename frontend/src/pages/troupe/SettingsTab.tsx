@@ -8,6 +8,7 @@ import { useAction } from "../../hooks";
 import { BadgeSetting } from "./BadgeSetting";
 import { DiablerieFlaws } from "./DiablerieFlaws";
 import { FeedingSetting } from "./FeedingSetting";
+import { FeedingTerritories } from "./FeedingTerritories";
 import { GolcondaSetting } from "./GolcondaSetting";
 import { ExperienceDefaults, StartingBlood } from "./StartingSection";
 import { StatusSetting, TitlesSetting } from "./StatusSetting";
@@ -57,6 +58,9 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
       </Group>
       <Group title="Feeding">
         <FeedingSetting troupeId={troupe.id} canEdit={canEdit} />
+        {troupe.feeding !== "off" && troupe.feeding_territories && (
+          <FeedingTerritories troupeId={troupe.id} canManage={!troupe.archived && (canEdit || troupe.my_role === "assistant_storyteller")} />
+        )}
       </Group>
     </div>
   );
