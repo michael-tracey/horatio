@@ -557,11 +557,12 @@ test("a new player goes from a troupe's page to building a character for it, the
   expect(made.status(), await made.text()).toBe(201);
   const troupeId: string = (await made.json()).id;
 
-  // A new player is welcomed with the steps to a first game; staff, with no characters either, are not.
+  // A new player is welcomed with the steps to a first game; staff, with no characters either, land on their troupes.
   const p = player.page;
   await expect(p.getByRole("heading", { name: "Welcome to Horatio" })).toBeVisible();
   await lead.page.reload();
-  await expect(lead.page.getByText("No characters yet.")).toBeVisible();
+  await expect(lead.page.getByRole("heading", { name: "Your troupes" })).toBeVisible();
+  await expect(lead.page.getByText("No characters of your own yet.", { exact: false })).toBeVisible();
   await expect(lead.page.getByRole("heading", { name: "Welcome to Horatio" })).toHaveCount(0);
 
   // The troupe's page says how to play there: one click to a character built for it.
