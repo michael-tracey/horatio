@@ -19,9 +19,9 @@ from horatio.permissions import TroupeAction, is_staff_for, visible_character
 router = APIRouter(tags=["badges"])
 
 ROLE_NAMES = {
-    "lead_storyteller": "Lead Storyteller",
+    "lead_storyteller": "Lead storyteller",
     "storyteller": "Storyteller",
-    "assistant_storyteller": "Assistant Storyteller",
+    "assistant_storyteller": "Assistant storyteller",
     "narrator": "Narrator",
 }
 

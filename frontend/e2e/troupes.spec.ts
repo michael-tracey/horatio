@@ -36,7 +36,7 @@ test("a troupe changes what new characters start with and their downtime actions
   await l.getByRole("button", { name: "Change actions for Everyone" }).click();
   await l.getByLabel("Downtime actions each cycle").fill("4");
   await l.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(l.getByText("replaced here")).toBeVisible();
+  await expect(l.getByText("Replaced here")).toBeVisible();
   await expect(l.getByText("4 downtime actions")).toBeVisible();
   await l.screenshot(shots("actions"));
 
@@ -417,7 +417,7 @@ test("someone asks for a troupe of their own, and the custodian approves it", as
   await a.reload();
   await expect(mine.getByText("Approved", { exact: true })).toBeVisible();
   await a.locator("main").getByRole("link", { name: troupeName }).first().click();
-  await expect(a.getByText("Lead Storyteller").first()).toBeVisible();
+  await expect(a.getByText("Lead storyteller").first()).toBeVisible();
 });
 
 test("archiving a troupe lets its characters go and ends its cycle, and the custodian reopens it", async ({ browser }) => {
@@ -593,12 +593,12 @@ test("a lead adds staff by picking from a list of people, the troupe's own playe
   // So is the lead.
   await lead.page.getByLabel("Person").fill(lead.handle);
   await expect(people.getByRole("option", { name: `@${lead.handle}` })).toHaveAttribute("aria-disabled", "true");
-  await expect(people.getByRole("option", { name: `@${lead.handle}` })).toContainText("Lead Storyteller");
+  await expect(people.getByRole("option", { name: `@${lead.handle}` })).toContainText("Lead storyteller");
   await lead.page.keyboard.press("Escape");
 
   // Their role is changed in the staff list.
   await lead.page.getByLabel("Role for staff-player").selectOption("assistant_storyteller");
-  await expect(lead.page.getByText(`@${player.handle} · Assistant Storyteller`)).toBeVisible();
+  await expect(lead.page.getByText(`@${player.handle} · Assistant storyteller`)).toBeVisible();
 });
 
 test("a new player goes from a troupe's page to building a character for it, the troupe already chosen", async ({ browser }) => {
@@ -726,7 +726,7 @@ test("the characters list and each Troupes tab say where a character stands: in 
   await expect(row("Settled Seraphine")).toContainText(`Home: ${hearths}`);
   await expect(row("Settled Seraphine").getByText(/^Downtime due \w{3} /)).toBeVisible();
   await expect(row("Lone Lucan")).toContainText("No home troupe yet");
-  await expect(p.getByText("active", { exact: true })).toHaveCount(0);
+  await expect(p.getByText("Active", { exact: true })).toHaveCount(0);
   await p.screenshot(shots("characters-standing"));
 
   // Submitted and answered, the results are new until the player opens them.
@@ -1122,7 +1122,7 @@ test("Waiting on you shows the open cycle, a quest request and a backstory waiti
   const characterTabs = l.getByRole("navigation", { name: "Characters", exact: true });
   await expect(characterTabs.getByRole("link", { name: /^Characters/ }).getByLabel("1 waiting")).toBeVisible();
   // The roster marks the backstory, and the mark opens it.
-  await l.getByRole("link", { name: "backstory to read" }).click();
+  await l.getByRole("link", { name: "Backstory to read" }).click();
   await expect(l).toHaveURL(new RegExp(`/characters/${id}/backstory`));
   await expect(l.getByText("Embraced in a Budapest opera house, 1911.")).toBeVisible();
   // The line itself goes straight to the backstory too, and the quest request's to Quests.

@@ -17,6 +17,7 @@ import { askedLine } from "./approvals";
 import { generationText } from "../../generation";
 
 type State = "pending" | "approved" | "declined" | "withdrawn";
+const STATE_NAMES: Record<State, string> = { pending: "Pending", approved: "Approved", declined: "Declined", withdrawn: "Withdrawn" };
 type Kind = "home_troupe_change" | "discipline" | "review" | "exception" | "diablerie" | "merit_flaw";
 
 const KINDS: Record<Kind, string> = {
@@ -41,8 +42,8 @@ export function ApprovalsTab({ troupeId }: { troupeId: string }) {
     <>
       <div className="mb-4 flex flex-wrap gap-2">
         {(["pending", "approved", "declined"] as State[]).map((s) => (
-          <Button key={s} variant={s === state ? "secondary" : "ghost"} onClick={() => setState(s)} className="capitalize">
-            {s}
+          <Button key={s} variant={s === state ? "secondary" : "ghost"} onClick={() => setState(s)}>
+            {STATE_NAMES[s]}
           </Button>
         ))}
         <Select aria-label="Kind" value={kind} onChange={(e) => setKind(e.target.value as Kind | "")} className="w-auto">
@@ -127,22 +128,22 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
       actions={
         <Badge tone={joining || ex ? "gold" : "mist"}>
           {joining
-            ? "asking to make this home"
+            ? "Asking to make this home"
             : approval.kind === "discipline"
-              ? "discipline"
+              ? "Discipline"
               : approval.kind === "review"
-                ? "rule review"
+                ? "Rule review"
                 : approval.kind === "exception"
                   ? ex?.free
-                    ? "exception, free"
-                    : "exception"
+                    ? "Exception, free"
+                    : "Exception"
                   : approval.kind === "diablerie"
-                    ? "diablerie"
+                    ? "Diablerie"
                     : approval.kind === "merit_flaw"
                       ? merit?.category === "flaws"
-                        ? "flaw"
-                        : "merit"
-                      : "sheet changes"}
+                        ? "Flaw"
+                        : "Merit"
+                      : "Sheet changes"}
         </Badge>
       }
     >

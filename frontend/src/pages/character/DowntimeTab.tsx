@@ -205,7 +205,7 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
             d.completion_xp > 0 && <p className="mt-2 text-sm">Submitting it earns {d.completion_xp} XP.</p>
           )}
           <div className="mt-3">
-            {d.status === "submitted" ? <Badge tone="gold">submitted{d.late ? " (late)" : ""}</Badge> : <Badge>draft</Badge>}
+            {d.status === "submitted" ? <Badge tone="gold">Submitted{d.late ? " (late)" : ""}</Badge> : <Badge>Draft</Badge>}
           </div>
         </Card>
         <Card title="Your actions">

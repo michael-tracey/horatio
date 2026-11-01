@@ -167,8 +167,8 @@ export function CartPanel({
                         {!priced && !prices.error ? <span className="text-mist"> · …</span> : cost && <span className="text-mist"> · {cost}</span>}
                       </span>
                       <span className="flex shrink-0 items-center gap-2">
-                        {exception && <Badge tone="gold">exception</Badge>}
-                        {priced?.needs_approval && <Badge tone="gold">needs approval</Badge>}
+                        {exception && <Badge tone="gold">Exception</Badge>}
+                        {priced?.needs_approval && <Badge tone="gold">Needs approval</Badge>}
                         <StepButton
                           label={`Take ${describe(line)} out of the cart`}
                           onClick={() => {

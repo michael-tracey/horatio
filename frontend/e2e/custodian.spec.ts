@@ -37,7 +37,7 @@ test("a player fills in their profile, and the custodian resets their password",
   const cancelled = await row.getByLabel("Reset link", { exact: true }).inputValue();
   expect(cancelled).toContain("/reset-password/");
   await expect(row.getByText(/^people-player has a reset link, unused, until /)).toBeVisible();
-  await expect(row.getByText("reset link out")).toBeVisible();
+  await expect(row.getByText("Reset link out")).toBeVisible();
   const resets = c.locator("section", { has: c.getByRole("heading", { name: "Password resets" }) });
   await expect(resets.getByRole("button", { name: "Cancel people-player's reset link" }).first()).toBeVisible();
   await expect(resets.getByText("people-custodian made a password reset link for people-player.").first()).toBeVisible();
@@ -46,7 +46,7 @@ test("a player fills in their profile, and the custodian resets their password",
   // They think better of it and cancel it.
   await row.getByRole("button", { name: "Cancel link" }).click();
   await expect(row.getByText("Make a link that lets people-player set a new password", { exact: false })).toBeVisible();
-  await expect(row.getByText("reset link out")).toHaveCount(0);
+  await expect(row.getByText("Reset link out")).toHaveCount(0);
 
   // They open the profile.
   await c.locator("main").getByRole("link", { name: new RegExp(player.email) }).click();
@@ -125,7 +125,7 @@ test("the custodian changes a player's email, and the player confirms it from th
 
   // Nothing changes until the link is opened: the custodian sends it on.
   await expect(row.getByText(`Waiting for chmail-player to confirm ${newEmail}`, { exact: false })).toBeVisible();
-  await expect(row.getByText("new email waiting")).toBeVisible();
+  await expect(row.getByText("New email waiting")).toBeVisible();
   const changes = c.locator("section", { has: c.getByRole("heading", { name: "Email changes" }) });
   await expect(changes.getByText(`${player.email} → ${newEmail}`, { exact: false })).toBeVisible();
   const url = await row.getByLabel("Link to confirm the new email").inputValue();
@@ -372,7 +372,7 @@ test("the custodian suspends a lead storyteller, who can't sign in until it is l
   await row.getByRole("button", { name: "Suspend susp-lead" }).click();
   await row.getByLabel("Reason").fill("Threatened another player at the last game");
   await row.getByRole("button", { name: "Suspend susp-lead" }).last().click();
-  await expect(row.getByText("suspended", { exact: true })).toBeVisible();
+  await expect(row.getByText("Suspended", { exact: true })).toBeVisible();
 
   // They are listed as suspended, with the troupe that wants a new lead, and it is logged.
   // Other tests may suspend people at the same time, so look only at this one.
@@ -384,7 +384,7 @@ test("the custodian suspends a lead storyteller, who can't sign in until it is l
 
   // The troupe list marks the troupe.
   await c.getByRole("link", { name: "Troupes", exact: true }).click();
-  await expect(c.locator("main li").filter({ hasText: troupeName }).getByText("lead suspended")).toBeVisible();
+  await expect(c.locator("main li").filter({ hasText: troupeName }).getByText("Lead suspended")).toBeVisible();
 
   // The lead is signed out at once, and told why they can't sign in, but not the reason.
   const l = lead.page;
@@ -403,7 +403,7 @@ test("the custodian suspends a lead storyteller, who can't sign in until it is l
   await row.getByRole("button", { name: "Lift the suspension of susp-lead" }).click();
   await row.getByLabel("Why lift it").fill("Apologised and agreed to the code of conduct");
   await row.getByRole("button", { name: "Lift suspension", exact: true }).click();
-  await expect(row.getByText("suspended", { exact: true })).toHaveCount(0);
+  await expect(row.getByText("Suspended", { exact: true })).toHaveCount(0);
   await expect(suspended).toHaveCount(0);
   await l.getByRole("button", { name: "Sign in" }).click();
   await expect(l.getByRole("heading", { name: "Your characters" })).toBeVisible();

@@ -203,7 +203,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.screenshot(shots("bell"));
   await lead.page.getByRole("button", { name: /Agnes asks to make Court of Ash .* its home/ }).click();
   await expect(lead.page.getByRole("link", { name: /Approvals/ }).getByLabel("1 waiting")).toBeVisible();
-  await expect(lead.page.getByText("asking to make this home")).toBeVisible();
+  await expect(lead.page.getByText("Asking to make this home")).toBeVisible();
   await lead.page.screenshot(shots("approvals"));
   await lead.page.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(lead.page.getByText("Nothing pending.")).toBeVisible();
@@ -236,20 +236,20 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await characterTab(p, "Sheet");
   await p.getByRole("button", { name: "Raise Celerity" }).click();
   await expect(cart.getByText("Celerity 2 → 3 · 9 XP")).toBeVisible();
-  await expect(cart.getByText("needs approval")).toBeVisible();
+  await expect(cart.getByText("Needs approval")).toBeVisible();
   await p.getByRole("button", { name: "Spend XP" }).click();
   await expect(p.getByText("Some of it waits for the home troupe's approval.")).toBeVisible();
-  await expect(p.getByText("awaiting approval").first()).toBeVisible();
+  await expect(p.getByText("Awaiting approval").first()).toBeVisible();
   await lead.page.getByRole("link", { name: /Approvals/ }).click();
   await expect(lead.page.getByText(/Celerity 2 → 3, for 9 XP/)).toBeVisible();
   await lead.page.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(lead.page.getByText("Nothing pending.")).toBeVisible();
   await p.reload();
-  await expect(p.getByText("awaiting approval")).toHaveCount(0);
+  await expect(p.getByText("Awaiting approval")).toHaveCount(0);
 
   // The troupe's characters and log show what happened.
   await lead.page.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
-  await expect(lead.page.getByText("home", { exact: true })).toBeVisible();
+  await expect(lead.page.getByText("Home", { exact: true })).toBeVisible();
   // Ticked characters print together, in a new tab, from the Print… menu.
   await lead.page.getByRole("button", { name: "Print…" }).click();
   await expect(lead.page.getByRole("button", { name: "Print selected (0)" })).toBeDisabled();
@@ -354,7 +354,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   const staffBadges = await staffTab;
   await expect(staffBadges.getByLabel("Size")).toHaveValue("3x4");
   await expect(staffBadges.getByText("2 badges · four to each A4 page")).toBeVisible();
-  await expect(staffBadges.getByRole("article", { name: "Badge for lead" }).getByText("Lead Storyteller")).toBeVisible();
+  await expect(staffBadges.getByRole("article", { name: "Badge for lead" }).getByText("Lead storyteller")).toBeVisible();
   await expect(staffBadges.getByRole("article", { name: "Badge for narrator" }).getByText("Narrator", { exact: true })).toBeVisible();
   await expect(staffBadges.getByRole("article", { name: "Badge for lead" }).getByText(troupeName)).toBeVisible();
   await staffBadges.screenshot(shots("staff-badges"));
@@ -382,7 +382,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(lead.page.getByRole("row", { name: "With the change 1 2 3 4 5" })).toBeVisible();
   await lead.page.screenshot(shots("costs"));
   await lead.page.getByRole("button", { name: "Save price" }).click();
-  await expect(lead.page.getByText("replaced here")).toBeVisible();
+  await expect(lead.page.getByText("Replaced here")).toBeVisible();
   // A fixed price for a merit held at one rating is its value here, which the editor says.
   await lead.page.getByRole("button", { name: "Add a price" }).click();
   await lead.page.getByLabel("Category").selectOption({ label: "Merits" });
@@ -455,7 +455,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(influence.getByText("Your Police specialisation counts your Elite as 2 for this.")).toBeVisible();
   await p.screenshot(shots("downtime"));
   await p.getByRole("button", { name: "Submit downtime" }).click();
-  await expect(p.getByText("submitted", { exact: true })).toBeVisible();
+  await expect(p.getByText("Submitted", { exact: true })).toBeVisible();
 
   // The lead hands the action to the narrator, who writes it. Staff see the influence action by name.
   await lead.page.getByRole("link", { name: "Responses" }).click();
@@ -477,7 +477,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await narrator.page.getByRole("link", { name: "November" }).click();
   await narrator.page.getByLabel("Response to Agnes").fill("The docks are crowded tonight; you feed well and unseen.");
   await narrator.page.getByRole("button", { name: "Save response" }).click();
-  await expect(narrator.page.getByText("written", { exact: true })).toBeVisible();
+  await expect(narrator.page.getByText("Written", { exact: true })).toBeVisible();
   await narrator.page.screenshot(shots("narrator"));
 
   // The lead closes, told first what closing means while it isn't yet due.
@@ -488,7 +488,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(closing.getByText("The 1 participant has submitted.")).toBeVisible();
   await lead.page.screenshot(shots("cycle-close"));
   await closing.getByRole("button", { name: "Yes, close submissions" }).click();
-  await expect(lead.page.getByText("closed", { exact: true })).toBeVisible();
+  await expect(lead.page.getByText("Closed", { exact: true })).toBeVisible();
 
   // Delivering starts on the Delivery tab, which says what would go. Agnes's influence
   // action and her feeding are still unanswered, so by default nothing goes.
@@ -523,12 +523,12 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("button", { name: "Answer", exact: true }).click();
   await expect(lead.page.getByRole("button", { name: "Change answer" })).toBeVisible();
   await lead.page.getByRole("link", { name: "Delivery", exact: true }).click();
-  await expect(lead.page.getByRole("row", { name: /Agnes/ }).getByText("changed since delivery")).toBeVisible();
+  await expect(lead.page.getByRole("row", { name: /Agnes/ }).getByText("Changed since delivery")).toBeVisible();
   await expect(deliverCard.getByText("Agnes (update)")).toBeVisible();
   await lead.page.screenshot(shots("cycle-delivery"));
   await deliverCard.getByRole("button", { name: "Deliver 1 downtime" }).click();
   await expect(lead.page.getByText("Delivered 1 downtime, as an update.")).toBeVisible();
-  await expect(lead.page.getByText("changed since delivery")).toHaveCount(0);
+  await expect(lead.page.getByText("Changed since delivery")).toHaveCount(0);
   await p.reload();
   await expect(p.getByText("The desk sergeant owes you a favour.")).toBeVisible();
   await expect(p.getByText("you feed well and unseen")).toBeVisible();
@@ -543,14 +543,14 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(completing.getByText("Every response is written.")).toBeVisible();
   await expect(completing.getByText("Players have every result as it stands.")).toBeVisible();
   await completing.getByRole("button", { name: "Yes, mark complete" }).click();
-  await expect(lead.page.getByText("complete", { exact: true })).toBeVisible();
+  await expect(lead.page.getByText("Complete", { exact: true })).toBeVisible();
 
   // Results always go out in Horatio; Discord needs the server set up first.
   await lead.page.getByRole("link", { name: "Troupes" }).click();
   await lead.page.getByRole("link", { name: troupeName }).click();
   await lead.page.getByRole("link", { name: "Customise", exact: true }).click();
   await lead.page.getByRole("link", { name: "Connectors", exact: true }).click();
-  await expect(lead.page.getByText("always on")).toBeVisible();
+  await expect(lead.page.getByText("Always on")).toBeVisible();
   // In plain words, with no server settings named and nothing to fill in.
   await expect(lead.page.getByText(/Discord isn't set up on this server yet. Ask the custodian/)).toBeVisible();
   await expect(lead.page.getByText(/Email isn't set up on this server yet/)).toBeVisible();
@@ -1130,7 +1130,7 @@ test("feeding in a downtime: Herd given to another character, both answered, and
   await expect(feeding.getByRole("status")).toHaveText("Feeding 0 + your Herd 1 = 1 of 1 needed ✓");
   await a.screenshot(shots("downtime-feeding"));
   await a.getByRole("button", { name: "Submit downtime" }).click();
-  await expect(a.getByText("submitted", { exact: true })).toBeVisible();
+  await expect(a.getByText("Submitted", { exact: true })).toBeVisible();
 
   // Bram sees the gift in his tally: 1 of the 2 he needs. Nothing stops him submitting.
   const b = receiver.page;
@@ -1141,7 +1141,7 @@ test("feeding in a downtime: Herd given to another character, both answered, and
   await expect(his.getByRole("status")).toHaveText("Feeding 0 + 1 from Agnes = 1 of 2 needed: you'll come to game at half Blood unless staff say otherwise.");
   await his.getByLabel("Where and how").fill("The back rooms of the Rack");
   await b.getByRole("button", { name: "Submit downtime" }).click();
-  await expect(b.getByText("submitted", { exact: true })).toBeVisible();
+  await expect(b.getByText("Submitted", { exact: true })).toBeVisible();
 
   // The tally suggests Full for Agnes and Half for Bram; the lead answers both.
   await l.reload();

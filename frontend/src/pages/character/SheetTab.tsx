@@ -814,7 +814,7 @@ function TraitRow({
               {(adding || removing) && <span className="ml-2 text-xs text-gold">in the cart</span>}
               {asked && (
                 <span className="ml-2">
-                  <Badge tone="gold">{asked === "adding" ? "awaiting approval" : "removal awaiting approval"}</Badge>
+                  <Badge tone="gold">{asked === "adding" ? "Awaiting approval" : "Removal awaiting approval"}</Badge>
                 </span>
               )}
               <GrantedBy trait={trait} points />
@@ -902,7 +902,7 @@ function TraitRow({
             {trait.detail && <span className="text-mist">: {trait.detail}</span>}
             {pending && (
               <span className="ml-2">
-                <Badge tone="gold">awaiting approval</Badge>
+                <Badge tone="gold">Awaiting approval</Badge>
               </span>
             )}
             <GrantedBy trait={trait} />
@@ -1036,11 +1036,11 @@ function TroupesCard({
             <li key={t.troupe_id} className="flex flex-wrap items-center gap-2">
               <span>{t.troupe_name}</span>
               {t.home ? (
-                <Badge tone="gold">home</Badge>
+                <Badge tone="gold">Home</Badge>
               ) : (
-                <Badge>visiting</Badge>
+                <Badge>Visiting</Badge>
               )}
-              {t.waiting && <Badge tone="blood">waiting to be accepted</Badge>}
+              {t.waiting && <Badge tone="blood">Waiting to be accepted</Badge>}
               {t.titles.map((title) => (
                 <Badge key={title} tone="gold">
                   {title}

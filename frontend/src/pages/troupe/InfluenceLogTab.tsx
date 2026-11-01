@@ -249,9 +249,9 @@ function EntryRow({
       {entry.purpose && <p>{entry.purpose}</p>}
       <BlockSources entry={entry} />
       <div className="flex flex-wrap items-center gap-2 text-xs text-mist">
-        {entry.times > 1 && <Badge tone="gold">logged {entry.times} times</Badge>}
+        {entry.times > 1 && <Badge tone="gold">Logged {entry.times} times</Badge>}
         {entry.blocks > 0 && <Badge>{entry.blocks === 1 ? "1 block" : `${entry.blocks} blocks`}</Badge>}
-        {entry.needs_details && <Badge tone="blood">needs details</Badge>}
+        {entry.needs_details && <Badge tone="blood">Needs details</Badge>}
         {entry.effect && <Badge tone={entry.effect.active ? "gold" : "mist"}>{entry.effect.active ? entry.effect.text : `${entry.effect.text}, over`}</Badge>}
         {entry.cycle_id && entry.source === "downtime" ? (
           <Link to={`/cycles/${entry.cycle_id}`} className="hover:text-gold">

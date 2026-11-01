@@ -35,7 +35,7 @@ export function filterHistory(entries: HistoryEntryOut[], filters: HistoryFilter
 /** Only ever the character's own blocks: "you blocked it twice". */
 export function blocksText(blocks: number): string | null {
   if (blocks <= 0) return null;
-  return `you blocked it ${blocks === 1 ? "once" : blocks === 2 ? "twice" : `${blocks} times`}`;
+  return `You blocked it ${blocks === 1 ? "once" : blocks === 2 ? "twice" : `${blocks} times`}`;
 }
 
 /** Where it came from, as the character's player reads it. */

@@ -245,7 +245,7 @@ export function EffectsCard({ troupeId }: { troupeId: string }) {
                 {e.defended > 0 && ` (${e.defended} defended)`}
               </span>
               <span className="text-mist">{e.upcoming ? `from ${dates.dateTime(e.starts_at)}` : lastsText(e, dates)}</span>
-              {e.kind === "block" && <Badge>strength {e.levels}</Badge>}
+              {e.kind === "block" && <Badge>Strength {e.levels}</Badge>}
               <Button
                 variant="ghost"
                 className="ml-auto px-2 py-0"

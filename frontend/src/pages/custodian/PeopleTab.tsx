@@ -81,9 +81,9 @@ function Person({ person }: { person: PlayerSummary }) {
           </span>
         </Link>
         <span className="flex flex-wrap items-center gap-2">
-          {person.suspended && <Badge tone="blood">suspended</Badge>}
-          {person.reset_expires_at && <Badge tone="gold">reset link out</Badge>}
-          {person.email_change_to && <Badge tone="gold">new email waiting</Badge>}
+          {person.suspended && <Badge tone="blood">Suspended</Badge>}
+          {person.reset_expires_at && <Badge tone="gold">Reset link out</Badge>}
+          {person.email_change_to && <Badge tone="gold">New email waiting</Badge>}
           <ViewAs person={person} />
           <Button
             type="button"

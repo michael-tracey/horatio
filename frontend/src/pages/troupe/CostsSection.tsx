@@ -119,7 +119,7 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
                       </span>
                       <span className="flex shrink-0 items-center gap-2">
                         {c.house && <Badge tone="gold">House rule</Badge>}
-                        {c.replaced && <Badge>replaced here</Badge>}
+                        {c.replaced && <Badge>Replaced here</Badge>}
                         {canEdit && c.house && c.id && (
                           <>
                             <Button variant="secondary" className="min-h-8 px-3" onClick={() => setEditing({ kind: "change", cost: c })}>

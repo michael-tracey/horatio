@@ -252,7 +252,7 @@ test("quests in downtime: a Quest action joins a Downtime Only quest, one result
   await card.getByLabel("Which quest").selectOption(quest.id);
   await card.getByLabel("Quest", { exact: true }).fill("Bram rows out to the flooded chantry.");
   await b.getByRole("button", { name: "Submit downtime" }).click();
-  await expect(b.getByText("submitted", { exact: true })).toBeVisible();
+  await expect(b.getByText("Submitted", { exact: true })).toBeVisible();
   await expect(b.getByText("1 / 3")).toBeVisible();
   await b.goto(`/characters/${bram}/quests/${quest.id}`);
   await expect(b.getByText("The party: Agnes, Bram")).toBeVisible();

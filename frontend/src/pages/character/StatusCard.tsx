@@ -83,10 +83,10 @@ export function WithReason({
   );
 }
 
-/** A status's type as a badge: "abiding", "negative". */
+/** A status's type as a badge: "Abiding", "Negative". */
 function TypeBadge({ type }: { type: string }) {
   const tone = type === "Negative" ? "blood" : type === "Fleeting" ? "mist" : "gold";
-  return <Badge tone={tone}>{type.toLowerCase()}</Badge>;
+  return <Badge tone={tone}>{type}</Badge>;
 }
 
 /**

@@ -220,7 +220,7 @@ function SeenRow({
           <span className={cx("text-parchment", s.spent && "line-through")}>{s.name}</span>
           {s.spent && (
             <span className="ml-2">
-              <Badge>spent</Badge>
+              <Badge>Spent</Badge>
             </span>
           )}
         </p>

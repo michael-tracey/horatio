@@ -193,7 +193,7 @@ function QuestionSet({ set, canEdit, sects, first, last }: { set: BackstoryQuest
         </span>
         {set.archived && (
           <span className="ml-2">
-            <Badge>archived</Badge>
+            <Badge>Archived</Badge>
           </span>
         )}
       </summary>
@@ -275,10 +275,10 @@ function QuestionRow({ question: q, canEdit, sects, first, last }: { question: B
         <p className="mt-1 flex flex-wrap gap-1.5 text-xs text-mist">
           <Badge>{KINDS[q.kind]}</Badge>
           {q.title && <Badge>Heading: {q.title}</Badge>}
-          {q.optional && <Badge>optional</Badge>}
+          {q.optional && <Badge>Optional</Badge>}
           {q.condition && <Badge tone="gold">{conditionText(q.condition)}</Badge>}
           {q.options.length > 0 && <span>{q.options.join(" / ")}</span>}
-          {q.archived && <Badge tone="blood">archived</Badge>}
+          {q.archived && <Badge tone="blood">Archived</Badge>}
         </p>
       </div>
       {canEdit && (

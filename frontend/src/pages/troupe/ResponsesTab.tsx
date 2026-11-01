@@ -7,7 +7,7 @@ import { useToast } from "../../components/Toast";
 import { Button, Empty, ErrorText, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { roleLabel } from "./roles";
-import { assigneeOf, byCharacter, questionsOf, responsesCount, shows, type ResponseFilter, type Status } from "./responsesList";
+import { assigneeOf, byCharacter, questionsOf, responsesCount, shows, STATUS_NAMES, type ResponseFilter, type Status } from "./responsesList";
 
 /**
  * Every response in a cycle, for storytellers and assistants to share out and
@@ -53,8 +53,8 @@ export function ResponsesTab({ cycle }: { cycle: CycleOut }) {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap gap-2">
         {(["all", "unassigned", "assigned", "written"] as const).map((f: Status) => (
-          <Button key={f} variant={f === filter.status ? "secondary" : "ghost"} className="capitalize" onClick={() => setFilter({ status: f })}>
-            {f} ({f === "all" ? all.length : all.filter((i) => i.status === f).length})
+          <Button key={f} variant={f === filter.status ? "secondary" : "ghost"} onClick={() => setFilter({ status: f })}>
+            {STATUS_NAMES[f]} ({f === "all" ? all.length : all.filter((i) => i.status === f).length})
           </Button>
         ))}
       </div>

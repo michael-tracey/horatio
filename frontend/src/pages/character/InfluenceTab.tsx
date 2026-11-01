@@ -153,9 +153,9 @@ function HistoryRow({
       </div>
       {entry.purpose && <p>{entry.purpose}</p>}
       <div className="flex flex-wrap items-center gap-2 text-xs text-mist">
-        {entry.times > 1 && <Badge tone="gold">taken {entry.times} times</Badge>}
+        {entry.times > 1 && <Badge tone="gold">Taken {entry.times} times</Badge>}
         {blocks && <Badge>{blocks}</Badge>}
-        {entry.needs_details && <Badge tone="blood">needs details</Badge>}
+        {entry.needs_details && <Badge tone="blood">Needs details</Badge>}
         {entry.other_troupe && <Badge>in {entry.troupe_name}</Badge>}
         {to ? (
           <Link to={to} className="hover:text-gold">

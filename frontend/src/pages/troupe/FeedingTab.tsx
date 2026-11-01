@@ -123,7 +123,7 @@ function CharacterFeeding({ cycle, character: c }: { cycle: CycleOut; character:
       title={c.character_name}
       actions={
         <span className="flex flex-wrap gap-2">
-          <Badge tone={submitted ? "gold" : "mist"}>{c.submission_status ?? "not started"}</Badge>
+          <Badge tone={submitted ? "gold" : "mist"}>{c.submission_status === "submitted" ? "Submitted" : c.submission_status === "draft" ? "Draft" : "Not started"}</Badge>
           {c.result && <Badge tone="gold">{RESULTS.find(([r]) => r === c.result)?.[1]}</Badge>}
         </span>
       }

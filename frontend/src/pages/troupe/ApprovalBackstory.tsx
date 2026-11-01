@@ -15,16 +15,16 @@ export function ApprovalBackstory({ characterId }: { characterId: string }) {
   const s = standing.data;
   if (!s?.read) return null;
   const words = !s.written
-    ? "not written yet"
+    ? "Not written yet"
     : s.approved
-      ? "approved"
+      ? "Approved"
       : s.changed_since_approval
-        ? "changed since it was approved"
+        ? "Changed since it was approved"
         : s.state === "returned"
-          ? "sent back to the player"
+          ? "Sent back to the player"
           : s.state === "resubmitted"
-            ? "revised and resubmitted"
-            : "not yet approved";
+            ? "Revised and resubmitted"
+            : "Not yet approved";
 
   return (
     <div className="mb-3 rounded-md border border-ash p-3" data-backstory>

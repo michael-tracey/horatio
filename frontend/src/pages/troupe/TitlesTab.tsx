@@ -177,10 +177,10 @@ function TitleRow({ troupeId, title, data, showSect = false }: { troupeId: strin
       <span className="font-medium text-parchment">{title.name}</span>
       {showSect && <span className="text-xs text-mist">{title.sect ?? "any sect"}</span>}
       {alias && <span className="text-xs text-mist">{alias}</span>}
-      {title.house && <Badge tone="gold">ours</Badge>}
-      {title.unique && <Badge>one at a time</Badge>}
-      {title.no_rules_yet && <Badge>no rules yet</Badge>}
-      {!title.offered && <Badge tone="blood">not a sect this troupe takes</Badge>}
+      {title.house && <Badge tone="gold">House rule</Badge>}
+      {title.unique && <Badge>One at a time</Badge>}
+      {title.no_rules_yet && <Badge>No rules yet</Badge>}
+      {!title.offered && <Badge tone="blood">Not a sect this troupe takes</Badge>}
       <span className="text-xs text-mist">
         {titleGives(titleStatusWords(title), title)}
         {page && ` · ${page}`}

@@ -281,7 +281,7 @@ test("influence spent at a game goes in the troupe's influence log, and comes of
   const e1 = l.getByRole("listitem", { name: "Entry E1" });
   await expect(e1.getByText("To hear what is said about the mayor")).toBeVisible();
   await expect(e1.getByText("At a game")).toBeVisible();
-  await expect(l.getByRole("listitem", { name: "Entry E2" }).getByText("needs details")).toBeVisible();
+  await expect(l.getByRole("listitem", { name: "Entry E2" }).getByText("Needs details")).toBeVisible();
   await expect(l.getByRole("listitem", { name: "Entry E3" })).toHaveCount(0);
 
   // Iris adds the details from the game's log, while the game goes on.
@@ -429,7 +429,7 @@ test("Gossip is filled from the influence log, and a discovery block hides an en
   await expect(elite.getByLabel("Your action").locator("option")).toHaveCount(2);
   await elite.getByLabel("Your action").selectOption((await own.getAttribute("value"))!);
   await p.getByRole("button", { name: "Submit downtime" }).click();
-  await expect(p.getByText("submitted", { exact: true })).toBeVisible();
+  await expect(p.getByText("Submitted", { exact: true })).toBeVisible();
 
   // The lead fills the first Gossip answer from the log: the result goes on the last,
   // strength 2, so the once-blocked entry shows, and never Agnes's own or who took them.

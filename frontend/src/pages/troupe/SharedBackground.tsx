@@ -122,7 +122,7 @@ function EntryRow({ entry, onDelete }: { entry: SharedEntryOut; onDelete: () => 
       {entry.purpose && <p>{entry.purpose}</p>}
       {entry.note && <p className="text-mist">{entry.note}</p>}
       <div className="flex flex-wrap items-center gap-2 text-xs text-mist">
-        {entry.kind === "use" ? <Badge>use</Badge> : <Badge tone="gold">{entry.kind === "contribution" ? "dots in" : "dots out"}</Badge>}
+        {entry.kind === "use" ? <Badge>Use</Badge> : <Badge tone="gold">{entry.kind === "contribution" ? "Dots in" : "Dots out"}</Badge>}
         {entry.logged_by_name && (
           <span>
             logged by {entry.logged_by_name}, {dates.date(entry.logged_at)}
