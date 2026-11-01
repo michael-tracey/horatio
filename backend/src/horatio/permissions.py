@@ -65,6 +65,7 @@ class TroupeAction(StrEnum):
     MANAGE_EQUIPMENT = "manage_equipment"
     MANAGE_LOCATIONS = "manage_locations"
     MANAGE_QUESTS = "manage_quests"
+    VIEW_RSVPS = "view_rsvps"
 
 
 _LEAD = {Role.LEAD_STORYTELLER}
@@ -123,6 +124,9 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     # The troupe's quest requests and quests: building, checking and sending them
     # (horatio.quests). Narrators work on those assigned to them, as for downtimes.
     TroupeAction.MANAGE_QUESTS: frozenset(_RUNNING),
+    # Who says they are coming to each scheduled game, by name: every member of staff
+    # plans for a game. Players see only how many (horatio.api.games).
+    TroupeAction.VIEW_RSVPS: frozenset(_ALL_STAFF),
 }
 
 
@@ -276,6 +280,28 @@ def whos_who_troupes(
         )
     )
     return staffed | set(playing)
+
+
+def is_member(db: Session, user: User, troupe: Troupe) -> bool:
+    """A member of a troupe: on its staff, or the player of an active character in
+    it, home or visiting; the same people as see its Who's Who. Never an archived
+    troupe's, but for the custodian."""
+    return troupe.id in whos_who_troupes(db, user, [troupe])
+
+
+def member_troupe_ids(db: Session, user: User) -> set[uuid.UUID]:
+    """The troupes, not archived, `user` is a member of. The custodian's are only
+    the ones they lead, staff or play in, not every troupe."""
+    staffed = db.scalars(
+        select(Troupe.id).where(
+            Troupe.archived_at.is_(None),
+            or_(
+                Troupe.lead_user_id == user.id,
+                exists().where(TroupeStaff.troupe_id == Troupe.id, TroupeStaff.user_id == user.id),
+            ),
+        )
+    )
+    return set(staffed) | _plays_in(db, user.id)
 
 
 def can_edit_character(db: Session, user: User, character: Character) -> bool:

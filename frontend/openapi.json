@@ -3087,6 +3087,70 @@
         "title": "BulkAwarded",
         "type": "object"
       },
+      "CalendarLink": {
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "CalendarLink",
+        "type": "object"
+      },
+      "CalendarLinkIn": {
+        "properties": {
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
+          }
+        },
+        "required": [
+          "troupe_id"
+        ],
+        "title": "CalendarLinkIn",
+        "type": "object"
+      },
+      "CalendarLinks": {
+        "properties": {
+          "personal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CalendarLink"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "troupe": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CalendarLink"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "troupe",
+          "personal"
+        ],
+        "title": "CalendarLinks",
+        "type": "object"
+      },
       "CardIn": {
         "properties": {
           "descriptor": {
@@ -11824,6 +11888,79 @@
           "notes"
         ],
         "title": "GameOut",
+        "type": "object"
+      },
+      "GameRsvpsOut": {
+        "properties": {
+          "answers": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/RsvpOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answers"
+          },
+          "coming": {
+            "title": "Coming",
+            "type": "integer"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "maybe": {
+            "title": "Maybe",
+            "type": "integer"
+          },
+          "my_answer": {
+            "anyOf": [
+              {
+                "enum": [
+                  "coming",
+                  "maybe",
+                  "not_coming"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "My Answer"
+          },
+          "not_coming": {
+            "title": "Not Coming",
+            "type": "integer"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "starts_at",
+          "ends_at",
+          "my_answer",
+          "coming",
+          "maybe",
+          "not_coming",
+          "answers"
+        ],
+        "title": "GameRsvpsOut",
         "type": "object"
       },
       "GatheredOut": {
@@ -26456,6 +26593,54 @@
         "title": "RosterEntry",
         "type": "object"
       },
+      "RsvpIn": {
+        "properties": {
+          "answer": {
+            "enum": [
+              "coming",
+              "maybe",
+              "not_coming"
+            ],
+            "title": "Answer",
+            "type": "string"
+          }
+        },
+        "required": [
+          "answer"
+        ],
+        "title": "RsvpIn",
+        "type": "object"
+      },
+      "RsvpOut": {
+        "properties": {
+          "answer": {
+            "enum": [
+              "coming",
+              "maybe",
+              "not_coming"
+            ],
+            "title": "Answer",
+            "type": "string"
+          },
+          "characters": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "person": {
+            "$ref": "#/components/schemas/ProfilePerson"
+          }
+        },
+        "required": [
+          "person",
+          "answer",
+          "characters"
+        ],
+        "title": "RsvpOut",
+        "type": "object"
+      },
       "SampleOut": {
         "properties": {
           "character_id": {
@@ -35721,6 +35906,126 @@
         "summary": "Download Backup",
         "tags": [
           "backups"
+        ]
+      }
+    },
+    "/api/calendar/links": {
+      "get": {
+        "description": "The caller's calendar links, for a member of the troupe.",
+        "operationId": "links_api_calendar_links_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarLinks"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Links",
+        "tags": [
+          "calendar"
+        ]
+      },
+      "post": {
+        "description": "A new address for one of the caller's calendars: made the first time,\nand after that reset, so the old address stops working.",
+        "operationId": "make_link_api_calendar_links_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalendarLinkIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarLink"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Make Link",
+        "tags": [
+          "calendar"
+        ]
+      }
+    },
+    "/api/calendar/{token}.ics": {
+      "get": {
+        "description": "The calendar itself, for a calendar app: no sign-in, only the address.",
+        "operationId": "feed_api_calendar__token__ics_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Feed",
+        "tags": [
+          "calendar"
         ]
       }
     },
@@ -52759,6 +53064,52 @@
       }
     },
     "/api/troupes/{troupe_id}/games": {
+      "get": {
+        "description": "The troupe's games still to come (or under way), soonest first, with how\nmany are coming: for its members.",
+        "operationId": "list_games_api_troupes__troupe_id__games_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GameRsvpsOut"
+                  },
+                  "title": "Response List Games Api Troupes  Troupe Id  Games Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Games",
+        "tags": [
+          "games"
+        ]
+      },
       "post": {
         "description": "A game the troupe will run, for its profile's schedule.",
         "operationId": "add_game_api_troupes__troupe_id__games_post",
@@ -52855,6 +53206,122 @@
         "summary": "Remove Game",
         "tags": [
           "troupe profiles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/games/{game_id}/rsvp": {
+      "delete": {
+        "description": "Take back your answer, saying nothing either way.",
+        "operationId": "take_back_api_troupes__troupe_id__games__game_id__rsvp_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "game_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Game Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameRsvpsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Take Back",
+        "tags": [
+          "games"
+        ]
+      },
+      "put": {
+        "description": "Say whether you are coming, in place of any answer before.",
+        "operationId": "answer_api_troupes__troupe_id__games__game_id__rsvp_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "game_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Game Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RsvpIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameRsvpsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Answer",
+        "tags": [
+          "games"
         ]
       }
     },
