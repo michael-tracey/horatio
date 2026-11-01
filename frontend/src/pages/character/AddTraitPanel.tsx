@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetTraitOut, TraitOut } from "../../api/types";
 import { HouseMark, HouseSummary } from "../../components/HouseMark";
@@ -12,6 +13,8 @@ import { detailNeed, fieldSkills, isInstance } from "./fields";
 import { ChoiceSelect } from "./ChoiceSelect";
 import { FreeChoicesFields } from "./FreeChoices";
 import { sayable, summary, toSend, type FreePick } from "./freeChoices";
+import { rulesLink } from "../rules/rulesBrowser";
+import { rulesTroupe } from "./rules";
 import { applyFilter, byKind, countOf, filterChoices, quickPicks } from "./traitFilter";
 
 /** A new trait for the cart. */
@@ -89,6 +92,8 @@ export function AddTraitPanel({
     setFilter(can ? "can" : "all");
   };
   const trait = all.find((t) => t.name === name);
+  // Every one of the category, as the character's troupe plays it, to read about.
+  const seeAll = rulesLink([category], rulesTroupe(character), character.splat);
   const fixed = trait?.fixed_rating ?? null;
   // Skills bought once per field, such as Performance: Singing (MET: VTM p. 92), and
   // a Retainer or identity, each bought with its own name (pp. 98-99, 104).
@@ -200,6 +205,11 @@ export function AddTraitPanel({
           </li>
         )}
       </ul>
+      {seeAll && (
+        <Link to={seeAll} className="self-start text-xs text-mist underline hover:text-parchment">
+          See all {cat?.name.toLowerCase() ?? "of them"} in the rules
+        </Link>
+      )}
       {asking && (
         <AskStaff
           key={asking.name}

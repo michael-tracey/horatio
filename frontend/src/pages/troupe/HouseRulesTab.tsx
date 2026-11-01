@@ -9,7 +9,7 @@ import { Card, ErrorText, Loading } from "../../components/ui";
 import { pageText } from "./bookPage";
 
 /** How a check is played, in a player's words. */
-const PLAYED: Record<string, string> = {
+export const PLAYED: Record<string, string> = {
   refuse: "Not allowed",
   complete: "Needed to finish character creation",
   review: "Allowed, for the storytellers to review",
@@ -54,11 +54,16 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
           What {troupe.name} plays differently from the book. They apply to characters whose home troupe this is, and to characters being built for it.
           Everything not listed here is as written.
         </p>
-        {staff && (
-          <Link to={`/troupes/${troupe.id}/rules`} className="text-sm text-mist underline hover:text-parchment">
-            See them in Customise
+        <span className="flex flex-wrap gap-x-4 gap-y-1">
+          <Link to={`/rules?troupe=${troupe.id}`} className="text-sm text-mist underline hover:text-parchment">
+            Browse every rule as played here
           </Link>
-        )}
+          {staff && (
+            <Link to={`/troupes/${troupe.id}/rules`} className="text-sm text-mist underline hover:text-parchment">
+              See them in Customise
+            </Link>
+          )}
+        </span>
       </div>
 
       {nothing && (
@@ -128,7 +133,14 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
       )}
 
       {r.house_traits.length > 0 && (
-        <Card title="House merits and flaws">
+        <Card
+          title="House merits and flaws"
+          actions={
+            <Link to={`/rules?category=merits&troupe=${troupe.id}`} className="text-sm text-mist underline hover:text-parchment">
+              See all merits
+            </Link>
+          }
+        >
           <ul className="divide-y divide-ash">
             {r.house_traits.map((h) => (
               <li key={`${h.splat}/${h.category}/${h.name}`} className="flex flex-col gap-1 py-2.5 text-sm">
