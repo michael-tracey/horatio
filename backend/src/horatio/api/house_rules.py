@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import audit, clan_merits, diablerie, feeding, resonance
+from horatio import audit, clan_merits, diablerie, feeding, rack, resonance, territories
 from horatio.api.downtimes import staff_troupe
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
@@ -914,9 +914,12 @@ class FeedingSettingIn(BaseModel):
     # "book", feeding tracked in downtimes as the core book has it, or "off", left out
     # of Horatio; what was recorded is kept either way (horatio.feeding).
     feeding: Literal["off", "book"]
-    # The optional rule Blood Resonance (Vol. 2, pp. 294-297), played while feeding is
-    # tracked; kept as set while it is off.
+    # The optional Vol. 2 rules, played while feeding is tracked and kept as set while
+    # it is off: Blood Resonance (pp. 294-297), feeding territories (pp. 304-307), and
+    # the Rack (pp. 298-303), which needs Blood Resonance.
     resonance: bool = False
+    territories: bool = False
+    rack: bool = False
 
 
 @router.put("/feeding")
@@ -926,7 +929,12 @@ def set_feeding(
     """How far Horatio handles feeding for this troupe: not at all, as the book has it,
     or with the optional Vol. 2 rules."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
-    feeding.set_setting(db, user, troupe, body.feeding, body.resonance)
+    feeding.set_setting(
+        db,
+        user,
+        troupe,
+        feeding.Setting(body.feeding, body.resonance, body.territories, body.rack),
+    )
     db.commit()
     return troupe_out(db, user, troupe)
 
@@ -1200,15 +1208,36 @@ def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
                 book_text=feeding.SETTING_TEXT["book"],
             )
         )
-    elif troupe.feeding_resonance:
-        found.append(
-            HouseSettingOut(
-                name="Blood Resonance",
-                text="Played: a character hunts for blood of one humor, and its feeding answer"
-                f" gives the Resonance and any Dyscrasia ({resonance.PAGES})",
-                book_text="An optional rule, off unless the troupe switches it on",
+    else:
+        show = feeding.shown(troupe)
+        optional = "An optional rule, off unless the troupe switches it on"
+        if show.resonance:
+            found.append(
+                HouseSettingOut(
+                    name="Blood Resonance",
+                    text="Played: a character hunts for blood of one humor, and its feeding"
+                    f" answer gives the Resonance and any Dyscrasia ({resonance.PAGES})",
+                    book_text=optional,
+                )
             )
-        )
+        if show.territories:
+            found.append(
+                HouseSettingOut(
+                    name="Feeding territories",
+                    text="Played: areas only the vampires the domain's Authority names may feed"
+                    f" in, which their holders patrol against poachers ({territories.PAGES})",
+                    book_text=optional,
+                )
+            )
+        if show.rack:
+            found.append(
+                HouseSettingOut(
+                    name="Advanced feeding: the Rack",
+                    text="Played: each character takes one vessel, a Feeding Card, from the"
+                    f" cycle's Rack instead of spending feeding actions ({rack.PAGES})",
+                    book_text=optional,
+                )
+            )
     if troupe.influence_lookback_days != 90:
         found.append(
             HouseSettingOut(

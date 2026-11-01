@@ -24,6 +24,7 @@ gives the Resonance and any Dyscrasia (horatio.resonance).
 """
 
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
@@ -37,6 +38,7 @@ from horatio.models import (
     CycleParticipant,
     DowntimeCycle,
     FeedingAdjustment,
+    FeedingTerritory,
     PlayEvent,
     PlayGame,
     RuleSet,
@@ -76,24 +78,77 @@ def not_tracked() -> Exception:
     return conflict("This troupe doesn't track feeding. Its storytellers can switch it on.")
 
 
-def set_setting(
-    db: Session, staff: User, troupe: Troupe, setting: str, resonance_rule: bool
-) -> None:
+@dataclass(frozen=True)
+class Shown:
+    """What of feeding a troupe plays, and so what Horatio shows of it: feeding at all,
+    and each optional rule."""
+
+    tracked: bool = True
+    resonance: bool = False
+    territories: bool = False
+    rack: bool = False
+
+
+# Everything shown, whatever was recorded.
+EVERYTHING = Shown(True, True, True, True)
+
+
+def shown(troupe: Troupe | None) -> Shown:
+    if not tracked(troupe):
+        return Shown(tracked=False)
+    if troupe is None:
+        return Shown()
+    return Shown(
+        tracked=True,
+        resonance=troupe.feeding_resonance,
+        territories=troupe.feeding_territories,
+        rack=troupe.feeding_resonance and troupe.feeding_rack,
+    )
+
+
+@dataclass(frozen=True)
+class Setting:
+    feeding: str
+    resonance: bool = False
+    territories: bool = False
+    rack: bool = False
+
+
+def set_setting(db: Session, staff: User, troupe: Troupe, setting: Setting) -> None:
     """Change how far Horatio handles the troupe's feeding. Nothing recorded is lost:
-    switching feeding off only hides it."""
-    if setting not in SETTINGS:
+    switching feeding, or a rule, off only hides it."""
+    if setting.feeding not in SETTINGS:
         raise unprocessable(f"Feeding is one of {', '.join(SETTINGS)}.")
-    if (troupe.feeding, troupe.feeding_resonance) == (setting, resonance_rule):
+    if setting.rack and not setting.resonance:
+        raise unprocessable(
+            "The Rack builds on Blood Resonance, as each vessel carries one: switch that on too."
+        )
+    now = Setting(
+        troupe.feeding, troupe.feeding_resonance, troupe.feeding_territories, troupe.feeding_rack
+    )
+    if now == setting:
         return
-    troupe.feeding, troupe.feeding_resonance = setting, resonance_rule
+    troupe.feeding = setting.feeding
+    troupe.feeding_resonance = setting.resonance
+    troupe.feeding_territories = setting.territories
+    troupe.feeding_rack = setting.rack
     db.flush()
+    rules_on = [
+        name
+        for name, on in (
+            ("Blood Resonance", setting.resonance),
+            ("feeding territories", setting.territories),
+            ("the Rack", setting.rack),
+        )
+        if on
+    ]
     audit.record(
         db,
         staff,
         "house.feeding",
         troupe_id=troupe.id,
-        feeding="not tracked" if setting == "off" else "tracked as the book has it",
-        resonance="on" if resonance_rule else "off",
+        feeding="not tracked" if setting.feeding == "off" else "tracked as the book has it",
+        rules=", ".join(rules_on) or "none",
     )
 
 
@@ -230,6 +285,12 @@ class Gift:
 
 
 @dataclass
+class Patrol:
+    territory_id: uuid.UUID
+    actions: int
+
+
+@dataclass
 class FeedingAnswer:
     """The Feeding section of one submission, as kept in `Submission.feeding`."""
 
@@ -242,6 +303,17 @@ class FeedingAnswer:
     herd_other_text: str = ""
     # With Blood Resonance: the humor the character hunts for, "" for any.
     resonance: str = ""
+    # With feeding territories and book feeding: the territory it feeds in once, by id,
+    # or "" for none; and downtime actions spent patrolling territories it holds.
+    territory: str = ""
+    patrols: list[Patrol] = field(default_factory=list[Patrol])
+    # With the Rack: the simple challenge thrown for hunting outside it (win, tie or
+    # lose), or "" before it hunts. Horatio sets it, never the player.
+    hunt: str = ""
+
+    @property
+    def patrolling(self) -> int:
+        return sum(p.actions for p in self.patrols)
 
     @property
     def herd_shared(self) -> int:
@@ -249,7 +321,14 @@ class FeedingAnswer:
 
     @property
     def empty(self) -> bool:
-        return not (self.actions or self.where.strip() or self.herd_shared or self.resonance)
+        return not (
+            self.actions
+            or self.where.strip()
+            or self.herd_shared
+            or self.resonance
+            or self.territory
+            or self.patrolling
+        )
 
     def stored(self) -> dict[str, Any]:
         return {
@@ -265,6 +344,13 @@ class FeedingAnswer:
             "herd_other": self.herd_other,
             "herd_other_text": self.herd_other_text.strip(),
             "resonance": self.resonance,
+            "territory": self.territory,
+            "patrols": [
+                {"territory_id": str(p.territory_id), "actions": p.actions}
+                for p in self.patrols
+                if p.actions
+            ],
+            "hunt": self.hunt,
         }
 
 
@@ -279,6 +365,11 @@ def answer_of(submission: Submission | None) -> FeedingAnswer:
         herd_other=int(raw.get("herd_other", 0)),
         herd_other_text=str(raw.get("herd_other_text", "")),
         resonance=str(raw.get("resonance", "")),
+        territory=str(raw.get("territory", "")),
+        patrols=[
+            Patrol(uuid.UUID(p["territory_id"]), int(p["actions"])) for p in raw.get("patrols", [])
+        ],
+        hunt=str(raw.get("hunt", "")),
     )
 
 
@@ -328,6 +419,20 @@ def check_answer(
         raise unprocessable(
             f"That shares out {answer.herd_shared} dots of Herd; this character has {herd}."
         )
+    if answer.territory or answer.patrols:
+        from horatio import territories
+
+        troupe = db.get_one(Troupe, cycle.troupe_id)
+        if any(p.actions < 0 for p in answer.patrols):
+            raise unprocessable("Feeding numbers cannot be negative.")
+        if answer.territory:
+            found = territories.territory_of(db, troupe, uuid.UUID(answer.territory))
+            if found.archived_at is not None:
+                raise unprocessable(f"{found.name} is no longer a feeding territory.")
+        for patrol in answer.patrols:
+            found = territories.territory_of(db, troupe, patrol.territory_id)
+            if patrol.actions and not territories.holds(found, character.id):
+                raise unprocessable(f"Only {found.name}'s holders patrol it.")
 
 
 @dataclass
@@ -358,6 +463,21 @@ def received(db: Session, cycle: DowntimeCycle, character_id: uuid.UUID) -> list
     return found
 
 
+def territory_fed(
+    db: Session, answer: FeedingAnswer, character_id: uuid.UUID
+) -> tuple[FeedingTerritory, bool] | None:
+    """The territory the character feeds in with book feeding, and whether it is
+    poaching there."""
+    if not answer.territory:
+        return None
+    found = db.get(FeedingTerritory, uuid.UUID(answer.territory))
+    if found is None:
+        return None
+    from horatio.territories import holds
+
+    return found, not holds(found, character_id)
+
+
 def tally(
     db: Session,
     cycle: DowntimeCycle,
@@ -366,47 +486,175 @@ def tally(
     submission: Submission | None,
     *,
     submitted_only: bool = False,
+    with_territories: bool = False,
 ) -> rules.Tally:
     """The advisory count for the character. Staff count only gifts from
-    downtimes that were submitted."""
+    downtimes that were submitted. With feeding territories, feeding in one stands in
+    for a feeding action."""
     answer = answer_of(submission)
     gifts = [
         (r.character_name, r.amount)
         for r in received(db, cycle, character.id)
         if r.submitted or not submitted_only
     ]
-    return rules.tally(feeding_need, answer.actions, answer.herd_own, gifts)
+    counted = rules.tally(feeding_need, answer.actions, answer.herd_own, gifts)
+    fed = territory_fed(db, answer, character.id) if with_territories else None
+    if fed is None:
+        return counted
+    territory, poaching = fed
+    label = f"{'Poaching' if poaching else 'Feeding'} in {territory.name}"
+    return rules.Tally(counted.needed, (*counted.parts, (label, 1)), counted.always_half)
 
 
-def summary(db: Session, answer: FeedingAnswer, *, with_resonance: bool = False) -> str:
-    """The player's Feeding section in one line, for staff and for the results; with
-    Blood Resonance, the humor hunted for too."""
-    names = dict(
-        db.execute(
-            select(Character.id, Character.name).where(
-                Character.id.in_([g.character_id for g in answer.gifts])
-            )
-        ).all()
+def patrol_names(db: Session, answer: FeedingAnswer) -> dict[uuid.UUID, str]:
+    ids = [p.territory_id for p in answer.patrols]
+    if not ids:
+        return {}
+    rows = db.execute(
+        select(FeedingTerritory.id, FeedingTerritory.name).where(FeedingTerritory.id.in_(ids))
     )
-    parts = [f"{answer.actions} feeding action{'' if answer.actions == 1 else 's'}"]
-    if answer.where.strip():
-        parts[0] += f" ({answer.where.strip()})"
-    herd: list[str] = []
-    if answer.herd_own:
-        herd.append(f"{answer.herd_own} for my feeding")
-    herd += [f"{g.amount} to {names.get(g.character_id, '?')}" for g in answer.gifts if g.amount]
-    if answer.herd_saved:
-        herd.append(f"{answer.herd_saved} saved for game")
-    if answer.herd_other:
-        other = f"{answer.herd_other} other"
-        if answer.herd_other_text.strip():
-            other += f" ({answer.herd_other_text.strip()})"
-        herd.append(other)
-    if herd:
-        parts.append("Herd: " + ", ".join(herd))
-    if with_resonance and answer.resonance in resonance.HUMORS:
+    return {i: n for i, n in rows}
+
+
+def summary(
+    db: Session,
+    answer: FeedingAnswer,
+    *,
+    with_resonance: bool = False,
+    show: Shown | None = None,
+    participant: CycleParticipant | None = None,
+) -> str:
+    """The player's Feeding section in one line, for staff and for the results; with
+    Blood Resonance, the humor hunted for too; with feeding territories, where it fed
+    and patrolled; with the Rack, the vessel it took rather than its actions and Herd."""
+    show = show or Shown(resonance=with_resonance)
+    parts: list[str] = []
+    if show.rack and participant is not None:
+        from horatio import rack
+
+        took = rack.taken_with_territory(db, participant)
+        parts.append(rack.card_text(took.card, took.territory) if took else "no Feeding Card")
+        if answer.where.strip():
+            parts.append(answer.where.strip())
+    else:
+        names = dict(
+            db.execute(
+                select(Character.id, Character.name).where(
+                    Character.id.in_([g.character_id for g in answer.gifts])
+                )
+            ).all()
+        )
+        parts = [f"{answer.actions} feeding action{'' if answer.actions == 1 else 's'}"]
+        if answer.where.strip():
+            parts[0] += f" ({answer.where.strip()})"
+        herd: list[str] = []
+        if answer.herd_own:
+            herd.append(f"{answer.herd_own} for my feeding")
+        herd += [
+            f"{g.amount} to {names.get(g.character_id, '?')}" for g in answer.gifts if g.amount
+        ]
+        if answer.herd_saved:
+            herd.append(f"{answer.herd_saved} saved for game")
+        if answer.herd_other:
+            other = f"{answer.herd_other} other"
+            if answer.herd_other_text.strip():
+                other += f" ({answer.herd_other_text.strip()})"
+            herd.append(other)
+        if herd:
+            parts.append("Herd: " + ", ".join(herd))
+        if show.territories and participant is not None:
+            fed = territory_fed(db, answer, participant.character_id)
+            if fed is not None:
+                parts.append(f"{'poaching' if fed[1] else 'feeding'} in {fed[0].name}")
+    if show.territories and answer.patrolling:
+        territory = patrol_names(db, answer)
+        for patrol in answer.patrols:
+            if patrol.actions:
+                actions = f"{patrol.actions} action{'' if patrol.actions == 1 else 's'}"
+                parts.append(f"patrolling {territory.get(patrol.territory_id, '?')} ({actions})")
+    if show.resonance and answer.resonance in resonance.HUMORS:
         parts.append(f"hunting {resonance.HUMORS[answer.resonance].name.lower()} blood")
     return " · ".join(parts)
+
+
+# --- poaching and patrols ---------------------------------------------------------------
+
+
+@dataclass
+class PatrolBy:
+    character_id: uuid.UUID
+    character_name: str
+    actions: int
+
+
+def poached(
+    db: Session, participant: CycleParticipant, answer: FeedingAnswer, show: Shown
+) -> FeedingTerritory | None:
+    """The territory the character poached in, if it did: one it fed in, or took a
+    card from, that it does not hold."""
+    if not show.territories:
+        return None
+    from horatio import territories
+
+    if show.rack:
+        from horatio import rack
+
+        took = rack.taken_with_territory(db, participant)
+        territory = took.territory if took else None
+    else:
+        fed = territory_fed(db, answer, participant.character_id)
+        territory = fed[0] if fed else None
+    if territory is None or territories.holds(territory, participant.character_id):
+        return None
+    return territory
+
+
+def patrols_of(
+    db: Session, cycle: DowntimeCycle, territory_id: uuid.UUID, but: uuid.UUID
+) -> list[PatrolBy]:
+    """Who patrolled the territory this cycle, with how many actions, from submitted
+    downtimes: each action is a simple challenge against a poacher there."""
+    rows = db.execute(
+        select(Submission, Character)
+        .join(CycleParticipant, Submission.participant_id == CycleParticipant.id)
+        .join(Character, CycleParticipant.character_id == Character.id)
+        .where(
+            CycleParticipant.cycle_id == cycle.id,
+            CycleParticipant.removed_at.is_(None),
+            Submission.status == "submitted",
+            Character.id != but,
+        )
+        .order_by(Character.name)
+    )
+    found: list[PatrolBy] = []
+    for submission, character in rows:
+        actions = sum(
+            p.actions for p in answer_of(submission).patrols if p.territory_id == territory_id
+        )
+        if actions:
+            found.append(PatrolBy(character.id, character.name, actions))
+    return found
+
+
+def catches_by(
+    db: Session, cycle: DowntimeCycle, patroller: Character, show: Shown
+) -> list[tuple[str, str]]:
+    """The poachers the character's patrols caught this cycle, as (poacher, territory),
+    from the answers staff gave them."""
+    rows = db.execute(
+        select(Submission, CycleParticipant, Character)
+        .join(CycleParticipant, Submission.participant_id == CycleParticipant.id)
+        .join(Character, CycleParticipant.character_id == Character.id)
+        .where(CycleParticipant.cycle_id == cycle.id, CycleParticipant.removed_at.is_(None))
+        .order_by(Character.name)
+    )
+    found: list[tuple[str, str]] = []
+    for submission, participant, character in rows:
+        if str(patroller.id) not in submission.feeding_caught_by:
+            continue
+        territory = poached(db, participant, answer_of(submission), show)
+        found.append((character.name, territory.name if territory else "a territory"))
+    return found
 
 
 # --- the storytellers' answer -----------------------------------------------------------
@@ -423,11 +671,12 @@ def write_answer(
     reply: str,
     humor: str | None = None,
     dyscrasia: str = "",
+    caught_by: Sequence[uuid.UUID] = (),
 ) -> Submission:
     """Answer the character's feeding: full or half Blood next game, with the
     working kept as it stood, or something else in the reply's own words; with
-    Blood Resonance, the Resonance it fed on and any Dyscrasia. No result takes the
-    answer back."""
+    Blood Resonance, the Resonance it fed on and any Dyscrasia; with feeding
+    territories, which patrols caught it poaching. No result takes the answer back."""
     from horatio.downtimes import submission_for
 
     if not tracked(troupe):
@@ -446,6 +695,17 @@ def write_answer(
         raise unprocessable(f"No humor {humor!r}.")
     if dyscrasia and (humor is None or resonance.dyscrasia(humor, dyscrasia) is None):
         raise unprocessable(f"No Dyscrasia {dyscrasia!r} for that Resonance.")
+    show = shown(troupe)
+    answer = answer_of(submission)
+    if caught_by:
+        territory = poached(db, participant, answer, show)
+        patrollers = (
+            {p.character_id for p in patrols_of(db, cycle, territory.id, character.id)}
+            if territory is not None
+            else set()
+        )
+        if not set(caught_by) <= patrollers:
+            raise unprocessable("Only a character who patrolled where it poached can catch it.")
     basis = participant_basis(db, participant, character, cycle)
     feeding_need = need(db, cycle, participant, basis)
     if feeding_need is None:
@@ -453,15 +713,36 @@ def write_answer(
     submission.feeding_result = result
     submission.feeding_reply = reply if result else ""
     submission.feeding_working = ""
-    if result in ("full", "half"):
-        counted = tally(db, cycle, character, feeding_need, submission, submitted_only=True)
+    if result in ("full", "half") and show.rack:
+        from horatio import rack
+
+        took = rack.taken_with_territory(db, participant)
+        submission.feeding_working = (
+            f"took {rack.card_text(took.card, took.territory)}."
+            if took
+            else "took no Feeding Card."
+        )
+    elif result in ("full", "half"):
+        counted = tally(
+            db,
+            cycle,
+            character,
+            feeding_need,
+            submission,
+            submitted_only=True,
+            with_territories=show.territories,
+        )
         submission.feeding_working = rules.working(feeding_need, counted)
     if result is None:
         submission.feeding_resonance, submission.feeding_dyscrasia = None, ""
-    elif resonance_on(troupe):
-        # With the rule off, an answer leaves the Resonance it gave before, kept for
-        # when the rule comes back.
-        submission.feeding_resonance, submission.feeding_dyscrasia = humor, dyscrasia
+        submission.feeding_caught_by = []
+    else:
+        # With a rule off, an answer leaves what it gave before, kept for when the rule
+        # comes back.
+        if show.resonance:
+            submission.feeding_resonance, submission.feeding_dyscrasia = humor, dyscrasia
+        if show.territories:
+            submission.feeding_caught_by = [str(i) for i in dict.fromkeys(caught_by)]
     submission.feeding_answered_by = staff.id if result else None
     submission.feeding_answered_at = datetime.now(UTC) if result else None
     db.flush()
@@ -477,7 +758,50 @@ def write_answer(
     return submission
 
 
-def result_text(submission: Submission, *, with_resonance: bool = False) -> str | None:
+def territory_text(db: Session, submission: Submission, show: Shown) -> str:
+    """With feeding territories, what came of poaching and patrolling: "You were caught
+    poaching in the Docks by Agnes." "Patrolling the Docks, you caught Bram poaching.";
+    "" when the character did neither."""
+    if not show.territories:
+        return ""
+    participant = db.get_one(CycleParticipant, submission.participant_id)
+    cycle = db.get_one(DowntimeCycle, participant.cycle_id)
+    character = db.get_one(Character, participant.character_id)
+    answer = answer_of(submission)
+    lines: list[str] = []
+    territory = poached(db, participant, answer, show)
+    if territory is not None:
+        catchers = [
+            p.character_name
+            for p in patrols_of(db, cycle, territory.id, character.id)
+            if str(p.character_id) in submission.feeding_caught_by
+        ]
+        if catchers:
+            lines.append(
+                f"You were caught poaching in {territory.name} by {' and '.join(catchers)}."
+            )
+        else:
+            lines.append(f"Poaching in {territory.name}, you went unnoticed.")
+    if answer.patrolling:
+        caught = catches_by(db, cycle, character, show)
+        names = patrol_names(db, answer)
+        for patrol in answer.patrols:
+            name = names.get(patrol.territory_id, "your territory")
+            here = [poacher for poacher, where in caught if where == name]
+            lines.append(
+                f"Patrolling {name}, you caught {' and '.join(here)} poaching."
+                if here
+                else f"Patrolling {name}, you caught no one."
+            )
+    return " ".join(lines)
+
+
+def result_text(
+    submission: Submission,
+    *,
+    with_resonance: bool = False,
+    territory_words: str = "",
+) -> str | None:
     """The Feeding part of the delivered results, or None if it is unanswered."""
     if submission.feeding_result is None:
         return None
@@ -490,26 +814,32 @@ def result_text(submission: Submission, *, with_resonance: bool = False) -> str 
     fed_on = resonance.answer_text(submission.feeding_resonance, submission.feeding_dyscrasia)
     if with_resonance and fed_on:
         text += f"\n\n{fed_on}"
+    if territory_words:
+        text += f"\n\n{territory_words}"
     if submission.feeding_working:
         # Its own paragraph, so Horatio shows it folded away.
         text += f"\n\n▸ How it was worked out: {submission.feeding_working}"
     return text
 
 
-def compose(
-    db: Session, submission: Submission, *, shown: bool = True, with_resonance: bool = False
-) -> str | None:
-    """The Feeding part of the results: None while it is unanswered, or when it is
-    not `shown`, the troupe not tracking feeding."""
-    if not shown:
+def compose(db: Session, submission: Submission, show: Shown) -> str | None:
+    """The Feeding part of the results: None while it is unanswered, or when the
+    troupe doesn't track feeding. `show` says which optional rules it shows."""
+    if not show.tracked:
         return None
-    found = result_text(submission, with_resonance=with_resonance)
+    found = result_text(
+        submission,
+        with_resonance=show.resonance,
+        territory_words=territory_text(db, submission, show),
+    )
     if found is None:
         return None
     answer = answer_of(submission)
+    participant = db.get_one(CycleParticipant, submission.participant_id)
+    words = summary(db, answer, show=show, participant=participant)
     lines = ["**Feeding**"]
-    if not answer.empty:
-        lines.append(f"*Your feeding:* {summary(db, answer, with_resonance=with_resonance)}")
+    if words and (not answer.empty or show.rack):
+        lines.append(f"*Your feeding:* {words}")
     return "\n".join(lines) + "\n" + found
 
 

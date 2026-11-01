@@ -16,8 +16,10 @@ from horatio import (
     pictures,
     quest_actions,
     quests,
+    rack,
     resonance,
     social_age,
+    territories,
     xp_range,
 )
 from horatio.api.influence import InfluenceStandingOut, standing_out
@@ -27,6 +29,8 @@ from horatio.models import (
     Character,
     CycleParticipant,
     DowntimeCycle,
+    FeedingCard,
+    FeedingTerritory,
     Quest,
     Question,
     Submission,
@@ -215,6 +219,11 @@ class GiftIn(BaseModel):
     amount: int = Field(ge=0, le=20)
 
 
+class PatrolIn(BaseModel):
+    territory_id: uuid.UUID
+    actions: int = Field(ge=0, le=20)
+
+
 class FeedingIn(BaseModel):
     """The Feeding section of the form."""
 
@@ -229,6 +238,51 @@ class FeedingIn(BaseModel):
     herd_other_text: str = Field(default="", max_length=500)
     # With Blood Resonance: the humor the character hunts for, "" for any.
     resonance: Humor | Literal[""] = ""
+    # With feeding territories and book feeding: the territory it feeds in, by id, ""
+    # for none; and the downtime actions it spends patrolling the territories it holds.
+    territory: str = Field(default="", max_length=40)
+    patrols: list[PatrolIn] = []
+
+
+class TerritoryOut(BaseModel):
+    """A feeding territory (horatio.territories), as the domain knows it."""
+
+    id: uuid.UUID
+    name: str
+    size: Literal["small", "moderate", "notable", "significant", "large"]
+    # "Small", and the vessels it holds.
+    size_name: str
+    vessels: int
+    area: str
+    # Who the proclamation reserves it for, in its words.
+    held_by: str
+    holder_ids: list[uuid.UUID]
+    holders: list[str]
+    # The character asking holds it (on the downtime form).
+    mine: bool = False
+
+
+class FeedingCardOut(BaseModel):
+    """A Feeding Card (horatio.rack): a vessel to feed on."""
+
+    id: uuid.UUID
+    number: int
+    # rack | territory | herd | hunt
+    source: Literal["rack", "territory", "herd", "hunt"]
+    resonance: Humor
+    dyscrasia: str
+    # What its Dyscrasia does, in a line.
+    dyscrasia_summary: str
+    descriptor: str
+    territory_id: uuid.UUID | None
+    territory_name: str | None
+    # The character asking took it (on the downtime form); its feeding restriction
+    # lets it feed there.
+    mine: bool = False
+    suits: bool = True
+    # For staff: who took it, and who it was dealt to.
+    taken_by: str | None = None
+    dealt_to: str | None = None
 
 
 class DyscrasiaOut(BaseModel):
@@ -272,6 +326,20 @@ class MyFeedingOut(BaseModel):
     locked: bool
     # With Blood Resonance on, the humors to hunt for; empty while it is off.
     humors: list[HumorOut] = []
+    # With feeding territories on, the domain's territories; empty while it is off.
+    territories: list[TerritoryOut] = []
+    # With the Rack on: it is played, the cards the character can take (and the one it
+    # took), how its hunt outside the Rack went (win | tie | lose, "" before it hunts),
+    # and its feeding restriction in words ("" for none).
+    rack: bool = False
+    cards: list[FeedingCardOut] = []
+    hunt: str = ""
+    restriction: str = ""
+
+
+class VesselIn(BaseModel):
+    # The card to take, or None to give back the one taken.
+    card_id: uuid.UUID | None
 
 
 class AnswerIn(BaseModel):
@@ -472,6 +540,8 @@ def feeding_in(answer: feeding.FeedingAnswer) -> FeedingIn:
         herd_other=answer.herd_other,
         herd_other_text=answer.herd_other_text,
         resonance=answer.resonance,  # type: ignore[arg-type]  # checked when saved
+        territory=answer.territory,
+        patrols=[PatrolIn(territory_id=p.territory_id, actions=p.actions) for p in answer.patrols],
     )
 
 
@@ -497,6 +567,8 @@ def feeding_answer(body: FeedingIn) -> feeding.FeedingAnswer:
         herd_other=body.herd_other,
         herd_other_text=body.herd_other_text,
         resonance=body.resonance,
+        territory=body.territory,
+        patrols=[feeding.Patrol(p.territory_id, p.actions) for p in body.patrols],
     )
 
 
@@ -520,23 +592,90 @@ def my_feeding_out(
     submission: Submission | None,
 ) -> MyFeedingOut | None:
     troupe = db.get_one(Troupe, cycle.troupe_id)
-    if not feeding.tracked(troupe):
+    show = feeding.shown(troupe)
+    if not show.tracked:
         return None
     basis = feeding.participant_basis(db, participant, character, cycle)
     need = feeding.need(db, cycle, participant, basis)
     if need is None:
         return None
+    answer = feeding.answer_of(submission)
     return MyFeedingOut(
         need=need_out(need),
         herd=int(basis.get("herd", 0)),
-        answer=feeding_in(feeding.answer_of(submission)),
+        answer=feeding_in(answer),
         received=received_out(feeding.received(db, cycle, character.id)),
         recipients=[
             RecipientOut(character_id=i, name=n)
             for i, n in feeding.recipients(db, cycle, character)
         ],
         locked=submission is not None and submission.feeding_result is not None,
-        humors=humors_out() if feeding.resonance_on(troupe) else [],
+        humors=humors_out() if show.resonance else [],
+        territories=[territory_out(db, t, character.id) for t in territories.listed(db, troupe)]
+        if show.territories
+        else [],
+        rack=show.rack,
+        cards=[
+            card_out(db, c, participant, character)
+            for c in rack.visible(db, cycle, participant)
+            if show.territories or c.source != "territory"
+        ]
+        if show.rack
+        else [],
+        hunt=answer.hunt,
+        restriction=rack.restriction_text(character.feeding_numbers) if show.rack else "",
+    )
+
+
+def territory_out(
+    db: DbSession, territory: FeedingTerritory, asking: uuid.UUID | None = None
+) -> TerritoryOut:
+    size = territories.SIZES[territory.size]
+    return TerritoryOut(
+        id=territory.id,
+        name=territory.name,
+        size=territory.size,  # type: ignore[arg-type]  # checked by the database
+        size_name=size.name,
+        vessels=size.vessels,
+        area=territory.area,
+        held_by=territory.held_by,
+        holder_ids=[uuid.UUID(i) for i in territory.holder_ids],
+        holders=territories.holder_names(db, territory),
+        mine=asking is not None and territories.holds(territory, asking),
+    )
+
+
+def card_out(
+    db: DbSession,
+    card: FeedingCard,
+    participant: CycleParticipant | None = None,
+    character: Character | None = None,
+    *,
+    staff: bool = False,
+) -> FeedingCardOut:
+    carried = resonance.dyscrasia(card.resonance, card.dyscrasia)
+    territory = db.get(FeedingTerritory, card.territory_id) if card.territory_id else None
+
+    def name_of(participant_id: uuid.UUID | None) -> str | None:
+        if participant_id is None:
+            return None
+        found = db.get_one(CycleParticipant, participant_id)
+        return db.get_one(Character, found.character_id).name
+
+    return FeedingCardOut(
+        id=card.id,
+        number=card.number,
+        source=card.source,  # type: ignore[arg-type]  # checked by the database
+        resonance=card.resonance,  # type: ignore[arg-type]  # checked by the database
+        dyscrasia=card.dyscrasia,
+        dyscrasia_summary=carried.summary if carried else "",
+        descriptor=card.descriptor,
+        territory_id=card.territory_id,
+        territory_name=territory.name if territory else None,
+        mine=participant is not None and card.taken_by == participant.id,
+        suits=character is None or rack.suits(character, card),
+        taken_by=name_of(card.taken_by) if staff else None,
+        dealt_to=name_of(card.dealt_to) if staff else None,
     )
 
 
@@ -840,6 +979,46 @@ def save_answers(
         [downtimes.AnswerSpec(**a.model_dump()) for a in body.answers],
         feeding_answer(body.feeding) if body.feeding is not None else None,
     )
+    db.commit()
+    return my_downtime_out(db, character, cycle, participant)
+
+
+@router.post("/characters/{character_id}/downtime/vessel")
+def take_vessel(
+    character_id: uuid.UUID, body: VesselIn, db: DbSession, user: CurrentUser
+) -> MyDowntime:
+    """With the Rack: take a Feeding Card, giving back any taken before, or give it back."""
+    character, cycle, participant = my_participation(db, user, character_id)
+    troupe = db.get_one(Troupe, cycle.troupe_id)
+    if not rack.on(troupe):
+        raise HTTPException(status.HTTP_409_CONFLICT, "This troupe doesn't play the Rack.")
+    rack.take(
+        db,
+        cycle,
+        troupe,
+        participant,
+        character,
+        downtimes.submission_for(db, participant),
+        body.card_id,
+    )
+    db.commit()
+    return my_downtime_out(db, character, cycle, participant)
+
+
+@router.post("/characters/{character_id}/downtime/hunt")
+def hunt_outside_the_rack(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> MyDowntime:
+    """With the Rack: hunt outside it, once a cycle. Horatio throws the simple challenge
+    and deals 3, 2 or 1 cards to choose from."""
+    character, cycle, participant = my_participation(db, user, character_id)
+    troupe = db.get_one(Troupe, cycle.troupe_id)
+    if not rack.on(troupe):
+        raise HTTPException(status.HTTP_409_CONFLICT, "This troupe doesn't play the Rack.")
+    submission = downtimes.submission_for(db, participant)
+    if submission is None:
+        submission = Submission(participant_id=participant.id)
+        db.add(submission)
+        db.flush()
+    rack.hunt(db, cycle, participant, submission)
     db.commit()
     return my_downtime_out(db, character, cycle, participant)
 

@@ -132,6 +132,65 @@ class FeedingAdjustment(Record):
     adjusted_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
 
 
+class FeedingTerritory(Record):
+    """A feeding territory (Vol. 2, pp. 304-305): an area of the domain where only
+    the vampires its Authority names may feed, rated Small to Large. Staff keep the
+    list as the Authority proclaims it; it is known to everyone in the domain.
+    Revoked or lost territories are archived, not deleted (horatio.territories)."""
+
+    __tablename__ = "feeding_territories"
+    __table_args__ = (
+        CheckConstraint(
+            "size in ('small', 'moderate', 'notable', 'significant', 'large')", name="size"
+        ),
+    )
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    name: Mapped[str]
+    size: Mapped[str] = mapped_column(default="small", server_default="small")
+    # Where it is, in a few words.
+    area: Mapped[str] = mapped_column(default="", server_default="")
+    # Who the proclamation reserves it for, in its words: "Clan Toreador", "the Prince".
+    held_by: Mapped[str] = mapped_column(default="", server_default="")
+    # The characters who may feed there, by id; none until it is assigned.
+    holder_ids: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class FeedingCard(Record):
+    """A Feeding Card: one vessel a character can feed on in a cycle, with the Rack
+    (Vol. 2, pp. 298-303; horatio.rack). Laid out on the Rack, set aside in a
+    feeding territory, or dealt to one character only, for its Herd or for hunting
+    outside the Rack. A character takes one; no one else can then."""
+
+    __tablename__ = "feeding_cards"
+    __table_args__ = (
+        CheckConstraint("source in ('rack', 'territory', 'herd', 'hunt')", name="source"),
+        CheckConstraint(
+            "resonance in ('choleric', 'melancholic', 'phlegmatic', 'sanguine')",
+            name="resonance",
+        ),
+        CheckConstraint("(source = 'territory') = (territory_id is not null)", name="territory"),
+        CheckConstraint("(source in ('herd', 'hunt')) = (dealt_to is not null)", name="dealt_to"),
+    )
+
+    cycle_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("downtime_cycles.id"), index=True)
+    source: Mapped[str] = mapped_column(default="rack", server_default="rack")
+    number: Mapped[int]
+    resonance: Mapped[str]
+    # The Dyscrasia it carries, by name, or "".
+    dyscrasia: Mapped[str] = mapped_column(default="", server_default="")
+    # Who the vessel is: appearance, occupation, anything else.
+    descriptor: Mapped[str] = mapped_column(default="", server_default="")
+    territory_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("feeding_territories.id"))
+    # The one participant a Herd or hunting card was dealt to.
+    dealt_to: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("cycle_participants.id"))
+    taken_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("cycle_participants.id"), index=True
+    )
+    taken_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class OwedAction(Record):
     """A downtime action a character owes for something done between games, such
     as learning a discipline dot (MET: VTM p. 111), or for influence spent at a
@@ -194,6 +253,9 @@ class Submission(Record):
     # fed on, and the Dyscrasia it carried, by name ("" for none).
     feeding_resonance: Mapped[str | None]
     feeding_dyscrasia: Mapped[str] = mapped_column(default="", server_default="")
+    # With Feeding Territories: the characters whose patrol caught this one poaching,
+    # by id (horatio.territories).
+    feeding_caught_by: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
 
 
 class Answer(Record):

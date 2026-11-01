@@ -7,6 +7,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { staffTallyText } from "../../feeding";
 import { useAction } from "../../hooks";
+import { cardLine, PoachingControls, RackCard, RestrictionEditor, TerritoriesThisCycle } from "./FeedingRules";
 
 type Clan = CycleFeedingOut["clans"][number];
 type Result = "full" | "half" | "other";
@@ -44,31 +45,36 @@ export function FeedingTab({ cycle }: { cycle: CycleOut }) {
     );
   if (feeding.isPending) return <Loading />;
   if (feeding.error) return <ErrorText error={feeding.error} />;
-  const { clans, characters } = feeding.data;
+  const { clans, characters, rack } = feeding.data;
   const inPlay = clans.filter((c) => c.characters > 0 || c.amount !== 1 || c.reason);
   const others = clans.filter((c) => !inPlay.includes(c));
   const editable = cycle.status !== "complete";
 
   return (
     <div className="flex flex-col gap-6">
-      <Card title="Feeding by clan">
-        <p className="mb-3 text-sm text-mist">Feeding actions each clan needs this cycle. The next cycle starts with these numbers.</p>
-        <ClanRows clans={inPlay} cycleId={cycle.id} editable={editable} />
-        {others.length > 0 && (
-          <details className="mt-3 text-sm">
-            <summary className="cursor-pointer text-mist">Other clans ({others.length})</summary>
-            <div className="mt-2">
-              <ClanRows clans={others} cycleId={cycle.id} editable={editable} />
-            </div>
-          </details>
-        )}
-      </Card>
+      {rack && <RackCard cycle={cycle} rack={rack} humors={feeding.data.humors ?? []} />}
+      <TerritoriesThisCycle territories={feeding.data.territories ?? []} rack={!!rack} />
+      {/* With the Rack, a vessel stands in for feeding actions (p. 298). */}
+      {!rack && (
+        <Card title="Feeding by clan">
+          <p className="mb-3 text-sm text-mist">Feeding actions each clan needs this cycle. The next cycle starts with these numbers.</p>
+          <ClanRows clans={inPlay} cycleId={cycle.id} editable={editable} />
+          {others.length > 0 && (
+            <details className="mt-3 text-sm">
+              <summary className="cursor-pointer text-mist">Other clans ({others.length})</summary>
+              <div className="mt-2">
+                <ClanRows clans={others} cycleId={cycle.id} editable={editable} />
+              </div>
+            </details>
+          )}
+        </Card>
+      )}
       {cycle.status === "draft" ? (
         <Empty>Each character's feeding shows here once the cycle opens.</Empty>
       ) : characters.length === 0 ? (
         <Empty>No one taking part feeds.</Empty>
       ) : (
-        characters.map((c) => <CharacterFeeding key={c.participant_id} cycle={cycle} character={c} humors={feeding.data.humors ?? []} />)
+        characters.map((c) => <CharacterFeeding key={c.participant_id} cycle={cycle} character={c} humors={feeding.data.humors ?? []} rack={!!rack} />)
       )}
     </div>
   );
@@ -113,13 +119,16 @@ function ClanRow({ clan, cycleId, editable }: { clan: Clan; cycleId: string; edi
   );
 }
 
-function CharacterFeeding({ cycle, character: c, humors }: { cycle: CycleOut; character: CharacterFeedingOut; humors: HumorOut[] }) {
+function CharacterFeeding({ cycle, character: c, humors, rack }: { cycle: CycleOut; character: CharacterFeedingOut; humors: HumorOut[]; rack: boolean }) {
   const path = { params: { path: { cycle_id: cycle.id, participant_id: c.participant_id } } };
-  const [result, setResult] = useState<Result>(c.result ?? (c.tally.enough ? "full" : "half"));
+  // With the Rack, taking a vessel is feeding: full Blood, as the book has it.
+  const fed = rack ? !!c.vessel && !c.need.always_half : c.tally.enough;
+  const [result, setResult] = useState<Result>(c.result ?? (fed ? "full" : "half"));
   const [reply, setReply] = useState(c.reply);
-  // With Blood Resonance: what it fed on, starting from what the player hunted for.
-  const [humor, setHumor] = useState<Humor | "">(c.result ? (c.resonance ?? "") : c.answer.resonance || "");
-  const [dyscrasia, setDyscrasia] = useState(c.dyscrasia ?? "");
+  // With Blood Resonance: what it fed on, starting from its vessel's, or what the player hunted for.
+  const [humor, setHumor] = useState<Humor | "">(c.result ? (c.resonance ?? "") : (c.vessel?.resonance ?? (c.answer.resonance || "")));
+  const [dyscrasia, setDyscrasia] = useState(c.result ? (c.dyscrasia ?? "") : (c.vessel?.dyscrasia ?? ""));
+  const [caught, setCaught] = useState<string[]>(c.caught_by ?? []);
   const chosen = humors.find((h) => h.key === humor);
   const carried = chosen?.dyscrasias.find((d) => d.name === dyscrasia);
   const [adjust, setAdjust] = useState({ delta: 1, reason: "" });
@@ -134,7 +143,7 @@ function CharacterFeeding({ cycle, character: c, humors }: { cycle: CycleOut; ch
       api.PUT("/api/cycles/{cycle_id}/participants/{participant_id}/feeding-answer", {
         ...path,
         // Without Blood Resonance, the answer leaves any Resonance given before as it was.
-        body: { result: value, reply, resonance: humor || null, dyscrasia: humor ? dyscrasia : "" },
+        body: { result: value, reply, resonance: humor || null, dyscrasia: humor ? dyscrasia : "", caught_by: caught },
       }),
     ),
   );
@@ -156,19 +165,28 @@ function CharacterFeeding({ cycle, character: c, humors }: { cycle: CycleOut; ch
         </span>
       }
     >
-      <p className="text-sm">
-        Needs <strong className="text-gold">{c.need.needed}</strong> feeding: {c.need.lines.map((l) => l.text).join(" · ")}.
-        {c.herd > 0 && <span className="text-mist"> Has Herd {c.herd}.</span>}
-      </p>
-      <p className="mt-1 text-sm">{c.summary || <span className="text-mist">No feeding entered.</span>}</p>
-      {c.received.map((r) => (
-        <p key={r.character_id} className="text-sm">
-          {r.character_name} gave {r.amount} Herd.{!r.submitted && <span className="text-mist"> (Not submitted, so not counted.)</span>}
+      {rack ? (
+        <p className={`text-sm ${c.vessel ? "text-gold" : "text-mist"}`} aria-label={`${c.character_name}'s vessel`}>
+          {c.vessel ? `Took Feeding Card ${cardLine(c.vessel)}${c.vessel.territory_name ? `, from ${c.vessel.territory_name}` : ""}.` : "No vessel taken yet."}
+          {c.herd > 0 && <span className="text-mist"> Has Herd {c.herd}.</span>}
         </p>
-      ))}
-      <p className={`mt-1 text-sm ${c.tally.enough ? "text-gold" : "text-mist"}`} aria-label={`${c.character_name}'s tally`}>
-        {staffTallyText(c.tally)}
-      </p>
+      ) : (
+        <>
+          <p className="text-sm">
+            Needs <strong className="text-gold">{c.need.needed}</strong> feeding: {c.need.lines.map((l) => l.text).join(" · ")}.
+            {c.herd > 0 && <span className="text-mist"> Has Herd {c.herd}.</span>}
+          </p>
+          <p className="mt-1 text-sm">{c.summary || <span className="text-mist">No feeding entered.</span>}</p>
+          {c.received.map((r) => (
+            <p key={r.character_id} className="text-sm">
+              {r.character_name} gave {r.amount} Herd.{!r.submitted && <span className="text-mist"> (Not submitted, so not counted.)</span>}
+            </p>
+          ))}
+          <p className={`mt-1 text-sm ${c.tally.enough ? "text-gold" : "text-mist"}`} aria-label={`${c.character_name}'s tally`}>
+            {staffTallyText(c.tally)}
+          </p>
+        </>
+      )}
 
       {c.result && c.resonance && (
         <p className="mt-2 text-sm">
@@ -192,6 +210,7 @@ function CharacterFeeding({ cycle, character: c, humors }: { cycle: CycleOut; ch
               </label>
             ))}
           </div>
+          <PoachingControls character={c} caught={caught} onChange={setCaught} />
           {humors.length > 0 && (
             <div className="grid gap-2 sm:grid-cols-2">
               <Field label="Resonance fed on">
@@ -263,7 +282,8 @@ function CharacterFeeding({ cycle, character: c, humors }: { cycle: CycleOut; ch
           {a.delta} feeding: {a.reason}
         </p>
       ))}
-      {cycle.status === "open" && (
+      {rack && cycle.status !== "complete" && <RestrictionEditor cycleId={cycle.id} character={c} />}
+      {cycle.status === "open" && !rack && (
         <details className="mt-3 text-sm">
           <summary className="cursor-pointer text-mist">Adjust {c.character_name}'s feeding</summary>
           <div className="mt-2 grid gap-2 sm:grid-cols-[5rem_1fr_auto]">

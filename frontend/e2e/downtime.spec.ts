@@ -1186,7 +1186,7 @@ type Person = Awaited<ReturnType<typeof person>>;
  * A troupe with a lead and one player whose vampire (Brujah, no Herd) is at home
  * there, and an open cycle: for the feeding setting's tests.
  */
-async function feedingTroupe(custodian: Person, lead: Person, player: Person, troupeName: string) {
+async function feedingTroupe(custodian: Person, lead: Person, player: Person, troupeName: string, other?: Person) {
   makeCustodian(custodian.email);
   const headers = { "X-Horatio": "1" };
   const send = async (page: Page, method: "GET" | "POST" | "PUT", url: string, data?: object) => {
@@ -1197,31 +1197,37 @@ async function feedingTroupe(custodian: Person, lead: Person, player: Person, tr
   await custodian.page.reload();
   const troupe = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
   await backstoryOptional(custodian.page, troupe.id);
-  const p = player.page;
-  const { id } = await send(p, "POST", "/api/characters", { splat: "vampire", name: "Bram" });
-  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
-  const picks: Record<string, [string, number][]> = {
-    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
-    focus_physicals: [["Strength", 1]],
-    focus_mentals: [["Wits", 1]],
-    focus_socials: [["Charisma", 1]],
-    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
-    backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
-    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  const home = async (p: Page, name: string, clan: string) => {
+    const { id } = await send(p, "POST", "/api/characters", { splat: "vampire", name });
+    await send(p, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: clan, rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+      disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+    };
+    for (const [category, list] of Object.entries(picks))
+      await send(p, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+    await send(p, "POST", `/api/characters/${id}/creation/complete`);
+    const asked = await send(p, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    return id as string;
   };
-  for (const [category, list] of Object.entries(picks))
-    await send(p, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
-  await send(p, "POST", `/api/characters/${id}/creation/complete`);
-  const asked = await send(p, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
-  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+  const bram = await home(player.page, "Bram", "Brujah");
+  const agnes = other ? await home(other.page, "Agnes", "Brujah") : "";
   const now = Date.now();
   const cycle = await send(lead.page, "POST", `/api/troupes/${troupe.id}/cycles`, {
     name: "Thin month",
     closes_at: new Date(now + 7 * 86400e3).toISOString(),
     grace_ends_at: new Date(now + 9 * 86400e3).toISOString(),
   });
-  await send(lead.page, "POST", `/api/cycles/${cycle.id}/open`);
-  return { lead: lead.page, player: p, troupe: troupe.id as string, bram: id as string, cycle: cycle.id as string, send };
+  // With a second player, opened by the test once the troupe's optional rules are set.
+  const open = () => send(lead.page, "POST", `/api/cycles/${cycle.id}/open`);
+  if (!other) await open();
+  return { lead: lead.page, player: player.page, troupe: troupe.id as string, bram, agnes, cycle: cycle.id as string, send, open };
 }
 
 /** The Feeding card of Troupe settings. */
@@ -1250,7 +1256,7 @@ test("a troupe that doesn't track feeding sees none of it, and switching it back
   await card.getByRole("radio", { name: /Don't track feeding/ }).click();
   await expect(card.getByRole("radio", { name: /Don't track feeding/ })).toBeChecked();
   await expect(l.getByText("Feeding isn't tracked now. What was recorded is kept, for if you switch it back on.")).toBeVisible();
-  await expect(card.getByRole("checkbox", { name: /Blood Resonance/ })).toBeDisabled();
+  await expect(card.getByRole("checkbox", { name: /^Blood Resonance/ })).toBeDisabled();
   await l.screenshot(shots("settings-feeding-off"));
   await l.goto(`/troupes/${troupe}/house-rules`);
   await expect(l.getByText("Not tracked: no feeding in downtimes, results or at the next game")).toBeVisible();
@@ -1295,9 +1301,9 @@ test("with Blood Resonance, the player hunts for a humor and staff answer with t
   const { lead: l, player: b, troupe, bram, cycle, send } = await feedingTroupe(...people, `Humoral Court ${run}`);
 
   await l.goto(`/troupes/${troupe}/settings`);
-  await feedingCard(l).getByRole("checkbox", { name: /Blood Resonance/ }).click();
-  await expect(feedingCard(l).getByRole("checkbox", { name: /Blood Resonance/ })).toBeChecked();
-  await expect(l.getByText("Blood Resonance is on.")).toBeVisible();
+  await feedingCard(l).getByRole("checkbox", { name: /^Blood Resonance/ }).click();
+  await expect(feedingCard(l).getByRole("checkbox", { name: /^Blood Resonance/ })).toBeChecked();
+  await expect(l.getByText("Blood Resonance: on.")).toBeVisible();
 
   // Bram hunts for sanguine blood.
   await b.goto(`/characters/${bram}/downtime`);
@@ -1325,4 +1331,114 @@ test("with Blood Resonance, the player hunts for a humor and staff answer with t
   await expect(b.getByText(/Fed on sanguine blood \(enthusiasm, vitality, excitement or joy\)\. Dyscrasia: Manic High/)).toBeVisible();
   await l.goto(`/troupes/${troupe}/house-rules`);
   await expect(l.getByText("Blood Resonance", { exact: true })).toBeVisible();
+});
+
+test("feeding territories: a holder patrols hers, a poacher is caught there, and both read what came of it", async ({ browser }) => {
+  const people = [await person(browser, "dtterr-custodian"), await person(browser, "dtterr-lead"), await person(browser, "dtterr-player")] as const;
+  const holder = await person(browser, "dtterr-holder");
+  const { lead: l, player: b, troupe, bram, agnes, cycle, send, open } = await feedingTroupe(...people, `Docklands Court ${run}`, holder);
+  const a = holder.page;
+
+  // The lead switches feeding territories on and assigns the Docks to Agnes.
+  await l.goto(`/troupes/${troupe}/settings`);
+  await feedingCard(l).getByRole("checkbox", { name: /^Feeding territories/ }).click();
+  await expect(feedingCard(l).getByRole("checkbox", { name: /^Feeding territories/ })).toBeChecked();
+  const territories = l.locator("section").filter({ has: l.getByRole("heading", { name: "Feeding territories" }) });
+  await territories.getByRole("button", { name: "Add a territory" }).click();
+  await territories.getByLabel("Name").fill("Docks");
+  await expect(territories.getByText("2 vessels; usually 1 to 2 vampires (p. 304).")).toBeVisible();
+  await territories.getByLabel("Proclaimed for").fill("the Harbour Coterie");
+  await territories.getByRole("checkbox", { name: "Agnes" }).check();
+  await territories.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(territories.getByText("Held by Agnes (the Harbour Coterie)")).toBeVisible();
+  await l.screenshot(shots("settings-territories"));
+  await open();
+
+  // Agnes feeds in her territory and patrols it; Bram feeds there too, which is poaching.
+  await a.goto(`/characters/${agnes}/downtime`);
+  const hers = a.locator("section").filter({ has: a.getByRole("heading", { name: "Feeding" }) });
+  await hers.getByLabel("Feed in a territory").selectOption({ label: "Docks (yours)" });
+  await hers.getByLabel("Actions patrolling Docks").fill("1");
+  await expect(hers.getByRole("status")).toHaveText("Enough feeding: 1 of the 1 needed (1 from feeding in Docks) ✓");
+  await a.getByRole("button", { name: "Submit downtime" }).click();
+  await expect(a.getByText("Submitted", { exact: true })).toBeVisible();
+  await b.goto(`/characters/${bram}/downtime`);
+  const his = b.locator("section").filter({ has: b.getByRole("heading", { name: "Feeding" }) });
+  await his.getByLabel("Feed in a territory").selectOption({ label: "Docks (held by Agnes)" });
+  await expect(his.getByText("That is poaching: Agnes may be patrolling it.")).toBeVisible();
+  await b.screenshot(shots("downtime-feeding-territory"));
+  await b.getByRole("button", { name: "Submit downtime" }).click();
+  await expect(b.getByText("Submitted", { exact: true })).toBeVisible();
+
+  // The lead sees both feeding in the Docks, and marks Bram caught by Agnes's patrol.
+  await l.goto(`/cycles/${cycle}/feeding`);
+  await expect(l.getByText("Feeding here: Agnes, Bram")).toBeVisible();
+  const bramCard = l.locator("section").filter({ has: l.getByRole("heading", { name: "Bram" }) });
+  await expect(bramCard.getByText(/^Poaching in Docks\./)).toBeVisible();
+  await bramCard.getByRole("checkbox", { name: "Caught by Agnes (1 action patrolling)" }).check();
+  await bramCard.getByRole("button", { name: "Answer" }).click();
+  await expect(bramCard.getByRole("button", { name: "Change answer" })).toBeVisible();
+  const agnesCard = l.locator("section").filter({ has: l.getByRole("heading", { name: "Agnes" }) });
+  await agnesCard.getByRole("button", { name: "Answer" }).click();
+  await expect(agnesCard.getByRole("button", { name: "Change answer" })).toBeVisible();
+  await l.screenshot(shots("cycle-feeding-territories"));
+
+  await send(l, "POST", `/api/cycles/${cycle}/close`, { add_to_ceiling: false });
+  expect((await send(l, "POST", `/api/cycles/${cycle}/deliver`)).delivered).toBe(2);
+  await b.goto(`/characters/${bram}/results`);
+  await expect(b.getByText("You were caught poaching in Docks by Agnes.")).toBeVisible();
+  await a.goto(`/characters/${agnes}/results`);
+  await expect(a.getByText("Patrolling Docks, you caught Bram poaching.")).toBeVisible();
+});
+
+test("with the Rack, staff lay out the cycle's vessels and a player takes one in place of feeding actions", async ({ browser }) => {
+  const people = [await person(browser, "dtrack-custodian"), await person(browser, "dtrack-lead"), await person(browser, "dtrack-player")] as const;
+  const { lead: l, player: b, troupe, bram, cycle, send } = await feedingTroupe(...people, `Rack Court ${run}`);
+
+  // The Rack needs Blood Resonance: it is offered once that is on.
+  await l.goto(`/troupes/${troupe}/settings`);
+  const rackBox = feedingCard(l).getByRole("checkbox", { name: /^The Rack/ });
+  await expect(rackBox).toBeDisabled();
+  await feedingCard(l).getByRole("checkbox", { name: /^Blood Resonance/ }).click();
+  await expect(rackBox).toBeEnabled();
+  await rackBox.click();
+  await expect(rackBox).toBeChecked();
+
+  // The lead lays out the cards the book suggests for one player: 2.
+  await l.goto(`/cycles/${cycle}/feeding`);
+  const rack = l.locator("section").filter({ has: l.getByRole("heading", { name: "The Rack" }) });
+  await expect(rack.getByText("The book suggests 2 for 1 taking part (p. 306).")).toBeVisible();
+  await expect(l.getByRole("heading", { name: "Feeding by clan" })).toHaveCount(0);
+  await rack.getByRole("button", { name: "Lay out 2 cards" }).click();
+  await expect(rack.getByText("2 of 2 left on the Rack.")).toBeVisible();
+
+  // Bram takes the first vessel on the Rack.
+  await b.goto(`/characters/${bram}/downtime`);
+  const feeding = b.locator("section").filter({ has: b.getByRole("heading", { name: "Feeding" }) });
+  await expect(feeding.getByLabel("Actions spent feeding")).toHaveCount(0);
+  const first = feeding.getByRole("region", { name: "On the Rack" }).getByRole("listitem").first();
+  const label = (await first.getAttribute("aria-label"))!;
+  const number = label.replace("Feeding Card ", "");
+  await first.getByRole("button", { name: "Take" }).click();
+  await expect(feeding.getByRole("status")).toContainText(`Your vessel: ${number}`);
+  await b.screenshot(shots("downtime-feeding-rack"));
+  await b.getByRole("button", { name: "Submit downtime" }).click();
+  await expect(b.getByText("Submitted", { exact: true })).toBeVisible();
+
+  // The lead answers full Blood, with the vessel's Resonance already chosen.
+  await l.reload();
+  const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Bram" }) });
+  await expect(card.getByLabel("Bram's vessel")).toContainText(`Took Feeding Card ${number}`);
+  await expect(card.getByRole("radio", { name: "Full Blood next game" })).toBeChecked();
+  await expect(card.getByLabel("Resonance fed on")).not.toHaveValue("");
+  await card.getByRole("button", { name: "Answer" }).click();
+  await expect(card.getByRole("button", { name: "Change answer" })).toBeVisible();
+  await expect(rack.getByText("1 of 2 left on the Rack.")).toBeVisible();
+  await l.screenshot(shots("cycle-feeding-rack"));
+
+  await send(l, "POST", `/api/cycles/${cycle}/close`, { add_to_ceiling: false });
+  expect((await send(l, "POST", `/api/cycles/${cycle}/deliver`)).delivered).toBe(1);
+  await b.goto(`/characters/${bram}/results`);
+  await expect(b.getByText(new RegExp(`Feeding Card ${number}, `)).first()).toBeVisible();
+  await expect(b.getByText("Full Blood next game.")).toBeVisible();
 });

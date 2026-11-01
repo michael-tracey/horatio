@@ -34,6 +34,7 @@ from horatio.models import (
     EquipmentEvent,
     EquipmentItem,
     FeedingAdjustment,
+    FeedingCard,
     HomeTroupeChange,
     Location,
     PlayCounter,
@@ -91,6 +92,13 @@ def delete_character(db: Session, player: User, character: Character) -> None:
         delete(AllowanceAdjustment).where(AllowanceAdjustment.participant_id.in_(participants))
     )
     db.execute(delete(FeedingAdjustment).where(FeedingAdjustment.participant_id.in_(participants)))
+    # The Rack's cards dealt to it go; one it took goes back on the Rack.
+    db.execute(delete(FeedingCard).where(FeedingCard.dealt_to.in_(participants)))
+    db.execute(
+        update(FeedingCard)
+        .where(FeedingCard.taken_by.in_(participants))
+        .values(taken_by=None, taken_at=None)
+    )
     db.execute(delete(CycleParticipant).where(CycleParticipant.character_id == cid))
     db.execute(delete(XpEntry).where(XpEntry.character_id == cid))
     db.execute(

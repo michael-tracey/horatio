@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FeedingNeedOut } from "./api/types";
-import { emptyFeeding, herdShared, needText, staffTallyText, tally } from "./feeding";
+import { emptyFeeding, feedingActionsSpent, herdShared, needText, staffTallyText, tally } from "./feeding";
 
 const need: FeedingNeedOut = {
   needed: 2,
@@ -52,5 +52,21 @@ describe("feeding", () => {
     expect(
       herdShared({ ...emptyFeeding(), herd_own: 1, gifts: [{ character_id: "b", amount: 2 }], herd_saved: 1, herd_other: 1 }),
     ).toBe(5);
+  });
+});
+
+describe("feeding territories and the Rack", () => {
+  const need = { needed: 2, lines: [], herd_factor: 1, always_half: false };
+
+  it("counts feeding in a territory as one feeding", () => {
+    const t = tally(need, { ...emptyFeeding(), actions: 1 }, [], "the Docks");
+    expect(t.text).toBe("Enough feeding: 2 of the 2 needed (1 feeding action, 1 from feeding in the Docks) ✓");
+  });
+
+  it("spends patrols, and no feeding actions with the Rack", () => {
+    const answer = { ...emptyFeeding(), actions: 2, patrols: [{ territory_id: "docks", actions: 1 }] };
+    expect(feedingActionsSpent(answer, false, true)).toBe(3);
+    expect(feedingActionsSpent(answer, true, true)).toBe(1);
+    expect(feedingActionsSpent(answer, false, false)).toBe(2);
   });
 });

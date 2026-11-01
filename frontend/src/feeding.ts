@@ -12,6 +12,8 @@ export const emptyFeeding = (): FeedingIn => ({
   herd_other: 0,
   herd_other_text: "",
   resonance: "",
+  territory: "",
+  patrols: [],
 });
 
 /** The Herd dots the answer shares out, which can't be more than the rating. */
@@ -35,9 +37,9 @@ export type Tally = { parts: string[]; total: number; needed: number; enough: bo
  * The advisory tally: "Enough feeding: 4 of the 2 needed (1 feeding action, 1 from
  * your Herd, 2 from Bram) ✓", or "0 of the 1 feeding needed so far: you'll come to
  * game at half Blood…". Herd counts as the character's traits say (twice, or not
- * at all). Nothing is blocked; storytellers decide.
+ * at all). Feeding in a territory counts for one. Nothing is blocked; storytellers decide.
  */
-export function tally(need: FeedingNeedOut, answer: FeedingIn, received: Gift[]): Tally {
+export function tally(need: FeedingNeedOut, answer: FeedingIn, received: Gift[], territory?: string): Tally {
   const factor = need.herd_factor;
   const actions = answer.actions ?? 0;
   const own = (answer.herd_own ?? 0) * factor;
@@ -45,7 +47,9 @@ export function tally(need: FeedingNeedOut, answer: FeedingIn, received: Gift[])
   if (actions) parts.push(actions === 1 ? "1 feeding action" : `${actions} feeding actions`);
   if (answer.herd_own) parts.push(`${own} from your Herd`);
   for (const g of received) parts.push(`${g.amount * factor} from ${g.character_name}`);
-  const total = actions + own + received.reduce((n, g) => n + g.amount * factor, 0);
+  // With feeding territories, feeding in one stands in for a feeding action.
+  if (territory) parts.push(`1 from feeding in ${territory}`);
+  const total = actions + own + received.reduce((n, g) => n + g.amount * factor, 0) + (territory ? 1 : 0);
   const enough = !need.always_half && total >= need.needed;
   const from = parts.length ? ` (${parts.join(", ")})` : "";
   const text = enough
@@ -66,4 +70,10 @@ export function staffTallyText(t: { needed: number; total: number; enough: boole
   if (t.enough) return `Has ${t.total} feeding, enough for the ${t.needed} it needs${from} ✓`;
   if (t.total < t.needed) return `Has ${t.total} of the ${t.needed} feeding it needs, short ${t.needed - t.total}${from}`;
   return `Has ${t.total} feeding${from}, but no feeding brings it to full Blood`;
+}
+
+/** The general actions the Feeding section spends: feeding actions (none with the Rack) and, with feeding territories, patrols. */
+export function feedingActionsSpent(answer: FeedingIn, rack: boolean, territories: boolean): number {
+  const patrols = territories ? (answer.patrols ?? []).reduce((n, p) => n + (p.actions ?? 0), 0) : 0;
+  return (rack ? 0 : (answer.actions ?? 0)) + patrols;
 }
