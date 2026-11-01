@@ -37,6 +37,7 @@ properties, as the troupe's rules read them (horatio.rules.house_effects), and a
 read here like a book merit's.
 """
 
+import re
 import tomllib
 from collections import defaultdict
 from collections.abc import Collection, Iterable, Mapping, Sequence
@@ -148,12 +149,23 @@ class TestPool(BaseModel):
     switched: list[SwitchedPart] = []
 
 
+class Cost(BaseModel):
+    """What using a power costs, for its Use button on the Pools tab (issue #370)."""
+
+    tracker: Literal["blood", "willpower"]
+    amount: int
+
+
 class PowerNote(BaseModel):
     level: int
     name: str
     note: str
     # What the character's focus adds, if they have the one the book names.
     focus: str | None = None
+    # What using it costs, when that is plain; None for a power with no clear cost.
+    cost: Cost | None = None
+    # The keys of its switches (see `active`), which using it turns on.
+    switches: list[str] = []
 
 
 class DisciplinePowers(BaseModel):
@@ -164,6 +176,9 @@ class DisciplinePowers(BaseModel):
     note: str | None
     focus: str | None
     powers: list[PowerNote]
+    # What activating the discipline itself costs (Celerity), and its switches.
+    cost: Cost | None = None
+    switches: list[str] = []
 
 
 class OtherPower(BaseModel):
@@ -974,6 +989,28 @@ def switches(rows: Sequence[SheetRow], rule_set: RuleSetData) -> list[Switch]:
     return work_out(Sheet.read(rows, rule_set), technique_bases(rule_set)).switches
 
 
+# A note that starts with what the power costs: "1 Blood, standard action: …".
+COST_NOTE = re.compile(r"^(\d+) (Blood|Willpower)\b")
+
+
+def cost(entry: Mapping[str, Any], sheet: Sheet) -> Cost | None:
+    """What using a discipline or power costs: its `cost` (`{ blood = 1 }` or
+    `{ willpower = 1 }`, none with its `unless_focus`), or else the Blood or
+    Willpower its note starts with. Costs that come part way through a note
+    ("Grapple, then 1 Blood") are left to the player."""
+    given = entry.get("cost")
+    if given is not None:
+        if given.get("unless_focus") in sheet.focuses:
+            return None
+        tracker = "willpower" if "willpower" in given else "blood"
+        return Cost(tracker=tracker, amount=given[tracker])
+    found = COST_NOTE.match(entry.get("note", ""))
+    if not found:
+        return None
+    tracker = "blood" if found[2] == "Blood" else "willpower"
+    return Cost(tracker=tracker, amount=int(found[1]))
+
+
 def disciplines(sheet: Sheet) -> list[DisciplinePowers]:
     book = catalogue()
     found: list[DisciplinePowers] = []
@@ -990,6 +1027,8 @@ def disciplines(sheet: Sheet) -> list[DisciplinePowers]:
                 versus=spec.get("versus"),
                 note=spec.get("note"),
                 focus=focus,
+                cost=cost(spec, sheet),
+                switches=[a["key"] for a in actives(spec)],
                 powers=[
                     PowerNote(
                         level=p["level"],
@@ -998,6 +1037,8 @@ def disciplines(sheet: Sheet) -> list[DisciplinePowers]:
                         focus=next(
                             (n for a, n in p.get("focus", {}).items() if a in sheet.focuses), None
                         ),
+                        cost=cost(p, sheet),
+                        switches=[a["key"] for a in actives(p)],
                     )
                     for p in book.powers.get(name, [])
                     if p["level"] <= rating

@@ -152,7 +152,7 @@ test("staff read a joining character's backstory, send it back on one section, a
   await p.reload();
   await p.getByRole("button", { name: /Notifications, \d+ waiting/ }).click();
   await p.getByRole("button", { name: /sent Isolde's backstory back \(on “My sire”\)/ }).click();
-  await expect(p.getByText(`${troupeName} sent it back with feedback.`)).toBeVisible();
+  await expect(p.getByText(`${troupeName}'s storytellers asked for changes: see their feedback below`)).toBeVisible();
   const thread = p.getByRole("list", { name: "Feedback and replies" });
   await expect(thread).toContainText("on “My sire”");
   await expect(thread).toContainText("More about the sire, please");
@@ -162,7 +162,7 @@ test("staff read a joining character's backstory, send it back on one section, a
   await expect(p.getByText("taught me to hunt the docks")).toBeVisible();
   await p.getByLabel("Reply to the storytellers").fill("Added the docks.");
   await p.getByRole("button", { name: "Resubmit the backstory" }).click();
-  await expect(p.getByText(`Revised and back with ${troupeName}'s storytellers.`)).toBeVisible();
+  await expect(p.getByText(`Revised and back with ${troupeName}'s storytellers. Nothing for you to do yet.`)).toBeVisible();
   await p.screenshot(shots("backstory-resubmitted"));
 
   // An assistant storyteller approves it; then the character can be accepted.

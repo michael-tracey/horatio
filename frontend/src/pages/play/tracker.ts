@@ -417,7 +417,8 @@ export function tapToast(view: Shown, tap: Tap): string {
   const name = trackerName(view, tracker);
   if (tracker === "health") return `${amount > 0 ? "Took" : "Healed"} ${n} ${tap.damage ?? "normal"}${tail}`;
   if (tracker === DRANK) return `Drank ${n} vitae${tail}`;
-  if (tracker === "blood" || tracker === "willpower") return `${amount < 0 ? "Spent" : "Restored"} ${n} ${name}${tail}`;
+  // A power's Use button names the power the spend was for, as its note.
+  if (tracker === "blood" || tracker === "willpower") return `${amount < 0 ? "Spent" : "Restored"} ${n} ${name}${amount < 0 && tap.note ? ` on ${tap.note}` : ""}${tail}`;
   if (view.expendables.some((e) => e.key === tracker)) return `${amount < 0 ? "Used" : "Restored"} ${n} ${name}${tail}`;
   if (isFixed(tracker) || tracker.startsWith(RETAINER)) return `${name} ${amount < 0 ? "−" : "+"}${n}${tail}`;
   if (isStatus(tracker)) return amount < 0 ? `${name} spent${tracker.startsWith(HELD) ? " for good" : ""}` : `${name} restored`;
@@ -433,6 +434,24 @@ export function tapToast(view: Shown, tap: Tap): string {
   }
   if (tracker.startsWith(EQUIP)) return `${view.equipment.find((i) => EQUIP + i.id === tracker)?.name ?? "Item"} ${amount > 0 ? "equipped" : "put away"}`;
   return "Saved";
+}
+
+/**
+ * What the toast says taps made together did, each after the one before:
+ * "Spent 1 Blood · 9/10 · Celerity switched on". Undoing them together says
+ * "Undone" once, with where each tracker stands now.
+ */
+export function tapsToast(view: Shown, taps: Tap[]): string {
+  const said: string[] = [];
+  let now = view;
+  for (const tap of taps) {
+    said.push(tapToast(now, tap));
+    now = withPending(now, [tap]);
+  }
+  if (taps.length > 1 && taps.every((t) => t.kind === "undo")) {
+    return ["Undone", ...said.map((s) => s.replace(/^Undone( · )?/, "")).filter(Boolean)].join(" · ");
+  }
+  return said.join(" · ");
 }
 
 /** Damage marked into the Incapacitated boxes: the character loses their simple action. */

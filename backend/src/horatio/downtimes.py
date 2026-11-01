@@ -16,12 +16,13 @@ after the grace period only a storyteller's say-so lets one in.
 """
 
 import uuid
+from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from horatio import audit, feeding, influence, responses, suspensions
@@ -30,6 +31,7 @@ from horatio.models import (
     Answer,
     Character,
     CycleParticipant,
+    Delivery,
     DowntimeCycle,
     OwedAction,
     Question,
@@ -599,6 +601,54 @@ def visible_questions(
 
 def submission_for(db: Session, participant: CycleParticipant) -> Submission | None:
     return db.scalar(select(Submission).where(Submission.participant_id == participant.id))
+
+
+@dataclass(frozen=True)
+class Waiting:
+    """What waits for a character's player between games."""
+
+    # When the downtime it has yet to submit is due (the soonest, if several); None for none.
+    due: datetime | None = None
+    # When each cycle's results last reached the player, newest first.
+    delivered: tuple[datetime, ...] = ()
+
+
+def waiting(db: Session, character_ids: Sequence[uuid.UUID]) -> dict[uuid.UUID, Waiting]:
+    """For each character, the downtime due and the results delivered, asked in two
+    queries for all of them. A character with neither is left out."""
+    due: dict[uuid.UUID, datetime] = {}
+    for character_id, closes_at in db.execute(
+        select(CycleParticipant.character_id, DowntimeCycle.closes_at)
+        .join(DowntimeCycle, CycleParticipant.cycle_id == DowntimeCycle.id)
+        .outerjoin(Submission, Submission.participant_id == CycleParticipant.id)
+        .where(
+            CycleParticipant.character_id.in_(character_ids),
+            CycleParticipant.removed_at.is_(None),
+            DowntimeCycle.status == "open",
+            or_(Submission.id.is_(None), Submission.status != "submitted"),
+        )
+    ):
+        due[character_id] = min(closes_at, due.get(character_id, closes_at))
+    delivered: dict[uuid.UUID, list[datetime]] = defaultdict(list)
+    for character_id, sent_at in db.execute(
+        select(CycleParticipant.character_id, func.max(Delivery.sent_at))
+        .join(Submission, Delivery.submission_id == Submission.id)
+        .join(CycleParticipant, Submission.participant_id == CycleParticipant.id)
+        .where(
+            CycleParticipant.character_id.in_(character_ids),
+            Delivery.channel == "horatio",
+            Delivery.status == "sent",
+            Delivery.test_mode.is_(False),
+            Delivery.sent_at.is_not(None),
+        )
+        .group_by(CycleParticipant.character_id, CycleParticipant.cycle_id)
+    ):
+        if sent_at is not None:
+            delivered[character_id].append(sent_at)
+    return {
+        c: Waiting(due=due.get(c), delivered=tuple(sorted(delivered[c], reverse=True)))
+        for c in {*due, *delivered}
+    }
 
 
 def answers_for(db: Session, submission: Submission) -> list[Answer]:

@@ -135,13 +135,13 @@ export function Empty({ children }: { children: ReactNode }) {
   return <p className="py-4 text-sm text-mist">{children}</p>;
 }
 
-export function Badge({ children, tone = "mist" }: { children: ReactNode; tone?: "mist" | "gold" | "blood" }) {
+export function Badge({ children, tone = "mist", className }: { children: ReactNode; tone?: "mist" | "gold" | "blood"; className?: string }) {
   const tones = {
     mist: "border-ash text-mist",
     gold: "border-gold/50 text-gold",
     blood: "border-blood text-blood-bright",
   };
-  return <span className={cx("rounded-full border px-2 py-0.5 text-xs whitespace-nowrap", tones[tone])}>{children}</span>;
+  return <span className={cx("rounded-full border px-2 py-0.5 text-xs whitespace-nowrap", tones[tone], className)}>{children}</span>;
 }
 
 export function PageTitle({ children, subtitle, actions }: { children: ReactNode; subtitle?: ReactNode; actions?: ReactNode }) {

@@ -1,6 +1,7 @@
 """Answering downtimes: assignment, narrators, writing, fill tables and delivery."""
 
 from collections.abc import Callable
+from datetime import datetime
 from typing import Any
 
 import pytest
@@ -300,6 +301,49 @@ def test_what_waits_for_the_player_between_games(
     assert len(waiting()["delivered"]) == 1
     staff = troupe.storyteller.client.get(f"/characters/{bram}/downtime/waiting")
     assert staff.status_code == 403
+
+
+def test_the_players_list_says_where_each_character_stands_and_what_waits(
+    client_for: Callable[[], TestClient], session: Session
+) -> None:
+    troupe = Troupe(client_for, session)
+    bram = member_character(troupe, troupe.player, "Bram")
+    cleo = member_character(troupe, troupe.player, "Cleo")
+
+    def listed() -> dict[str, dict[str, Any]]:
+        response = troupe.player.client.get("/characters")
+        assert response.status_code == 200, response.text
+        return {c["id"]: c for c in response.json()}
+
+    assert listed()[bram]["home_troupe_name"] == "Lords of the Night"
+    assert (listed()[bram]["downtime_due"], listed()[bram]["delivered"]) == (None, [])
+    # Each character's downtime, as its own tabs count it: Cleo submits hers, Bram not yet.
+    cycle = open_cycle(troupe, new_cycle(troupe))
+    general = question_id(my_downtime(troupe.player, cleo).json(), "Downtime action")
+    save(troupe.player, cleo, [{"question_id": general, "slot": 1, "body": "Read"}])
+    troupe.player.client.post(f"/characters/{cleo}/downtime/submit")
+    found = listed()
+    assert found[bram]["downtime_due"] is not None
+    assert datetime.fromisoformat(found[bram]["downtime_due"]) == datetime.fromisoformat(
+        cycle["closes_at"]
+    )
+    assert found[cleo]["downtime_due"] is None
+
+    troupe.assistant.client.post(f"/cycles/{cycle['id']}/close")
+    response = next(
+        r
+        for r in troupe.assistant.client.get(f"/cycles/{cycle['id']}/responses").json()
+        if r["answer"] == "Read"
+    )
+    troupe.assistant.client.put(f"/responses/{response['id']}", json={"body": "You learn."})
+    troupe.assistant.client.post(f"/cycles/{cycle['id']}/deliver", json={"partial": True})
+    found = listed()
+    assert (
+        found[cleo]["delivered"]
+        == troupe.player.client.get(f"/characters/{cleo}/downtime/waiting").json()["delivered"]
+    )
+    assert len(found[cleo]["delivered"]) == 1
+    assert found[bram]["delivered"] == []
 
 
 def test_a_response_written_after_delivery_reaches_the_player(scene: Scene) -> None:

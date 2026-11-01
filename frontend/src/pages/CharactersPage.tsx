@@ -6,12 +6,16 @@ import { api, unwrap } from "../api/client";
 import { Avatar } from "../components/Avatar";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, PageTitle, Select } from "../components/ui";
 import { useAction, useMe } from "../hooks";
+import { useDates } from "../dates";
 import { BuildFor } from "./character/BuildFor";
+import { seenUpTo } from "./character/resultsSeen";
+import { standing, waiting } from "./characterList";
 import { splatsFor, useSplats } from "./character/splats";
 
 export function CharactersPage() {
   const navigate = useNavigate();
   const me = useMe();
+  const dates = useDates();
   const characters = useQuery({ queryKey: ["characters"], queryFn: () => unwrap(api.GET("/api/characters")) });
   const [name, setName] = useState("");
   const [wanted, setSplat] = useState("vampire");
@@ -44,18 +48,22 @@ export function CharactersPage() {
             <ul className="divide-y divide-ash">
               {characters.data.map((c) => (
                 <li key={c.id}>
-                  <Link to={`/characters/${c.id}`} className="flex items-center justify-between gap-3 py-3 hover:text-gold">
-                    <span className="flex min-w-0 items-center gap-3">
-                      <Avatar name={c.name} picture={c.picture} clan={c.clan} />
-                      <span className="min-w-0">
-                        <span className="text-base">{c.name}</span>
-                        <span className="ml-2 text-sm text-mist capitalize">
-                          {c.splat}
-                          {c.clan && ` · ${c.clan}`}
-                        </span>
+                  <Link to={`/characters/${c.id}`} className="flex items-center gap-3 py-3 hover:text-gold">
+                    <Avatar name={c.name} picture={c.picture} clan={c.clan} />
+                    <span className="min-w-0">
+                      <span className="text-base">{c.name}</span>
+                      <span className="ml-2 text-sm text-mist capitalize">
+                        {c.splat}
+                        {c.clan && ` · ${c.clan}`}
+                      </span>
+                      <span className="mt-1 flex min-w-0 flex-wrap gap-1.5">
+                        {[...standing(c), ...waiting(c, seenUpTo(c.id), dates)].map((n) => (
+                          <Badge key={n.label} tone={n.tone} className="max-w-full truncate">
+                            {n.label}
+                          </Badge>
+                        ))}
                       </span>
                     </span>
-                    <Badge tone={c.status === "active" ? "gold" : c.status === "retired" ? "mist" : "blood"}>{c.status}</Badge>
                   </Link>
                 </li>
               ))}

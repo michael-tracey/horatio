@@ -425,7 +425,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** My Characters */
+        /**
+         * My Characters
+         * @description The player's characters, each with its troupes' names and its downtime, in a few
+         *     queries for the whole list.
+         */
         get: operations["my_characters_api_characters_get"];
         put?: never;
         /**
@@ -8625,6 +8629,66 @@ export interface components {
             /** Working */
             working: string;
         };
+        /**
+         * CharacterListOut
+         * @description A character in its player's list, with where it stands and what waits for them.
+         */
+        CharacterListOut: {
+            /** Asking Troupe Id */
+            asking_troupe_id: string | null;
+            /** Asking Troupe Name */
+            asking_troupe_name: string | null;
+            /** Building Troupe Id */
+            building_troupe_id: string | null;
+            /** Clan */
+            clan: string | null;
+            /** Creation Complete */
+            creation_complete: boolean;
+            /** Delivered */
+            delivered: string[];
+            /** Downtime Due */
+            downtime_due: string | null;
+            /** Home Troupe Id */
+            home_troupe_id: string | null;
+            /** Home Troupe Name */
+            home_troupe_name: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Left Listed */
+            left_listed: boolean;
+            /** Left Reason */
+            left_reason: string | null;
+            /** Name */
+            name: string;
+            /** Next Rename On */
+            next_rename_on: string | null;
+            /** Npc Form */
+            npc_form: string | null;
+            /** Npc Kind */
+            npc_kind: string | null;
+            /** Npc Kind Name */
+            npc_kind_name: string | null;
+            /** Owner Troupe Id */
+            owner_troupe_id: string | null;
+            /** Picture */
+            picture: string | null;
+            /**
+             * Player Id
+             * Format: uuid
+             */
+            player_id: string;
+            /** Pronouns */
+            pronouns: string | null;
+            /** Splat */
+            splat: string;
+            /** Status */
+            status: string;
+        };
         /** CharacterOut */
         CharacterOut: {
             /** Asking Troupe Id */
@@ -9032,6 +9096,19 @@ export interface components {
             character_id: string;
             /** Dots */
             dots: number;
+        };
+        /**
+         * Cost
+         * @description What using a power costs, for its Use button on the Pools tab (issue #370).
+         */
+        Cost: {
+            /** Amount */
+            amount: number;
+            /**
+             * Tracker
+             * @enum {string}
+             */
+            tracker: "blood" | "willpower";
         };
         /** CostCategoryOut */
         CostCategoryOut: {
@@ -9740,6 +9817,7 @@ export interface components {
         };
         /** DisciplinePowers */
         DisciplinePowers: {
+            cost?: components["schemas"]["Cost"] | null;
             /** Focus */
             focus: string | null;
             /** Name */
@@ -9752,6 +9830,11 @@ export interface components {
             powers: components["schemas"]["PowerNote"][];
             /** Rating */
             rating: number;
+            /**
+             * Switches
+             * @default []
+             */
+            switches: string[];
             /** Versus */
             versus: string | null;
         };
@@ -15066,6 +15149,7 @@ export interface components {
         };
         /** PowerNote */
         PowerNote: {
+            cost?: components["schemas"]["Cost"] | null;
             /** Focus */
             focus?: string | null;
             /** Level */
@@ -15074,6 +15158,11 @@ export interface components {
             name: string;
             /** Note */
             note: string;
+            /**
+             * Switches
+             * @default []
+             */
+            switches: string[];
         };
         /**
          * PowerOut
@@ -20341,7 +20430,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CharacterOut"][];
+                    "application/json": components["schemas"]["CharacterListOut"][];
                 };
             };
         };

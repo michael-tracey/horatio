@@ -515,22 +515,5 @@ def my_waiting(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Dow
     character = visible_character(db, user, character_id)
     if not can_edit_character(db, user, character):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the character's player sees this.")
-    found = downtimes.current_participation(db, character)
-    submission = downtimes.submission_for(db, found[1]) if found else None
-    delivered = db.execute(
-        select(func.max(Delivery.sent_at))
-        .join(Submission, Delivery.submission_id == Submission.id)
-        .join(CycleParticipant, Submission.participant_id == CycleParticipant.id)
-        .where(
-            CycleParticipant.character_id == character.id,
-            Delivery.channel == "horatio",
-            Delivery.status == "sent",
-            Delivery.test_mode.is_(False),
-            Delivery.sent_at.is_not(None),
-        )
-        .group_by(CycleParticipant.cycle_id)
-    ).scalars()
-    return DowntimeWaiting(
-        due=found is not None and (submission is None or submission.status != "submitted"),
-        delivered=sorted((d for d in delivered if d is not None), reverse=True),
-    )
+    found = downtimes.waiting(db, [character.id]).get(character.id, downtimes.Waiting())
+    return DowntimeWaiting(due=found.due is not None, delivered=list(found.delivered))

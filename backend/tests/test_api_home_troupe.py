@@ -298,6 +298,12 @@ def test_a_character_says_which_troupe_it_is_waiting_on(troupe: Troupe) -> None:
     assert asking() == [None]
     request_home(troupe.player, character_id, troupe.id)
     assert asking() == [troupe.id]
+    # The list names it too, for the player's characters page.
+    [listed] = troupe.player.client.get("/characters").json()
+    assert (listed["asking_troupe_name"], listed["home_troupe_name"]) == (
+        "Lords of the Night",
+        None,
+    )
     one = troupe.player.client.get(f"/characters/{character_id}").json()
     assert one["asking_troupe_id"] == troupe.id
     troupe.player.client.delete(f"/characters/{character_id}/home-troupe")
