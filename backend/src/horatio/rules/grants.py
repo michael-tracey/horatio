@@ -616,7 +616,7 @@ def validate_grant(
     names = list(grant.target.get("names") or [])
     if grant.kind == "replace_in_clan":
         # The names are disciplines to be in-clan, which the catalogue may lack
-        # (the Graveborne path of Blight of the Ever-Hungry).
+        # (the Graveborn path of Blight of the Ever-Hungry).
         if not names:
             raise ValueError(f"grant {grant.key} must name the in-clan disciplines")
         return

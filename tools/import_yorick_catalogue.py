@@ -359,7 +359,7 @@ EXTRA_TRAITS = {
         "properties": {"rating": 3, "type": "Clan", "requirement": "Baali: Angelis Ater"},
     },
     ("merits", "Blight of the Ever-Hungry"): {
-        "note": "In-clan disciplines become Auspex, Potence and Necromancy: Path of the Graveborne; a serrated maw bites without a grapple. Creation only.",
+        "note": "In-clan disciplines become Auspex, Potence and Necromancy: Path of the Graveborn; a serrated maw bites without a grapple. Creation only.",
         "page_reference": "Vol. 2, p. 62",
         "properties": {"rating": 3, "type": "Clan", "requirement": "Nagaraja"},
     },
