@@ -172,7 +172,7 @@ export function XpAwardsTab({ troupeId }: { troupeId: string }) {
 }
 
 /** A number with down and up arrows, never below 0. */
-function Stepper({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
+export function Stepper({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
   return (
     <span className="inline-flex items-center gap-1">
       <Button type="button" variant="secondary" className="min-h-9 w-9 px-0" aria-label={`Less ${label}`} disabled={value <= 0} onClick={() => onChange(value - 1)}>

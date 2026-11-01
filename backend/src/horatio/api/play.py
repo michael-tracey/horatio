@@ -650,7 +650,9 @@ def play_view(db: Session, character: Character) -> PlayView:
         vitae=vitae_out(db, character, limits, state),
         blood_usual=limits.blood,
         half_blood=limits.half_blood,
-        willpower=Tracker(value=state["willpower"], most=limits.willpower, start=limits.willpower),
+        willpower=Tracker(
+            value=state["willpower"], most=limits.willpower, start=limits.starting_willpower()
+        ),
         health=Health(
             levels=[HealthLevel(name=n, boxes=b) for n, b in limits.health],
             marks=state["health"],
@@ -1102,7 +1104,9 @@ def troupe_play(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[
                 ),
                 human_blood=state["human"] if limits.vitae else None,
                 willpower=Tracker(
-                    value=state["willpower"], most=limits.willpower, start=limits.willpower
+                    value=state["willpower"],
+                    most=limits.willpower,
+                    start=limits.starting_willpower(),
                 ),
                 health_marked=len(state["health"]),
                 health_boxes=len(limits.boxes(state["on"])),

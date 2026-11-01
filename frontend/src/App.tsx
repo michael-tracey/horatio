@@ -16,6 +16,7 @@ import { useTextSize } from "./textSize";
 // The bigger pages load when first opened, so the first visit (signing in, the
 // character list) downloads less.
 const AccountPage = lazy(() => import("./pages/AccountPage").then((m) => ({ default: m.AccountPage })));
+const CheckInPage = lazy(() => import("./pages/CheckInPage").then((m) => ({ default: m.CheckInPage })));
 const CharacterPage = lazy(() => import("./pages/character/CharacterPage").then((m) => ({ default: m.CharacterPage })));
 const CustodianPage = lazy(() => import("./pages/custodian/CustodianPage").then((m) => ({ default: m.CustodianPage })));
 const CyclePage = lazy(() => import("./pages/troupe/CyclePage").then((m) => ({ default: m.CyclePage })));
@@ -93,6 +94,8 @@ export function App() {
           <Route index element={<Navigate to="/characters" replace />} />
           <Route path="/characters" element={<CharactersPage />} />
           <Route path="/characters/:characterId/*" element={<CharacterPage />} />
+          <Route path="/check-in" element={<CheckInPage />} />
+          <Route path="/check-in/:code" element={<CheckInPage />} />
           <Route path="/troupes" element={<TroupesPage />} />
           <Route path="/troupes/:troupeId/*" element={<TroupePage />} />
           <Route path="/cycles/:cycleId/*" element={<CyclePage />} />

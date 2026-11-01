@@ -18,9 +18,18 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from horatio import checkin
 from horatio.api.troupe_profiles import ProfilePerson, someone, upcoming
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Character, GameRsvp, ScheduledGame, Troupe, TroupeMembership, User
+from horatio.models import (
+    Character,
+    GameAttendance,
+    GameRsvp,
+    ScheduledGame,
+    Troupe,
+    TroupeMembership,
+    User,
+)
 from horatio.permissions import TroupeAction, allows, is_member, troupe_role
 
 router = APIRouter(prefix="/troupes/{troupe_id}/games", tags=["games"])
@@ -50,6 +59,11 @@ class GameRsvpsOut(BaseModel):
     not_coming: int
     # Who said what, coming first, for the troupe's staff; None for anyone else.
     answers: list[RsvpOut] | None
+    # Check-in at the door (horatio.checkin): whether it is open, how many characters
+    # have checked in, and which of the caller's, by name.
+    checkin_open: bool
+    checked_in: int
+    my_checked_in: list[str]
 
 
 def member_troupe(db: Session, user: User, troupe_id: uuid.UUID) -> Troupe:
@@ -76,6 +90,14 @@ def games_out(
         troupe_role(db, user, troupe), TroupeAction.VIEW_RSVPS, is_custodian=user.is_custodian
     )
     rsvps = list(db.scalars(select(GameRsvp).where(GameRsvp.game_id.in_([g.id for g in games]))))
+    here = list(
+        db.execute(
+            select(GameAttendance.game_id, Character.name, Character.player_id)
+            .join(Character, GameAttendance.character_id == Character.id)
+            .where(GameAttendance.game_id.in_([g.id for g in games]))
+            .order_by(Character.name)
+        )
+    )
     people: dict[uuid.UUID, User] = {}
     characters: dict[uuid.UUID, list[str]] = {}
     if staff and rsvps:
@@ -97,8 +119,9 @@ def games_out(
 
     out: list[GameRsvpsOut] = []
     for game in games:
-        here = [r for r in rsvps if r.game_id == game.id]
-        mine = next((r for r in here if r.user_id == user.id), None)
+        said = [r for r in rsvps if r.game_id == game.id]
+        mine = next((r for r in said if r.user_id == user.id), None)
+        came = [(name, player) for game_id, name, player in here if game_id == game.id]
         answers = None
         if staff:
             answers = [
@@ -108,7 +131,7 @@ def games_out(
                     characters=characters.get(r.user_id, []),
                 )
                 for r in sorted(
-                    here,
+                    said,
                     key=lambda r: (ORDER[r.answer], people[r.user_id].display_name.lower()),
                 )
             ]
@@ -118,10 +141,13 @@ def games_out(
                 starts_at=game.starts_at,
                 ends_at=game.ends_at,
                 my_answer=cast(Answer, mine.answer) if mine else None,
-                coming=sum(r.answer == "coming" for r in here),
-                maybe=sum(r.answer == "maybe" for r in here),
-                not_coming=sum(r.answer == "not_coming" for r in here),
+                coming=sum(r.answer == "coming" for r in said),
+                maybe=sum(r.answer == "maybe" for r in said),
+                not_coming=sum(r.answer == "not_coming" for r in said),
                 answers=answers,
+                checkin_open=checkin.is_open(game),
+                checked_in=len(came),
+                my_checked_in=[name for name, player in came if player == user.id],
             )
         )
     return out

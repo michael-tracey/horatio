@@ -537,6 +537,26 @@ export interface paths {
         patch: operations["change_character_api_characters__character_id__patch"];
         trace?: never;
     };
+    "/api/characters/{character_id}/attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Attended
+         * @description The games the character came to, newest first.
+         */
+        get: operations["attended_api_characters__character_id__attendance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/backstory": {
         parameters: {
             query?: never;
@@ -3036,6 +3056,27 @@ export interface paths {
          *     self-entered XP while the character has no home troupe.
          */
         post: operations["correct_xp_api_characters__character_id__xp__entry_id__correction_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/checkin/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Code
+         * @description The game a door's code is for, while its check-in is open, with the caller's
+         *     characters there.
+         */
+        get: operations["read_code_api_checkin__code__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5978,6 +6019,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/games/past": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Past Games
+         * @description The troupe's latest games already over, newest first, with how many came: for
+         *     its staff, to see who came and award the XP.
+         */
+        get: operations["past_games_api_troupes__troupe_id__games_past_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/games/{game_id}": {
         parameters: {
             query?: never;
@@ -5990,6 +6052,95 @@ export interface paths {
         post?: never;
         /** Remove Game */
         delete: operations["remove_game_api_troupes__troupe_id__games__game_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/games/{game_id}/attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check In
+         * @description Check a character in: its player, while check-in is open, or the troupe's
+         *     running staff by hand. It starts the character's night on the Play View.
+         */
+        post: operations["check_in_api_troupes__troupe_id__games__game_id__attendance_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/games/{game_id}/attendance/{character_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Check Out
+         * @description Take a character off the game's attendance, by hand. Its Play View stays as it is.
+         */
+        delete: operations["check_out_api_troupes__troupe_id__games__game_id__attendance__character_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/games/{game_id}/checkin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Checkin
+         * @description The game, while its check-in is open, with the caller's characters there.
+         */
+        get: operations["read_checkin_api_troupes__troupe_id__games__game_id__checkin_get"];
+        /**
+         * Open Checkin
+         * @description Open check-in with a new code for the door; any code before stops working.
+         */
+        put: operations["open_checkin_api_troupes__troupe_id__games__game_id__checkin_put"];
+        post?: never;
+        /**
+         * Close Checkin
+         * @description Close check-in: the code stops working. Staff can still check people in by hand.
+         */
+        delete: operations["close_checkin_api_troupes__troupe_id__games__game_id__checkin_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/games/{game_id}/night": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Night
+         * @description The game's check-in, who came, and its XP: for the troupe's running staff.
+         */
+        get: operations["read_night_api_troupes__troupe_id__games__game_id__night_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -6014,6 +6165,27 @@ export interface paths {
          * @description Take back your answer, saying nothing either way.
          */
         delete: operations["take_back_api_troupes__troupe_id__games__game_id__rsvp_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/games/{game_id}/xp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Award Game Xp
+         * @description The game's XP to every character checked in whose home is this troupe, all at
+         *     once, and once a game. Visitors are awarded by their own home troupes.
+         */
+        post: operations["award_game_xp_api_troupes__troupe_id__games__game_id__xp_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -7453,6 +7625,18 @@ export interface components {
             /** Status */
             status: components["schemas"]["SourceStatus"][];
         };
+        /** Absentee */
+        Absentee: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Player Name */
+            player_name: string;
+        };
         /** ActionKindChoiceOut */
         ActionKindChoiceOut: {
             /** Key */
@@ -7861,6 +8045,57 @@ export interface components {
             any_narrator: boolean;
             /** User Id */
             user_id?: string | null;
+        };
+        /** AttendedGame */
+        AttendedGame: {
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /**
+             * Game Id
+             * Format: uuid
+             */
+            game_id: string;
+            /** Play Game Number */
+            play_game_number: number | null;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
+        /** Attendee */
+        Attendee: {
+            /** By Staff */
+            by_staff: boolean;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /**
+             * Checked In At
+             * Format: date-time
+             */
+            checked_in_at: string;
+            /** Home */
+            home: boolean;
+            /** Month Xp */
+            month_xp: number;
+            player: components["schemas"]["ProfilePerson"];
+            /** Rested */
+            rested: boolean | null;
         };
         /**
          * AttributeChange
@@ -9230,6 +9465,75 @@ export interface components {
             /** Strength */
             strength: ("refuse" | "complete" | "review" | "note" | "off") | null;
         };
+        /** CheckInCharacter */
+        CheckInCharacter: {
+            /** Checked In */
+            checked_in: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** CheckInIn */
+        CheckInIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /**
+             * Rested
+             * @default true
+             */
+            rested: boolean;
+        };
+        /**
+         * CheckInOffer
+         * @description A game whose check-in is open, and the caller's characters who can check in.
+         */
+        CheckInOffer: {
+            /** Characters */
+            characters: components["schemas"]["CheckInCharacter"][];
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /**
+             * Game Id
+             * Format: uuid
+             */
+            game_id: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
+        /** CheckInState */
+        CheckInState: {
+            /** Can Open */
+            can_open: boolean;
+            /** Code */
+            code: string | null;
+            /** Open */
+            open: boolean;
+            /**
+             * Opens At
+             * Format: date-time
+             */
+            opens_at: string;
+        };
         /** CheckOut */
         CheckOut: {
             /** About */
@@ -9257,6 +9561,20 @@ export interface components {
             strength: string;
             /** Text */
             text: string;
+        };
+        /** CheckedIn */
+        CheckedIn: {
+            /** Already */
+            already: boolean;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Play Started */
+            play_started: boolean;
         };
         /** ChoiceChange */
         ChoiceChange: {
@@ -11861,6 +12179,45 @@ export interface components {
             /** Log */
             log: components["schemas"]["LogEntryOut"][];
         };
+        /** GameNight */
+        GameNight: {
+            /** Attendees */
+            attendees: components["schemas"]["Attendee"][];
+            /** Can Award */
+            can_award: boolean;
+            checkin: components["schemas"]["CheckInState"];
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Game Xp High */
+            game_xp_high: number;
+            /** Game Xp Low */
+            game_xp_low: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Monthly Xp */
+            monthly_xp: number;
+            /** Others */
+            others: components["schemas"]["Absentee"][];
+            /** Session Xp */
+            session_xp: number;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            xp: components["schemas"]["GameXp"];
+        };
         /** GameOut */
         GameOut: {
             /** Ended At */
@@ -11888,6 +12245,10 @@ export interface components {
         GameRsvpsOut: {
             /** Answers */
             answers: components["schemas"]["RsvpOut"][] | null;
+            /** Checked In */
+            checked_in: number;
+            /** Checkin Open */
+            checkin_open: boolean;
             /** Coming */
             coming: number;
             /**
@@ -11904,6 +12265,8 @@ export interface components {
             maybe: number;
             /** My Answer */
             my_answer: ("coming" | "maybe" | "not_coming") | null;
+            /** My Checked In */
+            my_checked_in: string[];
             /** Not Coming */
             not_coming: number;
             /**
@@ -11911,6 +12274,35 @@ export interface components {
              * Format: date-time
              */
             starts_at: string;
+        };
+        /** GameXp */
+        GameXp: {
+            /** Amount */
+            amount: number | null;
+            /** Awarded At */
+            awarded_at: string | null;
+            awarded_by: components["schemas"]["ProfilePerson"] | null;
+        };
+        /** GameXpAwarded */
+        GameXpAwarded: {
+            /** Characters */
+            characters: number;
+            /** Past Monthly */
+            past_monthly: string[];
+            /** Total */
+            total: number;
+        };
+        /** GameXpIn */
+        GameXpIn: {
+            /** Amount */
+            amount: number;
+            /** Reason */
+            reason: string;
+            /**
+             * To Range
+             * @default true
+             */
+            to_range: boolean;
         };
         /** GatheredOut */
         GatheredOut: {
@@ -15061,6 +15453,28 @@ export interface components {
             live: components["schemas"]["LiveReset"][];
             /** Log */
             log: components["schemas"]["LogEntry"][];
+        };
+        /** PastGame */
+        PastGame: {
+            /** Attended */
+            attended: number;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /** Xp Awarded */
+            xp_awarded: number | null;
         };
         /**
          * PathStart
@@ -21687,6 +22101,37 @@ export interface operations {
             };
         };
     };
+    attended_api_characters__character_id__attendance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendedGame"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_backstory_api_characters__character_id__backstory_get: {
         parameters: {
             query?: never;
@@ -26461,6 +26906,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["XpEntryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_code_api_checkin__code__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckInOffer"];
                 };
             };
             /** @description Validation Error */
@@ -32485,6 +32961,37 @@ export interface operations {
             };
         };
     };
+    past_games_api_troupes__troupe_id__games_past_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PastGame"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     remove_game_api_troupes__troupe_id__games__game_id__delete: {
         parameters: {
             query?: never;
@@ -32503,6 +33010,203 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_in_api_troupes__troupe_id__games__game_id__attendance_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                game_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckedIn"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_out_api_troupes__troupe_id__games__game_id__attendance__character_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                game_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameNight"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_checkin_api_troupes__troupe_id__games__game_id__checkin_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                game_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckInOffer"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    open_checkin_api_troupes__troupe_id__games__game_id__checkin_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                game_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameNight"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    close_checkin_api_troupes__troupe_id__games__game_id__checkin_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                game_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameNight"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_night_api_troupes__troupe_id__games__game_id__night_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                game_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameNight"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -32570,6 +33274,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GameRsvpsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    award_game_xp_api_troupes__troupe_id__games__game_id__xp_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                game_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GameXpIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameXpAwarded"];
                 };
             };
             /** @description Validation Error */

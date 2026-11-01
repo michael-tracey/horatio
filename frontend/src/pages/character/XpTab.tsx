@@ -68,7 +68,30 @@ export function XpTab({ characterId, selfEntering = false }: { characterId: stri
           </table>
         </div>
       </Card>
+      <GamesAttended characterId={characterId} />
     </div>
+  );
+}
+
+/** The games the character came to, as check-in recorded them (issue #421). */
+function GamesAttended({ characterId }: { characterId: string }) {
+  const dates = useDates();
+  const games = useQuery({
+    queryKey: ["attendance", characterId],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/attendance", { params: { path: { character_id: characterId } } })),
+  });
+  if (!games.data?.length) return null;
+  return (
+    <Card title={`Games attended (${games.data.length})`}>
+      <ul aria-label="Games attended" className="divide-y divide-ash text-sm">
+        {games.data.map((g) => (
+          <li key={g.game_id} className="flex flex-wrap justify-between gap-x-3 py-2">
+            <time dateTime={g.starts_at}>{dates.gameStart(g.starts_at)}</time>
+            <span className="text-mist">{g.troupe_name}</span>
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }
 

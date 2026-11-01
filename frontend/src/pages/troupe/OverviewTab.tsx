@@ -33,7 +33,7 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
     <div className="grid gap-6 md:grid-cols-2">
       {can.staff && !troupe.archived && <WaitingCard troupeId={troupe.id} />}
       {/* For its members: the same people as see its Who's Who. */}
-      {troupe.whos_who && !troupe.archived && <GamesCard troupe={troupe} canAddGames={can.storyteller} />}
+      {troupe.whos_who && !troupe.archived && <GamesCard troupe={troupe} canAddGames={can.storyteller} running={can.running} />}
       <Summary troupe={troupe} />
       <JoinCard troupe={troupe} link={change && settings} />
       <div className="md:col-span-2">

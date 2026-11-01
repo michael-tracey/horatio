@@ -94,6 +94,7 @@ from horatio.models.status import HeldStatus, StatusBanMark, StatusSuppression
 from horatio.models.troupes import (
     CalendarFeed,
     CharacterTitle,
+    GameAttendance,
     GameRsvp,
     ScheduledGame,
     Troupe,
@@ -177,6 +178,7 @@ __all__ = [
     "RuleSet",
     "ScheduledGame",
     "GameRsvp",
+    "GameAttendance",
     "CalendarFeed",
     "Scene",
     "SceneCharacter",

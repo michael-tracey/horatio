@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab, builtVampire, ATTRIBUTES_AND_FOCUSES } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab, builtVampire, ATTRIBUTES_AND_FOCUSES, PASSWORD } from "./support";
 
 /** A troupe's setup: its rules, XP range, staff, profile and archiving, and asking for one. */
 
@@ -958,6 +958,128 @@ test("members say whether they are coming to a game, staff see who, and a calend
   await expect(address).not.toHaveText(new RegExp(old.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   expect((await p.request.get(old)).status()).toBe(404);
   expect((await p.request.get(path((await address.textContent())!))).status()).toBe(200);
+});
+
+test("players check in at the door and land in their Play View, and staff award the game's XP to those who came", async ({ browser }) => {
+  const custodian = await person(browser, "door-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "door-lead");
+  const player = await person(browser, "door-player");
+  const troupeName = `Keepers of Kendal ${run}`;
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const { id: troupeId } = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupeId);
+  // A game under way: it started an hour ago.
+  const start = new Date(Date.now() - 60 * 60_000);
+  await send(lead.page, "POST", `/api/troupes/${troupeId}/games`, { starts_at: start.toISOString(), ends_at: new Date(start.getTime() + 5 * 60 * 60_000).toISOString() });
+  // Hester is at home in the troupe, with 7 XP already this month; Wilf only visits.
+  const { id: hester } = await send(player.page, "POST", "/api/characters", { splat: "vampire", name: "Hester" });
+  await send(player.page, "PUT", `/api/characters/${hester}/traits`, { category: "clan", name: "Brujah", rating: null });
+  const picks: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Haven", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, list] of Object.entries(picks))
+    await send(player.page, "PUT", `/api/characters/${hester}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+  await send(player.page, "POST", `/api/characters/${hester}/creation/complete`);
+  const asked = await send(player.page, "POST", `/api/characters/${hester}/home-troupe`, { troupe_id: troupeId });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+  await send(lead.page, "POST", `/api/characters/${hester}/xp`, { amount: 7, reason: "Game, earlier this month" });
+  const { id: wilf } = await send(player.page, "POST", "/api/characters", { splat: "vampire", name: "Wilf" });
+  await send(player.page, "POST", `/api/characters/${wilf}/troupes`, { troupe_id: troupeId });
+
+  // The lead opens check-in from the game on About: a code and a QR code for the door.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}`);
+  const leadGame = l.getByRole("list", { name: "Games to come" }).getByRole("listitem").first();
+  await expect(leadGame.getByText("Nobody checked in yet")).toBeVisible();
+  await leadGame.getByRole("link", { name: "Check-in and attendance" }).click();
+  await expect(l.getByRole("heading", { name: "Game night" })).toBeVisible();
+  await expect(l.getByText("Nobody has checked in yet.")).toBeVisible();
+  await l.getByRole("button", { name: "Open check-in" }).click();
+  await expect(l.getByText("Check-in is open.")).toBeVisible();
+  await expect(l.getByRole("img", { name: /^QR code for check-in/ })).toBeVisible();
+  const code = ((await l.getByLabel(/^Code /).textContent()) ?? "").replace(/\s/g, "");
+  expect(code).toMatch(/^[A-Z2-9]{6}$/);
+  await l.screenshot(shots("game-night-door"));
+  await l.getByRole("button", { name: "Show at the door" }).click();
+  await expect(l.getByRole("dialog", { name: "Check in" }).getByRole("img", { name: /^QR code for check-in/ })).toBeVisible();
+  await l.screenshot(shots("game-night-door-shown"));
+  await l.getByRole("dialog", { name: "Check in" }).getByRole("button", { name: "Close" }).last().click();
+
+  // The QR code's link, followed signed out, signs the player in and comes back.
+  const door = await (await browser.newContext()).newPage();
+  await door.goto(`/check-in/${code}`);
+  await expect(door.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  expect(new URL(door.url()).searchParams.get("next")).toBe(`/check-in/${code}`);
+  await door.getByLabel("Email or handle").fill(player.email);
+  await door.getByLabel("Password").fill(PASSWORD);
+  await door.getByRole("button", { name: "Sign in" }).click();
+  await expect(door.getByRole("heading", { name: "Check in" })).toBeVisible();
+  await expect(door.getByText(troupeName)).toBeVisible();
+  await door.getByLabel("Hester").check();
+  await door.screenshot(shots("check-in"));
+  await door.getByRole("button", { name: "Check in Hester" }).click();
+  // Her night starts on the Play View.
+  await expect(door.getByRole("heading", { name: "Hester" })).toBeVisible();
+  expect(new URL(door.url()).pathname).toBe(`/play/characters/${hester}`);
+
+  // Wilf, from the game on About, without the code; no day's rest for him.
+  const p = player.page;
+  await p.goto(`/troupes/${troupeId}`);
+  const game = p.getByRole("list", { name: "Games to come" }).getByRole("listitem").first();
+  await expect(game.getByText("Checked in: Hester")).toBeVisible();
+  await game.getByRole("button", { name: "Check in" }).click();
+  const dialog = p.getByRole("dialog", { name: /^Check in: / });
+  await expect(dialog).toContainText("Hester · checked in");
+  await dialog.getByLabel("A full day's rest since the last game").uncheck();
+  await dialog.getByRole("button", { name: "Check in Wilf" }).click();
+  await expect(p.getByRole("heading", { name: "Wilf" })).toBeVisible();
+
+  // The lead sees who came, checks Wilf out and back in by hand.
+  await l.reload();
+  const came = l.getByRole("list", { name: "Checked in" });
+  await expect(l.getByRole("heading", { name: "Who came (2)" })).toBeVisible();
+  const wilfRow = came.getByRole("listitem").filter({ hasText: "Wilf" });
+  await expect(wilfRow.getByText("Visiting")).toBeVisible();
+  await expect(wilfRow.getByText("No day's rest")).toBeVisible();
+  await wilfRow.getByRole("button", { name: "Check out Wilf" }).click();
+  await expect(l.getByText("Checked out: Wilf")).toBeVisible();
+  await expect(came.getByRole("listitem")).toHaveCount(1);
+  await l.getByLabel("Check someone in by hand").selectOption({ label: "Wilf (door-player)" });
+  await l.getByRole("button", { name: "Check in", exact: true }).click();
+  await expect(l.getByText("Checked in: Wilf")).toBeVisible();
+  await expect(came.getByRole("listitem").filter({ hasText: "Wilf" }).getByText("By hand")).toBeVisible();
+
+  // The game's XP to those who came: the book's guidance, and a warning, not a refusal, past 10 in the month.
+  await expect(l.getByText("The book suggests 3 to 5 XP a game, and no more than 8 to 10 a month (MET: VtM core, p. 108).")).toBeVisible();
+  await expect(l.getByText("Wilf visiting: their home troupes award their XP.")).toBeVisible();
+  await expect(l.getByRole("alert")).toHaveText("This takes Hester past 10 XP this month, more than the book suggests. You can still award it.");
+  await l.getByRole("button", { name: "Less XP for the game" }).click();
+  await l.getByRole("button", { name: "Award…" }).click();
+  await l.screenshot(shots("game-night-award"));
+  await l.getByRole("button", { name: "Yes, award 7 XP to 1 character" }).click();
+  await expect(l.getByText("Awarded 7 XP to 1 character. Hester now has more than 10 this month.")).toBeVisible();
+  await expect(l.getByText(/^7 XP awarded to everyone here who calls this troupe home/)).toBeVisible();
+  await expect(l.getByText("Check-in closed when the game's XP was awarded.")).toBeVisible();
+
+  // Hester's Experience tab has the award and the game she came to.
+  await p.goto(`/characters/${hester}`);
+  await characterTab(p, "Experience");
+  await expect(p.getByRole("cell", { name: /^Game, / }).first()).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Games attended (1)" })).toBeVisible();
+  await expect(p.getByRole("list", { name: "Games attended" })).toContainText(troupeName);
 });
 
 test("a troupe's public page asks a newcomer to make an account, which brings them back to the troupe", async ({ browser }) => {

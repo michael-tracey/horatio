@@ -312,6 +312,8 @@ MESSAGES: dict[str, str] = {
     "troupe.xp_defaults": "{actor} set the troupe's XP to {session_xp} for a game and"
     " {downtime_xp} for a downtime.",
     "troupe.xp_range_game": "{actor} added a game's {amount} XP to the floor and ceiling.",
+    "xp.game_award": "{actor} awarded the game on {game}: {amount} XP to each of the"
+    " {characters} characters there who call this troupe home.",
     "troupe.xp_range_downtime": "{actor} added a downtime's {amount} XP to the ceiling.",
     "troupe.xp_range_set": "{actor} set the XP floor to {floor} and the ceiling to {ceiling}:"
     " {reason}",
@@ -565,6 +567,10 @@ MESSAGES: dict[str, str] = {
     "clan_logo.removed": "{actor} removed the logo for {clan}.",
     "audit.exported": "{actor} exported {count} events from the audit log.",
     "play.reset": "{actor} reset {character} for the next game (game {game} kept).",
+    "play.checkin_opened": "{actor} opened check-in for the game on {game}, with a new code.",
+    "play.checkin_closed": "{actor} closed check-in for the game on {game}.",
+    "play.checked_in": "{actor} checked {character} in to the game on {game}.",
+    "play.checked_out": "{actor} checked {character} out of the game on {game}.",
     "play.modifier_added": "{actor} added the modifier {label} to {character}.",
     "play.modifier_changed": "{actor} changed {character}'s modifier {label}.",
     "play.modifier_removed": "{actor} removed {character}'s modifier {label}.",
