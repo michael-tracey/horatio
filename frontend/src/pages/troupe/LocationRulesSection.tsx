@@ -140,7 +140,7 @@ function OwnQualities({ troupeId, catalogue, canEdit }: { troupeId: string; cata
                 </span>
                 {canEdit && (
                   <span className="flex shrink-0 gap-1">
-                    <Button variant="ghost" className="min-h-8 px-2" aria-label={`Change ${q.name}`} onClick={() => setEditing(q.id)}>
+                    <Button variant="secondary" className="min-h-8 px-3" aria-label={`Change ${q.name}`} onClick={() => setEditing(q.id)}>
                       Change
                     </Button>
                     <Button variant="ghost" className="min-h-8 px-2" onClick={() => archive.mutate(q)}>

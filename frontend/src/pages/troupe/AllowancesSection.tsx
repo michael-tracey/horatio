@@ -76,7 +76,7 @@ export function AllowancesSection({ troupeId, canEdit }: { troupeId: string; can
                       {r.replaced && <Badge>replaced here</Badge>}
                       {canEdit && r.house && r.id && (
                         <>
-                          <Button variant="ghost" className="min-h-8 px-2" aria-label={`Change actions for ${r.who}`} onClick={() => setEditing({ kind: "change", rule: r })}>
+                          <Button variant="secondary" className="min-h-8 px-3" aria-label={`Change actions for ${r.who}`} onClick={() => setEditing({ kind: "change", rule: r })}>
                             Change
                           </Button>
                           <Button variant="ghost" className="min-h-8 px-2" aria-label={`Remove actions for ${r.who}`} onClick={() => remove.mutate(r.id!)}>
@@ -85,7 +85,7 @@ export function AllowancesSection({ troupeId, canEdit }: { troupeId: string; can
                         </>
                       )}
                       {canEdit && !r.house && !r.replaced && (
-                        <Button variant="ghost" className="min-h-8 px-2" aria-label={`Change actions for ${r.who}`} onClick={() => setEditing({ kind: "replace", rule: r })}>
+                        <Button variant="secondary" className="min-h-8 px-3" aria-label={`Change actions for ${r.who}`} onClick={() => setEditing({ kind: "replace", rule: r })}>
                           Change
                         </Button>
                       )}

@@ -4691,6 +4691,10 @@
             "title": "Category",
             "type": "string"
           },
+          "group": {
+            "title": "Group",
+            "type": "string"
+          },
           "house": {
             "anyOf": [
               {
@@ -4729,6 +4733,7 @@
         "required": [
           "key",
           "category",
+          "group",
           "about",
           "message",
           "page",
@@ -5417,6 +5422,13 @@
             "title": "Name",
             "type": "string"
           },
+          "needs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Needs",
+            "type": "array"
+          },
           "settings": {
             "additionalProperties": true,
             "title": "Settings",
@@ -5442,6 +5454,7 @@
           "kind",
           "name",
           "unavailable",
+          "needs",
           "enabled",
           "mode",
           "test_mode",
@@ -26853,6 +26866,106 @@
           "settlement"
         ],
         "title": "SettlementOverride",
+        "type": "object"
+      },
+      "SetupConnector": {
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "on",
+              "test",
+              "off",
+              "unavailable"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "state"
+        ],
+        "title": "SetupConnector",
+        "type": "object"
+      },
+      "SetupOut": {
+        "properties": {
+          "actions": {
+            "title": "Actions",
+            "type": "integer"
+          },
+          "checks": {
+            "title": "Checks",
+            "type": "integer"
+          },
+          "checks_total": {
+            "title": "Checks Total",
+            "type": "integer"
+          },
+          "connectors": {
+            "items": {
+              "$ref": "#/components/schemas/SetupConnector"
+            },
+            "title": "Connectors",
+            "type": "array"
+          },
+          "costs": {
+            "title": "Costs",
+            "type": "integer"
+          },
+          "cycles": {
+            "title": "Cycles",
+            "type": "integer"
+          },
+          "described": {
+            "title": "Described",
+            "type": "boolean"
+          },
+          "house_traits": {
+            "title": "House Traits",
+            "type": "integer"
+          },
+          "other": {
+            "title": "Other",
+            "type": "integer"
+          },
+          "profile": {
+            "title": "Profile",
+            "type": "boolean"
+          },
+          "staff": {
+            "title": "Staff",
+            "type": "integer"
+          },
+          "starting": {
+            "title": "Starting",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "described",
+          "profile",
+          "staff",
+          "cycles",
+          "checks",
+          "checks_total",
+          "costs",
+          "starting",
+          "actions",
+          "house_traits",
+          "other",
+          "connectors"
+        ],
+        "title": "SetupOut",
         "type": "object"
       },
       "ShareIn": {
@@ -54749,6 +54862,50 @@
           }
         },
         "summary": "Settle Archived",
+        "tags": [
+          "troupes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/setup": {
+      "get": {
+        "description": "What a new lead sets up first, for the troupe's running staff.",
+        "operationId": "troupe_setup_api_troupes__troupe_id__setup_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Setup",
         "tags": [
           "troupes"
         ]

@@ -136,7 +136,7 @@ export function HouseTraitsSection({ troupeId, canEdit }: { troupeId: string; ca
                   <span className="text-xs text-mist">{h.holders === 1 ? "1 holds it" : `${h.holders} hold it`}</span>
                   {canEdit && (
                     <>
-                      <Button variant="ghost" className="min-h-8 px-2" aria-label={`Change ${h.name}`} onClick={() => setEditing(h)}>
+                      <Button variant="secondary" className="min-h-8 px-3" aria-label={`Change ${h.name}`} onClick={() => setEditing(h)}>
                         Change
                       </Button>
                       <Button

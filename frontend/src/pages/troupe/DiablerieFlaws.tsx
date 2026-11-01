@@ -42,7 +42,7 @@ export function DiablerieFlaws({ troupeId, canEdit }: { troupeId: string; canEdi
       actions={
         canEdit &&
         editing === null && (
-          <Button variant="ghost" className="min-h-8 px-2" aria-label="Change what diablerie does to Lesser Generation" onClick={() => setEditing(now)}>
+          <Button variant="secondary" className="min-h-8 px-3" aria-label="Change what diablerie does to Lesser Generation" onClick={() => setEditing(now)}>
             Change
           </Button>
         )
