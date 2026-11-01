@@ -38,7 +38,7 @@ def test_the_log_says_who_did_what(troupe: Troupe) -> None:
     client.post(f"/characters/{character_id}/troupes", json={"troupe_id": troupe.id})
 
     assert log(troupe.player, character_id) == [
-        ("player", "Agnes (player) joined the troupe."),
+        ("player", "Agnes (player) started visiting the troupe."),
         ("player", "player lowered Agnes's Brawl from 2 to 1 (2 XP back)."),
         ("player", "player bought Brawl 2 for Agnes (3 XP)."),
         ("player", "player chose Camarilla as Agnes's sect."),
@@ -76,7 +76,7 @@ def test_staff_see_their_own_troupes_part(troupe: Troupe) -> None:
     assert len(log(troupe.player, character_id)) == 2
     assert len(log(troupe.custodian, character_id)) == 2
     assert [m for _, m in log(troupe.assistant, character_id)] == [
-        "Agnes (player) joined the troupe."
+        "Agnes (player) started visiting the troupe."
     ]
     assert len(log(troupe.stranger, character_id)) == 1
     assert troupe.narrator.client.get(f"/characters/{character_id}/log").status_code == 404
