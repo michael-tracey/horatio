@@ -9097,6 +9097,19 @@ export interface components {
             /** Dots */
             dots: number;
         };
+        /**
+         * Cost
+         * @description What using a power costs, for its Use button on the Pools tab (issue #370).
+         */
+        Cost: {
+            /** Amount */
+            amount: number;
+            /**
+             * Tracker
+             * @enum {string}
+             */
+            tracker: "blood" | "willpower";
+        };
         /** CostCategoryOut */
         CostCategoryOut: {
             /** Group */
@@ -9804,6 +9817,7 @@ export interface components {
         };
         /** DisciplinePowers */
         DisciplinePowers: {
+            cost?: components["schemas"]["Cost"] | null;
             /** Focus */
             focus: string | null;
             /** Name */
@@ -9816,6 +9830,11 @@ export interface components {
             powers: components["schemas"]["PowerNote"][];
             /** Rating */
             rating: number;
+            /**
+             * Switches
+             * @default []
+             */
+            switches: string[];
             /** Versus */
             versus: string | null;
         };
@@ -15115,6 +15134,7 @@ export interface components {
         };
         /** PowerNote */
         PowerNote: {
+            cost?: components["schemas"]["Cost"] | null;
             /** Focus */
             focus?: string | null;
             /** Level */
@@ -15123,6 +15143,11 @@ export interface components {
             name: string;
             /** Note */
             note: string;
+            /**
+             * Switches
+             * @default []
+             */
+            switches: string[];
         };
         /**
          * PowerOut

@@ -35,7 +35,8 @@ const reference: PlayReference = {
       versus: null,
       note: "Speed, in steps and actions.",
       focus: null,
-      powers: [{ level: 1, name: "Alacrity", note: "Win ties on initiative.", focus: null }],
+      switches: [],
+      powers: [{ level: 1, name: "Alacrity", note: "Win ties on initiative.", focus: null, switches: [] }],
     },
   ],
 };

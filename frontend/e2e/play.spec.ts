@@ -282,6 +282,41 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(p.getByText("Alacrity", { exact: true })).toBeVisible();
   await expect(p.getByRole("img", { name: "2 dots" }).first()).toBeVisible();
   await p.screenshot(shots("play-pools-pips"));
+
+  // Blood, Willpower and health are in a strip under the tabs here too, and "−" spends from it (#370).
+  const strip = p.getByRole("banner").getByRole("group", { name: "Blood, Willpower and health" });
+  await expect(strip.getByRole("button", { name: "Blood 8 of 12: open the Tracker" })).toBeVisible();
+  await expect(strip.getByRole("button", { name: "Health 0 of 9 marked: open the Tracker" })).toBeVisible();
+  await strip.getByRole("button", { name: "Spend Blood" }).click();
+  await expect(p.getByText("Spent 1 Blood · 7/12")).toBeVisible();
+  await expect(strip.getByRole("button", { name: "Blood 7 of 12: open the Tracker" })).toBeVisible();
+  await (await undoInHeader(p, "Blood 8 → 7")).click();
+  await expect(strip.getByRole("button", { name: "Blood 8 of 12: open the Tracker" })).toBeVisible();
+  // Use on Celerity spends its Blood and switches it on: one tap, with one Undo for both.
+  await expect(initiative.getByText("5", { exact: true })).toBeVisible();
+  await p.getByRole("button", { name: "Use Celerity, 1 Blood" }).click();
+  const used = p.getByText("Spent 1 Blood · 7/12 · Celerity switched on");
+  await expect(used).toBeVisible();
+  await expect(strip.getByRole("button", { name: "Blood 7 of 12: open the Tracker" })).toBeVisible();
+  await expect(initiative.getByText("7", { exact: true })).toBeVisible();
+  await expect(p.getByRole("region", { name: "Switched on now" })).toContainText("On: Celerity");
+  // The screen as the player sees it, the strip at the top: not a full page, where the sticky header strays.
+  await p.evaluate(() => window.scrollTo(0, 0));
+  await p.screenshot({ ...shots("play-pools-use"), fullPage: false });
+  await used.locator("..").getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(p.getByText("Undone · Blood 8/12")).toBeVisible();
+  await expect(strip.getByRole("button", { name: "Blood 8 of 12: open the Tracker" })).toBeVisible();
+  await expect(initiative.getByText("5", { exact: true })).toBeVisible();
+  await expect(p.getByRole("region", { name: "Switched on now" })).toHaveCount(0);
+  // Potence's powers cost nothing, so they have no Use button.
+  await expect(p.getByRole("button", { name: /^Use Might/ })).toHaveCount(0);
+  // A name in the strip opens the Tracker, which has the full trackers and no strip.
+  await strip.getByRole("button", { name: "Blood 8 of 12: open the Tracker" }).click();
+  await expect(p.getByRole("tab", { name: "Tracker" })).toHaveAttribute("aria-selected", "true");
+  await expect(p.getByLabel("Blood: 8 of 12")).toBeVisible();
+  await expect(strip).toHaveCount(0);
+  await expect(p.getByText("Undid: Celerity on")).toBeVisible();
+  await expect(p.getByText("Undid: Blood 8 → 7")).toHaveCount(2);
 });
 
 test("Shape of the Beast on the Play View: a Huge fight form adds Healthy levels and Brawl, flight form ends it, and the Scene shows it", async ({ browser }) => {

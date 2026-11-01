@@ -12,9 +12,11 @@ from sqlalchemy.orm import Session
 
 from horatio.models import CharacterTrait, TraitCategory, TraitDefinition
 from horatio.reference import (
+    Cost,
     Sheet,
     actives,
     catalogue,
+    cost,
     damage_effects,
     effects,
     pools,
@@ -156,6 +158,55 @@ def test_power_notes_follow_dots_and_focus(troupe: Troupe, swift: str) -> None:
         "Instinctive Command",
     }
     assert any(t["name"] == "Celerity" for t in found["traits"])
+
+
+def test_powers_say_what_using_them_costs(troupe: Troupe, swift: str) -> None:
+    """A Use button on the Pools tab (issue #370) needs the cost, and the switch
+    using the power turns on."""
+    disciplines = {d["name"]: d for d in reference(troupe, swift)["disciplines"]}
+    celerity = disciplines["Celerity"]
+    # Celerity is activated as a whole, for 1 Blood (core p. 121), and switched on.
+    assert celerity["cost"] == {"tracker": "blood", "amount": 1}
+    assert celerity["switches"] == ["Celerity"]
+    assert all(p["cost"] is None for p in celerity["powers"])
+    # Dominate's orders cost nothing; Obfuscate's powers neither.
+    assert all(p["cost"] is None for p in disciplines["Dominate"]["powers"])
+    assert disciplines["Obfuscate"]["cost"] is None
+
+
+def test_a_cost_is_read_from_the_start_of_the_note_or_given() -> None:
+    plain = Sheet()
+    assert cost({"note": "1 Blood, standard action: an illusion."}, plain) == Cost(
+        tracker="blood", amount=1
+    )
+    assert cost({"note": "3 Blood, a minute's touch: cure."}, plain) == Cost(
+        tracker="blood", amount=3
+    )
+    assert cost({"note": "2 Willpower: hold on."}, plain) == Cost(tracker="willpower", amount=2)
+    # A cost part way through the note is not plain enough for one tap.
+    assert cost({"note": "Grapple, then 1 Blood: searing agony."}, plain) is None
+    assert cost({"note": "Standard action: change how an object looks."}, plain) is None
+    # A focus can make a power free (Eyes of the Beast with Perception, core p. 154).
+    eyes = catalogue().power("Protean", "Eyes of the Beast")
+    assert eyes is not None
+    assert cost(eyes, plain) == Cost(tracker="blood", amount=1)
+    assert cost(eyes, Sheet(focuses={"Perception"})) is None
+
+
+def test_every_power_that_switches_on_has_a_plain_cost_or_none() -> None:
+    """Most switches are bought with Blood: their notes say so plainly, so the
+    Use button can spend it and switch them on together."""
+    book = catalogue()
+    costed = [p for ps in book.powers.values() for p in ps if cost(p, Sheet()) is not None]
+    assert len(costed) > 100
+    feral = book.power("Protean", "Feral Claws")
+    assert feral is not None
+    assert cost(feral, Sheet()) == Cost(tracker="blood", amount=1)
+    assert [a["key"] for a in actives(feral)] == ["Feral Claws"]
+    for entry in [*book.disciplines.values(), *(p for ps in book.powers.values() for p in ps)]:
+        given = entry.get("cost")
+        if given is not None:
+            assert set(given) <= {"blood", "willpower", "unless_focus"}, entry["name"]
 
 
 def test_traits_say_what_they_do(troupe: Troupe, swift: str) -> None:

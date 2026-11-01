@@ -44,7 +44,8 @@ export function Derangements({ view, record, tap }: { view: Shown; record: Recor
   if (!showsDerangements(view))
     return (
       <>
-        <Button variant="secondary" className="min-h-11 w-full" onClick={() => setAdding(true)}>
+        {/* Rarely needed, so small: the trackers used every scene come first. */}
+        <Button variant="ghost" className="min-h-10 justify-start px-0" onClick={() => setAdding(true)}>
           Add a temporary derangement…
         </Button>
         {sheet}
