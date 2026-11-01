@@ -3,7 +3,7 @@ troupe's scheduled games, and their secret links to a calendar of a troupe's gam
 and downtime dates, or of every troupe they are in.
 
 Revision ID: 0125
-Revises: 0122
+Revises: 0124
 Create Date: 2026-11-01 15:00:00.000000
 """
 
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0125"
-down_revision: str | None = "0122"
+down_revision: str | None = "0124"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

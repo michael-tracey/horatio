@@ -3151,6 +3151,37 @@
         "title": "CalendarLinks",
         "type": "object"
       },
+      "CardIn": {
+        "properties": {
+          "descriptor": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Descriptor",
+            "type": "string"
+          },
+          "dyscrasia": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Dyscrasia",
+            "type": "string"
+          },
+          "resonance": {
+            "enum": [
+              "choleric",
+              "melancholic",
+              "phlegmatic",
+              "sanguine"
+            ],
+            "title": "Resonance",
+            "type": "string"
+          }
+        },
+        "required": [
+          "resonance"
+        ],
+        "title": "CardIn",
+        "type": "object"
+      },
       "CarriedOut": {
         "properties": {
           "about": {
@@ -3953,6 +3984,15 @@
             ],
             "title": "Answered At"
           },
+          "caught_by": {
+            "default": [],
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Caught By",
+            "type": "array"
+          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -3970,6 +4010,11 @@
             "title": "Delivered",
             "type": "boolean"
           },
+          "dyscrasia": {
+            "default": "",
+            "title": "Dyscrasia",
+            "type": "string"
+          },
           "herd": {
             "title": "Herd",
             "type": "integer"
@@ -3982,6 +4027,25 @@
             "title": "Participant Id",
             "type": "string"
           },
+          "patrols": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PatrolByOut"
+            },
+            "title": "Patrols",
+            "type": "array"
+          },
+          "poaching": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poaching"
+          },
           "received": {
             "items": {
               "$ref": "#/components/schemas/ReceivedOut"
@@ -3992,6 +4056,33 @@
           "reply": {
             "title": "Reply",
             "type": "string"
+          },
+          "resonance": {
+            "anyOf": [
+              {
+                "enum": [
+                  "choleric",
+                  "melancholic",
+                  "phlegmatic",
+                  "sanguine"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resonance"
+          },
+          "restriction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeedingNumbers"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "result": {
             "anyOf": [
@@ -4026,6 +4117,16 @@
           },
           "tally": {
             "$ref": "#/components/schemas/TallyOut"
+          },
+          "vessel": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeedingCardOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "working": {
             "title": "Working",
@@ -6195,6 +6296,32 @@
             },
             "title": "Clans",
             "type": "array"
+          },
+          "humors": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/HumorOut"
+            },
+            "title": "Humors",
+            "type": "array"
+          },
+          "rack": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RackOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "territories": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TerritoryUseOut"
+            },
+            "title": "Territories",
+            "type": "array"
           }
         },
         "required": [
@@ -6234,6 +6361,11 @@
           "completion_xp": {
             "title": "Completion Xp",
             "type": "integer"
+          },
+          "feeding": {
+            "default": true,
+            "title": "Feeding",
+            "type": "boolean"
           },
           "grace_ends_at": {
             "format": "date-time",
@@ -6465,6 +6597,28 @@
           "clans"
         ],
         "title": "DarkPackOut",
+        "type": "object"
+      },
+      "DealIn": {
+        "properties": {
+          "count": {
+            "maximum": 200.0,
+            "minimum": 0.0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "share": {
+            "default": 50,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Share",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "title": "DealIn",
         "type": "object"
       },
       "DebtIn": {
@@ -7945,6 +8099,24 @@
           "delivered"
         ],
         "title": "DowntimeWaiting",
+        "type": "object"
+      },
+      "DyscrasiaOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "summary"
+        ],
+        "title": "DyscrasiaOut",
         "type": "object"
       },
       "EffectBlock": {
@@ -10697,11 +10869,43 @@
       },
       "FeedingAnswerIn": {
         "properties": {
+          "caught_by": {
+            "default": [],
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Caught By",
+            "type": "array"
+          },
+          "dyscrasia": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Dyscrasia",
+            "type": "string"
+          },
           "reply": {
             "default": "",
             "maxLength": 2000,
             "title": "Reply",
             "type": "string"
+          },
+          "resonance": {
+            "anyOf": [
+              {
+                "enum": [
+                  "choleric",
+                  "melancholic",
+                  "phlegmatic",
+                  "sanguine"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resonance"
           },
           "result": {
             "anyOf": [
@@ -10724,6 +10928,120 @@
           "result"
         ],
         "title": "FeedingAnswerIn",
+        "type": "object"
+      },
+      "FeedingCardOut": {
+        "description": "A Feeding Card (horatio.rack): a vessel to feed on.",
+        "properties": {
+          "dealt_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dealt To"
+          },
+          "descriptor": {
+            "title": "Descriptor",
+            "type": "string"
+          },
+          "dyscrasia": {
+            "title": "Dyscrasia",
+            "type": "string"
+          },
+          "dyscrasia_summary": {
+            "title": "Dyscrasia Summary",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "mine": {
+            "default": false,
+            "title": "Mine",
+            "type": "boolean"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "resonance": {
+            "enum": [
+              "choleric",
+              "melancholic",
+              "phlegmatic",
+              "sanguine"
+            ],
+            "title": "Resonance",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "rack",
+              "territory",
+              "herd",
+              "hunt"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "suits": {
+            "default": true,
+            "title": "Suits",
+            "type": "boolean"
+          },
+          "taken_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taken By"
+          },
+          "territory_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Territory Id"
+          },
+          "territory_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Territory Name"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "source",
+          "resonance",
+          "dyscrasia",
+          "dyscrasia_summary",
+          "descriptor",
+          "territory_id",
+          "territory_name"
+        ],
+        "title": "FeedingCardOut",
         "type": "object"
       },
       "FeedingIn": {
@@ -10771,6 +11089,39 @@
             "title": "Herd Saved",
             "type": "integer"
           },
+          "patrols": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PatrolIn"
+            },
+            "title": "Patrols",
+            "type": "array"
+          },
+          "resonance": {
+            "anyOf": [
+              {
+                "enum": [
+                  "choleric",
+                  "melancholic",
+                  "phlegmatic",
+                  "sanguine"
+                ],
+                "type": "string"
+              },
+              {
+                "const": "",
+                "type": "string"
+              }
+            ],
+            "default": "",
+            "title": "Resonance"
+          },
+          "territory": {
+            "default": "",
+            "maxLength": 40,
+            "title": "Territory",
+            "type": "string"
+          },
           "where": {
             "default": "",
             "maxLength": 500,
@@ -10810,6 +11161,90 @@
           "always_half"
         ],
         "title": "FeedingNeedOut",
+        "type": "object"
+      },
+      "FeedingNumbers": {
+        "description": "A feeding restriction with the Rack (Vol. 2, p. 301): the last digits of the\ncard numbers the character may only, or may never, feed from.",
+        "properties": {
+          "endings": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 10,
+            "minItems": 1,
+            "title": "Endings",
+            "type": "array"
+          },
+          "mode": {
+            "enum": [
+              "only",
+              "never"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "text": {
+            "default": "",
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode",
+          "endings"
+        ],
+        "title": "FeedingNumbers",
+        "type": "object"
+      },
+      "FeedingNumbersIn": {
+        "properties": {
+          "rule": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeedingNumbers"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "rule"
+        ],
+        "title": "FeedingNumbersIn",
+        "type": "object"
+      },
+      "FeedingSettingIn": {
+        "properties": {
+          "feeding": {
+            "enum": [
+              "off",
+              "book"
+            ],
+            "title": "Feeding",
+            "type": "string"
+          },
+          "rack": {
+            "default": false,
+            "title": "Rack",
+            "type": "boolean"
+          },
+          "resonance": {
+            "default": false,
+            "title": "Resonance",
+            "type": "boolean"
+          },
+          "territories": {
+            "default": false,
+            "title": "Territories",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "feeding"
+        ],
+        "title": "FeedingSettingIn",
         "type": "object"
       },
       "FilterCondition": {
@@ -13124,6 +13559,44 @@
           "summary"
         ],
         "title": "HouseTraitOut",
+        "type": "object"
+      },
+      "HumorOut": {
+        "description": "One of Blood Resonance's four humors (horatio.resonance).",
+        "properties": {
+          "dyscrasias": {
+            "items": {
+              "$ref": "#/components/schemas/DyscrasiaOut"
+            },
+            "title": "Dyscrasias",
+            "type": "array"
+          },
+          "feelings": {
+            "title": "Feelings",
+            "type": "string"
+          },
+          "key": {
+            "enum": [
+              "choleric",
+              "melancholic",
+              "phlegmatic",
+              "sanguine"
+            ],
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "feelings",
+          "dyscrasias"
+        ],
+        "title": "HumorOut",
         "type": "object"
       },
       "IdentitiesIn": {
@@ -17729,9 +18202,30 @@
           "answer": {
             "$ref": "#/components/schemas/FeedingIn"
           },
+          "cards": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FeedingCardOut"
+            },
+            "title": "Cards",
+            "type": "array"
+          },
           "herd": {
             "title": "Herd",
             "type": "integer"
+          },
+          "humors": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/HumorOut"
+            },
+            "title": "Humors",
+            "type": "array"
+          },
+          "hunt": {
+            "default": "",
+            "title": "Hunt",
+            "type": "string"
           },
           "locked": {
             "title": "Locked",
@@ -17739,6 +18233,11 @@
           },
           "need": {
             "$ref": "#/components/schemas/FeedingNeedOut"
+          },
+          "rack": {
+            "default": false,
+            "title": "Rack",
+            "type": "boolean"
           },
           "received": {
             "items": {
@@ -17752,6 +18251,19 @@
               "$ref": "#/components/schemas/RecipientOut"
             },
             "title": "Recipients",
+            "type": "array"
+          },
+          "restriction": {
+            "default": "",
+            "title": "Restriction",
+            "type": "string"
+          },
+          "territories": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TerritoryOut"
+            },
+            "title": "Territories",
             "type": "array"
           }
         },
@@ -19478,6 +19990,51 @@
           "because"
         ],
         "title": "PathStart",
+        "type": "object"
+      },
+      "PatrolByOut": {
+        "properties": {
+          "actions": {
+            "title": "Actions",
+            "type": "integer"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "actions"
+        ],
+        "title": "PatrolByOut",
+        "type": "object"
+      },
+      "PatrolIn": {
+        "properties": {
+          "actions": {
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Actions",
+            "type": "integer"
+          },
+          "territory_id": {
+            "format": "uuid",
+            "title": "Territory Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "territory_id",
+          "actions"
+        ],
+        "title": "PatrolIn",
         "type": "object"
       },
       "PatronChoiceOut": {
@@ -24332,6 +24889,32 @@
           "basis"
         ],
         "title": "QuoteOut",
+        "type": "object"
+      },
+      "RackOut": {
+        "properties": {
+          "cards": {
+            "items": {
+              "$ref": "#/components/schemas/FeedingCardOut"
+            },
+            "title": "Cards",
+            "type": "array"
+          },
+          "players": {
+            "title": "Players",
+            "type": "integer"
+          },
+          "suggested": {
+            "title": "Suggested",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cards",
+          "players",
+          "suggested"
+        ],
+        "title": "RackOut",
         "type": "object"
       },
       "Rating": {
@@ -30302,6 +30885,217 @@
         "title": "TemporaryDerangementIn",
         "type": "object"
       },
+      "TerritoryIn": {
+        "properties": {
+          "area": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Area",
+            "type": "string"
+          },
+          "held_by": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Held By",
+            "type": "string"
+          },
+          "holder_ids": {
+            "default": [],
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Holder Ids",
+            "type": "array"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "size": {
+            "enum": [
+              "small",
+              "moderate",
+              "notable",
+              "significant",
+              "large"
+            ],
+            "title": "Size",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "size"
+        ],
+        "title": "TerritoryIn",
+        "type": "object"
+      },
+      "TerritoryOut": {
+        "description": "A feeding territory (horatio.territories), as the domain knows it.",
+        "properties": {
+          "area": {
+            "title": "Area",
+            "type": "string"
+          },
+          "held_by": {
+            "title": "Held By",
+            "type": "string"
+          },
+          "holder_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Holder Ids",
+            "type": "array"
+          },
+          "holders": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Holders",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "mine": {
+            "default": false,
+            "title": "Mine",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "size": {
+            "enum": [
+              "small",
+              "moderate",
+              "notable",
+              "significant",
+              "large"
+            ],
+            "title": "Size",
+            "type": "string"
+          },
+          "size_name": {
+            "title": "Size Name",
+            "type": "string"
+          },
+          "vessels": {
+            "title": "Vessels",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "size",
+          "size_name",
+          "vessels",
+          "area",
+          "held_by",
+          "holder_ids",
+          "holders"
+        ],
+        "title": "TerritoryOut",
+        "type": "object"
+      },
+      "TerritoryUseOut": {
+        "properties": {
+          "area": {
+            "title": "Area",
+            "type": "string"
+          },
+          "feeding": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Feeding",
+            "type": "array"
+          },
+          "held_by": {
+            "title": "Held By",
+            "type": "string"
+          },
+          "holder_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Holder Ids",
+            "type": "array"
+          },
+          "holders": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Holders",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "mine": {
+            "default": false,
+            "title": "Mine",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "patrols": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PatrolByOut"
+            },
+            "title": "Patrols",
+            "type": "array"
+          },
+          "size": {
+            "enum": [
+              "small",
+              "moderate",
+              "notable",
+              "significant",
+              "large"
+            ],
+            "title": "Size",
+            "type": "string"
+          },
+          "size_name": {
+            "title": "Size Name",
+            "type": "string"
+          },
+          "vessels": {
+            "title": "Vessels",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "size",
+          "size_name",
+          "vessels",
+          "area",
+          "held_by",
+          "holder_ids",
+          "holders"
+        ],
+        "title": "TerritoryUseOut",
+        "type": "object"
+      },
       "TestPool": {
         "properties": {
           "adds_willpower": {
@@ -31506,6 +32300,30 @@
             "title": "Downtime Xp",
             "type": "integer"
           },
+          "feeding": {
+            "default": "book",
+            "enum": [
+              "off",
+              "book"
+            ],
+            "title": "Feeding",
+            "type": "string"
+          },
+          "feeding_rack": {
+            "default": false,
+            "title": "Feeding Rack",
+            "type": "boolean"
+          },
+          "feeding_resonance": {
+            "default": false,
+            "title": "Feeding Resonance",
+            "type": "boolean"
+          },
+          "feeding_territories": {
+            "default": false,
+            "title": "Feeding Territories",
+            "type": "boolean"
+          },
           "golconda_enlightened": {
             "default": false,
             "title": "Golconda Enlightened",
@@ -32418,6 +33236,27 @@
           "access"
         ],
         "title": "VenueOut",
+        "type": "object"
+      },
+      "VesselIn": {
+        "properties": {
+          "card_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Card Id"
+          }
+        },
+        "required": [
+          "card_id"
+        ],
+        "title": "VesselIn",
         "type": "object"
       },
       "ViewAsIn": {
@@ -36899,6 +37738,50 @@
         ]
       }
     },
+    "/api/characters/{character_id}/downtime/hunt": {
+      "post": {
+        "description": "With the Rack: hunt outside it, once a cycle. Horatio throws the simple challenge\nand deals 3, 2 or 1 cards to choose from.",
+        "operationId": "hunt_outside_the_rack_api_characters__character_id__downtime_hunt_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyDowntime"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Hunt Outside The Rack",
+        "tags": [
+          "downtimes"
+        ]
+      }
+    },
     "/api/characters/{character_id}/downtime/results": {
       "get": {
         "description": "Delivered downtime results for the player's character, newest first: for\neach cycle, the latest delivery, which has every response as it was then.",
@@ -36985,6 +37868,60 @@
           }
         },
         "summary": "Submit",
+        "tags": [
+          "downtimes"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/downtime/vessel": {
+      "post": {
+        "description": "With the Rack: take a Feeding Card, giving back any taken before, or give it back.",
+        "operationId": "take_vessel_api_characters__character_id__downtime_vessel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VesselIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyDowntime"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Take Vessel",
         "tags": [
           "downtimes"
         ]
@@ -43853,7 +44790,7 @@
     },
     "/api/cycles/{cycle_id}/participants/{participant_id}/feeding-answer": {
       "put": {
-        "description": "Full Blood next game, half Blood, or something else.",
+        "description": "Full Blood next game, half Blood, or something else; with Blood Resonance, the\nResonance it fed on and any Dyscrasia.",
         "operationId": "answer_feeding_api_cycles__cycle_id__participants__participant_id__feeding_answer_put",
         "parameters": [
           {
@@ -43910,6 +44847,70 @@
           }
         },
         "summary": "Answer Feeding",
+        "tags": [
+          "feeding"
+        ]
+      }
+    },
+    "/api/cycles/{cycle_id}/participants/{participant_id}/feeding-numbers": {
+      "put": {
+        "description": "A character's feeding restriction with the Rack, such as Prey Exclusion or the\nVentrue clan weakness: the card numbers it may only, or never, feed from. It\nstays with the character from cycle to cycle.",
+        "operationId": "set_feeding_numbers_api_cycles__cycle_id__participants__participant_id__feeding_numbers_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "participant_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Participant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedingNumbersIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CycleFeedingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Feeding Numbers",
         "tags": [
           "feeding"
         ]
@@ -44012,6 +45013,174 @@
         "summary": "Replace Questions",
         "tags": [
           "downtimes"
+        ]
+      }
+    },
+    "/api/cycles/{cycle_id}/rack": {
+      "post": {
+        "description": "Lay out cards on the cycle's Rack, at random: and each territory's, and each\ncharacter's Herd cards, if they have none yet.",
+        "operationId": "deal_rack_api_cycles__cycle_id__rack_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DealIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CycleFeedingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Deal Rack",
+        "tags": [
+          "feeding"
+        ]
+      }
+    },
+    "/api/cycles/{cycle_id}/rack/{card_id}": {
+      "delete": {
+        "operationId": "remove_card_api_cycles__cycle_id__rack__card_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "card_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Card Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CycleFeedingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Card",
+        "tags": [
+          "feeding"
+        ]
+      },
+      "put": {
+        "operationId": "change_card_api_cycles__cycle_id__rack__card_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "card_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Card Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CardIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CycleFeedingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Card",
+        "tags": [
+          "feeding"
         ]
       }
     },
@@ -51629,6 +52798,268 @@
         "summary": "Take Back",
         "tags": [
           "equipment"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/feeding": {
+      "put": {
+        "description": "How far Horatio handles feeding for this troupe: not at all, as the book has it,\nor with the optional Vol. 2 rules.",
+        "operationId": "set_feeding_api_troupes__troupe_id__feeding_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedingSettingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Feeding",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/feeding-territories": {
+      "get": {
+        "description": "The troupe's feeding territories, which the whole domain knows: for its staff\nand the players of its characters.",
+        "operationId": "read_territories_api_troupes__troupe_id__feeding_territories_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TerritoryOut"
+                  },
+                  "title": "Response Read Territories Api Troupes  Troupe Id  Feeding Territories Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Territories",
+        "tags": [
+          "feeding"
+        ]
+      },
+      "post": {
+        "operationId": "add_territory_api_troupes__troupe_id__feeding_territories_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TerritoryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TerritoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Territory",
+        "tags": [
+          "feeding"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/feeding-territories/{territory_id}": {
+      "delete": {
+        "description": "Revoke a territory, or record it lost: it leaves the list, and is kept.",
+        "operationId": "archive_territory_api_troupes__troupe_id__feeding_territories__territory_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "territory_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Territory Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Territory",
+        "tags": [
+          "feeding"
+        ]
+      },
+      "put": {
+        "description": "Change a territory: its size, where it is, or who the Authority assigns it to.",
+        "operationId": "change_territory_api_troupes__troupe_id__feeding_territories__territory_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "territory_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Territory Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TerritoryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TerritoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Territory",
+        "tags": [
+          "feeding"
         ]
       }
     },

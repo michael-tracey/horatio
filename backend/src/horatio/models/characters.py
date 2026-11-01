@@ -68,6 +68,11 @@ class Character(Imported, Record):
     # Beast traits a diablerie adds to its next Play View game (horatio.diablerie),
     # which start there and are cleared when that game starts.
     beast_next_game: Mapped[int] = mapped_column(default=0, server_default="0")
+    # With the Rack, a feeding restriction such as Prey Exclusion or the Ventrue clan
+    # weakness, as staff set it (horatio.rack, Vol. 2, p. 301): the last digits of the
+    # Feeding Card numbers it may "only" or may "never" feed from, as
+    # {"mode": "only" | "never", "endings": [5, 9]}; None for no restriction.
+    feeding_numbers: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     # A ghoul's domitor (horatio.domitors): the vampire PC or NPC it is bound to, or,
     # for one not in Horatio, its name as the player typed it. The domitor's clan and
     # bloodline are the ghoul's clan trait. Both empty for a vampire.

@@ -465,6 +465,12 @@ MESSAGES: dict[str, str] = {
     " background {generation}, techniques lost: {techniques}, Humanity lowered {humanity},"
     " Beast traits {beast}, flaw: {flaw}.",
     "house.golconda": "{actor} set the house option: Golconda Seekers {setting}.",
+    "house.feeding": "{actor} set feeding to {feeding}, with optional rules: {rules}.",
+    "house.territory_saved": "{actor} added the feeding territory {name} ({size}): {holders}.",
+    "house.territory_changed": "{actor} changed the feeding territory {name} ({size}): {holders}.",
+    "house.territory_archived": "{actor} took the feeding territory {name} off the list.",
+    "downtime.rack_dealt": "{actor} laid out {count} cards on the Rack ({all} in all).",
+    "downtime.feeding_numbers": "{actor} set {character}'s feeding restriction: {rule}.",
     "house.diablerie_flaws": "{actor} set what diablerie does to Lesser Generation and Thin"
     " Blooded: it {setting}.",
     "house.clan_rarity": "{actor} set how rare clans are here: {rarities}.",

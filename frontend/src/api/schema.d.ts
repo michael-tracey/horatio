@@ -1045,6 +1045,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/downtime/hunt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hunt Outside The Rack
+         * @description With the Rack: hunt outside it, once a cycle. Horatio throws the simple challenge
+         *     and deals 3, 2 or 1 cards to choose from.
+         */
+        post: operations["hunt_outside_the_rack_api_characters__character_id__downtime_hunt_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/downtime/results": {
         parameters: {
             query?: never;
@@ -1077,6 +1098,26 @@ export interface paths {
         put?: never;
         /** Submit */
         post: operations["submit_api_characters__character_id__downtime_submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/downtime/vessel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take Vessel
+         * @description With the Rack: take a Feeding Card, giving back any taken before, or give it back.
+         */
+        post: operations["take_vessel_api_characters__character_id__downtime_vessel_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3326,9 +3367,32 @@ export interface paths {
         get?: never;
         /**
          * Answer Feeding
-         * @description Full Blood next game, half Blood, or something else.
+         * @description Full Blood next game, half Blood, or something else; with Blood Resonance, the
+         *     Resonance it fed on and any Dyscrasia.
          */
         put: operations["answer_feeding_api_cycles__cycle_id__participants__participant_id__feeding_answer_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cycles/{cycle_id}/participants/{participant_id}/feeding-numbers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Feeding Numbers
+         * @description A character's feeding restriction with the Rack, such as Prey Exclusion or the
+         *     Ventrue clan weakness: the card numbers it may only, or never, feed from. It
+         *     stays with the character from cycle to cycle.
+         */
+        put: operations["set_feeding_numbers_api_cycles__cycle_id__participants__participant_id__feeding_numbers_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -3365,6 +3429,45 @@ export interface paths {
         put: operations["replace_questions_api_cycles__cycle_id__questions_put"];
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cycles/{cycle_id}/rack": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Deal Rack
+         * @description Lay out cards on the cycle's Rack, at random: and each territory's, and each
+         *     character's Herd cards, if they have none yet.
+         */
+        post: operations["deal_rack_api_cycles__cycle_id__rack_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cycles/{cycle_id}/rack/{card_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Card */
+        put: operations["change_card_api_cycles__cycle_id__rack__card_id__put"];
+        post?: never;
+        /** Remove Card */
+        delete: operations["remove_card_api_cycles__cycle_id__rack__card_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -5778,6 +5881,73 @@ export interface paths {
          */
         post: operations["take_back_api_troupes__troupe_id__equipment__item_id__take_back_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/feeding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Feeding
+         * @description How far Horatio handles feeding for this troupe: not at all, as the book has it,
+         *     or with the optional Vol. 2 rules.
+         */
+        put: operations["set_feeding_api_troupes__troupe_id__feeding_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/feeding-territories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Territories
+         * @description The troupe's feeding territories, which the whole domain knows: for its staff
+         *     and the players of its characters.
+         */
+        get: operations["read_territories_api_troupes__troupe_id__feeding_territories_get"];
+        put?: never;
+        /** Add Territory */
+        post: operations["add_territory_api_troupes__troupe_id__feeding_territories_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/feeding-territories/{territory_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change Territory
+         * @description Change a territory: its size, where it is, or who the Authority assigns it to.
+         */
+        put: operations["change_territory_api_troupes__troupe_id__feeding_territories__territory_id__put"];
+        post?: never;
+        /**
+         * Archive Territory
+         * @description Revoke a territory, or record it lost: it leaves the list, and is kept.
+         */
+        delete: operations["archive_territory_api_troupes__troupe_id__feeding_territories__territory_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -8484,6 +8654,24 @@ export interface components {
             personal: components["schemas"]["CalendarLink"] | null;
             troupe: components["schemas"]["CalendarLink"] | null;
         };
+        /** CardIn */
+        CardIn: {
+            /**
+             * Descriptor
+             * @default
+             */
+            descriptor: string;
+            /**
+             * Dyscrasia
+             * @default
+             */
+            dyscrasia: string;
+            /**
+             * Resonance
+             * @enum {string}
+             */
+            resonance: "choleric" | "melancholic" | "phlegmatic" | "sanguine";
+        };
         /** CarriedOut */
         CarriedOut: {
             about: components["schemas"]["StatusAbout"] | null;
@@ -8815,6 +9003,11 @@ export interface components {
             /** Answered At */
             answered_at: string | null;
             /**
+             * Caught By
+             * @default []
+             */
+            caught_by: string[];
+            /**
              * Character Id
              * Format: uuid
              */
@@ -8825,6 +9018,11 @@ export interface components {
             clan: string;
             /** Delivered */
             delivered: boolean;
+            /**
+             * Dyscrasia
+             * @default
+             */
+            dyscrasia: string;
             /** Herd */
             herd: number;
             need: components["schemas"]["FeedingNeedOut"];
@@ -8833,10 +9031,20 @@ export interface components {
              * Format: uuid
              */
             participant_id: string;
+            /**
+             * Patrols
+             * @default []
+             */
+            patrols: components["schemas"]["PatrolByOut"][];
+            /** Poaching */
+            poaching?: string | null;
             /** Received */
             received: components["schemas"]["ReceivedOut"][];
             /** Reply */
             reply: string;
+            /** Resonance */
+            resonance?: ("choleric" | "melancholic" | "phlegmatic" | "sanguine") | null;
+            restriction?: components["schemas"]["FeedingNumbers"] | null;
             /** Result */
             result: ("full" | "half" | "other") | null;
             /** Submission Status */
@@ -8844,6 +9052,7 @@ export interface components {
             /** Summary */
             summary: string;
             tally: components["schemas"]["TallyOut"];
+            vessel?: components["schemas"]["FeedingCardOut"] | null;
             /** Working */
             working: string;
         };
@@ -9545,6 +9754,17 @@ export interface components {
             characters: components["schemas"]["CharacterFeedingOut"][];
             /** Clans */
             clans: components["schemas"]["ClanFeedingOut"][];
+            /**
+             * Humors
+             * @default []
+             */
+            humors: components["schemas"]["HumorOut"][];
+            rack?: components["schemas"]["RackOut"] | null;
+            /**
+             * Territories
+             * @default []
+             */
+            territories: components["schemas"]["TerritoryUseOut"][];
         };
         /** CycleOut */
         CycleOut: {
@@ -9564,6 +9784,11 @@ export interface components {
             closes_at: string;
             /** Completion Xp */
             completion_xp: number;
+            /**
+             * Feeding
+             * @default true
+             */
+            feeding: boolean;
             /**
              * Grace Ends At
              * Format: date-time
@@ -9674,6 +9899,16 @@ export interface components {
             clans: string[];
             /** Logo */
             logo: boolean;
+        };
+        /** DealIn */
+        DealIn: {
+            /** Count */
+            count: number;
+            /**
+             * Share
+             * @default 50
+             */
+            share: number;
         };
         /** DebtIn */
         DebtIn: {
@@ -10197,6 +10432,13 @@ export interface components {
             delivered: string[];
             /** Due */
             due: boolean;
+        };
+        /** DyscrasiaOut */
+        DyscrasiaOut: {
+            /** Name */
+            name: string;
+            /** Summary */
+            summary: string;
         };
         /**
          * EffectBlock
@@ -11187,12 +11429,71 @@ export interface components {
         /** FeedingAnswerIn */
         FeedingAnswerIn: {
             /**
+             * Caught By
+             * @default []
+             */
+            caught_by: string[];
+            /**
+             * Dyscrasia
+             * @default
+             */
+            dyscrasia: string;
+            /**
              * Reply
              * @default
              */
             reply: string;
+            /** Resonance */
+            resonance?: ("choleric" | "melancholic" | "phlegmatic" | "sanguine") | null;
             /** Result */
             result: ("full" | "half" | "other") | null;
+        };
+        /**
+         * FeedingCardOut
+         * @description A Feeding Card (horatio.rack): a vessel to feed on.
+         */
+        FeedingCardOut: {
+            /** Dealt To */
+            dealt_to?: string | null;
+            /** Descriptor */
+            descriptor: string;
+            /** Dyscrasia */
+            dyscrasia: string;
+            /** Dyscrasia Summary */
+            dyscrasia_summary: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Mine
+             * @default false
+             */
+            mine: boolean;
+            /** Number */
+            number: number;
+            /**
+             * Resonance
+             * @enum {string}
+             */
+            resonance: "choleric" | "melancholic" | "phlegmatic" | "sanguine";
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "rack" | "territory" | "herd" | "hunt";
+            /**
+             * Suits
+             * @default true
+             */
+            suits: boolean;
+            /** Taken By */
+            taken_by?: string | null;
+            /** Territory Id */
+            territory_id: string | null;
+            /** Territory Name */
+            territory_name: string | null;
         };
         /**
          * FeedingIn
@@ -11230,6 +11531,21 @@ export interface components {
              */
             herd_saved: number;
             /**
+             * Patrols
+             * @default []
+             */
+            patrols: components["schemas"]["PatrolIn"][];
+            /**
+             * Resonance
+             * @default
+             */
+            resonance: ("choleric" | "melancholic" | "phlegmatic" | "sanguine") | "";
+            /**
+             * Territory
+             * @default
+             */
+            territory: string;
+            /**
              * Where
              * @default
              */
@@ -11245,6 +11561,52 @@ export interface components {
             lines: components["schemas"]["NeedLineOut"][];
             /** Needed */
             needed: number;
+        };
+        /**
+         * FeedingNumbers
+         * @description A feeding restriction with the Rack (Vol. 2, p. 301): the last digits of the
+         *     card numbers the character may only, or may never, feed from.
+         */
+        FeedingNumbers: {
+            /** Endings */
+            endings: number[];
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "only" | "never";
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+        };
+        /** FeedingNumbersIn */
+        FeedingNumbersIn: {
+            rule: components["schemas"]["FeedingNumbers"] | null;
+        };
+        /** FeedingSettingIn */
+        FeedingSettingIn: {
+            /**
+             * Feeding
+             * @enum {string}
+             */
+            feeding: "off" | "book";
+            /**
+             * Rack
+             * @default false
+             */
+            rack: boolean;
+            /**
+             * Resonance
+             * @default false
+             */
+            resonance: boolean;
+            /**
+             * Territories
+             * @default false
+             */
+            territories: boolean;
         };
         /**
          * FilterCondition
@@ -12230,6 +12592,23 @@ export interface components {
              * Format: uuid
              */
             troupe_id: string;
+        };
+        /**
+         * HumorOut
+         * @description One of Blood Resonance's four humors (horatio.resonance).
+         */
+        HumorOut: {
+            /** Dyscrasias */
+            dyscrasias: components["schemas"]["DyscrasiaOut"][];
+            /** Feelings */
+            feelings: string;
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "choleric" | "melancholic" | "phlegmatic" | "sanguine";
+            /** Name */
+            name: string;
         };
         /** IdentitiesIn */
         IdentitiesIn: {
@@ -14015,15 +14394,45 @@ export interface components {
         /** MyFeedingOut */
         MyFeedingOut: {
             answer: components["schemas"]["FeedingIn"];
+            /**
+             * Cards
+             * @default []
+             */
+            cards: components["schemas"]["FeedingCardOut"][];
             /** Herd */
             herd: number;
+            /**
+             * Humors
+             * @default []
+             */
+            humors: components["schemas"]["HumorOut"][];
+            /**
+             * Hunt
+             * @default
+             */
+            hunt: string;
             /** Locked */
             locked: boolean;
             need: components["schemas"]["FeedingNeedOut"];
+            /**
+             * Rack
+             * @default false
+             */
+            rack: boolean;
             /** Received */
             received: components["schemas"]["ReceivedOut"][];
             /** Recipients */
             recipients: components["schemas"]["RecipientOut"][];
+            /**
+             * Restriction
+             * @default
+             */
+            restriction: string;
+            /**
+             * Territories
+             * @default []
+             */
+            territories: components["schemas"]["TerritoryOut"][];
         };
         /**
          * NeedLineOut
@@ -14668,6 +15077,28 @@ export interface components {
             page?: string | null;
             /** Rating */
             rating: number;
+        };
+        /** PatrolByOut */
+        PatrolByOut: {
+            /** Actions */
+            actions: number;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+        };
+        /** PatrolIn */
+        PatrolIn: {
+            /** Actions */
+            actions: number;
+            /**
+             * Territory Id
+             * Format: uuid
+             */
+            territory_id: string;
         };
         /** PatronChoiceOut */
         PatronChoiceOut: {
@@ -16528,6 +16959,15 @@ export interface components {
             from_rating: number | null;
             /** To Rating */
             to_rating: number | null;
+        };
+        /** RackOut */
+        RackOut: {
+            /** Cards */
+            cards: components["schemas"]["FeedingCardOut"][];
+            /** Players */
+            players: number;
+            /** Suggested */
+            suggested: number;
         };
         /** Rating */
         Rating: {
@@ -18817,6 +19257,108 @@ export interface components {
              */
             source: string;
         };
+        /** TerritoryIn */
+        TerritoryIn: {
+            /**
+             * Area
+             * @default
+             */
+            area: string;
+            /**
+             * Held By
+             * @default
+             */
+            held_by: string;
+            /**
+             * Holder Ids
+             * @default []
+             */
+            holder_ids: string[];
+            /** Name */
+            name: string;
+            /**
+             * Size
+             * @enum {string}
+             */
+            size: "small" | "moderate" | "notable" | "significant" | "large";
+        };
+        /**
+         * TerritoryOut
+         * @description A feeding territory (horatio.territories), as the domain knows it.
+         */
+        TerritoryOut: {
+            /** Area */
+            area: string;
+            /** Held By */
+            held_by: string;
+            /** Holder Ids */
+            holder_ids: string[];
+            /** Holders */
+            holders: string[];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Mine
+             * @default false
+             */
+            mine: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Size
+             * @enum {string}
+             */
+            size: "small" | "moderate" | "notable" | "significant" | "large";
+            /** Size Name */
+            size_name: string;
+            /** Vessels */
+            vessels: number;
+        };
+        /** TerritoryUseOut */
+        TerritoryUseOut: {
+            /** Area */
+            area: string;
+            /**
+             * Feeding
+             * @default []
+             */
+            feeding: string[];
+            /** Held By */
+            held_by: string;
+            /** Holder Ids */
+            holder_ids: string[];
+            /** Holders */
+            holders: string[];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Mine
+             * @default false
+             */
+            mine: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Patrols
+             * @default []
+             */
+            patrols: components["schemas"]["PatrolByOut"][];
+            /**
+             * Size
+             * @enum {string}
+             */
+            size: "small" | "moderate" | "notable" | "significant" | "large";
+            /** Size Name */
+            size_name: string;
+            /** Vessels */
+            vessels: number;
+        };
         /** TestPool */
         TestPool: {
             /**
@@ -19222,6 +19764,27 @@ export interface components {
             /** Downtime Xp */
             downtime_xp: number;
             /**
+             * Feeding
+             * @default book
+             * @enum {string}
+             */
+            feeding: "off" | "book";
+            /**
+             * Feeding Rack
+             * @default false
+             */
+            feeding_rack: boolean;
+            /**
+             * Feeding Resonance
+             * @default false
+             */
+            feeding_resonance: boolean;
+            /**
+             * Feeding Territories
+             * @default false
+             */
+            feeding_territories: boolean;
+            /**
              * Golconda Enlightened
              * @default false
              */
@@ -19549,6 +20112,11 @@ export interface components {
             name: string;
             /** Region */
             region: string;
+        };
+        /** VesselIn */
+        VesselIn: {
+            /** Card Id */
+            card_id: string | null;
         };
         /** ViewAsIn */
         ViewAsIn: {
@@ -22085,6 +22653,37 @@ export interface operations {
             };
         };
     };
+    hunt_outside_the_rack_api_characters__character_id__downtime_hunt_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyDowntime"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     my_results_api_characters__character_id__downtime_results_get: {
         parameters: {
             query?: never;
@@ -22126,6 +22725,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyDowntime"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    take_vessel_api_characters__character_id__downtime_vessel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VesselIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -26515,6 +27149,42 @@ export interface operations {
             };
         };
     };
+    set_feeding_numbers_api_cycles__cycle_id__participants__participant_id__feeding_numbers_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+                participant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedingNumbersIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CycleFeedingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     progress_api_cycles__cycle_id__progress_get: {
         parameters: {
             query?: never;
@@ -26568,6 +27238,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CycleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deal_rack_api_cycles__cycle_id__rack_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DealIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CycleFeedingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_card_api_cycles__cycle_id__rack__card_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CycleFeedingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_card_api_cycles__cycle_id__rack__card_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CycleFeedingOut"];
                 };
             };
             /** @description Validation Error */
@@ -31467,6 +32240,173 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["EquipmentItemDetailOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_feeding_api_troupes__troupe_id__feeding_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedingSettingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_territories_api_troupes__troupe_id__feeding_territories_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TerritoryOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_territory_api_troupes__troupe_id__feeding_territories_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TerritoryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TerritoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_territory_api_troupes__troupe_id__feeding_territories__territory_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                territory_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TerritoryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TerritoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_territory_api_troupes__troupe_id__feeding_territories__territory_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                territory_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
