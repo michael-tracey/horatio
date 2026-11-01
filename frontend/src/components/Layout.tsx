@@ -36,6 +36,9 @@ export function Layout() {
               <NavLink to="/troupes" className={({ isActive }) => link({ isActive: isActive || inCycle })}>
                 Troupes
               </NavLink>
+              <NavLink to="/rules" className={link}>
+                Rules
+              </NavLink>
               {me.data.is_custodian && (
                 <NavLink to="/custodian" className={link}>
                   Custodian

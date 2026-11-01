@@ -4723,6 +4723,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rules/{splat}/browse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Browse
+         * @description Every trait of the rule set with what the rules browser shows beside it: its
+         *     prices, the checks about it, its powers and a clan's rarity, all read from the
+         *     rules already loaded. Given `troupe_id`, as played there: its house prices, checks,
+         *     merits and flaws and clan rarities, and the traits it does not allow. Anyone
+         *     signed in may read it, as they may the troupe's house rules.
+         */
+        get: operations["browse_api_rules__splat__browse_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rules/{splat}/equipment": {
         parameters: {
             query?: never;
@@ -9981,6 +10005,21 @@ export interface components {
             /** To Rating */
             to_rating: number;
         };
+        /**
+         * DisciplinePowerOut
+         * @description A discipline's power at one dot, from the Play View's power reference: a
+         *     short note in our own words.
+         */
+        DisciplinePowerOut: {
+            /** Discipline */
+            discipline: string;
+            /** Level */
+            level: number;
+            /** Name */
+            name: string;
+            /** Note */
+            note: string;
+        };
         /** DisciplinePowers */
         DisciplinePowers: {
             cost?: components["schemas"]["Cost"] | null;
@@ -14073,6 +14112,19 @@ export interface components {
              */
             note: string;
         };
+        /**
+         * NotAllowedOut
+         * @description A trait the troupe does not let anyone buy: a house price of "cannot be bought"
+         *     for it, or for its whole category, that nothing more particular overrides.
+         */
+        NotAllowedOut: {
+            /** Category */
+            category: string;
+            /** Name */
+            name: string;
+            /** Text */
+            text: string | null;
+        };
         /** NoteIn */
         NoteIn: {
             /** Note */
@@ -15557,6 +15609,26 @@ export interface components {
             /** Summary */
             summary: string;
         };
+        /**
+         * PriceOut
+         * @description A cost rule in words: for one trait, or every trait of its category.
+         */
+        PriceOut: {
+            /** Book */
+            book?: string | null;
+            /** Category */
+            category: string;
+            /** House */
+            house: boolean;
+            /** Price */
+            price: string;
+            /** Text */
+            text?: string | null;
+            /** Trait */
+            trait: string | null;
+            /** When */
+            when: string | null;
+        };
         /** PrimaryPathChange */
         PrimaryPathChange: {
             /** Discipline */
@@ -16412,6 +16484,21 @@ export interface components {
             /** To Rating */
             to_rating: number | null;
         };
+        /**
+         * RarityOut
+         * @description How rare a clan is: in the troupe's setting, or in each sect's as the book has it.
+         *     Its bloodlines are as rare as it.
+         */
+        RarityOut: {
+            /** Clan */
+            clan: string;
+            /** House */
+            house: boolean;
+            /** Page */
+            page: string | null;
+            /** Text */
+            text: string;
+        };
         /** Rating */
         Rating: {
             /** Category */
@@ -17059,6 +17146,22 @@ export interface components {
             titles: string[];
             /** Waiting */
             waiting: boolean;
+        };
+        /** RulesBrowserOut */
+        RulesBrowserOut: {
+            catalogue: components["schemas"]["CatalogueOut"];
+            /** Not Allowed */
+            not_allowed: components["schemas"]["NotAllowedOut"][];
+            /** Powers */
+            powers: components["schemas"]["DisciplinePowerOut"][];
+            /** Prices */
+            prices: components["schemas"]["PriceOut"][];
+            /** Rarities */
+            rarities: components["schemas"]["RarityOut"][];
+            /** Requirements */
+            requirements: components["schemas"]["TraitCheckOut"][];
+            /** Troupe Name */
+            troupe_name: string | null;
         };
         /** SampleOut */
         SampleOut: {
@@ -18901,6 +19004,29 @@ export interface components {
              * @default
              */
             teacher: string;
+        };
+        /**
+         * TraitCheckOut
+         * @description A check, in the words a player reads when a change breaks it: about one trait,
+         *     every trait whose name starts with `prefix`, or (neither) a whole category.
+         */
+        TraitCheckOut: {
+            /** Category */
+            category: string;
+            /** House */
+            house?: string | null;
+            /** Key */
+            key: string;
+            /** Message */
+            message: string;
+            /** Page */
+            page: string | null;
+            /** Prefix */
+            prefix: string | null;
+            /** Strength */
+            strength: string;
+            /** Trait */
+            trait: string | null;
         };
         /**
          * TraitCondition
@@ -29034,6 +29160,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogueOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    browse_api_rules__splat__browse_get: {
+        parameters: {
+            query?: {
+                troupe_id?: string | null;
+            };
+            header?: never;
+            path: {
+                splat: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RulesBrowserOut"];
                 };
             };
             /** @description Validation Error */

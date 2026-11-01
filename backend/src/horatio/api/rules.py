@@ -1,4 +1,5 @@
-"""The rules a character plays by: categories, the trait catalogue, and house rules."""
+"""The rules a character plays by: categories, the trait catalogue, and house rules;
+and all of it at once for the rules browser, as played in one troupe."""
 
 import uuid
 
@@ -9,12 +10,15 @@ from sqlalchemy.exc import NoResultFound
 
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import RuleSet, Troupe
+from horatio.reference import catalogue as power_catalogue
+from horatio.rules import conditions, pricing
 from horatio.rules.feeding import clan_family
+from horatio.rules.files import EVERYWHERE
 from horatio.rules.grants import choices
-from horatio.rules.model import HouseTraitData, RuleSetData, TraitData
+from horatio.rules.model import CostRuleData, HouseTraitData, RuleSetData, TraitData, TroupeRules
 from horatio.rules.splats import SPLATS, splat_order
 from horatio.rules.status import GENERAL
-from horatio.rules.store import read_troupe_rules
+from horatio.rules.store import read_troupe_rules, same_subject
 
 router = APIRouter(prefix="/rules", tags=["rules"])
 
@@ -224,3 +228,225 @@ def house_out(house: HouseTraitData | None) -> HouseOut | None:
         summary=house.summary,
         in_clan=list(house.in_clan),
     )
+
+
+# --- The rules browser --------------------------------------------------------
+
+
+class PriceOut(BaseModel):
+    """A cost rule in words: for one trait, or every trait of its category."""
+
+    category: str
+    trait: str | None
+    # When it applies, such as "in-clan"; None for always.
+    when: str | None
+    price: str
+    # A house rule of the troupe asked about: its own wording, and the rule set's
+    # price it replaces (None for one the rule set does not have).
+    house: bool
+    text: str | None = None
+    book: str | None = None
+
+
+class TraitCheckOut(BaseModel):
+    """A check, in the words a player reads when a change breaks it: about one trait,
+    every trait whose name starts with `prefix`, or (neither) a whole category."""
+
+    key: str
+    category: str
+    trait: str | None
+    prefix: str | None
+    message: str
+    page: str | None
+    # As the rule set has it (refuse, complete, review or note), and the troupe's
+    # own strength where it changed it: one of those, or "off".
+    strength: str
+    house: str | None = None
+
+
+class NotAllowedOut(BaseModel):
+    """A trait the troupe does not let anyone buy: a house price of "cannot be bought"
+    for it, or for its whole category, that nothing more particular overrides."""
+
+    category: str
+    name: str
+    text: str | None
+
+
+class DisciplinePowerOut(BaseModel):
+    """A discipline's power at one dot, from the Play View's power reference: a
+    short note in our own words."""
+
+    discipline: str
+    level: int
+    name: str
+    note: str
+
+
+class RarityOut(BaseModel):
+    """How rare a clan is: in the troupe's setting, or in each sect's as the book has it.
+    Its bloodlines are as rare as it."""
+
+    clan: str
+    text: str
+    page: str | None
+    # The troupe's own rarity, not the book's.
+    house: bool
+
+
+class RulesBrowserOut(BaseModel):
+    catalogue: CatalogueOut
+    # The troupe whose house rules are applied; None for the book's rules.
+    troupe_name: str | None
+    prices: list[PriceOut]
+    requirements: list[TraitCheckOut]
+    not_allowed: list[NotAllowedOut]
+    powers: list[DisciplinePowerOut]
+    rarities: list[RarityOut]
+
+
+@router.get("/{splat}/browse")
+def browse(
+    splat: str, db: DbSession, user: CurrentUser, troupe_id: uuid.UUID | None = None
+) -> RulesBrowserOut:
+    """Every trait of the rule set with what the rules browser shows beside it: its
+    prices, the checks about it, its powers and a clan's rarity, all read from the
+    rules already loaded. Given `troupe_id`, as played there: its house prices, checks,
+    merits and flaws and clan rarities, and the traits it does not allow. Anyone
+    signed in may read it, as they may the troupe's house rules."""
+    troupe = db.get(Troupe, troupe_id) if troupe_id is not None else None
+    if troupe_id is not None and (
+        troupe is None or (troupe.archived_at is not None and not user.is_custodian)
+    ):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
+    found = catalogue(splat, db, user, troupe_id=troupe_id)
+    rules = read_troupe_rules(db, splat, troupe_id)
+    rule_set = rules.rule_set
+    # Archived house merits are for the characters that hold them, not to read about.
+    found.traits = [t for t in found.traits if not (t.house and t.house.archived)]
+    shown = {t.category for t in found.traits}
+    disciplines = {t.name for t in found.traits if t.category == "disciplines"}
+    powers = power_catalogue().powers
+    return RulesBrowserOut(
+        catalogue=found,
+        troupe_name=troupe.name if troupe is not None else None,
+        prices=prices(rules, shown),
+        requirements=[
+            TraitCheckOut(
+                key=c.key,
+                category=c.category,
+                trait=c.name,
+                prefix=c.name_prefix,
+                message=c.message,
+                page=c.page,
+                strength=c.strength,
+                house=rules.check_overrides.get(c.key),
+            )
+            for c in rule_set.checks
+            if c.category in shown and c.message and c.detail is None
+        ],
+        not_allowed=not_allowed(rules, found.traits),
+        powers=[
+            DisciplinePowerOut(discipline=d, level=p["level"], name=p["name"], note=p["note"])
+            for d in sorted(disciplines)
+            for p in powers.get(d, [])
+        ],
+        rarities=clan_rarities(rule_set, troupe),
+    )
+
+
+def unit_of(rule_set: RuleSetData, category: str) -> str:
+    return "point" if rule_set.categories[category].points_limit is not None else "dot"
+
+
+def prices(rules: TroupeRules, categories: set[str]) -> list[PriceOut]:
+    """The rule set's prices for those categories, each the troupe has replaced
+    swapped for its own, then the troupe's other prices. A troupe's price for a
+    merit or flaw of fixed value says the book's value beside it."""
+    rule_set = rules.rule_set
+    words = SPLATS[rule_set.splat].fact_words
+
+    def out(rule: CostRuleData, book: str | None = None) -> PriceOut:
+        return PriceOut(
+            category=rule.category,
+            trait=rule.trait,
+            when=conditions.describe(rule.condition, words),
+            price=pricing.describe(rule, unit_of(rule_set, rule.category)),
+            house=rule.house,
+            text=rule.text,
+            book=book,
+        )
+
+    found: list[PriceOut] = []
+    house = [r for r in rules.house_rules if r.category in categories]
+    for rule in rule_set.cost_rules:
+        if rule.category not in categories:
+            continue
+        replacing = next((h for h in house if same_subject(h, rule)), None)
+        if replacing is None:
+            found.append(out(rule))
+        else:
+            found.append(out(replacing, pricing.describe(rule, unit_of(rule_set, rule.category))))
+    for h in house:
+        if any(same_subject(h, r) for r in rule_set.cost_rules):
+            continue
+        value = rule_set.trait_properties(h.category, h.trait).get("rating") if h.trait else None
+        unit = unit_of(rule_set, h.category)
+        found.append(out(h, f"{value} {unit}{'' if value == 1 else 's'}" if value else None))
+    return found
+
+
+def not_allowed(rules: TroupeRules, traits: list[TraitOut]) -> list[NotAllowedOut]:
+    """The traits the troupe's house prices bar outright: "cannot be bought" with no
+    condition, for the trait or its whole category, where no price could beat it for
+    any character (pricing.choose_rule: a price naming the trait beats its category's,
+    and one with a condition beats one without)."""
+    bars = {
+        (r.category, r.trait): r
+        for r in rules.house_rules
+        if r.scheme == "not_allowed" and not r.condition
+    }
+    if not bars:
+        return []
+    every = [*rules.house_rules, *rules.rule_set.cost_rules]
+
+    def beaten(bar: CostRuleData, name: str) -> bool:
+        return any(
+            r is not bar
+            and r.category == bar.category
+            and ((bar.trait is None and r.trait == name) or (r.trait == bar.trait and r.condition))
+            for r in every
+        )
+
+    found: list[NotAllowedOut] = []
+    for t in traits:
+        bar = bars.get((t.category, t.name)) or bars.get((t.category, None))
+        if bar is not None and not beaten(bar, t.name):
+            found.append(NotAllowedOut(category=t.category, name=t.name, text=bar.text))
+    return found
+
+
+def clan_rarities(rule_set: RuleSetData, troupe: Troupe | None) -> list[RarityOut]:
+    """Each clan's rarity (MET: VTM pp. 403-404 and on): the troupe's own where it
+    names one; else in the troupe's setting, if it takes one sect only; else in each
+    sect's setting, as the book gives it (horatio.api.house_rules.clan_rarity_out)."""
+    setting = troupe.allowed_sects[0] if troupe and len(troupe.allowed_sects) == 1 else None
+    found: list[RarityOut] = []
+    for (category, clan), trait in sorted(rule_set.traits.items()):
+        if category != "clan" or ":" in clan:
+            continue
+        book: dict[str, dict[str, str]] = dict(trait.properties.get("rarity", {}))
+        house = troupe.clan_rarity.get(clan) if troupe else None
+        if house:
+            found.append(RarityOut(clan=clan, text=house.capitalize(), page=None, house=True))
+            continue
+        one = book.get(EVERYWHERE) or (book.get(setting) if setting else None)
+        if one:
+            text, page = one["rarity"].capitalize(), one["page"]
+        elif book:
+            text = ", ".join(f"{r['rarity']} for the {sect}" for sect, r in book.items())
+            text, page = text[0].upper() + text[1:], None
+        else:
+            continue
+        found.append(RarityOut(clan=clan, text=text, page=page, house=False))
+    return found

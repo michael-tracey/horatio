@@ -7479,6 +7479,35 @@
         "title": "DisciplineOut",
         "type": "object"
       },
+      "DisciplinePowerOut": {
+        "description": "A discipline's power at one dot, from the Play View's power reference: a\nshort note in our own words.",
+        "properties": {
+          "discipline": {
+            "title": "Discipline",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "discipline",
+          "level",
+          "name",
+          "note"
+        ],
+        "title": "DisciplinePowerOut",
+        "type": "object"
+      },
       "DisciplinePowers": {
         "properties": {
           "cost": {
@@ -18036,6 +18065,37 @@
         "title": "NewTroupeRequest",
         "type": "object"
       },
+      "NotAllowedOut": {
+        "description": "A trait the troupe does not let anyone buy: a house price of \"cannot be bought\"\nfor it, or for its whole category, that nothing more particular overrides.",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "text"
+        ],
+        "title": "NotAllowedOut",
+        "type": "object"
+      },
       "NoteIn": {
         "properties": {
           "note": {
@@ -21840,6 +21900,76 @@
         "title": "PreviewOut",
         "type": "object"
       },
+      "PriceOut": {
+        "description": "A cost rule in words: for one trait, or every trait of its category.",
+        "properties": {
+          "book": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Book"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "house": {
+            "title": "House",
+            "type": "boolean"
+          },
+          "price": {
+            "title": "Price",
+            "type": "string"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "trait": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trait"
+          },
+          "when": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "When"
+          }
+        },
+        "required": [
+          "category",
+          "trait",
+          "when",
+          "price",
+          "house"
+        ],
+        "title": "PriceOut",
+        "type": "object"
+      },
       "PrimaryPathChange": {
         "properties": {
           "discipline": {
@@ -24197,6 +24327,42 @@
         "title": "QuoteOut",
         "type": "object"
       },
+      "RarityOut": {
+        "description": "How rare a clan is: in the troupe's setting, or in each sect's as the book has it.\nIts bloodlines are as rare as it.",
+        "properties": {
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "house": {
+            "title": "House",
+            "type": "boolean"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "clan",
+          "text",
+          "page",
+          "house"
+        ],
+        "title": "RarityOut",
+        "type": "object"
+      },
       "Rating": {
         "properties": {
           "category": {
@@ -25871,6 +26037,70 @@
           "lines_veils"
         ],
         "title": "RosterEntry",
+        "type": "object"
+      },
+      "RulesBrowserOut": {
+        "properties": {
+          "catalogue": {
+            "$ref": "#/components/schemas/CatalogueOut"
+          },
+          "not_allowed": {
+            "items": {
+              "$ref": "#/components/schemas/NotAllowedOut"
+            },
+            "title": "Not Allowed",
+            "type": "array"
+          },
+          "powers": {
+            "items": {
+              "$ref": "#/components/schemas/DisciplinePowerOut"
+            },
+            "title": "Powers",
+            "type": "array"
+          },
+          "prices": {
+            "items": {
+              "$ref": "#/components/schemas/PriceOut"
+            },
+            "title": "Prices",
+            "type": "array"
+          },
+          "rarities": {
+            "items": {
+              "$ref": "#/components/schemas/RarityOut"
+            },
+            "title": "Rarities",
+            "type": "array"
+          },
+          "requirements": {
+            "items": {
+              "$ref": "#/components/schemas/TraitCheckOut"
+            },
+            "title": "Requirements",
+            "type": "array"
+          },
+          "troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
+          }
+        },
+        "required": [
+          "catalogue",
+          "troupe_name",
+          "prices",
+          "requirements",
+          "not_allowed",
+          "powers",
+          "rarities"
+        ],
+        "title": "RulesBrowserOut",
         "type": "object"
       },
       "SampleOut": {
@@ -30667,6 +30897,82 @@
           "name"
         ],
         "title": "TraitChange",
+        "type": "object"
+      },
+      "TraitCheckOut": {
+        "description": "A check, in the words a player reads when a change breaks it: about one trait,\nevery trait whose name starts with `prefix`, or (neither) a whole category.",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "house": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "House"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "prefix": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prefix"
+          },
+          "strength": {
+            "title": "Strength",
+            "type": "string"
+          },
+          "trait": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trait"
+          }
+        },
+        "required": [
+          "key",
+          "category",
+          "trait",
+          "prefix",
+          "message",
+          "page",
+          "strength"
+        ],
+        "title": "TraitCheckOut",
         "type": "object"
       },
       "TraitCondition": {
@@ -47727,6 +48033,66 @@
           }
         },
         "summary": "Catalogue",
+        "tags": [
+          "rules"
+        ]
+      }
+    },
+    "/api/rules/{splat}/browse": {
+      "get": {
+        "description": "Every trait of the rule set with what the rules browser shows beside it: its\nprices, the checks about it, its powers and a clan's rarity, all read from the\nrules already loaded. Given `troupe_id`, as played there: its house prices, checks,\nmerits and flaws and clan rarities, and the traits it does not allow. Anyone\nsigned in may read it, as they may the troupe's house rules.",
+        "operationId": "browse_api_rules__splat__browse_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "splat",
+            "required": true,
+            "schema": {
+              "title": "Splat",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "troupe_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Troupe Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RulesBrowserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Browse",
         "tags": [
           "rules"
         ]

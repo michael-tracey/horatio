@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router";
 import type { CatalogueOut } from "../../api/types";
 import { InfoButton } from "../../components/InfoButton";
 import { pageLabel } from "../../components/TraitInfo";
@@ -18,12 +19,18 @@ function Lines({ about, facts }: { about: string; facts: string[] }) {
 }
 
 /** The ⓘ beside a part of the sheet's title (Skills, Backgrounds…); nothing for a part with no copy. */
-export function PartInfo({ part, catalogue }: { part: string; catalogue: CatalogueOut | undefined }) {
+export function PartInfo({ part, catalogue, rules }: { part: string; catalogue: CatalogueOut | undefined; rules?: string | null }) {
   const info = partInfo(part, catalogue);
   if (!info) return null;
   return (
     <InfoButton label={`About ${part}`}>
       <Lines {...info} />
+      {/* Every one of them in the rules browser, as the character's troupe plays them. */}
+      {rules && (
+        <Link to={rules} className="mt-1 block text-gold underline hover:text-parchment">
+          See all {part.toLowerCase()} in the rules
+        </Link>
+      )}
     </InfoButton>
   );
 }
