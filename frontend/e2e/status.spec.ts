@@ -216,7 +216,7 @@ test("Enlightened: a Sabbat follower of an Accepted path holds it, and a Camaril
   await l.goto(`/troupes/${troupeId}/status`);
   await l.getByRole("heading", { name: "General status", exact: true }).click();
   const rule = l.getByRole("listitem", { name: "Enlightened", exact: true });
-  await expect(rule.getByText("innate", { exact: true })).toBeVisible();
+  await expect(rule.getByText("Innate", { exact: true })).toBeVisible();
   await expect(rule).toContainText("Given here by the merits Golconda Seeker, Path of Caine, Path of Cathari");
   await expect(rule).toContainText("Path of Typhon-Set.");
   await expect(rule).toContainText("Vol. 2, p. 267");
@@ -276,7 +276,7 @@ test("Status & Titles: a Camarilla player sees the status held with its sources,
   const status = p.locator("section").filter({ has: p.getByRole("heading", { name: "Status", exact: true }) });
   const list = status.getByRole("list", { name: "Status held" });
   const line = (name: string) => list.getByRole("listitem", { name, exact: true });
-  await expect(line("Acknowledged").getByText("accepted", { exact: true })).toBeVisible();
+  await expect(line("Acknowledged").getByText("Accepted", { exact: true })).toBeVisible();
   await expect(line("Acknowledged")).toContainText("by the Camarilla");
   await expect(line("Loyal").getByText("Fleeting", { exact: true })).toBeVisible();
   await expect(line("Loyal")).toContainText("from Mirela Stoica (Prince at the time)");

@@ -199,7 +199,8 @@ function Games({ profile }: { profile: TroupeProfileOut }) {
       ) : (
         <p className="text-sm text-mist">None yet.</p>
       )}
-      <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+      {/* Top-aligned, the button beside the inputs rather than the dates written under them. */}
+      <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-start">
         <Field label="Game starts">
           <DateInput
             type="datetime-local"
@@ -215,7 +216,7 @@ function Games({ profile }: { profile: TroupeProfileOut }) {
         <Field label="Game ends">
           <DateInput type="datetime-local" value={ends} onChange={(e) => setEnds(e.target.value)} />
         </Field>
-        <Button type="button" variant="secondary" disabled={!starts || !ends || add.isPending} onClick={() => add.mutate(undefined)}>
+        <Button type="button" variant="secondary" className="sm:mt-6" disabled={!starts || !ends || add.isPending} onClick={() => add.mutate(undefined)}>
           Add game
         </Button>
       </div>

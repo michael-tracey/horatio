@@ -362,7 +362,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("link", { name: "Troupe", exact: true }).click();
   await lead.page.getByRole("link", { name: "Log", exact: true }).click();
   await expect(lead.page.getByText("lead accepted Agnes (player); this is its home.")).toBeVisible();
-  await expect(lead.page.getByText("Agnes (player) joined the troupe.")).toBeVisible();
+  await expect(lead.page.getByText("Agnes (player) started visiting the troupe.")).toBeVisible();
   await expect(lead.page.getByText(/lead approved Agnes \(player\)'s Celerity/)).toBeVisible();
   await lead.page.screenshot(shots("log"));
   // The troupe's rules: the lead can play a check differently.
@@ -502,7 +502,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(lead.page.getByText("Delivered 1 downtime.")).toBeVisible();
   // Each participant against each channel; with no connectors, in Horatio only.
   await expect(lead.page.getByRole("columnheader", { name: "In Horatio" })).toBeVisible();
-  await expect(lead.page.getByRole("row", { name: /Agnes.*sent/ })).toBeVisible();
+  await expect(lead.page.getByRole("row", { name: /Agnes.*Sent/ })).toBeVisible();
   await characterTab(p, "Results");
   await expect(p.getByText("you feed well and unseen")).toBeVisible();
   // New to the player, with the response under the action it answers.
@@ -851,7 +851,7 @@ test("staff add a character to an open cycle, filter to those not submitted, and
   await adding.getByRole("button", { name: "Add to the cycle" }).click();
   await expect(l.getByText("Added Tobias Wren to Chase month.")).toBeVisible();
   await expect(l.getByText("1 submitted · 1 not started")).toBeVisible();
-  await expect(l.getByRole("row", { name: new RegExp(`Tobias Wren.*@${wren.handle}.*not started`) })).toBeVisible();
+  await expect(l.getByRole("row", { name: new RegExp(`Tobias Wren.*@${wren.handle}.*Not started`) })).toBeVisible();
 
   // Filtered to those not submitted, only Tobias is left; the overview links straight here.
   await l.getByRole("button", { name: "Not submitted (1)" }).click();

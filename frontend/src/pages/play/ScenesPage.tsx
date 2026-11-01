@@ -247,7 +247,8 @@ function ClearOldScenes({ troupeId, mine }: { troupeId: string; mine: boolean })
   return (
     <Card title="Old scenes">
       <p className="mb-3 text-sm text-mist">Remove every scene in the troupe, whoever made it, that nobody has opened or changed since the date you choose. Their characters stay as they are.</p>
-      <div className="flex flex-wrap items-end gap-2">
+      {/* Top-aligned, the buttons beside the input rather than the date written under it. */}
+      <div className="flex flex-wrap items-start gap-2 [&>button]:mt-6">
         <div className="w-44">
           <Field label="Not used since">
             <DateInput value={day} onChange={(e) => setDay(e.target.value)} />
