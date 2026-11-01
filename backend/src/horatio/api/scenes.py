@@ -122,6 +122,27 @@ def pinned(db: Session, scene_id: uuid.UUID) -> list[uuid.UUID]:
     )
 
 
+def pin_at_end(db: Session, scene_id: uuid.UUID, character_id: uuid.UUID) -> None:
+    """Put a character after the others in the scene, unless it is there already.
+    Holds the scene's row until the commit, so two pins at once take the next places
+    one after the other (issue #407): each reading the last place before the other
+    was saved, both took the same one, and the scene's order came out either way."""
+    db.execute(select(Scene.id).where(Scene.id == scene_id).with_for_update())
+    last = db.scalar(
+        select(func.max(SceneCharacter.position)).where(SceneCharacter.scene_id == scene_id)
+    )
+    # Two storytellers pinning the same character at once pin it once.
+    db.execute(
+        insert(SceneCharacter)
+        .values(
+            scene_id=scene_id,
+            character_id=character_id,
+            position=0 if last is None else last + 1,
+        )
+        .on_conflict_do_nothing(index_elements=["scene_id", "character_id"])
+    )
+
+
 def runnable(db: Session, troupe_id: uuid.UUID, character_ids: list[uuid.UUID]) -> set[uuid.UUID]:
     """Those of the characters the troupe can run in Play: the ones in it now, its
     NPCs and the PCs whose home or visiting troupe it is, as on its roster."""
@@ -306,19 +327,7 @@ def pin(
     scene = troupe_scene(db, troupe, scene_id)
     if character_id not in runnable(db, troupe.id, [character_id]):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such character in this troupe.")
-    last = db.scalar(
-        select(func.max(SceneCharacter.position)).where(SceneCharacter.scene_id == scene.id)
-    )
-    # Two storytellers pinning the same character at once pin it once.
-    db.execute(
-        insert(SceneCharacter)
-        .values(
-            scene_id=scene.id,
-            character_id=character_id,
-            position=0 if last is None else last + 1,
-        )
-        .on_conflict_do_nothing(index_elements=["scene_id", "character_id"])
-    )
+    pin_at_end(db, scene.id, character_id)
     used(scene)
     db.commit()
     return scene_out(db, user, troupe, scene)

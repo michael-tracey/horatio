@@ -26,13 +26,16 @@ export type Kind = NonNullable<ReturnType<typeof useSpecializations>["data"]>[nu
 export function SpecializationRow({ character, kind, editable }: { character: CharacterOut; kind: Kind; editable: boolean }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
-  const change = useAction((body: { name: string; detail: string; rating: number }) =>
-    unwrap(
-      api.PUT("/api/characters/{character_id}/traits", {
-        params: { path: { character_id: character.id } },
-        body: { category: kind.category, teacher: "", ...body },
-      }),
-    ),
+  // The list it shows is asked again first, before the rest of the page.
+  const change = useAction(
+    (body: { name: string; detail: string; rating: number }) =>
+      unwrap(
+        api.PUT("/api/characters/{character_id}/traits", {
+          params: { path: { character_id: character.id } },
+          body: { category: kind.category, teacher: "", ...body },
+        }),
+      ),
+    [["specializations", character.id]],
   );
   const held = kind.held.map((h) => {
     const name = h.name ?? "";

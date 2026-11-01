@@ -1,4 +1,4 @@
-import { useIsMutating, useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { partialMatchKey, useIsMutating, useMutation, useQueries, useQuery, useQueryClient, type Query, type QueryKey } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { api, ApiError, unwrap } from "./api/client";
 import type { Me, Preferences } from "./api/types";
@@ -100,8 +100,12 @@ export function useSetPreferences() {
  * A change that, when it succeeds, refreshes everything on screen. Horatio's
  * data is small and interlinked (a purchase changes the sheet, the XP, the
  * approval queue), so refetching all of it is simpler and never stale.
+ *
+ * `first` names the queries that show the change itself (the sheet, after Spend
+ * XP). They are asked again before the rest, on their own: the API is one process,
+ * and an answer asked for alongside twenty others waits behind all of them.
  */
-export function useAction<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>) {
+export function useAction<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>, first: QueryKey[] = []) {
   const client = useQueryClient();
   return useMutation({
     mutationFn: fn,
@@ -110,9 +114,12 @@ export function useAction<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>)
       // keeps the request it started before this change, and shows stale data. One
       // keyed by the sheet it is for (`of` in useUnavailable) is asked afresh under a
       // new key once the sheet changes: asking again under the old one is wasted.
-      const changes = { predicate: (q: { meta?: Record<string, unknown> }) => !q.meta?.bySheet };
-      await client.cancelQueries(changes);
-      await client.invalidateQueries(changes);
+      const changed = (q: Query) => !q.meta?.bySheet;
+      const leading = (q: Query) => first.some((key) => partialMatchKey(q.queryKey, key));
+      if (first.length) await client.invalidateQueries({ predicate: (q) => changed(q) && leading(q) });
+      const rest = { predicate: (q: Query) => changed(q) && !leading(q) };
+      await client.cancelQueries(rest);
+      await client.invalidateQueries(rest);
     },
   });
 }

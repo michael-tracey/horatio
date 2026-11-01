@@ -93,6 +93,7 @@ export function CartPanel({
   const [message, setMessage] = useState<ReactNode>(null);
   // A refused line being asked of staff as an exception.
   const [asking, setAsking] = useState<CartLine | null>(null);
+  // What was bought shows on the sheet and its specialisations, so those are asked again first.
   const spend = useAction(async () => {
     const lines = cart.lines;
     const result = await post(character.id, lines, false);
@@ -111,7 +112,7 @@ export function CartPanel({
       setMessage(<ErrorText error="Nothing was spent: a change was refused. It is marked below." />);
     }
     return result;
-  });
+  }, [["sheet", character.id], ["specializations", character.id]]);
   const t = prices.totals;
   const lines = cart.lines;
   const reason = !lines.length
