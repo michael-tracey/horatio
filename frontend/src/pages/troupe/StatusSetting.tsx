@@ -95,7 +95,7 @@ function WhoSetting({
       actions={
         canEdit &&
         editing === null && (
-          <Button variant="ghost" className="min-h-8 px-2" aria-label={label} onClick={() => setEditing(now)}>
+          <Button variant="secondary" className="min-h-8 px-3" aria-label={label} onClick={() => setEditing(now)}>
             Change
           </Button>
         )

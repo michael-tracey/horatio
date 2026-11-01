@@ -57,6 +57,58 @@ test("a troupe changes what new characters start with and their downtime actions
   await expect(p.getByText("0 of 9 points")).toBeVisible();
 });
 
+test("Customise opens on Overview, a setup checklist and the house settings, and Checks come in folded groups that a search looks through (#377)", async ({ browser }) => {
+  const custodian = await person(browser, "tally-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "tally-lead");
+  const troupeName = `House of Tallies ${run}`;
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+
+  // Customise opens on Overview: nothing is set up yet, and every rule plays as the book has it.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}`);
+  await l.getByRole("link", { name: "Customise", exact: true }).click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/customise$`));
+  const steps = l.getByRole("list", { name: "Setting up" });
+  await expect(steps.getByRole("listitem")).toHaveCount(4);
+  await expect(l.getByText("0 of 4 done")).toBeVisible();
+  const glance = l.locator("section").filter({ has: l.getByRole("heading", { name: "House settings at a glance" }) });
+  await expect(glance.getByText(/^0 of \d+ played differently$/)).toBeVisible();
+  await expect(glance.getByText(/Discord: not set up on this server/)).toBeVisible();
+  await l.screenshot(shots("customise-overview"));
+
+  // Checks open on the troupe's house rules, of which there are none yet.
+  await steps.getByRole("link", { name: /^House rules\W+to do/ }).click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/rules$`));
+  await expect(l.getByText("No house rules yet.")).toBeVisible();
+  // All of them come in groups, folded, each with its count.
+  await l.getByRole("button", { name: /^All checks/ }).click();
+  const clanMerits = l.locator("details").filter({ hasText: "Clan merits, only for their clan or bloodline" });
+  await expect(clanMerits).toContainText(/\d{3} checks/);
+  await expect(clanMerits).toHaveJSProperty("open", false);
+  await expect(l.getByLabel(/^Setting for:/)).toHaveCount(0);
+  const techniques = l.locator("details").filter({ has: l.getByRole("heading", { name: "Techniques", exact: true }) });
+  await techniques.getByRole("heading", { name: "Techniques", exact: true }).click();
+  await expect(techniques.getByLabel(/^Setting for: Animal Swarm needs/)).toBeVisible();
+
+  // A search looks through them all, and opens the group it finds the check in.
+  await l.getByLabel("Search checks").fill("Calm Heart");
+  await expect(l.getByRole("group", { name: "Checks by kind" }).locator("details")).toHaveCount(1);
+  await expect(l.locator("details").filter({ has: l.getByRole("heading", { name: "Merits", exact: true }) })).toContainText("1 of 29 checks");
+  await l.getByLabel(/Setting for: Brujah cannot take Calm Heart/).selectOption({ label: "Off" });
+  await expect(l.getByText("Saved: Calm Heart is now Off")).toBeVisible();
+  await expect(l.getByRole("button", { name: "House rules (1)" })).toBeVisible();
+  await l.screenshot(shots("customise-checks"));
+
+  // Overview counts it.
+  await l.getByRole("link", { name: "Overview", exact: true }).click();
+  await expect(steps.getByRole("link", { name: /^House rules\W+done/ })).toBeVisible();
+  await expect(glance.getByText(/^1 of \d+ played differently$/)).toBeVisible();
+});
+
 test("a troupe's players read its house rules: a price the lead changes shows there beside the book's", async ({ browser }) => {
   const custodian = await person(browser, "lantern-custodian");
   makeCustodian(custodian.email);
@@ -122,6 +174,7 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   await l.getByRole("link", { name: "Troupes" }).click();
   await l.getByRole("link", { name: troupeName }).click();
   await l.getByRole("link", { name: "Customise", exact: true }).click();
+  await l.getByRole("link", { name: "Troupe settings", exact: true }).click();
   await l.getByRole("button", { name: "Set by hand" }).click();
   await l.getByLabel("Floor", { exact: true }).fill("100");
   await l.getByLabel("Ceiling", { exact: true }).fill("120");
@@ -270,6 +323,7 @@ test("storytellers filter the troupe's characters and print what they find", asy
   await expect(p.getByText("2 of 3 characters")).toBeVisible();
 
   // Print all prints what the filter shows.
+  await p.getByRole("button", { name: "Print…" }).click();
   const printTab = p.context().waitForEvent("page");
   await p.getByRole("button", { name: "Print all 2" }).click();
   const printed = await printTab;

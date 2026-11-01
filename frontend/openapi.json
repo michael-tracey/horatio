@@ -2983,6 +2983,56 @@
         "title": "BuiltInPowerOut",
         "type": "object"
       },
+      "BulkAssigned": {
+        "properties": {
+          "assigned": {
+            "title": "Assigned",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "assigned"
+        ],
+        "title": "BulkAssigned",
+        "type": "object"
+      },
+      "BulkAssignment": {
+        "description": "Several of a cycle's responses, assigned in one go.",
+        "properties": {
+          "any_narrator": {
+            "default": false,
+            "title": "Any Narrator",
+            "type": "boolean"
+          },
+          "response_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Response Ids",
+            "type": "array"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          }
+        },
+        "required": [
+          "response_ids"
+        ],
+        "title": "BulkAssignment",
+        "type": "object"
+      },
       "BulkAward": {
         "properties": {
           "awards": {
@@ -4641,6 +4691,10 @@
             "title": "Category",
             "type": "string"
           },
+          "group": {
+            "title": "Group",
+            "type": "string"
+          },
           "house": {
             "anyOf": [
               {
@@ -4679,6 +4733,7 @@
         "required": [
           "key",
           "category",
+          "group",
           "about",
           "message",
           "page",
@@ -5367,6 +5422,13 @@
             "title": "Name",
             "type": "string"
           },
+          "needs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Needs",
+            "type": "array"
+          },
           "settings": {
             "additionalProperties": true,
             "title": "Settings",
@@ -5392,6 +5454,7 @@
           "kind",
           "name",
           "unavailable",
+          "needs",
           "enabled",
           "mode",
           "test_mode",
@@ -6169,6 +6232,63 @@
           "questions"
         ],
         "title": "CycleOut",
+        "type": "object"
+      },
+      "CycleSummaryOut": {
+        "description": "A cycle in the troupe's list: when it is due and how far it has got.",
+        "properties": {
+          "closes_at": {
+            "format": "date-time",
+            "title": "Closes At",
+            "type": "string"
+          },
+          "grace_ends_at": {
+            "format": "date-time",
+            "title": "Grace Ends At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "participants": {
+            "title": "Participants",
+            "type": "integer"
+          },
+          "responses": {
+            "title": "Responses",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted": {
+            "title": "Submitted",
+            "type": "integer"
+          },
+          "written": {
+            "title": "Written",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "closes_at",
+          "grace_ends_at",
+          "participants",
+          "submitted",
+          "responses",
+          "written"
+        ],
+        "title": "CycleSummaryOut",
         "type": "object"
       },
       "CycleUseOut": {
@@ -18898,6 +19018,36 @@
         "title": "PanelsOut",
         "type": "object"
       },
+      "ParticipantChoiceOut": {
+        "description": "A character staff can add to an open cycle.",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "player_handle": {
+            "title": "Player Handle",
+            "type": "string"
+          },
+          "removed": {
+            "title": "Removed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "player_handle",
+          "removed"
+        ],
+        "title": "ParticipantChoiceOut",
+        "type": "object"
+      },
       "ParticipantDeliveries": {
         "properties": {
           "answered": {
@@ -19024,9 +19174,30 @@
             ],
             "title": "Picture"
           },
+          "player_handle": {
+            "title": "Player Handle",
+            "type": "string"
+          },
+          "player_id": {
+            "format": "uuid",
+            "title": "Player Id",
+            "type": "string"
+          },
           "removed": {
             "title": "Removed",
             "type": "boolean"
+          },
+          "saved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saved At"
           },
           "shortfall": {
             "additionalProperties": {
@@ -19046,6 +19217,18 @@
             ],
             "title": "Submission Status"
           },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
           "submitted_late": {
             "title": "Submitted Late",
             "type": "boolean"
@@ -19057,6 +19240,8 @@
           "character_name",
           "picture",
           "clan",
+          "player_id",
+          "player_handle",
           "allowance",
           "breakdown",
           "adjustments",
@@ -19065,6 +19250,8 @@
           "late_accepted",
           "submission_status",
           "submitted_late",
+          "saved_at",
+          "submitted_at",
           "completion_xp_awarded"
         ],
         "title": "ParticipantOut",
@@ -21448,6 +21635,11 @@
           "email_downtime": {
             "default": false,
             "title": "Email Downtime",
+            "type": "boolean"
+          },
+          "email_downtime_reminders": {
+            "default": false,
+            "title": "Email Downtime Reminders",
             "type": "boolean"
           },
           "email_pictures": {
@@ -24233,6 +24425,48 @@
         "title": "RefusalOut",
         "type": "object"
       },
+      "RemindedOut": {
+        "properties": {
+          "characters": {
+            "title": "Characters",
+            "type": "integer"
+          },
+          "players": {
+            "title": "Players",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "players",
+          "characters"
+        ],
+        "title": "RemindedOut",
+        "type": "object"
+      },
+      "ReminderOut": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "by": {
+            "title": "By",
+            "type": "string"
+          },
+          "players": {
+            "title": "Players",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "at",
+          "by",
+          "players"
+        ],
+        "title": "ReminderOut",
+        "type": "object"
+      },
       "RemoveIn": {
         "properties": {
           "reason": {
@@ -26637,6 +26871,106 @@
           "settlement"
         ],
         "title": "SettlementOverride",
+        "type": "object"
+      },
+      "SetupConnector": {
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "on",
+              "test",
+              "off",
+              "unavailable"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "state"
+        ],
+        "title": "SetupConnector",
+        "type": "object"
+      },
+      "SetupOut": {
+        "properties": {
+          "actions": {
+            "title": "Actions",
+            "type": "integer"
+          },
+          "checks": {
+            "title": "Checks",
+            "type": "integer"
+          },
+          "checks_total": {
+            "title": "Checks Total",
+            "type": "integer"
+          },
+          "connectors": {
+            "items": {
+              "$ref": "#/components/schemas/SetupConnector"
+            },
+            "title": "Connectors",
+            "type": "array"
+          },
+          "costs": {
+            "title": "Costs",
+            "type": "integer"
+          },
+          "cycles": {
+            "title": "Cycles",
+            "type": "integer"
+          },
+          "described": {
+            "title": "Described",
+            "type": "boolean"
+          },
+          "house_traits": {
+            "title": "House Traits",
+            "type": "integer"
+          },
+          "other": {
+            "title": "Other",
+            "type": "integer"
+          },
+          "profile": {
+            "title": "Profile",
+            "type": "boolean"
+          },
+          "staff": {
+            "title": "Staff",
+            "type": "integer"
+          },
+          "starting": {
+            "title": "Starting",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "described",
+          "profile",
+          "staff",
+          "cycles",
+          "checks",
+          "checks_total",
+          "costs",
+          "starting",
+          "actions",
+          "house_traits",
+          "other",
+          "connectors"
+        ],
+        "title": "SetupOut",
         "type": "object"
       },
       "ShareIn": {
@@ -30538,6 +30872,28 @@
               }
             ],
             "title": "Requirement"
+          },
+          "weakness": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weakness"
+          },
+          "weakness_page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weakness Page"
           }
         },
         "required": [
@@ -31171,6 +31527,16 @@
               }
             ],
             "title": "Last Tap At"
+          },
+          "lines_veils": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LinesVeils"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "player_name": {
             "title": "Player Name",
@@ -32431,6 +32797,11 @@
       },
       "WorkCycle": {
         "properties": {
+          "closes_at": {
+            "format": "date-time",
+            "title": "Closes At",
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -32440,15 +32811,26 @@
             "title": "Name",
             "type": "string"
           },
+          "open_to_narrators": {
+            "default": 0,
+            "title": "Open To Narrators",
+            "type": "integer"
+          },
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "to_write": {
+            "default": 0,
+            "title": "To Write",
+            "type": "integer"
           }
         },
         "required": [
           "id",
           "name",
-          "status"
+          "status",
+          "closes_at"
         ],
         "title": "WorkCycle",
         "type": "object"
@@ -42738,6 +43120,54 @@
         ]
       }
     },
+    "/api/cycles/{cycle_id}/participant-choices": {
+      "get": {
+        "description": "The characters that could be added to the cycle.",
+        "operationId": "participant_choices_api_cycles__cycle_id__participant_choices_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ParticipantChoiceOut"
+                  },
+                  "title": "Response Participant Choices Api Cycles  Cycle Id  Participant Choices Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Participant Choices",
+        "tags": [
+          "downtimes"
+        ]
+      }
+    },
     "/api/cycles/{cycle_id}/participants": {
       "get": {
         "operationId": "list_participants_api_cycles__cycle_id__participants_get",
@@ -43226,6 +43656,96 @@
         ]
       }
     },
+    "/api/cycles/{cycle_id}/reminders": {
+      "get": {
+        "description": "When staff reminded players to submit, newest first.",
+        "operationId": "list_reminders_api_cycles__cycle_id__reminders_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReminderOut"
+                  },
+                  "title": "Response List Reminders Api Cycles  Cycle Id  Reminders Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Reminders",
+        "tags": [
+          "downtimes"
+        ]
+      },
+      "post": {
+        "description": "Remind the players whose downtimes are not submitted.",
+        "operationId": "remind_api_cycles__cycle_id__reminders_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemindedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remind",
+        "tags": [
+          "downtimes"
+        ]
+      }
+    },
     "/api/cycles/{cycle_id}/responses": {
       "get": {
         "description": "Every response in the cycle, for storytellers and assistant storytellers.",
@@ -43269,6 +43789,60 @@
           }
         },
         "summary": "All Responses",
+        "tags": [
+          "responses"
+        ]
+      }
+    },
+    "/api/cycles/{cycle_id}/responses/assignment": {
+      "put": {
+        "description": "Assign several of the cycle's responses to one staff member, to any narrator,\nor back to no one, all or none of them.",
+        "operationId": "assign_many_api_cycles__cycle_id__responses_assignment_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkAssignment"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkAssigned"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Assign Many",
         "tags": [
           "responses"
         ]
@@ -49777,7 +50351,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/CycleOut"
+                    "$ref": "#/components/schemas/CycleSummaryOut"
                   },
                   "title": "Response List Cycles Api Troupes  Troupe Id  Cycles Get",
                   "type": "array"
@@ -54312,6 +54886,50 @@
           }
         },
         "summary": "Settle Archived",
+        "tags": [
+          "troupes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/setup": {
+      "get": {
+        "description": "What a new lead sets up first, for the troupe's running staff.",
+        "operationId": "troupe_setup_api_troupes__troupe_id__setup_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Setup",
         "tags": [
           "troupes"
         ]

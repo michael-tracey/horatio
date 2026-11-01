@@ -78,6 +78,7 @@ export type StatusSourceOut = Schemas["StatusSourceOut"];
 export type NotificationOut = Schemas["NotificationOut"];
 export type CheckOut = Schemas["CheckOut"];
 export type ConnectorOut = Schemas["ConnectorOut"];
+export type SetupOut = Schemas["SetupOut"];
 export type DeliveryStatus = Schemas["DeliveryStatus"];
 export type DeliveryOut = Schemas["DeliveryOut"];
 export type ParticipantDeliveries = Schemas["ParticipantDeliveries"];

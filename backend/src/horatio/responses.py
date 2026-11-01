@@ -17,6 +17,7 @@ delivery sends it again as an update.
 import random
 import re
 import uuid
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -92,8 +93,11 @@ class WorkItem:
     cycle: DowntimeCycle
 
 
-def work_items(db: Session, cycle: DowntimeCycle) -> list[WorkItem]:
-    rows = db.execute(
+def work_items(
+    db: Session, cycle: DowntimeCycle, response_ids: Collection[uuid.UUID] | None = None
+) -> list[WorkItem]:
+    """The cycle's responses, by character; with `response_ids`, only those of them."""
+    query = (
         select(Response, Answer, Question, Character)
         .join(Answer, Response.answer_id == Answer.id)
         .join(Question, Answer.question_id == Question.id)
@@ -103,7 +107,9 @@ def work_items(db: Session, cycle: DowntimeCycle) -> list[WorkItem]:
         .where(CycleParticipant.cycle_id == cycle.id, CycleParticipant.removed_at.is_(None))
         .order_by(Character.name, Question.position, Answer.slot)
     )
-    return [WorkItem(r, a, q, c, cycle) for r, a, q, c in rows]
+    if response_ids is not None:
+        query = query.where(Response.id.in_(response_ids))
+    return [WorkItem(r, a, q, c, cycle) for r, a, q, c in db.execute(query)]
 
 
 def item_for(db: Session, response_id: uuid.UUID) -> WorkItem | None:
@@ -136,16 +142,36 @@ def mine(db: Session, user: User, cycle: DowntimeCycle) -> list[WorkItem]:
     ]
 
 
+def unwritten(
+    db: Session, user: User, cycle_ids: Sequence[uuid.UUID]
+) -> dict[uuid.UUID, tuple[int, int]]:
+    """For each cycle, the responses still to write: assigned to `user`, and open
+    to any narrator. One query for all of them; a cycle with neither is left out."""
+    rows = db.execute(
+        select(
+            CycleParticipant.cycle_id,
+            func.count(Response.id).filter(Response.assigned_to_user_id == user.id),
+            func.count(Response.id).filter(Response.assigned_to_any_narrator),
+        )
+        .select_from(Response)
+        .join(Answer, Response.answer_id == Answer.id)
+        .join(Submission, Answer.submission_id == Submission.id)
+        .join(CycleParticipant, Submission.participant_id == CycleParticipant.id)
+        .where(
+            CycleParticipant.cycle_id.in_(cycle_ids),
+            CycleParticipant.removed_at.is_(None),
+            Response.status != "written",
+        )
+        .group_by(CycleParticipant.cycle_id)
+    )
+    return {cycle_id: (yours, pool) for cycle_id, yours, pool in rows if yours or pool}
+
+
 # --- assigning and writing --------------------------------------------------------------
 
 
-def assign(
-    db: Session,
-    staff: User,
-    item: WorkItem,
-    troupe: Troupe,
-    user_id: uuid.UUID | None,
-    any_narrator: bool,
+def check_assignee(
+    db: Session, troupe: Troupe, user_id: uuid.UUID | None, any_narrator: bool
 ) -> None:
     if user_id is not None and any_narrator:
         raise unprocessable("Assign to one staff member or to any narrator, not both.")
@@ -157,6 +183,43 @@ def assign(
         )
         if on_staff is None:
             raise unprocessable("Responses can only be assigned to this troupe's staff.")
+
+
+def assign(
+    db: Session,
+    staff: User,
+    item: WorkItem,
+    troupe: Troupe,
+    user_id: uuid.UUID | None,
+    any_narrator: bool,
+) -> None:
+    check_assignee(db, troupe, user_id, any_narrator)
+    assign_checked(db, staff, item, troupe, user_id, any_narrator)
+
+
+def assign_many(
+    db: Session,
+    staff: User,
+    items: list[WorkItem],
+    troupe: Troupe,
+    user_id: uuid.UUID | None,
+    any_narrator: bool,
+) -> None:
+    """Assign several responses to one staff member (or any narrator, or no one) at
+    once: the staff member is checked once, and each is assigned as `assign` does."""
+    check_assignee(db, troupe, user_id, any_narrator)
+    for item in items:
+        assign_checked(db, staff, item, troupe, user_id, any_narrator)
+
+
+def assign_checked(
+    db: Session,
+    staff: User,
+    item: WorkItem,
+    troupe: Troupe,
+    user_id: uuid.UUID | None,
+    any_narrator: bool,
+) -> None:
     response = item.response
     response.assigned_to_user_id = user_id
     response.assigned_to_any_narrator = any_narrator

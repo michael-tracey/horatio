@@ -120,11 +120,25 @@ class WorkCycle(BaseModel):
     id: uuid.UUID
     name: str
     status: str
+    closes_at: datetime
+    # Responses still to write: assigned to me, and open to any narrator.
+    to_write: int = 0
+    open_to_narrators: int = 0
 
 
 class Assignment(BaseModel):
     user_id: uuid.UUID | None = None
     any_narrator: bool = False
+
+
+class BulkAssignment(Assignment):
+    """Several of a cycle's responses, assigned in one go."""
+
+    response_ids: list[uuid.UUID] = Field(min_length=1, max_length=1000)
+
+
+class BulkAssigned(BaseModel):
+    assigned: int
 
 
 class Writing(BaseModel):
@@ -276,12 +290,25 @@ def response_item(
 def work_cycles(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[WorkCycle]:
     """Cycles with downtimes to answer, for any staff member, narrators included."""
     staff_troupe(db, user, troupe_id, TroupeAction.ANSWER_ASSIGNED_RESPONSES)
-    cycles = db.scalars(
-        select(DowntimeCycle)
-        .where(DowntimeCycle.troupe_id == troupe_id, DowntimeCycle.status != "draft")
-        .order_by(DowntimeCycle.id.desc())
+    cycles = list(
+        db.scalars(
+            select(DowntimeCycle)
+            .where(DowntimeCycle.troupe_id == troupe_id, DowntimeCycle.status != "draft")
+            .order_by(DowntimeCycle.id.desc())
+        )
     )
-    return [WorkCycle(id=c.id, name=c.name, status=c.status) for c in cycles]
+    unwritten = responses.unwritten(db, user, [c.id for c in cycles])
+    return [
+        WorkCycle(
+            id=c.id,
+            name=c.name,
+            status=c.status,
+            closes_at=c.closes_at,
+            to_write=unwritten.get(c.id, (0, 0))[0],
+            open_to_narrators=unwritten.get(c.id, (0, 0))[1],
+        )
+        for c in cycles
+    ]
 
 
 @router.get("/cycles/{cycle_id}/responses")
@@ -365,6 +392,22 @@ def assign(
     responses.assign(db, user, item, troupe, body.user_id, body.any_narrator)
     db.commit()
     return item_out(db, item)
+
+
+@router.put("/cycles/{cycle_id}/responses/assignment")
+def assign_many(
+    cycle_id: uuid.UUID, body: BulkAssignment, db: DbSession, user: CurrentUser
+) -> BulkAssigned:
+    """Assign several of the cycle's responses to one staff member, to any narrator,
+    or back to no one, all or none of them."""
+    cycle, troupe = staff_cycle(db, user, cycle_id, TroupeAction.ASSIGN_RESPONSES)
+    wanted = set(body.response_ids)
+    items = responses.work_items(db, cycle, wanted)
+    if len(items) != len(wanted):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such response in this cycle.")
+    responses.assign_many(db, user, items, troupe, body.user_id, body.any_narrator)
+    db.commit()
+    return BulkAssigned(assigned=len(items))
 
 
 @router.post("/responses/{response_id}/accept")

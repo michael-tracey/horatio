@@ -12,7 +12,8 @@ While the troupe runs quests, each new form has the Quest action too
 
 Players save answers as a draft and submit them, and can keep editing until
 the grace period ends. A submission after the close date is marked late;
-after the grace period only a storyteller's say-so lets one in.
+after the grace period only a storyteller's say-so lets one in. While the
+cycle is open, staff can remind the players whose downtimes are not submitted.
 """
 
 import uuid
@@ -25,16 +26,18 @@ from typing import Any
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, feeding, influence, responses, suspensions
+from horatio import audit, feeding, influence, notifications, responses, suspensions
 from horatio.models import (
     AllowanceAdjustment,
     Answer,
+    AuditEvent,
     Character,
     CycleParticipant,
     Delivery,
     DowntimeCycle,
     OwedAction,
     Question,
+    Response,
     RuleSet,
     Submission,
     Troupe,
@@ -439,6 +442,151 @@ def remove_participant(
     )
 
 
+def addable(db: Session, cycle: DowntimeCycle) -> list[tuple[Character, User]]:
+    """The characters `add_participant` would take, with their players, by name:
+    the troupe's active player characters not taking part, a removed one included."""
+    taking_part = select(CycleParticipant.character_id).where(
+        CycleParticipant.cycle_id == cycle.id, CycleParticipant.removed_at.is_(None)
+    )
+    rows = db.execute(
+        select(Character, User)
+        .join(User, Character.player_id == User.id)
+        .where(
+            Character.home_troupe_id == cycle.troupe_id,
+            Character.kind == "pc",
+            Character.status == "active",
+            Character.id.not_in(taking_part),
+        )
+        .order_by(Character.name)
+    )
+    return [(character, player) for character, player in rows]
+
+
+# --- chasing submissions ----------------------------------------------------------------
+
+
+def not_submitted(db: Session, cycle: DowntimeCycle) -> list[tuple[Character, User]]:
+    """The characters taking part whose downtimes are not submitted, with their players."""
+    rows = db.execute(
+        select(Character, User)
+        .select_from(CycleParticipant)
+        .join(Character, CycleParticipant.character_id == Character.id)
+        .join(User, Character.player_id == User.id)
+        .outerjoin(Submission, Submission.participant_id == CycleParticipant.id)
+        .where(
+            CycleParticipant.cycle_id == cycle.id,
+            CycleParticipant.removed_at.is_(None),
+            or_(Submission.id.is_(None), Submission.status != "submitted"),
+        )
+        .order_by(Character.name)
+    )
+    return [(character, player) for character, player in rows]
+
+
+@dataclass(frozen=True)
+class Reminded:
+    players: int
+    characters: int
+
+
+def remind(db: Session, staff: User, cycle: DowntimeCycle, troupe: Troupe) -> Reminded:
+    """Remind each player whose downtime is not submitted, in the bell (and by email
+    for those who choose it), and record it for staff to see when they last did."""
+    if cycle.status != "open":
+        raise conflict("Only an open cycle's downtimes can be chased.")
+    waiting = not_submitted(db, cycle)
+    if not waiting:
+        raise conflict("Every downtime is submitted: there is no one to remind.")
+    for character, player in waiting:
+        notifications.notify(
+            db,
+            [player.id],
+            "downtime.reminder",
+            f"{character.name}'s downtime for {cycle.name} isn't submitted yet",
+            f"/characters/{character.id}/downtime",
+            troupe_id=troupe.id,
+            character_id=character.id,
+        )
+    reminded = Reminded(players=len({player.id for _, player in waiting}), characters=len(waiting))
+    audit.record(
+        db,
+        staff,
+        "downtime.reminded",
+        troupe_id=troupe.id,
+        cycle_id=cycle.id,
+        players=reminded.players,
+        characters=reminded.characters,
+    )
+    return reminded
+
+
+@dataclass(frozen=True)
+class Reminder:
+    at: datetime
+    by: str
+    players: int
+
+
+def reminders(db: Session, cycle: DowntimeCycle) -> list[Reminder]:
+    """When staff reminded players about this cycle, newest first."""
+    rows = db.execute(
+        select(AuditEvent, User.display_name)
+        .outerjoin(User, AuditEvent.actor_id == User.id)
+        .where(
+            AuditEvent.troupe_id == cycle.troupe_id,
+            AuditEvent.action == "downtime.reminded",
+            AuditEvent.data["cycle_id"].astext == str(cycle.id),
+        )
+        .order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc())
+    )
+    return [
+        Reminder(at=event.created_at, by=name or "?", players=int(event.data.get("players", 0)))
+        for event, name in rows
+    ]
+
+
+@dataclass(frozen=True)
+class Counts:
+    """How far a cycle has got, for a line in a list of cycles."""
+
+    participants: int = 0
+    submitted: int = 0
+    responses: int = 0
+    written: int = 0
+
+
+def counts(db: Session, cycle_ids: Sequence[uuid.UUID]) -> dict[uuid.UUID, Counts]:
+    """Each cycle's participants, submissions and responses, in two queries for all."""
+    taking_part = CycleParticipant.removed_at.is_(None)
+    found: dict[uuid.UUID, Counts] = {}
+    for cycle_id, participants, submitted in db.execute(
+        select(
+            CycleParticipant.cycle_id,
+            func.count(CycleParticipant.id),
+            func.count(Submission.id).filter(Submission.status == "submitted"),
+        )
+        .outerjoin(Submission, Submission.participant_id == CycleParticipant.id)
+        .where(CycleParticipant.cycle_id.in_(cycle_ids), taking_part)
+        .group_by(CycleParticipant.cycle_id)
+    ):
+        found[cycle_id] = Counts(participants=participants, submitted=submitted)
+    for cycle_id, total, written in db.execute(
+        select(
+            CycleParticipant.cycle_id,
+            func.count(Response.id),
+            func.count(Response.id).filter(Response.status == "written"),
+        )
+        .select_from(Response)
+        .join(Answer, Response.answer_id == Answer.id)
+        .join(Submission, Answer.submission_id == Submission.id)
+        .join(CycleParticipant, Submission.participant_id == CycleParticipant.id)
+        .where(CycleParticipant.cycle_id.in_(cycle_ids), taking_part)
+        .group_by(CycleParticipant.cycle_id)
+    ):
+        found[cycle_id] = replace(found.get(cycle_id, Counts()), responses=total, written=written)
+    return found
+
+
 def owe_actions(db: Session, user: User, character: Character, amount: int, reason: str) -> None:
     """Record downtime actions the character owes its home troupe, and take them
     from its current cycle if it has not submitted yet."""
@@ -833,6 +981,9 @@ def save_answers(
         answer.body = spec.body.strip()
         answer.structured = spec.structured or {}
     submission.feeding = feeding_answer.stored()
+    # When the player last saved, for staff chasing downtimes: a change to the
+    # answers alone would leave the submission's own row, and its time, as it was.
+    submission.updated_at = now()
     db.flush()
     responses.sync_responses(db, submission)
     if submission.status == "submitted":

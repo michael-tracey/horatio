@@ -122,7 +122,7 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
                         {c.replaced && <Badge>replaced here</Badge>}
                         {canEdit && c.house && c.id && (
                           <>
-                            <Button variant="ghost" className="min-h-8 px-2" onClick={() => setEditing({ kind: "change", cost: c })}>
+                            <Button variant="secondary" className="min-h-8 px-3" onClick={() => setEditing({ kind: "change", cost: c })}>
                               Change
                             </Button>
                             <Button
@@ -137,8 +137,8 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
                         )}
                         {canEdit && !c.house && !c.replaced && (c.trait !== null || !category?.per_trait) && (
                           <Button
-                            variant="ghost"
-                            className="min-h-8 px-2"
+                            variant="secondary"
+                            className="min-h-8 px-3"
                             aria-label={`Change the price for ${subject(c, category)}`}
                             onClick={() => setEditing({ kind: "replace", cost: c })}
                           >

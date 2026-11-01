@@ -51,9 +51,13 @@ class SendError(Exception):
 class Connector(ABC):
     kind: ClassVar[str]
     name: ClassVar[str]
+    # The server settings it needs (environment variables), named only to the
+    # custodian, who sets them; a storyteller can't act on them.
+    needs: ClassVar[tuple[str, ...]] = ()
 
     def unavailable(self) -> str | None:
-        """Why the server cannot use this connector (it is not configured), or None."""
+        """Why the server cannot use this connector (it is not configured), in plain
+        words for a storyteller, or None."""
         return None
 
     @abstractmethod

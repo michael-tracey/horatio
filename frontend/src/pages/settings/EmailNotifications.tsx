@@ -5,11 +5,12 @@ import { Card, Loading, Notice } from "../../components/ui";
 import { usePreferences } from "../../hooks";
 import { Choice, Setting } from "./SettingsPage";
 
-type EmailKind = "email_downtime" | "email_approvals" | "email_troupe_requests" | "email_renames" | "email_pictures" | "email_titles";
+type EmailKind = "email_downtime" | "email_downtime_reminders" | "email_approvals" | "email_troupe_requests" | "email_renames" | "email_pictures" | "email_titles";
 
 /** Each kind of notification that can come by email (horatio.notification_emails.TOPICS). */
 const KINDS: [EmailKind, string, string][] = [
   ["email_downtime", "Downtime results", "When your downtime results are ready. Some troupes email them as well."],
+  ["email_downtime_reminders", "Downtime reminders", "When staff remind you that a downtime isn't submitted yet."],
   ["email_approvals", "Approvals waiting", "Requests in troupes where you approve changes."],
   ["email_troupe_requests", "Troupe requests", "New troupes people ask the custodian for, and the answer to your own."],
   ["email_renames", "Character renames", "When a character you play or run is renamed."],

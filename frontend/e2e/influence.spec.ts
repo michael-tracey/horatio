@@ -83,6 +83,7 @@ test("storytellers log influence for PCs, NPCs and names only, and a player read
 
   // Beside a submission on the cycle page, the tool opens with the character and cycle filled in.
   await l.getByRole("link", { name: "Participants" }).click();
+  await l.getByRole("button", { name: "More for Corvin" }).click();
   await l.getByRole("button", { name: "Log influence for Corvin" }).click();
   let form = l.getByRole("dialog").getByRole("form", { name: "Log influence" });
   await expect(form.getByLabel("Who")).toHaveValue("Corvin");
@@ -304,6 +305,7 @@ test("influence spent at a game goes in the troupe's influence log, and comes of
   const opened = await l.request.post(`/api/cycles/${cycleId}/open`, { headers });
   expect(opened.status(), await opened.text()).toBe(200);
   await l.goto(`/cycles/${cycleId}/participants`);
+  await l.getByRole("button", { name: /^More for / }).click();
   await expect(l.getByText(/1 influence elite/)).toBeVisible();
   await expect(l.getByText(/^-1 influence_elite: Spent at the \d+ \w+ game$/)).toHaveCount(2);
   await l.screenshot(shots("cycle-influence-owed"));
