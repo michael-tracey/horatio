@@ -327,6 +327,11 @@ grade is `special`), `status` (`held` | `taken_back` | `discarded`, the last fro
 of its holder's home troupe now (`home_troupe_id`, or an NPC's `owner_troupe_id`),
 whichever troupe gave it. Every give and change is checked with
 `horatio.equipment.check`, by the holder's troupe rules.
+An item can expire (#443, `horatio.item_expiry`) while its holder's home troupe
+has `items_expire` on: `expiry_kind` (`date` | `games` | `cycle`, or null for
+never) with `expires_on` (the last day it is held), `expires_after_games` (counted
+from `expiry_from`) or `expires_cycle_id`; `expiry_note` (what happens) and
+`expiry_warned_at`. On expiry it is taken back with the reason "Expired".
 
 **`equipment_events`**: each item's history. `item_id`, `action` (`given`,
 `changed`, `taken_back`; and for #282 `passed`, `discarded`, `restored`),

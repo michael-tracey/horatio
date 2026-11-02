@@ -26,7 +26,15 @@ from typing import Any
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, feeding, influence, notifications, responses, suspensions
+from horatio import (
+    audit,
+    feeding,
+    influence,
+    item_expiry,
+    notifications,
+    responses,
+    suspensions,
+)
 from horatio.models import (
     AllowanceAdjustment,
     Answer,
@@ -376,6 +384,8 @@ def close_cycle(db: Session, staff: User, cycle: DowntimeCycle) -> None:
     cycle.closed_at = now()
     db.flush()
     audit.record(db, staff, "downtime.cycle_closed", troupe_id=cycle.troupe_id, cycle_id=cycle.id)
+    # Items that expire with the cycle go now (horatio.item_expiry).
+    item_expiry.check_due(db, cycle_ids=[cycle.id])
 
 
 # --- participants -----------------------------------------------------------------------

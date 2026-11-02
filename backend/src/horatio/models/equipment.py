@@ -1,8 +1,8 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey
+from sqlalchemy import CheckConstraint, Date, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -26,6 +26,15 @@ class EquipmentItem(Record):
         ),
         # Only an item moved from a sheet with no home troupe has no troupe (#341).
         CheckConstraint("troupe_id is not null or from_sheet", name="troupe_given"),
+        # An expiry (#443): on a date, after a number of the holder's games, or when a
+        # downtime cycle closes, each with what it needs.
+        CheckConstraint(
+            "expiry_kind is null"
+            " or (expiry_kind = 'date' and expires_on is not null)"
+            " or (expiry_kind = 'games' and expires_after_games > 0)"
+            " or (expiry_kind = 'cycle' and expires_cycle_id is not null)",
+            name="expiry",
+        ),
     )
 
     # Who holds it; once taken back or discarded, who last held it.
@@ -58,6 +67,20 @@ class EquipmentItem(Record):
     # A Vampiric Text the character held as a trait on its sheet, which migration
     # 0115 made an item (#341): nobody gave it.
     from_sheet: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # When it expires (horatio.item_expiry, #443), while its holder's home troupe lets
+    # items expire: "date", once the day `expires_on` is over; "games", once the
+    # holder has been to `expires_after_games` games starting from `expiry_from`;
+    # "cycle", when the downtime cycle `expires_cycle_id` closes. None: never.
+    expiry_kind: Mapped[str | None]
+    expires_on: Mapped[date | None] = mapped_column(Date)
+    expires_after_games: Mapped[int | None]
+    expires_cycle_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("downtime_cycles.id"))
+    # When the expiry was set: games are counted from then.
+    expiry_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # What happens when it expires, for its holder: "The blessing fades".
+    expiry_note: Mapped[str] = mapped_column(default="", server_default="")
+    # When its holder was warned it is about to expire; None until then.
+    expiry_warned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class EquipmentEvent(Record):

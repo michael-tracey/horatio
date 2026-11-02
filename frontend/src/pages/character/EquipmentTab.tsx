@@ -7,6 +7,7 @@ import { pageLabel } from "../../components/TraitInfo";
 import { Badge, Card, ErrorText, Loading, Notice } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { ExpiryLine } from "./ExpiryLine";
 import { ItemActions } from "./ItemActions";
 import {
   combatFirst,
@@ -208,6 +209,7 @@ export function EquipmentCard({
       <p className="text-xs text-mist">
         {givenText(item)}, {dates.date(item.given_at)}
       </p>
+      {item.expiry && <ExpiryLine expiry={item.expiry} />}
       {item.staff_note && (
         <p className="whitespace-pre-line text-xs text-mist">
           Staff note: {item.staff_note}

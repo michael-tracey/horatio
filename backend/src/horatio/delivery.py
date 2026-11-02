@@ -292,14 +292,16 @@ def mark_sent(delivery: Delivery, user: User) -> None:
 
 def send_due_now() -> int:
     """`send_due` in a session of its own, for the worker; then the notifications
-    people asked for by email (horatio.notification_emails), and the suspensions
-    whose end date has passed (horatio.suspensions)."""
-    from horatio import notification_emails
+    people asked for by email (horatio.notification_emails), the suspensions
+    whose end date has passed (horatio.suspensions), and the items that have
+    expired or are about to (horatio.item_expiry)."""
+    from horatio import item_expiry, notification_emails
     from horatio.db import get_sessionmaker
 
     with get_sessionmaker()() as db:
         sent = send_due(db) + notification_emails.send_due(db)
     suspensions.end_due_now()
+    item_expiry.check_due_now()
     return sent
 
 

@@ -10,6 +10,7 @@ import { DiablerieFlaws } from "./DiablerieFlaws";
 import { FeedingSetting } from "./FeedingSetting";
 import { FeedingTerritories } from "./FeedingTerritories";
 import { GolcondaSetting } from "./GolcondaSetting";
+import { ItemExpirySetting } from "./ItemExpirySetting";
 import { ExperienceDefaults, StartingBlood } from "./StartingSection";
 import { StatusSetting, TitlesSetting } from "./StatusSetting";
 import { WhosWhoSetting } from "./WhosWhoSetting";
@@ -55,6 +56,7 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
         <BadgeSetting troupe={troupe} canEdit={canEdit} />
         <StartingBlood troupeId={troupe.id} canEdit={canEdit} />
         <DiablerieFlaws troupeId={troupe.id} canEdit={canEdit} />
+        <ItemExpirySetting troupe={troupe} canEdit={canEdit} />
       </Group>
       <Group title="Feeding">
         <FeedingSetting troupeId={troupe.id} canEdit={canEdit} />

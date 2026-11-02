@@ -5869,6 +5869,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/equipment/expiry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Item Expiry Choices
+         * @description Whether the troupe lets items expire, and the downtime cycle an item can
+         *     expire with: what the item editor offers.
+         */
+        get: operations["item_expiry_choices_api_troupes__troupe_id__equipment_expiry_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/equipment/templates": {
         parameters: {
             query?: never;
@@ -6535,6 +6556,27 @@ export interface paths {
          * @description House rule: how many days back lookups look, from the close of their cycle.
          */
         put: operations["set_lookback_api_troupes__troupe_id__influence_lookback_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/item-expiry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Items Expire
+         * @description Switch on or off "Items can expire". Off, no expiry shows or runs, and those
+         *     already set wait until it is switched on again.
+         */
+        put: operations["set_items_expire_api_troupes__troupe_id__item_expiry_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -9186,6 +9228,7 @@ export interface components {
             description: string;
             /** Effects */
             effects?: components["schemas"]["SpecialEffectModel"][];
+            expiry?: components["schemas"]["ExpiryIn"] | null;
             /**
              * Grade
              * @enum {string}
@@ -11427,6 +11470,7 @@ export interface components {
             discarded: components["schemas"]["DiscardedOut"] | null;
             /** Effects */
             effects: components["schemas"]["SpecialEffectModel"][];
+            expiry?: components["schemas"]["ExpiryOut"] | null;
             facts: components["schemas"]["EquipmentFactsOut"];
             /** From Sheet */
             from_sheet: boolean;
@@ -11496,6 +11540,7 @@ export interface components {
             discarded: components["schemas"]["DiscardedOut"] | null;
             /** Effects */
             effects: components["schemas"]["SpecialEffectModel"][];
+            expiry?: components["schemas"]["ExpiryOut"] | null;
             facts: components["schemas"]["EquipmentFactsOut"];
             /** From Sheet */
             from_sheet: boolean;
@@ -11826,6 +11871,50 @@ export interface components {
             owed: number;
             /** Uses */
             uses: number;
+        };
+        /**
+         * ExpiryIn
+         * @description When an item expires (horatio.item_expiry): on a day (`on`, the last day it is
+         *     held), after a number of the holder's games from now (`games`), or at the end of
+         *     the troupe's open downtime cycle; with a note on what happens.
+         */
+        ExpiryIn: {
+            /** Games */
+            games?: number | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "date" | "games" | "cycle";
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** On */
+            on?: string | null;
+        };
+        /**
+         * ExpiryOut
+         * @description When a held item expires, for whoever sees it; shown only while its holder's
+         *     home troupe lets items expire.
+         */
+        ExpiryOut: {
+            /** Cycle Closes At */
+            cycle_closes_at: string | null;
+            /** Cycle Name */
+            cycle_name: string | null;
+            /** Games Left */
+            games_left: number | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "date" | "games" | "cycle";
+            /** Note */
+            note: string;
+            /** On */
+            on: string | null;
         };
         /** FeedingAdjustmentIn */
         FeedingAdjustmentIn: {
@@ -12444,6 +12533,7 @@ export interface components {
             description: string;
             /** Effects */
             effects?: components["schemas"]["SpecialEffectModel"][];
+            expiry?: components["schemas"]["ExpiryIn"] | null;
             /**
              * Grade
              * @enum {string}
@@ -13542,6 +13632,20 @@ export interface components {
             /** Url */
             url: string;
         };
+        /**
+         * ItemExpiryOut
+         * @description What the item editor offers for an expiry.
+         */
+        ItemExpiryOut: {
+            /** Cycle Closes At */
+            cycle_closes_at: string | null;
+            /** Cycle Id */
+            cycle_id: string | null;
+            /** Cycle Name */
+            cycle_name: string | null;
+            /** On */
+            on: boolean;
+        };
         /** ItemSpend */
         ItemSpend: {
             /** Item */
@@ -13569,6 +13673,11 @@ export interface components {
              * @default
              */
             to_name: string;
+        };
+        /** ItemsExpireIn */
+        ItemsExpireIn: {
+            /** On */
+            on: boolean;
         };
         /** KindOut */
         KindOut: {
@@ -20394,6 +20503,11 @@ export interface components {
             id: string;
             /** Influence Lookback Days */
             influence_lookback_days: number;
+            /**
+             * Items Expire
+             * @default false
+             */
+            items_expire: boolean;
             /**
              * Lead User Id
              * Format: uuid
@@ -32779,6 +32893,37 @@ export interface operations {
             };
         };
     };
+    item_expiry_choices_api_troupes__troupe_id__equipment_expiry_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemExpiryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     troupe_templates_api_troupes__troupe_id__equipment_templates_get: {
         parameters: {
             query?: never;
@@ -34173,6 +34318,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_items_expire_api_troupes__troupe_id__item_expiry_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemsExpireIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemExpiryOut"];
                 };
             };
             /** @description Validation Error */

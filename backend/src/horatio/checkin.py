@@ -30,7 +30,7 @@ from datetime import UTC, date, datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, play
+from horatio import audit, item_expiry, play
 from horatio.models import Character, GameAttendance, PlayGame, ScheduledGame, User, XpEntry
 from horatio.sheets import unprocessable
 
@@ -189,6 +189,7 @@ def check_in(
         game=when(game),
     )
     db.flush()
+    attended(db, character)
     return attendance, True
 
 
@@ -207,6 +208,13 @@ def check_out(db: Session, actor: User, game: ScheduledGame, character: Characte
         game=when(game),
     )
     db.flush()
+
+
+def attended(db: Session, character: Character) -> None:
+    """The character's attendance was recorded: an item expiring after its games may
+    have run out, or have one game left (horatio.item_expiry). Checked here as well
+    as by the delivery worker, for a check-in by hand after the game ended."""
+    item_expiry.check_due(db, character_ids=[character.id])
 
 
 def month_start(today: date) -> date:

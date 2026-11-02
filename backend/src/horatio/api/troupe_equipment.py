@@ -2,11 +2,11 @@
 storytellers and assistant storytellers, changed and taken back by them, with the
 troupe's own templates; and a character's equipment, for whoever sees its sheet,
 which its player or staff give to another home character or discard, and staff
-restore."""
+restore. A troupe that lets items expire gives them an expiry (horatio.item_expiry)."""
 
 import uuid
 from collections import Counter
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import equipment
+from horatio import audit, equipment, item_expiry
 from horatio.api.downtimes import staff_troupe
 from horatio.api.equipment import (
     EquipmentFactsOut,
@@ -25,8 +25,10 @@ from horatio.api.equipment import (
 )
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.equipment import EquipmentRefused, ItemFields, ItemQuality, SpecialEffect
+from horatio.item_expiry import Expiry
 from horatio.models import (
     Character,
+    DowntimeCycle,
     EquipmentEvent,
     EquipmentItem,
     EquipmentTemplate,
@@ -59,6 +61,36 @@ class EquipmentItemQualityOut(BaseModel):
     # What it does at the table, in a few words: "+3 initiative".
     play: str | None
     page: str | None
+
+
+ExpiryKind = Literal["date", "games", "cycle"]
+
+
+class ExpiryIn(BaseModel):
+    """When an item expires (horatio.item_expiry): on a day (`on`, the last day it is
+    held), after a number of the holder's games from now (`games`), or at the end of
+    the troupe's open downtime cycle; with a note on what happens."""
+
+    kind: ExpiryKind
+    on: date | None = None
+    games: int | None = Field(default=None, ge=1, le=item_expiry.MOST_GAMES)
+    note: str = Field(default="", max_length=300)
+
+
+class ExpiryOut(BaseModel):
+    """When a held item expires, for whoever sees it; shown only while its holder's
+    home troupe lets items expire."""
+
+    kind: ExpiryKind
+    # The last day it is held.
+    on: date | None
+    # The holder's games left before it expires.
+    games_left: int | None
+    # The downtime cycle it expires with, and that cycle's deadline.
+    cycle_name: str | None
+    cycle_closes_at: datetime | None
+    # What happens when it expires: "The blessing fades".
+    note: str
 
 
 class DiscardedOut(BaseModel):
@@ -110,6 +142,9 @@ class EquipmentItemOut(BaseModel):
     can_change: bool
     # Set once it is discarded.
     discarded: DiscardedOut | None
+    # When it expires, while it is held and its holder's home troupe lets items
+    # expire; None if it doesn't.
+    expiry: ExpiryOut | None = None
 
 
 class EquipmentEventOut(BaseModel):
@@ -215,11 +250,30 @@ class GiveEquipmentIn(EquipmentItemFieldsIn):
     character_id: uuid.UUID
     # The template it was started from, for its history.
     template: str | None = Field(default=None, max_length=200)
+    # When it expires, if the troupe lets items expire; None for never.
+    expiry: ExpiryIn | None = None
 
 
 class ChangeEquipmentIn(EquipmentItemFieldsIn):
     # Told to the holder's player; needed unless only the staff note changes.
     reason: str = Field(default="", max_length=1000)
+    # Its new expiry, or None to remove it. Left out, the expiry stays as it is.
+    expiry: ExpiryIn | None = None
+
+
+class ItemExpiryOut(BaseModel):
+    """What the item editor offers for an expiry."""
+
+    # The troupe lets items expire.
+    on: bool
+    # Its open downtime cycle, which an item can expire with; None if none is open.
+    cycle_id: uuid.UUID | None
+    cycle_name: str | None
+    cycle_closes_at: datetime | None
+
+
+class ItemsExpireIn(BaseModel):
+    on: bool
 
 
 class TakeBackEquipmentIn(BaseModel):
@@ -270,6 +324,10 @@ def fields_in(body: EquipmentFieldsIn) -> ItemFields:
         staff_note=body.staff_note if isinstance(body, EquipmentItemFieldsIn) else "",
         archaic=body.archaic,
     )
+
+
+def expiry_in(body: ExpiryIn | None) -> Expiry | None:
+    return Expiry(body.kind, body.on, body.games, body.note) if body else None
 
 
 def refusal(error: EquipmentRefused) -> HTTPException:
@@ -366,6 +424,29 @@ class Reader:
             from_sheet=item.from_sheet,
             can_change=manages and item.status == "held",
             discarded=self.discarded(item) if item.status == "discarded" else None,
+            expiry=self.expiry(item, character),
+        )
+
+    def expiry(self, item: EquipmentItem, character: Character) -> ExpiryOut | None:
+        home = equipment.home_of(character)
+        if item.expiry_kind is None or item.status != "held" or home is None:
+            return None
+        if not item_expiry.applies(self.troupe(home)):
+            return None
+        cycle = (
+            self.db.get_one(DowntimeCycle, item.expires_cycle_id) if item.expires_cycle_id else None
+        )
+        return ExpiryOut(
+            kind=item.expiry_kind,  # type: ignore[arg-type]  # checked by the database
+            on=item.expires_on,
+            games_left=(
+                item_expiry.games_left(self.db, item, item_expiry.now())
+                if item.expiry_kind == "games"
+                else None
+            ),
+            cycle_name=cycle.name if cycle else None,
+            cycle_closes_at=cycle.closes_at if cycle else None,
+            note=item.expiry_note,
         )
 
     def discarded(self, item: EquipmentItem) -> DiscardedOut | None:
@@ -501,7 +582,15 @@ def give_equipment(
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_EQUIPMENT)
     character = visible_character(db, user, body.character_id)
     try:
-        item = equipment.give(db, user, troupe, character, fields_in(body), template=body.template)
+        item = equipment.give(
+            db,
+            user,
+            troupe,
+            character,
+            fields_in(body),
+            template=body.template,
+            expiry=expiry_in(body.expiry),
+        )
     except EquipmentRefused as error:
         raise refusal(error) from None
     db.commit()
@@ -547,6 +636,40 @@ def delete_template(
     db.commit()
 
 
+def expiry_choices(db: Session, troupe: Troupe) -> ItemExpiryOut:
+    cycle = item_expiry.open_cycle(db, troupe)
+    return ItemExpiryOut(
+        on=troupe.items_expire,
+        cycle_id=cycle.id if cycle else None,
+        cycle_name=cycle.name if cycle else None,
+        cycle_closes_at=cycle.closes_at if cycle else None,
+    )
+
+
+@router.get("/troupes/{troupe_id}/equipment/expiry")
+def item_expiry_choices(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> ItemExpiryOut:
+    """Whether the troupe lets items expire, and the downtime cycle an item can
+    expire with: what the item editor offers."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_EQUIPMENT)
+    return expiry_choices(db, troupe)
+
+
+@router.put("/troupes/{troupe_id}/item-expiry")
+def set_items_expire(
+    troupe_id: uuid.UUID, body: ItemsExpireIn, db: DbSession, user: CurrentUser
+) -> ItemExpiryOut:
+    """Switch on or off "Items can expire". Off, no expiry shows or runs, and those
+    already set wait until it is switched on again."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    if troupe.items_expire != body.on:
+        troupe.items_expire = body.on
+        audit.record(
+            db, user, "house.items_expire", troupe_id=troupe.id, setting="on" if body.on else "off"
+        )
+    db.commit()
+    return expiry_choices(db, troupe)
+
+
 @router.get("/troupes/{troupe_id}/equipment/{item_id}")
 def equipment_item(
     troupe_id: uuid.UUID, item_id: uuid.UUID, db: DbSession, user: CurrentUser
@@ -569,7 +692,16 @@ def change_equipment(
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_EQUIPMENT)
     item = troupe_item(db, user, troupe, item_id)
     try:
-        equipment.change(db, user, troupe, item, fields_in(body), body.reason)
+        equipment.change(
+            db,
+            user,
+            troupe,
+            item,
+            fields_in(body),
+            body.reason,
+            expiry=expiry_in(body.expiry),
+            change_expiry="expiry" in body.model_fields_set,
+        )
     except EquipmentRefused as error:
         raise refusal(error) from None
     db.commit()
