@@ -840,6 +840,7 @@ function TraitRow({
             </>
           }
           description={about?.description}
+          wording={about?.changed}
           summary={houseSummary}
           page={about?.page_reference}
         />
@@ -870,6 +871,7 @@ function TraitRow({
           name={trait.name}
           after={swappedTo && <span className="text-gold"> → {swappedTo}</span>}
           description={about?.description}
+          wording={about?.changed}
           page={about?.page_reference}
         />
         {swapping ? (
@@ -925,6 +927,7 @@ function TraitRow({
           </>
         }
         description={about?.description}
+        wording={about?.changed}
         more={more}
         page={about?.page_reference}
       />

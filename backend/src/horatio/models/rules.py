@@ -133,16 +133,24 @@ class CheckOverride(Record):
 
 class TraitOverride(Record):
     """A troupe's own change to one book trait (horatio.book_traits): banned in the
-    troupe, with the reason its players see. One row per troupe and trait, which the
+    troupe, with the reason its players see; and its own wording, added to the
+    book's summary or in place of it. One row per troupe and trait, which the
     other changes to a book trait share."""
 
     __tablename__ = "trait_overrides"
-    __table_args__ = (UniqueConstraint("troupe_id", "trait_definition_id"),)
+    __table_args__ = (
+        UniqueConstraint("troupe_id", "trait_definition_id"),
+        CheckConstraint("wording_mode in ('added', 'replaces')", name="wording_mode"),
+    )
 
     troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
     trait_definition_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trait_definitions.id"))
     banned: Mapped[bool] = mapped_column(default=False, server_default="false")
     ban_reason: Mapped[str] = mapped_column(default="", server_default="")
+    # The troupe's own text for the trait, in Markdown: never the book's.
+    wording: Mapped[str] = mapped_column(default="", server_default="")
+    # "added" to the book's summary, or "replaces" it.
+    wording_mode: Mapped[str] = mapped_column(default="added", server_default="added")
 
 
 class CostRule(Record):

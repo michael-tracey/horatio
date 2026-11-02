@@ -68,6 +68,7 @@ function TraitLine({ trait: t, reference }: { trait: Trait; reference: PlayRefer
         ) : null
       }
       summary={t.house_summary}
+      wording={t}
       page={t.page_reference}
     />
   );

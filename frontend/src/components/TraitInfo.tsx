@@ -1,6 +1,8 @@
 import { useId, useState } from "react";
 import type { ReactNode } from "react";
+import { bookSummary, wordingOf, type Wording } from "../houseWording";
 import { isSrdPage, SRD_NAME } from "../pages/troupe/bookPage";
+import { HouseWording } from "./TroupeChange";
 
 /** How a rules page reference reads: "p. 86" in the core book, as the data gives it ("Vol. 2, p. 281"), or the SRD's name for a link to it. */
 export function pageLabel(page: string | null | undefined): string | null {
@@ -51,6 +53,7 @@ export function TraitInfo({
   more,
   page,
   summary,
+  wording,
 }: {
   name: ReactNode;
   after?: ReactNode;
@@ -59,11 +62,14 @@ export function TraitInfo({
   page?: string | null;
   /** A house merit's "what it does", from its effects: under the description. */
   summary?: string | null;
+  /** The troupe's own wording for a book trait: added to the description, or in its place. */
+  wording?: Partial<Wording> | null;
 }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const pageText = pageLabel(page);
-  const says = Boolean(description || more || summary);
+  const says = Boolean(description || more || summary || wordingOf(wording));
+  const shown = bookSummary(description, wording);
   return (
     <>
       <span className="min-w-0">
@@ -85,7 +91,8 @@ export function TraitInfo({
       </span>
       {says && open && (
         <div id={id} className="order-last col-span-full basis-full pb-1 pl-5 text-xs leading-relaxed text-mist">
-          {description && <p>{description}</p>}
+          {shown && <p>{shown}</p>}
+          <HouseWording change={wording} className="my-1" />
           {summary && <p className="text-gold">What it does: {summary}</p>}
           {more}
           {pageText && (

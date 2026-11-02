@@ -3,6 +3,7 @@ dots still waiting on the home troupe marked."""
 
 import uuid
 from datetime import date, datetime
+from typing import Literal
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -51,6 +52,17 @@ class PrintedTrait(BaseModel):
     house: str | None = None
 
 
+class PrintedWording(BaseModel):
+    """The troupe's own wording for a trait the character holds (horatio.book_traits),
+    printed after the sheet with the book's page."""
+
+    name: str
+    page: str | None
+    # In Markdown: added to the book's summary, or in its place.
+    text: str
+    mode: Literal["added", "replaces"]
+
+
 class PrintedBlood(BaseModel):
     """The Blood boxes to print: `most` that can be spent, `per_turn` a turn. A
     ghoul's are its vitae, and the rest of its `pool` is human Blood, which cannot
@@ -97,6 +109,8 @@ class PrintedSheet(BaseModel):
     # now, whose modifiers count as the player's own do.
     equipment: list[EquipmentItemOut] = []
     equipped: list[uuid.UUID] = []
+    # Its home troupe's own wording for the traits it holds, as it plays by those rules.
+    wording: list[PrintedWording] = []
 
 
 @router.get("/print")
@@ -182,6 +196,19 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
         for t in sorted(snapshot, key=lambda t: (order.get(t["category"], 999), t["name"]))
         if t["category"] in rule_set.categories
     ]
+    playing = sheets.rules_for(db, character)
+    wording = [
+        PrintedWording(
+            name=t.name,
+            page=t.page_reference,
+            text=change.wording,
+            mode=change.wording_mode,
+        )
+        for key in dict.fromkeys((r.category.key, r.definition.name) for r in rows)
+        if (change := playing.trait_changes.get(key)) is not None
+        and change.wording
+        and (t := playing.rule_set.traits.get(key)) is not None
+    ]
     limits = play.limits(db, character)
     # No reader: a printed sheet shows no staff note.
     reader = Reader(db, None)
@@ -221,4 +248,5 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
         equipment=[reader.item(item, character) for item in equipment.items_of(db, character)],
         equipped=[uuid.UUID(key) for key, _ in limits.equipped],
         picture=pictures.picture_url(character.id, character.picture_id),
+        wording=wording,
     )

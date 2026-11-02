@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, openScene, undoInHeader } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, openScene, undoInHeader, backstoryOptional, builtVampire, ATTRIBUTES_AND_FOCUSES } from "./support";
 
 /** The Play View at a game: blood, feeding, the Beast and derangements. */
 
@@ -44,6 +44,58 @@ test("the Play View's Sheet tab puts the archetype in the subheader, and says wh
   await expect(p.getByText("MET: VTM pp. 100-102")).toBeVisible();
   await expect(p.getByText("Swimming, climbing and jumping are simple actions for you")).toBeVisible();
   await p.screenshot(shots("play-sheet-info"));
+});
+
+test("a troupe's house wording on a power shows on the Play View, marked as the troupe's, with the book page (#433)", async ({ browser }) => {
+  const custodian = await person(browser, "wording-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "wording-lead");
+  const player = await person(browser, "wording-player");
+  const troupeName = `Hall of Glosses ${run}`;
+  const headers = { "X-Horatio": "1" };
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  await backstoryOptional(lead.page, troupeId);
+
+  // The lead gives Presence the troupe's own wording, added to the book's.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules/book-traits`);
+  await l.getByLabel("Category").selectOption({ label: "Disciplines" });
+  await l.getByRole("searchbox", { name: "Search book traits" }).fill("presence");
+  await l.getByRole("list", { name: "Book traits found" }).getByRole("button", { name: /^Presence/ }).click();
+  await l.getByLabel("House wording").fill("Majesty lasts one scene here, not an hour.");
+  await expect(l.getByLabel("How players see it")).toContainText("Majesty lasts one scene here, not an hour.");
+  await l.getByRole("button", { name: "Save", exact: true }).click();
+  const changed = l.locator("section").filter({ has: l.getByRole("heading", { name: "Changed in this troupe", exact: true }) });
+  await expect(changed.getByRole("listitem").filter({ hasText: "Presence" })).toContainText("Own wording, added to the book's");
+
+  // A player's Brujah with Presence makes the troupe home.
+  const p = player.page;
+  const id = await builtVampire(p, "Gloss", "Brujah", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  const asked = await p.request.post(`/api/characters/${id}/home-troupe`, { headers, data: { troupe_id: troupeId } });
+  expect(asked.status(), await asked.text()).toBeLessThan(300);
+  const [request] = await (await l.request.get(`/api/troupes/${troupeId}/approvals`)).json();
+  const approved = await l.request.post(`/api/approvals/${request.id}/approve`, { headers, data: {} });
+  expect(approved.status(), await approved.text()).toBeLessThan(300);
+
+  // On the Play View's Sheet tab, Presence opens to the troupe's wording, marked so, under the book's.
+  await p.goto(`/play/characters/${id}?tab=sheet`);
+  await p.getByRole("button", { name: "Presence", exact: true }).click();
+  const wording = p.getByTestId("house-wording");
+  await expect(wording).toContainText("House rule");
+  await expect(wording).toContainText("Majesty lasts one scene here, not an hour.");
+  await p.screenshot(shots("play-house-wording"));
+
+  // The House rules tab lists it under Changed wording.
+  await p.goto(`/troupes/${troupeId}/house-rules`);
+  const worded = p.locator("section").filter({ has: p.getByRole("heading", { name: "Changed wording", exact: true }) });
+  await expect(worded).toContainText("Majesty lasts one scene here, not an hour.");
 });
 
 test("at a game, the Play View tracks blood and uses, offline too, and the storytellers reset the troupe", async ({ browser }) => {

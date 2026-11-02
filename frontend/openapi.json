@@ -3181,6 +3181,33 @@
             "default": "vampire",
             "title": "Splat",
             "type": "string"
+          },
+          "wording": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wording"
+          },
+          "wording_mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "added",
+                  "replaces"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wording Mode"
           }
         },
         "required": [
@@ -3231,6 +3258,18 @@
           "splat_label": {
             "title": "Splat Label",
             "type": "string"
+          },
+          "wording": {
+            "title": "Wording",
+            "type": "string"
+          },
+          "wording_mode": {
+            "enum": [
+              "added",
+              "replaces"
+            ],
+            "title": "Wording Mode",
+            "type": "string"
           }
         },
         "required": [
@@ -3241,7 +3280,9 @@
           "name",
           "page",
           "banned",
-          "ban_reason"
+          "ban_reason",
+          "wording",
+          "wording_mode"
         ],
         "title": "BookTraitOut",
         "type": "object"
@@ -21878,6 +21919,20 @@
             },
             "title": "Specialties",
             "type": "array"
+          },
+          "wording": {
+            "default": "",
+            "title": "Wording",
+            "type": "string"
+          },
+          "wording_mode": {
+            "default": "added",
+            "enum": [
+              "added",
+              "replaces"
+            ],
+            "title": "Wording Mode",
+            "type": "string"
           }
         },
         "required": [
@@ -23737,6 +23792,14 @@
               }
             ],
             "title": "Troupe Portrait"
+          },
+          "wording": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PrintedWording"
+            },
+            "title": "Wording",
+            "type": "array"
           }
         },
         "required": [
@@ -23854,6 +23917,46 @@
           "specializes"
         ],
         "title": "PrintedTrait",
+        "type": "object"
+      },
+      "PrintedWording": {
+        "description": "The troupe's own wording for a trait the character holds (horatio.book_traits),\nprinted after the sheet with the book's page.",
+        "properties": {
+          "mode": {
+            "enum": [
+              "added",
+              "replaces"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "page",
+          "text",
+          "mode"
+        ],
+        "title": "PrintedWording",
         "type": "object"
       },
       "ProblemOut": {
@@ -32688,7 +32791,7 @@
         "type": "object"
       },
       "TraitChangeOut": {
-        "description": "A troupe's change to a book trait (horatio.book_traits): banned in the troupe,\nwith the reason its players see (\"\" for none).",
+        "description": "A troupe's change to a book trait (horatio.book_traits): banned in the troupe,\nwith the reason its players see (\"\" for none); its own wording, in Markdown (\"\" for\nnone), added to the book's summary or replacing it.",
         "properties": {
           "ban_reason": {
             "title": "Ban Reason",
@@ -32697,6 +32800,20 @@
           "banned": {
             "title": "Banned",
             "type": "boolean"
+          },
+          "wording": {
+            "default": "",
+            "title": "Wording",
+            "type": "string"
+          },
+          "wording_mode": {
+            "default": "added",
+            "enum": [
+              "added",
+              "replaces"
+            ],
+            "title": "Wording Mode",
+            "type": "string"
           }
         },
         "required": [
@@ -52214,7 +52331,7 @@
         ]
       },
       "put": {
-        "description": "Change a book trait in the troupe: ban it, with a reason, or lift the ban. Those\nwho hold it keep it.",
+        "description": "Change a book trait in the troupe: ban it, with a reason, or lift the ban (those\nwho hold it keep it); give it the troupe's own wording, or take it away.",
         "operationId": "change_book_trait_api_troupes__troupe_id__book_traits_put",
         "parameters": [
           {

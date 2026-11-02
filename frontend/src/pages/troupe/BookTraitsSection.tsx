@@ -7,7 +7,9 @@ import { EmptyState } from "../../components/EmptyState";
 import { Explainer } from "../../components/Explainer";
 import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
+import { HouseWording } from "../../components/TroupeChange";
 import { useAction } from "../../hooks";
+import { bookSummary } from "../../houseWording";
 import { pageText } from "./bookPage";
 import { bookTraits, changeSummary, findTraits, SHOWN } from "./bookTraits";
 import { useHouseSplat } from "./HouseSplat";
@@ -17,8 +19,9 @@ type Picked = { category: string; name: string };
 /**
  * Customise › Rules › Book traits: the troupe's own changes to traits from the book.
  * Storytellers search or browse the catalogue, open a trait, and change it in one
- * panel: ban it, with a reason the players see. Those who already hold a banned
- * trait keep it; they are listed here for staff to deal with one by one.
+ * panel: ban it, with a reason the players see, and give it wording of the troupe's
+ * own. Those who already hold a banned trait keep it; they are listed here for
+ * staff to deal with one by one.
  */
 export function BookTraitsSection({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
   const { splat, picker } = useHouseSplat(troupeId);
@@ -125,6 +128,7 @@ export function BookTraitsSection({ troupeId, canEdit }: { troupeId: string; can
                       <span className="text-parchment">{t.name}</span>
                       <span className="text-xs text-mist">{categoryName(categories, t.category)}</span>
                       {t.changed?.banned && <Badge tone="blood">Banned</Badge>}
+                      {t.changed?.wording && <Badge tone="gold">House wording</Badge>}
                     </button>
                   </li>
                 ))}
@@ -162,7 +166,7 @@ function ChangeRow({ change, onOpen }: { change: BookTraitOut; onOpen: () => voi
   );
 }
 
-/** One trait's changes in this troupe, a control for each. */
+/** One trait's changes in this troupe, a control for each, saved together. */
 function TraitPanel({
   troupeId,
   splat,
@@ -179,9 +183,15 @@ function TraitPanel({
   onClose: () => void;
 }) {
   const toast = useToast();
-  const [banned, setBanned] = useState(trait.changed?.banned ?? false);
-  const [reason, setReason] = useState(trait.changed?.ban_reason ?? "");
-  const save = useAction((body: { banned: boolean; ban_reason: string }) =>
+  const saved = {
+    banned: trait.changed?.banned ?? false,
+    ban_reason: trait.changed?.ban_reason ?? "",
+    wording: trait.changed?.wording ?? "",
+    wording_mode: trait.changed?.wording_mode ?? ("added" as const),
+  };
+  const [draft, setDraft] = useState(saved);
+  const set = (next: Partial<typeof draft>) => setDraft((d) => ({ ...d, ...next }));
+  const save = useAction((body: typeof draft) =>
     unwrap(
       api.PUT("/api/troupes/{troupe_id}/book-traits", {
         params: { path: { troupe_id: troupeId } },
@@ -189,7 +199,8 @@ function TraitPanel({
       }),
     ),
   );
-  const dirty = banned !== (trait.changed?.banned ?? false) || (banned && reason.trim() !== (trait.changed?.ban_reason ?? ""));
+  const sent = { ...draft, ban_reason: draft.banned ? draft.ban_reason.trim() : "", wording: draft.wording.trim() };
+  const dirty = (Object.keys(saved) as (keyof typeof saved)[]).some((k) => sent[k] !== saved[k]);
   return (
     <Card
       title={trait.name}
@@ -204,38 +215,66 @@ function TraitPanel({
         {categoryName(categories, trait.category)}
         {trait.page_reference && ` · ${pageText(trait.page_reference)}`}
       </p>
-      {trait.description && <p className="mt-2 text-sm">{trait.description}</p>}
+      {trait.description && (
+        <p className="mt-2 text-sm">
+          <span className="text-xs text-mist">The book's summary: </span>
+          {trait.description}
+        </p>
+      )}
 
       <section className="mt-4 flex flex-col gap-3 border-t border-ash pt-4" aria-label="Ban">
         <label className="flex min-h-10 items-center gap-3 text-sm">
-          <input type="checkbox" checked={banned} disabled={!canEdit} onChange={(e) => setBanned(e.target.checked)} className="h-5 w-5" />
+          <input type="checkbox" checked={draft.banned} disabled={!canEdit} onChange={(e) => set({ banned: e.target.checked })} className="h-5 w-5" />
           <span>
             Banned in this troupe
             <span className="block text-xs text-mist">Characters can't buy or pick it. Those who hold it keep it, flagged on their sheet.</span>
           </span>
         </label>
-        {banned && (
+        {draft.banned && (
           <Field label="Reason (optional)" hint="Players see this beside the trait.">
-            <Textarea rows={2} maxLength={500} value={reason} disabled={!canEdit} onChange={(e) => setReason(e.target.value)} />
+            <Textarea rows={2} maxLength={500} value={draft.ban_reason} disabled={!canEdit} onChange={(e) => set({ ban_reason: e.target.value })} />
           </Field>
         )}
-        {canEdit && (
-          <div>
-            <Button
-              disabled={!dirty || save.isPending}
-              onClick={() =>
-                save.mutate(
-                  { banned, ban_reason: banned ? reason : "" },
-                  { onSuccess: () => toast({ message: banned ? `Saved: ${trait.name} is banned here` : `Saved: ${trait.name} is no longer banned` }) },
-                )
-              }
-            >
-              Save
-            </Button>
+      </section>
+
+      <section className="mt-4 flex flex-col gap-3 border-t border-ash pt-4" aria-label="House wording">
+        <Field label="House wording" hint="In Markdown. Write the troupe's own words: never copy the book's text. Leave it empty for none.">
+          <Textarea rows={4} maxLength={4000} value={draft.wording} disabled={!canEdit} onChange={(e) => set({ wording: e.target.value })} />
+        </Field>
+        <fieldset className="flex flex-col gap-1 text-sm" disabled={!canEdit}>
+          <legend className="mb-1 text-mist">How it reads</legend>
+          {(
+            [
+              ["added", "Added to the book's summary"],
+              ["replaces", "In place of the book's summary"],
+            ] as const
+          ).map(([value, label]) => (
+            <label key={value} className="flex min-h-8 items-center gap-2">
+              <input type="radio" name={`wording-mode-${trait.name}`} checked={draft.wording_mode === value} onChange={() => set({ wording_mode: value })} />
+              {label}
+            </label>
+          ))}
+        </fieldset>
+        {draft.wording.trim() && (
+          <div className="rounded-md border border-ash bg-night/40 p-3 text-sm" aria-label="How players see it">
+            <p className="mb-1 text-xs text-mist">How players see it</p>
+            {bookSummary(trait.description, draft) && <p className="mb-1 text-mist">{trait.description}</p>}
+            <HouseWording change={draft} />
           </div>
         )}
-        <ErrorText error={save.error} />
       </section>
+
+      {canEdit && (
+        <div className="mt-4 border-t border-ash pt-4">
+          <Button
+            disabled={!dirty || save.isPending}
+            onClick={() => save.mutate(sent, { onSuccess: () => toast({ message: `Saved: ${trait.name} in this troupe` }) })}
+          >
+            Save
+          </Button>
+        </div>
+      )}
+      <ErrorText error={save.error} />
     </Card>
   );
 }
