@@ -3035,6 +3035,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/troupes/{troupe_id}/leaving": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Leaving
+         * @description What leaving the troupe would end: its titles there and its requests waiting
+         *     there, by name.
+         */
+        get: operations["leaving_api_characters__character_id__troupes__troupe_id__leaving_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/unavailable": {
         parameters: {
             query?: never;
@@ -14732,6 +14753,20 @@ export interface components {
              */
             reason: "final_death" | "off_field" | "inactive";
         };
+        /**
+         * LeavingOut
+         * @description What leaving a troupe ends, for the player to confirm first.
+         */
+        LeavingOut: {
+            /** Free Changes Open */
+            free_changes_open: boolean;
+            /** Home */
+            home: boolean;
+            /** Requests */
+            requests: components["schemas"]["WithdrawnOut"][];
+            /** Titles */
+            titles: string[];
+        };
         /** LedTroupe */
         LedTroupe: {
             /**
@@ -22579,6 +22614,13 @@ export interface components {
              */
             until: string;
         };
+        /** WithdrawnOut */
+        WithdrawnOut: {
+            /** Refund */
+            refund: number;
+            /** What */
+            what: string;
+        };
         /**
          * WithoutDot
          * @description A trait of a restricted pool that takes no pick, though it may be in-clan.
@@ -28748,6 +28790,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    leaving_api_characters__character_id__troupes__troupe_id__leaving_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeavingOut"];
+                };
             };
             /** @description Validation Error */
             422: {
