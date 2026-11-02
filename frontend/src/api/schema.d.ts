@@ -8241,6 +8241,13 @@ export interface components {
             player: components["schemas"]["ProfilePerson"];
             /** Rested */
             rested: boolean | null;
+            /** Status Source */
+            status_source?: string | null;
+            /**
+             * Status To Choose
+             * @default false
+             */
+            status_to_choose: boolean;
         };
         /**
          * AttributeChange
@@ -9687,6 +9694,18 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /**
+             * Status At Checkin
+             * @default false
+             */
+            status_at_checkin: boolean;
+            /** Status Source */
+            status_source?: string | null;
+            /**
+             * Status Sources
+             * @default []
+             */
+            status_sources: components["schemas"]["AbidingSourceOut"][];
         };
         /** CheckInIn */
         CheckInIn: {
@@ -9700,6 +9719,8 @@ export interface components {
              * @default true
              */
             rested: boolean;
+            /** Source */
+            source?: string | null;
         };
         /**
          * CheckInOffer
@@ -15583,6 +15604,8 @@ export interface components {
         OtherOut: {
             /** Accepted */
             accepted: string | null;
+            /** Carried Source */
+            carried_source?: string | null;
             /**
              * Character Id
              * Format: uuid
@@ -16246,6 +16269,11 @@ export interface components {
             source: string | null;
             /** Source Chosen */
             source_chosen: boolean;
+            /**
+             * Source Fixed
+             * @default false
+             */
+            source_fixed: boolean;
             /** Sources */
             sources: components["schemas"]["AbidingSourceOut"][];
             /** Suppressed */
@@ -19538,6 +19566,11 @@ export interface components {
             chosen: {
                 [key: string]: string;
             };
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
             /** Source */
             source?: string | null;
         };
@@ -20573,6 +20606,8 @@ export interface components {
             session_xp?: number | null;
             /** Starting Xp */
             starting_xp?: number | null;
+            /** Status At Checkin */
+            status_at_checkin?: boolean | null;
             /** Status By */
             status_by?: ("players" | "staff") | null;
             /** Titles By */
@@ -20708,6 +20743,11 @@ export interface components {
             starting_blood: number | null;
             /** Starting Xp */
             starting_xp: number;
+            /**
+             * Status At Checkin
+             * @default false
+             */
+            status_at_checkin: boolean;
             /** Status By */
             status_by: string;
             /** Titles By */
@@ -21098,6 +21138,8 @@ export interface components {
             active_title?: string | null;
             /** Bans */
             bans: string[];
+            /** Carried Source */
+            carried_source?: string | null;
             /**
              * Character Id
              * Format: uuid

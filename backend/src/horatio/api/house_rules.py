@@ -18,6 +18,7 @@ from horatio import (
     diablerie,
     feeding,
     game_xp,
+    play_status,
     rack,
     resonance,
     territories,
@@ -1191,6 +1192,15 @@ def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
                 name="Blood at the start of a game",
                 text=f"{troupe.starting_blood} Blood",
                 book_text="Full",
+            )
+        )
+    if play_status.at_checkin(troupe):
+        found.append(
+            HouseSettingOut(
+                name="The night's status",
+                text="Each character chooses its one source of abiding status as it checks in"
+                " to a game, and keeps it all game; staff can change it, with a reason",
+                book_text="Chosen once for each game, as it begins (MET: VTM p. 311)",
             )
         )
     if troupe.diablerie_flaws != "leave":

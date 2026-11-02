@@ -434,6 +434,7 @@ MESSAGES: dict[str, str] = {
     "status.ban_marked": "{actor} marked the status ban “{ban}” for {character}: {mark}{because}.",
     "troupe.status_by": "{actor} set Status on sheets: {setting}.",
     "troupe.titles_by": "{actor} set Titles on sheets: {setting}.",
+    "troupe.status_at_checkin": "{actor} set the night's status source: {setting}.",
     "troupe.badges": "{actor} set what badges print: {titles}, {status}.",
     "troupe.badge_pronouns": "{actor} set badges to print {pronouns}.",
     "troupe.whos_who": "{actor} set the Who's Who to show {status}.",

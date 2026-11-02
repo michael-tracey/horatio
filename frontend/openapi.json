@@ -1132,6 +1132,22 @@
               }
             ],
             "title": "Rested"
+          },
+          "status_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Source"
+          },
+          "status_to_choose": {
+            "default": false,
+            "title": "Status To Choose",
+            "type": "boolean"
           }
         },
         "required": [
@@ -5215,6 +5231,30 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "status_at_checkin": {
+            "default": false,
+            "title": "Status At Checkin",
+            "type": "boolean"
+          },
+          "status_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Source"
+          },
+          "status_sources": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AbidingSourceOut"
+            },
+            "title": "Status Sources",
+            "type": "array"
           }
         },
         "required": [
@@ -5236,6 +5276,18 @@
             "default": true,
             "title": "Rested",
             "type": "boolean"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
           }
         },
         "required": [
@@ -20355,6 +20407,17 @@
             ],
             "title": "Accepted"
           },
+          "carried_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Carried Source"
+          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -21957,6 +22020,11 @@
           },
           "source_chosen": {
             "title": "Source Chosen",
+            "type": "boolean"
+          },
+          "source_fixed": {
+            "default": false,
+            "title": "Source Fixed",
             "type": "boolean"
           },
           "sources": {
@@ -30619,6 +30687,12 @@
             "title": "Chosen",
             "type": "object"
           },
+          "reason": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Reason",
+            "type": "string"
+          },
           "source": {
             "anyOf": [
               {
@@ -33416,6 +33490,17 @@
             ],
             "title": "Starting Xp"
           },
+          "status_at_checkin": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status At Checkin"
+          },
           "status_by": {
             "anyOf": [
               {
@@ -33777,6 +33862,11 @@
           "starting_xp": {
             "title": "Starting Xp",
             "type": "integer"
+          },
+          "status_at_checkin": {
+            "default": false,
+            "title": "Status At Checkin",
+            "type": "boolean"
           },
           "status_by": {
             "title": "Status By",
@@ -34840,6 +34930,17 @@
             },
             "title": "Bans",
             "type": "array"
+          },
+          "carried_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Carried Source"
           },
           "character_id": {
             "format": "uuid",

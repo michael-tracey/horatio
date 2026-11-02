@@ -23,3 +23,11 @@ export function matching(others: OtherOut[], query: string): OtherOut[] {
   const q = query.trim().toLowerCase();
   return q ? others.filter((o) => o.name.toLowerCase().includes(q)) : others;
 }
+
+/**
+ * "Camarilla · Prince", or the sect alone; and, where the troupe fixes it at check-in,
+ * the source of abiding status the other carries into tonight's game (issue #441).
+ */
+export function sectLine(o: OtherOut): string {
+  return [o.sect ?? "No sect", ...o.titles, ...(o.carried_source ? [`status from ${o.carried_source} tonight`] : [])].join(" · ");
+}

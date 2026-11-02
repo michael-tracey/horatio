@@ -1,7 +1,7 @@
 import { encode } from "uqr";
 import { describe, expect, it } from "vitest";
-import type { Attendee } from "../../api/types";
-import { checkedInText, checkInPath, checkInUrl, names, pastMonthly, qrPath, spacedCode, tidyCode, toAward } from "./checkin";
+import type { Attendee, CheckInCharacter } from "../../api/types";
+import { attendeeStatus, checkedInText, checkInPath, checkInUrl, names, pastMonthly, qrPath, spacedCode, statusQuestion, tidyCode, toAward } from "./checkin";
 
 const attendee = (name: string, month_xp: number, home = true): Attendee => ({
   character_id: name,
@@ -13,6 +13,7 @@ const attendee = (name: string, month_xp: number, home = true): Attendee => ({
   rested: true,
   month_xp,
   kind: "attended",
+  status_to_choose: false,
 });
 
 describe("the door's code", () => {
@@ -71,5 +72,39 @@ describe("the QR code", () => {
     expect(ring.every(Boolean)).toBe(true);
     expect(qr.data[3]![3]).toBe(false);
     expect(qr.size).toBe(qr.data.length);
+  });
+});
+
+describe("the night's status at check-in (#441)", () => {
+  const source = (name: string) => ({ name, kind: "title" as const, status: [] });
+  const character = (more: Partial<CheckInCharacter>): CheckInCharacter => ({
+    id: "agnes",
+    name: "Agnes",
+    checked_in: false,
+    status_at_checkin: true,
+    status_sources: [],
+    ...more,
+  });
+
+  it("asks nothing where the troupe doesn't choose it at check-in, or the character has no source", () => {
+    expect(statusQuestion(character({ status_at_checkin: false, status_sources: [source("Prince"), source("Elder")] }))).toEqual({ kind: "none" });
+    expect(statusQuestion(character({}))).toEqual({ kind: "none" });
+    expect(statusQuestion(character({ checked_in: true, status_sources: [source("Prince"), source("Elder")] }))).toEqual({ kind: "none" });
+  });
+
+  it("says the one it carries: its only source, or one chosen tonight already", () => {
+    expect(statusQuestion(character({ status_sources: [source("Prince")] }))).toEqual({ kind: "carries", source: "Prince" });
+    expect(statusQuestion(character({ status_sources: [source("Seneschal"), source("Elder")], status_source: "Elder" }))).toEqual({ kind: "carries", source: "Elder" });
+  });
+
+  it("asks which of several", () => {
+    const sources = [source("Seneschal"), source("Elder")];
+    expect(statusQuestion(character({ status_sources: sources }))).toEqual({ kind: "choose", sources });
+  });
+
+  it("tells staff the source each character came with, or that one is still to choose", () => {
+    expect(attendeeStatus({ ...attendee("Agnes", 0), status_source: "Elder" })).toBe("Status from Elder");
+    expect(attendeeStatus({ ...attendee("Agnes", 0), status_to_choose: true })).toBe("Status to choose");
+    expect(attendeeStatus(attendee("Agnes", 0))).toBeNull();
   });
 });

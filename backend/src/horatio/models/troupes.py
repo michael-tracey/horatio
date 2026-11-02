@@ -89,6 +89,9 @@ class Troupe(Imported, Record):
     # Titles on sheets (horatio.titles): whether "players" choose their own
     # characters' titles from their sect's, or only its running "staff" give them.
     titles_by: Mapped[str] = mapped_column(default="players", server_default="players")
+    # House rule: each character's source of abiding status is chosen as it checks in
+    # to a game, and fixed for that game (horatio.play_status). Off: as the book has it.
+    status_at_checkin: Mapped[bool] = mapped_column(default=False, server_default="false")
     # What its game badges print (horatio.badges): the titles held here, or not; and
     # the status carried into a game here, "all" of it, "negative" status only, or
     # "none", leaving the space for stickers.

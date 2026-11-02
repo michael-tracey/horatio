@@ -10,7 +10,7 @@ import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { checkInUrl, names, spacedCode } from "./checkin";
+import { attendeeStatus, checkInUrl, names, spacedCode } from "./checkin";
 import { BOOK_MONTHLY, figureFor, NO_CHOICE, signed, usesLeft, type Choice } from "./gameXp";
 import { PAYMENTS_NOTE } from "./GameXpSettings";
 import { Stepper } from "./XpAwardsTab";
@@ -202,6 +202,14 @@ function AttendanceCard({ night }: { night: GameNight }) {
                     {!a.home && <Badge>Visiting</Badge>}
                     {a.by_staff && <Badge>By hand</Badge>}
                     {a.rested === false && <Badge>No day's rest</Badge>}
+                    {attendeeStatus(a) &&
+                      (a.status_to_choose ? (
+                        <Link to={`/play/characters/${a.character_id}?tab=status`} className="text-xs text-gold underline" aria-label={`Choose ${a.character_name}'s status`}>
+                          {attendeeStatus(a)}
+                        </Link>
+                      ) : (
+                        <Badge tone="gold">{attendeeStatus(a)}</Badge>
+                      ))}
                   </span>
                 </span>
                 <Button

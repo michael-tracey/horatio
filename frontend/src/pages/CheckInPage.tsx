@@ -7,7 +7,7 @@ import { EmptyState } from "../components/EmptyState";
 import { Button, Card, ErrorText, Field, Input, Loading, PageTitle } from "../components/ui";
 import { useDates } from "../dates";
 import { useAction } from "../hooks";
-import { checkInPath, tidyCode } from "./troupe/checkin";
+import { checkInPath, statusQuestion, tidyCode } from "./troupe/checkin";
 
 /**
  * Checking in at a game's door (issue #421): the page a door's QR code opens, or
@@ -76,7 +76,9 @@ function CodeForm() {
 
 /**
  * Pick the character you're playing tonight and say whether it had a full day's
- * rest, then check in: the night starts on its Play View, which opens.
+ * rest, then check in: the night starts on its Play View, which opens. Where the
+ * troupe chooses the night's status at check-in (issue #441), pick the one source of
+ * abiding status it carries too, fixed for the game.
  */
 export function CheckInForm({ offer }: { offer: CheckInOffer }) {
   const dates = useDates();
@@ -84,11 +86,15 @@ export function CheckInForm({ offer }: { offer: CheckInOffer }) {
   const waiting = offer.characters.filter((c) => !c.checked_in);
   const [chosen, setChosen] = useState(waiting[0]?.id ?? "");
   const [rested, setRested] = useState(true);
+  const [source, setSource] = useState("");
+  const picked = offer.characters.find((c) => c.id === chosen);
+  const question = picked ? statusQuestion(picked) : ({ kind: "none" } as const);
+  const ready = !!chosen && (question.kind !== "choose" || !!source);
   const go = useAction(async () => {
     const done = await unwrap(
       api.POST("/api/troupes/{troupe_id}/games/{game_id}/attendance", {
         params: { path: { troupe_id: offer.troupe_id, game_id: offer.game_id } },
-        body: { character_id: chosen, rested },
+        body: { character_id: chosen, rested, source: question.kind === "choose" ? source : null },
       }),
     );
     // The Play View opening is the answer: a toast would go with the page it was on.
@@ -117,7 +123,7 @@ export function CheckInForm({ offer }: { offer: CheckInOffer }) {
       className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
-        if (chosen) go.mutate(undefined);
+        if (ready) go.mutate(undefined);
       }}
     >
       {heading}
@@ -138,12 +144,47 @@ export function CheckInForm({ offer }: { offer: CheckInOffer }) {
               key={c.id}
               className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-md border px-3 text-sm ${chosen === c.id ? "border-gold bg-gold/10" : "border-line"}`}
             >
-              <input type="radio" name="character" value={c.id} checked={chosen === c.id} onChange={() => setChosen(c.id)} />
+              <input
+                type="radio"
+                name="character"
+                value={c.id}
+                checked={chosen === c.id}
+                onChange={() => {
+                  setChosen(c.id);
+                  setSource("");
+                }}
+              />
               {c.name}
             </label>
           ),
         )}
       </fieldset>
+      {question.kind === "carries" && (
+        <p className="text-sm">
+          Abiding status tonight from <span className="text-gold">{question.source}</span>
+          <span className="block text-xs text-mist">Your one source of abiding status, fixed for the game.</span>
+        </p>
+      )}
+      {question.kind === "choose" && (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 text-sm text-parchment">Which status do you carry tonight?</legend>
+          <p className="text-xs text-mist">
+            Your one source of abiding status (MET: VTM p. 311). It's fixed for the game: only the storytellers can change it. Innate status always applies.
+          </p>
+          {question.sources.map((s) => (
+            <label
+              key={s.name}
+              className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm ${source === s.name ? "border-gold bg-gold/10" : "border-line"}`}
+            >
+              <input type="radio" name="source" value={s.name} checked={source === s.name} onChange={() => setSource(s.name)} />
+              <span>
+                {s.name}
+                {s.status.length > 0 && <span className="block text-xs text-mist">{s.status.map((g) => (g.condition ? `${g.name} (${g.condition})` : g.name)).join(", ")}</span>}
+              </span>
+            </label>
+          ))}
+        </fieldset>
+      )}
       {waiting.length > 0 && (
         <>
           <label className="flex items-start gap-3 text-sm">
@@ -155,7 +196,7 @@ export function CheckInForm({ offer }: { offer: CheckInOffer }) {
               </span>
             </span>
           </label>
-          <Button type="submit" className="min-h-12 text-base" disabled={!chosen || go.isPending}>
+          <Button type="submit" className="min-h-12 text-base" disabled={!ready || go.isPending}>
             Check in{chosen ? ` ${offer.characters.find((c) => c.id === chosen)?.name ?? ""}` : ""}
           </Button>
         </>

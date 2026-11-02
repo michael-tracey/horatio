@@ -968,6 +968,8 @@ def describe(
 ) -> str:
     """The tap as the log reads it: "Blood 7 → 6", "Turned into fight form"."""
     if event.kind == "note":
+        if event.tracker == play_status.SOURCE_NOTE:
+            return "Source of abiding status changed"
         return "Note"
     if event.kind == "undo":
         text = f"Undid: {describe(target, limits)}" if target is not None else "Undid a tap"
