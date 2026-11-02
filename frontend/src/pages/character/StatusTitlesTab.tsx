@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { BanOut, CharacterOut, CharacterTitlesOut, HeldTitleOut, StatusOut, TitleChoiceOut } from "../../api/types";
+import { useClanName } from "../../components/ClanNames";
 import { Dialog } from "../../components/Dialog";
 import { InfoButton } from "../../components/InfoButton";
 import { pageLabel } from "../../components/TraitInfo";
@@ -267,6 +268,7 @@ function holds(ban: BanOut): string {
 function Bans({ character }: { character: CharacterOut }) {
   const status = useStatus(character.id);
   const [open, setOpen] = useState<string | null>(null);
+  const named = useClanName();
   const s = status.data;
   if (!s?.accepted) return null;
   const bans = s.bans.filter((b) => b.applies || s.staff);
@@ -279,12 +281,12 @@ function Bans({ character }: { character: CharacterOut }) {
             <li key={b.applies_to}>
               <button
                 type="button"
-                aria-label={`${banLevel(b.level)} ban: ${b.applies_to}`}
+                aria-label={`${banLevel(b.level)} ban: ${named(b.applies_to)}`}
                 onClick={() => setOpen(b.applies_to)}
                 className="flex min-h-9 w-full items-center gap-2 rounded-md px-1.5 text-left hover:bg-night"
               >
                 <Badge tone={b.applies ? "blood" : "mist"}>{banLevel(b.level)}</Badge>
-                <span className={`min-w-0 flex-1 truncate text-sm ${b.applies ? "text-parchment" : "text-mist"}`}>{b.applies_to}</span>
+                <span className={`min-w-0 flex-1 truncate text-sm ${b.applies ? "text-parchment" : "text-mist"}`}>{named(b.applies_to)}</span>
                 <span className="shrink-0 text-xs text-mist">{holds(b)}</span>
               </button>
             </li>
@@ -302,6 +304,7 @@ function Bans({ character }: { character: CharacterOut }) {
 
 /** One ban: what it does, why it holds, and for staff, applying or lifting it with a reason. */
 function BanPanel({ character, status, ban }: { character: CharacterOut; status: StatusOut; ban: BanOut }) {
+  const named = useClanName();
   const mark = useAction((body: { mark: "applies" | "exempt" | null; reason: string }) =>
     unwrap(api.PUT("/api/characters/{character_id}/status/bans", { params: { path: { character_id: character.id } }, body: { ban: ban.applies_to, ...body } })),
   );
@@ -319,7 +322,7 @@ function BanPanel({ character, status, ban }: { character: CharacterOut; status:
   return (
     <div className="flex flex-col gap-3 text-sm">
       <p className="text-parchment">
-        <Badge tone={ban.applies ? "blood" : "mist"}>{banLevel(ban.level)}</Badge> {ban.applies_to}
+        <Badge tone={ban.applies ? "blood" : "mist"}>{banLevel(ban.level)}</Badge> {named(ban.applies_to)}
       </p>
       <p className="text-mist">
         A lesser ban cuts fleeting status to 3, a greater to 1 (MET: VTM p. 312).{page && ` ${page}.`}
