@@ -251,7 +251,7 @@ def take(
     """Take a card, giving back any taken before; or give it back with no card."""
     from horatio.downtimes import ensure_can_submit
 
-    ensure_can_submit(cycle, participant)
+    ensure_can_submit(db, cycle, participant)
     if submission is not None and submission.feeding_result is not None:
         raise conflict("A storyteller has already answered your feeding; it can no longer change.")
     before = taken(db, participant)
@@ -288,7 +288,7 @@ def hunt(
     from horatio.downtimes import ensure_can_submit
 
     rng = rng or random.Random()
-    ensure_can_submit(cycle, participant)
+    ensure_can_submit(db, cycle, participant)
     if submission.feeding.get("hunt"):
         raise conflict("This character has hunted outside the Rack this cycle already.")
     outcome = rng.choice(list(HUNT_CARDS))
