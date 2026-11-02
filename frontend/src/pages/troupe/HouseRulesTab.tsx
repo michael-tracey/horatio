@@ -7,6 +7,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { HouseMark, HouseSummary } from "../../components/HouseMark";
 import { Card, ErrorText, Loading } from "../../components/ui";
 import { pageText } from "./bookPage";
+import { Chart } from "./LanguagesSection";
 
 /** How a check is played, in a player's words. */
 export const PLAYED: Record<string, string> = {
@@ -177,7 +178,9 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
         <Card title="Other house rules">
           <ul className="divide-y divide-ash">
             {r.other.map((o) => (
-              <Row key={o.name} subject={o.name} now={o.text} book={o.book_text} />
+              <Row key={o.name} subject={o.name} now={o.text} book={o.book_text}>
+                {o.table && <Chart ratings={o.table} doubled={false} className="mt-1" />}
+              </Row>
             ))}
           </ul>
         </Card>
@@ -215,12 +218,13 @@ function SplatPart({ label, split, children }: { label: string; split: boolean; 
 }
 
 /** A house rule: what it is about, how the troupe plays it, and how the book does. */
-function Row({ subject, now, book, note }: { subject: ReactNode; now: string; book?: string | null; note?: string | null }) {
+function Row({ subject, now, book, note, children }: { subject: ReactNode; now: string; book?: string | null; note?: string | null; children?: ReactNode }) {
   return (
     <li className="flex flex-col gap-0.5 py-2.5 text-sm sm:flex-row sm:items-baseline sm:gap-4">
       <span className="min-w-0 flex-1">
         <span className="text-parchment">{subject}</span>
         {note && <span className="block text-xs text-mist">House rule: {note}</span>}
+        {children}
       </span>
       <span className="flex flex-col sm:items-end sm:text-right">
         <span className="text-gold">{now}</span>

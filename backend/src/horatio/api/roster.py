@@ -467,6 +467,7 @@ MESSAGES: dict[str, str] = {
     " background {generation}, techniques lost: {techniques}, Humanity lowered {humanity},"
     " Beast traits {beast}, flaw: {flaw}.",
     "house.golconda": "{actor} set the house option: Golconda Seekers {setting}.",
+    "house.languages": "{actor} set how many languages Linguistics gives: {setting}.",
     "house.feeding": "{actor} set feeding to {feeding}, with optional rules: {rules}.",
     "house.territory_saved": "{actor} added the feeding territory {name} ({size}): {holders}.",
     "house.territory_changed": "{actor} changed the feeding territory {name} ({size}): {holders}.",

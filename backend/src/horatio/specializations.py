@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from horatio import audit
 from horatio.models import Character, TraitCategory, Troupe, TroupeSpecialization, User
+from horatio.rules.checks import dots_limit
 from horatio.sheets import rules_for, rules_troupe, sheet_rows
 
 CUSTOM = "Custom"
@@ -34,6 +35,11 @@ class Kind:
     custom: bool
     held: list[tuple[str, str]]  # name, detail
     parent_rating: int
+    # How many the character may hold under its rules' checks (a troupe's chart of
+    # languages, two a dot with Natural Linguist), and how many held count against
+    # that: not those another trait gives. None where no check limits them.
+    allowed: int | None = None
+    counted: int = 0
 
 
 def troupe_options(db: Session, troupe_id: uuid.UUID | None) -> dict[str, list[str]]:
@@ -54,6 +60,14 @@ def kinds(db: Session, character: Character) -> list[Kind]:
     rules = rules_for(db, character)
     lists = troupe_options(db, rules_troupe(character))
     rows = sheet_rows(db, character)
+    sheet = [r.as_rules_trait() for r in rows]
+    # The least any check on a kind allows here. Their conditions are only about
+    # what the sheet holds, so they need nothing more (horatio.rules.checks.Context).
+    limits: dict[str, int] = {}
+    for check in rules.checks():
+        limit = dots_limit(check, sheet)
+        if limit is not None and limit[0] == check.category:
+            limits[check.category] = min(limits.get(check.category, limit[1]), limit[1])
     found: list[Kind] = []
     for category in rules.rule_set.categories.values():
         if not category.specializes:
@@ -84,6 +98,12 @@ def kinds(db: Session, character: Character) -> list[Kind]:
                     if r.category.key == category.key and r.trait.rating != 0
                 ],
                 parent_rating=(parent.trait.rating or 0) if parent else 0,
+                allowed=limits.get(category.key),
+                counted=sum(
+                    1
+                    for t in sheet
+                    if t.category == category.key and t.rating != 0 and not t.granted
+                ),
             )
         )
     return found

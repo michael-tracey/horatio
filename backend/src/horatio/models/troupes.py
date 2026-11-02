@@ -32,6 +32,7 @@ class Troupe(Imported, Record):
         CheckConstraint("location_limit in ('refuse', 'note')", name="location_limit"),
         CheckConstraint("backstory_mode in ('free', 'either', 'wizard')", name="backstory_mode"),
         CheckConstraint("feeding in ('off', 'book')", name="feeding"),
+        CheckConstraint("languages in ('book', 'accelerated', 'custom')", name="languages"),
     )
 
     name: Mapped[str]
@@ -69,6 +70,13 @@ class Troupe(Imported, Record):
     # Golconda Seeker holds the innate status Enlightened (Vol. 2, p. 267). Off unless
     # switched on (horatio.rules.grants.HOUSE_OPTIONS).
     golconda_enlightened: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # House rule: how many languages Linguistics gives (horatio.rules.languages):
+    # "book", one per dot; "accelerated", the accelerated chart; or "custom", its own
+    # figure for each rating in languages_table (kept while another is chosen). And
+    # whether Natural Linguist doubles it, as the book has it.
+    languages: Mapped[str] = mapped_column(default="book", server_default="book")
+    languages_table: Mapped[list[int] | None] = mapped_column(JSONB)
+    natural_linguist_doubles: Mapped[bool] = mapped_column(default=True, server_default="true")
     # Feeding (horatio.feeding): "book", tracked in downtimes as the core book has it,
     # or "off", left out of Horatio altogether. What was recorded while it was on is
     # kept, and comes back when it is switched on again.

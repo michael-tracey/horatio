@@ -152,6 +152,38 @@ test("a troupe's players read its house rules: a price the lead changes shows th
   await p.screenshot(shots("house-rules"));
 });
 
+test("a lead chooses the accelerated chart of languages, and the House rules tab shows it (#437)", async ({ browser }) => {
+  const custodian = await person(browser, "lingo-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "lingo-lead");
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: `Tongues of Babel ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+
+  // Customise › Rules › Languages: the book's one per dot until the lead picks a chart.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules/languages`);
+  const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Languages from Linguistics" }) });
+  await expect(card.getByLabel(/^Book/)).toBeChecked();
+  await card.getByLabel(/Accelerated chart/).click();
+  const languages = card.getByRole("row", { name: /^Languages/ });
+  await expect(languages.getByRole("cell").nth(6)).toHaveText("32");
+  await expect(card.getByRole("row", { name: /With Natural Linguist/ }).getByRole("cell").nth(6)).toHaveText("64");
+  await card.getByRole("button", { name: "Save" }).click();
+  await expect(l.getByText("Saved: how many languages Linguistics gives")).toBeVisible();
+  await expect(card.getByRole("button", { name: "Save" })).toBeDisabled();
+  await l.screenshot(shots("languages-setting"));
+
+  // Its players read the chart beside the book's.
+  await l.goto(`/troupes/${troupeId}/house-rules`);
+  const other = l.locator("section").filter({ has: l.getByRole("heading", { name: "Other house rules" }) });
+  const rule = other.getByRole("listitem").filter({ hasText: "Languages from Linguistics" });
+  await expect(rule.getByText(/^1, 2, 4, 8, 16, 24 and 32 languages/)).toBeVisible();
+  await expect(rule.getByText(/By the book: One per dot of Linguistics/)).toBeVisible();
+  await expect(rule.getByRole("row", { name: /^Languages/ }).getByRole("cell").nth(4)).toHaveText("16");
+});
+
 test("a player looks up the rules: a power by name and by its summary, then as played in a troupe, a house price shown and a banned merit hidden (#422)", async ({ browser }) => {
   const custodian = await person(browser, "rulebook-custodian");
   makeCustodian(custodian.email);

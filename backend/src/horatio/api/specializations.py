@@ -2,15 +2,18 @@
 trait's missing detail."""
 
 import uuid
+from typing import Literal
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from horatio import sheets, specializations
+from horatio import languages, sheets, specializations
 from horatio.api.downtimes import staff_troupe
 from horatio.api.sheets import SheetOut, players_character, sheet_out
 from horatio.auth.deps import CurrentUser, DbSession
+from horatio.models import Troupe
 from horatio.permissions import TroupeAction, visible_character
+from horatio.rules import languages as language_rules
 from horatio.rules.store import read_troupe_rules
 
 router = APIRouter(tags=["specialisations"])
@@ -29,6 +32,11 @@ class KindOut(BaseModel):
     # Free text is allowed (as "Custom" with the text as detail).
     custom: bool
     held: list[dict[str, str]]
+    # How many the character may hold under its rules (one a dot by the book, or the
+    # troupe's chart of languages), and how many it holds that count against that:
+    # not those another trait gives. None where nothing limits them.
+    allowed: int | None
+    counted: int
 
 
 class TroupeKindOut(BaseModel):
@@ -66,6 +74,8 @@ def character_kinds(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -
             from_troupe=k.from_troupe,
             custom=k.custom,
             held=[{"name": n, "detail": d} for n, d in k.held],
+            allowed=k.allowed,
+            counted=k.counted,
         )
         for k in specializations.kinds(db, character)
     ]
@@ -118,3 +128,83 @@ def set_troupe_kind(
     specializations.set_troupe_options(db, user, troupe, category, body.names)
     db.commit()
     return troupe_kinds(troupe_id, db, user)
+
+
+# --- Languages ------------------------------------------------------------------
+
+
+class LanguagesIn(BaseModel):
+    # "book", one language per dot of Linguistics (p. 95); "accelerated", the
+    # accelerated chart; or "custom", the troupe's own chart.
+    mode: Literal["book", "accelerated", "custom"]
+    # The troupe's own chart: languages at each rating from 1. Kept while another
+    # chart is chosen; left out, the one it has stays.
+    custom: list[int] | None = Field(default=None, max_length=20)
+    # Natural Linguist doubles the chart in use, as the book has it (p. 252).
+    natural_doubles: bool = True
+
+
+class OverOut(BaseModel):
+    """A character holding more languages than the troupe's chart now allows: they
+    keep them, and the sheet shows the broken check."""
+
+    character_id: uuid.UUID
+    name: str
+    held: int
+    allowed: int
+
+
+class LanguagesOut(BaseModel):
+    mode: Literal["book", "accelerated", "custom"]
+    # The troupe's own chart, kept while another is chosen; empty until set.
+    custom: list[int]
+    natural_doubles: bool
+    # The languages each rating gives under the chart in use, from 1 to max_rating,
+    # without Natural Linguist; and the accelerated chart, for offering.
+    table: list[int]
+    accelerated: list[int]
+    max_rating: int
+    # The setting in words, and the book's.
+    text: str
+    book_text: str
+    over: list[OverOut]
+
+
+def languages_out(db: DbSession, troupe_id: uuid.UUID) -> LanguagesOut:
+    troupe = db.get_one(Troupe, troupe_id)
+    rule = language_rules.rule_of(troupe)
+    most = languages.max_rating(db, troupe_id)
+    return LanguagesOut(
+        mode=rule.mode,
+        custom=list(rule.custom),
+        natural_doubles=rule.natural_doubles,
+        table=rule.ratings(most),
+        accelerated=list(language_rules.ACCELERATED),
+        max_rating=most,
+        text=language_rules.setting_text(rule),
+        book_text=language_rules.BOOK_TEXT,
+        over=[
+            OverOut(character_id=o.character_id, name=o.name, held=o.held, allowed=o.allowed)
+            for o in languages.over_limit(db, troupe_id)
+        ],
+    )
+
+
+@router.get("/troupes/{troupe_id}/languages")
+def read_languages(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> LanguagesOut:
+    """How many languages Linguistics gives in the troupe, and who holds more."""
+    staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
+    return languages_out(db, troupe_id)
+
+
+@router.put("/troupes/{troupe_id}/languages")
+def set_languages(
+    troupe_id: uuid.UUID, body: LanguagesIn, db: DbSession, user: CurrentUser
+) -> LanguagesOut:
+    """Choose how many languages Linguistics gives: creation, purchases, review and
+    the sheet follow at once. A character holding more than the new chart allows
+    keeps them, flagged on the sheet and listed here."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    languages.set_rule(db, user, troupe, body.mode, body.custom, body.natural_doubles)
+    db.commit()
+    return languages_out(db, troupe_id)

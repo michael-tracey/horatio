@@ -13952,6 +13952,20 @@
             "title": "Name",
             "type": "string"
           },
+          "table": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Table"
+          },
           "text": {
             "title": "Text",
             "type": "string"
@@ -15486,9 +15500,24 @@
       },
       "KindOut": {
         "properties": {
+          "allowed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allowed"
+          },
           "category": {
             "title": "Category",
             "type": "string"
+          },
+          "counted": {
+            "title": "Counted",
+            "type": "integer"
           },
           "custom": {
             "title": "Custom",
@@ -15541,9 +15570,119 @@
           "options",
           "from_troupe",
           "custom",
-          "held"
+          "held",
+          "allowed",
+          "counted"
         ],
         "title": "KindOut",
+        "type": "object"
+      },
+      "LanguagesIn": {
+        "properties": {
+          "custom": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom"
+          },
+          "mode": {
+            "enum": [
+              "book",
+              "accelerated",
+              "custom"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "natural_doubles": {
+            "default": true,
+            "title": "Natural Doubles",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "title": "LanguagesIn",
+        "type": "object"
+      },
+      "LanguagesOut": {
+        "properties": {
+          "accelerated": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Accelerated",
+            "type": "array"
+          },
+          "book_text": {
+            "title": "Book Text",
+            "type": "string"
+          },
+          "custom": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Custom",
+            "type": "array"
+          },
+          "max_rating": {
+            "title": "Max Rating",
+            "type": "integer"
+          },
+          "mode": {
+            "enum": [
+              "book",
+              "accelerated",
+              "custom"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "natural_doubles": {
+            "title": "Natural Doubles",
+            "type": "boolean"
+          },
+          "over": {
+            "items": {
+              "$ref": "#/components/schemas/OverOut"
+            },
+            "title": "Over",
+            "type": "array"
+          },
+          "table": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Table",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode",
+          "custom",
+          "natural_doubles",
+          "table",
+          "accelerated",
+          "max_rating",
+          "text",
+          "book_text",
+          "over"
+        ],
+        "title": "LanguagesOut",
         "type": "object"
       },
       "LearnIn": {
@@ -20056,6 +20195,36 @@
           "troupe_id"
         ],
         "title": "OtherStatusOut",
+        "type": "object"
+      },
+      "OverOut": {
+        "description": "A character holding more languages than the troupe's chart now allows: they\nkeep them, and the sheet shows the broken check.",
+        "properties": {
+          "allowed": {
+            "title": "Allowed",
+            "type": "integer"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "held": {
+            "title": "Held",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "held",
+          "allowed"
+        ],
+        "title": "OverOut",
         "type": "object"
       },
       "OwedOut": {
@@ -56040,6 +56209,102 @@
         "summary": "Set Lookback",
         "tags": [
           "influence lookups"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/languages": {
+      "get": {
+        "description": "How many languages Linguistics gives in the troupe, and who holds more.",
+        "operationId": "read_languages_api_troupes__troupe_id__languages_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LanguagesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Languages",
+        "tags": [
+          "specialisations"
+        ]
+      },
+      "put": {
+        "description": "Choose how many languages Linguistics gives: creation, purchases, review and\nthe sheet follow at once. A character holding more than the new chart allows\nkeeps them, flagged on the sheet and listed here.",
+        "operationId": "set_languages_api_troupes__troupe_id__languages_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LanguagesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LanguagesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Languages",
+        "tags": [
+          "specialisations"
         ]
       }
     },

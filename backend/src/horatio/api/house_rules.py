@@ -19,7 +19,7 @@ from horatio.auth.deps import CurrentUser, DbSession
 from horatio.creation import RESTRICTION_TEXT
 from horatio.models import Character, HouseTrait, Troupe, User
 from horatio.permissions import TroupeAction
-from horatio.rules import checks, conditions, pricing
+from horatio.rules import checks, conditions, languages, pricing
 from horatio.rules.checks import REQUIREMENT_KEY, CheckData
 from horatio.rules.files import EVERYWHERE
 from horatio.rules.model import (
@@ -1111,6 +1111,8 @@ class HouseSettingOut(BaseModel):
     name: str
     text: str
     book_text: str
+    # A chart behind it, by rating from 1: the languages Linguistics gives.
+    table: list[int] | None = None
 
 
 class HouseRulesOut(BaseModel):
@@ -1198,6 +1200,16 @@ def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
                 name="Golconda and Enlightened",
                 text="Golconda Seekers hold the innate status Enlightened (Vol. 2, p. 267)",
                 book_text="An optional rule, off unless the troupe's sect recognises Golconda",
+            )
+        )
+    language_rule = languages.rule_of(troupe)
+    if not language_rule.is_book:
+        found.append(
+            HouseSettingOut(
+                name="Languages from Linguistics",
+                text=languages.setting_text(language_rule, capital=True),
+                book_text=languages.BOOK_TEXT,
+                table=list(language_rule.table) if language_rule.table else None,
             )
         )
     if not feeding.tracked(troupe):
