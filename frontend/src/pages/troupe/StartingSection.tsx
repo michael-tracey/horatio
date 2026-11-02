@@ -7,11 +7,12 @@ import { Explainer } from "../../components/Explainer";
 import { Badge, Button, Card, ErrorText, Input, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { ClanRarity } from "./ClanRarity";
+import { DefaultBloodlines } from "./DefaultBloodlines";
 import { useHouseSplat } from "./HouseSplat";
 
 /**
  * What new characters get free in each category: picks at a rating, or a budget
- * of points, and how rare each clan is. A troupe's rules for a category replace all the rule set's for it,
+ * of points, how rare each clan is, and its default bloodline. A troupe's rules for a category replace all the rule set's for it,
  * for characters built for this troupe or homed in it while still being built.
  */
 export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
@@ -44,6 +45,7 @@ export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEd
         </ul>
       </Card>
       <ClanRarity troupeId={troupeId} canEdit={canEdit} />
+      <DefaultBloodlines troupeId={troupeId} canEdit={canEdit} />
       <p className="text-sm text-mist">
         Starting XP, the XP floor and ceiling, blood at the start of a game, diablerie and Golconda are under{" "}
         <Link to={`/troupes/${troupeId}/settings`} className="underline hover:text-parchment">

@@ -5771,6 +5771,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/default-bloodlines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Default Bloodlines
+         * @description The bloodline each clan plays as by default here: the book's for each sect, and
+         *     the troupe's own where it names one (horatio.clan_merits).
+         */
+        get: operations["read_default_bloodlines_api_troupes__troupe_id__default_bloodlines_get"];
+        /**
+         * Set Default Bloodlines
+         * @description Name the bloodline a clan plays as by default here, or the plain clan. Characters
+         *     being built here take the clan merits it means straight away; finished characters
+         *     keep the bloodline and merits they have.
+         */
+        put: operations["set_default_bloodlines_api_troupes__troupe_id__default_bloodlines_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/diablerie-flaws": {
         parameters: {
             query?: never;
@@ -10356,6 +10383,33 @@ export interface components {
              * @default
              */
             reason: string;
+        };
+        /** DefaultBloodlineRow */
+        DefaultBloodlineRow: {
+            /** Bloodlines */
+            bloodlines: string[];
+            /** Book */
+            book: {
+                [key: string]: string;
+            };
+            /** Clan */
+            clan: string;
+            /** House */
+            house: string | null;
+        };
+        /** DefaultBloodlinesIn */
+        DefaultBloodlinesIn: {
+            /** Defaults */
+            defaults: {
+                [key: string]: string;
+            };
+        };
+        /** DefaultBloodlinesOut */
+        DefaultBloodlinesOut: {
+            /** Clans */
+            clans: components["schemas"]["DefaultBloodlineRow"][];
+            /** Setting */
+            setting: string | null;
         };
         /** DeliverIn */
         DeliverIn: {
@@ -17521,6 +17575,13 @@ export interface components {
         RarityOut: {
             /** Clan */
             clan: string;
+            /** Default */
+            default?: string | null;
+            /**
+             * Default House
+             * @default false
+             */
+            default_house: boolean;
             /** House */
             house: boolean;
             /** Page */
@@ -32562,6 +32623,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CycleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_default_bloodlines_api_troupes__troupe_id__default_bloodlines_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefaultBloodlinesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_default_bloodlines_api_troupes__troupe_id__default_bloodlines_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DefaultBloodlinesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefaultBloodlinesOut"];
                 };
             };
             /** @description Validation Error */

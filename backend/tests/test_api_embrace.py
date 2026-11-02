@@ -339,6 +339,27 @@ def test_the_domitors_childe_keeps_its_clan_merits(troupe: Troupe) -> None:
     assert found["generation"] == 10
 
 
+def test_the_suggested_bloodline_merit_follows_the_default_bloodline(troupe: Troupe) -> None:
+    """A Vizier sire's childe in the Camarilla needs no bloodline merit, the Viziers
+    being the setting's default Assamites (p. 403), unless the troupe plays the plain
+    clan as its default (#435)."""
+    ghoul = vivian(troupe)
+    vizier = {"name": "Old Hamid", "clan": "Assamite: Vizier", "generation": 10}
+
+    def bought() -> list[tuple[str, int]]:
+        found = plan(troupe.storyteller, ghoul, sire=vizier, clan_merits=None).json()
+        return [line for line in steps(found)["clan"] if "bought" in line[0]]
+
+    assert bought() == []
+    plain = troupe.lead.client.put(
+        f"/troupes/{troupe.id}/default-bloodlines", json={"defaults": {"Assamite": "Assamite"}}
+    )
+    assert plain.status_code == 200, plain.text
+    assert [text for text, _ in bought()] == [
+        "Bloodline: Vizier bought for the sire's Assamite: Vizier"
+    ]
+
+
 def test_over_the_merit_limit_merits_come_off_or_the_character_dies(troupe: Troupe) -> None:
     ghoul = vivian(troupe, merits=[("Code of Honor", 2), ("Clear Sighted", 3)])
 

@@ -1016,18 +1016,7 @@ def set_clan_rarity(
         )
     troupe.clan_rarity = dict(sorted(body.rarities.items()))
     db.flush()
-    clan_merits.resync(
-        db,
-        db.scalars(
-            select(Character).where(
-                (Character.home_troupe_id == troupe.id)
-                | (
-                    Character.home_troupe_id.is_(None) & (Character.building_troupe_id == troupe.id)
-                ),
-                Character.creation_completed_at.is_(None),
-            )
-        ).all(),
-    )
+    clan_merits.resync(db, building_here(db, troupe))
     audit.record(
         db,
         user,
@@ -1037,6 +1026,132 @@ def set_clan_rarity(
     )
     db.commit()
     return clan_rarity_out(db, troupe)
+
+
+def building_here(db: DbSession, troupe: Troupe) -> list[Character]:
+    """The characters still being built under the troupe's rules: homed here, or
+    built for it with no home yet."""
+    return list(
+        db.scalars(
+            select(Character).where(
+                (Character.home_troupe_id == troupe.id)
+                | (
+                    Character.home_troupe_id.is_(None) & (Character.building_troupe_id == troupe.id)
+                ),
+                Character.creation_completed_at.is_(None),
+            )
+        ).all()
+    )
+
+
+# --- Default bloodlines -----------------------------------------------------------
+
+
+class DefaultBloodlineRow(BaseModel):
+    # A clan with bloodlines, and those bloodlines ("Tzimisce: Koldun").
+    clan: str
+    bloodlines: list[str]
+    # The bloodline the book plays as the clan's default, in each sect's setting that
+    # has one.
+    book: dict[str, str]
+    # The troupe's own: one of its bloodlines, or the clan itself for the plain clan
+    # with no default; None to go by the book.
+    house: str | None
+
+
+class DefaultBloodlinesOut(BaseModel):
+    # The sect whose defaults apply to everyone built here: the troupe's one sect, if it
+    # takes characters of one sect only. Otherwise each character's own sect.
+    setting: str | None
+    clans: list[DefaultBloodlineRow]
+
+
+class DefaultBloodlinesIn(BaseModel):
+    # Each clan the troupe chooses for itself: a bloodline, or the clan for none.
+    defaults: dict[str, str]
+
+
+def default_bloodlines_out(db: DbSession, troupe: Troupe) -> DefaultBloodlinesOut:
+    rule_set = read_troupe_rules(db, "vampire", troupe.id).rule_set
+    names = sorted(n for (c, n) in rule_set.traits if c == "clan")
+    return DefaultBloodlinesOut(
+        setting=troupe.allowed_sects[0] if len(troupe.allowed_sects) == 1 else None,
+        clans=[
+            DefaultBloodlineRow(
+                clan=clan,
+                bloodlines=lines,
+                book=clan_merits.book_defaults(rule_set, clan),
+                house=troupe.default_bloodlines.get(clan),
+            )
+            for clan in names
+            if ":" not in clan
+            and (lines := [n for n in names if ":" in n and clan_merits.family_of(n) == clan])
+        ],
+    )
+
+
+def default_text(clan: str, default: str | None) -> str:
+    """A clan's default bloodline in words: the bloodline, or the plain clan."""
+    return default if default and default != clan else f"The plain {clan}, no bloodline"
+
+
+def book_default_text(row: DefaultBloodlineRow, setting: str | None) -> str:
+    """The book's default for the clan, in the troupe's setting or in each sect's."""
+    if setting:
+        return default_text(row.clan, row.book.get(setting))
+    if not row.book:
+        return default_text(row.clan, None)
+    return ", ".join(f"{b} for the {sect}" for sect, b in row.book.items())
+
+
+@router.get("/default-bloodlines")
+def read_default_bloodlines(
+    troupe_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> DefaultBloodlinesOut:
+    """The bloodline each clan plays as by default here: the book's for each sect, and
+    the troupe's own where it names one (horatio.clan_merits)."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
+    return default_bloodlines_out(db, troupe)
+
+
+@router.put("/default-bloodlines")
+def set_default_bloodlines(
+    troupe_id: uuid.UUID, body: DefaultBloodlinesIn, db: DbSession, user: CurrentUser
+) -> DefaultBloodlinesOut:
+    """Name the bloodline a clan plays as by default here, or the plain clan. Characters
+    being built here take the clan merits it means straight away; finished characters
+    keep the bloodline and merits they have."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    rule_set = read_troupe_rules(db, "vampire", troupe.id).rule_set
+    unknown = [
+        f"{clan} as {line}"
+        for clan, line in body.defaults.items()
+        if ":" in clan
+        or ("clan", clan) not in rule_set.traits
+        or ("clan", line) not in rule_set.traits
+        or clan_merits.family_of(line) != clan
+    ]
+    if unknown:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            f"Not a clan and one of its bloodlines: {', '.join(unknown)}.",
+        )
+    troupe.default_bloodlines = dict(sorted(body.defaults.items()))
+    db.flush()
+    clan_merits.resync(db, building_here(db, troupe))
+    audit.record(
+        db,
+        user,
+        "house.default_bloodlines",
+        troupe_id=troupe.id,
+        defaults=", ".join(
+            f"{c} as {'the plain clan' if line == c else line}"
+            for c, line in troupe.default_bloodlines.items()
+        )
+        or "the book's",
+    )
+    db.commit()
+    return default_bloodlines_out(db, troupe)
 
 
 # --- What players read ------------------------------------------------------------
@@ -1260,6 +1375,18 @@ def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
                     name=f"How rare the {row.clan} are",
                     text=row.house.capitalize(),
                     book_text=book or "Not given",
+                )
+            )
+    if troupe.default_bloodlines:
+        defaults = default_bloodlines_out(db, troupe)
+        for row in defaults.clans:
+            if row.house is None:
+                continue
+            found.append(
+                HouseSettingOut(
+                    name=f"The default {row.clan}",
+                    text=default_text(row.clan, row.house),
+                    book_text=book_default_text(row, defaults.setting),
                 )
             )
     return found
