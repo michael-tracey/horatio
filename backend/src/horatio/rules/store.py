@@ -17,6 +17,7 @@ from horatio.models import (
     CreationRule,
     EquipmentQuality,
     EquipmentTemplate,
+    HouseCheck,
     HouseTrait,
     RuleSet,
     StartingTrait,
@@ -43,6 +44,12 @@ from horatio.rules.files import (
     feeding_modifier_to_dict,
 )
 from horatio.rules.grants import grant_from_dict, grant_to_dict
+from horatio.rules.house_checks import (
+    HouseCheckData,
+    HouseCheckProblem,
+    check_house_check,
+    to_check,
+)
 from horatio.rules.house_effects import merged
 from horatio.rules.model import (
     ActionKindData,
@@ -769,7 +776,6 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
     creation_only = tuple(rule_set.creation_only) + tuple(
         {"category": h.category, "name": h.name} for h in house_data if h.creation_only
     )
-
     data = RuleSetData(
         key=rule_set.key,
         splat=rule_set.splat,
@@ -815,6 +821,17 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         creation_rules=[creation_data(r) for r in creation_rows if r.troupe_id is None],
         starting_traits=[starting_data(r) for r in starting_rows if r.troupe_id is None],
     )
+    # The troupe's own checks (horatio.house_checks), beside the book's: one the rule
+    # set can no longer run (a trait the book has since lost) is left out, and its
+    # staff see why on the Checks page.
+    house_checks = house_checks_of(session, splat, troupe_id)
+    if house_checks:
+        usable = [
+            to_check(c, troupe.name if troupe is not None else "")
+            for c in house_checks
+            if house_check_problem(c, data) is None
+        ]
+        data = replace(data, checks=(*data.checks, *usable))
     # The house traits' effects, as grants, checks, play properties, allowance rules
     # and feeding modifiers beside the book's.
     unmerged = data
@@ -841,6 +858,47 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         house_traits=house_data,
         unmerged=unmerged if data is not unmerged else None,
     )
+
+
+def house_checks_of(
+    session: Session, splat: str, troupe_id: uuid.UUID | None
+) -> list[HouseCheckData]:
+    """A troupe's own checks for a splat, oldest first."""
+    if troupe_id is None:
+        return []
+    return [
+        house_check_data(row)
+        for row in session.scalars(
+            select(HouseCheck)
+            .where(HouseCheck.troupe_id == troupe_id, HouseCheck.splat == splat)
+            .order_by(HouseCheck.created_at, HouseCheck.id)
+        )
+    ]
+
+
+def house_check_data(row: HouseCheck) -> HouseCheckData:
+    return HouseCheckData(
+        id=str(row.id),
+        splat=row.splat,
+        category=row.category,
+        name=row.name,
+        name_prefix=row.name_prefix,
+        kind=row.kind,
+        mode=row.mode,  # type: ignore[arg-type]  # checked by the database
+        condition=row.condition,
+        strength=row.strength,
+        message=row.message,
+        step=row.step,
+    )
+
+
+def house_check_problem(check: HouseCheckData, rule_set: RuleSetData) -> str | None:
+    """Why the rule set cannot run a house check now, or None if it can."""
+    try:
+        check_house_check(check, rule_set)
+    except HouseCheckProblem as problem:
+        return str(problem)
+    return None
 
 
 def house_traits_of(

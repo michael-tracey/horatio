@@ -131,6 +131,34 @@ class CheckOverride(Record):
     strength: Mapped[str]
 
 
+class HouseCheck(Record):
+    """A check a troupe added itself (horatio.house_checks): a subject, a condition
+    it requires or forbids (horatio.rules.checks' vocabulary, as JSON), a strength,
+    the message the player sees, and an optional creation step."""
+
+    __tablename__ = "house_checks"
+    __table_args__ = (
+        CheckConstraint("mode in ('requires', 'forbids')", name="mode"),
+        CheckConstraint("strength in ('refuse', 'complete', 'review', 'note')", name="strength"),
+        CheckConstraint("num_nonnulls(name, name_prefix, kind) <= 1", name="subject"),
+    )
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    splat: Mapped[str] = mapped_column(default="vampire", server_default="vampire")
+    # The subject: a category, and in it one trait, the names starting with a
+    # prefix, or the traits of one catalogue type; none of these for all of them.
+    category: Mapped[str]
+    name: Mapped[str | None]
+    name_prefix: Mapped[str | None]
+    kind: Mapped[str | None]
+    mode: Mapped[str]
+    condition: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    strength: Mapped[str]
+    message: Mapped[str]
+    # The creation step (a category) a "complete" check holds the wizard on.
+    step: Mapped[str | None]
+
+
 class CostRule(Record):
     """A cost rule. `troupe_id` null: part of the generic rule set; set: a house rule."""
 

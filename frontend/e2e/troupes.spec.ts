@@ -109,6 +109,52 @@ test("Customise opens on Overview, a setup checklist and the house settings, and
   await expect(glance.getByText(/^1 of \d+ played differently$/)).toBeVisible();
 });
 
+test("the lead builds a check of the troupe's own from blocks, and it refuses a purchase (#432)", async ({ browser }) => {
+  const custodian = await person(browser, "ownchk-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "ownchk-lead");
+  const player = await person(browser, "ownchk-player");
+  const troupeName = `House of Own Checks ${run}`;
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+
+  // The lead keeps Iron Will for the Ventrue: a trait from the catalogue, and a clan block.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules`);
+  await l.getByRole("button", { name: "Add a check" }).click();
+  const form = l.getByRole("region", { name: "A new check" });
+  await form.getByLabel("Kind of trait", { exact: true }).selectOption({ label: "Merits" });
+  await form.getByLabel("Trait", { exact: true }).selectOption("Iron Will");
+  await form.getByLabel("It", { exact: true }).selectOption({ label: "Is allowed only when…" });
+  await form.getByLabel("Condition: add a block").selectOption({ label: "Clan or its bloodlines…" });
+  await form.getByLabel("Condition 1: add a trait").selectOption("Ventrue");
+  const preview = form.getByRole("region", { name: "Preview" });
+  await expect(preview).toContainText("Iron Will: refused unless the clan is Ventrue or one of its bloodlines.");
+  await expect(preview).toContainText("None of the troupe's characters breaks it now.");
+  await form.getByLabel("Message the player sees").fill("Iron Will is for the Ventrue here.");
+  await form.getByRole("button", { name: "Add the check" }).click();
+  const own = l.getByRole("list", { name: "The troupe's own checks" });
+  await expect(own.getByRole("listitem").filter({ hasText: "Iron Will is for the Ventrue here." })).toContainText("Our own");
+  await l.screenshot(shots("customise-own-check"));
+
+  // A Brujah being built for the troupe cannot take it on the Merits step.
+  const p = player.page;
+  const character = await p.request.post("/api/characters", { headers, data: { splat: "vampire", name: "Osric Vane", building_troupe_id: troupeId } });
+  expect(character.status(), await character.text()).toBe(201);
+  const characterId: string = (await character.json()).id;
+  const clan = await p.request.put(`/api/characters/${characterId}/traits`, { headers, data: { category: "clan", name: "Brujah", rating: null } });
+  expect(clan.status(), await clan.text()).toBe(200);
+  const bought = await p.request.put(`/api/characters/${characterId}/creation/categories/merits`, { headers, data: { picks: [{ name: "Iron Will" }] } });
+  expect(bought.status()).toBe(409);
+  expect((await bought.json()).detail).toContain("Iron Will is for the Ventrue here.");
+
+  // The players' House rules tab lists it as the troupe's own.
+  await p.goto(`/troupes/${troupeId}/house-rules`);
+  await expect(p.getByText("Iron Will is for the Ventrue here.")).toBeVisible();
+});
+
 test("a troupe's players read its house rules: a price the lead changes shows there beside the book's", async ({ browser }) => {
   const custodian = await person(browser, "lantern-custodian");
   makeCustodian(custodian.email);

@@ -258,3 +258,7 @@ export type BackstorySettingsOut = Schemas["BackstorySettingsOut"];
 export type BackstoryQuestionSetOut = Schemas["BackstoryQuestionSetOut"];
 export type BackstoryQuestionOut = Schemas["BackstoryQuestionOut"];
 export type BackstoryQuestionIn = Schemas["BackstoryQuestionIn"];
+export type OwnCheckIn = Schemas["OwnCheckIn"];
+export type OwnCheckOut = Schemas["OwnCheckOut"];
+export type OwnCheckPreviewOut = Schemas["OwnCheckPreviewOut"];
+export type BreakingOut = Schemas["BreakingOut"];
