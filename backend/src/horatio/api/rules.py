@@ -2,20 +2,31 @@
 and all of it at once for the rules browser, as played in one troupe."""
 
 import uuid
+from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
 
+from horatio import written_rules
+from horatio.api.written_rules import WrittenRuleOut, rules_out
 from horatio.auth.deps import CurrentUser, DbSession
+from horatio.clan_merits import book_defaults
 from horatio.models import RuleSet, Troupe
 from horatio.reference import catalogue as power_catalogue
 from horatio.rules import conditions, pricing
 from horatio.rules.feeding import clan_family
 from horatio.rules.files import EVERYWHERE
 from horatio.rules.grants import choices
-from horatio.rules.model import CostRuleData, HouseTraitData, RuleSetData, TraitData, TroupeRules
+from horatio.rules.model import (
+    CostRuleData,
+    HouseTraitData,
+    RuleSetData,
+    TraitChangeData,
+    TraitData,
+    TroupeRules,
+)
 from horatio.rules.splats import SPLATS, splat_order
 from horatio.rules.status import GENERAL
 from horatio.rules.store import read_troupe_rules, same_subject
@@ -61,6 +72,20 @@ class HouseOut(BaseModel):
     in_clan: list[str] = Field(default_factory=list[str])
 
 
+class TraitChangeOut(BaseModel):
+    """A troupe's change to a book trait (horatio.book_traits): banned in the troupe,
+    with the reason its players see ("" for none); its own wording, in Markdown ("" for
+    none), added to the book's summary or replacing it."""
+
+    banned: bool
+    ban_reason: str
+    wording: str = ""
+    wording_mode: Literal["added", "replaces"] = "added"
+    # A merit or flaw's category in the troupe (its `kind` here), and the book's.
+    kind: str | None = None
+    book_kind: str | None = None
+
+
 class TraitOut(BaseModel):
     category: str
     name: str
@@ -94,6 +119,17 @@ class TraitOut(BaseModel):
     instance: str | None = None
     # A troupe's own merit or flaw; its page reference reads "House rule — <troupe>".
     house: HouseOut | None = None
+    # The written house rules about it of the troupe asked about (horatio.written_rules).
+    written_rules: list["WrittenRuleRef"] = Field(default_factory=list["WrittenRuleRef"])
+    # The troupe's change to this book trait (horatio.book_traits), if it made one.
+    changed: TraitChangeOut | None = None
+
+
+class WrittenRuleRef(BaseModel):
+    """A troupe's written rule about a trait, to link to where the troupe's players read it."""
+
+    id: uuid.UUID
+    title: str
 
 
 class CatalogueOut(BaseModel):
@@ -141,6 +177,7 @@ def catalogue(
     except NoResultFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No rules for {splat!r}.") from None
     house_text = {(r.category, r.trait): r.text for r in rules.house_rules if r.trait and r.text}
+    written = written_rules.by_trait(db, troupe_id, rules.splat) if troupe_id else {}
     chooses: dict[tuple[str, str], list[str]] = {}
     for grant in rules.rule_set.grants:
         # The player of a free_choices grant chooses beside the merit, not in its detail.
@@ -195,6 +232,11 @@ def catalogue(
                 and t.properties.get("requirement") == "requires_specialization",
                 instance=t.properties.get("instance"),
                 house=house_out(rules.house_trait(t.category, t.name)),
+                written_rules=[
+                    WrittenRuleRef(id=r.id, title=r.title)
+                    for r in written.get((t.category, t.name), [])
+                ],
+                changed=change_out(rules.trait_changes.get((t.category, t.name))),
             )
             for t in traits
             if category is None or t.category == category
@@ -211,6 +253,19 @@ def clan_weakness(rule_set: RuleSetData, trait: TraitData) -> dict[str, str | No
     if "weakness" not in found:
         found = rule_set.trait_properties("clan", clan_family(trait.name))
     return {"weakness": found.get("weakness"), "weakness_page": found.get("weakness_page")}
+
+
+def change_out(change: TraitChangeData | None) -> TraitChangeOut | None:
+    if change is None:
+        return None
+    return TraitChangeOut(
+        banned=change.banned,
+        ban_reason=change.ban_reason,
+        wording=change.wording,
+        wording_mode=change.wording_mode,
+        kind=change.kind,
+        book_kind=change.book_kind,
+    )
 
 
 def house_out(house: HouseTraitData | None) -> HouseOut | None:
@@ -292,6 +347,10 @@ class RarityOut(BaseModel):
     page: str | None
     # The troupe's own rarity, not the book's.
     house: bool
+    # The bloodline it plays as by default, in words ("Tzimisce: Carpathian", or each
+    # sect's as the book has it); None for none. `default_house`: the troupe's own.
+    default: str | None = None
+    default_house: bool = False
 
 
 class RulesBrowserOut(BaseModel):
@@ -303,6 +362,8 @@ class RulesBrowserOut(BaseModel):
     not_allowed: list[NotAllowedOut]
     powers: list[DisciplinePowerOut]
     rarities: list[RarityOut]
+    # The troupe's written house rules, to read and search among the rest.
+    written_rules: list[WrittenRuleOut] = Field(default_factory=list[WrittenRuleOut])
 
 
 @router.get("/{splat}/browse")
@@ -352,6 +413,7 @@ def browse(
             for p in powers.get(d, [])
         ],
         rarities=clan_rarities(rule_set, troupe),
+        written_rules=rules_out(db, troupe.id) if troupe is not None else [],
     )
 
 
@@ -435,10 +497,13 @@ def clan_rarities(rule_set: RuleSetData, troupe: Troupe | None) -> list[RarityOu
     for (category, clan), trait in sorted(rule_set.traits.items()):
         if category != "clan" or ":" in clan:
             continue
+        default = default_of(rule_set, clan, troupe, setting)
         book: dict[str, dict[str, str]] = dict(trait.properties.get("rarity", {}))
         house = troupe.clan_rarity.get(clan) if troupe else None
         if house:
-            found.append(RarityOut(clan=clan, text=house.capitalize(), page=None, house=True))
+            found.append(
+                RarityOut(clan=clan, text=house.capitalize(), page=None, house=True, **default)
+            )
             continue
         one = book.get(EVERYWHERE) or (book.get(setting) if setting else None)
         if one:
@@ -448,5 +513,21 @@ def clan_rarities(rule_set: RuleSetData, troupe: Troupe | None) -> list[RarityOu
             text, page = text[0].upper() + text[1:], None
         else:
             continue
-        found.append(RarityOut(clan=clan, text=text, page=page, house=False))
+        found.append(RarityOut(clan=clan, text=text, page=page, house=False, **default))
     return found
+
+
+def default_of(
+    rule_set: RuleSetData, clan: str, troupe: Troupe | None, setting: str | None
+) -> dict[str, Any]:
+    """The clan's default bloodline in words, for its RarityOut: the troupe's own where
+    it names one, else the book's in the troupe's setting, or in each sect's."""
+    house = troupe.default_bloodlines.get(clan) if troupe else None
+    if house is not None:
+        text = house if house != clan else f"None: the plain {clan}"
+        return {"default": text, "default_house": True}
+    book = book_defaults(rule_set, clan)
+    if setting:
+        return {"default": book.get(setting)}
+    text = ", ".join(f"{line} for the {sect}" for sect, line in book.items())
+    return {"default": text or None}

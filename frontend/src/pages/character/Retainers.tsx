@@ -8,7 +8,7 @@ import { Button, ErrorText, Input, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { pageLabel } from "../../components/TraitInfo";
-import { backText, givingMerits, LOST_NOTE, LOST_WORDS, retainerName, retainerSource } from "./retainers";
+import { backText, givingMerits, growthText, LOST_NOTE, LOST_WORDS, neglectText, retainerName, retainerSource } from "./retainers";
 
 export function useRetainers(characterId: string) {
   return useQuery({
@@ -92,8 +92,8 @@ export function NpcLinks({ retainer }: { retainer: RetainerOut }) {
   );
 }
 
-/** Retainers listed read-only, as on the Play View's Sheet tab. */
-export function RetainerLines({ retainers }: { retainers: RetainerOut[] }) {
+/** Retainers listed read-only, as on the Play View's Sheet tab; staff can clear a neglect with `onClear`. */
+export function RetainerLines({ retainers, onClear }: { retainers: RetainerOut[]; onClear?: (retainerId: string) => void }) {
   const dates = useDates();
   return (
     <ul className="mt-1 text-sm" aria-label="Retainers">
@@ -112,8 +112,20 @@ export function RetainerLines({ retainers }: { retainers: RetainerOut[] }) {
               {r.lost_on ? ` ${dates.date(r.lost_on)}` : ""}
             </span>
           )}
+          {r.upkeep && <span className="text-mist"> · upkeep {r.upkeep}</span>}
           <NpcLinks retainer={r} />
           {backText(r, dates.date) && <p className="text-xs text-blood-bright">{backText(r, dates.date)}</p>}
+          {neglectText(r, dates.date) && (
+            <p className="text-xs text-blood-bright">
+              {neglectText(r, dates.date)}
+              {onClear && r.id && (
+                <button type="button" className="ml-2 text-gold underline" aria-label={`Clear the neglect of ${retainerName(r)}`} onClick={() => onClear(r.id!)}>
+                  Clear
+                </button>
+              )}
+            </p>
+          )}
+          {growthText(r) && <p className="text-xs text-mist">{growthText(r)}</p>}
           {r.description && <p className="text-xs text-mist">{r.description}</p>}
           {r.given && r.note && (
             <p className="text-xs text-mist">
@@ -164,6 +176,9 @@ export function RetainersPanel({ character, merits }: { character: CharacterOut;
       }),
     ),
   );
+  const clear = useAction((retainerId: string) =>
+    unwrap(api.DELETE("/api/characters/{character_id}/retainers/{retainer_id}/neglected", { params: { path: { character_id: character.id, retainer_id: retainerId } } })),
+  );
   if (!data.data) return null;
   const { retainers, can_edit, can_link, skills, disciplines } = data.data;
   if (retainers.length === 0 && !can_edit) return null;
@@ -179,7 +194,8 @@ export function RetainersPanel({ character, merits }: { character: CharacterOut;
     <div className="mb-1 ml-3 border-l border-ash pl-3 text-xs" aria-label="Retainers list">
       {!draft && (
         <>
-          <RetainerLines retainers={retainers} />
+          <RetainerLines retainers={retainers} onClear={can_link ? (id) => clear.mutate(id) : undefined} />
+          <ErrorText error={clear.error} />
           {retainers.some((r) => r.lost) && <p className="mt-1 text-mist">{LOST_NOTE}</p>}
         </>
       )}

@@ -675,7 +675,7 @@ test("a skill's specialisations sit in its own list item, in the sheet's two col
     }
     // The skill, its specialisations and their Add button all sit in the one item.
     await expect(academics.getByText("Academics", { exact: true }).first()).toBeVisible();
-    await expect(academics.getByText("Academics Specialisations 1/1")).toBeVisible();
+    await expect(academics.getByText("Academics Specialisations 1 of 1")).toBeVisible();
     await expect(academics.getByRole("button", { name: "Remove Medieval" })).toBeVisible();
     await expect(academics.getByRole("listitem")).toHaveCount(0); // one item for the whole trait
     // And the item is kept whole across a column break.

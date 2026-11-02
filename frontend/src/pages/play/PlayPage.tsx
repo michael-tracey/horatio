@@ -11,6 +11,7 @@ import { useAction, usePreferences } from "../../hooks";
 import { offered, reachNote, TYPE_NAMES } from "../../influence";
 import { choiceName } from "../character/creation/logic";
 import { ChoiceInfo } from "../character/Info";
+import { useClanName } from "../../components/ClanNames";
 import { Derangements, showsDerangements } from "./Derangements";
 import { EquipmentTab } from "./Equipment";
 import { Feed, FeedButton } from "./Feed";
@@ -22,6 +23,7 @@ import { PowersBanner } from "./Powers";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { RetainerPools } from "./RetainerPools";
 import { StatusTab } from "./Status";
+import { TeachingAsks } from "./Teaching";
 import { DRANK, incapacitated, influenceStanding, latestUndoable, tapsToast, type Damage, type Shown, type ShownEntry, type Tap } from "./tracker";
 import { TrackerStrip } from "./TrackerStrip";
 import { usePlay, type Play, type Sync } from "./usePlay";
@@ -153,6 +155,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
       {tab === "equipment" && <EquipmentTab characterId={characterId} view={shown} tap={tap} />}
       {tab === "tracker" && (
         <>
+          <TeachingAsks characterId={characterId} />
           <div className="grid gap-3 md:grid-cols-2">
             {shown.vitae ? (
               <VitaeTracker
@@ -173,7 +176,15 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
                 extra={shown.panels.feed ? <FeedButton onClick={() => setFeeding(true)} /> : undefined}
               />
             )}
-            <BoxTracker title="Willpower" tracker="willpower" value={shown.willpower.value} most={shown.willpower.most} record={record} loud />
+            <BoxTracker
+              title="Willpower"
+              tracker="willpower"
+              value={shown.willpower.value}
+              most={shown.willpower.most}
+              hint={shown.willpower_lent ?? undefined}
+              record={record}
+              loud
+            />
             <HealthTracker view={shown} record={record} />
             <div className="grid gap-3">
               {shown.morality && (
@@ -439,19 +450,20 @@ export function SyncStatus({ sync }: { sync: Sync }) {
  */
 function Identity({ view }: { view: PlayView }) {
   const { reference } = useReference(view.character_id);
+  const named = useClanName();
   const choices = reference?.traits.filter((t) => t.group === "Identity") ?? [];
   const facts: ReactNode[] = [
     ...(choices.length > 0
       ? choices.map((t) => (
           <span key={t.category} className="whitespace-nowrap">
-            <span className="text-parchment/90">{choiceName(t)}</span>
-            <ChoiceInfo choice={t} shown={choiceName(t)} about={t} />
+            <span className="text-parchment/90">{named(choiceName(t))}</span>
+            <ChoiceInfo choice={t} shown={named(choiceName(t))} about={t} />
           </span>
         ))
-      : [view.clan, view.sect]),
+      : [named(view.clan), view.sect]),
     // A ghoul's domitor, beside the clan it takes from it.
     reference?.domitor ? (
-      <span key="domitor" className="whitespace-nowrap" title={reference.domitor.weakness ?? undefined}>
+      <span key="domitor" className="whitespace-nowrap" title={named(reference.domitor.weakness) ?? undefined}>
         Domitor: <span className="text-parchment/90">{reference.domitor.name}</span>
       </span>
     ) : null,

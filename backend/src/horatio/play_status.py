@@ -21,6 +21,18 @@ abiding status at once, spent or not, as `carried` works from the titles held no
 Each is the holder's to make once, and is then locked for the game. Only staff
 change it.
 
+**Chosen at check-in** (issue #441), where the troupe's house rule says so
+(Troupe.status_at_checkin): the source of abiding status is chosen as the character
+checks in to a game (horatio.checkin), before it enters play, and is fixed for that
+game (`fix_at_checkin`). Its only source is chosen for it. Staff checking a
+character in by hand may leave a choice of several for them to make on its Play
+View. Its player cannot choose or change it on the Play View; staff can, giving a
+reason, which goes in the game's log as a note. A title's status for the night (a
+Bishop's Enforcer) and a ruler away are still chosen on the Play View, and status
+given at the game is held beside the source, never in its place. While its game is
+on, the troupe's Who's Who and the others at the game show the source it carries
+(`carried_tonight`). Absentee games start no night, so choose nothing.
+
 **Spending** is always the holder's, whatever the troupe's Status on sheets setting:
 
 - abiding and innate status is spent for the game: a tap on "status:<name>"
@@ -33,14 +45,24 @@ change it.
 
 import uuid
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass, field
-from datetime import date, datetime
+from dataclasses import dataclass, field, replace
+from datetime import UTC, date, datetime
 from typing import Any, Literal
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from horatio import audit, sect_status, titles
-from horatio.models import Character, HeldStatus, PlayEvent, PlayGame, Troupe, User
+from horatio.models import (
+    Character,
+    GameAttendance,
+    HeldStatus,
+    PlayEvent,
+    PlayGame,
+    ScheduledGame,
+    Troupe,
+    User,
+)
 from horatio.rules.status import StatusData, TitleData
 from horatio.sheets import apply_grants, conflict, unprocessable
 
@@ -48,6 +70,9 @@ from horatio.sheets import apply_grants, conflict, unprocessable
 STATUS = "status:"
 # A tap spending a fleeting status for good, by its record: "held:<id>".
 HELD = "held:"
+# The note in a game's log of staff changing its source of abiding status, where the
+# troupe fixes it at check-in.
+SOURCE_NOTE = "status-source"
 
 
 def status_key(name: str) -> str:
@@ -81,12 +106,17 @@ def is_status(tracker: str) -> bool:
 class Choices:
     """What PlayGame.status keeps: the source of abiding status chosen, each title's
     status chosen from its choice, the titles whose holders are away, and the titles
-    held in the troupe as the game began (None before it has)."""
+    held in the troupe as the game began (None before it has). `checked_in`: the
+    scheduled game whose check-in fixed the source, where the troupe chooses it then;
+    `to_choose`: it checked in with several sources and none chosen (by staff, by
+    hand), for staff to choose."""
 
     source: str | None = None
     chosen: Mapping[str, str] = field(default_factory=dict[str, str])
     absent: tuple[str, ...] = ()
     begun_with: tuple[str, ...] | None = None
+    checked_in: str | None = None
+    to_choose: bool = False
 
     @staticmethod
     def of(game: PlayGame | None) -> "Choices":
@@ -97,6 +127,8 @@ class Choices:
             chosen=dict(kept.get("chosen", {})),
             absent=tuple(kept.get("absent", [])),
             begun_with=tuple(begun) if begun is not None else None,
+            checked_in=kept.get("checked_in"),
+            to_choose=bool(kept.get("to_choose", False)),
         )
 
     def kept(self) -> dict[str, Any]:
@@ -105,7 +137,23 @@ class Choices:
             found["source"] = self.source
         if self.begun_with is not None:
             found["titles"] = list(self.begun_with)
+        if self.checked_in is not None:
+            found["checked_in"] = self.checked_in
+        if self.to_choose:
+            found["to_choose"] = True
         return found
+
+
+# The troupe's setting, as its log says it.
+CHECKIN_TEXT = {
+    True: "chosen at check-in and fixed for the game",
+    False: "chosen on the Play View, as the book has it",
+}
+
+
+def at_checkin(troupe: Troupe | None) -> bool:
+    """The troupe's house rule: the source of abiding status is chosen at check-in."""
+    return troupe is not None and troupe.status_at_checkin
 
 
 def troupe_of(db: Session, character: Character) -> Troupe | None:
@@ -160,6 +208,8 @@ class AtGame:
     troupe: Troupe | None
     found: sect_status.Standing
     choices: Choices
+    # The troupe chooses the source at check-in: its player cannot on the Play View.
+    fixed: bool = False
     sources: list[sect_status.AbidingSource] = field(
         default_factory=list[sect_status.AbidingSource]
     )
@@ -178,7 +228,7 @@ def at_game(db: Session, character: Character, game: PlayGame | None) -> AtGame:
     found = sect_status.standing(db, character)
     troupe = troupe_of(db, character)
     choices = Choices.of(game)
-    at = AtGame(troupe, found, choices)
+    at = AtGame(troupe, found, choices, at_checkin(troupe))
     if troupe is None or found.sect_data is None:
         return at
     data = titles.title_data(db, troupe.id)
@@ -364,10 +414,13 @@ def choose(
     source: str | None = None,
     chosen: Mapping[str, str] | None = None,
     absent: Mapping[str, bool] | None = None,
+    reason: str = "",
 ) -> None:
     """Make the character's choices for the game: its source of abiding status, a
     title's status, a title's holder absent (or, by staff, back). The holder makes
-    each once, and it is locked for the game; `staff` change any of them."""
+    each once, and it is locked for the game; `staff` change any of them. Where the
+    troupe chooses the source at check-in, only staff choose it here, and changing
+    one already chosen takes a `reason`, noted in the game's log."""
     begin(db, character, game)
     at = at_game(db, character, game)
     if at.found.sect_data is None or at.troupe is None:
@@ -375,11 +428,19 @@ def choose(
     before = at.choices
     locked = "is chosen for this game; staff can change it."
     new_source = before.source
+    reason = reason.strip()
     if source is not None and source != before.source:
         if not any(s.name == source for s in at.sources):
             raise unprocessable(f"{source} gives {character.name} no abiding status here.")
+        if at.fixed and not staff:
+            raise conflict(
+                "Your source of abiding status is chosen as you check in, and fixed for the"
+                " game; staff can change it."
+            )
         if before.source is not None and not staff:
             raise conflict(f"Your source of abiding status {locked}")
+        if at.fixed and before.source is not None and not reason:
+            raise unprocessable("Give a reason for the change: it goes in the game's log.")
         new_source = source
     data = titles.title_data(db, at.troupe.id)
     held_now = [t.name for t in at.titles if not t.next_game]
@@ -406,11 +467,21 @@ def choose(
             if not staff:
                 raise conflict(f"The {title}'s absence {locked}")
             new_absent.remove(title)
-    after = Choices(new_source, new_chosen, tuple(new_absent), Choices.of(game).begun_with)
+    source_changed = new_source != before.source
+    after = Choices(
+        new_source,
+        new_chosen,
+        tuple(new_absent),
+        Choices.of(game).begun_with,
+        checked_in=before.checked_in,
+        to_choose=before.to_choose and new_source is None,
+    )
     said = choice_text(after, before)
     if not said:
         return
     game.status = after.kept()
+    if at.fixed and source_changed:
+        note_source(db, user, game, before.source, new_source, reason)
     audit.record(
         db,
         user,
@@ -418,9 +489,123 @@ def choose(
         troupe_id=at.troupe.id,
         character_id=character.id,
         game=game.number,
-        choice=said,
+        choice=f"{said} ({reason})" if reason and source_changed else said,
     )
     db.flush()
+
+
+def note_source(
+    db: Session, user: User, game: PlayGame, was: str | None, now: str | None, reason: str
+) -> None:
+    """Note staff choosing or changing the game's source of abiding status in its log."""
+    text = f"From {was} to {now}" if was else f"{now}"
+    db.add(
+        PlayEvent(
+            game_id=game.id,
+            client_id=uuid.uuid4(),
+            actor_id=user.id,
+            happened_at=datetime.now(UTC),
+            kind="note",
+            tracker=SOURCE_NOTE,
+            note=f"{text}: {reason}" if reason else text,
+        )
+    )
+
+
+def fixed_for(choices: Choices, game: ScheduledGame) -> str | None:
+    """The source fixed as the character checked in to `game`, if it did: checked out
+    and in again, it keeps it."""
+    return choices.source if choices.checked_in == str(game.id) else None
+
+
+def fix_at_checkin(
+    db: Session,
+    user: User,
+    character: Character,
+    night: PlayGame,
+    game: ScheduledGame,
+    source: str | None,
+    *,
+    by_staff: bool,
+) -> None:
+    """As the character checks in to `game`, where its troupe chooses the source of
+    abiding status then: fix it for the night. It is the one fixed at this game's
+    check-in already, if any; else its only source; else `source`, which its player
+    must give. Staff checking it in by hand may leave a choice of several to make on
+    its Play View. A source chosen before check-in, or kept from an earlier game the
+    night joined, gives way to the choice made now."""
+    if not at_checkin(troupe_of(db, character)):
+        return
+    begin(db, character, night)
+    at = at_game(db, character, night)
+    if at.found.sect_data is None or at.troupe is None:
+        return
+    before = at.choices
+    chosen = fixed_for(before, game)
+    if chosen is None and len(at.sources) == 1:
+        chosen = at.sources[0].name
+    elif chosen is None and len(at.sources) > 1:
+        if source is not None:
+            if not any(s.name == source for s in at.sources):
+                raise unprocessable(f"{source} gives {character.name} no abiding status here.")
+            chosen = source
+        elif not by_staff:
+            raise unprocessable(
+                f"Choose the one source of abiding status {character.name} carries tonight."
+            )
+    after = replace(
+        before,
+        source=chosen,
+        checked_in=str(game.id),
+        to_choose=chosen is None and len(at.sources) > 1,
+    )
+    night.status = after.kept()
+    if chosen != before.source:
+        audit.record(
+            db,
+            user,
+            "play.status_chosen",
+            troupe_id=at.troupe.id,
+            character_id=character.id,
+            game=night.number,
+            choice=f"{chosen} as its source of abiding status, at check-in",
+        )
+    db.flush()
+
+
+@dataclass(frozen=True)
+class Tonight:
+    """The source of abiding status a character checked in with, fixed for a game
+    still on; None while staff are still to choose it."""
+
+    source: str | None
+    to_choose: bool
+
+
+def carried_tonight(db: Session, character_ids: Iterable[uuid.UUID]) -> dict[uuid.UUID, Tonight]:
+    """The source each character carries into a game on now, where it was fixed as it
+    checked in: from its night's choices, while that night and the scheduled game are
+    both on. Those not checked in to one, or whose troupe does not fix it, are left
+    out."""
+    ids = list(character_ids)
+    if not ids:
+        return {}
+    rows = db.execute(
+        select(GameAttendance.character_id, GameAttendance.game_id, PlayGame.status)
+        .join(PlayGame, GameAttendance.play_game_id == PlayGame.id)
+        .join(ScheduledGame, GameAttendance.game_id == ScheduledGame.id)
+        .where(
+            GameAttendance.character_id.in_(ids),
+            GameAttendance.kind == "attended",
+            PlayGame.ended_at.is_(None),
+            ScheduledGame.ends_at > datetime.now(UTC),
+        )
+    )
+    return {
+        character_id: Tonight(kept.get("source"), bool(kept.get("to_choose")))
+        for character_id, game_id, kept in rows
+        if kept.get("checked_in") == str(game_id)
+    }
 
 
 # --- spending fleeting status for good ---------------------------------------------------------

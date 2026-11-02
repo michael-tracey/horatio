@@ -20,6 +20,7 @@ const bare: TroupeProfileOut = {
   lead: { id: "u1", handle: "night_owl", display_name: "Mara" },
   min_age: null,
   content_notes: "",
+  written_rules: [],
   can_edit: false,
   pictures_available: true,
 };

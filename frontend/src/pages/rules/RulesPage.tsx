@@ -3,14 +3,20 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { PriceOut, RulesBrowserOut, TraitCheckOut } from "../../api/types";
+import { ClanNames, useClanName, useTroupeClanName } from "../../components/ClanNames";
+import { clanNamed } from "../../clanNames";
 import { EmptyState, FilterBar } from "../../components/EmptyState";
 import { HouseMark, HouseSummary } from "../../components/HouseMark";
+import { Markdown } from "../../components/Markdown";
 import { PageRef } from "../../components/TraitInfo";
 import { Badge, Button, Card, ErrorText, Input, Loading, PageTitle, Select } from "../../components/ui";
 import { useSplats } from "../character/splats";
 import { pageText } from "../troupe/bookPage";
 import { PLAYED } from "../troupe/HouseRulesTab";
+import { ruleLink } from "../troupe/writtenRules";
+import { RuleAbout } from "../troupe/WrittenRulesList";
 import { ownFirst } from "../troupeList";
+import { CategoryMark, HouseWording } from "../../components/TroupeChange";
 import {
   applyFilters,
   categoryPrices,
@@ -21,6 +27,7 @@ import {
   ratingLabel,
   SECTIONS,
   sectionCounts,
+  WRITTEN,
   shownChecks,
   type Entry,
   type Filters,
@@ -59,6 +66,8 @@ export function RulesPage() {
     barred: shownBy.barred === "1",
   };
 
+  // The clan stored as Assamite, as the troupe chosen calls it; the default for the book.
+  const clanName = useTroupeClanName(troupeId || null);
   const splats = useSplats();
   // A key of its own, as the Troupes page has: a list asked for earlier lacks a troupe made since.
   const troupes = useQuery({ queryKey: ["troupes", "rules"], queryFn: () => unwrap(api.GET("/api/troupes")) });
@@ -84,7 +93,7 @@ export function RulesPage() {
   const limit = more.key === filterKey ? more.limit : PAGE;
 
   return (
-    <>
+    <ClanNames name={clanName}>
       <PageTitle subtitle="Every trait, power, ritual, merit and flaw, with its book page and a short summary. Choose a troupe to see it as played there.">
         Rules
       </PageTitle>
@@ -134,7 +143,10 @@ export function RulesPage() {
             />
             <nav aria-label="Categories" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
               <Chip label="Everything" pressed={!filters.section} onClick={() => set({ category: "", rating: "" })} />
-              {SECTIONS.filter((s) => data?.catalogue.categories.some((c) => s.categories.includes(c.key))).map((s) => (
+              {[
+                ...(data?.written_rules?.length ? [WRITTEN] : []),
+                ...SECTIONS.filter((s) => data?.catalogue.categories.some((c) => s.categories.includes(c.key))),
+              ].map((s) => (
                 <Chip
                   key={s.key}
                   label={s.label}
@@ -150,7 +162,7 @@ export function RulesPage() {
                 {data &&
                   clanChoices(data).map((c) => (
                     <option key={c} value={c}>
-                      For {c}
+                      For {clanNamed(c, clanName)}
                     </option>
                   ))}
               </Select>
@@ -201,7 +213,7 @@ export function RulesPage() {
               <p className="text-sm text-mist" aria-live="polite">
                 {shown.length === 1 ? "1 found" : `${shown.length} found`}
               </p>
-              <Results data={data} shown={shown.slice(0, limit)} />
+              <Results data={data} shown={shown.slice(0, limit)} troupeId={troupeId} />
               {shown.length > limit && (
                 <Button variant="secondary" className="self-start" onClick={() => setMore({ key: filterKey, limit: limit + PAGE })}>
                   Show {Math.min(PAGE, shown.length - limit)} more
@@ -211,12 +223,12 @@ export function RulesPage() {
           )
         )}
       </div>
-    </>
+    </ClanNames>
   );
 }
 
 /** The entries under a heading for each category, with what the whole category costs and the rules it keeps. */
-function Results({ data, shown }: { data: RulesBrowserOut; shown: Entry[] }) {
+function Results({ data, shown, troupeId }: { data: RulesBrowserOut; shown: Entry[]; troupeId: string }) {
   const parts: { category: string; entries: Entry[] }[] = [];
   for (const e of shown) {
     const last = parts[parts.length - 1];
@@ -226,6 +238,17 @@ function Results({ data, shown }: { data: RulesBrowserOut; shown: Entry[] }) {
   return (
     <>
       {parts.map((part, n) => {
+        if (part.category === WRITTEN.key) {
+          return (
+            <Card key={`${part.category}/${n}`} title={`${data.troupe_name ?? "The troupe"}'s written rules`} dense>
+              <ul className="divide-y divide-ash">
+                {part.entries.map((e) => (
+                  <WrittenRow key={e.key} entry={e} troupeId={troupeId} />
+                ))}
+              </ul>
+            </Card>
+          );
+        }
         const category = data.catalogue.categories.find((c) => c.key === part.category);
         const prices = categoryPrices(data, part.category);
         const general = generalChecks(data, part.category);
@@ -246,7 +269,7 @@ function Results({ data, shown }: { data: RulesBrowserOut; shown: Entry[] }) {
             )}
             <ul className="divide-y divide-ash">
               {part.entries.map((e) => (
-                <EntryRow key={e.key} entry={e} troupe={data.troupe_name} />
+                <EntryRow key={e.key} entry={e} troupe={data.troupe_name} troupeId={troupeId} />
               ))}
             </ul>
           </Card>
@@ -256,21 +279,43 @@ function Results({ data, shown }: { data: RulesBrowserOut; shown: Entry[] }) {
   );
 }
 
-function EntryRow({ entry: e, troupe }: { entry: Entry; troupe: string | null }) {
+/** One of the troupe's written rules, marked as its house rule, to read in full. */
+function WrittenRow({ entry: e, troupeId }: { entry: Entry; troupeId: string }) {
+  const rule = e.written!;
+  return (
+    <li className="flex flex-col gap-1 py-2.5 text-sm" data-testid="rules-entry">
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <h3 className="font-sans text-sm text-parchment">
+          <Link to={ruleLink(troupeId, rule.id)} className="hover:underline">
+            {rule.title}
+          </Link>
+        </h3>
+        <Badge tone="gold">House rule</Badge>
+        {rule.section && <span className="text-xs text-mist">{rule.section}</span>}
+      </div>
+      {rule.body.trim() && <Markdown text={rule.body} />}
+      <RuleAbout rule={rule} troupeId={troupeId} />
+    </li>
+  );
+}
+
+function EntryRow({ entry: e, troupe, troupeId }: { entry: Entry; troupe: string | null; troupeId: string }) {
+  const named = useClanName();
   const t = e.trait;
   const checks = shownChecks(e);
   const power = !t;
   return (
     <li className={`flex flex-col gap-1 py-2.5 text-sm ${power ? "pl-3 sm:pl-5" : ""}`} data-testid="rules-entry">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <h3 className="font-sans text-sm text-parchment">{e.name}</h3>
+        <h3 className="font-sans text-sm text-parchment">{named(e.name)}</h3>
         {e.rating && <span className="text-xs text-gold">{e.rating}</span>}
-        {e.requirement && <Badge>{e.requirement}</Badge>}
+        {e.requirement && <Badge>{named(e.requirement)}</Badge>}
         {t?.kind && t.kind !== e.requirement && <span className="text-xs text-mist">{t.kind}</span>}
         {t?.house && <HouseMark label={t.house.label} />}
+        <CategoryMark change={t?.changed} />
         {e.barred && (
           <>
-            <Badge tone="blood">Not allowed in {troupe}</Badge>
+            <Badge tone="blood">{e.banned ? `Banned in ${troupe}` : `Not allowed in ${troupe}`}</Badge>
             <Badge tone="gold">House rule</Badge>
           </>
         )}
@@ -280,32 +325,52 @@ function EntryRow({ entry: e, troupe }: { entry: Entry; troupe: string | null })
           </span>
         )}
       </div>
-      {e.summary && <p className="text-mist">{e.summary}</p>}
+      {e.summary && <p className="text-mist">{named(e.summary)}</p>}
+      <HouseWording change={t?.changed} />
       {t?.house && (
         <>
           <HouseSummary summary={t.description ? t.house.summary : null} />
           <span className="text-xs text-mist">{t.house.availability === "staff" ? "Given by the storytellers only." : "Available when building for the troupe."}</span>
         </>
       )}
-      {e.barred?.text && <p className="text-xs text-mist">House rule: {e.barred.text}</p>}
+      {e.barred?.text && <p className="text-xs text-mist">House rule: {named(e.barred.text)}</p>}
       {t?.house_rule && (
         <p className="text-xs text-mist">
-          <Badge tone="gold">House rule</Badge> {t.house_rule}
+          <Badge tone="gold">House rule</Badge> {named(t.house_rule)}
         </p>
       )}
+      {t?.written_rules?.map((w) => (
+        <p key={w.id} className="text-xs text-mist">
+          <Badge tone="gold">House rule</Badge>{" "}
+          <Link to={ruleLink(troupeId, w.id)} className="underline hover:text-parchment">
+            {w.title}
+          </Link>
+        </p>
+      ))}
       {t?.attribute && <p className="text-xs text-mist">Usually tested with {t.attribute}.</p>}
       {t?.in_clan && t.in_clan.length > 0 && <p className="text-xs text-mist">In-clan: {t.in_clan.join(", ")}.</p>}
       {t?.weakness && (
         <p className="text-xs text-mist">
-          Weakness: {t.weakness}
+          Weakness: {named(t.weakness)}
           {t.weakness_page && ` ${pageText(t.weakness_page)}`}
         </p>
       )}
       {e.rarity && (
         <p className="text-xs text-mist">
-          Rarity: {e.rarity.text}
+          Rarity: {named(e.rarity.text)}
           {e.rarity.page && ` ${pageText(e.rarity.page)}`}
           {e.rarity.house && (
+            <>
+              {" "}
+              <Badge tone="gold">House rule</Badge>
+            </>
+          )}
+        </p>
+      )}
+      {e.rarity?.default && !e.name.includes(":") && (
+        <p className="text-xs text-mist">
+          Default bloodline: {e.rarity.default}
+          {e.rarity.default_house && (
             <>
               {" "}
               <Badge tone="gold">House rule</Badge>
@@ -329,18 +394,19 @@ function EntryRow({ entry: e, troupe }: { entry: Entry; troupe: string | null })
 
 /** Prices in words, each house price marked with the book's beside it. */
 function Prices({ prices, label }: { prices: PriceOut[]; label: string }) {
+  const named = useClanName();
   return (
     <ul className="flex flex-col gap-0.5">
       {prices.map((p, n) => (
         <li key={n}>
           {label}
-          {p.when && ` (${p.when})`}: <span className={p.house ? "text-gold" : "text-parchment"}>{p.price}</span>
+          {p.when && ` (${named(p.when)})`}: <span className={p.house ? "text-gold" : "text-parchment"}>{p.price}</span>
           {p.house && (
             <>
               {" "}
               <Badge tone="gold">House rule</Badge>
               {p.book && ` By the book: ${p.book}.`}
-              {p.text && ` ${p.text}`}
+              {p.text && ` ${named(p.text)}`}
             </>
           )}
         </li>
@@ -351,11 +417,12 @@ function Prices({ prices, label }: { prices: PriceOut[]; label: string }) {
 
 /** Checks in the words a player meets when one refuses a change, with how the troupe plays any it changed. */
 function Checks({ checks }: { checks: TraitCheckOut[] }) {
+  const named = useClanName();
   return (
     <ul className="flex flex-col gap-0.5">
       {checks.map((c) => (
         <li key={c.key} className={c.house === "off" ? "line-through decoration-mist/60" : undefined}>
-          {c.message}
+          {named(c.message)}
           {c.page && (
             <>
               {" "}

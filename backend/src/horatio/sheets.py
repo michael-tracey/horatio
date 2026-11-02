@@ -30,7 +30,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import delete, event, func, inspect, select, true
 from sqlalchemy.orm import ORMExecuteState, Session
 
-from horatio import audit, notifications, repricing, xp_range
+from horatio import audit, free_changes, notifications, repricing, xp_range
 from horatio.models import (
     AlternateIdentity,
     AppliedHouseTrait,
@@ -50,7 +50,7 @@ from horatio.models import (
     User,
     XpEntry,
 )
-from horatio.rules.checks import Context, Violation, matches, traits_in, violations
+from horatio.rules.checks import Context, Violation, is_ban, matches, traits_in, violations
 from horatio.rules.conditions import describe as describe_condition
 from horatio.rules.grants import (
     Effects,
@@ -297,7 +297,8 @@ def approved_ratings(
 
 def accepted_ratings(db: Session, character: Character) -> dict[TraitKey, int]:
     """The lowest each trait can go: its rating when the home troupe accepted the
-    character, or a discipline dot the home troupe has approved since."""
+    character, or a discipline dot the home troupe has approved since, or a free
+    change it has approved (horatio.free_changes)."""
     floor: dict[TraitKey, int] = {}
     if character.home_troupe_id is None:
         return floor
@@ -315,6 +316,7 @@ def accepted_ratings(db: Session, character: Character) -> dict[TraitKey, int]:
             TraitDefinition.name,
             DisciplinePurchase.detail,
             DisciplinePurchase.to_rating,
+            DisciplinePurchase.free_change,
         )
         .join(Approval, DisciplinePurchase.approval_id == Approval.id)
         .join(TraitDefinition, DisciplinePurchase.trait_definition_id == TraitDefinition.id)
@@ -327,8 +329,10 @@ def accepted_ratings(db: Session, character: Character) -> dict[TraitKey, int]:
     )
     if accepted_at is not None:
         query = query.where(Approval.decided_at >= accepted_at)
-    for category, name, detail, rating in db.execute(query):
-        floor[(category, name, detail)] = max(floor.get((category, name, detail), 0), rating)
+    for category, name, detail, rating, lowered in db.execute(query.order_by(Approval.decided_at)):
+        key = (category, name, detail)
+        # A free change approved (horatio.free_changes) lowers it.
+        floor[key] = min(floor.get(key, 0), rating) if lowered else max(floor.get(key, 0), rating)
     # A trait staff gave by exception, like dots they approved.
     for row, exception in held_by_exception(db, character):
         if exception.given_at is not None and (
@@ -1283,6 +1287,67 @@ def hold_for_review(
     return True
 
 
+def hold_free_change(
+    db: Session,
+    user: User,
+    character: Character,
+    definition: TraitDefinition,
+    detail: str,
+    before: int,
+    after: int,
+    cost: int,
+) -> None:
+    """A trait lowered below the accepted sheet in the character's free changes
+    (horatio.free_changes) is refunded at once, and waits on the home troupe like a
+    change held for review: declining puts the dots back and takes the XP back."""
+    assert character.home_troupe_id is not None
+    approval = Approval(
+        character_id=character.id,
+        troupe_id=character.home_troupe_id,
+        kind="review",
+        requested_by=user.id,
+        player_note=free_changes.REVIEW_NOTE,
+    )
+    db.add(approval)
+    db.flush()
+    db.add(
+        DisciplinePurchase(
+            approval_id=approval.id,
+            trait_definition_id=definition.id,
+            detail=detail,
+            from_rating=before,
+            to_rating=after,
+            cost=cost,
+            free_change=True,
+        )
+    )
+    db.flush()
+    name = f"{definition.name}: {detail}" if detail else definition.name
+    audit.record(
+        db,
+        user,
+        "sheet.free_change",
+        troupe_id=approval.troupe_id,
+        character_id=character.id,
+        name=name,
+        from_rating=before,
+        to_rating=after,
+        refund=-cost,
+    )
+    audit.record(
+        db,
+        user,
+        "approval.request",
+        troupe_id=approval.troupe_id,
+        character_id=character.id,
+        approval_id=approval.id,
+        kind="review",
+        name=definition.name,
+        rating=after,
+    )
+    notifications.approval_waiting(db, approval)
+
+
 def selects(selector: Mapping[str, str], category: str, name: str) -> bool:
     """Whether a `creation_only` entry in the rules data is about this trait."""
     return (
@@ -1426,7 +1491,13 @@ def broken_since(
     exception instead."""
     db.expire_all()
     now_broken = (
-        [v for v in sheet_violations(db, character) if v.key not in before.broken] if checks else []
+        [
+            v
+            for v in sheet_violations(db, character)
+            if v.key not in before.broken or raised_banned(v, before)
+        ]
+        if checks
+        else []
     )
     asked = set(excepting)
     excepted: dict[TraitKey, list[Violation]] = {}
@@ -1495,6 +1566,14 @@ def broken_since(
                 )
             )
     return Judgement(refused, reviewed, excepted)
+
+
+def raised_banned(violation: Violation, before: SheetState) -> bool:
+    """Whether a change raised a trait the troupe bans: one held already is kept as
+    it is (horatio.book_traits), but buying more of it is refused as buying it is."""
+    subject = violation.subject
+    held = before.ratings.get((subject.category, subject.name, subject.detail), 0)
+    return is_ban(violation.check) and (subject.rating or 0) > held
 
 
 def refusal(problems: Sequence[Problem]) -> str:
@@ -1922,10 +2001,14 @@ def set_trait(
     by_staff: bool = False,
     because: str = "",
     picks: Sequence[FreeChoice] = (),
+    teacher_id: uuid.UUID | None = None,
 ) -> Change:
     """Add a trait, change its rating, or (at rating 0) remove it, buying or
     refunding the difference. Unrated traits replace the category's choice.
     `teacher` names who teaches a discipline dot that waits on the home troupe.
+    A trait the troupe's teacher rules ask a teacher for (horatio.teaching) needs
+    one: a character of the troupe (`teacher_id`) or an NPC named in `teacher`; once
+    a home troupe has accepted the character, it waits on it as a discipline does.
     A merit or flaw changed by the player once a home troupe has accepted the
     character is asked of its staff instead (horatio.merit_requests), with the
     free traits `picks` chooses for a merit.
@@ -2027,13 +2110,25 @@ def set_trait(
     quote = priced
 
     accepted = accepted_ratings(db, character).get((category.key, definition.name, detail), 0)
-    if rating < accepted and category.buy_off_factor and rating == 0 and quote is not None:
+    # Below the accepted sheet in the character's free changes: refunded in full, and
+    # held for the home troupe's review (horatio.free_changes).
+    free_change = (
+        rating < accepted
+        and rating < current_rating
+        and character.kind == "pc"
+        and not by_staff
+        and by_exception is None
+        and free_changes.refunds(db, character, category.key, definition.name)
+    )
+    if free_change:
+        because = because or "a free change"
+    elif rating < accepted and category.buy_off_factor and rating == 0 and quote is not None:
         # Buying off an accepted flaw costs a multiple of what it gave (p. 236).
         held = SheetTrait(category.key, definition.name, current_rating, 0, detail)
         sheet = [r.as_rules_trait() for r in sheet_rows(db, character)]
         worth = points(rules_for(db, character), sheet, held)
         quote = Quote(cost=category.buy_off_factor * worth, rule=quote.rule)
-    elif rating < accepted:
+    elif rating < accepted and rating < current_rating:
         raise conflict(
             f"{name} was accepted at {accepted}. Only storytellers can take accepted dots away."
         )
@@ -2044,6 +2139,22 @@ def set_trait(
         raise conflict(
             f"{name} is waiting for the home troupe's approval. Withdraw that to change it."
         )
+    from horatio import teaching  # imports this module
+
+    need = (
+        teaching.need_for(
+            db, character, category.key, definition.name, detail, current_rating, rating
+        )
+        if by_exception is None and not by_staff and free is None
+        else None
+    )
+    taught_by = (
+        teaching.chosen_teacher(
+            db, character, need, category.key, definition.name, detail, teacher_id, teacher
+        )
+        if need is not None
+        else None
+    )
     cost = 0 if free is not None or quote is None else quote.cost
     repriced: list[repricing.Repriced] = []
     if reopened and rating != current_rating:
@@ -2090,7 +2201,7 @@ def set_trait(
 
     held = (
         rating > current_rating
-        and category.key in NEEDS_HOME_APPROVAL
+        and (category.key in NEEDS_HOME_APPROVAL or need is not None)
         and character.home_troupe_id is not None
         and character.kind == "pc"
         and by_exception is None
@@ -2143,12 +2254,15 @@ def set_trait(
         cost=cost,
         free=free or "",
     )
+    if free_change:
+        hold_free_change(db, player, character, definition, detail, current_rating, rating, cost)
     learning_now = by_exception is None or (by_exception == "given" and free is None)
     if not held and rating > current_rating and learning_now:
         whole = definition.properties.get("rating") is not None
         owed = owed_for(db, character, category, rating - current_rating, whole, name, detail)
         doing = f"Gaining {name}" if whole else f"Learning {name} {rating}"
         owe(db, player, character, owed.actions, owed.reason(doing))
+    approval: Approval | None = None
     if held:
         assert character.home_troupe_id is not None
         approval = Approval(
@@ -2167,7 +2281,7 @@ def set_trait(
                 from_rating=current_rating,
                 to_rating=rating,
                 cost=cost,
-                teacher=teacher,
+                teacher=taught_by.name if taught_by is not None else teacher,
             )
         )
         db.flush()
@@ -2183,12 +2297,30 @@ def set_trait(
             rating=rating,
         )
         notifications.approval_waiting(db, approval)
+    if need is not None and taught_by is not None:
+        teaching.record(
+            db,
+            player,
+            character,
+            need,
+            taught_by,
+            definition,
+            detail,
+            rating,
+            approval,
+        )
     if free is not None:
         return Change(
             quote=None,
             trait=trait,
             normal_cost=priced.cost if priced else None,
             repriced=tuple(repriced),
+        )
+    if free_change:
+        return Change(
+            quote=quote,
+            trait=trait,
+            asked=f"A free change: {-cost} XP back, which the home troupe reviews.",
         )
     return Change(quote=quote, trait=trait, repriced=tuple(repriced))
 
@@ -2432,6 +2564,10 @@ def decide(
     character = lock_character(db, approval.character_id)
     if at_cost and not (approve and approval.kind == "exception"):
         raise unprocessable("Only an exception asked for free can be approved at normal cost.")
+    from horatio import teaching  # imports this module
+
+    if approve:
+        teaching.ready(db, approval)
     if approval.kind == ASKED_KIND:
         from horatio import merit_requests  # imports this module
 
@@ -2477,6 +2613,8 @@ def decide(
         from horatio.reconciliation import approve_change  # imports this module
 
         approve_change(db, staff, approval, character, settlement_overrides or {}, xp)
+    if approve:
+        teaching.decided(db, staff, approval, approve=True)
     approval.status = "approved" if approve else "declined"
     approval.decided_by = staff.id
     approval.decided_at = datetime.now(UTC)
@@ -2548,6 +2686,16 @@ def undo_discipline(
             db.delete(trait)
         else:
             trait.rating = bought.from_rating
+    elif bought.from_rating > 0:
+        # A trait removed as a free change (horatio.free_changes) comes back.
+        db.add(
+            CharacterTrait(
+                character_id=character.id,
+                trait_definition_id=definition.id,
+                rating=bought.from_rating,
+                detail=bought.detail,
+            )
+        )
     db.add(
         XpEntry(
             character_id=character.id,
@@ -2563,6 +2711,10 @@ def undo_discipline(
         )
     )
     db.flush()
+    from horatio import teaching  # imports this module
+
+    # A teacher's Willpower spent on it comes back.
+    teaching.decided(db, user, approval, approve=False)
 
 
 def withdraw(db: Session, player: User, approval: Approval) -> Approval:

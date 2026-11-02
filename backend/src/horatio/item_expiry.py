@@ -92,7 +92,8 @@ def applies(troupe: Troupe | None) -> bool:
 
 def attended_games(db: Session, character_id: uuid.UUID, since: datetime, until: datetime) -> int:
     """The games the character came to that started at or after `since` and had ended
-    by `until`: what "after N games" counts."""
+    by `until`: what "after N games" counts. An absentee game (horatio.game_xp) is
+    not coming to one."""
     return (
         db.scalar(
             select(func.count())
@@ -100,6 +101,7 @@ def attended_games(db: Session, character_id: uuid.UUID, since: datetime, until:
             .join(ScheduledGame, GameAttendance.game_id == ScheduledGame.id)
             .where(
                 GameAttendance.character_id == character_id,
+                GameAttendance.kind == "attended",
                 ScheduledGame.starts_at >= since,
                 ScheduledGame.ends_at <= until,
             )

@@ -40,3 +40,16 @@ export function backText(
 }
 
 export const LOST_WORDS: Record<string, string> = { released: "Released", killed: "Killed" };
+
+/** A Retainer's neglect, under the house rule of upkeep (#442): null while it is not neglected. */
+export function neglectText(r: Pick<RetainerOut, "neglected_on">, date: (iso: string) => string): string | null {
+  return r.neglected_on ? `Neglected since ${date(r.neglected_on)}: its upkeep went unpaid.` : null;
+}
+
+/** The XP its growth gave (#442): banked here, and what its NPC has to spend; null for none. */
+export function growthText(r: Pick<RetainerOut, "banked_xp" | "npc_xp" | "npc_name">): string | null {
+  const parts: string[] = [];
+  if (r.banked_xp) parts.push(`${r.banked_xp} XP banked`);
+  if (r.npc_xp != null) parts.push(`${r.npc_name ?? "Its NPC"} has ${r.npc_xp} XP to spend`);
+  return parts.length ? parts.join(" · ") : null;
+}

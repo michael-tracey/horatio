@@ -33,6 +33,7 @@ from horatio import (
     item_expiry,
     notifications,
     responses,
+    retainer_upkeep,
     suspensions,
 )
 from horatio.models import (
@@ -384,6 +385,8 @@ def close_cycle(db: Session, staff: User, cycle: DowntimeCycle) -> None:
     cycle.closed_at = now()
     db.flush()
     audit.record(db, staff, "downtime.cycle_closed", troupe_id=cycle.troupe_id, cycle_id=cycle.id)
+    # The troupe's Retainer upkeep kept as a downtime cost, and Retainer growth.
+    retainer_upkeep.cycle_closed(db, staff, cycle)
     # Items that expire with the cycle go now (horatio.item_expiry).
     item_expiry.check_due(db, cycle_ids=[cycle.id])
 
@@ -825,11 +828,25 @@ def answers_for(db: Session, submission: Submission) -> list[Answer]:
     )
 
 
-def ensure_can_submit(cycle: DowntimeCycle, participant: CycleParticipant) -> None:
+def closed_to(db: Session, cycle: DowntimeCycle, participant: CycleParticipant) -> str | None:
+    """Why the downtime is closed to this participant, though the cycle is open: the
+    troupe's absentee downtimes ask for a game attended lately (horatio.game_xp). A
+    storyteller's Accept late lets it in anyway."""
+    from horatio import game_xp
+
+    if participant.late_accepted_by is not None:
+        return None
+    return game_xp.downtime_closed(db, cycle, db.get_one(Character, participant.character_id))
+
+
+def ensure_can_submit(db: Session, cycle: DowntimeCycle, participant: CycleParticipant) -> None:
     if cycle.status != "open":
         raise conflict("This cycle is not open.")
     if now() > cycle.grace_ends_at and participant.late_accepted_by is None:
         raise conflict("The grace period is over. Ask a storyteller to accept a late downtime.")
+    closed = closed_to(db, cycle, participant)
+    if closed:
+        raise conflict(closed)
 
 
 @dataclass
@@ -867,7 +884,7 @@ def save_answers(
     actions come out of the general actions."""
     from horatio import quest_actions
 
-    ensure_can_submit(cycle, participant)
+    ensure_can_submit(db, cycle, participant)
     suspensions.refuse_character(db, character)
     allowance_now = effective_allowance(db, participant)
     shown = {q.id: q for q in visible_questions(db, cycle, character, allowance_now)}
@@ -1034,7 +1051,7 @@ def submit(
     """Submit the downtime, joining the party of each quest its Quest actions name."""
     from horatio import quest_actions
 
-    ensure_can_submit(cycle, participant)
+    ensure_can_submit(db, cycle, participant)
     suspensions.refuse_character(db, character)
     submission = submission_for(db, participant)
     answered = {a.question_id for a in answers_for(db, submission)} if submission else set()

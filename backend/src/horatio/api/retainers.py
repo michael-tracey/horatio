@@ -7,9 +7,9 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from horatio import identities, reference, retainers, sheets
+from horatio import identities, reference, retainer_upkeep, retainers, sheets
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Character, User
+from horatio.models import Character, Retainer, User
 from horatio.permissions import visible_character
 
 router = APIRouter(prefix="/characters/{character_id}", tags=["retainers"])
@@ -66,6 +66,14 @@ class RetainerOut(BaseModel):
     note: str = ""
     page: str | None = None
     given_disciplines: list[str] = []
+    # The troupe's house rules (horatio.retainer_upkeep): its upkeep ("1 Blood a
+    # game"), None when it pays none; the day it went neglected, its upkeep unpaid;
+    # XP its growth banked here while no NPC was linked; and the XP its NPC has to
+    # spend, for those who can see that NPC, while growth is played.
+    upkeep: str | None = None
+    neglected_on: date | None = None
+    banked_xp: int = 0
+    npc_xp: int | None = None
 
 
 class RetainersOut(BaseModel):
@@ -100,11 +108,20 @@ class RetainersIn(BaseModel):
     retainers: list[RetainerIn] = Field(max_length=retainers.MAX_LISTED)
 
 
-def listed(db: Session, entries: list[retainers.Listed], viewer: User | None) -> list[RetainerOut]:
+def listed(
+    db: Session,
+    entries: list[retainers.Listed],
+    viewer: User | None,
+    rules: retainer_upkeep.Rules | None = None,
+) -> list[RetainerOut]:
     out: list[RetainerOut] = []
+    rules = rules or retainer_upkeep.Rules()
+    today = date.today()
+    banked = retainer_upkeep.banked(db, [e.row.id for e in entries if e.row])
     for e in entries:
         r = e.row
         npc = retainers.viewable_npc(db, viewer, r) if r else None
+        upkeep = rules.upkeep
         out.append(
             RetainerOut(
                 id=r.id if r else None,
@@ -134,6 +151,10 @@ def listed(db: Session, entries: list[retainers.Listed], viewer: User | None) ->
                 note=e.given.note if e.given else "",
                 page=e.given.page if e.given else None,
                 given_disciplines=list(e.given.disciplines) if e.given else [],
+                upkeep=upkeep.each() if upkeep and retainer_upkeep.pays(e, upkeep, today) else None,
+                neglected_on=r.neglected_on if r else None,
+                banked_xp=banked.get(r.id, 0) if r else 0,
+                npc_xp=sheets.xp_balance(db, npc) if npc and rules.growth else None,
             )
         )
     return out
@@ -151,7 +172,12 @@ def powers(discipline: str, dots: int) -> list[RetainerPower]:
 def retainers_out(db: Session, character: Character, user: User) -> RetainersOut:
     return RetainersOut(
         rating=retainers.rating(db, character),
-        retainers=listed(db, retainers.read(db, character), user),
+        retainers=listed(
+            db,
+            retainers.read(db, character),
+            user,
+            retainer_upkeep.rules_of(retainer_upkeep.troupe_of(db, character)),
+        ),
         can_edit=retainers.can_edit(db, user, character),
         can_link=retainers.can_link(db, user, character),
         skills=retainers.skills(db, character),
@@ -184,6 +210,24 @@ def save_retainers(
         [retainers.Draft(**r.model_dump()) for r in body.retainers],
         link=retainers.can_link(db, user, character),
     )
+    db.commit()
+    return retainers_out(db, character, user)
+
+
+@router.delete("/retainers/{retainer_id}/neglected")
+def clear_neglect(
+    character_id: uuid.UUID, retainer_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> RetainersOut:
+    """Clear a Retainer's neglect, once the troupe has dealt with it. Its staff do."""
+    character = visible_character(db, user, character_id)
+    if not retainers.can_link(db, user, character):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Only the character's staff can clear a neglect."
+        )
+    row = db.get(Retainer, retainer_id)
+    if row is None or row.character_id != character.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such Retainer.")
+    retainer_upkeep.clear_neglect(db, user, character, row)
     db.commit()
     return retainers_out(db, character, user)
 

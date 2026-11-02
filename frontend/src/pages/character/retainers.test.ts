@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { backText, givingMerits, retainerName, retainerSource } from "./retainers";
+import { backText, givingMerits, growthText, neglectText, retainerName, retainerSource } from "./retainers";
 
 describe("a Retainer in a list", () => {
   it("is named, or says it has no name yet", () => {
@@ -28,5 +28,19 @@ describe("a lost Retainer", () => {
   });
   it("says nothing for one serving", () => {
     expect(backText({ ...lost, lost: null }, date)).toBeNull();
+  });
+});
+
+describe("a Retainer under the house rules for upkeep and growth (#442)", () => {
+  const date = (iso: string) => `on ${iso}`;
+  it("says when it went neglected", () => {
+    expect(neglectText({ neglected_on: null }, date)).toBeNull();
+    expect(neglectText({ neglected_on: "2026-11-01" }, date)).toBe("Neglected since on 2026-11-01: its upkeep went unpaid.");
+  });
+  it("says what its growth banked, and what its NPC has to spend", () => {
+    expect(growthText({ banked_xp: 0, npc_xp: null, npc_name: null })).toBeNull();
+    expect(growthText({ banked_xp: 8, npc_xp: null, npc_name: null })).toBe("8 XP banked");
+    expect(growthText({ banked_xp: 4, npc_xp: 6, npc_name: "Marta" })).toBe("4 XP banked · Marta has 6 XP to spend");
+    expect(growthText({ banked_xp: 0, npc_xp: 0, npc_name: null })).toBe("Its NPC has 0 XP to spend");
   });
 });

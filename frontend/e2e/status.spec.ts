@@ -629,6 +629,89 @@ test("at a game, a Seneschal elder chooses one source of status, spends Authorit
   await expect(l.getByText("Abiding status from Elder, chosen for this game.")).toBeVisible();
 });
 
+test("where the troupe chooses the night's status at check-in, an elder Seneschal picks Elder at the door and the Play View keeps it fixed (#441)", async ({ browser }) => {
+  const custodian = await person(browser, "nightsrc-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "nightsrc-lead");
+  const player = await person(browser, "nightsrc-player");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT" | "GET", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const { id: troupeId } = await send(custodian.page, "POST", "/api/troupes", { name: `Court at the Door ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupeId);
+
+  // Wenna, a Camarilla elder at home in the troupe, is its Seneschal: two sources of abiding status.
+  const p = player.page;
+  const { id } = await send(p, "POST", "/api/characters", { splat: "vampire", name: "Wenna" });
+  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+  const build: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Generation", 3], ["Fame", 2], ["Herd", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, picks] of Object.entries(build))
+    await send(p, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await send(p, "POST", `/api/characters/${id}/creation/complete`, {});
+  const asked = await send(p, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+  await send(lead.page, "PUT", `/api/troupes/${troupeId}/characters/${id}/titles`, { titles: ["Seneschal"] });
+
+  // The lead switches the house rule on under Customise, and the players' House rules tab says so.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/settings`);
+  const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "The night's status" }) });
+  await card.getByLabel("Choose the night's status at check-in").click();
+  await expect(card.getByLabel("Choose the night's status at check-in")).toBeChecked();
+  await p.goto(`/troupes/${troupeId}/house-rules`);
+  await expect(p.getByText("The night's status")).toBeVisible();
+
+  // A game under way, its check-in open.
+  const start = new Date(Date.now() - 60 * 60_000);
+  const game = await send(l, "POST", `/api/troupes/${troupeId}/games`, { starts_at: start.toISOString(), ends_at: new Date(start.getTime() + 5 * 60 * 60_000).toISOString() });
+  const { checkin } = await send(l, "PUT", `/api/troupes/${troupeId}/games/${game.id}/checkin`);
+
+  // At the door: Wenna must say which status she carries tonight.
+  await p.goto(`/check-in/${checkin.code}`);
+  await expect(p.getByRole("heading", { name: "Check in" })).toBeVisible();
+  const which = p.getByRole("group", { name: "Which status do you carry tonight?" });
+  await expect(which.getByRole("radio")).toHaveCount(2);
+  await expect(p.getByRole("button", { name: "Check in Wenna" })).toBeDisabled();
+  await which.getByRole("radio", { name: /^Elder/ }).check();
+  await p.screenshot(shots("check-in-status"));
+  await p.getByRole("button", { name: "Check in Wenna" }).click();
+  await expect(p.getByRole("heading", { name: "Wenna" })).toBeVisible();
+
+  // The Play View has it fixed: no choosing, no changing.
+  await p.getByRole("tab", { name: "Status" }).click();
+  await expect(p.getByText("Abiding status from Elder, chosen at check-in and fixed for this game.")).toBeVisible();
+  const abiding = p.locator("section").filter({ has: p.getByRole("heading", { name: "Abiding status" }) });
+  await expect(abiding.getByText("Confirmed", { exact: true })).toBeVisible();
+  await expect(p.getByRole("button", { name: "Choose Seneschal" })).toHaveCount(0);
+  await expect(p.getByRole("button", { name: "Change" })).toHaveCount(0);
+  await p.screenshot(shots("play-status-fixed"));
+
+  // Staff see it on Game night, and change it on the Play View with a reason for the game's log.
+  await l.goto(`/troupes/${troupeId}/games/${game.id}`);
+  await expect(l.getByRole("list", { name: "Checked in" }).getByRole("listitem").filter({ hasText: "Wenna" }).getByText("Status from Elder")).toBeVisible();
+  await l.goto(`/play/characters/${id}?tab=status`);
+  await l.getByRole("button", { name: "Change" }).click();
+  await expect(l.getByRole("button", { name: "Choose Seneschal" })).toBeDisabled();
+  await l.getByLabel("Why change it? (for the game's log)").fill("She named the wrong one at the door");
+  await l.getByRole("button", { name: "Choose Seneschal" }).click();
+  await expect(l.getByText("Abiding status from Seneschal, chosen at check-in and fixed for this game.")).toBeVisible();
+  await p.goto(`/play/characters/${id}?tab=status`);
+  await expect(p.getByText("Abiding status from Seneschal, chosen at check-in and fixed for this game.")).toBeVisible();
+});
+
 test("at a game, a Camarilla character with Leadership 2 learns about two of a rival's status, and a Sabbat character sees none", async ({ browser }) => {
   const custodian = await person(browser, "rival-cust");
   makeCustodian(custodian.email);

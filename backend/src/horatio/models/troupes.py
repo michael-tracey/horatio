@@ -32,6 +32,9 @@ class Troupe(Imported, Record):
         CheckConstraint("location_limit in ('refuse', 'note')", name="location_limit"),
         CheckConstraint("backstory_mode in ('free', 'either', 'wizard')", name="backstory_mode"),
         CheckConstraint("feeding in ('off', 'book')", name="feeding"),
+        CheckConstraint("languages in ('book', 'accelerated', 'custom')", name="languages"),
+        CheckConstraint("free_changes in ('none', 'date', 'games')", name="free_changes"),
+        CheckConstraint("assamite_name in ('Banu Haqim', 'Assamite')", name="assamite_name"),
     )
 
     name: Mapped[str]
@@ -69,6 +72,13 @@ class Troupe(Imported, Record):
     # Golconda Seeker holds the innate status Enlightened (Vol. 2, p. 267). Off unless
     # switched on (horatio.rules.grants.HOUSE_OPTIONS).
     golconda_enlightened: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # House rule: how many languages Linguistics gives (horatio.rules.languages):
+    # "book", one per dot; "accelerated", the accelerated chart; or "custom", its own
+    # figure for each rating in languages_table (kept while another is chosen). And
+    # whether Natural Linguist doubles it, as the book has it.
+    languages: Mapped[str] = mapped_column(default="book", server_default="book")
+    languages_table: Mapped[list[int] | None] = mapped_column(JSONB)
+    natural_linguist_doubles: Mapped[bool] = mapped_column(default=True, server_default="true")
     # Feeding (horatio.feeding): "book", tracked in downtimes as the core book has it,
     # or "off", left out of Horatio altogether. What was recorded while it was on is
     # kept, and comes back when it is switched on again.
@@ -82,6 +92,10 @@ class Troupe(Imported, Record):
     # Blood Resonance, as its vessels each carry one (horatio.territories, horatio.rack).
     feeding_territories: Mapped[bool] = mapped_column(default=False, server_default="false")
     feeding_rack: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # What the clan stored as "Assamite" is called here (horatio.clan_names): "Banu
+    # Haqim", its later name, or "Assamite", the books'. Only what is shown changes;
+    # the rules and sheets keep "Assamite".
+    assamite_name: Mapped[str] = mapped_column(default="Banu Haqim", server_default="Banu Haqim")
     # Status on sheets (horatio.sect_status): who adds and removes fleeting and
     # negative status on its characters' sheets: "players", each on their own, naming
     # the patron; or "staff", its running staff only. Running staff always can.
@@ -89,6 +103,9 @@ class Troupe(Imported, Record):
     # Titles on sheets (horatio.titles): whether "players" choose their own
     # characters' titles from their sect's, or only its running "staff" give them.
     titles_by: Mapped[str] = mapped_column(default="players", server_default="players")
+    # House rule: each character's source of abiding status is chosen as it checks in
+    # to a game, and fixed for that game (horatio.play_status). Off: as the book has it.
+    status_at_checkin: Mapped[bool] = mapped_column(default=False, server_default="false")
     # What its game badges print (horatio.badges): the titles held here, or not; and
     # the status carried into a game here, "all" of it, "negative" status only, or
     # "none", leaving the space for stickers.
@@ -106,6 +123,22 @@ class Troupe(Imported, Record):
     # Its staff can give items that expire (horatio.item_expiry, #443). Off, no expiry
     # shows or runs; those set before wait until it is switched on again.
     items_expire: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # House rules for Retainers (horatio.retainer_upkeep): upkeep, in Blood or
+    # Willpower, and growth, in XP a month. Each is off while it is absent.
+    retainer_rules: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # House rule: free changes for new characters (horatio.free_changes). "none" locks
+    # a character on acceptance; "date" leaves it open for `free_changes_days` days
+    # from acceptance, "games" until it has attended `free_changes_games` games. Only
+    # characters accepted since the troupe last turned it on (`free_changes_since`)
+    # have one, and the traits in `free_changes_excluded` ([{category, name}]) are
+    # never refunded in it.
+    free_changes: Mapped[str] = mapped_column(default="none", server_default="none")
+    free_changes_days: Mapped[int] = mapped_column(default=30, server_default="30")
+    free_changes_games: Mapped[int] = mapped_column(default=3, server_default="3")
+    free_changes_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    free_changes_excluded: Mapped[list[dict[str, str]]] = mapped_column(
+        JSONB, default=list, server_default="[]"
+    )
     # The clans with a seat at its court, by clan without the bloodline; None until
     # staff choose, for the clans whose Primogen is held there (horatio.whos_who).
     seated_clans: Mapped[list[str] | None] = mapped_column(JSONB)
@@ -113,6 +146,12 @@ class Troupe(Imported, Record):
     # ("Lasombra": "rare"), over the book's rarity for the setting's sect. A character
     # built here takes the rarity merit it names (horatio.clan_merits).
     clan_rarity: Mapped[dict[str, str]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # House rule: the bloodline each clan plays as by default, by clan ("Tzimisce":
+    # "Tzimisce: Koldun"), or the clan itself for none, over the book's default for the
+    # setting's sect. A clan it leaves out goes by the book (horatio.clan_merits).
+    default_bloodlines: Mapped[dict[str, str]] = mapped_column(
+        JSONB, default=dict, server_default="{}"
+    )
     # House options for Stock Locations (horatio.rules.locations) it has switched
     # off, by key: every other is on. And what going over a character's control
     # limit does: "refuse" it, or "note" it for staff (horatio.locations).
@@ -138,6 +177,12 @@ class Troupe(Imported, Record):
     profile: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
     # Who new players should contact: one of its staff.
     contact_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    # Its written house rules (horatio.written_rules) show on its profile too.
+    written_rules_public: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Game XP (horatio.game_xp): a chart of XP by earned-XP band and attendance kind,
+    # adjustments, the monthly cap and absentee games, as GameXpSettings writes it.
+    # Empty is the book's way: the session XP for everyone there, warned past 10 a month.
+    game_xp: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
 
 
 class ScheduledGame(Record):
@@ -185,7 +230,10 @@ class GameAttendance(Record):
     record."""
 
     __tablename__ = "game_attendances"
-    __table_args__ = (UniqueConstraint("game_id", "character_id"),)
+    __table_args__ = (
+        UniqueConstraint("game_id", "character_id"),
+        CheckConstraint("kind in ('attended', 'absentee')", name="kind"),
+    )
 
     game_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("scheduled_games.id"))
     character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
@@ -196,6 +244,42 @@ class GameAttendance(Record):
     play_game_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("play_games.id"))
     # Whether its player said it had a full day's rest; None when no night started.
     rested: Mapped[bool | None]
+    # "attended": the character was there. "absentee": it missed the game, and staff
+    # (or its player, where the troupe allows) recorded it as an absentee game
+    # (horatio.game_xp), which earns the chart's absentee XP. Only "attended" is having
+    # been there (horatio.checkin.ATTENDED).
+    kind: Mapped[str] = mapped_column(default="attended", server_default="attended")
+
+
+class GameXpAward(Record):
+    """What one character got for one game's XP (horatio.game_xp): its attendance
+    kind, its band on the troupe's chart, the adjustments ticked, any cap and any
+    figure staff set by hand, and the XP entry it made. Adjustments' monthly limits
+    count from here."""
+
+    __tablename__ = "game_xp_awards"
+    __table_args__ = (UniqueConstraint("game_id", "character_id"),)
+
+    game_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("scheduled_games.id"))
+    character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
+    kind: Mapped[str]
+    # The band's label ("201–300"); None with no chart.
+    band: Mapped[str | None]
+    # The chart's figure (or the flat amount), before adjustments and the cap.
+    figure: Mapped[int]
+    # Each adjustment ticked: {"key", "name", "amount"}.
+    adjustments: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, default=list, server_default="[]"
+    )
+    # What the monthly cap held back.
+    capped: Mapped[int] = mapped_column(default=0, server_default="0")
+    # A figure staff set by hand, and why.
+    override: Mapped[int | None]
+    override_reason: Mapped[str] = mapped_column(default="", server_default="")
+    amount: Mapped[int]
+    # None when it gave nothing.
+    xp_entry_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("xp_entries.id"))
+    awarded_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
 
 
 class CalendarFeed(Record):

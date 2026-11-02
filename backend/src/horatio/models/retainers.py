@@ -40,6 +40,33 @@ class Retainer(Record):
     # perhaps one discipline in-clan for its domitor, to its dots.
     specialties: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
     discipline: Mapped[str] = mapped_column(default="", server_default="")
+    # The day its upkeep went unpaid (horatio.retainer_upkeep); null while it is not
+    # neglected. Staff decide what follows, and clear it.
+    neglected_on: Mapped[date | None] = mapped_column(Date)
+
+
+class RetainerGrowth(Record):
+    """XP a Retainer gained as a downtime cycle closed (horatio.retainer_upkeep):
+    given to the NPC linked to it, on that NPC's XP, or `banked` here when none is."""
+
+    __tablename__ = "retainer_growth"
+
+    retainer_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("retainers.id", ondelete="CASCADE"), index=True
+    )
+    cycle_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("downtime_cycles.id", ondelete="SET NULL")
+    )
+    # The calendar month it is for: its first day.
+    month: Mapped[date] = mapped_column(Date)
+    amount: Mapped[int]
+    banked: Mapped[bool]
+    npc_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("characters.id", ondelete="SET NULL")
+    )
+    xp_entry_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("xp_entries.id", ondelete="SET NULL")
+    )
 
 
 class AlternateIdentity(Record):

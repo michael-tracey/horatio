@@ -98,6 +98,9 @@ class PlayStatusOut(BaseModel):
     source_chosen: bool
     # More than one source, and none chosen yet.
     choosing: bool
+    # The troupe chooses the source as the character checks in, fixed for the game
+    # (issue #441): its player cannot choose or change it here; staff can, with a reason.
+    source_fixed: bool = False
     conditions: list[ConditionOut]
     titles: list[TitleHeldOut]
     # Negative first, then abiding, innate and fleeting.
@@ -120,6 +123,8 @@ class StatusChoiceIn(BaseModel):
     chosen: dict[str, str] = {}
     # Titles whose holder is away (True), or, by staff, back after all (False).
     absent: dict[str, bool] = {}
+    # Why staff change a source fixed at check-in, for the game's log.
+    reason: str = Field(default="", max_length=300)
 
 
 def source_status(derived: Sequence[sect_status.Derived]) -> list[SourceStatus]:
@@ -147,6 +152,7 @@ def play_status_out(
         source=at.source.name if at.source else None,
         source_chosen=at.choices.source is not None,
         choosing=at.choosing,
+        source_fixed=at.fixed,
         conditions=[
             ConditionOut(
                 title=c.title,

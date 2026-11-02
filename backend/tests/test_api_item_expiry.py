@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from horatio import item_expiry
-from horatio.models import EquipmentItem
+from horatio.models import EquipmentItem, GameAttendance
 from tests.api_helpers import Troupe
 from tests.test_api_checkin import check_in, game, past_game
 from tests.test_api_downtimes import member_character, new_cycle, open_cycle
@@ -204,6 +204,25 @@ def test_a_game_recorded_after_it_ended_takes_it_at_once(
     # Staff check it in by hand after the game: the check-in takes it.
     assert check_in(expiring.assistant, expiring, last, agnes).status_code == 200
     assert record(session, item).status == "taken_back"
+
+
+def test_an_absentee_game_does_not_count(expiring: Troupe, agnes: str, session: Session) -> None:
+    item = given(expiring, agnes, **BLESSING, expiry={"kind": "games", "games": 1})
+    record(session, item).expiry_from = datetime.now(UTC) - timedelta(days=10)
+    session.flush()
+    missed = past_game(expiring, session, days_ago=3)
+    # Recorded as an absentee game (horatio.game_xp): missed, so not one of its games.
+    session.add(
+        GameAttendance(
+            game_id=uuid.UUID(missed),
+            character_id=uuid.UUID(agnes),
+            checked_in_by=record(session, item).given_by,
+            kind="absentee",
+        )
+    )
+    session.flush()
+    assert item_expiry.check_due(session) == 0
+    assert held(expiring, agnes)[0]["expiry"]["games_left"] == 1
 
 
 # --- the cycle -----------------------------------------------------------------------------

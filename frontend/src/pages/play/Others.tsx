@@ -2,13 +2,13 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { OtherOut, SeenOut } from "../../api/types";
+import type { SeenOut } from "../../api/types";
 import { Pronouns } from "../../components/PronounsInput";
 import { Badge, Button, ErrorText, Input } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { endingText } from "../character/status";
-import { leadershipOf, matching, shownSeen } from "./others";
+import { leadershipOf, matching, sectLine, shownSeen } from "./others";
 import { tapId, type Shown } from "./tracker";
 
 function cx(...classes: (string | false | null | undefined)[]): string {
@@ -77,11 +77,6 @@ export function Others({ view, undo, online }: { view: Shown; undo: (tapId: stri
       )}
     </section>
   );
-}
-
-/** "Camarilla · Prince", or the sect alone. */
-function sectLine(o: OtherOut): string {
-  return [o.sect ?? "No sect", ...o.titles].join(" · ");
 }
 
 function OtherStatus({ view, otherId, undo, online, onBack }: { view: Shown; otherId: string; undo: (tapId: string) => void; online: boolean; onBack: () => void }) {

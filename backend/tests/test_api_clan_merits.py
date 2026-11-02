@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from horatio.clan_merits import Setting, needed
 from horatio.rules.files import DATA_DIR, load_rule_set
-from tests.api_helpers import Person, Troupe, new_character
+from tests.api_helpers import Person, Troupe, finish, new_character
 from tests.test_api_creation import FULL_BUILD, creation, pick
 
 pytestmark = pytest.mark.usefixtures("without_bank")
@@ -190,6 +190,101 @@ def test_a_troupe_of_one_sect_is_the_setting_and_names_its_own_rarities(troupe: 
     assert bloodline.status_code == 422
 
 
+def test_a_troupe_chooses_its_own_default_bloodlines(troupe: Troupe) -> None:
+    """Issue #435: a troupe plays a clan's default as another bloodline, or as the plain
+    clan; characters being built here follow, and finished ones keep what they have."""
+    limited = troupe.lead.client.patch(
+        f"/troupes/{troupe.id}", json={"allowed_sects": ["Camarilla"]}
+    )
+    assert limited.status_code == 200, limited.text
+
+    def built_here(name: str, clan: str) -> str:
+        character_id = new_character(troupe, troupe.player, name, finished=False, clan=clan)
+        moved = troupe.player.client.put(
+            f"/characters/{character_id}/building-troupe", json={"troupe_id": troupe.id}
+        )
+        assert moved.status_code == 200, moved.text
+        return character_id
+
+    # By the book, the Camarilla's Tzimisce are Carpathian: free of the bloodline merit,
+    # and the plain clan one step rarer (p. 403).
+    carpathian = built_here("Vlad", "Tzimisce: Carpathian")
+    plain = built_here("Ilona", "Tzimisce")
+    finished = built_here("Old Mihai", "Tzimisce: Carpathian")
+    assert clan_merits(creation(troupe.player, carpathian)) == [("Rare Clan", 4)]
+    assert clan_merits(creation(troupe.player, plain)) == [("Restricted Clan", 6)]
+    finish(troupe, finished)
+
+    shown = troupe.lead.client.get(f"/troupes/{troupe.id}/default-bloodlines").json()
+    assert shown["setting"] == "Camarilla"
+    tzimisce = next(c for c in shown["clans"] if c["clan"] == "Tzimisce")
+    assert tzimisce["book"] == {"Camarilla": "Tzimisce: Carpathian"}
+    assert tzimisce["house"] is None
+    assert "Tzimisce: Koldun" in tzimisce["bloodlines"]
+    assert all(c["clan"] != "Brujah" or c["bloodlines"] for c in shown["clans"])
+
+    # Only storytellers choose, and only a clan and one of its own bloodlines.
+    path = f"/troupes/{troupe.id}/default-bloodlines"
+    plain_tzimisce = {"defaults": {"Tzimisce": "Tzimisce"}}
+    assert troupe.player.client.put(path, json=plain_tzimisce).status_code == 403
+    for wrong in (
+        {"Tzimisce": "Gangrel: Coyote"},
+        {"Tzimisce: Koldun": "Tzimisce: Koldun"},
+        {"Tzimisce": "Tzimisce: Nobody"},
+    ):
+        assert troupe.lead.client.put(path, json={"defaults": wrong}).status_code == 422
+
+    # Land of the Sky's house rule: the default Tzimisce is the plain clan.
+    chosen = troupe.lead.client.put(path, json=plain_tzimisce)
+    assert chosen.status_code == 200, chosen.text
+    assert next(c for c in chosen.json()["clans"] if c["clan"] == "Tzimisce")["house"] == (
+        "Tzimisce"
+    )
+    assert clan_merits(creation(troupe.player, plain)) == [("Rare Clan", 4)]
+    assert clan_merits(creation(troupe.player, carpathian)) == [
+        ("Rare Clan", 4),
+        ("Bloodline: Carpathian", 3),
+    ]
+    assert held_merits(troupe.player, carpathian) == {"Rare Clan": 4, "Bloodline: Carpathian": 3}
+    # A finished character keeps its bloodline and merits.
+    assert held_merits(troupe.player, finished) == {"Rare Clan": 4}
+
+    # Another bloodline as the default: it needs no merit, and the plain clan pays more.
+    koldun = troupe.lead.client.put(path, json={"defaults": {"Tzimisce": "Tzimisce: Koldun"}})
+    assert koldun.status_code == 200, koldun.text
+    state = creation(troupe.player, plain)
+    assert clan_merits(state) == [("Restricted Clan", 6)]
+    name = troupe.lead.client.get(f"/troupes/{troupe.id}").json()["name"]
+    assert state["clan_merits"][0]["why"] == (
+        f"{name} plays Tzimisce: Koldun as the default Tzimisce, so Tzimisce's own"
+        " line takes its bloodline's cost: it is restricted there."
+    )
+    assert choose(troupe.player, carpathian, "clan", "Tzimisce: Koldun").status_code == 200
+    assert clan_merits(creation(troupe.player, carpathian)) == [("Rare Clan", 4)]
+
+    # Players read it on the House rules tab, and in the rules browser.
+    read = troupe.player.client.get(f"/troupes/{troupe.id}/house-rules").json()
+    other = {s["name"]: (s["text"], s["book_text"]) for s in read["other"]}
+    assert other["The default Tzimisce"] == ("Tzimisce: Koldun", "Tzimisce: Carpathian")
+    browsed = troupe.player.client.get(
+        "/rules/vampire/browse", params={"troupe_id": troupe.id}
+    ).json()
+    rarity = next(r for r in browsed["rarities"] if r["clan"] == "Tzimisce")
+    assert (rarity["default"], rarity["default_house"]) == ("Tzimisce: Koldun", True)
+    assert next(r for r in browsed["rarities"] if r["clan"] == "Assamite")["default"] == (
+        "Assamite: Vizier"
+    )
+    log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
+    assert "lead set the clans' default bloodlines here: Tzimisce as Tzimisce: Koldun." in log
+    assert "lead set the clans' default bloodlines here: Tzimisce as the plain clan." in log
+
+    # Back to the book.
+    assert troupe.lead.client.put(path, json={"defaults": {}}).status_code == 200
+    assert clan_merits(creation(troupe.player, plain)) == [("Restricted Clan", 6)]
+    read = troupe.player.client.get(f"/troupes/{troupe.id}/house-rules").json()
+    assert "The default Tzimisce" not in {s["name"] for s in read["other"]}
+
+
 def test_more_than_seven_points_is_restricted_clan(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player, finished=False, clan="Tzimisce: Koldun")
     assert choose(troupe.player, character_id, "sect", "Camarilla").status_code == 200
@@ -261,6 +356,26 @@ def test_the_book_tables() -> None:
     assert names("Gangrel", "Sabbat") == [("Uncommon Clan", 2)]
     # A clan the setting does not name is restricted (p. 404).
     assert names("Baali", "Camarilla") == [("Restricted Clan", 6)]
+
+    # A troupe's own default (#435): the plain clan, or another bloodline, in place of
+    # the book's; the book's default then needs its bloodline merit.
+    def house(clan: str, sect: str | None, defaults: dict[str, str]) -> list[tuple[str, int]]:
+        setting = Setting(sect, troupe="Land of the Sky", defaults=defaults)
+        return [(m.name, m.points) for m in needed(rule_set, clan, setting, value)]
+
+    plain = {"Tzimisce": "Tzimisce"}
+    assert names("Tzimisce", "Camarilla") == [("Restricted Clan", 6)]
+    assert house("Tzimisce", "Camarilla", plain) == [("Rare Clan", 4)]
+    assert house("Tzimisce: Carpathian", "Camarilla", plain) == [
+        ("Rare Clan", 4),
+        ("Bloodline: Carpathian", 3),
+    ]
+    koldun = {"Tzimisce": "Tzimisce: Koldun"}
+    assert house("Tzimisce: Koldun", "Camarilla", koldun) == [("Rare Clan", 4)]
+    assert house("Tzimisce", "Camarilla", koldun) == [("Restricted Clan", 6)]
+    # It holds in every sect's setting; another clan still goes by the book.
+    assert house("Tzimisce: Koldun", "Sabbat", koldun) == []
+    assert house("Gangrel: Coyote", "Sabbat", koldun) == []
     # A default bloodline's merit is worth the 2 points one step rarer stands for, but
     # for the Carpathians' 3: a plain Tzimisce in the Camarilla pays 6, not 7.
     for (category, name), trait in rule_set.traits.items():

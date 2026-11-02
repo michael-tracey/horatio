@@ -7,6 +7,7 @@
 import { useSyncExternalStore } from "react";
 import type { components } from "../../api/schema";
 import type { FreePick } from "./freeChoices";
+import { NO_TEACHER, type TeacherChoice } from "./teachers";
 
 /** A change asked of the home troupe's staff as an exception to the rules: why, and whether at no XP cost. */
 export type Exception = { reason: string; free: boolean };
@@ -21,6 +22,10 @@ export type CartLine =
       from: number;
       to: number;
       teacher?: string;
+      /** The troupe's character who teaches it, where a teacher rule asks for one (horatio.teaching). */
+      teacher_id?: string;
+      /** The teacher is an NPC, named in `teacher`. */
+      npc_teacher?: boolean;
       fixed?: boolean;
       exception?: Exception;
       /** For a merit that gives free traits the player chooses: their choices, made with it. */
@@ -71,12 +76,37 @@ export function setRating(
     from,
     to,
     ...((trait.teacher ?? found?.teacher) ? { teacher: trait.teacher ?? found?.teacher } : {}),
+    ...(found?.teacher_id ? { teacher_id: found.teacher_id } : {}),
+    ...(found?.npc_teacher ? { npc_teacher: true } : {}),
     ...((trait.fixed ?? found?.fixed) ? { fixed: true } : {}),
     ...((trait.picks ?? found?.picks)?.length ? { picks: trait.picks ?? found?.picks, picked: trait.picked ?? found?.picked } : {}),
     // Asked as an exception: it stays asked at the new rating, which is judged again when spent.
     ...((trait.exception ?? found?.exception) && to > from ? { exception: trait.exception ?? found?.exception } : {}),
   };
   return found ? lines.map((l) => (l === found ? line : l)) : [...lines, line];
+}
+
+/** Choose who teaches a line a troupe's teacher rule asks a teacher for. */
+export function chooseTeacher(lines: CartLine[], line: CartLine, choice: TeacherChoice): CartLine[] {
+  return lines.map((l) => {
+    if (l !== line || l.kind !== "set") return l;
+    const rest = { ...l };
+    delete rest.teacher;
+    delete rest.teacher_id;
+    delete rest.npc_teacher;
+    return {
+      ...rest,
+      ...(choice.teacher ? { teacher: choice.teacher } : {}),
+      ...(choice.teacher_id ? { teacher_id: choice.teacher_id } : {}),
+      ...(choice.npc ? { npc_teacher: true } : {}),
+    };
+  });
+}
+
+/** The teacher chosen for a line, as the picker shows it. */
+export function teacherOf(line: CartLine): TeacherChoice {
+  if (line.kind !== "set") return NO_TEACHER;
+  return { teacher: line.teacher ?? "", teacher_id: line.teacher_id ?? null, npc: !!line.npc_teacher };
 }
 
 /** Ask staff for a line the rules refuse, as an exception. */
@@ -113,7 +143,8 @@ export function toChange(line: CartLine): CartChange {
         detail: line.detail,
         rating: line.to,
         from_rating: line.from,
-        teacher: line.teacher ?? "",
+        teacher: line.teacher_id ? "" : (line.teacher ?? ""),
+        ...(line.teacher_id ? { teacher_id: line.teacher_id } : {}),
         ...(line.exception ? { exception: line.exception } : {}),
         ...(line.picks?.length ? { picks: line.picks } : {}),
       };

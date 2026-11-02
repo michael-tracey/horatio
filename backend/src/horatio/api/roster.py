@@ -314,6 +314,10 @@ MESSAGES: dict[str, str] = {
     "troupe.xp_range_game": "{actor} added a game's {amount} XP to the floor and ceiling.",
     "xp.game_award": "{actor} awarded the game on {game}: {amount} XP to each of the"
     " {characters} characters there who call this troupe home.",
+    "xp.game_award_chart": "{actor} awarded the game on {game} by the troupe's chart:"
+    " {total} XP in all to the {characters} characters who call this troupe home.",
+    "troupe.xp_game_settings": "{actor} set the troupe's game XP: {chart}; adjustments:"
+    " {adjustments}; monthly XP {cap}; absentee games {absentee}.",
     "troupe.xp_range_downtime": "{actor} added a downtime's {amount} XP to the ceiling.",
     "troupe.xp_range_set": "{actor} set the XP floor to {floor} and the ceiling to {ceiling}:"
     " {reason}",
@@ -430,6 +434,7 @@ MESSAGES: dict[str, str] = {
     "status.ban_marked": "{actor} marked the status ban “{ban}” for {character}: {mark}{because}.",
     "troupe.status_by": "{actor} set Status on sheets: {setting}.",
     "troupe.titles_by": "{actor} set Titles on sheets: {setting}.",
+    "troupe.status_at_checkin": "{actor} set the night's status source: {setting}.",
     "troupe.badges": "{actor} set what badges print: {titles}, {status}.",
     "troupe.badge_pronouns": "{actor} set badges to print {pronouns}.",
     "troupe.whos_who": "{actor} set the Who's Who to show {status}.",
@@ -441,6 +446,15 @@ MESSAGES: dict[str, str] = {
     "troupe.sects_limited": "{actor} set which sects may join: {sects}.",
     "troupe.splats_limited": "{actor} set which splats may join: {splats}.",
     "house.check": "{actor} set the rule {check} to {strength}.",
+    "house.check_added": "{actor} added a house check: {text} ({breaking})",
+    "house.check_changed": "{actor} changed a house check: {text} ({breaking})",
+    "house.check_removed": "{actor} removed a house check: {text}",
+    "house.teacher_added": "{actor} added a teacher rule: {text}",
+    "house.teacher_changed": "{actor} changed a teacher rule: {text}",
+    "house.teacher_removed": "{actor} removed a teacher rule: {text}",
+    "sheet.teacher": "{actor} named {teacher} to teach {character} {name} {rating}.",
+    "sheet.teacher_confirmed": "{actor} agreed for {character} to spend Willpower: {what}.",
+    "sheet.teacher_refused": "{actor} said no for {character}: {what}.",
     "house.cost_added": "{actor} priced {what} at {price}.",
     "house.cost_changed": "{actor} changed the price of {what} to {price}.",
     "house.creation_set": "{actor} set the troupe's starting {category}: {text}.",
@@ -457,6 +471,12 @@ MESSAGES: dict[str, str] = {
     "house.trait_deleted": "{actor} deleted the {what} {name}.",
     "house.trait_applied": "{actor} gave {character} the {what} {name} ({how}): {reason}",
     "house.trait_removed": "{actor} took the {what} {name} off {character}: {reason}",
+    "house.trait_banned": "{actor} banned {what} in the troupe (reason: {reason}).",
+    "house.trait_unbanned": "{actor} lifted the troupe's ban on {what}.",
+    "house.trait_worded": "{actor} set the troupe's wording for {what}, {how}.",
+    "house.trait_wording_removed": "{actor} removed the troupe's wording for {what}.",
+    "house.trait_recategorised": "{actor} made {what} {kind} in the troupe (by the book: {book}).",
+    "house.trait_category_restored": "{actor} put {what} back in its book category, {book}.",
     "troupe.specializations": "{actor} set the troupe's {kind}: {count} options.",
     "sheet.primary_path": "{actor} named {path} {character}'s primary path of {discipline}.",
     "sheet.detail": "{actor} set {character}'s {name} detail to {detail}.",
@@ -467,7 +487,11 @@ MESSAGES: dict[str, str] = {
     " background {generation}, techniques lost: {techniques}, Humanity lowered {humanity},"
     " Beast traits {beast}, flaw: {flaw}.",
     "house.golconda": "{actor} set the house option: Golconda Seekers {setting}.",
+    "house.languages": "{actor} set how many languages Linguistics gives: {setting}.",
+    "house.clan_names": "{actor} chose to call the Assamites {name}.",
     "house.feeding": "{actor} set feeding to {feeding}, with optional rules: {rules}.",
+    "house.retainer_rules": "{actor} set the house rules for Retainers: upkeep {upkeep};"
+    " growth {growth}.",
     "house.territory_saved": "{actor} added the feeding territory {name} ({size}): {holders}.",
     "house.territory_changed": "{actor} changed the feeding territory {name} ({size}): {holders}.",
     "house.territory_archived": "{actor} took the feeding territory {name} off the list.",
@@ -476,6 +500,17 @@ MESSAGES: dict[str, str] = {
     "house.diablerie_flaws": "{actor} set what diablerie does to Lesser Generation and Thin"
     " Blooded: it {setting}.",
     "house.clan_rarity": "{actor} set how rare clans are here: {rarities}.",
+    "house.default_bloodlines": "{actor} set the clans' default bloodlines here: {defaults}.",
+    "house.written_rule_added": "{actor} added the written rule {title} ({section}).",
+    "house.written_rule_changed": "{actor} changed the written rule {title}.",
+    "house.written_rule_moved": "{actor} moved the written rule {title} {direction}.",
+    "house.written_rule_deleted": "{actor} deleted the written rule {title}.",
+    "house.written_rules_public": "{actor} set the troupe's profile so it {state}.",
+    "house.free_changes": "{actor} set free changes for new characters: {setting}; never"
+    " refunded: {excluded}.",
+    "sheet.free_change": "{actor} made a free change to {character}: {name} {from_rating} →"
+    " {to_rating}, {refund} XP back.",
+    "character.free_changes_ended": "{character}'s free changes as a new character ended: {why}.",
     "sheet.give": "{actor} gave {character} {name} {rating} by exception ({cost} XP): {reason}",
     "sheet.power_choices": "{actor} changed {character}'s choices for {power}.",
     "creation.pick": "{actor} picked {name} {rating} for {character}.",
@@ -559,6 +594,13 @@ MESSAGES: dict[str, str] = {
     "retainer.restored": "{actor} marked {name}, one of {character}'s Retainers, as serving again.",
     "retainer.linked": "{actor} linked {name}, one of {character}'s Retainers, to an NPC.",
     "retainer.unlinked": "{actor} unlinked {name}, one of {character}'s Retainers, from its NPC.",
+    "retainer.neglected": "{name}, one of {character}'s Retainers, is neglected: its {cost}"
+    " upkeep wasn't paid.",
+    "retainer.neglect_cleared": "{actor} cleared the neglect of {name}, one of {character}'s"
+    " Retainers.",
+    "retainer.upkeep_charged": "{actor} closed {cycle}, charging {character} {amount} of"
+    " Retainer upkeep for the next game.",
+    "retainer.grew": "{name}, one of {character}'s Retainers, gained {xp} XP ({where}).",
     "identity.accepted": "{actor} noted {character}'s identity {name} as Accepted by {by}.",
     "identity.unaccepted": "{actor} noted {character}'s identity {name} as Accepted by no one.",
     "character.visible_note": "{actor} set what others see on {character}'s badge: {note}",
@@ -571,6 +613,8 @@ MESSAGES: dict[str, str] = {
     "play.checkin_closed": "{actor} closed check-in for the game on {game}.",
     "play.checked_in": "{actor} checked {character} in to the game on {game}.",
     "play.checked_out": "{actor} checked {character} out of the game on {game}.",
+    "play.absentee_marked": "{actor} marked {character} absentee for the game on {game}.",
+    "play.absentee_unmarked": "{actor} took back {character}'s absentee game on {game}.",
     "play.modifier_added": "{actor} added the modifier {label} to {character}.",
     "play.modifier_changed": "{actor} changed {character}'s modifier {label}.",
     "play.modifier_removed": "{actor} removed {character}'s modifier {label}.",

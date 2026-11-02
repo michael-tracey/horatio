@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import audit, closing, handles, pictures, sect_status, titles, xp_range
+from horatio import audit, closing, handles, pictures, play_status, sect_status, titles, xp_range
 from horatio.api.troupe_profiles import Profile
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
@@ -72,12 +72,18 @@ class TroupeOut(BaseModel):
     # feeding is tracked.
     feeding_territories: bool = False
     feeding_rack: bool = False
+    # What the clan stored as "Assamite" is called here (horatio.clan_names): only
+    # what is shown changes.
+    assamite_name: Literal["Banu Haqim", "Assamite"] = "Banu Haqim"
     # Status on sheets (horatio.sect_status): "players" keep their own fleeting and
     # negative status, naming the patron, or only "staff" add and remove it.
     status_by: str
     # Titles on sheets (horatio.titles): "players" choose their characters' titles
     # from their sect's, or only "staff" give them.
     titles_by: str
+    # House rule: each character's source of abiding status is chosen as it checks in
+    # to a game, and fixed for the game (horatio.play_status).
+    status_at_checkin: bool = False
     # What its game badges print (horatio.badges): the titles held here or not, and
     # the status carried into a game here: "all", "negative" only, or "none".
     badge_titles: bool
@@ -129,6 +135,7 @@ class TroupeChanges(BaseModel):
     starting_xp: int | None = Field(default=None, ge=0, le=10000)
     status_by: Literal["players", "staff"] | None = None
     titles_by: Literal["players", "staff"] | None = None
+    status_at_checkin: bool | None = None
     badge_titles: bool | None = None
     badge_status: Literal["all", "negative", "none"] | None = None
     badge_pronouns: bool | None = None
@@ -300,8 +307,10 @@ def one_out(
         feeding_resonance=troupe.feeding_resonance,
         feeding_territories=troupe.feeding_territories,
         feeding_rack=troupe.feeding_rack,
+        assamite_name=troupe.assamite_name,  # type: ignore[arg-type]  # checked by the database
         status_by=troupe.status_by,
         titles_by=troupe.titles_by,
+        status_at_checkin=troupe.status_at_checkin,
         badge_titles=troupe.badge_titles,
         badge_status=troupe.badge_status,
         badge_pronouns=troupe.badge_pronouns,
@@ -503,6 +512,17 @@ def change_troupe(
             troupe_id=troupe.id,
             setting=titles.SETTING_TEXT[body.titles_by],
         )
+    if body.status_at_checkin is not None:
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
+        if body.status_at_checkin != troupe.status_at_checkin:
+            troupe.status_at_checkin = body.status_at_checkin
+            audit.record(
+                db,
+                user,
+                "troupe.status_at_checkin",
+                troupe_id=troupe.id,
+                setting=play_status.CHECKIN_TEXT[body.status_at_checkin],
+            )
     if body.badge_titles is not None or body.badge_status is not None:
         require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
         if body.badge_titles is not None:
