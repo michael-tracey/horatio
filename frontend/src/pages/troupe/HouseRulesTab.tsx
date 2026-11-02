@@ -8,6 +8,7 @@ import { HouseMark, HouseSummary } from "../../components/HouseMark";
 import { useClanName } from "../../components/ClanNames";
 import { Card, ErrorText, Loading } from "../../components/ui";
 import { BookTraitChanges } from "./BookTraitChanges";
+import { writtenStrength } from "./checkStrength";
 import { pageText } from "./bookPage";
 import { GameXpRules } from "./GameXpSettings";
 import { Chart } from "./LanguagesSection";
@@ -143,7 +144,7 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
                 }
                 note={c.own ? "the troupe's own check" : null}
                 now={PLAYED[c.house] ?? c.house}
-                book={c.own ? "Not in the book" : (PLAYED[c.strength] ?? c.strength)}
+                book={c.own ? "Not in the book" : writtenStrength(c, (s) => PLAYED[s] ?? s)}
               />
             ))}
           </ul>

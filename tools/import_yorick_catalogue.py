@@ -489,8 +489,13 @@ def main(csv_path: str) -> None:
             if category == "flaws" and ": " in name and key == "requirement" and not value:
                 prefix = name.split(": ")[0]
                 value = FLAW_PREFIX_CLANS.get(prefix, prefix)
+            if key == "requirement" and value == "requires_specialization":
+                # Yorick's requirement column also marks a trait bought once per
+                # field or name; the rules keep that apart from who it is for.
+                properties.append("requires_specialization = true")
+                value = ""
             if category == "merits" and name in CLAN_OF_MERIT:
-                if key == "requirement" and value in ("", "requires_specialization"):
+                if key == "requirement" and not value:
                     value = CLAN_OF_MERIT[name]
                 if key == "type" and not value:
                     value = "Clan"

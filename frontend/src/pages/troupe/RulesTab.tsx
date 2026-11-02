@@ -22,6 +22,7 @@ import { LocationRulesSection } from "./LocationRulesSection";
 import { OwnChecks } from "./OwnChecks";
 import { QuestSettings } from "./QuestSettings";
 import { RetainerRules } from "./RetainerRules";
+import { writtenStrength } from "./checkStrength";
 import { StartingSection } from "./StartingSection";
 import { TeacherRules } from "./TeacherRules";
 import { WrittenRulesSection } from "./WrittenRulesSection";
@@ -304,8 +305,12 @@ function groupChecks(checks: CheckOut[]): Map<string, CheckOut[]> {
 
 const strengthLabel = (value: string) => strength(value)?.label ?? value;
 
+const writtenLabel = (rule: CheckOut) => writtenStrength(rule, strengthLabel);
+
 function RuleRow({ rule, canEdit, onChange }: { rule: CheckOut; canEdit: boolean; onChange: (value: Strength | null) => void }) {
-  const played = strength(rule.house ?? rule.strength);
+  const house = rule.house ? strength(rule.house) : undefined;
+  const written = strength(rule.strength);
+  const played = house ?? (written && { ...written, label: writtenLabel(rule) });
   const named = useClanName();
   return (
     <li className="flex flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:gap-4">
@@ -327,8 +332,8 @@ function RuleRow({ rule, canEdit, onChange }: { rule: CheckOut; canEdit: boolean
             onChange={(e) => onChange((e.target.value || null) as Strength | null)}
             className={`min-h-8 w-56 py-1 text-sm ${rule.house ? "border-gold/60 text-gold" : ""}`}
           >
-            <option value="">As written ({strength(rule.strength)?.label ?? rule.strength})</option>
-            {STRENGTHS.filter((s) => s.value !== rule.strength).map((s) => (
+            <option value="">As written ({writtenLabel(rule)})</option>
+            {STRENGTHS.filter((s) => rule.once_finished || s.value !== rule.strength).map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label}
               </option>

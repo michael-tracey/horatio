@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { added, askException, costText, describe as describeLine, loadCart, ordered, pick, plannedRating, setRating, swap, toChange, unpick, type CartLine } from "./cart";
+import { added, askable, askException, costText, describe as describeLine, loadCart, ordered, pick, plannedRating, setRating, swap, toChange, unaskable, unpick, type CartLine } from "./cart";
 
 const brawl = { category: "skills", name: "Brawl", detail: "", rating: 2 };
 
@@ -86,6 +86,40 @@ describe("askException", () => {
     expect(setRating(asked, brawl, 4)[0]).toMatchObject({ to: 4, exception });
     // Lowered back below where it was saved, it is no longer asked.
     expect(setRating(asked, brawl, 1)[0]).not.toHaveProperty("exception");
+  });
+});
+
+describe("askable", () => {
+  const priced = (over: Partial<{ refused: string | null; askable: boolean; unaskable: string | null }>) => ({
+    cost: 2,
+    refused: "Bloodline: Creeps can only be chosen during character creation.",
+    needs_approval: false,
+    breaks: [],
+    repriced: [],
+    askable: true,
+    unaskable: null,
+    ...over,
+  });
+  const creeps = setRating([], { category: "merits", name: "Bloodline: Creeps", detail: "", rating: 0 }, 2)[0]!;
+
+  it("offers asking staff only when the server says an exception can set the refusal aside", () => {
+    expect(askable(creeps, priced({}))).toBe(true);
+    expect(askable(creeps, priced({ askable: false, unaskable: "Asking staff can't help with this." }))).toBe(false);
+    expect(askable(creeps, undefined)).toBe(false);
+  });
+
+  it("is not offered for a line that is not refused, already asked, or not a raise", () => {
+    expect(askable(creeps, priced({ refused: null }))).toBe(false);
+    const asked = askException([creeps], creeps, { reason: "Found in the Depths", free: false })[0]!;
+    expect(askable(asked, priced({}))).toBe(false);
+    const lowered = setRating([], brawl, 1)[0]!;
+    expect(askable(lowered, priced({}))).toBe(false);
+  });
+
+  it("says why asking can't help when the server says so", () => {
+    expect(unaskable(creeps, priced({ askable: false, unaskable: "Asking staff can't help with this." }))).toBe("Asking staff can't help with this.");
+    expect(unaskable(creeps, priced({}))).toBeNull();
+    expect(unaskable(creeps, priced({ refused: null, askable: false, unaskable: "Ignored" }))).toBeNull();
   });
 });
 

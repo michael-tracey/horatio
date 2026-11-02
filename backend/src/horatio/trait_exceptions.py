@@ -20,6 +20,13 @@ breaks, and `sheets.sheet_violations` leaves those checks out for that trait,
 up to the rating it was given at. Any other check it breaks is still flagged,
 and raising it further is judged as normal. It goes when the trait does.
 
+An exception also sets aside the lock on a trait chosen at creation only, for
+that one trait: taking it after creation ("finished"), or changing it once a
+home troupe has accepted the character ("accepted"), as a storyteller may rule
+for a bloodline discovered in play. It keeps the lock among its checks
+(`LOCK_KEY`). A bloodline merit kept this way makes the character of that
+bloodline, as choosing it at creation would (`clan_merits.join_bloodline`).
+
 Free dots are free dots (CONTEXT.md: Free Rating): a later raise is priced from
 them, and the player cannot take them away for XP back. A free exception still
 writes its line in the XP history, at 0 XP, with the reason, and owes no
@@ -35,7 +42,7 @@ from fastapi import HTTPException
 from sqlalchemy import select, true
 from sqlalchemy.orm import Session
 
-from horatio import audit, notifications, sheets
+from horatio import audit, clan_merits, notifications, sheets
 from horatio.models import (
     Approval,
     Character,
@@ -48,7 +55,7 @@ from horatio.models import (
     XpEntry,
 )
 from horatio.rules.checks import Violation
-from horatio.sheets import SheetState, TraitKey, conflict, unprocessable
+from horatio.sheets import Lock, SheetState, TraitKey, conflict, unprocessable
 
 
 @dataclass(frozen=True)
@@ -59,12 +66,40 @@ class Ask:
     free: bool = False
 
 
-def checks_of(broken: Sequence[Violation]) -> list[dict[str, str]]:
-    """The checks an exception sets aside, as it keeps them: once each."""
+# How an exception keeps a lock it sets aside, among its checks: "lock:finished".
+LOCK_KEY = "lock:"
+# What setting each lock aside means, for staff to read.
+SET_ASIDE = {
+    "finished": "Chosen after creation, by exception.",
+    "accepted": "Changed after a home troupe accepted the character, by exception.",
+}
+
+
+def checks_of(
+    broken: Sequence[Violation], key: TraitKey | None = None, lock: Lock | None = None
+) -> list[dict[str, str]]:
+    """The checks an exception sets aside, as it keeps them: once each; and the
+    `lock` on its trait (`key`), as a trait chosen at creation only, if any."""
     found: dict[str, str] = {}
+    if lock is not None and key is not None:
+        found[f"{LOCK_KEY}{lock}"] = sheets.lock_message(lock, key[1])
     for violation in broken:
         found.setdefault(violation.check.key, violation.message)
     return [{"key": key, "message": message} for key, message in found.items()]
+
+
+def set_aside(checks: Sequence[dict[str, str]]) -> list[str]:
+    """The locks an exception's kept checks set aside, in words."""
+    return [
+        SET_ASIDE[c["key"].removeprefix(LOCK_KEY)]
+        for c in checks
+        if c["key"].startswith(LOCK_KEY) and c["key"].removeprefix(LOCK_KEY) in SET_ASIDE
+    ]
+
+
+def rules_broken(checks: Sequence[dict[str, str]]) -> list[str]:
+    """The rules an exception's kept checks set aside, but for the locks."""
+    return [c["message"] for c in checks if not c["key"].startswith(LOCK_KEY)]
 
 
 def named(key: TraitKey) -> str:
@@ -105,15 +140,17 @@ def ask(
     broken: Sequence[Violation],
     before: SheetState,
     normal_cost: int | None,
-) -> bool:
+) -> list[dict[str, str]] | None:
     """A change asked as an exception has been made: raise the approval it waits
-    on, and keep the exception, so the checks it breaks are set aside for it
-    while it waits. Says whether it did: not if the trait was not raised."""
+    on, and keep the exception, so the checks it breaks, and any lock on it as a
+    trait chosen at creation only, are set aside for it while it waits. Says what
+    it keeps set aside; None if the trait was not raised, so nothing is asked."""
     row = next((r for r in sheets.sheet_rows(db, character) if r.key == key), None)
     rating = (row.trait.rating or 0) if row else 0
     from_rating = before.ratings.get(key, 0)
     if row is None or rating <= from_rating:
-        return False
+        return None
+    kept = checks_of(broken, key, sheets.lock_on(db, character, key))
     assert character.home_troupe_id is not None
     spent = spent_since(db, character, row.definition, before.xp)
     approval = Approval(
@@ -140,7 +177,7 @@ def ask(
             character_id=character.id,
             character_trait_id=row.trait.id,
             rating=rating,
-            checks=checks_of(broken),
+            checks=kept,
             free=asked.free,
             normal_cost=normal_cost if asked.free else spent,
             reason=asked.reason,
@@ -163,7 +200,7 @@ def ask(
         reason=asked.reason,
     )
     notifications.approval_waiting(db, approval)
-    return True
+    return kept
 
 
 def asked_for(db: Session, approval: Approval) -> TraitException | None:
@@ -221,6 +258,7 @@ def approve_asked(
     exception.given_by = staff.id
     exception.given_at = datetime.now(UTC)
     db.flush()
+    clan_merits.join_bloodline(db, staff, character, definition.name)
     if not exception.free:
         whole = definition.properties.get("rating") is not None
         owed = sheets.owed_for(
@@ -289,11 +327,18 @@ def give(
         raise
     judged = sheets.broken_since(db, None, character, before, excepting=[key])
     broken = judged.excepted.get(key, [])
-    refusals = [] if despite else [sheets.problem(v) for v in broken]
+    lock = judged.unlocked.get(key)
+    kept = checks_of(broken, key, lock)
+    refusals = (
+        []
+        if despite
+        else [sheets.problem(v) for v in broken]
+        + ([sheets.Problem(sheets.lock_message(lock, name), *key)] if lock else [])
+    )
     refusals += judged.refused
     outcome = Given(
         cost=balance - sheets.xp_balance(db, character),
-        breaks=[c["message"] for c in checks_of(broken)],
+        breaks=[c["message"] for c in kept],
         refused=sheets.refusal(refusals) if refusals else None,
     )
     if trial or refusals:
@@ -309,7 +354,7 @@ def give(
             character_id=character.id,
             character_trait_id=row.trait.id,
             rating=rating,
-            checks=checks_of(broken),
+            checks=kept,
             free=free,
             normal_cost=change.normal_cost if free else outcome.cost,
             reason=reason,
@@ -319,6 +364,7 @@ def give(
         )
     )
     db.flush()
+    clan_merits.join_bloodline(db, staff, character, row.definition.name)
     audit.record(
         db,
         staff,

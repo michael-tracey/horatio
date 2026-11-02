@@ -9,7 +9,7 @@ import { StepButton } from "../../components/StepButton";
 import { Badge, Button, Card, ErrorText, Notice } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { AskStaff } from "./AskStaff";
-import { askException, chooseTeacher, costText, describe, teacherOf, toChange, type Cart, type CartLine } from "./cart";
+import { askable as canAsk, askException, chooseTeacher, costText, describe, teacherOf, toChange, unaskable, type Cart, type CartLine } from "./cart";
 import { TeacherPicker } from "./TeacherPicker";
 
 type CartOut = components["schemas"]["CartOut"];
@@ -147,8 +147,9 @@ export function CartPanel({
                 const priced = prices.data?.lines[i];
                 const cost = costText(priced?.cost);
                 const exception = line.kind === "set" ? line.exception : undefined;
-                // Only a home troupe's staff can make an exception, and only to add or raise a trait.
-                const askable = !!priced?.refused && !exception && line.kind === "set" && line.to > line.from && !!character.home_troupe_id;
+                // Only what an exception sets aside can be asked of the home troupe's staff.
+                const askable = canAsk(line, priced);
+                const cantAsk = unaskable(line, priced);
                 return (
                   <li key={`${describe(line)}/${i}`} className="flex flex-col gap-0.5">
                     <span className="flex items-start justify-between gap-2">
@@ -196,6 +197,7 @@ export function CartPanel({
                         {priced?.breaks.length ? <span className="block">Against the rules: {named(priced.breaks.join(" "))}</span> : null}
                       </span>
                     )}
+                    {cantAsk && <span className="text-xs text-mist">{named(cantAsk)}</span>}
                     {askable && asking !== line && (
                       <button type="button" className="self-start text-xs text-gold underline" onClick={() => setAsking(line)}>
                         Ask staff
