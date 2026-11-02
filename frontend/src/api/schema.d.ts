@@ -6871,6 +6871,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/languages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Languages
+         * @description How many languages Linguistics gives in the troupe, and who holds more.
+         */
+        get: operations["read_languages_api_troupes__troupe_id__languages_get"];
+        /**
+         * Set Languages
+         * @description Choose how many languages Linguistics gives: creation, purchases, review and
+         *     the sheet follow at once. A character holding more than the new chart allows
+         *     keeps them, flagged on the sheet and listed here.
+         */
+        put: operations["set_languages_api_troupes__troupe_id__languages_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/lead": {
         parameters: {
             query?: never;
@@ -13872,6 +13898,8 @@ export interface components {
             book_text: string;
             /** Name */
             name: string;
+            /** Table */
+            table?: number[] | null;
             /** Text */
             text: string;
         };
@@ -14462,8 +14490,12 @@ export interface components {
         };
         /** KindOut */
         KindOut: {
+            /** Allowed */
+            allowed: number | null;
             /** Category */
             category: string;
+            /** Counted */
+            counted: number;
             /** Custom */
             custom: boolean;
             /** From Troupe */
@@ -14482,6 +14514,45 @@ export interface components {
             parent_name: string;
             /** Parent Rating */
             parent_rating: number;
+        };
+        /** LanguagesIn */
+        LanguagesIn: {
+            /** Custom */
+            custom?: number[] | null;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "book" | "accelerated" | "custom";
+            /**
+             * Natural Doubles
+             * @default true
+             */
+            natural_doubles: boolean;
+        };
+        /** LanguagesOut */
+        LanguagesOut: {
+            /** Accelerated */
+            accelerated: number[];
+            /** Book Text */
+            book_text: string;
+            /** Custom */
+            custom: number[];
+            /** Max Rating */
+            max_rating: number;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "book" | "accelerated" | "custom";
+            /** Natural Doubles */
+            natural_doubles: boolean;
+            /** Over */
+            over: components["schemas"]["OverOut"][];
+            /** Table */
+            table: number[];
+            /** Text */
+            text: string;
         };
         /** LearnIn */
         LearnIn: {
@@ -16277,6 +16348,24 @@ export interface components {
             status: components["schemas"]["SeenOut"][] | null;
             /** Troupe Id */
             troupe_id: string | null;
+        };
+        /**
+         * OverOut
+         * @description A character holding more languages than the troupe's chart now allows: they
+         *     keep them, and the sheet shows the broken check.
+         */
+        OverOut: {
+            /** Allowed */
+            allowed: number;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Held */
+            held: number;
+            /** Name */
+            name: string;
         };
         /** OwedOut */
         OwedOut: {
@@ -36399,6 +36488,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_languages_api_troupes__troupe_id__languages_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LanguagesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_languages_api_troupes__troupe_id__languages_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LanguagesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LanguagesOut"];
                 };
             };
             /** @description Validation Error */

@@ -74,19 +74,22 @@ export function SpecializationRow({ character, kind, editable }: { character: Ch
   });
   const heldLabels = new Set(held.map((h) => h.label));
   const options = kind.options.filter((o) => !heldLabels.has(o));
-  const room = held.length < Math.max(kind.parent_rating, 1);
+  // How many it may hold, by the rules' checks (the troupe's chart of languages, two
+  // a dot with Natural Linguist), counting only those not given by another trait.
+  const allowed = kind.allowed ?? kind.parent_rating;
+  const room = kind.counted < Math.max(allowed, 1);
   const pick = (option: string) => {
     // A troupe's options and free text are both stored as Custom with the text.
     void (kind.from_troupe ? add(CUSTOM, option) : add(option, ""));
     setOpen(false);
   };
-  const missing = held.length < kind.parent_rating;
+  const missing = kind.counted < allowed;
 
   return (
     <div className="mb-1 ml-3 border-l border-ash pl-3 text-xs">
       <span className="flex flex-wrap items-center gap-1.5">
-        <span className={missing ? "text-gold" : "text-mist"}>
-          {kind.name} {held.length}/{kind.parent_rating}
+        <span className={kind.counted > allowed ? "text-blood-bright" : missing ? "text-gold" : "text-mist"}>
+          {kind.name} {kind.counted} of {allowed}
         </span>
         {held.map((h) => (
           <span key={`${h.name}/${h.detail}`} className="inline-flex items-center gap-1 rounded border border-ash px-1.5 text-parchment">

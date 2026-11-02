@@ -204,7 +204,7 @@ test("a teacher rule asks for a teacher, and a Lore specialisation is bought fro
   await expect(add).toBeDisabled();
   await lore.getByLabel("Teacher for Sabbat").selectOption({ label: "Brother Tobiah" });
   await add.click();
-  await expect(lore.getByText("Lore Specialisations 1/1")).toBeVisible();
+  await expect(lore.getByText("Lore Specialisations 1 of 1")).toBeVisible();
   await p.screenshot(shots("teacher-lore-specialisation"));
 
   // It waits on the troupe, taught by Brother Tobiah; approving owes the downtime action.
@@ -260,6 +260,38 @@ test("a troupe's players read its house rules: a price the lead changes shows th
   await expect(attributes.getByText("House rule: Training is slow here")).toBeVisible();
   await expect(p.getByText(/The storytellers approve it before the troupe accepts the character/)).toBeVisible();
   await p.screenshot(shots("house-rules"));
+});
+
+test("a lead chooses the accelerated chart of languages, and the House rules tab shows it (#437)", async ({ browser }) => {
+  const custodian = await person(browser, "lingo-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "lingo-lead");
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: `Tongues of Babel ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+
+  // Customise › Rules › Languages: the book's one per dot until the lead picks a chart.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules/languages`);
+  const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Languages from Linguistics" }) });
+  await expect(card.getByLabel(/^Book/)).toBeChecked();
+  await card.getByLabel(/Accelerated chart/).click();
+  const languages = card.getByRole("row", { name: /^Languages/ });
+  await expect(languages.getByRole("cell").nth(6)).toHaveText("32");
+  await expect(card.getByRole("row", { name: /With Natural Linguist/ }).getByRole("cell").nth(6)).toHaveText("64");
+  await card.getByRole("button", { name: "Save" }).click();
+  await expect(l.getByText("Saved: how many languages Linguistics gives")).toBeVisible();
+  await expect(card.getByRole("button", { name: "Save" })).toBeDisabled();
+  await l.screenshot(shots("languages-setting"));
+
+  // Its players read the chart beside the book's.
+  await l.goto(`/troupes/${troupeId}/house-rules`);
+  const other = l.locator("section").filter({ has: l.getByRole("heading", { name: "Other house rules" }) });
+  const rule = other.getByRole("listitem").filter({ hasText: "Languages from Linguistics" });
+  await expect(rule.getByText(/^1, 2, 4, 8, 16, 24 and 32 languages/)).toBeVisible();
+  await expect(rule.getByText(/By the book: One per dot of Linguistics/)).toBeVisible();
+  await expect(rule.getByRole("row", { name: /^Languages/ }).getByRole("cell").nth(4)).toHaveText("16");
 });
 
 test("a troupe's written rules: the lead adds and orders them, and a player reads them by section, in the rules browser and on its profile (#434)", async ({ browser }) => {

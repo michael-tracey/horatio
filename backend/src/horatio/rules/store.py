@@ -53,6 +53,7 @@ from horatio.rules.house_checks import (
     to_check,
 )
 from horatio.rules.house_effects import merged
+from horatio.rules.languages import applied, rule_of
 from horatio.rules.model import (
     ActionKindData,
     AllowanceRuleData,
@@ -831,7 +832,12 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         starting_xp=rule_set.starting_xp,
         titles=titles_from([*rule_set.titles, *rule_set.status_rules.get("titles", [])]),
         status_rules=status_rules_from_dict(rule_set.status_rules),
-        checks=tuple(check_from_dict(c) for c in rule_set.checks if c["key"] not in recategorised),
+        # The two on languages played by the troupe's chart (horatio.rules.languages).
+        checks=applied(
+            [check_from_dict(c) for c in rule_set.checks if c["key"] not in recategorised],
+            rule_of(troupe),
+            house_page(troupe.name if troupe is not None else ""),
+        ),
         grants=tuple(
             g for g in (grant_from_dict(r) for r in rule_set.grants) if g.option in options
         ),

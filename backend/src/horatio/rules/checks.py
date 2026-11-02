@@ -53,11 +53,17 @@ Condition vocabulary (every key in one table must hold):
     finished = true                 the character's creation is finished
     npc = true                      the character is an NPC, built by staff
     more_than_dots = { count = { category, name_prefix }, dots = { category, name_prefix },
-                       per_dot? }
+                       per_dot?, table? }
                                     the sheet holds more traits of the first kind
                                     than it has dots of the second (rituals against
                                     Thaumaturgy), leaving out those another trait
-                                    gives (Chosen of Cappadocius' specialisations)
+                                    gives (Chosen of Cappadocius' specialisations).
+                                    Each dot allows `per_dot` of them (one), or
+                                    `table` lists how many each total of dots
+                                    allows, from one dot: [1, 2, 4] allows 1 at one
+                                    dot, 2 at two, 4 at three, the last carrying on
+                                    above (a troupe's chart of languages,
+                                    horatio.rules.languages)
     above_in_clan = { category, name_prefix }
                                     the subject is rated above every in-clan trait
                                     of that kind the sheet holds, or the primary
@@ -376,13 +382,7 @@ def matches(
                 and t.rating != 0
                 and not t.granted
             )
-            dots = sum(
-                t.rating or 0
-                for t in sheet
-                if t.category == dotted["category"]
-                and t.name.startswith(dotted.get("name_prefix", ""))
-            )
-            ok = held > dots * test.get("per_dot", 1)
+            ok = held > dots_allow(test, dots_of(sheet, dotted))
         elif key == "above_in_clan":
             primaries = [
                 t.rating or 0
@@ -435,6 +435,39 @@ def matches(
         if not ok:
             return False
     return True
+
+
+def dots_of(sheet: Sequence[SheetTrait], dotted: Mapping[str, Any]) -> int:
+    """The dots the sheet holds in a category (whose names start with `name_prefix`)."""
+    return sum(
+        t.rating or 0
+        for t in sheet
+        if t.category == dotted["category"] and t.name.startswith(dotted.get("name_prefix", ""))
+    )
+
+
+def dots_allow(test: Mapping[str, Any], dots: int) -> int:
+    """For more_than_dots: how many of the first kind so many dots allow, by its
+    `table` where it has one, else `per_dot` for each dot."""
+    table = test.get("table")
+    if table:
+        return table[min(dots, len(table)) - 1] if dots > 0 else 0
+    return dots * test.get("per_dot", 1)
+
+
+def dots_limit(
+    check: CheckData, sheet: Sequence[SheetTrait], context: Context = NO_CONTEXT
+) -> tuple[str, int] | None:
+    """For a check that forbids more_than_dots: the category it counts, and how many
+    of it the sheet may hold, where its other conditions hold on this sheet (two
+    languages a dot only with Natural Linguist). None for any other check."""
+    test = (check.forbids or {}).get("more_than_dots")
+    if test is None:
+        return None
+    rest = {k: v for k, v in (check.forbids or {}).items() if k != "more_than_dots"}
+    if rest and not matches(rest, sheet, SheetTrait(category=check.category, name=""), context):
+        return None
+    return test["count"]["category"], dots_allow(test, dots_of(sheet, test["dots"]))
 
 
 def clashing(
@@ -548,6 +581,10 @@ def validate_condition(condition: Condition, known: set[tuple[str, str]]) -> Non
             for name in named:
                 if not any(n == name for _, n in known):
                     raise ValueError(f"a check names an unknown trait: {name!r}")
+        if key == "more_than_dots" and "table" in test:
+            table = test["table"]
+            if not table or not all(isinstance(n, int) and n >= 0 for n in table):
+                raise ValueError("a more_than_dots table lists whole numbers, at least one")
         if key == "any_of":
             for c in test:
                 validate_condition(c, known)

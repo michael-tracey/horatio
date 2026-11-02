@@ -159,3 +159,58 @@ def test_attributes_may_go_above_10_by_as_many_dots_as_generation(
 ) -> None:
     found = violations([attribute_limit()], sheet)
     assert [v.subject.name for v in found] == flagged
+
+
+SPELLS = {"count": {"category": "rituals"}, "dots": {"category": "disciplines"}}
+
+
+@pytest.mark.parametrize(
+    ("extra", "rituals", "dots", "expected"),
+    [
+        ({}, 2, 2, False),
+        ({}, 3, 2, True),
+        ({"per_dot": 2}, 4, 2, False),
+        ({"per_dot": 2}, 5, 2, True),
+        # A table: languages at one dot, two, three; the last carries on above.
+        ({"table": [1, 2, 4]}, 4, 3, False),
+        ({"table": [1, 2, 4]}, 5, 3, True),
+        ({"table": [1, 2, 4]}, 4, 6, False),
+        ({"table": [1, 2, 4]}, 5, 6, True),
+        ({"table": [1, 2, 4]}, 1, 0, True),
+        ({"table": [1, 2, 4]}, 2, 1, True),
+    ],
+)
+def test_more_than_dots_counts_per_dot_or_by_a_table(
+    extra: dict[str, object], rituals: int, dots: int, expected: bool
+) -> None:
+    sheet = [t("rituals", f"Ritual {n}") for n in range(rituals)]
+    if dots:
+        sheet.append(t("disciplines", "Thaumaturgy", dots))
+
+    assert matches({"more_than_dots": {**SPELLS, **extra}}, sheet, sheet[0]) == expected
+
+
+def test_dots_limit_is_how_many_a_check_allows_where_its_other_conditions_hold() -> None:
+    from horatio.rules.checks import dots_limit
+
+    plain = CheckData(
+        key="a",
+        category="rituals",
+        forbids={"more_than_dots": {**SPELLS, "table": [1, 3]}, "not": {"clan": ["Tremere"]}},
+    )
+    sheet = [t("disciplines", "Thaumaturgy", 2)]
+
+    assert dots_limit(plain, sheet) == ("rituals", 3)
+    assert dots_limit(plain, [*sheet, t("clan", "Tremere", None)]) is None
+    assert (
+        dots_limit(CheckData(key="b", category="rituals", forbids={"clan": ["X"]}), sheet) is None
+    )
+
+
+def test_a_more_than_dots_table_must_list_whole_numbers() -> None:
+    from horatio.rules.checks import validate_condition
+
+    validate_condition({"more_than_dots": {**SPELLS, "table": [1, 2]}}, set())
+    for table in ([], [1, "two"], [-1]):
+        with pytest.raises(ValueError, match="table"):
+            validate_condition({"more_than_dots": {**SPELLS, "table": table}}, set())

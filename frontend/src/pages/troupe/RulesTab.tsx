@@ -17,6 +17,7 @@ import { pageText } from "./bookPage";
 import { CostsSection } from "./CostsSection";
 import { FreeChangesSettings } from "./FreeChangesSettings";
 import { HouseTraitsSection } from "./HouseTraitsSection";
+import { LanguagesSection } from "./LanguagesSection";
 import { LocationRulesSection } from "./LocationRulesSection";
 import { OwnChecks } from "./OwnChecks";
 import { QuestSettings } from "./QuestSettings";
@@ -61,7 +62,8 @@ const strength = (value: string) => STRENGTHS.find((s) => s.value === value);
 /**
  * The troupe's house rules, part by part: how it plays the rule set's checks,
  * what traits cost here, what new characters start with, how many downtime
- * actions characters get, and the troupe's own merits and flaws. The status of
+ * actions characters get, how many languages Linguistics gives, and the troupe's
+ * own merits and flaws. The status of
  * each sect is a reference of its own, on the Troupe group's Status tab.
  */
 export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
@@ -75,6 +77,7 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
           { to: `${base}/costs`, label: "Costs" },
           { to: `${base}/starting`, label: "Starting points" },
           { to: `${base}/actions`, label: "Downtime actions" },
+          { to: `${base}/languages`, label: "Languages" },
           { to: `${base}/house-traits`, label: "House merits and flaws" },
           { to: `${base}/written`, label: "Written rules" },
           { to: `${base}/book-traits`, label: "Book traits" },
@@ -90,6 +93,7 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
         <Route path="costs" element={<CostsSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="starting" element={<StartingSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="actions" element={<AllowancesSection troupeId={troupeId} canEdit={canEdit} />} />
+        <Route path="languages" element={<LanguagesSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="house-traits" element={<HouseTraitsSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="written" element={<WrittenRulesSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="book-traits" element={<BookTraitsSection troupeId={troupeId} canEdit={canEdit} />} />
