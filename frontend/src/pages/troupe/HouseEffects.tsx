@@ -41,7 +41,7 @@ function numbers(from: number, to: number): number[] {
 }
 
 /** Names chosen from a list: each with × to take it off, and a picker to add another. */
-function TraitList({
+export function TraitList({
   label,
   name,
   options,
