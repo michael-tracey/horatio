@@ -225,11 +225,9 @@ def catalogue(
                 attribute=t.properties.get("attribute"),
                 choices=chooses.get((t.category, t.name)) or t.properties.get("choices"),
                 kind=t.properties.get("type"),
-                requirement=t.properties.get("requirement")
-                if t.properties.get("requirement") != "requires_specialization"
-                else None,
+                requirement=t.properties.get("requirement"),
                 needs_field=t.category == "skills"
-                and t.properties.get("requirement") == "requires_specialization",
+                and bool(t.properties.get("requires_specialization")),
                 instance=t.properties.get("instance"),
                 house=house_out(rules.house_trait(t.category, t.name)),
                 written_rules=[

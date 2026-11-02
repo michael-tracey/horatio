@@ -659,6 +659,127 @@ requires = { has = { category = "sect", name = "Sabbat" } }
 message = "Only members of the Sabbat know the ritae."
 page = "452"
 
+# A merit or flaw whose catalogue type is a sect is for members of that sect: the book
+# gives each sect's merits and flaws in its setting chapter, as part of belonging to it
+# (Camarilla pp. 404-405, Sabbat pp. 452-454, Anarch Movement pp. 485-487). The checks
+# key on the type, so a troupe that moves one to another category (horatio.book_traits:
+# Soul Shard made General) lifts its sect's check with it. Each is needed to finish
+# creation, then waits for the home troupe's review; a troupe can soften or switch off
+# each one, as any check. Nothing is taken away from a character who already holds one:
+# the sheet lists it under "Against the rules".
+#
+# A change of sect is treated the same way. A vampire is Accepted by one sect at a time
+# (p. 310), and the book says nothing of what happens to the merits of the old one, so
+# they stay on the sheet, flagged, for staff to settle: buy a flaw off, swap a merit, or
+# keep it by exception.
+#
+# Infiltrators. The one way to belong to a second sect is an Alternate Identity Accepted
+# by it, with its status and rank there (p. 310); at 4 dots the identity is made to
+# infiltrate another clan or sect (p. 99). The book gives that identity status, not the
+# other sect's merits and flaws, and the sheet does not say which sect an identity is in,
+# so an infiltrator takes their own sect's: staff give the other's by exception.
+#
+# Anarch Republic, a sect from Yorick's catalogue with no book of its own, is taken as
+# the Anarch Movement.
+[[checks]]
+key = "sect/merits/Anarch"
+category = "merits"
+forbids = { kind = ["Anarch"], not = { has_any = [
+  { category = "sect", name = "Anarch" },
+  { category = "sect", name = "Anarch Republic" },
+] } }
+strength = "complete"
+once_finished = "review"
+message = "{name} is an Anarch merit: only members of the Anarch Movement can take it."
+page = "485"
+
+[[checks]]
+key = "sect/flaws/Anarch"
+category = "flaws"
+forbids = { kind = ["Anarch"], not = { has_any = [
+  { category = "sect", name = "Anarch" },
+  { category = "sect", name = "Anarch Republic" },
+] } }
+strength = "complete"
+once_finished = "review"
+message = "{name} is an Anarch flaw: only members of the Anarch Movement can take it."
+page = "487"
+
+# Emissary to the Camarilla is the exception: a Camarilla merit for a character no sect
+# has Accepted, such as a Giovanni liaison or a Setite priest, who may then hold one
+# fleeting Camarilla status (p. 404; bns_met_vampire_status.toml, `outsiders`). So it is
+# not for the Camarilla's own members, nor the Sabbat's or the Anarchs'. Autarkis, the
+# Inconnu, the Nictuku, the Independent Alliance and a character with no sect may take
+# it: as for status, a sect the book gives no Acceptance counts as none.
+[[checks]]
+key = "sect/merits/Camarilla"
+category = "merits"
+forbids = { kind = ["Camarilla"], not = { any_of = [
+  { has = { category = "sect", name = "Camarilla" } },
+  { self = { names = ["Emissary to the Camarilla"] } },
+] } }
+strength = "complete"
+once_finished = "review"
+message = "{name} is a Camarilla merit: only members of the Camarilla can take it."
+page = "404"
+
+[[checks]]
+key = "sect/merits/Emissary to the Camarilla"
+category = "merits"
+name = "Emissary to the Camarilla"
+forbids = { kind = ["Camarilla"], has_any = [
+  { category = "sect", name = "Camarilla" },
+  { category = "sect", name = "Sabbat" },
+  { category = "sect", name = "Anarch" },
+  { category = "sect", name = "Anarch Republic" },
+] }
+strength = "complete"
+once_finished = "review"
+message = "Emissary to the Camarilla is for a character no sect has Accepted, not for members of the Camarilla, the Sabbat or the Anarch Movement."
+page = "404"
+
+[[checks]]
+key = "sect/flaws/Camarilla"
+category = "flaws"
+forbids = { kind = ["Camarilla"], not = { has = { category = "sect", name = "Camarilla" } } }
+strength = "complete"
+once_finished = "review"
+message = "{name} is a Camarilla flaw: only members of the Camarilla can take it."
+page = "405"
+
+[[checks]]
+key = "sect/merits/Sabbat"
+category = "merits"
+forbids = { kind = ["Sabbat"], not = { has = { category = "sect", name = "Sabbat" } } }
+strength = "complete"
+once_finished = "review"
+message = "{name} is a Sabbat merit: only members of the Sabbat can take it."
+page = "452"
+
+[[checks]]
+key = "sect/flaws/Sabbat"
+category = "flaws"
+forbids = { kind = ["Sabbat"], not = { has = { category = "sect", name = "Sabbat" } } }
+strength = "complete"
+once_finished = "review"
+message = "{name} is a Sabbat flaw: only members of the Sabbat can take it."
+page = "454"
+
+# The Independent Alliance is a sect of its own, led by the Giovanni and the Followers
+# of Set (Vol. 2 Issue 1, p. 14). Its one merit, Made, has no book of ours (it came from
+# Yorick); it is for the Alliance's members. The Giovanni are kept out of the Camarilla
+# (p. 403), so in a Camarilla game they come as outsiders: a Giovanni whose sheet names
+# the Independent Alliance takes its merit and Emissary to the Camarilla, not the
+# Camarilla's others. The check keys on the sect, never the clan.
+[[checks]]
+key = "sect/merits/Independent Alliance"
+category = "merits"
+forbids = { kind = ["Independent Alliance"], not = { has = { category = "sect", name = "Independent Alliance" } } }
+strength = "complete"
+once_finished = "review"
+message = "{name} is an Independent Alliance merit: only members of the Independent Alliance can take it."
+page = "Vol. 2 Issue 1, p. 14"
+
 # --- creation ---------------------------------------------------------------------
 
 # Without a dot of Generation the character is a mortal (p. 98). Checked when

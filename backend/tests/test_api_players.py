@@ -54,7 +54,7 @@ def test_the_log_names_a_characters_player(troupe: Troupe) -> None:
 
     messages = [e["message"] for e in troupe_log(troupe)]
     assert messages[:2] == [
-        "Mr. Carbuncle (player) left the troupe.",
+        "Mr. Carbuncle (player) stopped visiting Lords of the Night.",
         "Mr. Carbuncle (player) started visiting the troupe.",
     ]
     entry = troupe_log(troupe)[0]

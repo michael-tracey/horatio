@@ -109,6 +109,19 @@ export function teacherOf(line: CartLine): TeacherChoice {
   return { teacher: line.teacher ?? "", teacher_id: line.teacher_id ?? null, npc: !!line.npc_teacher };
 }
 
+type PricedLine = components["schemas"]["CartLineOut"];
+
+/** Whether to offer asking staff for a line as an exception: the server says what
+ * refuses it is only what an exception sets aside, and it is a raise not asked already. */
+export function askable(line: CartLine, priced: PricedLine | undefined): boolean {
+  return !!priced?.refused && !!priced.askable && line.kind === "set" && !line.exception && line.to > line.from;
+}
+
+/** Why asking staff for a refused line can't help, if the server says so. */
+export function unaskable(line: CartLine, priced: PricedLine | undefined): string | null {
+  return priced?.refused && !askable(line, priced) ? (priced.unaskable ?? null) : null;
+}
+
 /** Ask staff for a line the rules refuse, as an exception. */
 export function askException(lines: CartLine[], line: CartLine, exception: Exception): CartLine[] {
   return lines.map((l) => (l === line && l.kind === "set" ? { ...l, exception } : l));

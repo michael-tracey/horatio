@@ -32,18 +32,21 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, backstories, notifications, titles, xp_range
+from horatio import audit, backstories, free_changes, notifications, titles, xp_range
 from horatio.creation import Pool, pools_for
 from horatio.models import (
     Approval,
     Character,
+    DisciplinePurchase,
     HomeTroupeChange,
     ReconciliationItem,
+    TraitDefinition,
     Troupe,
     TroupeMembership,
     User,
     XpEntry,
 )
+from horatio.permissions import TroupeAction
 from horatio.rules.model import SheetTrait, TroupeRules
 from horatio.rules.pricing import NotAllowed, PricingError, trait_cost
 from horatio.rules.splats import SPLATS
@@ -55,6 +58,7 @@ from horatio.sheets import (
     conflict,
     ensure_house_traits_fit,
     ensure_unlocked,
+    ever_accepted,
     freeze_sheet,
     pending_purchases,
     rules_troupe,
@@ -190,8 +194,44 @@ def leave(db: Session, player: User, character: Character, troupe: Troupe) -> No
         raise conflict("Withdraw the request to make this the home troupe first.")
     if character.kind == "npc":
         raise conflict("An NPC stays in its troupe until it is deleted.")
+    home = character.home_troupe_id == troupe.id
     end_membership(db, player, character, troupe, membership)
-    audit.record(db, player, "troupe.leave", troupe_id=troupe.id, character_id=character.id)
+    audit.record(
+        db,
+        player,
+        "troupe.leave",
+        troupe_id=troupe.id,
+        character_id=character.id,
+        kind="home" if home else "visit",
+        troupe=troupe.name,
+    )
+    if home:
+        # Its running staff lose sight of the sheet, so they are told.
+        staff = notifications.staff_for(db, troupe, TroupeAction.VIEW_MEMBER_CHARACTERS)
+        notifications.notify(
+            db,
+            [s for s in staff if s != player.id],
+            "troupe.left_home",
+            f"{character.name} left {troupe.name} as its home troupe",
+            f"/troupes/{troupe.id}/log",
+            troupe_id=troupe.id,
+            character_id=character.id,
+        )
+
+
+def waiting_in(db: Session, character: Character, troupe: Troupe) -> list[Approval]:
+    """The character's requests waiting on the troupe's staff."""
+    return list(
+        db.scalars(
+            select(Approval)
+            .where(
+                Approval.character_id == character.id,
+                Approval.troupe_id == troupe.id,
+                Approval.status == "pending",
+            )
+            .order_by(Approval.id)
+        )
+    )
 
 
 def end_membership(
@@ -205,16 +245,14 @@ def end_membership(
     titles.drop_all(db, troupe.id, character.id)
     membership.represented_by = None
     if character.home_troupe_id == troupe.id:
+        # Free changes come from a first acceptance only: being accepted again,
+        # here or elsewhere, does not bring them back (horatio.free_changes).
+        if free_changes.window(db, character) is not None:
+            free_changes.end(db, character, f"it left {troupe.name}", tell=False)
         character.home_troupe_id = None
         sync_fixed_ratings(db, character)
     # Requests waiting in a troupe the character has left are moot.
-    for approval in db.scalars(
-        select(Approval).where(
-            Approval.character_id == character.id,
-            Approval.troupe_id == troupe.id,
-            Approval.status == "pending",
-        )
-    ):
+    for approval in waiting_in(db, character, troupe):
         if approval.kind == ASKED_KIND:
             from horatio.merit_requests import refund  # imports this module
 
@@ -224,6 +262,69 @@ def end_membership(
         approval.status = "withdrawn"
         approval.decided_at = datetime.now(UTC)
     db.flush()
+
+
+@dataclass(frozen=True)
+class Withdrawn:
+    """A request that leaving a troupe withdraws: what it asked, and the XP that
+    comes back (negative for a free change undone, whose refund goes back)."""
+
+    what: str
+    refund: int
+
+
+@dataclass(frozen=True)
+class Leaving:
+    """What leaving a troupe ends, for the player to confirm first."""
+
+    home: bool
+    titles: list[str]
+    requests: list[Withdrawn]
+    # Its free changes are open, and leaving its home troupe ends them.
+    free_changes_open: bool
+
+
+def withdrawn(db: Session, approval: Approval) -> Withdrawn:
+    """A waiting request as `end_membership` withdraws it: "Celerity 1 → 2", 2 XP back."""
+    bought = db.scalar(
+        select(DisciplinePurchase).where(DisciplinePurchase.approval_id == approval.id)
+    )
+    if bought is None:
+        what = {
+            "diablerie": "Diablerie",
+            "home_troupe_change": "To make this the home troupe",
+        }.get(approval.kind, approval.kind.replace("_", " ").capitalize())
+        return Withdrawn(what, 0)
+    name = db.get_one(TraitDefinition, bought.trait_definition_id).name
+    label = f"{name}: {bought.detail}" if bought.detail else name
+    if approval.kind == ASKED_KIND:
+        from horatio.merit_requests import asked_of  # imports this module
+
+        asked, _ = asked_of(db, approval)
+        if asked.adding:
+            verb = "Take on" if asked.flaw else "Add"
+        else:
+            verb = "Buy off" if asked.flaw else "Remove"
+        return Withdrawn(f"{verb} {label}", max(bought.cost, 0))
+    what = f"{label} {bought.from_rating} → {bought.to_rating}"
+    if approval.kind == "exception":
+        what += " by exception"
+    elif bought.free_change:
+        what += " as a free change"
+    return Withdrawn(what, bought.cost)
+
+
+def leaving(db: Session, character: Character, troupe: Troupe) -> Leaving:
+    """What leaving the troupe would end: as `end_membership` does it."""
+    if current_membership(db, character, troupe) is None:
+        raise conflict("The character is not in that troupe.")
+    home = character.home_troupe_id == troupe.id
+    return Leaving(
+        home=home,
+        titles=titles.held(db, troupe.id, character.id),
+        requests=[withdrawn(db, a) for a in waiting_in(db, character, troupe)],
+        free_changes_open=home and free_changes.window(db, character) is not None,
+    )
 
 
 # --- finding differences ----------------------------------------------------------------
@@ -567,8 +668,9 @@ def allowed_settlements(
 
 def unbanked_xp(db: Session, character: Character) -> int:
     """Creation XP the character would lose on its first acceptance: everything
-    unspent past the rule set's bank."""
-    if character.home_troupe_id is not None:
+    unspent past the rule set's bank. None once a troupe has accepted it, even if it
+    has since left: its XP then is XP it was given."""
+    if ever_accepted(db, character):
         return 0
     limit = read_troupe_rules(db, character.splat, None).rule_set.banked_xp
     if limit is None:

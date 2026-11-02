@@ -156,7 +156,7 @@ def test_the_field_check_names_the_skills_the_catalogue_marks() -> None:
     marked = {
         name
         for (category, name), t in rules.traits.items()
-        if category == "skills" and t.properties.get("requirement") == "requires_specialization"
+        if category == "skills" and t.properties.get("requires_specialization")
     }
     [check] = [c for c in rules.checks if "need a field" in c.message]
     assert check.step == "skills"
