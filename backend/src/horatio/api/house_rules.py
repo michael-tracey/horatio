@@ -22,6 +22,7 @@ from horatio import (
     resonance,
     territories,
 )
+from horatio.api.book_traits import BookTraitOut, book_traits_out
 from horatio.api.downtimes import staff_troupe
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
@@ -31,6 +32,7 @@ from horatio.permissions import TroupeAction
 from horatio.rules import checks, conditions, pricing
 from horatio.rules.checks import REQUIREMENT_KEY, CheckData
 from horatio.rules.files import EVERYWHERE
+from horatio.rules.house_checks import is_house_check
 from horatio.rules.model import (
     ActionKindData,
     AllowanceRuleData,
@@ -143,6 +145,9 @@ def checks_out(db: DbSession, troupe_id: uuid.UUID) -> list[CheckOut]:
     for splat in ["vampire", *(s for s in troupe.allowed_splats if s != "vampire")]:
         rules = read_troupe_rules(db, splat, troupe_id)
         for c in rules.rule_set.checks:
+            # The troupe's own checks are listed apart (horatio.api.house_checks).
+            if is_house_check(c.key):
+                continue
             found.setdefault(
                 c.key,
                 CheckOut(
@@ -948,6 +953,28 @@ def set_feeding(
     return troupe_out(db, user, troupe)
 
 
+# --- Clan names -------------------------------------------------------------------
+
+
+class ClanNamesIn(BaseModel):
+    # What the clan stored as "Assamite" is called here: its later name, or the books'.
+    assamite: Literal["Banu Haqim", "Assamite"]
+
+
+@router.put("/clan-names")
+def set_clan_names(
+    troupe_id: uuid.UUID, body: ClanNamesIn, db: DbSession, user: CurrentUser
+) -> TroupeOut:
+    """What the troupe calls the clan the books call the Assamites (horatio.clan_names).
+    Only what is shown changes: the rules and the sheets keep "Assamite"."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    if troupe.assamite_name != body.assamite:
+        troupe.assamite_name = body.assamite
+        audit.record(db, user, "house.clan_names", troupe_id=troupe.id, name=body.assamite)
+    db.commit()
+    return troupe_out(db, user, troupe)
+
+
 # --- Clan rarity ------------------------------------------------------------------
 
 Rarity = Literal["common", "uncommon", "rare", "restricted"]
@@ -1095,6 +1122,8 @@ class HouseCheckOut(BaseModel):
     # note or off.
     strength: str
     house: str
+    # The troupe's own check, not a book one played differently (horatio.house_checks).
+    own: bool = False
 
 
 class HouseMeritOut(BaseModel):
@@ -1127,10 +1156,14 @@ class HouseRulesOut(BaseModel):
     checks: list[HouseCheckOut]
     house_traits: list[HouseMeritOut]
     other: list[HouseSettingOut]
+    # Its teacher rules (horatio.teaching), in plain words.
+    teachers: list[str] = []
     # How its backstories are written (free | either | wizard), and whether one must be
     # approved before a character is accepted here.
     backstory_mode: str
     backstory_required: bool
+    # Its changes to book traits: those it bans (horatio.book_traits).
+    book_traits: list[BookTraitOut] = []
 
 
 def splat_house_rules(db: DbSession, troupe_id: uuid.UUID, splat: str) -> SplatHouseRulesOut:
@@ -1288,6 +1321,33 @@ def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
     return found
 
 
+def own_checks(db: DbSession, troupe: Troupe) -> list[HouseCheckOut]:
+    """The troupe's own checks the rules can run, for its players: the message each
+    gives, and how strictly it holds."""
+    found: list[HouseCheckOut] = []
+    for splat in ["vampire", *(s for s in troupe.allowed_splats if s != "vampire")]:
+        for c in read_troupe_rules(db, splat, troupe.id).rule_set.checks:
+            if is_house_check(c.key):
+                found.append(
+                    HouseCheckOut(
+                        rule=c.message, page=None, strength=c.strength, house=c.strength, own=True
+                    )
+                )
+    return found
+
+
+def teacher_rules(db: DbSession, troupe: Troupe) -> list[str]:
+    """The troupe's teacher rules its rules can use, in plain words."""
+    from horatio import teaching  # imports this module
+
+    found: list[str] = []
+    for row in teaching.rule_rows(db, troupe.id):
+        data = teaching.rule_data(row)
+        if teaching.problem_of(db, troupe, data) is None:
+            found.append(teaching.text_of(db, troupe, data))
+    return found
+
+
 @router.get("/house-rules")
 def read_house_rules(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> HouseRulesOut:
     """What the troupe plays differently from the book, for its players to read before
@@ -1325,14 +1385,19 @@ def read_house_rules(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> 
     return HouseRulesOut(
         splats=[splat_house_rules(db, troupe.id, s) for s in splats],
         checks=[
-            HouseCheckOut(
-                rule=c.message or c.about, page=c.page, strength=c.strength, house=c.house
-            )
-            for c in checks_out(db, troupe.id)
-            if c.house
+            *own_checks(db, troupe),
+            *(
+                HouseCheckOut(
+                    rule=c.message or c.about, page=c.page, strength=c.strength, house=c.house
+                )
+                for c in checks_out(db, troupe.id)
+                if c.house
+            ),
         ],
         house_traits=merits,
         other=other_settings(db, troupe),
+        teachers=teacher_rules(db, troupe),
         backstory_mode=troupe.backstory_mode,
         backstory_required=troupe.backstory_required,
+        book_traits=book_traits_out(db, troupe),
     )

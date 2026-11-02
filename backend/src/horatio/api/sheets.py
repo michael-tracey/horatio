@@ -333,8 +333,11 @@ class TraitChange(BaseModel):
     # Null for traits without a rating; 0 removes a rated trait.
     rating: int | None = Field(default=None, ge=0)
     note: str | None = Field(default=None, max_length=1000)
-    # For a discipline dot that waits on the home troupe: who teaches it.
+    # For a discipline dot that waits on the home troupe: who teaches it. For a trait
+    # a troupe's teacher rule asks a teacher for: an NPC by name, or the character
+    # of the troupe who teaches it (horatio.teaching).
     teacher: str = Field(default="", max_length=200)
+    teacher_id: uuid.UUID | None = None
 
 
 class ChoiceChange(BaseModel):
@@ -750,6 +753,7 @@ def change_trait(
             body.rating,
             body.note,
             body.teacher,
+            teacher_id=body.teacher_id,
         )
     db.commit()
     cost = (change.quote.cost if change.quote else 0) + change.repricing_cost

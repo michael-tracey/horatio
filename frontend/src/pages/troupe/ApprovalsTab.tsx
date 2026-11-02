@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { QueuedApproval, XpReviewOut } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
+import { useClanName } from "../../components/ClanNames";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
@@ -13,7 +14,7 @@ import { describeDifference, settlementLabel } from "../../settlements";
 import { joining, type XpChoice } from "./xpRange";
 import { useBackstoryStanding } from "../character/BackstoryTab";
 import { ApprovalBackstory } from "./ApprovalBackstory";
-import { askedLine } from "./approvals";
+import { askedLine, teachingText } from "./approvals";
 import { generationText } from "../../generation";
 
 type State = "pending" | "approved" | "declined" | "withdrawn";
@@ -72,6 +73,7 @@ export function ApprovalsTab({ troupeId }: { troupeId: string }) {
 }
 
 function ApprovalCard({ approval }: { approval: QueuedApproval }) {
+  const named = useClanName();
   const [note, setNote] = useState("");
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   const [xp, setXp] = useState<XpChoice & { extra_reason: string }>({ self_entered: "keep", top_up: null, above_ceiling: "keep", extra: 0, extra_reason: "" });
@@ -130,7 +132,9 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
           {joining
             ? "Asking to make this home"
             : approval.kind === "discipline"
-              ? "Discipline"
+              ? d?.teaching && d.category !== "disciplines"
+                ? "Taught"
+                : "Discipline"
               : approval.kind === "review"
                 ? d?.free_change
                   ? "Free change"
@@ -160,17 +164,22 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
         </Link>
       </div>
       {approval.player_note && !d?.free_change && <p className="mb-3 text-sm italic">"{approval.player_note}"</p>}
+      {approval.banned && approval.banned.length > 0 && (
+        <p className="mb-3 text-sm text-blood-bright">
+          Holds what this troupe bans: {approval.banned.join(", ")}. Accepting it keeps them, flagged on the sheet.
+        </p>
+      )}
       {d && ex && (
         <div className="mb-3 flex flex-col gap-1 text-sm">
           <p>
-            {d.name}
+            {named(d.name)}
             {d.detail && `: ${d.detail}`}
             {d.house && <HouseMark label={d.house} />} {d.from_rating} → {d.to_rating},{" "}
             {ex.free
               ? `asked for free${ex.normal_cost != null ? ` (at normal cost, ${ex.normal_cost} XP)` : " (it has no normal cost)"}.`
               : `for ${d.cost} XP.`}
           </p>
-          {ex.breaks.length > 0 && <p className="text-blood-bright">Against the rules: {ex.breaks.join(" ")}</p>}
+          {ex.breaks.length > 0 && <p className="text-blood-bright">Against the rules: {named(ex.breaks.join(" "))}</p>}
           {pending && (
             <p className="text-mist">
               It is on the sheet, waiting on you. Approving keeps it, and the sheet stops flagging these rules for it; declining takes it back
@@ -202,10 +211,10 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
       )}
       {d && !ex && !merit && !d.free_change && (
         <p className="mb-3 text-sm">
-          {d.name}
+          {named(d.name)}
           {d.detail && `: ${d.detail}`}
           {d.house && <HouseMark label={d.house} />} {d.from_rating} → {d.to_rating}, for {d.cost} XP.{" "}
-          {d.teacher && <>Taught by {d.teacher}. </>}
+          {d.teaching ? <>{teachingText(d.teaching)} </> : d.teacher && <>Taught by {d.teacher}. </>}
           <span className="text-mist">The XP is spent; declining refunds it and takes the dots back.</span>
         </p>
       )}
@@ -320,9 +329,10 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
 function MeritFlawAsk({ ask: m, pending }: { ask: NonNullable<QueuedApproval["discipline"]>; pending: boolean }) {
   const flaw = m.category === "flaws";
   const adding = m.to_rating > m.from_rating;
+  const named = useClanName();
   const name = (
     <>
-      {m.name}
+      {named(m.name)}
       {m.detail && `: ${m.detail}`}
       {m.house && <HouseMark label={m.house} />}
     </>

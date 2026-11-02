@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { WhosWhoEntry } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
+import { useClanName } from "../../components/ClanNames";
 import { LinesVeilsNote } from "../../components/LinesVeils";
 import { Badge, Empty, ErrorText, Input, Loading, Select } from "../../components/ui";
 import { RepresentedBy } from "./RepresentedBy";
@@ -22,6 +23,7 @@ export function WhosWhoTab({ troupeId }: { troupeId: string }) {
   });
   const [filter, setFilter] = useState<WhosWhoFilter>(NO_FILTER);
   const { hash } = useLocation();
+  const named = useClanName();
   const loaded = !!whosWho.data;
   // A link to one character's entry (from the Play View) scrolls to it once it is there.
   useEffect(() => {
@@ -59,7 +61,7 @@ export function WhosWhoTab({ troupeId }: { troupeId: string }) {
           <option value="">Every clan</option>
           {choices.clans.map((c) => (
             <option key={c} value={c}>
-              {c}
+              {named(c)}
             </option>
           ))}
         </Select>
@@ -78,7 +80,7 @@ export function WhosWhoTab({ troupeId }: { troupeId: string }) {
         <nav aria-label="Jump to" className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
           {shown.map((s) => (
             <a key={s.id} href={`#${s.id}`} className="text-mist underline hover:text-gold">
-              {s.title}
+              {named(s.title)}
             </a>
           ))}
         </nav>
@@ -96,15 +98,16 @@ type Represent = { troupeId: string; canSet: string[] };
 
 function WhosWhoSection({ section, seated, represent }: { section: Section; seated: string[] | null; represent: Represent }) {
   const headingId = `${section.id}-heading`;
+  const named = useClanName();
   return (
     <section id={section.id} aria-labelledby={headingId} className="scroll-mt-4">
       <h2 id={headingId} className="mb-1 text-lg text-gold">
-        {section.title}
+        {named(section.title)}
       </h2>
       {section.kind === "court" && <p className="mb-2 text-xs text-mist">Everyone holding a title here, highest first.</p>}
       {section.kind === "other" && (
         <p className="mb-2 text-xs text-mist">
-          Clans with no seat at court.{seated && ` Only the ${andList(seated)} have one here.`}
+          Clans with no seat at court.{seated && ` Only the ${named(andList(seated))} have one here.`}
         </p>
       )}
       <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -126,6 +129,7 @@ function andList(items: string[]): string {
 
 /** One character: who it is, who plays it, what it holds here, and what others can see. */
 function EntryCard({ entry: e, kind, seated, represent }: { entry: WhosWhoEntry; kind: Section["kind"]; seated: string[]; represent: Represent }) {
+  const named = useClanName();
   return (
     <article aria-label={e.name} className="flex h-full gap-3 rounded-lg border border-ash bg-dusk p-3">
       <Avatar name={e.name} picture={e.picture} clan={e.clan} size="md" />
@@ -135,7 +139,7 @@ function EntryCard({ entry: e, kind, seated, represent }: { entry: WhosWhoEntry;
           {e.pronouns && <span className="text-xs text-mist">({e.pronouns})</span>}
         </div>
         <span className="text-mist">
-          {clanText(e.clan)} · {e.social_age}
+          {named(clanText(e.clan))} · {e.social_age}
         </span>
         <span>
           {e.player_id ? (
@@ -169,11 +173,11 @@ function EntryCard({ entry: e, kind, seated, represent }: { entry: WhosWhoEntry;
         {(e.visible.length > 0 || e.bans.length > 0 || e.negative.length > 0) && (
           <ul aria-label={`What others see of ${e.name}`} className="mt-1 flex flex-col gap-0.5 border-t border-ash pt-1 text-xs">
             {e.visible.map((v) => (
-              <li key={v}>{v}</li>
+              <li key={v}>{named(v)}</li>
             ))}
             {e.bans.map((b) => (
               <li key={b} className="text-blood-bright">
-                {b}
+                {named(b)}
               </li>
             ))}
             {e.negative.map((n) => (

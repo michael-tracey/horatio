@@ -4,7 +4,7 @@ purchases are free changes, and the kind of a game attendance, so that an absent
 game (issue #438) never counts as one attended.
 
 Revision ID: 0135
-Revises: 0127
+Revises: 0131
 Create Date: 2026-11-01 23:00:00.000000
 """
 
@@ -15,7 +15,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0135"
-down_revision: str | None = "0127"
+down_revision: str | None = "0131"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
