@@ -336,8 +336,7 @@ def options(
             if category == "merits"
             else None,
             needs_detail=name == CUSTOM
-            or rule_set.trait_properties(category, name).get("requirement")
-            == "requires_specialization",
+            or bool(rule_set.trait_properties(category, name).get("requires_specialization")),
         )
         for name in sorted(names)
         if (category, name) in rule_set.traits
