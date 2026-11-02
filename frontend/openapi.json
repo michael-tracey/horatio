@@ -3172,6 +3172,18 @@
             "title": "Category",
             "type": "string"
           },
+          "kind": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
           "name": {
             "maxLength": 200,
             "title": "Name",
@@ -3228,6 +3240,17 @@
             "title": "Banned",
             "type": "boolean"
           },
+          "book_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Book Kind"
+          },
           "category": {
             "title": "Category",
             "type": "string"
@@ -3235,6 +3258,17 @@
           "category_name": {
             "title": "Category Name",
             "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
           },
           "name": {
             "title": "Name",
@@ -3282,7 +3316,9 @@
           "banned",
           "ban_reason",
           "wording",
-          "wording_mode"
+          "wording_mode",
+          "kind",
+          "book_kind"
         ],
         "title": "BookTraitOut",
         "type": "object"
@@ -3302,6 +3338,20 @@
             },
             "title": "Holders",
             "type": "array"
+          },
+          "kinds": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "type": "object"
+            },
+            "default": {},
+            "title": "Kinds",
+            "type": "object"
           }
         },
         "required": [
@@ -32801,6 +32851,28 @@
             "title": "Banned",
             "type": "boolean"
           },
+          "book_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Book Kind"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
           "wording": {
             "default": "",
             "title": "Wording",
@@ -52331,7 +52403,7 @@
         ]
       },
       "put": {
-        "description": "Change a book trait in the troupe: ban it, with a reason, or lift the ban (those\nwho hold it keep it); give it the troupe's own wording, or take it away.",
+        "description": "Change a book trait in the troupe: ban it, with a reason, or lift the ban (those\nwho hold it keep it); give it the troupe's own wording, or take it away; move a\nmerit or flaw to another category.",
         "operationId": "change_book_trait_api_troupes__troupe_id__book_traits_put",
         "parameters": [
           {

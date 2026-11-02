@@ -133,9 +133,9 @@ class CheckOverride(Record):
 
 class TraitOverride(Record):
     """A troupe's own change to one book trait (horatio.book_traits): banned in the
-    troupe, with the reason its players see; and its own wording, added to the
-    book's summary or in place of it. One row per troupe and trait, which the
-    other changes to a book trait share."""
+    troupe, with the reason its players see; its own wording, added to the book's
+    summary or in place of it; and for a merit or flaw, its category (catalogue
+    type) in the troupe. One row per troupe and trait, which the changes share."""
 
     __tablename__ = "trait_overrides"
     __table_args__ = (
@@ -151,6 +151,9 @@ class TraitOverride(Record):
     wording: Mapped[str] = mapped_column(default="", server_default="")
     # "added" to the book's summary, or "replaces" it.
     wording_mode: Mapped[str] = mapped_column(default="added", server_default="added")
+    # A merit or flaw's category in the troupe, in place of its catalogue type
+    # ("General" for a sect flaw); null keeps the book's.
+    kind: Mapped[str | None]
 
 
 class CostRule(Record):

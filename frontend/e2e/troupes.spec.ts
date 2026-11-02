@@ -271,6 +271,61 @@ test("a lead bans a merit on the Book traits page: it is greyed out with the rea
   await expect(banned.getByRole("listitem").filter({ hasText: "Lucky" })).toContainText("Too swingy at our table.");
 });
 
+test("a lead makes Soul Shard a general flaw on the Book traits page, and a player finds it among the general flaws (#436)", async ({ browser }) => {
+  const custodian = await person(browser, "recat-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "recat-lead");
+  const player = await person(browser, "recat-player");
+  const troupeName = `Hall of Shards ${run}`;
+  const headers = { "X-Horatio": "1" };
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  await backstoryOptional(lead.page, troupeId);
+
+  // The lead opens Soul Shard, a Sabbat flaw by the book, and makes it General here.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules/book-traits`);
+  await l.getByLabel("Category", { exact: true }).selectOption({ label: "Flaws" });
+  await l.getByRole("searchbox", { name: "Search book traits" }).fill("soul shard");
+  await l.getByRole("list", { name: "Book traits found" }).getByRole("button", { name: /^Soul Shard/ }).click();
+  await l.getByLabel("Category in this troupe").selectOption("General");
+  await expect(l.getByRole("region", { name: "Category" })).toContainText("Characters who hold it keep it.");
+  await l.getByRole("button", { name: "Save", exact: true }).click();
+  const changed = l.locator("section").filter({ has: l.getByRole("heading", { name: "Changed in this troupe", exact: true }) });
+  await expect(changed.getByRole("listitem").filter({ hasText: "Soul Shard" })).toContainText("Category: General (Sabbat in the book)");
+
+  // A player's character makes the troupe home.
+  const p = player.page;
+  const id = await builtVampire(p, "Shardwell", "Brujah", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  const asked = await p.request.post(`/api/characters/${id}/home-troupe`, { headers, data: { troupe_id: troupeId } });
+  expect(asked.status(), await asked.text()).toBeLessThan(300);
+  const [request] = await (await l.request.get(`/api/troupes/${troupeId}/approvals`)).json();
+  const approved = await l.request.post(`/api/approvals/${request.id}/approve`, { headers, data: {} });
+  expect(approved.status(), await approved.text()).toBeLessThan(300);
+
+  // Among the general flaws, Soul Shard, marked as changed here.
+  await p.goto(`/characters/${id}`);
+  const part = p.locator("section").filter({ has: p.getByRole("heading", { name: "Merits and Flaws", exact: true }) });
+  await part.getByRole("button", { name: "Add" }).click();
+  await p.getByRole("navigation", { name: "Categories" }).getByRole("button", { name: /^Flaws/ }).click();
+  await p.getByLabel("Show").selectOption("kind:General");
+  await p.getByLabel("Search Flaws").fill("Soul Shard");
+  await expect(p.getByRole("button", { name: /^Soul Shard/ })).toBeVisible();
+  await p.getByLabel("Show").selectOption("kind:Sabbat");
+  await expect(p.getByRole("button", { name: /^Soul Shard/ })).toHaveCount(0);
+
+  // The troupe's House rules list the change.
+  await p.goto(`/troupes/${troupeId}/house-rules`);
+  const categories = p.locator("section").filter({ has: p.getByRole("heading", { name: "Changed categories", exact: true }) });
+  await expect(categories.getByRole("listitem").filter({ hasText: "Soul Shard" })).toContainText("General here; Sabbat in the book.");
+});
+
 test("a troupe's XP floor and ceiling: new characters start at the floor, and staff settle a joiner's XP", async ({ browser }) => {
   // A whole character creation, then a home troupe request.
   test.slow();

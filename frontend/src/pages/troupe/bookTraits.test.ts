@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CategoryOut, TraitOut } from "../../api/types";
-import { bookTraits, changeSummary, findTraits } from "./bookTraits";
+import { bookTraits, changeSummary, findTraits, requirementNote } from "./bookTraits";
 
 const category = (key: string, name: string, derived = false) => ({ key, name, derived }) as CategoryOut;
 const trait = (cat: string, name: string, more: Partial<TraitOut> = {}) =>
@@ -49,5 +49,17 @@ describe("changeSummary", () => {
       "Banned",
       "Own wording, in place of the book's",
     ]);
+  });
+});
+
+describe("category changes", () => {
+  it("says the troupe's category beside the book's", () => {
+    expect(changeSummary({ banned: false, ban_reason: "", kind: "General", book_kind: "Sabbat" })).toEqual(["Category: General (Sabbat in the book)"]);
+  });
+
+  it("says a clan merit moved out of Clan drops its clan requirement, and nothing else does", () => {
+    expect(requirementNote("Clan", "General", "Toreador")).toBe("Its clan requirement goes with the category: any clan can take it here, not only Toreador.");
+    expect(requirementNote("Clan", "Clan", "Toreador")).toBeNull();
+    expect(requirementNote("Sabbat", "General", null)).toBeNull();
   });
 });

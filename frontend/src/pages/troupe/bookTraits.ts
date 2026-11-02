@@ -33,9 +33,31 @@ export function findTraits(traits: TraitOut[], query: string, category: string):
 }
 
 /** A trait's change, as the list of changes says it: "Banned: too swingy", "Own wording, added to the book's". */
-export function changeSummary(change: { banned: boolean; ban_reason: string; wording?: string; wording_mode?: string }): string[] {
+export function changeSummary(change: {
+  banned: boolean;
+  ban_reason: string;
+  wording?: string;
+  wording_mode?: string;
+  kind?: string | null;
+  book_kind?: string | null;
+}): string[] {
   const parts: string[] = [];
+  if (change.kind) parts.push(`Category: ${change.kind} (${change.book_kind ?? "another"} in the book)`);
   if (change.banned) parts.push(change.ban_reason ? `Banned: ${change.ban_reason}` : "Banned");
   if (change.wording) parts.push(change.wording_mode === "replaces" ? "Own wording, in place of the book's" : "Own wording, added to the book's");
   return parts;
+}
+
+/** A merit or flaw's categories to choose from: the book's for its category, the trait's own first. */
+export function kindChoices(kinds: Record<string, Record<string, string[]>>, splat: string, category: string): string[] {
+  return kinds[splat]?.[category] ?? [];
+}
+
+/**
+ * What moving a merit or flaw to another category does to what it needs, for the
+ * panel to say: a clan merit moved out of Clan leaves its clan requirement behind.
+ */
+export function requirementNote(bookKind: string | null | undefined, kind: string, requirement: string | null | undefined): string | null {
+  if (bookKind === "Clan" && kind && kind !== "Clan") return `Its clan requirement goes with the category: any clan can take it here${requirement ? `, not only ${requirement}` : ""}.`;
+  return null;
 }
