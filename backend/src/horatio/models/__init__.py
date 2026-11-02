@@ -87,6 +87,7 @@ from horatio.models.rules import (
     StartingTrait,
     TraitCategory,
     TraitDefinition,
+    TraitOverride,
 )
 from horatio.models.scenes import Scene, SceneCharacter
 from horatio.models.shared_backgrounds import SharedBackground, SharedBackgroundEntry
@@ -194,6 +195,7 @@ __all__ = [
     "TraitCategory",
     "TraitDefinition",
     "TraitException",
+    "TraitOverride",
     "Troupe",
     "TroupeMembership",
     "TroupeRequest",

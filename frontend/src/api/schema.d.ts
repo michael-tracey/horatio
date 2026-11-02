@@ -5457,6 +5457,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/book-traits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Book Traits
+         * @description The troupe's changes to book traits, and the characters holding a trait it bans.
+         */
+        get: operations["list_book_traits_api_troupes__troupe_id__book_traits_get"];
+        /**
+         * Change Book Trait
+         * @description Change a book trait in the troupe: ban it, with a reason, or lift the ban. Those
+         *     who hold it keep it.
+         */
+        put: operations["change_book_trait_api_troupes__troupe_id__book_traits_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/characters": {
         parameters: {
             query?: never;
@@ -8771,6 +8796,29 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /**
+         * BannedHolderOut
+         * @description A character playing by the troupe's rules who holds a trait it bans.
+         */
+        BannedHolderOut: {
+            /** Category */
+            category: string;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Detail */
+            detail: string;
+            /** Excepted */
+            excepted: boolean;
+            /** Name */
+            name: string;
+            /** Splat */
+            splat: string;
+        };
         /** BlockChoicesOut */
         BlockChoicesOut: {
             /** Entries */
@@ -8888,6 +8936,54 @@ export interface components {
              * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
              */
             file: string;
+        };
+        /**
+         * BookTraitChange
+         * @description A change to one book trait. Only the fields given change; the rest stay.
+         */
+        BookTraitChange: {
+            /** Ban Reason */
+            ban_reason?: string | null;
+            /** Banned */
+            banned?: boolean | null;
+            /** Category */
+            category: string;
+            /** Name */
+            name: string;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+        };
+        /**
+         * BookTraitOut
+         * @description A troupe's change to one book trait.
+         */
+        BookTraitOut: {
+            /** Ban Reason */
+            ban_reason: string;
+            /** Banned */
+            banned: boolean;
+            /** Category */
+            category: string;
+            /** Category Name */
+            category_name: string;
+            /** Name */
+            name: string;
+            /** Page */
+            page: string | null;
+            /** Splat */
+            splat: string;
+            /** Splat Label */
+            splat_label: string;
+        };
+        /** BookTraitsOut */
+        BookTraitsOut: {
+            /** Changes */
+            changes: components["schemas"]["BookTraitOut"][];
+            /** Holders */
+            holders: components["schemas"]["BannedHolderOut"][];
         };
         /**
          * BudgetChange
@@ -12963,6 +13059,11 @@ export interface components {
             backstory_mode: string;
             /** Backstory Required */
             backstory_required: boolean;
+            /**
+             * Book Traits
+             * @default []
+             */
+            book_traits: components["schemas"]["BookTraitOut"][];
             /** Checks */
             checks: components["schemas"]["HouseCheckOut"][];
             /** House Traits */
@@ -17440,6 +17541,11 @@ export interface components {
             /** Asked At */
             asked_at?: string | null;
             /**
+             * Banned
+             * @default []
+             */
+            banned: string[];
+            /**
              * Character Id
              * Format: uuid
              */
@@ -20156,6 +20262,17 @@ export interface components {
             teacher: string;
         };
         /**
+         * TraitChangeOut
+         * @description A troupe's change to a book trait (horatio.book_traits): banned in the troupe,
+         *     with the reason its players see ("" for none).
+         */
+        TraitChangeOut: {
+            /** Ban Reason */
+            ban_reason: string;
+            /** Banned */
+            banned: boolean;
+        };
+        /**
          * TraitCheckOut
          * @description A check, in the words a player reads when a change breaks it: about one trait,
          *     every trait whose name starts with `prefix`, or (neither) a whole category.
@@ -20227,6 +20344,7 @@ export interface components {
             attribute: string | null;
             /** Category */
             category: string;
+            changed?: components["schemas"]["TraitChangeOut"] | null;
             /** Choices */
             choices?: string[] | null;
             /** Description */
@@ -31848,6 +31966,72 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_book_traits_api_troupes__troupe_id__book_traits_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookTraitsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_book_trait_api_troupes__troupe_id__book_traits_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookTraitChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookTraitOut"];
+                };
             };
             /** @description Validation Error */
             422: {

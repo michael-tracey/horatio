@@ -131,6 +131,20 @@ class CheckOverride(Record):
     strength: Mapped[str]
 
 
+class TraitOverride(Record):
+    """A troupe's own change to one book trait (horatio.book_traits): banned in the
+    troupe, with the reason its players see. One row per troupe and trait, which the
+    other changes to a book trait share."""
+
+    __tablename__ = "trait_overrides"
+    __table_args__ = (UniqueConstraint("troupe_id", "trait_definition_id"),)
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    trait_definition_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trait_definitions.id"))
+    banned: Mapped[bool] = mapped_column(default=False, server_default="false")
+    ban_reason: Mapped[str] = mapped_column(default="", server_default="")
+
+
 class CostRule(Record):
     """A cost rule. `troupe_id` null: part of the generic rule set; set: a house rule."""
 

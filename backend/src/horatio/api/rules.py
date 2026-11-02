@@ -15,7 +15,14 @@ from horatio.rules import conditions, pricing
 from horatio.rules.feeding import clan_family
 from horatio.rules.files import EVERYWHERE
 from horatio.rules.grants import choices
-from horatio.rules.model import CostRuleData, HouseTraitData, RuleSetData, TraitData, TroupeRules
+from horatio.rules.model import (
+    CostRuleData,
+    HouseTraitData,
+    RuleSetData,
+    TraitChangeData,
+    TraitData,
+    TroupeRules,
+)
 from horatio.rules.splats import SPLATS, splat_order
 from horatio.rules.status import GENERAL
 from horatio.rules.store import read_troupe_rules, same_subject
@@ -61,6 +68,14 @@ class HouseOut(BaseModel):
     in_clan: list[str] = Field(default_factory=list[str])
 
 
+class TraitChangeOut(BaseModel):
+    """A troupe's change to a book trait (horatio.book_traits): banned in the troupe,
+    with the reason its players see ("" for none)."""
+
+    banned: bool
+    ban_reason: str
+
+
 class TraitOut(BaseModel):
     category: str
     name: str
@@ -94,6 +109,8 @@ class TraitOut(BaseModel):
     instance: str | None = None
     # A troupe's own merit or flaw; its page reference reads "House rule — <troupe>".
     house: HouseOut | None = None
+    # The troupe's change to this book trait (horatio.book_traits), if it made one.
+    changed: TraitChangeOut | None = None
 
 
 class CatalogueOut(BaseModel):
@@ -195,6 +212,7 @@ def catalogue(
                 and t.properties.get("requirement") == "requires_specialization",
                 instance=t.properties.get("instance"),
                 house=house_out(rules.house_trait(t.category, t.name)),
+                changed=change_out(rules.trait_changes.get((t.category, t.name))),
             )
             for t in traits
             if category is None or t.category == category
@@ -211,6 +229,12 @@ def clan_weakness(rule_set: RuleSetData, trait: TraitData) -> dict[str, str | No
     if "weakness" not in found:
         found = rule_set.trait_properties("clan", clan_family(trait.name))
     return {"weakness": found.get("weakness"), "weakness_page": found.get("weakness_page")}
+
+
+def change_out(change: TraitChangeData | None) -> TraitChangeOut | None:
+    if change is None:
+        return None
+    return TraitChangeOut(banned=change.banned, ban_reason=change.ban_reason)
 
 
 def house_out(house: HouseTraitData | None) -> HouseOut | None:

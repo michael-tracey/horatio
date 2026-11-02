@@ -158,6 +158,11 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
         </Link>
       </div>
       {approval.player_note && <p className="mb-3 text-sm italic">"{approval.player_note}"</p>}
+      {approval.banned && approval.banned.length > 0 && (
+        <p className="mb-3 text-sm text-blood-bright">
+          Holds what this troupe bans: {approval.banned.join(", ")}. Accepting it keeps them, flagged on the sheet.
+        </p>
+      )}
       {d && ex && (
         <div className="mb-3 flex flex-col gap-1 text-sm">
           <p>

@@ -63,6 +63,7 @@ from horatio.models import (
     User,
     XpEntry,
 )
+from horatio.rules.checks import is_ban
 from horatio.rules.model import SheetTrait, TroupeRules
 from horatio.rules.pricing import PricingError, fixed_rating, points, purchase_cost
 from horatio.rules.splats import DOMITOR_IN_CLAN, SPLATS
@@ -1082,11 +1083,14 @@ class Run:
         )
 
     def judge(self) -> None:
-        """The sheet as it now stands: what the rules refuse stops it; the rest is noted."""
+        """The sheet as it now stands: what the rules refuse stops it; the rest is noted.
+        Of the troupe's bans, only its new clan's stops it: a trait the ghoul held
+        already is kept and flagged, as for any character (horatio.book_traits)."""
         self.db.expire_all()
         refusals: list[sheets.Problem] = []
         for violation in sheets.sheet_violations(self.db, self.character):
-            if sheets.blocking(violation, self.character):
+            kept = is_ban(violation.check) and violation.subject.category != "clan"
+            if sheets.blocking(violation, self.character) and not kept:
                 refusals.append(sheets.problem(violation))
             else:
                 self.plan.notes.append(violation.message)

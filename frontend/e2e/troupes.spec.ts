@@ -217,6 +217,60 @@ test("a player looks up the rules: a power by name and by its summary, then as p
   await expect(p.getByLabel("As played in")).toHaveValue(troupeId);
 });
 
+test("a lead bans a merit on the Book traits page: it is greyed out with the reason in a player's picker, and listed on House rules (#431)", async ({ browser }) => {
+  const custodian = await person(browser, "ban-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "ban-lead");
+  const player = await person(browser, "ban-player");
+  const troupeName = `Court of Refusals ${run}`;
+  const headers = { "X-Horatio": "1" };
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  await backstoryOptional(lead.page, troupeId);
+
+  // The lead finds Lucky in the catalogue and bans it, with a reason.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules/book-traits`);
+  await l.getByRole("searchbox", { name: "Search book traits" }).fill("lucky");
+  await l.getByRole("list", { name: "Book traits found" }).getByRole("button", { name: /^Lucky/ }).click();
+  await l.getByLabel("Banned in this troupe").check();
+  await l.getByLabel("Reason (optional)").fill("Too swingy at our table.");
+  await l.getByRole("button", { name: "Save", exact: true }).click();
+  const changed = l.locator("section").filter({ has: l.getByRole("heading", { name: "Changed in this troupe", exact: true }) });
+  await expect(changed.getByRole("listitem").filter({ hasText: "Lucky" })).toContainText("Banned: Too swingy at our table.");
+  await l.screenshot(shots("book-traits-ban"));
+
+  // A player's character joins the troupe.
+  const p = player.page;
+  const id = await builtVampire(p, "Rosamund", "Brujah", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  const asked = await p.request.post(`/api/characters/${id}/home-troupe`, { headers, data: { troupe_id: troupeId } });
+  expect(asked.status(), await asked.text()).toBeLessThan(300);
+  const [request] = await (await l.request.get(`/api/troupes/${troupeId}/approvals`)).json();
+  const approved = await l.request.post(`/api/approvals/${request.id}/approve`, { headers, data: {} });
+  expect(approved.status(), await approved.text()).toBeLessThan(300);
+
+  // In the merit picker, Lucky is greyed out with the troupe's reason.
+  await p.goto(`/characters/${id}`);
+  const part = p.locator("section").filter({ has: p.getByRole("heading", { name: "Merits and Flaws", exact: true }) });
+  await part.getByRole("button", { name: "Add" }).click();
+  await p.getByLabel("Show").selectOption("all");
+  await p.getByLabel("Search Merits").fill("Lucky");
+  const lucky = p.getByRole("button", { name: /^Lucky/ });
+  await expect(lucky).toBeDisabled();
+  await expect(lucky).toContainText("Lucky is banned in this troupe. Too swingy at our table.");
+
+  // The troupe's House rules list it as banned.
+  await p.goto(`/troupes/${troupeId}/house-rules`);
+  const banned = p.locator("section").filter({ has: p.getByRole("heading", { name: "Banned", exact: true }) });
+  await expect(banned.getByRole("listitem").filter({ hasText: "Lucky" })).toContainText("Too swingy at our table.");
+});
+
 test("a troupe's XP floor and ceiling: new characters start at the floor, and staff settle a joiner's XP", async ({ browser }) => {
   // A whole character creation, then a home troupe request.
   test.slow();

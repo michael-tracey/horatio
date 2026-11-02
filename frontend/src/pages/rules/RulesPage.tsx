@@ -270,7 +270,7 @@ function EntryRow({ entry: e, troupe }: { entry: Entry; troupe: string | null })
         {t?.house && <HouseMark label={t.house.label} />}
         {e.barred && (
           <>
-            <Badge tone="blood">Not allowed in {troupe}</Badge>
+            <Badge tone="blood">{e.banned ? `Banned in ${troupe}` : `Not allowed in ${troupe}`}</Badge>
             <Badge tone="gold">House rule</Badge>
           </>
         )}

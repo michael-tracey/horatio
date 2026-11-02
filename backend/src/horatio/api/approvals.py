@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from horatio import (
+    book_traits,
     diablerie,
     embrace,
     free_choices,
@@ -184,6 +185,9 @@ class QueuedApproval(ApprovalOut):
     locks: list[LockedOut] = []
     # For a home troupe request still waiting: the free traits the player chose.
     free_choices: list[FreeChoicesSummaryOut] = []
+    # For a home troupe request still waiting: the traits the character holds that the
+    # troupe bans (horatio.book_traits), which accepting it brings in.
+    banned: list[str] = []
     # For a merit or flaw request: the quest staff answered it with, if they did.
     quest: ApprovalQuestOut | None = None
     # For a merit or flaw request still waiting, while the troupe runs quests and none
@@ -464,6 +468,9 @@ def troupe_approvals(
             xp=xp_review_out(db, a, c),
             locks=locks_out(db, a, c),
             free_choices=free_choices_out(db, a, c),
+            banned=book_traits.banned_held(db, troupe.id, c)
+            if a.kind == "home_troupe_change" and a.status == "pending"
+            else [],
             quest=quest_out(db, a),
             quest_suggestion=quest_suggestion_out(db, a, troupe),
         )
