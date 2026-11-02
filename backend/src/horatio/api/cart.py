@@ -7,7 +7,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
-from horatio import cart, sheets
+from horatio import cart, sheets, teaching
 from horatio.api.sheets import FreePickIn, players_character
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.permissions import visible_character
@@ -36,6 +36,8 @@ class SetChangeIn(BaseModel):
     # The rating the cart was made from: refused if the sheet has moved on since.
     from_rating: int | None = Field(default=None, ge=0)
     teacher: str = Field(default="", max_length=200)
+    # The character of the troupe who teaches it, where a teacher rule asks for one.
+    teacher_id: uuid.UUID | None = None
     # Asked as an exception: made at once, waiting on the home troupe's staff.
     exception: ExceptionIn | None = None
     # For a merit that gives free traits the player chooses: their choices, made with it.
@@ -90,6 +92,26 @@ class RepricedOut(BaseModel):
     cost: int
 
 
+class TeacherNeedOut(BaseModel):
+    """A troupe's teacher rule asks a teacher for a change (horatio.teaching)."""
+
+    # The rule, in plain words.
+    rule: str
+    # The rating the teacher must hold.
+    rating: int
+    # Willpower the teacher spends, and the games before it returns.
+    willpower: int
+    games: int
+
+
+def teacher_need_out(need: teaching.Need | None) -> TeacherNeedOut | None:
+    if need is None:
+        return None
+    return TeacherNeedOut(
+        rule=need.text, rating=need.rating, willpower=need.rule.willpower, games=need.rule.games
+    )
+
+
 class CartLineOut(BaseModel):
     # XP the change spends (negative: refunds). For a refused change, what it
     # would have cost where that can be told.
@@ -106,6 +128,8 @@ class CartLineOut(BaseModel):
     # A power a merit opens past a check: the merit, and what it costs through it
     # ("Hard as Steel: 20 XP").
     because: str | None = None
+    # A troupe's teacher rule asks a teacher for it: the line names one.
+    teacher: TeacherNeedOut | None = None
 
 
 class CartOut(BaseModel):
@@ -131,6 +155,7 @@ def to_change(change: CartChangeIn) -> cart.Change:
                 if change.exception
                 else None,
                 tuple(p.to_rules() for p in change.picks or ()),
+                change.teacher_id,
             )
         case SwapChangeIn():
             return cart.Swap(change.category, change.from_name, change.to_name)
@@ -167,6 +192,7 @@ def spend_cart(character_id: uuid.UUID, body: CartIn, db: DbSession, user: Curre
                 breaks=list(o.breaks),
                 repriced=[RepricedOut(purchase=r.label, cost=r.cost) for r in o.repriced],
                 because=o.because,
+                teacher=teacher_need_out(o.teacher),
             )
             for o in outcomes
         ],

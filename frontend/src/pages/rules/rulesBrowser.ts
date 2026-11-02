@@ -4,6 +4,7 @@
  * nothing of the server.
  */
 import type { DisciplinePowerOut, NotAllowedOut, PriceOut, RarityOut, RulesBrowserOut, TraitCheckOut, TraitOut } from "../../api/types";
+import { withClanNames } from "../../clanNames";
 
 /** A part of the browser, and the catalogue categories it shows, in order. */
 export type Section = { key: string; label: string; categories: string[] };
@@ -134,7 +135,8 @@ export function entries(data: RulesBrowserOut): Entry[] {
       barred: t.changed?.banned ? { category: t.category, name: t.name, text: t.changed.ban_reason || null } : (barred.get(key) ?? null),
       banned: !!t.changed?.banned,
       rarity: t.category === "clan" ? (rarity.get(t.name) ?? rarity.get(family(t.name)) ?? null) : null,
-      text: [t.name, t.description, t.requirement, t.kind, t.house?.summary, t.house_rule].filter(Boolean).join(" ").toLowerCase(),
+      // Either name finds the clan stored as Assamite (#430).
+      text: withClanNames([t.name, t.description, t.requirement, t.kind, t.house?.summary, t.house_rule].filter(Boolean).join(" ")).toLowerCase(),
     });
     if (t.category === "disciplines") found.push(...(powers.get(t.name) ?? []).map((p) => powerEntry(p, t, clans)));
   }

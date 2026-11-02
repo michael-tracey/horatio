@@ -1936,10 +1936,14 @@ def set_trait(
     by_staff: bool = False,
     because: str = "",
     picks: Sequence[FreeChoice] = (),
+    teacher_id: uuid.UUID | None = None,
 ) -> Change:
     """Add a trait, change its rating, or (at rating 0) remove it, buying or
     refunding the difference. Unrated traits replace the category's choice.
     `teacher` names who teaches a discipline dot that waits on the home troupe.
+    A trait the troupe's teacher rules ask a teacher for (horatio.teaching) needs
+    one: a character of the troupe (`teacher_id`) or an NPC named in `teacher`; once
+    a home troupe has accepted the character, it waits on it as a discipline does.
     A merit or flaw changed by the player once a home troupe has accepted the
     character is asked of its staff instead (horatio.merit_requests), with the
     free traits `picks` chooses for a merit.
@@ -2058,6 +2062,22 @@ def set_trait(
         raise conflict(
             f"{name} is waiting for the home troupe's approval. Withdraw that to change it."
         )
+    from horatio import teaching  # imports this module
+
+    need = (
+        teaching.need_for(
+            db, character, category.key, definition.name, detail, current_rating, rating
+        )
+        if by_exception is None and not by_staff and free is None
+        else None
+    )
+    taught_by = (
+        teaching.chosen_teacher(
+            db, character, need, category.key, definition.name, detail, teacher_id, teacher
+        )
+        if need is not None
+        else None
+    )
     cost = 0 if free is not None or quote is None else quote.cost
     repriced: list[repricing.Repriced] = []
     if reopened and rating != current_rating:
@@ -2104,7 +2124,7 @@ def set_trait(
 
     held = (
         rating > current_rating
-        and category.key in NEEDS_HOME_APPROVAL
+        and (category.key in NEEDS_HOME_APPROVAL or need is not None)
         and character.home_troupe_id is not None
         and character.kind == "pc"
         and by_exception is None
@@ -2163,6 +2183,7 @@ def set_trait(
         owed = owed_for(db, character, category, rating - current_rating, whole, name, detail)
         doing = f"Gaining {name}" if whole else f"Learning {name} {rating}"
         owe(db, player, character, owed.actions, owed.reason(doing))
+    approval: Approval | None = None
     if held:
         assert character.home_troupe_id is not None
         approval = Approval(
@@ -2181,7 +2202,7 @@ def set_trait(
                 from_rating=current_rating,
                 to_rating=rating,
                 cost=cost,
-                teacher=teacher,
+                teacher=taught_by.name if taught_by is not None else teacher,
             )
         )
         db.flush()
@@ -2197,6 +2218,18 @@ def set_trait(
             rating=rating,
         )
         notifications.approval_waiting(db, approval)
+    if need is not None and taught_by is not None:
+        teaching.record(
+            db,
+            player,
+            character,
+            need,
+            taught_by,
+            definition,
+            detail,
+            rating,
+            approval,
+        )
     if free is not None:
         return Change(
             quote=None,
@@ -2446,6 +2479,10 @@ def decide(
     character = lock_character(db, approval.character_id)
     if at_cost and not (approve and approval.kind == "exception"):
         raise unprocessable("Only an exception asked for free can be approved at normal cost.")
+    from horatio import teaching  # imports this module
+
+    if approve:
+        teaching.ready(db, approval)
     if approval.kind == ASKED_KIND:
         from horatio import merit_requests  # imports this module
 
@@ -2491,6 +2528,8 @@ def decide(
         from horatio.reconciliation import approve_change  # imports this module
 
         approve_change(db, staff, approval, character, settlement_overrides or {}, xp)
+    if approve:
+        teaching.decided(db, staff, approval, approve=True)
     approval.status = "approved" if approve else "declined"
     approval.decided_by = staff.id
     approval.decided_at = datetime.now(UTC)
@@ -2577,6 +2616,10 @@ def undo_discipline(
         )
     )
     db.flush()
+    from horatio import teaching  # imports this module
+
+    # A teacher's Willpower spent on it comes back.
+    teaching.decided(db, user, approval, approve=False)
 
 
 def withdraw(db: Session, player: User, approval: Approval) -> Approval:

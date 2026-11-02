@@ -26,6 +26,7 @@ from horatio import (
     retainers,
     sect_status,
     sheets,
+    teaching,
 )
 from horatio.api.downtimes import staff_troupe
 from horatio.api.equipment import EquipmentModifierOut, modifier_out
@@ -304,6 +305,9 @@ class PlayView(BaseModel):
     # Blood started at half: the character fed short last downtime.
     half_blood: bool = False
     willpower: Tracker
+    # Willpower out teaching that rest does not bring back yet (horatio.teaching), in
+    # words: "1 Willpower out teaching Firearms 2 to Elmer: back after 2 more games".
+    willpower_lent: str | None = None
     health: Health
     morality: Morality | None
     beast: Tracker
@@ -653,6 +657,7 @@ def play_view(db: Session, character: Character) -> PlayView:
         willpower=Tracker(
             value=state["willpower"], most=limits.willpower, start=limits.starting_willpower()
         ),
+        willpower_lent=teaching.lent_text(db, character),
         health=Health(
             levels=[HealthLevel(name=n, boxes=b) for n, b in limits.health],
             marks=state["health"],
