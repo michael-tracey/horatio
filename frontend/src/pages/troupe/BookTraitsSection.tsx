@@ -237,7 +237,7 @@ function TraitPanel({
         )}
       </section>
 
-      <section className="mt-4 flex flex-col gap-3 border-t border-ash pt-4" aria-label="House wording">
+      <section className="mt-4 flex flex-col gap-3 border-t border-ash pt-4" aria-label="Wording">
         <Field label="House wording" hint="In Markdown. Write the troupe's own words: never copy the book's text. Leave it empty for none.">
           <Textarea rows={4} maxLength={4000} value={draft.wording} disabled={!canEdit} onChange={(e) => set({ wording: e.target.value })} />
         </Field>

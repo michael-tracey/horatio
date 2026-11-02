@@ -46,7 +46,7 @@ test("the Play View's Sheet tab puts the archetype in the subheader, and says wh
   await p.screenshot(shots("play-sheet-info"));
 });
 
-test("a troupe's house wording on a power shows on the Play View, marked as the troupe's, with the book page (#433)", async ({ browser }) => {
+test("a troupe's house wording on a power shows on the Play View, marked as the troupe's, under the book's summary (#433)", async ({ browser }) => {
   const custodian = await person(browser, "wording-custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "wording-lead");

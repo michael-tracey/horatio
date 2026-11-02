@@ -227,7 +227,7 @@ AWE = "Draws every eye; **one** target per turn here."
 
 
 def test_storytellers_give_a_trait_house_wording_and_players_read_it(troupe: Troupe) -> None:
-    body = {"category": "disciplines", "name": "Presence", "wording": AWE}
+    body: dict[str, Any] = {"category": "disciplines", "name": "Presence", "wording": AWE}
     assert change(troupe, troupe.assistant, **body).status_code == 403
 
     worded = change(troupe, **body)
