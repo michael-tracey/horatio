@@ -25,7 +25,7 @@ from datetime import UTC, datetime
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
-from horatio import notification_emails
+from horatio import clan_names, notification_emails
 from horatio.models import (
     Approval,
     Character,
@@ -151,6 +151,13 @@ def approval_items(
         elif approval.kind == "merit_flaw" and approval.id in disciplines:
             name, bought = disciplines[approval.id]
             summary = f"{character} asks {merit_flaw_ask(name, bought)}"
+        elif approval.id in disciplines and disciplines[approval.id][1].free_change:
+            name, bought = disciplines[approval.id]
+            detail = f": {bought.detail}" if bought.detail else ""
+            summary = (
+                f"{character} lowered {name}{detail} {bought.from_rating} → {bought.to_rating}"
+                f" as a free change ({-bought.cost} XP back)"
+            )
         elif approval.id in disciplines:
             name, bought = disciplines[approval.id]
             detail = f": {bought.detail}" if bought.detail else ""
@@ -188,6 +195,10 @@ def merit_flaw_ask(name: str, bought: DisciplinePurchase) -> str:
     if bought.to_rating > bought.from_rating:
         paid = f"{bought.cost} XP" if bought.cost >= 0 else f"gives {-bought.cost} XP"
         return f"to add {label} ({paid})"
+    if bought.free_change and bought.cost > 0:
+        return f"to buy off {label} as a free change ({bought.cost} XP)"
+    if bought.free_change:
+        return f"to remove {label} as a free change ({-bought.cost} XP back)"
     if bought.cost:
         return f"to buy off {label} ({bought.cost} XP)"
     return f"to remove {label} (no XP back)"
@@ -254,10 +265,34 @@ def quest_request_tasks(db: Session, user: User) -> list[Item]:
     ]
 
 
+def teaching_tasks(db: Session, user: User) -> list[Item]:
+    """Teaching asked of the person's characters, at the cost of their Willpower
+    (horatio.teaching): theirs to confirm or refuse."""
+    from horatio import teaching  # imports this module
+
+    return [
+        Item(
+            id=f"teaching:{t.id}",
+            kind="teaching",
+            task=True,
+            troupe_id=t.troupe_id,
+            troupe_name=db.get_one(Troupe, t.troupe_id).name,
+            summary=f"{teacher.name}: {teaching.what_taught(db, t)}? "
+            f"It costs {t.willpower} Willpower.",
+            link=f"/play/characters/{teacher.id}?tab=tracker",
+            at=t.created_at,
+            read=False,
+            picture=picture_url(teacher.id, teacher.picture_id),
+        )
+        for t, teacher in teaching.waiting_for(db, user)
+    ]
+
+
 TASK_SOURCES: list[Callable[[Session, User], list[Item]]] = [
     approval_tasks,
     troupe_request_tasks,
     quest_request_tasks,
+    teaching_tasks,
 ]
 
 
@@ -345,8 +380,11 @@ def notify(
     character_id: uuid.UUID | None = None,
 ) -> None:
     """Leave a message for each of `user_ids`, in the same transaction as the event,
-    and an email for those who want this kind by email."""
+    and an email for those who want this kind by email. The clan stored as Assamite is
+    named as the troupe calls it then, and stays so (horatio.clan_names)."""
     user_ids = list(dict.fromkeys(user_ids))
+    troupe = db.get(Troupe, troupe_id) if troupe_id is not None else None
+    summary = clan_names.shown(summary, clan_names.troupe_name(troupe))
     for user_id in user_ids:
         db.add(
             Notification(

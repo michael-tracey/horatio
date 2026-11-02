@@ -220,6 +220,9 @@ class Limits:
     # Willpower the game starts with, if not full: the character had no full day's
     # rest before it (horatio.checkin).
     willpower_start: int | None = None
+    # Willpower out teaching as the game starts, which rest does not bring back
+    # (horatio.teaching).
+    willpower_lent: int = 0
     # Names for counters since removed, so old logs still read.
     removed: Mapping[str, str] = field(default_factory=dict[str, str])
     # Derangement traits where the game starts (where the last one ended), and
@@ -348,10 +351,11 @@ class Limits:
 
     def starting_willpower(self) -> int:
         """Full after a day's rest (MET: VtM core, p. 288), else where the last game
-        left it, never above the sheet's."""
+        left it, never above the sheet's, less any out teaching."""
+        most = max(0, self.willpower - self.willpower_lent)
         if self.willpower_start is None:
-            return self.willpower
-        return max(0, min(self.willpower_start, self.willpower))
+            return most
+        return max(0, min(self.willpower_start, most))
 
     def human_start(self) -> int:
         """A ghoul's human Blood as a game starts: the rest of its pool."""
@@ -749,6 +753,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         beast_start=min(beast, BEAST_TRAITS),
         willpower=ratings.get(("willpower_sources", "Willpower"), 0),
         willpower_start=game.willpower_start if game is not None else None,
+        willpower_lent=lent_teaching(db, character, game),
         health=tuple((level, ratings.get(("health_levels", level), 0)) for level in HEALTH_LEVELS),
         morality=(path.trait.rating or 0) if path and panels.morality else 0,
         morality_name=path.definition.name if path and panels.morality else None,
@@ -778,6 +783,12 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
     if not found.items:
         return found
     return replace(found, equipped=carried_equipped(db, character, game, found))
+
+
+def lent_teaching(db: Session, character: Character, game: PlayGame | None) -> int:
+    from horatio import teaching  # imports this module
+
+    return teaching.lent(db, character, game)
 
 
 def stock_limits(db: Session, character: Character) -> Limits:
@@ -968,6 +979,8 @@ def describe(
 ) -> str:
     """The tap as the log reads it: "Blood 7 → 6", "Turned into fight form"."""
     if event.kind == "note":
+        if event.tracker == play_status.SOURCE_NOTE:
+            return "Source of abiding status changed"
         return "Note"
     if event.kind == "undo":
         text = f"Undid: {describe(target, limits)}" if target is not None else "Undid a tap"

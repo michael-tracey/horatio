@@ -9,7 +9,7 @@ afterEach(cleanup);
 type Trait = PlayReference["traits"][number];
 
 function trait(category: string, category_name: string, group: string, name: string, more: Partial<Trait> = {}): Trait {
-  return { category, category_name, group, name, detail: "", rating: 1, specialties: [], note: "", ...more };
+  return { category, category_name, group, name, detail: "", rating: 1, specialties: [], note: "", wording: "", wording_mode: "added", ...more };
 }
 
 const reference: PlayReference = {
@@ -25,6 +25,7 @@ const reference: PlayReference = {
     trait("attributes", "Attributes", "Attributes", "Physical", { rating: 5, description: "Strength, speed and toughness." }),
     trait("focus_physicals", "Physical Focus", "Attributes", "Stamina", { rating: null, description: "Toughness and endurance." }),
     trait("skills", "Skills", "Skills", "Brawl", { rating: 2, description: "Fighting with your body.", page_reference: "93" }),
+    trait("skills", "Skills", "Skills", "Dodge", { rating: 1, description: "Getting out of the way.", wording: "Only once a round here.", wording_mode: "replaces" }),
     trait("status_traits", "Sect Status", "Backgrounds", "Acclaimed", { rating: null }),
     trait("disciplines", "Disciplines", "Disciplines", "Celerity", { rating: 1, description: "Supernatural speed." }),
   ],
@@ -74,6 +75,14 @@ describe("SheetTab", () => {
     expect(screen.getByText("Speed, in steps and actions.")).toBeTruthy();
     expect(screen.getByText("Alacrity")).toBeTruthy();
     expect(screen.queryByText("Supernatural speed.")).toBeNull();
+  });
+
+  it("opens a trait to the troupe's wording, marked as the troupe's, in place of the book's", () => {
+    sheet();
+    fireEvent.click(screen.getByRole("button", { name: "Dodge" }));
+    expect(screen.getByText("House rule, in place of the book's")).toBeTruthy();
+    expect(screen.getByText("Only once a round here.")).toBeTruthy();
+    expect(screen.queryByText("Getting out of the way.")).toBeNull();
   });
 
   it("leaves the archetype to the subheader", () => {

@@ -33,8 +33,12 @@
         "title": "AbidingSourceOut",
         "type": "object"
       },
-      "Absentee": {
+      "AbsenteeMarked": {
         "properties": {
+          "absentee": {
+            "title": "Absentee",
+            "type": "boolean"
+          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -43,18 +47,14 @@
           "character_name": {
             "title": "Character Name",
             "type": "string"
-          },
-          "player_name": {
-            "title": "Player Name",
-            "type": "string"
           }
         },
         "required": [
           "character_id",
           "character_name",
-          "player_name"
+          "absentee"
         ],
-        "title": "Absentee",
+        "title": "AbsenteeMarked",
         "type": "object"
       },
       "ActionKindChoiceOut": {
@@ -124,6 +124,48 @@
           "name"
         ],
         "title": "ActiveIn",
+        "type": "object"
+      },
+      "Adjustment": {
+        "description": "XP staff tick for a character when awarding a game: \"Helped +1\", at most\n`per_month` times a calendar month (None for no limit).",
+        "properties": {
+          "amount": {
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "key": {
+            "default": "",
+            "maxLength": 40,
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "per_month": {
+            "anyOf": [
+              {
+                "maximum": 31.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Month"
+          }
+        },
+        "required": [
+          "name",
+          "amount"
+        ],
+        "title": "Adjustment",
         "type": "object"
       },
       "AdjustmentIn": {
@@ -1064,6 +1106,15 @@
             "title": "Home",
             "type": "boolean"
           },
+          "kind": {
+            "default": "attended",
+            "enum": [
+              "attended",
+              "absentee"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
           "month_xp": {
             "title": "Month Xp",
             "type": "integer"
@@ -1081,6 +1132,22 @@
               }
             ],
             "title": "Rested"
+          },
+          "status_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Source"
+          },
+          "status_to_choose": {
+            "default": false,
+            "title": "Status To Choose",
+            "type": "boolean"
           }
         },
         "required": [
@@ -2773,6 +2840,87 @@
         "title": "BanOut",
         "type": "object"
       },
+      "Band": {
+        "description": "One row of the chart: earned XP up to and including `up_to` (None for the last\nrow, which has no top), and the XP for a game attended and an absentee game.",
+        "properties": {
+          "absentee": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Absentee",
+            "type": "integer"
+          },
+          "attended": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Attended",
+            "type": "integer"
+          },
+          "up_to": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Up To"
+          }
+        },
+        "required": [
+          "attended",
+          "absentee"
+        ],
+        "title": "Band",
+        "type": "object"
+      },
+      "BannedHolderOut": {
+        "description": "A character playing by the troupe's rules who holds a trait it bans.",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "excepted": {
+            "title": "Excepted",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "splat": {
+            "title": "Splat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "splat",
+          "category",
+          "name",
+          "detail",
+          "excepted"
+        ],
+        "title": "BannedHolderOut",
+        "type": "object"
+      },
       "BlockChoicesOut": {
         "properties": {
           "entries": {
@@ -3094,6 +3242,255 @@
           "file"
         ],
         "title": "Body_upload_portrait_api_troupes__troupe_id__portrait_post",
+        "type": "object"
+      },
+      "BookTraitChange": {
+        "description": "A change to one book trait. Only the fields given change; the rest stay.",
+        "properties": {
+          "ban_reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ban Reason"
+          },
+          "banned": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Banned"
+          },
+          "category": {
+            "maxLength": 100,
+            "title": "Category",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "splat": {
+            "default": "vampire",
+            "title": "Splat",
+            "type": "string"
+          },
+          "wording": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wording"
+          },
+          "wording_mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "added",
+                  "replaces"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wording Mode"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "BookTraitChange",
+        "type": "object"
+      },
+      "BookTraitOut": {
+        "description": "A troupe's change to one book trait.",
+        "properties": {
+          "ban_reason": {
+            "title": "Ban Reason",
+            "type": "string"
+          },
+          "banned": {
+            "title": "Banned",
+            "type": "boolean"
+          },
+          "book_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Book Kind"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "category_name": {
+            "title": "Category Name",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "splat": {
+            "title": "Splat",
+            "type": "string"
+          },
+          "splat_label": {
+            "title": "Splat Label",
+            "type": "string"
+          },
+          "wording": {
+            "title": "Wording",
+            "type": "string"
+          },
+          "wording_mode": {
+            "enum": [
+              "added",
+              "replaces"
+            ],
+            "title": "Wording Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "splat",
+          "splat_label",
+          "category",
+          "category_name",
+          "name",
+          "page",
+          "banned",
+          "ban_reason",
+          "wording",
+          "wording_mode",
+          "kind",
+          "book_kind"
+        ],
+        "title": "BookTraitOut",
+        "type": "object"
+      },
+      "BookTraitsOut": {
+        "properties": {
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/BookTraitOut"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "holders": {
+            "items": {
+              "$ref": "#/components/schemas/BannedHolderOut"
+            },
+            "title": "Holders",
+            "type": "array"
+          },
+          "kinds": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "type": "object"
+            },
+            "default": {},
+            "title": "Kinds",
+            "type": "object"
+          }
+        },
+        "required": [
+          "changes",
+          "holders"
+        ],
+        "title": "BookTraitsOut",
+        "type": "object"
+      },
+      "BreakingOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "kind",
+          "message"
+        ],
+        "title": "BreakingOut",
         "type": "object"
       },
       "BudgetChange": {
@@ -3606,6 +4003,16 @@
             },
             "title": "Repriced",
             "type": "array"
+          },
+          "teacher": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TeacherNeedOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -4407,6 +4814,15 @@
             ],
             "title": "Asking Troupe Name"
           },
+          "assamite_name": {
+            "default": "Banu Haqim",
+            "enum": [
+              "Banu Haqim",
+              "Assamite"
+            ],
+            "title": "Assamite Name",
+            "type": "string"
+          },
           "building_troupe_id": {
             "anyOf": [
               {
@@ -4640,6 +5056,15 @@
               }
             ],
             "title": "Asking Troupe Id"
+          },
+          "assamite_name": {
+            "default": "Banu Haqim",
+            "enum": [
+              "Banu Haqim",
+              "Assamite"
+            ],
+            "title": "Assamite Name",
+            "type": "string"
           },
           "building_troupe_id": {
             "anyOf": [
@@ -5045,6 +5470,48 @@
         "title": "CharacterTitlesOut",
         "type": "object"
       },
+      "CharacterXpIn": {
+        "description": "Staff's choice for one character: adjustments ticked, or its figure set by hand.",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "override": {
+            "anyOf": [
+              {
+                "maximum": 1000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override"
+          },
+          "override_reason": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Override Reason",
+            "type": "string"
+          },
+          "ticks": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Ticks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_id"
+        ],
+        "title": "CharacterXpIn",
+        "type": "object"
+      },
       "CheckChange": {
         "properties": {
           "strength": {
@@ -5086,6 +5553,30 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "status_at_checkin": {
+            "default": false,
+            "title": "Status At Checkin",
+            "type": "boolean"
+          },
+          "status_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Source"
+          },
+          "status_sources": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AbidingSourceOut"
+            },
+            "title": "Status Sources",
+            "type": "array"
           }
         },
         "required": [
@@ -5107,6 +5598,18 @@
             "default": true,
             "title": "Rested",
             "type": "boolean"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
           }
         },
         "required": [
@@ -5604,6 +6107,23 @@
           "why"
         ],
         "title": "ClanMeritOut",
+        "type": "object"
+      },
+      "ClanNamesIn": {
+        "properties": {
+          "assamite": {
+            "enum": [
+              "Banu Haqim",
+              "Assamite"
+            ],
+            "title": "Assamite",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assamite"
+        ],
+        "title": "ClanNamesIn",
         "type": "object"
       },
       "ClanRarityIn": {
@@ -8123,6 +8643,11 @@
             "title": "Detail",
             "type": "string"
           },
+          "free_change": {
+            "default": false,
+            "title": "Free Change",
+            "type": "boolean"
+          },
           "from_rating": {
             "title": "From Rating",
             "type": "integer"
@@ -8145,6 +8670,16 @@
           "teacher": {
             "title": "Teacher",
             "type": "string"
+          },
+          "teaching": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/horatio__api__approvals__TeachingOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "to_rating": {
             "title": "To Rating",
@@ -12009,6 +12544,144 @@
         "title": "FoundOut",
         "type": "object"
       },
+      "FreeChangesOut": {
+        "description": "The character's free changes as a new character, while they are open\n(horatio.free_changes): lowering or removing a trait refunds its full XP.",
+        "properties": {
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "excluded": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Excluded",
+            "type": "array"
+          },
+          "games_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Games Left"
+          },
+          "kind": {
+            "enum": [
+              "date",
+              "games"
+            ],
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "ends_at",
+          "games_left",
+          "excluded"
+        ],
+        "title": "FreeChangesOut",
+        "type": "object"
+      },
+      "FreeChangesSetting": {
+        "properties": {
+          "days": {
+            "default": 30,
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Days",
+            "type": "integer"
+          },
+          "excluded": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TraitRef"
+            },
+            "maxItems": 100,
+            "title": "Excluded",
+            "type": "array"
+          },
+          "games": {
+            "default": 3,
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Games",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "none",
+              "date",
+              "games"
+            ],
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "FreeChangesSetting",
+        "type": "object"
+      },
+      "FreeChangesSettingOut": {
+        "properties": {
+          "days": {
+            "default": 30,
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Days",
+            "type": "integer"
+          },
+          "excluded": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TraitRef"
+            },
+            "maxItems": 100,
+            "title": "Excluded",
+            "type": "array"
+          },
+          "games": {
+            "default": 3,
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Games",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "none",
+              "date",
+              "games"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "text"
+        ],
+        "title": "FreeChangesSettingOut",
+        "type": "object"
+      },
       "FreeChoicesChange": {
         "description": "Replace the free traits chosen for a held merit.",
         "properties": {
@@ -12326,6 +12999,14 @@
       },
       "GameNight": {
         "properties": {
+          "absentees": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Attendee"
+            },
+            "title": "Absentees",
+            "type": "array"
+          },
           "attendees": {
             "items": {
               "$ref": "#/components/schemas/Attendee"
@@ -12345,6 +13026,18 @@
             "title": "Ends At",
             "type": "string"
           },
+          "game_xp": {
+            "$ref": "#/components/schemas/GameXpSettings",
+            "default": {
+              "absentee": false,
+              "absentee_by_players": false,
+              "absentee_downtime": false,
+              "absentee_lookback_days": 60,
+              "adjustments": [],
+              "bands": [],
+              "cap": "warn"
+            }
+          },
           "game_xp_high": {
             "title": "Game Xp High",
             "type": "integer"
@@ -12352,6 +13045,14 @@
           "game_xp_low": {
             "title": "Game Xp Low",
             "type": "integer"
+          },
+          "given": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/GameXpGiven"
+            },
+            "title": "Given",
+            "type": "array"
           },
           "id": {
             "format": "uuid",
@@ -12364,7 +13065,7 @@
           },
           "others": {
             "items": {
-              "$ref": "#/components/schemas/Absentee"
+              "$ref": "#/components/schemas/NotHere"
             },
             "title": "Others",
             "type": "array"
@@ -12385,6 +13086,14 @@
           },
           "xp": {
             "$ref": "#/components/schemas/GameXp"
+          },
+          "xp_lines": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/XpLine"
+            },
+            "title": "Xp Lines",
+            "type": "array"
           }
         },
         "required": [
@@ -12602,6 +13311,14 @@
       },
       "GameXpAwarded": {
         "properties": {
+          "capped": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Capped",
+            "type": "array"
+          },
           "characters": {
             "title": "Characters",
             "type": "integer"
@@ -12626,13 +13343,114 @@
         "title": "GameXpAwarded",
         "type": "object"
       },
+      "GameXpGiven": {
+        "description": "What one character got for the game, once awarded.",
+        "properties": {
+          "adjustments": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Adjustments",
+            "type": "array"
+          },
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "band": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Band"
+          },
+          "capped": {
+            "title": "Capped",
+            "type": "integer"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "figure": {
+            "title": "Figure",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "attended",
+              "absentee"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "override": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override"
+          },
+          "override_reason": {
+            "title": "Override Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "kind",
+          "band",
+          "figure",
+          "adjustments",
+          "capped",
+          "override",
+          "override_reason",
+          "amount"
+        ],
+        "title": "GameXpGiven",
+        "type": "object"
+      },
       "GameXpIn": {
         "properties": {
+          "absentee_amount": {
+            "anyOf": [
+              {
+                "maximum": 1000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Absentee Amount"
+          },
           "amount": {
             "maximum": 1000.0,
             "minimum": 1.0,
             "title": "Amount",
             "type": "integer"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterXpIn"
+            },
+            "title": "Characters",
+            "type": "array"
           },
           "reason": {
             "maxLength": 500,
@@ -12651,6 +13469,76 @@
           "reason"
         ],
         "title": "GameXpIn",
+        "type": "object"
+      },
+      "GameXpSettings": {
+        "description": "A troupe's game XP, as Troupe.game_xp keeps it. The defaults are the book's way.",
+        "properties": {
+          "absentee": {
+            "default": false,
+            "title": "Absentee",
+            "type": "boolean"
+          },
+          "absentee_by_players": {
+            "default": false,
+            "title": "Absentee By Players",
+            "type": "boolean"
+          },
+          "absentee_downtime": {
+            "default": false,
+            "title": "Absentee Downtime",
+            "type": "boolean"
+          },
+          "absentee_lookback_days": {
+            "default": 60,
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Absentee Lookback Days",
+            "type": "integer"
+          },
+          "adjustments": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Adjustment"
+            },
+            "maxItems": 12,
+            "title": "Adjustments",
+            "type": "array"
+          },
+          "bands": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Band"
+            },
+            "maxItems": 20,
+            "title": "Bands",
+            "type": "array"
+          },
+          "cap": {
+            "default": "warn",
+            "enum": [
+              "warn",
+              "cap",
+              "off"
+            ],
+            "title": "Cap",
+            "type": "string"
+          },
+          "monthly_xp": {
+            "anyOf": [
+              {
+                "maximum": 1000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monthly Xp"
+          }
+        },
+        "title": "GameXpSettings",
         "type": "object"
       },
       "GatheredOut": {
@@ -13694,6 +14582,11 @@
             "title": "House",
             "type": "string"
           },
+          "own": {
+            "default": false,
+            "title": "Own",
+            "type": "boolean"
+          },
           "page": {
             "anyOf": [
               {
@@ -13986,6 +14879,14 @@
             "title": "Backstory Required",
             "type": "boolean"
           },
+          "book_traits": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BookTraitOut"
+            },
+            "title": "Book Traits",
+            "type": "array"
+          },
           "checks": {
             "items": {
               "$ref": "#/components/schemas/HouseCheckOut"
@@ -14012,6 +14913,14 @@
               "$ref": "#/components/schemas/SplatHouseRulesOut"
             },
             "title": "Splats",
+            "type": "array"
+          },
+          "teachers": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Teachers",
             "type": "array"
           }
         },
@@ -18470,6 +19379,50 @@
         "title": "MetIn",
         "type": "object"
       },
+      "MissedGame": {
+        "description": "A game that has started, whose XP is still to award, and the caller's characters\nat home in the troupe: for a player to mark one absentee, where the troupe allows.",
+        "properties": {
+          "absentee": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Absentee",
+            "type": "array"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CheckInCharacter"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "game_id": {
+            "format": "uuid",
+            "title": "Game Id",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "game_id",
+          "starts_at",
+          "ends_at",
+          "characters",
+          "absentee"
+        ],
+        "title": "MissedGame",
+        "type": "object"
+      },
       "ModifierChange": {
         "description": "Whatever of a modifier is changing; the rest stays.",
         "properties": {
@@ -18784,6 +19737,17 @@
             },
             "title": "Breakdown",
             "type": "array"
+          },
+          "closed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed"
           },
           "closes_at": {
             "format": "date-time",
@@ -19406,6 +20370,35 @@
         "title": "NotAllowedOut",
         "type": "object"
       },
+      "NotHere": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "home": {
+            "default": true,
+            "title": "Home",
+            "type": "boolean"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "player_name"
+        ],
+        "title": "NotHere",
+        "type": "object"
+      },
       "NoteIn": {
         "properties": {
           "note": {
@@ -19651,6 +20644,15 @@
               }
             ],
             "title": "Asking Troupe Id"
+          },
+          "assamite_name": {
+            "default": "Banu Haqim",
+            "enum": [
+              "Banu Haqim",
+              "Assamite"
+            ],
+            "title": "Assamite Name",
+            "type": "string"
           },
           "building_troupe_id": {
             "anyOf": [
@@ -20012,6 +21014,17 @@
             ],
             "title": "Accepted"
           },
+          "carried_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Carried Source"
+          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -20163,6 +21176,299 @@
           "amount"
         ],
         "title": "OwedOut",
+        "type": "object"
+      },
+      "OwnCheckIn": {
+        "properties": {
+          "category": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "condition": {
+            "additionalProperties": true,
+            "title": "Condition",
+            "type": "object"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "message": {
+            "maxLength": 500,
+            "title": "Message",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "requires",
+              "forbids"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "name_prefix": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name Prefix"
+          },
+          "splat": {
+            "default": "vampire",
+            "title": "Splat",
+            "type": "string"
+          },
+          "step": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step"
+          },
+          "strength": {
+            "default": "refuse",
+            "enum": [
+              "refuse",
+              "complete",
+              "review",
+              "note"
+            ],
+            "title": "Strength",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "mode",
+          "condition",
+          "message"
+        ],
+        "title": "OwnCheckIn",
+        "type": "object"
+      },
+      "OwnCheckOut": {
+        "properties": {
+          "breaking": {
+            "items": {
+              "$ref": "#/components/schemas/BreakingOut"
+            },
+            "title": "Breaking",
+            "type": "array"
+          },
+          "category": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "condition": {
+            "additionalProperties": true,
+            "title": "Condition",
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "message": {
+            "maxLength": 500,
+            "title": "Message",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "requires",
+              "forbids"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "name_prefix": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name Prefix"
+          },
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem"
+          },
+          "splat": {
+            "default": "vampire",
+            "title": "Splat",
+            "type": "string"
+          },
+          "step": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step"
+          },
+          "strength": {
+            "default": "refuse",
+            "enum": [
+              "refuse",
+              "complete",
+              "review",
+              "note"
+            ],
+            "title": "Strength",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "mode",
+          "condition",
+          "message",
+          "id",
+          "key",
+          "text",
+          "problem",
+          "breaking"
+        ],
+        "title": "OwnCheckOut",
+        "type": "object"
+      },
+      "OwnCheckPreviewIn": {
+        "properties": {
+          "check": {
+            "$ref": "#/components/schemas/OwnCheckIn"
+          },
+          "house_check_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "House Check Id"
+          }
+        },
+        "required": [
+          "check"
+        ],
+        "title": "OwnCheckPreviewIn",
+        "type": "object"
+      },
+      "OwnCheckPreviewOut": {
+        "properties": {
+          "breaking": {
+            "items": {
+              "$ref": "#/components/schemas/BreakingOut"
+            },
+            "title": "Breaking",
+            "type": "array"
+          },
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "problem",
+          "breaking"
+        ],
+        "title": "OwnCheckPreviewOut",
         "type": "object"
       },
       "OwnEntryOut": {
@@ -20892,6 +22198,11 @@
             "title": "Detail",
             "type": "string"
           },
+          "free_change": {
+            "default": false,
+            "title": "Free Change",
+            "type": "boolean"
+          },
           "from_rating": {
             "title": "From Rating",
             "type": "integer"
@@ -21616,6 +22927,11 @@
             "title": "Source Chosen",
             "type": "boolean"
           },
+          "source_fixed": {
+            "default": false,
+            "title": "Source Fixed",
+            "type": "boolean"
+          },
           "sources": {
             "items": {
               "$ref": "#/components/schemas/AbidingSourceOut"
@@ -21781,6 +23097,20 @@
             },
             "title": "Specialties",
             "type": "array"
+          },
+          "wording": {
+            "default": "",
+            "title": "Wording",
+            "type": "string"
+          },
+          "wording_mode": {
+            "default": "added",
+            "enum": [
+              "added",
+              "replaces"
+            ],
+            "title": "Wording Mode",
+            "type": "string"
           }
         },
         "required": [
@@ -22046,6 +23376,17 @@
           },
           "willpower": {
             "$ref": "#/components/schemas/Tracker"
+          },
+          "willpower_lent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Willpower Lent"
           }
         },
         "required": [
@@ -23640,6 +24981,14 @@
               }
             ],
             "title": "Troupe Portrait"
+          },
+          "wording": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PrintedWording"
+            },
+            "title": "Wording",
+            "type": "array"
           }
         },
         "required": [
@@ -23757,6 +25106,46 @@
           "specializes"
         ],
         "title": "PrintedTrait",
+        "type": "object"
+      },
+      "PrintedWording": {
+        "description": "The troupe's own wording for a trait the character holds (horatio.book_traits),\nprinted after the sheet with the book's page.",
+        "properties": {
+          "mode": {
+            "enum": [
+              "added",
+              "replaces"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "page",
+          "text",
+          "mode"
+        ],
+        "title": "PrintedWording",
         "type": "object"
       },
       "ProblemOut": {
@@ -25494,6 +26883,14 @@
               }
             ],
             "title": "Asked At"
+          },
+          "banned": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Banned",
+            "type": "array"
           },
           "character_id": {
             "format": "uuid",
@@ -27577,6 +28974,13 @@
               }
             ],
             "title": "Troupe Name"
+          },
+          "written_rules": {
+            "items": {
+              "$ref": "#/components/schemas/WrittenRuleOut"
+            },
+            "title": "Written Rules",
+            "type": "array"
           }
         },
         "required": [
@@ -28500,6 +29904,18 @@
             "maxLength": 200,
             "title": "Teacher",
             "type": "string"
+          },
+          "teacher_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Teacher Id"
           }
         },
         "required": [
@@ -29149,6 +30565,16 @@
             },
             "title": "Exceptions",
             "type": "array"
+          },
+          "free_changes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FreeChangesOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "home_troupe_id": {
             "anyOf": [
@@ -30291,6 +31717,12 @@
             "default": {},
             "title": "Chosen",
             "type": "object"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Reason",
+            "type": "string"
           },
           "source": {
             "anyOf": [
@@ -31785,6 +33217,424 @@
         "title": "Taps",
         "type": "object"
       },
+      "TeacherChoiceOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind"
+        ],
+        "title": "TeacherChoiceOut",
+        "type": "object"
+      },
+      "TeacherNeedOut": {
+        "description": "A troupe's teacher rule asks a teacher for a change (horatio.teaching).",
+        "properties": {
+          "games": {
+            "title": "Games",
+            "type": "integer"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "willpower": {
+            "title": "Willpower",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rule",
+          "rating",
+          "willpower",
+          "games"
+        ],
+        "title": "TeacherNeedOut",
+        "type": "object"
+      },
+      "TeacherOptionsOut": {
+        "description": "A purchase needs a teacher: the rule, and who in the troupe could teach it.",
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/TeacherChoiceOut"
+            },
+            "title": "Candidates",
+            "type": "array"
+          },
+          "games": {
+            "title": "Games",
+            "type": "integer"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "willpower": {
+            "title": "Willpower",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rule",
+          "rating",
+          "willpower",
+          "games",
+          "candidates"
+        ],
+        "title": "TeacherOptionsOut",
+        "type": "object"
+      },
+      "TeacherRuleBriefOut": {
+        "description": "A teacher rule that applies to the character now: what it is about.",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name_prefix": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name Prefix"
+          },
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Names",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "names",
+          "name_prefix",
+          "text"
+        ],
+        "title": "TeacherRuleBriefOut",
+        "type": "object"
+      },
+      "TeacherRuleIn": {
+        "properties": {
+          "actions": {
+            "default": 0,
+            "maximum": 5.0,
+            "minimum": 0.0,
+            "title": "Actions",
+            "type": "integer"
+          },
+          "always": {
+            "default": false,
+            "title": "Always",
+            "type": "boolean"
+          },
+          "category": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition"
+          },
+          "games": {
+            "default": 0,
+            "maximum": 12.0,
+            "minimum": 0.0,
+            "title": "Games",
+            "type": "integer"
+          },
+          "holds": {
+            "default": "same",
+            "enum": [
+              "same",
+              "rating"
+            ],
+            "title": "Holds",
+            "type": "string"
+          },
+          "name_prefix": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name Prefix"
+          },
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Names",
+            "type": "array"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "maximum": 10.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "splat": {
+            "default": "vampire",
+            "title": "Splat",
+            "type": "string"
+          },
+          "willpower": {
+            "default": 0,
+            "maximum": 5.0,
+            "minimum": 0.0,
+            "title": "Willpower",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category"
+        ],
+        "title": "TeacherRuleIn",
+        "type": "object"
+      },
+      "TeacherRuleOut": {
+        "properties": {
+          "actions": {
+            "default": 0,
+            "maximum": 5.0,
+            "minimum": 0.0,
+            "title": "Actions",
+            "type": "integer"
+          },
+          "always": {
+            "default": false,
+            "title": "Always",
+            "type": "boolean"
+          },
+          "category": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition"
+          },
+          "games": {
+            "default": 0,
+            "maximum": 12.0,
+            "minimum": 0.0,
+            "title": "Games",
+            "type": "integer"
+          },
+          "holds": {
+            "default": "same",
+            "enum": [
+              "same",
+              "rating"
+            ],
+            "title": "Holds",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name_prefix": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name Prefix"
+          },
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Names",
+            "type": "array"
+          },
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "maximum": 10.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "splat": {
+            "default": "vampire",
+            "title": "Splat",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "willpower": {
+            "default": 0,
+            "maximum": 5.0,
+            "minimum": 0.0,
+            "title": "Willpower",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "id",
+          "text",
+          "problem"
+        ],
+        "title": "TeacherRuleOut",
+        "type": "object"
+      },
+      "TeacherRulePreviewOut": {
+        "properties": {
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "problem"
+        ],
+        "title": "TeacherRulePreviewOut",
+        "type": "object"
+      },
+      "TeachingAskOut": {
+        "description": "A purchase asking the character to teach it, at the cost of its Willpower.",
+        "properties": {
+          "games": {
+            "title": "Games",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "student": {
+            "title": "Student",
+            "type": "string"
+          },
+          "what": {
+            "title": "What",
+            "type": "string"
+          },
+          "willpower": {
+            "title": "Willpower",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "what",
+          "student",
+          "willpower",
+          "games"
+        ],
+        "title": "TeachingAskOut",
+        "type": "object"
+      },
       "TemporaryDerangement": {
         "properties": {
           "held": {
@@ -32589,6 +34439,18 @@
             "maxLength": 200,
             "title": "Teacher",
             "type": "string"
+          },
+          "teacher_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Teacher Id"
           }
         },
         "required": [
@@ -32596,6 +34458,61 @@
           "name"
         ],
         "title": "TraitChange",
+        "type": "object"
+      },
+      "TraitChangeOut": {
+        "description": "A troupe's change to a book trait (horatio.book_traits): banned in the troupe,\nwith the reason its players see (\"\" for none); its own wording, in Markdown (\"\" for\nnone), added to the book's summary or replacing it.",
+        "properties": {
+          "ban_reason": {
+            "title": "Ban Reason",
+            "type": "string"
+          },
+          "banned": {
+            "title": "Banned",
+            "type": "boolean"
+          },
+          "book_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Book Kind"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "wording": {
+            "default": "",
+            "title": "Wording",
+            "type": "string"
+          },
+          "wording_mode": {
+            "default": "added",
+            "enum": [
+              "added",
+              "replaces"
+            ],
+            "title": "Wording Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "banned",
+          "ban_reason"
+        ],
+        "title": "TraitChangeOut",
         "type": "object"
       },
       "TraitCheckOut": {
@@ -32706,6 +34623,30 @@
         "title": "TraitCondition",
         "type": "object"
       },
+      "TraitLink": {
+        "description": "A trait of the rule set for `splat`, or one of the troupe's own merits or flaws.",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "splat": {
+            "default": "vampire",
+            "title": "Splat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "TraitLink",
+        "type": "object"
+      },
       "TraitNeed": {
         "properties": {
           "category": {
@@ -32772,6 +34713,16 @@
           "category": {
             "title": "Category",
             "type": "string"
+          },
+          "changed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TraitChangeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "choices": {
             "anyOf": [
@@ -32918,6 +34869,13 @@
               }
             ],
             "title": "Weakness Page"
+          },
+          "written_rules": {
+            "items": {
+              "$ref": "#/components/schemas/WrittenRuleRef"
+            },
+            "title": "Written Rules",
+            "type": "array"
           }
         },
         "required": [
@@ -32931,6 +34889,24 @@
           "attribute"
         ],
         "title": "TraitOut",
+        "type": "object"
+      },
+      "TraitRef": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "TraitRef",
         "type": "object"
       },
       "TraitRefOut": {
@@ -33088,6 +35064,17 @@
               }
             ],
             "title": "Starting Xp"
+          },
+          "status_at_checkin": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status At Checkin"
           },
           "status_by": {
             "anyOf": [
@@ -33291,6 +35278,15 @@
             "title": "Archived",
             "type": "boolean"
           },
+          "assamite_name": {
+            "default": "Banu Haqim",
+            "enum": [
+              "Banu Haqim",
+              "Assamite"
+            ],
+            "title": "Assamite Name",
+            "type": "string"
+          },
           "badge_pronouns": {
             "title": "Badge Pronouns",
             "type": "boolean"
@@ -33450,6 +35446,11 @@
           "starting_xp": {
             "title": "Starting Xp",
             "type": "integer"
+          },
+          "status_at_checkin": {
+            "default": false,
+            "title": "Status At Checkin",
+            "type": "boolean"
           },
           "status_by": {
             "title": "Status By",
@@ -33827,6 +35828,13 @@
           },
           "venue": {
             "$ref": "#/components/schemas/VenueOut"
+          },
+          "written_rules": {
+            "items": {
+              "$ref": "#/components/schemas/WrittenRuleOut"
+            },
+            "title": "Written Rules",
+            "type": "array"
           }
         },
         "required": [
@@ -33847,6 +35855,7 @@
           "lead",
           "min_age",
           "content_notes",
+          "written_rules",
           "can_edit",
           "pictures_available"
         ],
@@ -34514,6 +36523,17 @@
             "title": "Bans",
             "type": "array"
           },
+          "carried_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Carried Source"
+          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -35044,6 +37064,217 @@
         "title": "Writing",
         "type": "object"
       },
+      "WrittenRuleChange": {
+        "properties": {
+          "body": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Body",
+            "type": "string"
+          },
+          "move": {
+            "anyOf": [
+              {
+                "enum": [
+                  "up",
+                  "down"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Move"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "section": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Section",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "trait": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TraitLink"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "WrittenRuleChange",
+        "type": "object"
+      },
+      "WrittenRuleIn": {
+        "properties": {
+          "body": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Body",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "section": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Section",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "trait": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TraitLink"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "WrittenRuleIn",
+        "type": "object"
+      },
+      "WrittenRuleOut": {
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "section": {
+            "title": "Section",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "trait": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TraitLink"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "section",
+          "title",
+          "body",
+          "position",
+          "trait",
+          "page"
+        ],
+        "title": "WrittenRuleOut",
+        "type": "object"
+      },
+      "WrittenRuleRef": {
+        "description": "A troupe's written rule about a trait, to link to where the troupe's players read it.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "WrittenRuleRef",
+        "type": "object"
+      },
+      "WrittenRulesOut": {
+        "properties": {
+          "public": {
+            "title": "Public",
+            "type": "boolean"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/WrittenRuleOut"
+            },
+            "title": "Rules",
+            "type": "array"
+          }
+        },
+        "required": [
+          "public",
+          "rules"
+        ],
+        "title": "WrittenRulesOut",
+        "type": "object"
+      },
       "XpAward": {
         "properties": {
           "amount": {
@@ -35254,6 +37485,77 @@
           "to_rating"
         ],
         "title": "XpEntryOut",
+        "type": "object"
+      },
+      "XpLine": {
+        "description": "What one character would get for the game (horatio.game_xp): its attendance\nkind, its band and the chart's figure, and what the monthly cap leaves.",
+        "properties": {
+          "band": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Band"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "earned_xp": {
+            "title": "Earned Xp",
+            "type": "integer"
+          },
+          "figure": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Figure"
+          },
+          "kind": {
+            "enum": [
+              "attended",
+              "absentee"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "month_xp": {
+            "title": "Month Xp",
+            "type": "integer"
+          },
+          "used": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Used",
+            "type": "object"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "kind",
+          "earned_xp",
+          "month_xp",
+          "band",
+          "figure",
+          "used"
+        ],
+        "title": "XpLine",
         "type": "object"
       },
       "XpRangeChange": {
@@ -35566,6 +37868,45 @@
         "title": "MergeIn",
         "type": "object"
       },
+      "horatio__api__approvals__TeachingOut": {
+        "description": "Who teaches a purchase a troupe's teacher rule asked a teacher for\n(horatio.teaching), and the teacher's Willpower.",
+        "properties": {
+          "actions": {
+            "title": "Actions",
+            "type": "integer"
+          },
+          "games": {
+            "title": "Games",
+            "type": "integer"
+          },
+          "in_troupe": {
+            "title": "In Troupe",
+            "type": "boolean"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "teacher": {
+            "title": "Teacher",
+            "type": "string"
+          },
+          "willpower": {
+            "title": "Willpower",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "teacher",
+          "in_troupe",
+          "actions",
+          "willpower",
+          "games",
+          "status"
+        ],
+        "title": "TeachingOut",
+        "type": "object"
+      },
       "horatio__api__influence_effects__BlockIn": {
         "properties": {
           "activity": {
@@ -35675,6 +38016,34 @@
           }
         },
         "title": "ResetIn",
+        "type": "object"
+      },
+      "horatio__api__teachers__TeachingOut": {
+        "properties": {
+          "asked": {
+            "items": {
+              "$ref": "#/components/schemas/TeachingAskOut"
+            },
+            "title": "Asked",
+            "type": "array"
+          },
+          "lent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lent"
+          }
+        },
+        "required": [
+          "asked",
+          "lent"
+        ],
+        "title": "TeachingOut",
         "type": "object"
       }
     }
@@ -43871,6 +46240,198 @@
         ]
       }
     },
+    "/api/characters/{character_id}/teacher-rules": {
+      "get": {
+        "description": "The troupe's teacher rules that apply to the character as its sheet stands\n(who it is, whether creation is finished), for the sheet to ask for a teacher\nbefore adding a trait one is about. The purchase itself is judged again.",
+        "operationId": "character_teacher_rules_api_characters__character_id__teacher_rules_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TeacherRuleBriefOut"
+                  },
+                  "title": "Response Character Teacher Rules Api Characters  Character Id  Teacher Rules Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Teacher Rules",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/teachers": {
+      "get": {
+        "description": "Whether buying the trait from `current` to `rating` needs a teacher here, and\nthe troupe's characters who qualify; null if it needs none.",
+        "operationId": "teacher_options_api_characters__character_id__teachers_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": true,
+            "schema": {
+              "title": "Category",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "rating",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "title": "Rating",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "detail",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Detail",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "current",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Current",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/TeacherOptionsOut"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Teacher Options Api Characters  Character Id  Teachers Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Teacher Options",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/teaching": {
+      "get": {
+        "description": "What the character is asked to teach, and its Willpower out teaching.",
+        "operationId": "character_teaching_api_characters__character_id__teaching_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/horatio__api__teachers__TeachingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Teaching",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
     "/api/characters/{character_id}/titles": {
       "get": {
         "description": "The titles the character holds in its home troupe, the active one, and those\nit can choose.",
@@ -50859,6 +53420,94 @@
         ]
       }
     },
+    "/api/teachings/{teaching_id}/confirm": {
+      "post": {
+        "description": "The teacher's player agrees to teach: the Willpower is spent on the Play View.",
+        "operationId": "confirm_teaching_api_teachings__teaching_id__confirm_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "teaching_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Teaching Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/horatio__api__teachers__TeachingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Teaching",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/teachings/{teaching_id}/refuse": {
+      "post": {
+        "description": "The teacher's player will not teach it; staff then decline the purchase.",
+        "operationId": "refuse_teaching_api_teachings__teaching_id__refuse_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "teaching_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Teaching Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/horatio__api__teachers__TeachingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refuse Teaching",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
     "/api/troupe-requests": {
       "get": {
         "description": "For the custodian: what is waiting, longest waiting first, then the latest\ndecided.",
@@ -52052,6 +54701,102 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/book-traits": {
+      "get": {
+        "description": "The troupe's changes to book traits, and the characters holding a trait it bans.",
+        "operationId": "list_book_traits_api_troupes__troupe_id__book_traits_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookTraitsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Book Traits",
+        "tags": [
+          "book traits"
+        ]
+      },
+      "put": {
+        "description": "Change a book trait in the troupe: ban it, with a reason, or lift the ban (those\nwho hold it keep it); give it the troupe's own wording, or take it away; move a\nmerit or flaw to another category.",
+        "operationId": "change_book_trait_api_troupes__troupe_id__book_traits_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookTraitChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookTraitOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Book Trait",
+        "tags": [
+          "book traits"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/characters": {
       "get": {
         "description": "Every character in the troupe now: those whose home it is first, then visitors.",
@@ -52390,6 +55135,60 @@
           }
         },
         "summary": "Change Check",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/clan-names": {
+      "put": {
+        "description": "What the troupe calls the clan the books call the Assamites (horatio.clan_names).\nOnly what is shown changes: the rules and the sheets keep \"Assamite\".",
+        "operationId": "set_clan_names_api_troupes__troupe_id__clan_names_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClanNamesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Clan Names",
         "tags": [
           "house rules"
         ]
@@ -54432,6 +57231,197 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/free-changes": {
+      "get": {
+        "operationId": "read_free_changes_api_troupes__troupe_id__free_changes_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FreeChangesSettingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Free Changes",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "put": {
+        "description": "Set how long the troupe's new characters stay open to free changes. It applies\nat once to the characters whose free changes are open; turning it on gives them to\ncharacters accepted from now on.",
+        "operationId": "set_free_changes_api_troupes__troupe_id__free_changes_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FreeChangesSetting"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FreeChangesSettingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Free Changes",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/game-xp": {
+      "get": {
+        "description": "The troupe's game XP settings. Like its house rules, anyone signed in may read them.",
+        "operationId": "read_game_xp_api_troupes__troupe_id__game_xp_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameXpSettings"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Game Xp",
+        "tags": [
+          "game xp"
+        ]
+      },
+      "put": {
+        "description": "Set the troupe's game XP, all of it at once. The defaults are the book's way.",
+        "operationId": "save_game_xp_api_troupes__troupe_id__game_xp_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GameXpSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameXpSettings"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Game Xp",
+        "tags": [
+          "game xp"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/games": {
       "get": {
         "description": "The troupe's games still to come (or under way), soonest first, with how\nmany are coming: for its members.",
@@ -54532,6 +57522,54 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/games/missed": {
+      "get": {
+        "description": "The troupe's games that have started and whose XP is still to award, newest\nfirst, with the caller's characters at home here that didn't check in: for a player\nto mark one absentee, where the troupe lets players. Empty where it doesn't.",
+        "operationId": "missed_games_api_troupes__troupe_id__games_missed_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MissedGame"
+                  },
+                  "title": "Response Missed Games Api Troupes  Troupe Id  Games Missed Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Missed Games",
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/games/past": {
       "get": {
         "description": "The troupe's latest games already over, newest first, with how many came: for\nits staff, to see who came and award the XP.",
@@ -54623,6 +57661,132 @@
         "summary": "Remove Game",
         "tags": [
           "troupe profiles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/games/{game_id}/absentee/{character_id}": {
+      "delete": {
+        "description": "Take back a character's absentee game. One checked in is left as it is.",
+        "operationId": "unmark_absentee_api_troupes__troupe_id__games__game_id__absentee__character_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "game_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Game Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbsenteeMarked"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unmark Absentee",
+        "tags": [
+          "check-in"
+        ]
+      },
+      "put": {
+        "description": "Record a character as absentee for a game it missed (horatio.game_xp): the\ntroupe's running staff, or its player where the troupe allows. Payments aren't\ntracked here: marking it is the record.",
+        "operationId": "mark_absentee_api_troupes__troupe_id__games__game_id__absentee__character_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "game_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Game Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbsenteeMarked"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mark Absentee",
+        "tags": [
+          "check-in"
         ]
       }
     },
@@ -55195,6 +58359,265 @@
           }
         },
         "summary": "Set Golconda",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/house-checks": {
+      "get": {
+        "operationId": "list_own_checks_api_troupes__troupe_id__house_checks_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OwnCheckOut"
+                  },
+                  "title": "Response List Own Checks Api Troupes  Troupe Id  House Checks Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Own Checks",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "post": {
+        "operationId": "add_own_check_api_troupes__troupe_id__house_checks_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnCheckIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnCheckOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Own Check",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/house-checks/preview": {
+      "post": {
+        "description": "The check as it is being built, in plain words, and the troupe's characters it\nwould break; or why it cannot be saved as it is. Nothing is saved.",
+        "operationId": "preview_own_check_api_troupes__troupe_id__house_checks_preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnCheckPreviewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnCheckPreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Own Check",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/house-checks/{check_id}": {
+      "delete": {
+        "operationId": "remove_own_check_api_troupes__troupe_id__house_checks__check_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "check_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Check Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Own Check",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "put": {
+        "operationId": "change_own_check_api_troupes__troupe_id__house_checks__check_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "check_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Check Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnCheckIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnCheckOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Own Check",
         "tags": [
           "house rules"
         ]
@@ -59254,6 +62677,265 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/teacher-rules": {
+      "get": {
+        "operationId": "list_teacher_rules_api_troupes__troupe_id__teacher_rules_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TeacherRuleOut"
+                  },
+                  "title": "Response List Teacher Rules Api Troupes  Troupe Id  Teacher Rules Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Teacher Rules",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "post": {
+        "operationId": "add_teacher_rule_api_troupes__troupe_id__teacher_rules_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeacherRuleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherRuleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Teacher Rule",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/teacher-rules/preview": {
+      "post": {
+        "description": "The rule as it is being made, in plain words; or why it cannot be saved as it\nis. Nothing is saved.",
+        "operationId": "preview_teacher_rule_api_troupes__troupe_id__teacher_rules_preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeacherRuleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherRulePreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Teacher Rule",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/teacher-rules/{rule_id}": {
+      "delete": {
+        "operationId": "remove_teacher_rule_api_troupes__troupe_id__teacher_rules__rule_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rule Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Teacher Rule",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "put": {
+        "operationId": "change_teacher_rule_api_troupes__troupe_id__teacher_rules__rule_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rule Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeacherRuleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherRuleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Teacher Rule",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/titles": {
       "get": {
         "description": "The titles the troupe gives, with their sect and status, and who holds them.",
@@ -59599,6 +63281,264 @@
         "summary": "Work Cycles",
         "tags": [
           "responses"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/written-rules": {
+      "get": {
+        "description": "The troupe's written house rules, in reading order. Anyone signed in may read\nthem, as they may its other house rules.",
+        "operationId": "read_written_rules_api_troupes__troupe_id__written_rules_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WrittenRulesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Written Rules",
+        "tags": [
+          "written rules"
+        ]
+      },
+      "post": {
+        "description": "Add a written rule, last in its section.",
+        "operationId": "add_written_rule_api_troupes__troupe_id__written_rules_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WrittenRuleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WrittenRulesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Written Rule",
+        "tags": [
+          "written rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/written-rules-public": {
+      "put": {
+        "description": "Show the written rules on the troupe's profile too, or not: off unless staff\nswitch it on. A public profile shows them to anyone at all.",
+        "operationId": "set_written_rules_public_api_troupes__troupe_id__written_rules_public_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WrittenRulesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Written Rules Public",
+        "tags": [
+          "written rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/written-rules/{rule_id}": {
+      "delete": {
+        "operationId": "delete_written_rule_api_troupes__troupe_id__written_rules__rule_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rule Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Written Rule",
+        "tags": [
+          "written rules"
+        ]
+      },
+      "put": {
+        "description": "Change a written rule's words, section or links; or move it up or down its\nsection. Moved to another section, it goes last there.",
+        "operationId": "change_written_rule_api_troupes__troupe_id__written_rules__rule_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rule Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WrittenRuleChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WrittenRulesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Written Rule",
+        "tags": [
+          "written rules"
         ]
       }
     },

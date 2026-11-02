@@ -64,6 +64,42 @@ export function TitlesSetting({ troupe, canEdit }: { troupe: TroupeOut; canEdit:
   );
 }
 
+/**
+ * House rule (issue #441): each character's one source of abiding status is chosen as
+ * it checks in to a game, before it enters play, and fixed for the game. Off: chosen on
+ * the Play View as the game begins, as the book has it.
+ */
+export function StatusAtCheckinSetting({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
+  const save = useAction((on: boolean) =>
+    unwrap(api.PATCH("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupe.id } }, body: { status_at_checkin: on } })),
+  );
+  const on = troupe.status_at_checkin;
+  return (
+    <Card title="The night's status">
+      <p className="mb-3 text-sm text-mist">
+        A character with more than one source of abiding status, such as a title and its social age, carries only one into a game (MET: VTM p. 311).
+      </p>
+      {!canEdit ? (
+        <p className="text-sm">{on ? "Chosen at check-in, and fixed for the game." : "Chosen on the Play View as the game begins."}</p>
+      ) : (
+        <div className="flex flex-col gap-2 text-sm">
+          <label className="flex items-start gap-2">
+            <input type="checkbox" className="mt-1" checked={on} disabled={save.isPending} onChange={(e) => save.mutate(e.target.checked)} />
+            <span>
+              Choose the night's status at check-in
+              <span className="block text-xs text-mist">
+                Players choose the source as they check in, and can't change it on the Play View. Storytellers and assistant storytellers can, with a reason for the game's
+                log. Status given for a single night is held beside it.
+              </span>
+            </span>
+          </label>
+          <ErrorText error={save.error} />
+        </div>
+      )}
+    </Card>
+  );
+}
+
 /** A setting of who does something on the troupe's sheets: its players, or staff only. */
 function WhoSetting({
   troupe,

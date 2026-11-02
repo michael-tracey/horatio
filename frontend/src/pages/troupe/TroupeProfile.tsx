@@ -7,6 +7,7 @@ import { Badge, Card } from "../../components/ui";
 import { useDates } from "../../dates";
 import { withNext } from "../../next";
 import { filled, linksOf, newPlayersText, type LinkKind } from "./profile";
+import { WrittenRulesList } from "./WrittenRulesList";
 
 /**
  * A troupe's profile: its portrait, links, schedule, venue, setting, new players
@@ -116,6 +117,11 @@ export function TroupeProfileView({ profile: p, signedIn }: { profile: TroupePro
         {filled(p.content_notes) && (
           <Card title="Content notes">
             <p className="text-sm whitespace-pre-line">{p.content_notes}</p>
+          </Card>
+        )}
+        {p.written_rules.length > 0 && (
+          <Card title="House rules" className="md:col-span-2">
+            <WrittenRulesList rules={p.written_rules} troupeId={signedIn ? p.id : undefined} />
           </Card>
         )}
       </div>

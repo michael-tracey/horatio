@@ -31,6 +31,8 @@ class OtherOut(BaseModel):
     # Of the viewer's sect: the sect's name for Accepted, and its titles in the troupe.
     accepted: str | None
     titles: list[str]
+    # The source of abiding status it carries into a game on now, fixed as it checked in.
+    carried_source: str | None = None
 
 
 class SeenOut(BaseModel):
@@ -82,6 +84,7 @@ def other_out(other: play_others.Other) -> OtherOut:
         same_sect=other.same_sect,
         accepted=other.accepted,
         titles=list(other.titles),
+        carried_source=other.carried_source,
     )
 
 

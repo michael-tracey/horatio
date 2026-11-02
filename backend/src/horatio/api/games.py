@@ -94,7 +94,7 @@ def games_out(
         db.execute(
             select(GameAttendance.game_id, Character.name, Character.player_id)
             .join(Character, GameAttendance.character_id == Character.id)
-            .where(GameAttendance.game_id.in_([g.id for g in games]))
+            .where(GameAttendance.game_id.in_([g.id for g in games]), checkin.ATTENDED)
             .order_by(Character.name)
         )
     )

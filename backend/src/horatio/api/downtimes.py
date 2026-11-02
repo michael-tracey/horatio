@@ -399,6 +399,9 @@ class MyDowntime(BaseModel):
     feeding: MyFeedingOut | None = None
     # The quests its Quest action can name, when the form has one.
     quests: list[QuestChoiceOut] = []
+    # Why the downtime is closed to this character though the cycle is open: the
+    # troupe's absentee downtimes ask for a game attended lately (horatio.game_xp).
+    closed: str | None = None
 
 
 # --- helpers ----------------------------------------------------------------------------
@@ -956,6 +959,7 @@ def my_downtime_out(
         quests=quest_choices(db, character, cycle, submission)
         if any(q.kind == "quest" for q in questions)
         else [],
+        closed=downtimes.closed_to(db, cycle, participant),
     )
 
 

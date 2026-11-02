@@ -131,6 +131,59 @@ class CheckOverride(Record):
     strength: Mapped[str]
 
 
+class TraitOverride(Record):
+    """A troupe's own change to one book trait (horatio.book_traits): banned in the
+    troupe, with the reason its players see; its own wording, added to the book's
+    summary or in place of it; and for a merit or flaw, its category (catalogue
+    type) in the troupe. One row per troupe and trait, which the changes share."""
+
+    __tablename__ = "trait_overrides"
+    __table_args__ = (
+        UniqueConstraint("troupe_id", "trait_definition_id"),
+        CheckConstraint("wording_mode in ('added', 'replaces')", name="wording_mode"),
+    )
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    trait_definition_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trait_definitions.id"))
+    banned: Mapped[bool] = mapped_column(default=False, server_default="false")
+    ban_reason: Mapped[str] = mapped_column(default="", server_default="")
+    # The troupe's own text for the trait, in Markdown: never the book's.
+    wording: Mapped[str] = mapped_column(default="", server_default="")
+    # "added" to the book's summary, or "replaces" it.
+    wording_mode: Mapped[str] = mapped_column(default="added", server_default="added")
+    # A merit or flaw's category in the troupe, in place of its catalogue type
+    # ("General" for a sect flaw); null keeps the book's.
+    kind: Mapped[str | None]
+
+
+class HouseCheck(Record):
+    """A check a troupe added itself (horatio.house_checks): a subject, a condition
+    it requires or forbids (horatio.rules.checks' vocabulary, as JSON), a strength,
+    the message the player sees, and an optional creation step."""
+
+    __tablename__ = "house_checks"
+    __table_args__ = (
+        CheckConstraint("mode in ('requires', 'forbids')", name="mode"),
+        CheckConstraint("strength in ('refuse', 'complete', 'review', 'note')", name="strength"),
+        CheckConstraint("num_nonnulls(name, name_prefix, kind) <= 1", name="subject"),
+    )
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    splat: Mapped[str] = mapped_column(default="vampire", server_default="vampire")
+    # The subject: a category, and in it one trait, the names starting with a
+    # prefix, or the traits of one catalogue type; none of these for all of them.
+    category: Mapped[str]
+    name: Mapped[str | None]
+    name_prefix: Mapped[str | None]
+    kind: Mapped[str | None]
+    mode: Mapped[str]
+    condition: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    strength: Mapped[str]
+    message: Mapped[str]
+    # The creation step (a category) a "complete" check holds the wizard on.
+    step: Mapped[str | None]
+
+
 class CostRule(Record):
     """A cost rule. `troupe_id` null: part of the generic rule set; set: a house rule."""
 

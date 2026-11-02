@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { withClanNames } from "../../clanNames";
+import { useClanName } from "../../components/ClanNames";
 import { HouseMark } from "../../components/HouseMark";
 import { useMemo, useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
@@ -95,6 +97,7 @@ export function NpcBuilder({ character }: { character: CharacterOut }) {
 
 function Identity({ sheet, catalogue, withoutClan, onChange }: { sheet: SheetOut; catalogue: CatalogueOut; withoutClan: boolean; onChange: (c: Change) => void }) {
   const choices = identityChoices(catalogue, sheet).filter((c) => !(withoutClan && c.key === "clan"));
+  const named = useClanName();
   return (
     <Card title="Who">
       <div className="grid gap-3 sm:grid-cols-2">
@@ -108,7 +111,9 @@ function Identity({ sheet, catalogue, withoutClan, onChange }: { sheet: SheetOut
               {catalogue.traits
                 .filter((t) => t.category === c.key && t.name !== CUSTOM_ARCHETYPE)
                 .map((t) => (
-                  <option key={t.name}>{t.name}</option>
+                  <option key={t.name} value={t.name}>
+                    {named(t.name)}
+                  </option>
                 ))}
             </Select>
           </Field>
@@ -276,7 +281,7 @@ function Section({
   const q = query.trim().toLowerCase();
   // Long lists show what the NPC has, plus whatever the search finds.
   const long = traits.length > 30;
-  const shown = traits.filter((t) => (q ? t.name.toLowerCase().includes(q) : !long || ratings.get(`${t.category}/${t.name}`)));
+  const shown = traits.filter((t) => (q ? withClanNames(t.name).toLowerCase().includes(q) : !long || ratings.get(`${t.category}/${t.name}`)));
   const groups = new Map<string, TraitOut[]>();
   for (const t of shown) {
     const heading = split ? (t.attribute ?? "Other") : (catalogue.categories.find((c) => c.key === t.category)?.name ?? t.category);
@@ -339,6 +344,7 @@ function Row({
   /** Why this one is out of order for the NPC; it is allowed all the same. */
   mark?: string;
 }) {
+  const named = useClanName();
   if (trait.fixed_rating || power) {
     const on = rating > 0;
     const level = trait.fixed_rating ?? 1;
@@ -347,7 +353,7 @@ function Row({
         <div className="flex items-center justify-between gap-2">
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={on} onChange={() => onChange({ category: trait.category, name: trait.name, rating: on ? 0 : level })} />
-            <span className={on ? "text-parchment" : "text-mist"}>{trait.name}</span>
+            <span className={on ? "text-parchment" : "text-mist"}>{named(trait.name)}</span>
             {trait.house && <HouseMark label={trait.house.label} short />}
           </label>
           {trait.fixed_rating && <Badge>{trait.fixed_rating}</Badge>}
@@ -355,7 +361,7 @@ function Row({
         {mark && (
           <p className="ml-6 text-xs text-blood-bright" data-testid="power-mark">
             {on ? "Marked: " : ""}
-            {mark}
+            {named(mark)}
           </p>
         )}
       </li>
@@ -367,7 +373,7 @@ function Row({
   return (
     <li className={`flex flex-wrap items-center justify-between gap-2 text-sm ${aside ? "py-1.5" : "py-0.5"}`}>
       <span className="flex flex-wrap items-center gap-3">
-        <span className={`${aside ? "w-16" : ""} ${rating ? "text-parchment" : "text-mist"}`}>{label ?? trait.name}</span>
+        <span className={`${aside ? "w-16" : ""} ${rating ? "text-parchment" : "text-mist"}`}>{label ?? named(trait.name)}</span>
         {aside}
       </span>
       <span className="flex">
