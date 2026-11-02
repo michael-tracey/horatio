@@ -5572,6 +5572,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/clan-names": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Clan Names
+         * @description What the troupe calls the clan the books call the Assamites (horatio.clan_names).
+         *     Only what is shown changes: the rules and the sheets keep "Assamite".
+         */
+        put: operations["set_clan_names_api_troupes__troupe_id__clan_names_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/clan-rarity": {
         parameters: {
             query?: never;
@@ -9382,6 +9403,12 @@ export interface components {
             asking_troupe_id: string | null;
             /** Asking Troupe Name */
             asking_troupe_name: string | null;
+            /**
+             * Assamite Name
+             * @default Banu Haqim
+             * @enum {string}
+             */
+            assamite_name: "Banu Haqim" | "Assamite";
             /** Building Troupe Id */
             building_troupe_id: string | null;
             /** Clan */
@@ -9437,6 +9464,12 @@ export interface components {
         CharacterOut: {
             /** Asking Troupe Id */
             asking_troupe_id: string | null;
+            /**
+             * Assamite Name
+             * @default Banu Haqim
+             * @enum {string}
+             */
+            assamite_name: "Banu Haqim" | "Assamite";
             /** Building Troupe Id */
             building_troupe_id: string | null;
             /** Clan */
@@ -9766,6 +9799,14 @@ export interface components {
             points: number;
             /** Why */
             why: string;
+        };
+        /** ClanNamesIn */
+        ClanNamesIn: {
+            /**
+             * Assamite
+             * @enum {string}
+             */
+            assamite: "Banu Haqim" | "Assamite";
         };
         /** ClanRarityIn */
         ClanRarityIn: {
@@ -15181,6 +15222,12 @@ export interface components {
         NpcOut: {
             /** Asking Troupe Id */
             asking_troupe_id: string | null;
+            /**
+             * Assamite Name
+             * @default Banu Haqim
+             * @enum {string}
+             */
+            assamite_name: "Banu Haqim" | "Assamite";
             /** Building Troupe Id */
             building_troupe_id: string | null;
             /** Clan */
@@ -20347,6 +20394,12 @@ export interface components {
             allowed_splats: string[];
             /** Archived */
             archived: boolean;
+            /**
+             * Assamite Name
+             * @default Banu Haqim
+             * @enum {string}
+             */
+            assamite_name: "Banu Haqim" | "Assamite";
             /** Badge Pronouns */
             badge_pronouns: boolean;
             /** Badge Status */
@@ -32052,6 +32105,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_clan_names_api_troupes__troupe_id__clan_names_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClanNamesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
                 };
             };
             /** @description Validation Error */

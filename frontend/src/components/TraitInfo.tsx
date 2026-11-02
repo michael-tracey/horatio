@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import type { ReactNode } from "react";
 import { isSrdPage, SRD_NAME } from "../pages/troupe/bookPage";
+import { useClanName } from "./ClanNames";
 
 /** How a rules page reference reads: "p. 86" in the core book, as the data gives it ("Vol. 2, p. 281"), or the SRD's name for a link to it. */
 export function pageLabel(page: string | null | undefined): string | null {
@@ -42,7 +43,8 @@ function Chevron({ open }: { open: boolean }) {
  * It renders into the row's own container, a wrapping flex row or a grid: the
  * name (and whatever follows it on the same line, `after`), then the panel, which
  * takes a line of its own below the row's other cells. The panel follows the button in
- * the page, as a disclosure's does, and is shown last.
+ * the page, as a disclosure's does, and is shown last. A name given as text, and the
+ * description, name the clan as the troupe does (useClanName).
  */
 export function TraitInfo({
   name,
@@ -62,6 +64,8 @@ export function TraitInfo({
 }) {
   const [open, setOpen] = useState(false);
   const id = useId();
+  const named = useClanName();
+  const shownName = typeof name === "string" ? named(name) : name;
   const pageText = pageLabel(page);
   const says = Boolean(description || more || summary);
   return (
@@ -76,17 +80,17 @@ export function TraitInfo({
             className="-ml-1 inline-flex items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-ash/60"
           >
             <Chevron open={open} />
-            {name}
+            {shownName}
           </button>
         ) : (
-          name
+          shownName
         )}
         {after}
       </span>
       {says && open && (
         <div id={id} className="order-last col-span-full basis-full pb-1 pl-5 text-xs leading-relaxed text-mist">
-          {description && <p>{description}</p>}
-          {summary && <p className="text-gold">What it does: {summary}</p>}
+          {description && <p>{named(description)}</p>}
+          {summary && <p className="text-gold">What it does: {named(summary)}</p>}
           {more}
           {pageText && (
             <p className="mt-0.5">

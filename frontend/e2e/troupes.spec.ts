@@ -217,6 +217,58 @@ test("a player looks up the rules: a power by name and by its summary, then as p
   await expect(p.getByLabel("As played in")).toHaveValue(troupeId);
 });
 
+test("staff call the clan Banu Haqim or Assamite, and the sheet and the rules follow at once, either name found by a search (#430)", async ({ browser }) => {
+  const custodian = await person(browser, "haqim-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "haqim-lead");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Alamut ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  const l = lead.page;
+  const send = async (url: string, data: object, method: "POST" | "PUT" = "POST") => {
+    const response = await l.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  // Rashid, the troupe's Vizier, with his caste's flaw: kept under the books' name.
+  const { id } = await send(`/api/troupes/${troupeId}/npcs`, { name: "Rashid the Vizier", wizard: false });
+  for (const [category, name, rating] of [
+    ["clan", "Assamite: Vizier", null],
+    ["flaws", "Assamite: Diluted Blood", 2],
+  ] as const)
+    await send(`/api/characters/${id}/npc/ratings`, { category, name, rating, detail: "" }, "PUT");
+  const search = l.getByRole("searchbox", { name: "Search the rules" });
+  const entry = (name: string) => l.getByTestId("rules-entry").filter({ has: l.getByRole("heading", { name, exact: true }) });
+
+  // A new troupe calls the clan Banu Haqim, on the sheet and in its rules, where the books' name finds it.
+  await l.goto(`/characters/${id}/sheet`);
+  await expect(l.getByText("Banu Haqim: Diluted Blood", { exact: true })).toBeVisible();
+  await expect(l.getByText("Banu Haqim: Vizier", { exact: true }).first()).toBeVisible();
+  await expect(l.getByText("Assamite: Diluted Blood")).toHaveCount(0);
+  await l.goto(`/rules?troupe=${troupeId}`);
+  await search.fill("assamite vizier");
+  await expect(entry("Banu Haqim: Vizier")).toBeVisible();
+
+  // The lead calls it Assamite instead, in Customise's Troupe settings.
+  await l.goto(`/troupes/${troupeId}/settings`);
+  const names = l.locator("section").filter({ has: l.getByRole("heading", { name: "Banu Haqim or Assamite" }) });
+  await expect(names.getByRole("radio", { name: /^Banu Haqim/ })).toBeChecked();
+  await names.getByRole("radio", { name: /^Assamite/ }).click();
+  await expect(l.getByText("The clan is called the Assamites here now.")).toBeVisible();
+  await expect(names.getByRole("radio", { name: /^Assamite/ })).toBeChecked();
+  await l.screenshot(shots("clan-names-setting"));
+
+  // The sheet and the rules follow straight away, and the other name still finds it.
+  await l.goto(`/characters/${id}/sheet`);
+  await expect(l.getByText("Assamite: Diluted Blood", { exact: true })).toBeVisible();
+  await expect(l.getByText("Assamite: Vizier", { exact: true }).first()).toBeVisible();
+  await expect(l.getByText("Banu Haqim: Diluted Blood")).toHaveCount(0);
+  await l.goto(`/rules?troupe=${troupeId}`);
+  await search.fill("banu haqim vizier");
+  await expect(entry("Assamite: Vizier")).toBeVisible();
+});
+
 test("a troupe's XP floor and ceiling: new characters start at the floor, and staff settle a joiner's XP", async ({ browser }) => {
   // A whole character creation, then a home troupe request.
   test.slow();

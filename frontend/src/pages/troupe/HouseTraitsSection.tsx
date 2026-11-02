@@ -6,6 +6,7 @@ import { Dialog } from "../../components/Dialog";
 import { EmptyState } from "../../components/EmptyState";
 import { Explainer } from "../../components/Explainer";
 import { HouseMark } from "../../components/HouseMark";
+import { useClanName } from "../../components/ClanNames";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { EffectsEditor, HousePreview, useHousePreview } from "./HouseEffects";
@@ -53,6 +54,7 @@ const draftOf = (h: HouseTraitOut): Draft => ({
  */
 export function HouseTraitsSection({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
   const [editing, setEditing] = useState<HouseTraitOut | "new" | null>(null);
+  const named = useClanName();
   const path = { params: { path: { troupe_id: troupeId } } };
   const list = useQuery({
     queryKey: ["house-traits", troupeId],
@@ -158,8 +160,8 @@ export function HouseTraitsSection({ troupeId, canEdit }: { troupeId: string; ca
               </div>
               {(h.description || h.requirement) && (
                 <p className="text-xs text-mist">
-                  {h.requirement && <span>Requires {h.requirement}. </span>}
-                  {h.description}
+                  {h.requirement && <span>Requires {named(h.requirement)}. </span>}
+                  {named(h.description)}
                 </p>
               )}
               {h.summary && <p className="text-xs text-gold">What it does: {h.summary}</p>}

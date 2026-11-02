@@ -3,6 +3,7 @@ import { useDeferredValue, useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, DomitorOut, SheetOut } from "../../api/types";
+import { useClanName } from "../../components/ClanNames";
 import { Button, Card, ErrorText, Field, Input, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { listed } from "./creation/notices";
@@ -19,6 +20,7 @@ export function useDomitor(character: CharacterOut, enabled = true) {
 
 /** Who the domitor is, in a line, with its in-clan disciplines, which are the ghoul's. */
 export function DomitorSummary({ domitor }: { domitor: DomitorOut }) {
+  const named = useClanName();
   return (
     <div className="flex flex-col gap-1 text-sm">
       <p>
@@ -30,7 +32,7 @@ export function DomitorSummary({ domitor }: { domitor: DomitorOut }) {
         ) : (
           <span className="text-parchment">{domitor.name}</span>
         )}
-        {domitor.clan && `, ${domitor.clan}`}
+        {domitor.clan && `, ${named(domitor.clan)}`}
         {domitor.character_id ? "." : ", who is not in Horatio."}
       </p>
       <p className="text-mist">
@@ -95,6 +97,7 @@ export function DomitorForm({ character, sheet, catalogue, onDone }: { character
   const path = { path: { character_id: character.id } };
   const [draft, setDraft] = useState<DomitorDraft>({ kind: "linked", choice: null });
   const [search, setSearch] = useState("");
+  const shown = useClanName();
   const q = useDeferredValue(search.trim());
   const found = useQuery({
     queryKey: ["domitor-choices", character.id, q],
@@ -156,7 +159,7 @@ export function DomitorForm({ character, sheet, catalogue, onDone }: { character
                     <input type="radio" name="domitor-choice" checked={draft.choice?.character_id === c.character_id} onChange={() => setDraft({ kind: "linked", choice: c })} />
                     <span className="text-parchment">{c.name}</span>
                     <span className="text-mist">
-                      {c.clan} · {c.kind === "npc" ? "NPC" : "PC"}
+                      {shown(c.clan)} · {c.kind === "npc" ? "NPC" : "PC"}
                     </span>
                   </label>
                 </li>
@@ -174,7 +177,9 @@ export function DomitorForm({ character, sheet, catalogue, onDone }: { character
             <Select value={named.clan} onChange={(e) => setDraft({ ...named, clan: e.target.value })}>
               <option value="">Choose…</option>
               {clansOf(catalogue).map((clan) => (
-                <option key={clan}>{clan}</option>
+                <option key={clan} value={clan}>
+                  {shown(clan)}
+                </option>
               ))}
             </Select>
           </Field>

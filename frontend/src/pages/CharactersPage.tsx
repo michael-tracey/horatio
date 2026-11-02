@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import { Avatar } from "../components/Avatar";
+import { clanNamed } from "../clanNames";
 import type { TroupeOut } from "../api/types";
 import { Badge, Button, Card, CountBubble, Empty, ErrorText, Field, Input, Loading, PageTitle, Select } from "../components/ui";
 import { useAction, useMe } from "../hooks";
@@ -67,7 +68,8 @@ export function CharactersPage() {
                         <span className="text-base">{c.name}</span>
                         <span className="ml-2 text-sm text-mist capitalize">
                           {c.splat}
-                          {c.clan && ` · ${c.clan}`}
+                          {/* As the troupe it plays in calls its clan. */}
+                          {c.clan && ` · ${clanNamed(c.clan, c.assamite_name)}`}
                         </span>
                         <span className="mt-1 flex min-w-0 flex-wrap gap-1.5">
                           {[...standing(c), ...waiting(c, seenUpTo(c.id), dates)].map((n) => (

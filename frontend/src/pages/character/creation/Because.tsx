@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import { Link } from "react-router";
 import type { TraitRefOut } from "../../../api/types";
+import { useClanName } from "../../../components/ClanNames";
 import { stepFor, type StepRef } from "./notices";
 
 /**
@@ -9,6 +10,7 @@ import { stepFor, type StepRef } from "./notices";
  * step is named without a link.
  */
 export function Because({ characterId, refs, steps, step }: { characterId: string; refs: TraitRefOut[]; steps: StepRef[]; step: StepRef }) {
+  const shown = useClanName();
   const named = refs.filter((r) => !!r.name);
   if (!named.length) return null;
   return (
@@ -20,7 +22,7 @@ export function Because({ characterId, refs, steps, step }: { characterId: strin
         return (
           <Fragment key={`${r.category}/${r.name}`}>
             {i > 0 && ", "}
-            {r.name}
+            {shown(r.name)}
             {at && at.key !== step.key && (
               <>
                 {" "}

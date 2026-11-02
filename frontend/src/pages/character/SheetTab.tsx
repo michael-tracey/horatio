@@ -27,6 +27,7 @@ import { StepButton, StepButtons } from "../../components/StepButton";
 import { InfoButton } from "../../components/InfoButton";
 import { houseLabels } from "../../houseTraits";
 import { TraitInfo } from "../../components/TraitInfo";
+import { useClanName } from "../../components/ClanNames";
 import { HEALTH_RULE, healthRows } from "../../health";
 import { useAction } from "../../hooks";
 import { pipsOf } from "../../ratings";
@@ -198,6 +199,7 @@ export function SheetTab({
   const sheet = useSheet(character.id);
   const catalogue = useCatalogue(character);
   const creation = useCreation(character);
+  const named = useClanName();
   const needsField = fieldSkills(catalogue.data);
   // A Retainer or identity held without a name, from before each was named, can be named.
   const instanceOf = (t: SheetTraitOut) => catalogue.data?.traits.find((x) => x.category === t.category && x.name === t.name)?.instance ?? null;
@@ -403,7 +405,7 @@ export function SheetTab({
                     p.strength === "refuse" ? "text-blood-bright" : "text-mist"
                   }
                 >
-                  {p.message}
+                  {named(p.message)}
                 </li>
               ))}
             </ul>
@@ -805,11 +807,12 @@ function TraitRow({
 }) {
   const [swapping, setSwapping] = useState(false);
   const [to, setTo] = useState("");
+  const named = useClanName();
   const pending = trait.pending_from !== null;
   // Only in the cart: not on the saved sheet yet.
   const adding = trait.id.startsWith("cart/");
   // Which one, for a trait held more than once: "Raise Retainers: Bocephus".
-  const which = trait.detail ? `${trait.name}: ${trait.detail}` : trait.name;
+  const which = named(trait.detail ? `${trait.name}: ${trait.detail}` : trait.name);
   // A troupe's own merit or flaw: "★ House merit of Night Court".
   const houseLabel = trait.house?.label ?? about?.house?.label;
   const houseSummary = trait.house?.summary || about?.house?.summary;
@@ -818,7 +821,7 @@ function TraitRow({
     return (
       <div className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 text-sm">
         <TraitInfo
-          name={<span className={removing ? "line-through" : adding || asked ? "text-gold" : undefined}>{trait.name}</span>}
+          name={<span className={removing ? "line-through" : adding || asked ? "text-gold" : undefined}>{named(trait.name)}</span>}
           after={
             <>
               {trait.detail && <span className="text-mist">: {trait.detail}</span>}
@@ -866,21 +869,23 @@ function TraitRow({
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <TraitInfo
           name={trait.name}
-          after={swappedTo && <span className="text-gold"> → {swappedTo}</span>}
+          after={swappedTo && <span className="text-gold"> → {named(swappedTo)}</span>}
           description={about?.description}
           page={about?.page_reference}
         />
         {swapping ? (
           <span className="flex items-center gap-1">
             <Select
-              aria-label={`Change ${trait.name} to`}
+              aria-label={`Change ${named(trait.name)} to`}
               value={to}
               onChange={(e) => setTo(e.target.value)}
               className="h-8 py-0"
             >
               <option value="">Change to…</option>
               {swap.others.map((o) => (
-                <option key={o}>{o}</option>
+                <option key={o} value={o}>
+                  {named(o)}
+                </option>
               ))}
             </Select>
             <Button
@@ -907,7 +912,7 @@ function TraitRow({
   return (
     <div className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 text-sm">
       <TraitInfo
-        name={<span className={pending || adding ? "text-gold" : undefined}>{trait.name}</span>}
+        name={<span className={pending || adding ? "text-gold" : undefined}>{named(trait.name)}</span>}
         after={
           <>
             {trait.detail && <span className="text-mist">: {trait.detail}</span>}
@@ -1012,6 +1017,7 @@ function TroupesCard({
   sheet: SheetOut;
   mine: boolean;
 }) {
+  const named = useClanName();
   const withdraw = useAction((approvalId: string) =>
     unwrap(
       api.DELETE("/api/characters/{character_id}/disciplines/{approval_id}", {
@@ -1089,12 +1095,12 @@ function TroupesCard({
                 <span>
                   {d.kind === "merit_flaw" ? (
                     <>
-                      {askedText(d)}
+                      {named(askedText(d))}
                       {d.quest && <span className="text-mist"> · answered with the quest {d.quest}</span>}
                     </>
                   ) : (
                     <>
-                      {d.name}
+                      {named(d.name)}
                       {d.detail && `: ${d.detail}`} {d.from_rating} → {d.to_rating} ({d.cost} XP)
                     </>
                   )}
@@ -1145,6 +1151,7 @@ function CreationPanel({
   cart: Cart;
   locked: boolean;
 }) {
+  const named = useClanName();
   const lines = cart.lines;
   const takenBack = (p: Pool, name: string, detail: string) =>
     lines.some((l) => l.kind === "unpick" && l.category === p.category && l.name === name && l.detail === detail);
@@ -1218,11 +1225,11 @@ function CreationPanel({
                       takenBack(p, t.name, t.detail) ? (
                         <span key={`${t.name}/${t.detail}`} className="ml-2 inline-flex items-center gap-1">
                           <span className="text-mist line-through">
-                            {t.name}
+                            {named(t.name)}
                             {t.detail && `: ${t.detail}`}
                           </span>
                           <button
-                            aria-label={`Keep the pick on ${t.name}`}
+                            aria-label={`Keep the pick on ${named(t.name)}`}
                             className="text-xs text-gold hover:text-parchment"
                             onClick={() => cart.update((l) => l.filter((x) => !(x.kind === "unpick" && x.category === p.category && x.name === t.name && x.detail === t.detail)))}
                           >
@@ -1231,11 +1238,11 @@ function CreationPanel({
                         </span>
                       ) : (
                         <span key={`${t.name}/${t.detail}`} className="ml-2 inline-flex items-center gap-1">
-                          {t.name}
+                          {named(t.name)}
                           {t.detail && `: ${t.detail}`}
                           {!locked && (
                             <button
-                              aria-label={`Take back the pick on ${t.name}`}
+                              aria-label={`Take back the pick on ${named(t.name)}`}
                               className="text-mist hover:text-blood-bright"
                               onClick={() => cart.update((l) => unpick(l, { category: p.category, name: t.name, detail: t.detail }))}
                             >
@@ -1247,10 +1254,10 @@ function CreationPanel({
                     )}
                     {cartPicks(p).map((l) => (
                       <span key={`cart/${l.name}/${l.detail}`} className="ml-2 inline-flex items-center gap-1 text-gold">
-                        {l.name}
+                        {named(l.name)}
                         <span className="text-xs">(in the cart)</span>
                         <button
-                          aria-label={`Take the pick on ${l.name} out of the cart`}
+                          aria-label={`Take the pick on ${named(l.name)} out of the cart`}
                           className="text-mist hover:text-blood-bright"
                           onClick={() => cart.remove(l)}
                         >
@@ -1274,7 +1281,7 @@ function CreationPanel({
                         <option value="">{p.kind === "points" ? "Pick one…" : `Pick one at ${p.rating}…`}</option>
                         {options.map((t) => (
                           <option key={t.name} value={t.name}>
-                            {t.name}
+                            {named(t.name)}
                             {p.kind === "points" ? ` (${t.fixed_rating ?? 1})` : ""}
                           </option>
                         ))}

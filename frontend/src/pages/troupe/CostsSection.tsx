@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CostCategoryOut, CostOut, CostsOut } from "../../api/types";
+import { withClanNames } from "../../clanNames";
+import { useClanName } from "../../components/ClanNames";
 import { Explainer } from "../../components/Explainer";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
@@ -32,6 +34,7 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
   const [onlyOurs, setOnlyOurs] = useState(false);
   const [query, setQuery] = useState("");
   const { splat, picker } = useHouseSplat(troupeId);
+  const named = useClanName();
   const costs = useQuery({
     queryKey: ["costs", troupeId, splat],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/costs", { params: { path: { troupe_id: troupeId }, query: { splat } } })),
@@ -48,7 +51,7 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
     (c) =>
       categories.has(c.category) &&
       (!onlyOurs || c.house) &&
-      (!q || `${categories.get(c.category)?.name} ${subject(c, categories.get(c.category))}`.toLowerCase().includes(q)),
+      (!q || withClanNames(`${categories.get(c.category)?.name} ${subject(c, categories.get(c.category))}`).toLowerCase().includes(q)),
   );
   const groups = new Map<string, CostOut[]>();
   for (const c of shown) groups.set(c.category, [...(groups.get(c.category) ?? []), c]);
@@ -111,7 +114,7 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
                   {rows.map((c) => (
                     <li key={c.id ?? `${c.trait}-${JSON.stringify(c.condition)}`} className="flex items-center gap-3 py-2.5 sm:gap-4">
                       <span className={`min-w-0 flex-1 text-sm ${c.replaced ? "text-mist line-through" : ""}`}>
-                        <span className={c.replaced ? "" : "text-parchment"}>{subject(c, category)}</span>
+                        <span className={c.replaced ? "" : "text-parchment"}>{named(subject(c, category))}</span>
                         {": "}
                         <span>{c.price_text}</span>
                         {c.page && <span className="text-mist"> {pageText(c.page)}</span>}
@@ -128,7 +131,7 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
                             <Button
                               variant="ghost"
                               className="min-h-8 px-2"
-                              aria-label={`Remove the price for ${subject(c, category)}`}
+                              aria-label={`Remove the price for ${named(subject(c, category))}`}
                               onClick={() => remove.mutate(c.id!)}
                             >
                               Remove
@@ -139,7 +142,7 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
                           <Button
                             variant="secondary"
                             className="min-h-8 px-3"
-                            aria-label={`Change the price for ${subject(c, category)}`}
+                            aria-label={`Change the price for ${named(subject(c, category))}`}
                             onClick={() => setEditing({ kind: "replace", cost: c })}
                           >
                             Change
@@ -170,7 +173,9 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
 
 function PriceEditor({ troupeId, splat, data, editing, onClose }: { troupeId: string; splat: string; data: CostsOut; editing: Editing; onClose: () => void }) {
   const start = editing.kind === "new" ? null : editing.cost;
-  const [category, setCategory] = useState(start?.category ?? data.categories[0]?.key ?? "");
+  const named = useClanName();
+  const [category, setCategory]
+ = useState(start?.category ?? data.categories[0]?.key ?? "");
   const [trait, setTrait] = useState(start?.trait ?? "");
   const [scheme, setScheme] = useState<Scheme>(start?.scheme ?? "per_dot");
   const [rate, setRate] = useState(start?.rate?.toString() ?? "");
@@ -221,7 +226,7 @@ function PriceEditor({ troupeId, splat, data, editing, onClose }: { troupeId: st
     !!category && (!cat?.per_trait || !!trait) && (!needsRate || pricing.rate !== null) && (scheme !== "table" || pricing.table !== null);
   const unit = cat?.unit ?? "dot";
   const title =
-    editing.kind === "new" ? "Add a price" : `Price for ${subject(editing.cost, cat)}`;
+    editing.kind === "new" ? "Add a price" : `Price for ${named(subject(editing.cost, cat))}`;
 
   return (
     <Card title={title}>
@@ -314,7 +319,7 @@ function PriceEditor({ troupeId, splat, data, editing, onClose }: { troupeId: st
         {stillApplies.length > 0 && (
           <p className="text-xs text-mist">
             More specific prices still apply:{" "}
-            {stillApplies.map((c) => `${subject(c, cat)} (${c.price_text})`).join("; ")}.
+            {stillApplies.map((c) => `${named(subject(c, cat))} (${c.price_text})`).join("; ")}.
           </p>
         )}
 

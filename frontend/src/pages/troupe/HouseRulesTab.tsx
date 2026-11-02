@@ -5,6 +5,7 @@ import { api, unwrap } from "../../api/client";
 import type { SplatHouseRulesOut, TroupeOut } from "../../api/types";
 import { EmptyState } from "../../components/EmptyState";
 import { HouseMark, HouseSummary } from "../../components/HouseMark";
+import { useClanName } from "../../components/ClanNames";
 import { Card, ErrorText, Loading } from "../../components/ui";
 import { pageText } from "./bookPage";
 
@@ -33,6 +34,7 @@ const BOOK_XP = 30;
  * only; its storytellers change them under Customise.
  */
 export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boolean }) {
+  const named = useClanName();
   const rules = useQuery({
     queryKey: ["house-rules", troupe.id],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/house-rules", { params: { path: { troupe_id: troupe.id } } })),
@@ -81,7 +83,7 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
                   key={`${c.category}/${c.subject}`}
                   subject={
                     <>
-                      {c.subject}
+                      {named(c.subject)}
                       {c.page && <span className="text-mist"> {pageText(c.page)}</span>}
                     </>
                   }
@@ -216,15 +218,16 @@ function SplatPart({ label, split, children }: { label: string; split: boolean; 
 
 /** A house rule: what it is about, how the troupe plays it, and how the book does. */
 function Row({ subject, now, book, note }: { subject: ReactNode; now: string; book?: string | null; note?: string | null }) {
+  const named = useClanName();
   return (
     <li className="flex flex-col gap-0.5 py-2.5 text-sm sm:flex-row sm:items-baseline sm:gap-4">
       <span className="min-w-0 flex-1">
-        <span className="text-parchment">{subject}</span>
-        {note && <span className="block text-xs text-mist">House rule: {note}</span>}
+        <span className="text-parchment">{typeof subject === "string" ? named(subject) : subject}</span>
+        {note && <span className="block text-xs text-mist">House rule: {named(note)}</span>}
       </span>
       <span className="flex flex-col sm:items-end sm:text-right">
-        <span className="text-gold">{now}</span>
-        {book && <span className="text-xs text-mist">By the book: {book}</span>}
+        <span className="text-gold">{named(now)}</span>
+        {book && <span className="text-xs text-mist">By the book: {named(book)}</span>}
       </span>
     </li>
   );

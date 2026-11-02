@@ -28,6 +28,7 @@ import { ResultsTab } from "./ResultsTab";
 import { newResults, useSeenUpTo } from "./resultsSeen";
 import { CharacterShared } from "../troupe/SharedBackground";
 import { ChoiceInfo } from "./Info";
+import { useClanName } from "../../components/ClanNames";
 import { SheetTab, useCatalogue } from "./SheetTab";
 import { StatusTitlesTab } from "./StatusTitlesTab";
 import { TroupesTab } from "./TroupesTab";
@@ -351,16 +352,17 @@ function Identity({ character, lead }: { character: CharacterOut; lead: string }
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/sheet", { params: { path: { character_id: character.id } } })),
   });
   const catalogue = useCatalogue(character);
+  const named = useClanName();
   const choices = (sheet.data?.traits ?? []).filter((t) => t.rating === null);
   return (
     <span className="flex flex-wrap items-center gap-x-2">
       <span className="capitalize">{lead}</span>
       {choices.map((t) => (
         <span key={t.id}>
-          · <span className="text-parchment/90">{choiceName(t)}</span>
+          · <span className="text-parchment/90">{named(choiceName(t))}</span>
           <ChoiceInfo
             choice={t}
-            shown={choiceName(t)}
+            shown={named(choiceName(t))}
             about={catalogue.data?.traits.find((c) => c.category === t.category && c.name === t.name)}
           />
         </span>

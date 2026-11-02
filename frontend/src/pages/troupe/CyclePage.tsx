@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, Route, Routes, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
+import { ClanNames } from "../../components/ClanNames";
 import type { CycleOut, QuestionIn } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Notice, PageTitle, Select, Tabs, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
@@ -31,7 +32,7 @@ export function CyclePage() {
   const c = cycle.data;
   const base = `/cycles/${c.id}`;
   return (
-    <>
+    <ClanNames name={troupe.data?.assamite_name}>
       <nav aria-label="Breadcrumb" className="mb-1 text-sm text-mist">
         <ol className="flex flex-wrap items-center gap-x-1.5">
           <li className="min-w-0">
@@ -68,7 +69,7 @@ export function CyclePage() {
         <Route path="responses" element={<ResponsesTab cycle={c} />} />
         <Route path="delivery" element={<DeliveryTab cycle={c} />} />
       </Routes>
-    </>
+    </ClanNames>
   );
 }
 

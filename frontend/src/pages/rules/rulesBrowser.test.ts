@@ -111,6 +111,26 @@ describe("applyFilters", () => {
     ]);
   });
 
+  it("finds the clan stored as Assamite by either name (#430)", () => {
+    const assamites = entries(
+      data({
+        catalogue: {
+          ...data().catalogue,
+          traits: [
+            trait("clan", "Assamite: Vizier", { in_clan: ["Auspex"] }),
+            trait("rituals", "Thaumaturgy: Kiss of the Asp (Assamite)", { fixed_rating: 2 }),
+            trait("merits", "Calm Heart", { fixed_rating: 1, kind: "General" }),
+          ],
+        },
+        powers: [],
+      }),
+    );
+    for (const query of ["assamite", "banu haqim", "Banu Haqim: Vizier"]) {
+      expect(names(applyFilters(assamites, { ...none, section: "clans", query }))).toEqual(["Assamite: Vizier"]);
+    }
+    expect(names(applyFilters(assamites, { ...none, query: "asp banu" }))).toEqual(["Thaumaturgy: Kiss of the Asp (Assamite)"]);
+  });
+
   it("narrows to points or a level", () => {
     expect(names(applyFilters(all, { ...none, section: "merits", rating: 3 }))).toEqual(["Absent Sway"]);
     expect(names(applyFilters(all, { ...none, section: "disciplines", rating: 5 }))).toEqual(["Majesty"]);

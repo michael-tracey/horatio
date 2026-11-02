@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from horatio import (
     clan_merits,
+    clan_names,
     deletion,
     domitors,
     downtimes,
@@ -76,6 +77,9 @@ class CharacterOut(BaseModel):
     left_reason: str | None
     # Its troupes' Who's Who lists it under "No longer with us".
     left_listed: bool
+    # What its sheet calls the clan stored as "Assamite" (horatio.clan_names): as the
+    # troupe whose rules it plays by does, or Banu Haqim outside any troupe.
+    assamite_name: Literal["Banu Haqim", "Assamite"] = "Banu Haqim"
 
 
 class CharacterListOut(CharacterOut):
@@ -179,6 +183,7 @@ def characters_out(db: Session, characters: Iterable[Character]) -> list[Charact
         Approval.status == "pending",
     )
     asking = {character_id: troupe_id for character_id, troupe_id in db.execute(pending)}
+    called = clan_names.for_characters(db, found)
     return [
         CharacterOut(
             id=character.id,
@@ -201,6 +206,7 @@ def characters_out(db: Session, characters: Iterable[Character]) -> list[Charact
             npc_form=character.npc_form,
             left_reason=character.left_reason,
             left_listed=character.left_listed,
+            assamite_name=called[character.id],  # type: ignore[arg-type]  # checked by the database
         )
         for character in found
     ]
