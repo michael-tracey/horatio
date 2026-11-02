@@ -124,8 +124,9 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
                     {c.page && <span className="text-mist"> {pageText(c.page)}</span>}
                   </>
                 }
+                note={c.own ? "the troupe's own check" : null}
                 now={PLAYED[c.house] ?? c.house}
-                book={PLAYED[c.strength] ?? c.strength}
+                book={c.own ? "Not in the book" : (PLAYED[c.strength] ?? c.strength)}
               />
             ))}
           </ul>

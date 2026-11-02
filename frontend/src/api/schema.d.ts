@@ -6261,6 +6261,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/house-checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Own Checks */
+        get: operations["list_own_checks_api_troupes__troupe_id__house_checks_get"];
+        put?: never;
+        /** Add Own Check */
+        post: operations["add_own_check_api_troupes__troupe_id__house_checks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/house-checks/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Own Check
+         * @description The check as it is being built, in plain words, and the troupe's characters it
+         *     would break; or why it cannot be saved as it is. Nothing is saved.
+         */
+        post: operations["preview_own_check_api_troupes__troupe_id__house_checks_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/house-checks/{check_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Own Check */
+        put: operations["change_own_check_api_troupes__troupe_id__house_checks__check_id__put"];
+        post?: never;
+        /** Remove Own Check */
+        delete: operations["remove_own_check_api_troupes__troupe_id__house_checks__check_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/house-rules": {
         parameters: {
             query?: never;
@@ -8888,6 +8945,20 @@ export interface components {
              * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
              */
             file: string;
+        };
+        /** BreakingOut */
+        BreakingOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Kind */
+            kind: string;
+            /** Message */
+            message: string;
+            /** Name */
+            name: string;
         };
         /**
          * BudgetChange
@@ -12841,6 +12912,11 @@ export interface components {
         HouseCheckOut: {
             /** House */
             house: string;
+            /**
+             * Own
+             * @default false
+             */
+            own: boolean;
             /** Page */
             page: string | null;
             /** Rule */
@@ -15344,6 +15420,104 @@ export interface components {
              * @enum {string}
              */
             type: "elite" | "underworld";
+        };
+        /** OwnCheckIn */
+        OwnCheckIn: {
+            /** Category */
+            category: string;
+            /** Condition */
+            condition: {
+                [key: string]: unknown;
+            };
+            /** Kind */
+            kind?: string | null;
+            /** Message */
+            message: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "requires" | "forbids";
+            /** Name */
+            name?: string | null;
+            /** Name Prefix */
+            name_prefix?: string | null;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /** Step */
+            step?: string | null;
+            /**
+             * Strength
+             * @default refuse
+             * @enum {string}
+             */
+            strength: "refuse" | "complete" | "review" | "note";
+        };
+        /** OwnCheckOut */
+        OwnCheckOut: {
+            /** Breaking */
+            breaking: components["schemas"]["BreakingOut"][];
+            /** Category */
+            category: string;
+            /** Condition */
+            condition: {
+                [key: string]: unknown;
+            };
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Key */
+            key: string;
+            /** Kind */
+            kind?: string | null;
+            /** Message */
+            message: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "requires" | "forbids";
+            /** Name */
+            name?: string | null;
+            /** Name Prefix */
+            name_prefix?: string | null;
+            /** Problem */
+            problem: string | null;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /** Step */
+            step?: string | null;
+            /**
+             * Strength
+             * @default refuse
+             * @enum {string}
+             */
+            strength: "refuse" | "complete" | "review" | "note";
+            /** Text */
+            text: string;
+        };
+        /** OwnCheckPreviewIn */
+        OwnCheckPreviewIn: {
+            check: components["schemas"]["OwnCheckIn"];
+            /** House Check Id */
+            house_check_id?: string | null;
+        };
+        /** OwnCheckPreviewOut */
+        OwnCheckPreviewOut: {
+            /** Breaking */
+            breaking: components["schemas"]["BreakingOut"][];
+            /** Problem */
+            problem: string | null;
+            /** Text */
+            text: string;
         };
         /**
          * OwnEntryOut
@@ -33629,6 +33803,173 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["TroupeOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_own_checks_api_troupes__troupe_id__house_checks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnCheckOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_own_check_api_troupes__troupe_id__house_checks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnCheckIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnCheckOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_own_check_api_troupes__troupe_id__house_checks_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnCheckPreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnCheckPreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_own_check_api_troupes__troupe_id__house_checks__check_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                check_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnCheckIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnCheckOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_own_check_api_troupes__troupe_id__house_checks__check_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                check_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

@@ -14,6 +14,7 @@ import { pageText } from "./bookPage";
 import { CostsSection } from "./CostsSection";
 import { HouseTraitsSection } from "./HouseTraitsSection";
 import { LocationRulesSection } from "./LocationRulesSection";
+import { OwnChecks } from "./OwnChecks";
 import { QuestSettings } from "./QuestSettings";
 import { StartingSection } from "./StartingSection";
 
@@ -171,6 +172,8 @@ function ChecksSection({ troupeId, canEdit }: { troupeId: string; canEdit: boole
           ))}
         </dl>
       </Explainer>
+
+      <OwnChecks troupeId={troupeId} canEdit={canEdit} />
 
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-3">

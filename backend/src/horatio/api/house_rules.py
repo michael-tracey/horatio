@@ -22,6 +22,7 @@ from horatio.permissions import TroupeAction
 from horatio.rules import checks, conditions, pricing
 from horatio.rules.checks import REQUIREMENT_KEY, CheckData
 from horatio.rules.files import EVERYWHERE
+from horatio.rules.house_checks import is_house_check
 from horatio.rules.model import (
     ActionKindData,
     AllowanceRuleData,
@@ -134,6 +135,9 @@ def checks_out(db: DbSession, troupe_id: uuid.UUID) -> list[CheckOut]:
     for splat in ["vampire", *(s for s in troupe.allowed_splats if s != "vampire")]:
         rules = read_troupe_rules(db, splat, troupe_id)
         for c in rules.rule_set.checks:
+            # The troupe's own checks are listed apart (horatio.api.house_checks).
+            if is_house_check(c.key):
+                continue
             found.setdefault(
                 c.key,
                 CheckOut(
@@ -1086,6 +1090,8 @@ class HouseCheckOut(BaseModel):
     # note or off.
     strength: str
     house: str
+    # The troupe's own check, not a book one played differently (horatio.house_checks).
+    own: bool = False
 
 
 class HouseMeritOut(BaseModel):
@@ -1265,6 +1271,21 @@ def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
     return found
 
 
+def own_checks(db: DbSession, troupe: Troupe) -> list[HouseCheckOut]:
+    """The troupe's own checks the rules can run, for its players: the message each
+    gives, and how strictly it holds."""
+    found: list[HouseCheckOut] = []
+    for splat in ["vampire", *(s for s in troupe.allowed_splats if s != "vampire")]:
+        for c in read_troupe_rules(db, splat, troupe.id).rule_set.checks:
+            if is_house_check(c.key):
+                found.append(
+                    HouseCheckOut(
+                        rule=c.message, page=None, strength=c.strength, house=c.strength, own=True
+                    )
+                )
+    return found
+
+
 @router.get("/house-rules")
 def read_house_rules(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> HouseRulesOut:
     """What the troupe plays differently from the book, for its players to read before
@@ -1302,11 +1323,14 @@ def read_house_rules(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> 
     return HouseRulesOut(
         splats=[splat_house_rules(db, troupe.id, s) for s in splats],
         checks=[
-            HouseCheckOut(
-                rule=c.message or c.about, page=c.page, strength=c.strength, house=c.house
-            )
-            for c in checks_out(db, troupe.id)
-            if c.house
+            *own_checks(db, troupe),
+            *(
+                HouseCheckOut(
+                    rule=c.message or c.about, page=c.page, strength=c.strength, house=c.house
+                )
+                for c in checks_out(db, troupe.id)
+                if c.house
+            ),
         ],
         house_traits=merits,
         other=other_settings(db, troupe),
