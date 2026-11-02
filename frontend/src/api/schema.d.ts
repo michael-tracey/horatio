@@ -5575,7 +5575,8 @@ export interface paths {
         /**
          * Change Book Trait
          * @description Change a book trait in the troupe: ban it, with a reason, or lift the ban (those
-         *     who hold it keep it); give it the troupe's own wording, or take it away.
+         *     who hold it keep it); give it the troupe's own wording, or take it away; move a
+         *     merit or flaw to another category.
          */
         put: operations["change_book_trait_api_troupes__troupe_id__book_traits_put"];
         post?: never;
@@ -9186,6 +9187,8 @@ export interface components {
             banned?: boolean | null;
             /** Category */
             category: string;
+            /** Kind */
+            kind?: string | null;
             /** Name */
             name: string;
             /**
@@ -9207,10 +9210,14 @@ export interface components {
             ban_reason: string;
             /** Banned */
             banned: boolean;
+            /** Book Kind */
+            book_kind: string | null;
             /** Category */
             category: string;
             /** Category Name */
             category_name: string;
+            /** Kind */
+            kind: string | null;
             /** Name */
             name: string;
             /** Page */
@@ -9233,6 +9240,15 @@ export interface components {
             changes: components["schemas"]["BookTraitOut"][];
             /** Holders */
             holders: components["schemas"]["BannedHolderOut"][];
+            /**
+             * Kinds
+             * @default {}
+             */
+            kinds: {
+                [key: string]: {
+                    [key: string]: string[];
+                };
+            };
         };
         /** BreakingOut */
         BreakingOut: {
@@ -20899,6 +20915,10 @@ export interface components {
             ban_reason: string;
             /** Banned */
             banned: boolean;
+            /** Book Kind */
+            book_kind?: string | null;
+            /** Kind */
+            kind?: string | null;
             /**
              * Wording
              * @default

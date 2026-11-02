@@ -98,10 +98,8 @@ def test_storytellers_ban_a_trait_and_players_read_it(troupe: Troupe) -> None:
     lifted = change(troupe, name="Lucky", banned=False)
 
     assert lifted.json()["banned"] is False
-    assert troupe.storyteller.client.get(f"/troupes/{troupe.id}/book-traits").json() == {
-        "changes": [],
-        "holders": [],
-    }
+    listed = troupe.storyteller.client.get(f"/troupes/{troupe.id}/book-traits").json()
+    assert (listed["changes"], listed["holders"]) == ([], [])
     log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
     assert "storyteller lifted the troupe's ban on Lucky." in log
 
@@ -241,6 +239,8 @@ def test_storytellers_give_a_trait_house_wording_and_players_read_it(troupe: Tro
         "ban_reason": "",
         "wording": AWE,
         "wording_mode": "added",
+        "kind": None,
+        "book_kind": None,
     }
     read = troupe.player.client.get(f"/troupes/{troupe.id}/house-rules").json()
     assert [(b["name"], b["wording"]) for b in read["book_traits"]] == [("Presence", AWE)]
@@ -256,10 +256,8 @@ def test_storytellers_give_a_trait_house_wording_and_players_read_it(troupe: Tro
     log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
     assert "storyteller removed the troupe's wording for Presence." in log
     change(troupe, category="disciplines", name="Presence", banned=False)
-    assert troupe.storyteller.client.get(f"/troupes/{troupe.id}/book-traits").json() == {
-        "changes": [],
-        "holders": [],
-    }
+    listed = troupe.storyteller.client.get(f"/troupes/{troupe.id}/book-traits").json()
+    assert (listed["changes"], listed["holders"]) == ([], [])
 
 
 def test_house_wording_is_the_troupes_own_and_follows_the_home_troupe(troupe: Troupe) -> None:
@@ -286,3 +284,90 @@ def test_house_wording_is_the_troupes_own_and_follows_the_home_troupe(troupe: Tr
     ]
     other = troupe.player.client.get(f"/rules/vampire?troupe_id={elsewhere}").json()
     assert next(t for t in other["traits"] if t["name"] == "Presence")["changed"] is None
+
+
+# --- Category -------------------------------------------------------------------------------
+
+
+def recategorise(troupe: Troupe, name: str, kind: str, category: str = "merits") -> Any:
+    return change(troupe, category=category, name=name, kind=kind)
+
+
+def catalogued(troupe: Troupe, name: str) -> dict[str, Any]:
+    found = troupe.player.client.get(f"/rules/vampire?troupe_id={troupe.id}").json()
+    return next(t for t in found["traits"] if t["name"] == name)
+
+
+def test_a_sect_flaw_made_general_is_listed_and_taken_as_one(troupe: Troupe) -> None:
+    assert recategorise(troupe, "Soul Shard", "Nonsense", "flaws").status_code == 422
+    assert recategorise(troupe, "Presence", "General", "disciplines").status_code == 422
+    assert catalogued(troupe, "Soul Shard")["kind"] == "Sabbat"
+
+    made = recategorise(troupe, "Soul Shard", "General", "flaws")
+
+    assert made.status_code == 200, made.text
+    assert (made.json()["kind"], made.json()["book_kind"]) == ("General", "Sabbat")
+    soul_shard = catalogued(troupe, "Soul Shard")
+    assert soul_shard["kind"] == "General"
+    assert (soul_shard["changed"]["kind"], soul_shard["changed"]["book_kind"]) == (
+        "General",
+        "Sabbat",
+    )
+    camarilla = homed(troupe, clan="Ventrue")
+    troupe.player.client.put(
+        f"/characters/{camarilla}/traits",
+        json={"category": "sect", "name": "Camarilla", "rating": None},
+    )
+    bought(troupe, camarilla, "flaws", "Soul Shard", 3)
+    held = [t["name"] for t in sheet(troupe.player, camarilla)["traits"]]
+    assert "Soul Shard" in held
+    read = troupe.player.client.get(f"/troupes/{troupe.id}/house-rules").json()
+    assert [(b["name"], b["kind"], b["book_kind"]) for b in read["book_traits"]] == [
+        ("Soul Shard", "General", "Sabbat")
+    ]
+    listed = troupe.storyteller.client.get(f"/troupes/{troupe.id}/book-traits").json()
+    assert "Sabbat" in listed["kinds"]["vampire"]["flaws"]
+    log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
+    assert "storyteller made Soul Shard General in the troupe (by the book: Sabbat)." in log
+
+    # Its book category again is no change at all.
+    assert recategorise(troupe, "Soul Shard", "", "flaws").json()["kind"] is None
+    assert catalogued(troupe, "Soul Shard")["changed"] is None
+    log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
+    assert "storyteller put Soul Shard back in its book category, Sabbat." in log
+
+
+def test_a_clan_merit_made_general_leaves_its_clan_requirement_behind(troupe: Troupe) -> None:
+    brujah = homed(troupe, clan="Brujah")
+    refused = buy(troupe.player, brujah, "merits", "Absent Sway", 3)
+    assert refused.status_code == 409
+    assert "only for Toreador" in refused.json()["detail"]
+
+    assert recategorise(troupe, "Absent Sway", "General").status_code == 200
+
+    absent_sway = catalogued(troupe, "Absent Sway")
+    assert (absent_sway["kind"], absent_sway["requirement"]) == ("General", None)
+    checks = troupe.storyteller.client.get(f"/troupes/{troupe.id}/checks").json()
+    assert "merits/Absent Sway/requirement" not in [c["key"] for c in checks]
+    bought(troupe, brujah, "merits", "Absent Sway", 3)
+    # A Toreador takes it beside a clan merit of the same value: it is no clan merit here.
+    toreador = homed(troupe, "Cora", clan="Toreador")
+    bought(troupe, toreador, "merits", "Ephemeral Rhapsody", 3)
+    bought(troupe, toreador, "merits", "Absent Sway", 3)
+    held = [t["name"] for t in sheet(troupe.player, toreador)["traits"]]
+    assert {"Absent Sway", "Ephemeral Rhapsody"} <= set(held)
+
+
+def test_a_category_change_that_breaks_a_check_is_flagged_not_enforced(troupe: Troupe) -> None:
+    toreador = homed(troupe, clan="Toreador")
+    bought(troupe, toreador, "merits", "Absent Sway", 3)
+    bought(troupe, toreador, "merits", "Iron Will", 3)
+
+    # Iron Will made a clan merit clashes with Absent Sway, of the same value.
+    assert recategorise(troupe, "Iron Will", "Clan").status_code == 200
+
+    held = [t["name"] for t in sheet(troupe.player, toreador)["traits"]]
+    assert {"Absent Sway", "Iron Will"} <= set(held)
+    assert any("already a clan merit of this value" in p for p in problems(troupe.player, toreador))
+    # Other changes to the sheet go on.
+    bought(troupe, toreador, "merits", "Acute Sense", 1)

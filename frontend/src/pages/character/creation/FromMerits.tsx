@@ -10,7 +10,7 @@ import { comesWithClan } from "./clanMerits";
 import { ChoiceSelect } from "../ChoiceSelect";
 import { fieldSkills } from "../fields";
 import type { StepRef } from "./notices";
-import { HouseWording } from "../../../components/TroupeChange";
+import { CategoryMark, HouseWording } from "../../../components/TroupeChange";
 import { bookSummary } from "../../../houseWording";
 
 export type FromMeritsProps = {
@@ -152,6 +152,7 @@ function FromBudget({
                       {t.page_reference ? `, ${pageText(t.page_reference)}` : ""})
                     </span>
                     {mine?.detail && <span className="text-parchment">: {mine.detail}</span>}
+                    <CategoryMark change={t.changed} />
                   </label>
                   {t.description && (
                     <p id={`${id}-about`} className="mt-0.5 text-xs text-mist">

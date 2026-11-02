@@ -78,6 +78,9 @@ class TraitChangeOut(BaseModel):
     ban_reason: str
     wording: str = ""
     wording_mode: Literal["added", "replaces"] = "added"
+    # A merit or flaw's category in the troupe (its `kind` here), and the book's.
+    kind: str | None = None
+    book_kind: str | None = None
 
 
 class TraitOut(BaseModel):
@@ -243,6 +246,8 @@ def change_out(change: TraitChangeData | None) -> TraitChangeOut | None:
         ban_reason=change.ban_reason,
         wording=change.wording,
         wording_mode=change.wording_mode,
+        kind=change.kind,
+        book_kind=change.book_kind,
     )
 
 

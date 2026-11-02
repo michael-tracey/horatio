@@ -1,7 +1,8 @@
 """A troupe's own changes to book traits: its storytellers ban a merit, flaw, power,
 ritual, technique, path, background, clan or bloodline in the troupe, with a reason
-its players see (issue #431), and give any of them wording of the troupe's own
-(issue #433), added to the book's summary or in its place.
+its players see (issue #431), give any of them wording of the troupe's own
+(issue #433), added to the book's summary or in its place, and move a merit or flaw
+to another category (issue #436), such as a sect flaw made a general one.
 
 The changes are kept one row per troupe and trait (`TraitOverride`), and read into
 the troupe's rules where they are put together (horatio.rules.store), so whatever
@@ -15,6 +16,12 @@ still let one character have it. Staff building an NPC may use a banned trait.
 House wording is the troupe's own text, in Markdown, never the book's: players read
 it wherever they read the trait, marked as the troupe's, with the book's page still
 shown. A character plays by its home troupe's rules, so it reads that troupe's.
+
+A merit or flaw's category is its catalogue type, which every rule tied to the type
+reads: `kind` checks, the clan merit values and the grants that ask for a type. The
+troupe's rules read it swapped, so all of those follow. A clan merit moved out of
+Clan leaves its clan requirement behind; its own checks stay. Characters who hold it
+keep it, and a check it newly breaks is flagged on their sheet, not enforced.
 """
 
 import uuid
@@ -155,6 +162,68 @@ def set_wording(
             troupe_id=troupe.id,
             what=what,
             how="in place of the book's" if mode == "replaces" else "added to the book's",
+        )
+
+
+# The categories whose traits have a catalogue type a troupe can change.
+TYPED = ("merits", "flaws")
+
+
+def book_kinds(db: Session, splat: str, category: str) -> list[str]:
+    """The catalogue types the book gives the traits of a category, in order: what a
+    troupe can move one of them to."""
+    found = db.scalars(
+        select(TraitDefinition.properties["type"].astext)
+        .join(TraitCategory, TraitDefinition.category_id == TraitCategory.id)
+        .join(RuleSet, TraitCategory.rule_set_id == RuleSet.id)
+        .where(
+            RuleSet.splat == splat,
+            TraitCategory.key == category,
+            TraitDefinition.troupe_id.is_(None),
+            TraitDefinition.retired.is_(False),
+        )
+        .distinct()
+    )
+    return sorted(k for k in found if k)
+
+
+def set_kind(
+    db: Session,
+    user: User,
+    troupe: Troupe,
+    splat: str,
+    definition: TraitDefinition,
+    category: str,
+    *,
+    kind: str | None,
+) -> None:
+    """Move a merit or flaw to another of the book's categories in the troupe, or
+    (None, or the book's own) back to the book's."""
+    book = definition.properties.get("type")
+    if category not in TYPED or not book:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "Only a merit or flaw's category changes."
+        )
+    if kind is not None and kind not in book_kinds(db, splat, category):
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"No category {kind!r}.")
+    kind = None if kind == book else kind
+    if change_of(db, troupe, splat, category, definition.name).kind == kind:
+        return
+    change_book_trait(db, troupe.id, definition.id, {"kind": kind})
+    what = for_splat(definition.name, splat)
+    if kind is None:
+        audit.record(
+            db, user, "house.trait_category_restored", troupe_id=troupe.id, what=what, book=book
+        )
+    else:
+        audit.record(
+            db,
+            user,
+            "house.trait_recategorised",
+            troupe_id=troupe.id,
+            what=what,
+            kind=kind,
+            book=book,
         )
 
 

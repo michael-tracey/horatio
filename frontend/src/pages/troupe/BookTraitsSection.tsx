@@ -11,7 +11,7 @@ import { HouseWording } from "../../components/TroupeChange";
 import { useAction } from "../../hooks";
 import { bookSummary } from "../../houseWording";
 import { pageText } from "./bookPage";
-import { bookTraits, changeSummary, findTraits, SHOWN } from "./bookTraits";
+import { bookTraits, changeSummary, findTraits, kindChoices, requirementNote, SHOWN } from "./bookTraits";
 import { useHouseSplat } from "./HouseSplat";
 
 type Picked = { category: string; name: string };
@@ -19,8 +19,8 @@ type Picked = { category: string; name: string };
 /**
  * Customise › Rules › Book traits: the troupe's own changes to traits from the book.
  * Storytellers search or browse the catalogue, open a trait, and change it in one
- * panel: ban it, with a reason the players see, and give it wording of the troupe's
- * own. Those who already hold a banned trait keep it; they are listed here for
+ * panel: ban it, with a reason the players see, give it wording of the troupe's
+ * own, and move a merit or flaw to another category. Those who already hold a banned trait keep it; they are listed here for
  * staff to deal with one by one.
  */
 export function BookTraitsSection({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
@@ -59,7 +59,18 @@ export function BookTraitsSection({ troupeId, canEdit }: { troupeId: string; can
         </p>
       </Explainer>
 
-      {open && <TraitPanel key={`${splat}/${open.category}/${open.name}`} troupeId={troupeId} splat={splat} trait={open} categories={categories} canEdit={canEdit} onClose={() => setPicked(null)} />}
+      {open && (
+        <TraitPanel
+          key={`${splat}/${open.category}/${open.name}`}
+          troupeId={troupeId}
+          splat={splat}
+          trait={open}
+          categories={categories}
+          kinds={kindChoices(changes.data.kinds ?? {}, splat, open.category)}
+          canEdit={canEdit}
+          onClose={() => setPicked(null)}
+        />
+      )}
 
       <Card title="Changed in this troupe">
         {changed.length === 0 ? (
@@ -129,6 +140,7 @@ export function BookTraitsSection({ troupeId, canEdit }: { troupeId: string; can
                       <span className="text-xs text-mist">{categoryName(categories, t.category)}</span>
                       {t.changed?.banned && <Badge tone="blood">Banned</Badge>}
                       {t.changed?.wording && <Badge tone="gold">House wording</Badge>}
+                      {t.changed?.kind && <Badge tone="gold">{t.changed.kind}</Badge>}
                     </button>
                   </li>
                 ))}
@@ -172,6 +184,7 @@ function TraitPanel({
   splat,
   trait,
   categories,
+  kinds,
   canEdit,
   onClose,
 }: {
@@ -179,19 +192,30 @@ function TraitPanel({
   splat: string;
   trait: TraitOut;
   categories: CategoryOut[];
+  /** The categories a merit or flaw can be moved to; none for any other trait. */
+  kinds: string[];
   canEdit: boolean;
   onClose: () => void;
 }) {
   const toast = useToast();
+  const bookKind = trait.changed?.book_kind ?? trait.kind ?? null;
   const saved = {
     banned: trait.changed?.banned ?? false,
     ban_reason: trait.changed?.ban_reason ?? "",
     wording: trait.changed?.wording ?? "",
     wording_mode: trait.changed?.wording_mode ?? ("added" as const),
+    kind: trait.changed?.kind ?? "",
   };
+  // The checks about it, to show which stay with it whatever its category.
+  const checks = useQuery({
+    queryKey: ["checks", troupeId],
+    enabled: kinds.length > 0,
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/checks", { params: { path: { troupe_id: troupeId } } })),
+  });
+  const own = (checks.data ?? []).filter((c) => c.category === trait.category && c.about === trait.name && !c.key.endsWith("/requirement"));
   const [draft, setDraft] = useState(saved);
   const set = (next: Partial<typeof draft>) => setDraft((d) => ({ ...d, ...next }));
-  const save = useAction((body: typeof draft) =>
+  const save = useAction((body: Omit<typeof draft, "kind"> & { kind?: string }) =>
     unwrap(
       api.PUT("/api/troupes/{troupe_id}/book-traits", {
         params: { path: { troupe_id: troupeId } },
@@ -200,6 +224,8 @@ function TraitPanel({
     ),
   );
   const sent = { ...draft, ban_reason: draft.banned ? draft.ban_reason.trim() : "", wording: draft.wording.trim() };
+  // Only a merit or flaw has a category to send.
+  const body = kinds.length > 0 ? sent : { ...sent, kind: undefined };
   const dirty = (Object.keys(saved) as (keyof typeof saved)[]).some((k) => sent[k] !== saved[k]);
   return (
     <Card
@@ -264,11 +290,48 @@ function TraitPanel({
         )}
       </section>
 
+      {kinds.length > 0 && bookKind && (
+        <section className="mt-4 flex flex-col gap-3 border-t border-ash pt-4" aria-label="Category">
+          <Field label="Category in this troupe" hint={`${bookKind} in the book. Every rule tied to the category follows: clan merit values, sect and type checks, filters.`}>
+            <Select value={draft.kind} disabled={!canEdit} onChange={(e) => set({ kind: e.target.value === bookKind ? "" : e.target.value })}>
+              <option value="">As the book has it ({bookKind})</option>
+              {kinds
+                .filter((k) => k !== bookKind)
+                .map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+            </Select>
+          </Field>
+          {draft.kind && requirementNote(bookKind, draft.kind, trait.requirement) && (
+            <p className="text-sm text-gold">{requirementNote(bookKind, draft.kind, trait.requirement)}</p>
+          )}
+          {draft.kind && (
+            <div className="text-sm text-mist">
+              {own.length > 0 ? (
+                <>
+                  <p>Its own checks stay, whatever its category; change them on the Checks page:</p>
+                  <ul className="mt-1 list-disc pl-5">
+                    {own.map((c) => (
+                      <li key={c.key}>{c.message}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p>It has no checks of its own to keep.</p>
+              )}
+              <p className="mt-1">Characters who hold it keep it. A rule it newly breaks is flagged on their sheet, not enforced.</p>
+            </div>
+          )}
+        </section>
+      )}
+
       {canEdit && (
         <div className="mt-4 border-t border-ash pt-4">
           <Button
             disabled={!dirty || save.isPending}
-            onClick={() => save.mutate(sent, { onSuccess: () => toast({ message: `Saved: ${trait.name} in this troupe` }) })}
+            onClick={() => save.mutate(body, { onSuccess: () => toast({ message: `Saved: ${trait.name} in this troupe` }) })}
           >
             Save
           </Button>

@@ -247,8 +247,9 @@ def house_page(troupe_name: str) -> str:
 @dataclass(frozen=True)
 class TraitChangeData:
     """A troupe's own change to one book trait (horatio.book_traits): banned in the
-    troupe, with the reason its players see; and its own wording, in Markdown,
-    added to the book's summary or replacing it."""
+    troupe, with the reason its players see; its own wording, in Markdown, added
+    to the book's summary or replacing it; and a merit or flaw's category (its
+    catalogue type) in the troupe, which `RuleSetData.traits` already reads."""
 
     category: str
     name: str
@@ -256,6 +257,10 @@ class TraitChangeData:
     ban_reason: str = ""
     wording: str = ""
     wording_mode: Literal["added", "replaces"] = "added"
+    # The troupe's category for a merit or flaw, and the book's it replaces; None
+    # where the troupe keeps the book's.
+    kind: str | None = None
+    book_kind: str | None = None
 
 
 @dataclass(frozen=True)
