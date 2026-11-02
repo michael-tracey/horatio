@@ -135,6 +135,8 @@ class Troupe(Imported, Record):
     profile: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
     # Who new players should contact: one of its staff.
     contact_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    # Its written house rules (horatio.written_rules) show on its profile too.
+    written_rules_public: Mapped[bool] = mapped_column(default=False, server_default="false")
 
 
 class ScheduledGame(Record):

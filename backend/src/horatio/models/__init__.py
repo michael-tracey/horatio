@@ -106,8 +106,10 @@ from horatio.models.troupes import (
     XpRangeEntry,
 )
 from horatio.models.viewing import Viewing
+from horatio.models.written_rules import WrittenRule
 
 __all__ = [
+    "WrittenRule",
     "Backstory",
     "BackstoryAnswer",
     "BackstoryFeedback",

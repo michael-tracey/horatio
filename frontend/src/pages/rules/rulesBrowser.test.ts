@@ -79,6 +79,18 @@ describe("entries", () => {
     expect(by.get("Presence")?.rating).toBeNull();
   });
 
+  it("puts the troupe's written rules first, as house rules found by a word in their body", () => {
+    const harpy = { id: "h1", section: "Status", title: "The Harpy vote", body: "Harpies vote **openly** at court.", position: 1, trait: null, page: "312" };
+    const all = entries(data({ troupe_name: "Lords of the Night", written_rules: [harpy] }));
+    expect(all[0]).toMatchObject({ key: "written/h1", section: "written", name: "The Harpy vote", page: "312", written: harpy });
+    expect(names(applyFilters(all, { ...none, query: "openly" }))).toEqual(["The Harpy vote"]);
+    expect(names(applyFilters(all, { ...none, query: "status harpy" }))).toEqual(["The Harpy vote"]);
+    expect(names(applyFilters(all, { ...none, section: "written" }))).toEqual(["The Harpy vote"]);
+    // A written rule is for no clan.
+    expect(names(applyFilters(all, { ...none, clan: "Toreador" }))).not.toContain("The Harpy vote");
+    expect(sectionCounts(all, none).get("written")).toBe(1);
+  });
+
   it("gives a bloodline its clan's rarity", () => {
     const by = new Map(entries(data()).map((e) => [e.name, e]));
     expect(by.get("Toreador: Volgirre")?.rarity?.text).toBe("Common");
