@@ -109,8 +109,101 @@ def test_saving_over_a_newer_version_is_refused(troupe: Troupe) -> None:
     # Another device opened it at version 0 and saves late.
     late = save(troupe.player, agnes, "Born in 1900.", 0)
     assert late.status_code == 409
-    assert "changed since you opened it" in late.json()["detail"]
+    assert "submitted since you started" in late.json()["detail"]
     assert read(troupe.player, agnes)["text"] == "Born in 1890."
+
+
+def draft(person: Person, character_id: str, text: str, based_on: int) -> Any:
+    return person.client.put(
+        f"/characters/{character_id}/backstory/draft", json={"text": text, "based_on": based_on}
+    )
+
+
+def test_a_draft_saves_as_it_is_typed_without_making_a_version(troupe: Troupe) -> None:
+    agnes = new_character(troupe, troupe.player)
+    kept = draft(troupe.player, agnes, "Born in 1890, in", 0)
+    assert kept.status_code == 200, kept.text
+    assert kept.json()["version"] == 0
+    assert kept.json()["draft"] == {
+        **kept.json()["draft"],
+        "text": "Born in 1890, in",
+        "based_on": 0,
+        "behind": False,
+    }
+    assert draft(troupe.player, agnes, "Born in 1890, in Dublin.", 0).status_code == 200
+
+    # Saving the draft makes no version and isn't logged; the backstory reads as before.
+    body = read(troupe.player, agnes)
+    assert body["version"] == 0 and body["text"] == "" and not body["written"]
+    assert body["draft"]["text"] == "Born in 1890, in Dublin."
+    log = troupe.player.client.get(f"/characters/{agnes}/log").json()
+    assert not any("backstory" in e["message"] for e in log)
+
+    # Submitting makes it the next version, and the draft goes.
+    assert save(troupe.player, agnes, "Born in 1890, in Dublin.", 0).status_code == 200
+    body = read(troupe.player, agnes)
+    assert body["version"] == 1 and body["text"] == "Born in 1890, in Dublin."
+    assert body["draft"] is None
+
+    # A draft that says the same as the latest version is no draft.
+    assert draft(troupe.player, agnes, "Born in 1890, in Cork.", 1).json()["draft"]["text"]
+    assert draft(troupe.player, agnes, "Born in 1890, in Dublin.", 1).json()["draft"] is None
+    assert read(troupe.player, agnes)["draft"] is None
+
+    # Discarding it keeps the latest version.
+    draft(troupe.player, agnes, "Something else.", 1)
+    discarded = troupe.player.client.delete(f"/characters/{agnes}/backstory/draft")
+    assert discarded.status_code == 200, discarded.text
+    assert discarded.json()["draft"] is None
+    assert discarded.json()["text"] == "Born in 1890, in Dublin."
+
+    # It is capped like the backstory, and started from a version that exists.
+    too_long = "a" * (backstories.MAX_LENGTH + 1)
+    assert draft(troupe.player, agnes, too_long, 1).status_code == 422
+    assert draft(troupe.player, agnes, "From the future.", 2).status_code == 422
+
+
+def test_a_newer_version_never_loses_the_draft(troupe: Troupe) -> None:
+    agnes = new_character(troupe, troupe.player)
+    assert save(troupe.player, agnes, "Born in 1890.", 0).status_code == 200
+    # On the phone, the player carries on writing.
+    draft(troupe.player, agnes, "Born in 1890.\n\nShe fled to Chicago.", 1)
+    # Meanwhile, on another device, they submit something else.
+    assert save(troupe.player, agnes, "Born in 1900.", 1).status_code == 200
+
+    # The draft is kept, behind the newer version, with how the two differ.
+    body = read(troupe.player, agnes)
+    assert body["text"] == "Born in 1900." and body["version"] == 2
+    assert body["draft"]["text"] == "Born in 1890.\n\nShe fled to Chicago."
+    assert body["draft"]["behind"] and body["draft"]["based_on"] == 1
+    assert {(line["change"], line["text"]) for line in body["draft"]["differences"]} >= {
+        ("removed", "Born in 1900."),
+        ("added", "She fled to Chicago."),
+    }
+    # Submitting it as it stands is refused...
+    assert save(troupe.player, agnes, body["draft"]["text"], 1).status_code == 409
+    # ...until the player keeps theirs over the newer version.
+    kept = draft(troupe.player, agnes, body["draft"]["text"], 2).json()
+    assert kept["version"] == 2
+    assert not kept["draft"]["behind"] and kept["draft"]["differences"] is None
+    assert save(troupe.player, agnes, body["draft"]["text"], 2).status_code == 200
+    assert read(troupe.player, agnes)["draft"] is None
+
+
+def test_staff_never_read_the_draft(troupe: Troupe) -> None:
+    agnes = new_character(troupe, troupe.player)
+    save(troupe.player, agnes, "A secret past.", 0)
+    draft(troupe.player, agnes, "A secret past, and a secret present.", 1)
+    ask_home(troupe.player, agnes, troupe.id)
+    for reader in (troupe.lead, troupe.assistant, troupe.custodian):
+        body = read(reader, agnes)
+        assert body["text"] == "A secret past." and body["draft"] is None
+        assert (
+            reader.client.put(
+                f"/characters/{agnes}/backstory/draft", json={"text": "x", "based_on": 1}
+            ).status_code
+            == 403
+        )
 
 
 def test_only_its_player_and_home_troupe_storytellers_read_it(
@@ -340,6 +433,39 @@ def test_building_again_keeps_what_the_player_wrote_outside_the_sections(
     )
     assert replaced.status_code == 200
     assert "the bastard" not in replaced.json()["text"]
+
+
+def test_building_puts_the_sections_in_the_draft_too(troupe: Troupe) -> None:
+    settings(troupe, "either")
+    made = troupe.lead.client.post(f"/troupes/{troupe.id}/backstory-sets", json={"name": "Basics"})
+    set_id = made.json()["sets"][0]["id"]
+    added = troupe.lead.client.post(
+        f"/backstory-sets/{set_id}/questions", json={"kind": "short", "text": "Where?"}
+    )
+    question = added.json()["sets"][0]["questions"][0]["id"]
+    agnes = new_character(troupe, troupe.player)
+    ask_home(troupe.player, agnes, troupe.id)
+    answer(troupe.player, agnes, question, "Dublin")
+    built = troupe.player.client.post(f"/characters/{agnes}/backstory/sets/{set_id}/build", json={})
+    body = built.json()
+    # The player is writing a draft around the sections when they answer again.
+    mine = f"My own opening.\n\n{body['text']}"
+    draft(troupe.player, agnes, mine, body["version"])
+    answer(troupe.player, agnes, question, "Cork")
+    again = troupe.player.client.post(f"/characters/{agnes}/backstory/sets/{set_id}/build", json={})
+    assert again.status_code == 200, again.text
+    after = again.json()
+    assert "Cork" in after["text"] and "My own opening." not in after["text"]
+    assert after["draft"]["text"].startswith("My own opening.\n\n<!-- questions:")
+    assert "Cork" in after["draft"]["text"] and "Dublin" not in after["draft"]["text"]
+    assert after["draft"]["based_on"] == after["version"] and not after["draft"]["behind"]
+
+    # An edit between the marks in the draft is asked about before building replaces it.
+    edited = after["draft"]["text"].replace("Cork", "Cork, by the sea")
+    draft(troupe.player, agnes, edited, after["version"])
+    assert read(troupe.player, agnes)["edited_sets"] == [set_id]
+    asked = troupe.player.client.post(f"/characters/{agnes}/backstory/sets/{set_id}/build", json={})
+    assert asked.status_code == 409
 
 
 def test_archiving_a_question_keeps_its_answers(troupe: Troupe) -> None:

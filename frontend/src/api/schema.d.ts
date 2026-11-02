@@ -568,7 +568,8 @@ export interface paths {
         get: operations["get_backstory_api_characters__character_id__backstory_get"];
         /**
          * Save Backstory
-         * @description Save the backstory, as opened at `version`: refused if it has changed since.
+         * @description Submit the backstory as its next version, started from `version`: refused if a
+         *     newer one was submitted since. The draft goes.
          */
         put: operations["save_backstory_api_characters__character_id__backstory_put"];
         post?: never;
@@ -610,6 +611,30 @@ export interface paths {
         /** Approve */
         post: operations["approve_api_characters__character_id__backstory_approve_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/backstory/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save Draft
+         * @description Keep the writer's draft as they type, without making a version.
+         */
+        put: operations["save_draft_api_characters__character_id__backstory_draft_put"];
+        post?: never;
+        /**
+         * Discard Draft
+         * @description Throw the draft away, keeping the latest version.
+         */
+        delete: operations["discard_draft_api_characters__character_id__backstory_draft_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -8294,6 +8319,38 @@ export interface components {
              */
             replace_edits: boolean;
         };
+        /** BackstoryDraftIn */
+        BackstoryDraftIn: {
+            /** Based On */
+            based_on: number;
+            /** Text */
+            text: string;
+        };
+        /**
+         * BackstoryDraftOut
+         * @description Its writer's draft, saved as they type and not yet submitted.
+         */
+        BackstoryDraftOut: {
+            /** Based On */
+            based_on: number;
+            /** Behind */
+            behind: boolean;
+            /** Differences */
+            differences?: components["schemas"]["BackstoryLineOut"][] | null;
+            /**
+             * Saved At
+             * Format: date-time
+             */
+            saved_at: string;
+            /** Text */
+            text: string;
+        };
+        /** BackstoryDraftSavedOut */
+        BackstoryDraftSavedOut: {
+            draft: components["schemas"]["BackstoryDraftOut"] | null;
+            /** Version */
+            version: number;
+        };
         /** BackstoryFeedbackIn */
         BackstoryFeedbackIn: {
             /** Body */
@@ -8348,6 +8405,7 @@ export interface components {
             changed_since_approval: boolean;
             /** Differences */
             differences?: components["schemas"]["BackstoryLineOut"][] | null;
+            draft?: components["schemas"]["BackstoryDraftOut"] | null;
             /**
              * Edited Sets
              * @default []
@@ -22374,6 +22432,72 @@ export interface operations {
                 "application/json": components["schemas"]["BackstoryApproveIn"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackstoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_draft_api_characters__character_id__backstory_draft_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackstoryDraftIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackstoryDraftSavedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discard_draft_api_characters__character_id__backstory_draft_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

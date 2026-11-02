@@ -1,0 +1,65 @@
+/* The backstory editor's text, set as the Markdown component sets a backstory
+   (components/Markdown.tsx), so it reads as it will be read. Loaded only with the
+   editor. */
+@reference "../../index.css";
+
+.rich-editor .ProseMirror {
+  @apply min-h-60 px-3 py-2 text-sm leading-relaxed break-words outline-none;
+}
+.rich-editor .ProseMirror > * + *,
+.rich-editor blockquote > * + * {
+  @apply mt-3;
+}
+.rich-editor h1 {
+  @apply text-xl text-gold;
+}
+.rich-editor h2 {
+  @apply text-lg text-gold;
+}
+.rich-editor h3 {
+  @apply text-base text-gold;
+}
+.rich-editor h4 {
+  @apply text-base;
+}
+.rich-editor h5 {
+  @apply text-sm;
+}
+.rich-editor h6 {
+  @apply text-sm text-mist;
+}
+.rich-editor ul {
+  @apply list-disc pl-6;
+}
+.rich-editor ol {
+  @apply list-decimal pl-6;
+}
+.rich-editor li + li {
+  @apply mt-1;
+}
+.rich-editor blockquote {
+  @apply border-l-2 border-ash pl-3 text-mist;
+}
+.rich-editor pre {
+  @apply overflow-x-auto rounded-md border border-ash p-3 text-xs;
+}
+.rich-editor :not(pre) > code {
+  @apply rounded bg-ash px-1 text-xs;
+}
+.rich-editor a {
+  @apply text-gold underline;
+}
+.rich-editor hr {
+  @apply border-ash;
+}
+.rich-editor .ProseMirror-selectednode {
+  @apply outline-2 outline-gold/60;
+}
+/* A question mark or other comment line: a divider that can't be edited. */
+.rich-editor [data-comment] {
+  @apply my-1 border-y border-dashed border-line py-1 text-center font-sans text-xs tracking-wide text-mist uppercase select-none;
+}
+.rich-editor .is-editor-empty:first-child::before {
+  @apply pointer-events-none float-left h-0 text-mist;
+  content: attr(data-placeholder);
+}

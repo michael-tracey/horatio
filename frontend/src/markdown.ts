@@ -22,16 +22,18 @@ export type Block =
   | { t: "ol"; start: number; items: Inline[][] }
   | { t: "quote"; c: Block[] }
   | { t: "code"; v: string }
-  | { t: "hr" };
+  | { t: "hr" }
+  /** A line that is only an HTML comment, as written: kept only when asked for (the editor keeps them). */
+  | { t: "comment"; v: string };
 
-const COMMENT = /^\s*<!--.*-->\s*$/;
+export const COMMENT = /^\s*<!--.*-->\s*$/;
 const HEADING = /^ {0,3}(#{1,6})(?:\s+(.*?))?\s*#*\s*$/;
-const RULE = /^ {0,3}([-*_])(\s*\1){2,}\s*$/;
+export const RULE = /^ {0,3}([-*_])(\s*\1){2,}\s*$/;
 const BULLET = /^ {0,3}[-*+]\s+(.*)$/;
 const NUMBER = /^ {0,3}(\d{1,9})[.)]\s+(.*)$/;
 const QUOTE = /^ {0,3}>\s?(.*)$/;
 const FENCE = /^ {0,3}(```|~~~)/;
-const SAFE_LINK = /^(https?:\/\/|mailto:)/i;
+export const SAFE_LINK = /^(https?:\/\/|mailto:)/i;
 const ESCAPABLE = "\\`*_{}[]()#+-.!>~|<";
 
 /** The heading lines of a backstory, as their text: the sections feedback can be on. */
@@ -42,7 +44,7 @@ export function headings(text: string): string[] {
     .filter((h) => h.length > 0);
 }
 
-export function parseBlocks(text: string): Block[] {
+export function parseBlocks(text: string, keepComments = false): Block[] {
   const lines = text.replace(/\r\n?/g, "\n").split("\n");
   const blocks: Block[] = [];
   let i = 0;
@@ -61,6 +63,7 @@ export function parseBlocks(text: string): Block[] {
     }
     if (COMMENT.test(line)) {
       endParagraph();
+      if (keepComments) blocks.push({ t: "comment", v: line });
       i++;
       continue;
     }
@@ -93,7 +96,7 @@ export function parseBlocks(text: string): Block[] {
       endParagraph();
       const inner: string[] = [];
       while (i < lines.length && QUOTE.test(lines[i]!)) inner.push(lines[i++]!.match(QUOTE)![1]!);
-      blocks.push({ t: "quote", c: parseBlocks(inner.join("\n")) });
+      blocks.push({ t: "quote", c: parseBlocks(inner.join("\n"), keepComments) });
       continue;
     }
     const bullet = line.match(BULLET);

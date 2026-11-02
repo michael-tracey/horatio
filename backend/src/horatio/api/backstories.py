@@ -13,6 +13,7 @@ from horatio import backstories, titles
 from horatio.api.downtimes import staff_troupe
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
+    Backstory,
     BackstoryQuestion,
     BackstoryQuestionSet,
     Character,
@@ -115,6 +116,26 @@ class BackstoryLineOut(BaseModel):
     count: int = 0
 
 
+class BackstoryDraftOut(BaseModel):
+    """Its writer's draft, saved as they type and not yet submitted."""
+
+    text: str
+    # The version it was started from.
+    based_on: int
+    saved_at: datetime
+    # A newer version was submitted since it was started.
+    behind: bool
+    # Once behind: how the draft differs from the newer version, line by line.
+    differences: list[BackstoryLineOut] | None = None
+
+
+class BackstoryDraftSavedOut(BaseModel):
+    # The latest version: newer than the draft's when one was submitted elsewhere.
+    version: int
+    # None once the draft says the same as the latest version.
+    draft: BackstoryDraftOut | None
+
+
 class BackstoryOut(BackstoryStandingOut):
     text: str = ""
     # Name it when saving: a save over a newer version is refused.
@@ -128,12 +149,20 @@ class BackstoryOut(BackstoryStandingOut):
     differences: list[BackstoryLineOut] | None = None
     # For its writer: the question sets whose built sections they have since edited.
     edited_sets: list[uuid.UUID] = []
+    # For its writer: their draft, if they have one. Never for staff reading it.
+    draft: BackstoryDraftOut | None = None
 
 
 class BackstoryIn(BaseModel):
     text: str = Field(max_length=backstories.MAX_LENGTH)
-    # The version it was opened at.
+    # The version it was started from.
     version: int
+
+
+class BackstoryDraftIn(BaseModel):
+    text: str = Field(max_length=backstories.MAX_LENGTH)
+    # The version it was started from.
+    based_on: int
 
 
 class BackstoryFeedbackIn(BaseModel):
@@ -183,6 +212,27 @@ def standing(db: DbSession, user: User, character: Character) -> BackstoryStandi
     )
 
 
+def lines_out(old: str, new: str) -> list[BackstoryLineOut]:
+    return [
+        BackstoryLineOut(change=line.change, text=line.text, count=line.count)  # type: ignore[arg-type]
+        for line in backstories.differences(old, new)
+    ]
+
+
+def draft_out(backstory: Backstory) -> BackstoryDraftOut | None:
+    if backstory.draft_text is None or backstory.draft_at is None:
+        return None
+    based_on = backstory.draft_version or 0
+    behind = based_on != backstory.version
+    return BackstoryDraftOut(
+        text=backstory.draft_text,
+        based_on=based_on,
+        saved_at=backstory.draft_at,
+        behind=behind,
+        differences=lines_out(backstory.text, backstory.draft_text) if behind else None,
+    )
+
+
 def backstory_out(db: DbSession, user: User, character: Character) -> BackstoryOut:
     found = standing(db, user, character)
     backstory = backstories.find(db, character)
@@ -191,10 +241,7 @@ def backstory_out(db: DbSession, user: User, character: Character) -> BackstoryO
     troupe = backstories.review_troupe(db, character)
     differences = None
     if found.review and found.changed_since_approval and backstory.approved_text is not None:
-        differences = [
-            BackstoryLineOut(change=line.change, text=line.text, count=line.count)  # type: ignore[arg-type]
-            for line in backstories.differences(backstory.approved_text, backstory.text)
-        ]
+        differences = lines_out(backstory.approved_text, backstory.text)
     return BackstoryOut(
         **found.model_dump(),
         text=backstory.text,
@@ -218,6 +265,7 @@ def backstory_out(db: DbSession, user: User, character: Character) -> BackstoryO
         edited_sets=[uuid.UUID(s) for s in backstories.edited_sets(backstory)]
         if found.write
         else [],
+        draft=draft_out(backstory) if found.write else None,
     )
 
 
@@ -251,9 +299,30 @@ def get_backstory(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> 
 def save_backstory(
     character_id: uuid.UUID, body: BackstoryIn, db: DbSession, user: CurrentUser
 ) -> BackstoryOut:
-    """Save the backstory, as opened at `version`: refused if it has changed since."""
+    """Submit the backstory as its next version, started from `version`: refused if a
+    newer one was submitted since. The draft goes."""
     character = written_character(db, user, character_id)
     backstories.save(db, user, character, body.text, body.version)
+    db.commit()
+    return backstory_out(db, user, character)
+
+
+@router.put("/characters/{character_id}/backstory/draft")
+def save_draft(
+    character_id: uuid.UUID, body: BackstoryDraftIn, db: DbSession, user: CurrentUser
+) -> BackstoryDraftSavedOut:
+    """Keep the writer's draft as they type, without making a version."""
+    character = written_character(db, user, character_id)
+    backstory = backstories.save_draft(db, character, body.text, body.based_on)
+    db.commit()
+    return BackstoryDraftSavedOut(version=backstory.version, draft=draft_out(backstory))
+
+
+@router.delete("/characters/{character_id}/backstory/draft")
+def discard_draft(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> BackstoryOut:
+    """Throw the draft away, keeping the latest version."""
+    character = written_character(db, user, character_id)
+    backstories.discard_draft(db, character)
     db.commit()
     return backstory_out(db, user, character)
 

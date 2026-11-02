@@ -54,6 +54,8 @@ function block(b: Block, key: number): ReactNode {
       );
     case "hr":
       return <hr key={key} className="border-ash" />;
+    case "comment":
+      return null;
   }
 }
 

@@ -1577,6 +1577,93 @@
         "title": "BackstoryBuildIn",
         "type": "object"
       },
+      "BackstoryDraftIn": {
+        "properties": {
+          "based_on": {
+            "title": "Based On",
+            "type": "integer"
+          },
+          "text": {
+            "maxLength": 500000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "based_on"
+        ],
+        "title": "BackstoryDraftIn",
+        "type": "object"
+      },
+      "BackstoryDraftOut": {
+        "description": "Its writer's draft, saved as they type and not yet submitted.",
+        "properties": {
+          "based_on": {
+            "title": "Based On",
+            "type": "integer"
+          },
+          "behind": {
+            "title": "Behind",
+            "type": "boolean"
+          },
+          "differences": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BackstoryLineOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Differences"
+          },
+          "saved_at": {
+            "format": "date-time",
+            "title": "Saved At",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "based_on",
+          "saved_at",
+          "behind"
+        ],
+        "title": "BackstoryDraftOut",
+        "type": "object"
+      },
+      "BackstoryDraftSavedOut": {
+        "properties": {
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BackstoryDraftOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "draft"
+        ],
+        "title": "BackstoryDraftSavedOut",
+        "type": "object"
+      },
       "BackstoryFeedbackIn": {
         "properties": {
           "body": {
@@ -1717,6 +1804,16 @@
               }
             ],
             "title": "Differences"
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BackstoryDraftOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "edited_sets": {
             "default": [],
@@ -37144,7 +37241,7 @@
         ]
       },
       "put": {
-        "description": "Save the backstory, as opened at `version`: refused if it has changed since.",
+        "description": "Submit the backstory as its next version, started from `version`: refused if a\nnewer one was submitted since. The draft goes.",
         "operationId": "save_backstory_api_characters__character_id__backstory_put",
         "parameters": [
           {
@@ -37308,6 +37405,102 @@
           }
         },
         "summary": "Approve",
+        "tags": [
+          "backstories"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/backstory/draft": {
+      "delete": {
+        "description": "Throw the draft away, keeping the latest version.",
+        "operationId": "discard_draft_api_characters__character_id__backstory_draft_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackstoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Discard Draft",
+        "tags": [
+          "backstories"
+        ]
+      },
+      "put": {
+        "description": "Keep the writer's draft as they type, without making a version.",
+        "operationId": "save_draft_api_characters__character_id__backstory_draft_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackstoryDraftIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackstoryDraftSavedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Draft",
         "tags": [
           "backstories"
         ]

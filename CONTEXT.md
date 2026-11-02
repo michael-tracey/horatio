@@ -246,7 +246,7 @@ A piece of free-form writing attached to a character, such as its background or 
 _Avoid_: Notes, bio, extended text
 
 **Backstory**:
-The Long Text of a character's past: one per character, in Markdown, written freely or built from its troupe's backstory questions, as the troupe's house rules allow. Only its player, the custodian, and the storytellers and assistant storytellers of its home troupe (or of a troupe it asks to make home) read it; an NPC's belongs to its troupe's. Never with the sheet, on the Play View or printed. Its storytellers read it as part of accepting the character, and a troupe can require it approved first, as it does unless it says otherwise.
+The Long Text of a character's past: one per character, in Markdown, written freely or built from its troupe's backstory questions, as the troupe's house rules allow. Only its player, the custodian, and the storytellers and assistant storytellers of its home troupe (or of a troupe it asks to make home) read it; an NPC's belongs to its troupe's. Never with the sheet, on the Play View or printed. Its storytellers read it as part of accepting the character, and a troupe can require it approved first, as it does unless it says otherwise. Its writer works on a draft, saved as they type; the draft becomes the next version only when they submit it, and staff read and approve versions, never the draft.
 _Avoid_: Background (that is a kind of trait), bio, history
 
 **Backstory Question**:
