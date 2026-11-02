@@ -3,7 +3,7 @@ dot, the accelerated chart or the troupe's own, and whether Natural Linguist
 doubles it. Every troupe starts on the book's.
 
 Revision ID: 0137
-Revises: 0127
+Revises: 0134
 Create Date: 2026-11-01 23:00:00.000000
 """
 
@@ -14,7 +14,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0137"
-down_revision: str | None = "0127"
+down_revision: str | None = "0134"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

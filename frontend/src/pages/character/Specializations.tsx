@@ -1,10 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, SheetTraitOut } from "../../api/types";
 import { Button, ErrorText, Input } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { ruleAbout } from "../troupe/teacherRules";
 import { detailNeed, FIELD_PLACEHOLDER, fieldNeeded } from "./fields";
+import { TeacherPicker, useTeacherOptions, type Bought } from "./TeacherPicker";
+import { hasTeacher, NO_TEACHER, teacherFields, type TeacherChoice } from "./teachers";
 
 const CUSTOM = "Custom";
 
@@ -18,6 +21,16 @@ export function useSpecializations(characterId: string) {
 
 export type Kind = NonNullable<ReturnType<typeof useSpecializations>["data"]>[number];
 
+const teacherRulesQuery = (characterId: string) => ({
+  queryKey: ["character-teacher-rules", characterId],
+  queryFn: () => unwrap(api.GET("/api/characters/{character_id}/teacher-rules", { params: { path: { character_id: characterId } } })),
+});
+
+/** The troupe's teacher rules that apply to the character now (horatio.teaching). */
+export function useTeacherRules(characterId: string, enabled: boolean) {
+  return useQuery({ ...teacherRulesQuery(characterId), enabled });
+}
+
 /**
  * A skill or background's specialisations, under it on the sheet: what the
  * character has, and (if they can edit) a way to add another or remove one.
@@ -26,9 +39,16 @@ export type Kind = NonNullable<ReturnType<typeof useSpecializations>["data"]>[nu
 export function SpecializationRow({ character, kind, editable }: { character: CharacterOut; kind: Kind; editable: boolean }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
+  // One a teacher rule is about, waiting for its teacher before it is added.
+  const [teaching, setTeaching] = useState<{ name: string; detail: string; label: string } | null>(null);
+  const [teacher, setTeacher] = useState<TeacherChoice>(NO_TEACHER);
+  const rules = useTeacherRules(character.id, editable);
+  const bought: Bought | null = teaching ? { category: kind.category, name: teaching.name, detail: teaching.detail, rating: 1, current: 0 } : null;
+  // The sheet's guess was wrong when the server says it needs none: add it as it is.
+  const needless = useTeacherOptions(character.id, bought).data === null;
   // The list it shows is asked again first, before the rest of the page.
   const change = useAction(
-    (body: { name: string; detail: string; rating: number }) =>
+    (body: { name: string; detail: string; rating: number; teacher?: string; teacher_id?: string }) =>
       unwrap(
         api.PUT("/api/characters/{character_id}/traits", {
           params: { path: { character_id: character.id } },
@@ -37,6 +57,16 @@ export function SpecializationRow({ character, kind, editable }: { character: Ch
       ),
     [["specializations", character.id]],
   );
+  const client = useQueryClient();
+  /** Add one, first asking for its teacher where a rule is about it. */
+  const add = async (name: string, detail: string) => {
+    // Picked before the rules arrived: they are waited for.
+    const applying = rules.data ?? (await client.fetchQuery(teacherRulesQuery(character.id)));
+    if ((applying ?? []).some((r) => ruleAbout(r, kind.category, name))) {
+      setTeaching({ name, detail, label: name === CUSTOM ? detail : name });
+      setTeacher(NO_TEACHER);
+    } else change.mutate({ name, detail, rating: 1 });
+  };
   const held = kind.held.map((h) => {
     const name = h.name ?? "";
     const detail = h.detail ?? "";
@@ -50,7 +80,7 @@ export function SpecializationRow({ character, kind, editable }: { character: Ch
   const room = kind.counted < Math.max(allowed, 1);
   const pick = (option: string) => {
     // A troupe's options and free text are both stored as Custom with the text.
-    change.mutate(kind.from_troupe ? { name: CUSTOM, detail: option, rating: 1 } : { name: option, detail: "", rating: 1 });
+    void (kind.from_troupe ? add(CUSTOM, option) : add(option, ""));
     setOpen(false);
   };
   const missing = kind.counted < allowed;
@@ -107,7 +137,7 @@ export function SpecializationRow({ character, kind, editable }: { character: Ch
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!text.trim()) return;
-                change.mutate({ name: CUSTOM, detail: text.trim(), rating: 1 });
+                void add(CUSTOM, text.trim());
                 setText("");
                 setOpen(false);
               }}
@@ -118,6 +148,36 @@ export function SpecializationRow({ character, kind, editable }: { character: Ch
               </Button>
             </form>
           )}
+        </div>
+      )}
+      {teaching && (
+        <div className="mt-1.5 flex flex-col gap-1.5 rounded border border-ash bg-night/50 p-2">
+          <span className="text-parchment">Add {teaching.label}</span>
+          <TeacherPicker
+            characterId={character.id}
+            bought={bought!}
+            label={teaching.label}
+            value={teacher}
+            onChange={setTeacher}
+          />
+          <span className="flex flex-wrap gap-1.5">
+            <Button
+              variant="secondary"
+              className="min-h-7 px-2 py-0.5 text-xs"
+              disabled={!(needless || hasTeacher(teacher)) || change.isPending}
+              onClick={() =>
+                change.mutate(
+                  { name: teaching.name, detail: teaching.detail, rating: 1, ...teacherFields(teacher) },
+                  { onSuccess: () => setTeaching(null) },
+                )
+              }
+            >
+              {needless ? "Add" : "Add with this teacher"}
+            </Button>
+            <Button variant="ghost" className="min-h-7 px-2 py-0.5 text-xs" onClick={() => setTeaching(null)}>
+              Cancel
+            </Button>
+          </span>
         </div>
       )}
       <ErrorText error={change.error} />

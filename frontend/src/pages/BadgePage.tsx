@@ -4,6 +4,7 @@ import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { BadgeOut, StaffBadgeOut } from "../api/types";
 import { clanColour, initials } from "../components/avatar";
+import { useClanName } from "../components/ClanNames";
 import { usePreferences } from "../hooks";
 import { PAPERS, pageRule } from "../paper";
 import { BADGE_SIZES, grid, nameSize, pages, perPageText, SQUEEZE, standing, type BadgeSize } from "./badgeLayout";
@@ -336,6 +337,7 @@ function CharacterBadge({
   size: BadgeSize;
 }) {
   const l = LOOKS[look];
+  const named = useClanName();
   const anyStatus = badge.status.length + badge.negative.length > 0;
   const [card, step] = useSqueeze();
   const { inch, pt, name } = scale(size, step);
@@ -351,7 +353,7 @@ function CharacterBadge({
         </p>
       )}
       <p className={`text-center ${l.accent}`} style={{ fontSize: pt(12.5) }}>
-        {standing(badge.clan, badge.social_age)}
+        {standing(named(badge.clan), badge.social_age)}
       </p>
       {badge.titles.length > 0 && (
         <p className="text-center leading-snug italic" style={{ fontSize: pt(11) }}>

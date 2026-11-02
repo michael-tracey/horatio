@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
+import { ClanNames } from "./ClanNames";
 import { pageLabel, TraitInfo } from "./TraitInfo";
 
 afterEach(cleanup);
@@ -25,6 +26,20 @@ describe("TraitInfo", () => {
     fireEvent.click(button);
     expect(button.getAttribute("aria-expanded")).toBe("false");
     expect(document.getElementById(panel.id)).toBeNull();
+  });
+
+  it("names the clan stored as Assamite as the troupe does", () => {
+    const flaw = <TraitInfo name="Assamite: Unbroken" description="Drinking non-Assamite vampire blood hurts you." />;
+    render(<ClanNames name="Banu Haqim">{flaw}</ClanNames>);
+    fireEvent.click(screen.getByRole("button", { name: "Banu Haqim: Unbroken" }));
+    expect(screen.getByText("Drinking non-Banu Haqim vampire blood hurts you.")).toBeTruthy();
+    cleanup();
+    render(<ClanNames name="Assamite">{flaw}</ClanNames>);
+    expect(screen.getByRole("button", { name: "Assamite: Unbroken" })).toBeTruthy();
+    cleanup();
+    // Outside any troupe: the default, Banu Haqim.
+    render(flaw);
+    expect(screen.getByRole("button", { name: "Banu Haqim: Unbroken" })).toBeTruthy();
   });
 
   it("lets several be open at once", () => {

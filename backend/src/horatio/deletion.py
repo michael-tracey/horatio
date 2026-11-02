@@ -36,6 +36,7 @@ from horatio.models import (
     FeedingAdjustment,
     FeedingCard,
     GameAttendance,
+    GameXpAward,
     HomeTroupeChange,
     Location,
     PlayCounter,
@@ -48,6 +49,7 @@ from horatio.models import (
     Retainer,
     SheetVersion,
     Submission,
+    Teaching,
     TraitException,
     TroupeMembership,
     User,
@@ -101,6 +103,8 @@ def delete_character(db: Session, player: User, character: Character) -> None:
         .values(taken_by=None, taken_at=None)
     )
     db.execute(delete(CycleParticipant).where(CycleParticipant.character_id == cid))
+    # Its game XP awards, which point at its XP entries.
+    db.execute(delete(GameXpAward).where(GameXpAward.character_id == cid))
     db.execute(delete(XpEntry).where(XpEntry.character_id == cid))
     db.execute(
         delete(ReconciliationItem).where(ReconciliationItem.home_troupe_change_id.in_(changes))
@@ -109,6 +113,13 @@ def delete_character(db: Session, player: User, character: Character) -> None:
     db.execute(delete(HomeTroupeChange).where(HomeTroupeChange.approval_id.in_(approvals)))
     db.execute(delete(DisciplinePurchase).where(DisciplinePurchase.approval_id.in_(approvals)))
     db.execute(delete(Diablerie).where(Diablerie.character_id == cid))
+    # What it was taught goes; what it taught keeps its name.
+    db.execute(delete(Teaching).where(Teaching.character_id == cid))
+    db.execute(
+        update(Teaching)
+        .where(Teaching.teacher_id == cid)
+        .values(teacher_id=None, spent_game_id=None)
+    )
     db.execute(delete(Approval).where(Approval.character_id == cid))
     db.execute(
         update(TroupeMembership)

@@ -45,7 +45,17 @@ from dataclasses import dataclass, field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, badges, feeding, leaving, preferences, sect_status, social_age, titles
+from horatio import (
+    audit,
+    badges,
+    feeding,
+    leaving,
+    play_status,
+    preferences,
+    sect_status,
+    social_age,
+    titles,
+)
 from horatio.models import Character, CharacterTitle, Troupe, TroupeMembership, User
 from horatio.sheets import conflict, membership, rules_for, sheet_rows, unprocessable
 
@@ -79,6 +89,9 @@ class Entry:
     # The one of its titles that gives it status (horatio.titles).
     active_title: str | None = None
     left_reason: str | None = None
+    # The source of abiding status it carries into a game on now, fixed as it checked
+    # in (horatio.play_status.carried_tonight).
+    carried_source: str | None = None
 
     @property
     def family(self) -> str | None:
@@ -267,6 +280,7 @@ def whos_who(db: Session, troupe: Troupe) -> WhosWho:
     standing = social_age.standings(db, ids)
     sects = titles.character_sects(db, ids)
     visible = badges.visible_to_others(db, characters)
+    tonight = play_status.carried_tonight(db, [c.id for c in characters])
     players = {
         u.id: u
         for u in db.scalars(
@@ -319,6 +333,7 @@ def whos_who(db: Session, troupe: Troupe) -> WhosWho:
                 visiting_from=homes.get(c.home_troupe_id)
                 if visiting and c.home_troupe_id
                 else None,
+                carried_source=t.source if (t := tonight.get(c.id)) else None,
             )
         )
     # Who it was, who played it and why it left: no more.

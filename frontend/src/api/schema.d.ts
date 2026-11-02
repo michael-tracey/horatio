@@ -2767,6 +2767,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/teacher-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Teacher Rules
+         * @description The troupe's teacher rules that apply to the character as its sheet stands
+         *     (who it is, whether creation is finished), for the sheet to ask for a teacher
+         *     before adding a trait one is about. The purchase itself is judged again.
+         */
+        get: operations["character_teacher_rules_api_characters__character_id__teacher_rules_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/teachers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Teacher Options
+         * @description Whether buying the trait from `current` to `rating` needs a teacher here, and
+         *     the troupe's characters who qualify; null if it needs none.
+         */
+        get: operations["teacher_options_api_characters__character_id__teachers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/teaching": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Teaching
+         * @description What the character is asked to teach, and its Willpower out teaching.
+         */
+        get: operations["character_teaching_api_characters__character_id__teaching_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/titles": {
         parameters: {
             query?: never;
@@ -5100,6 +5163,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/teachings/{teaching_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Teaching
+         * @description The teacher's player agrees to teach: the Willpower is spent on the Play View.
+         */
+        post: operations["confirm_teaching_api_teachings__teaching_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/teachings/{teaching_id}/refuse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refuse Teaching
+         * @description The teacher's player will not teach it; staff then decline the purchase.
+         */
+        post: operations["refuse_teaching_api_teachings__teaching_id__refuse_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupe-requests": {
         parameters: {
             query?: never;
@@ -5457,6 +5560,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/book-traits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Book Traits
+         * @description The troupe's changes to book traits, and the characters holding a trait it bans.
+         */
+        get: operations["list_book_traits_api_troupes__troupe_id__book_traits_get"];
+        /**
+         * Change Book Trait
+         * @description Change a book trait in the troupe: ban it, with a reason, or lift the ban (those
+         *     who hold it keep it); give it the troupe's own wording, or take it away; move a
+         *     merit or flaw to another category.
+         */
+        put: operations["change_book_trait_api_troupes__troupe_id__book_traits_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/characters": {
         parameters: {
             query?: never;
@@ -5565,6 +5694,27 @@ export interface paths {
         get?: never;
         /** Change Check */
         put: operations["change_check_api_troupes__troupe_id__checks__key__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/clan-names": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Clan Names
+         * @description What the troupe calls the clan the books call the Assamites (horatio.clan_names).
+         *     Only what is shown changes: the rules and the sheets keep "Assamite".
+         */
+        put: operations["set_clan_names_api_troupes__troupe_id__clan_names_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -5765,6 +5915,33 @@ export interface paths {
         put?: never;
         /** Create Cycle */
         post: operations["create_cycle_api_troupes__troupe_id__cycles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/default-bloodlines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Default Bloodlines
+         * @description The bloodline each clan plays as by default here: the book's for each sect, and
+         *     the troupe's own where it names one (horatio.clan_merits).
+         */
+        get: operations["read_default_bloodlines_api_troupes__troupe_id__default_bloodlines_get"];
+        /**
+         * Set Default Bloodlines
+         * @description Name the bloodline a clan plays as by default here, or the plain clan. Characters
+         *     being built here take the clan merits it means straight away; finished characters
+         *     keep the bloodline and merits they have.
+         */
+        put: operations["set_default_bloodlines_api_troupes__troupe_id__default_bloodlines_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6043,6 +6220,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/free-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Free Changes */
+        get: operations["read_free_changes_api_troupes__troupe_id__free_changes_get"];
+        /**
+         * Set Free Changes
+         * @description Set how long the troupe's new characters stay open to free changes. It applies
+         *     at once to the characters whose free changes are open; turning it on gives them to
+         *     characters accepted from now on.
+         */
+        put: operations["set_free_changes_api_troupes__troupe_id__free_changes_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/game-xp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Game Xp
+         * @description The troupe's game XP settings. Like its house rules, anyone signed in may read them.
+         */
+        get: operations["read_game_xp_api_troupes__troupe_id__game_xp_get"];
+        /**
+         * Save Game Xp
+         * @description Set the troupe's game XP, all of it at once. The defaults are the book's way.
+         */
+        put: operations["save_game_xp_api_troupes__troupe_id__game_xp_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/games": {
         parameters: {
             query?: never;
@@ -6062,6 +6286,28 @@ export interface paths {
          * @description A game the troupe will run, for its profile's schedule.
          */
         post: operations["add_game_api_troupes__troupe_id__games_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/games/missed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Missed Games
+         * @description The troupe's games that have started and whose XP is still to award, newest
+         *     first, with the caller's characters at home here that didn't check in: for a player
+         *     to mark one absentee, where the troupe lets players. Empty where it doesn't.
+         */
+        get: operations["missed_games_api_troupes__troupe_id__games_missed_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6101,6 +6347,32 @@ export interface paths {
         post?: never;
         /** Remove Game */
         delete: operations["remove_game_api_troupes__troupe_id__games__game_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/games/{game_id}/absentee/{character_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Mark Absentee
+         * @description Record a character as absentee for a game it missed (horatio.game_xp): the
+         *     troupe's running staff, or its player where the troupe allows. Payments aren't
+         *     tracked here: marking it is the record.
+         */
+        put: operations["mark_absentee_api_troupes__troupe_id__games__game_id__absentee__character_id__put"];
+        post?: never;
+        /**
+         * Unmark Absentee
+         * @description Take back a character's absentee game. One checked in is left as it is.
+         */
+        delete: operations["unmark_absentee_api_troupes__troupe_id__games__game_id__absentee__character_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -6256,6 +6528,63 @@ export interface paths {
         put: operations["set_golconda_api_troupes__troupe_id__golconda_put"];
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/house-checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Own Checks */
+        get: operations["list_own_checks_api_troupes__troupe_id__house_checks_get"];
+        put?: never;
+        /** Add Own Check */
+        post: operations["add_own_check_api_troupes__troupe_id__house_checks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/house-checks/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Own Check
+         * @description The check as it is being built, in plain words, and the troupe's characters it
+         *     would break; or why it cannot be saved as it is. Nothing is saved.
+         */
+        post: operations["preview_own_check_api_troupes__troupe_id__house_checks_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/house-checks/{check_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Own Check */
+        put: operations["change_own_check_api_troupes__troupe_id__house_checks__check_id__put"];
+        post?: never;
+        /** Remove Own Check */
+        delete: operations["remove_own_check_api_troupes__troupe_id__house_checks__check_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -7466,6 +7795,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/teacher-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Teacher Rules */
+        get: operations["list_teacher_rules_api_troupes__troupe_id__teacher_rules_get"];
+        put?: never;
+        /** Add Teacher Rule */
+        post: operations["add_teacher_rule_api_troupes__troupe_id__teacher_rules_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/teacher-rules/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Teacher Rule
+         * @description The rule as it is being made, in plain words; or why it cannot be saved as it
+         *     is. Nothing is saved.
+         */
+        post: operations["preview_teacher_rule_api_troupes__troupe_id__teacher_rules_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/teacher-rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Teacher Rule */
+        put: operations["change_teacher_rule_api_troupes__troupe_id__teacher_rules__rule_id__put"];
+        post?: never;
+        /** Remove Teacher Rule */
+        delete: operations["remove_teacher_rule_api_troupes__troupe_id__teacher_rules__rule_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/titles": {
         parameters: {
             query?: never;
@@ -7565,6 +7951,74 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/written-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Written Rules
+         * @description The troupe's written house rules, in reading order. Anyone signed in may read
+         *     them, as they may its other house rules.
+         */
+        get: operations["read_written_rules_api_troupes__troupe_id__written_rules_get"];
+        put?: never;
+        /**
+         * Add Written Rule
+         * @description Add a written rule, last in its section.
+         */
+        post: operations["add_written_rule_api_troupes__troupe_id__written_rules_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/written-rules-public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Written Rules Public
+         * @description Show the written rules on the troupe's profile too, or not: off unless staff
+         *     switch it on. A public profile shows them to anyone at all.
+         */
+        put: operations["set_written_rules_public_api_troupes__troupe_id__written_rules_public_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/written-rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change Written Rule
+         * @description Change a written rule's words, section or links; or move it up or down its
+         *     section. Moved to another section, it goes last there.
+         */
+        put: operations["change_written_rule_api_troupes__troupe_id__written_rules__rule_id__put"];
+        post?: never;
+        /** Delete Written Rule */
+        delete: operations["delete_written_rule_api_troupes__troupe_id__written_rules__rule_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -7700,8 +8154,10 @@ export interface components {
             /** Status */
             status: components["schemas"]["SourceStatus"][];
         };
-        /** Absentee */
-        Absentee: {
+        /** AbsenteeMarked */
+        AbsenteeMarked: {
+            /** Absentee */
+            absentee: boolean;
             /**
              * Character Id
              * Format: uuid
@@ -7709,8 +8165,6 @@ export interface components {
             character_id: string;
             /** Character Name */
             character_name: string;
-            /** Player Name */
-            player_name: string;
         };
         /** ActionKindChoiceOut */
         ActionKindChoiceOut: {
@@ -7743,6 +8197,24 @@ export interface components {
         ActiveIn: {
             /** Name */
             name: string;
+        };
+        /**
+         * Adjustment
+         * @description XP staff tick for a character when awarding a game: "Helped +1", at most
+         *     `per_month` times a calendar month (None for no limit).
+         */
+        Adjustment: {
+            /** Amount */
+            amount: number;
+            /**
+             * Key
+             * @default
+             */
+            key: string;
+            /** Name */
+            name: string;
+            /** Per Month */
+            per_month?: number | null;
         };
         /** AdjustmentIn */
         AdjustmentIn: {
@@ -8166,11 +8638,24 @@ export interface components {
             checked_in_at: string;
             /** Home */
             home: boolean;
+            /**
+             * Kind
+             * @default attended
+             * @enum {string}
+             */
+            kind: "attended" | "absentee";
             /** Month Xp */
             month_xp: number;
             player: components["schemas"]["ProfilePerson"];
             /** Rested */
             rested: boolean | null;
+            /** Status Source */
+            status_source?: string | null;
+            /**
+             * Status To Choose
+             * @default false
+             */
+            status_to_choose: boolean;
         };
         /**
          * AttributeChange
@@ -8797,6 +9282,42 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /**
+         * Band
+         * @description One row of the chart: earned XP up to and including `up_to` (None for the last
+         *     row, which has no top), and the XP for a game attended and an absentee game.
+         */
+        Band: {
+            /** Absentee */
+            absentee: number;
+            /** Attended */
+            attended: number;
+            /** Up To */
+            up_to?: number | null;
+        };
+        /**
+         * BannedHolderOut
+         * @description A character playing by the troupe's rules who holds a trait it bans.
+         */
+        BannedHolderOut: {
+            /** Category */
+            category: string;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Detail */
+            detail: string;
+            /** Excepted */
+            excepted: boolean;
+            /** Name */
+            name: string;
+            /** Splat */
+            splat: string;
+        };
         /** BlockChoicesOut */
         BlockChoicesOut: {
             /** Entries */
@@ -8914,6 +9435,94 @@ export interface components {
              * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
              */
             file: string;
+        };
+        /**
+         * BookTraitChange
+         * @description A change to one book trait. Only the fields given change; the rest stay.
+         */
+        BookTraitChange: {
+            /** Ban Reason */
+            ban_reason?: string | null;
+            /** Banned */
+            banned?: boolean | null;
+            /** Category */
+            category: string;
+            /** Kind */
+            kind?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /** Wording */
+            wording?: string | null;
+            /** Wording Mode */
+            wording_mode?: ("added" | "replaces") | null;
+        };
+        /**
+         * BookTraitOut
+         * @description A troupe's change to one book trait.
+         */
+        BookTraitOut: {
+            /** Ban Reason */
+            ban_reason: string;
+            /** Banned */
+            banned: boolean;
+            /** Book Kind */
+            book_kind: string | null;
+            /** Category */
+            category: string;
+            /** Category Name */
+            category_name: string;
+            /** Kind */
+            kind: string | null;
+            /** Name */
+            name: string;
+            /** Page */
+            page: string | null;
+            /** Splat */
+            splat: string;
+            /** Splat Label */
+            splat_label: string;
+            /** Wording */
+            wording: string;
+            /**
+             * Wording Mode
+             * @enum {string}
+             */
+            wording_mode: "added" | "replaces";
+        };
+        /** BookTraitsOut */
+        BookTraitsOut: {
+            /** Changes */
+            changes: components["schemas"]["BookTraitOut"][];
+            /** Holders */
+            holders: components["schemas"]["BannedHolderOut"][];
+            /**
+             * Kinds
+             * @default {}
+             */
+            kinds: {
+                [key: string]: {
+                    [key: string]: string[];
+                };
+            };
+        };
+        /** BreakingOut */
+        BreakingOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Kind */
+            kind: string;
+            /** Message */
+            message: string;
+            /** Name */
+            name: string;
         };
         /**
          * BudgetChange
@@ -9081,6 +9690,7 @@ export interface components {
              * @default []
              */
             repriced: components["schemas"]["RepricedOut"][];
+            teacher?: components["schemas"]["TeacherNeedOut"] | null;
         };
         /** CartOut */
         CartOut: {
@@ -9408,6 +10018,12 @@ export interface components {
             asking_troupe_id: string | null;
             /** Asking Troupe Name */
             asking_troupe_name: string | null;
+            /**
+             * Assamite Name
+             * @default Banu Haqim
+             * @enum {string}
+             */
+            assamite_name: "Banu Haqim" | "Assamite";
             /** Building Troupe Id */
             building_troupe_id: string | null;
             /** Clan */
@@ -9463,6 +10079,12 @@ export interface components {
         CharacterOut: {
             /** Asking Troupe Id */
             asking_troupe_id: string | null;
+            /**
+             * Assamite Name
+             * @default Banu Haqim
+             * @enum {string}
+             */
+            assamite_name: "Banu Haqim" | "Assamite";
             /** Building Troupe Id */
             building_troupe_id: string | null;
             /** Clan */
@@ -9568,6 +10190,26 @@ export interface components {
             /** Why */
             why: string | null;
         };
+        /**
+         * CharacterXpIn
+         * @description Staff's choice for one character: adjustments ticked, or its figure set by hand.
+         */
+        CharacterXpIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Override */
+            override?: number | null;
+            /**
+             * Override Reason
+             * @default
+             */
+            override_reason: string;
+            /** Ticks */
+            ticks?: string[];
+        };
         /** CheckChange */
         CheckChange: {
             /** Strength */
@@ -9584,6 +10226,18 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /**
+             * Status At Checkin
+             * @default false
+             */
+            status_at_checkin: boolean;
+            /** Status Source */
+            status_source?: string | null;
+            /**
+             * Status Sources
+             * @default []
+             */
+            status_sources: components["schemas"]["AbidingSourceOut"][];
         };
         /** CheckInIn */
         CheckInIn: {
@@ -9597,6 +10251,8 @@ export interface components {
              * @default true
              */
             rested: boolean;
+            /** Source */
+            source?: string | null;
         };
         /**
          * CheckInOffer
@@ -9792,6 +10448,14 @@ export interface components {
             points: number;
             /** Why */
             why: string;
+        };
+        /** ClanNamesIn */
+        ClanNamesIn: {
+            /**
+             * Assamite
+             * @enum {string}
+             */
+            assamite: "Banu Haqim" | "Assamite";
         };
         /** ClanRarityIn */
         ClanRarityIn: {
@@ -10383,6 +11047,33 @@ export interface components {
              */
             reason: string;
         };
+        /** DefaultBloodlineRow */
+        DefaultBloodlineRow: {
+            /** Bloodlines */
+            bloodlines: string[];
+            /** Book */
+            book: {
+                [key: string]: string;
+            };
+            /** Clan */
+            clan: string;
+            /** House */
+            house: string | null;
+        };
+        /** DefaultBloodlinesIn */
+        DefaultBloodlinesIn: {
+            /** Defaults */
+            defaults: {
+                [key: string]: string;
+            };
+        };
+        /** DefaultBloodlinesOut */
+        DefaultBloodlinesOut: {
+            /** Clans */
+            clans: components["schemas"]["DefaultBloodlineRow"][];
+            /** Setting */
+            setting: string | null;
+        };
         /** DeliverIn */
         DeliverIn: {
             /**
@@ -10720,6 +11411,11 @@ export interface components {
             cost: number;
             /** Detail */
             detail: string;
+            /**
+             * Free Change
+             * @default false
+             */
+            free_change: boolean;
             /** From Rating */
             from_rating: number;
             /** House */
@@ -10728,6 +11424,7 @@ export interface components {
             name: string;
             /** Teacher */
             teacher: string;
+            teaching?: components["schemas"]["horatio__api__approvals__TeachingOut"] | null;
             /** To Rating */
             to_rating: number;
         };
@@ -12164,6 +12861,72 @@ export interface components {
             times: number;
         };
         /**
+         * FreeChangesOut
+         * @description The character's free changes as a new character, while they are open
+         *     (horatio.free_changes): lowering or removing a trait refunds its full XP.
+         */
+        FreeChangesOut: {
+            /** Ends At */
+            ends_at: string | null;
+            /** Excluded */
+            excluded: string[];
+            /** Games Left */
+            games_left: number | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "date" | "games";
+        };
+        /** FreeChangesSetting */
+        FreeChangesSetting: {
+            /**
+             * Days
+             * @default 30
+             */
+            days: number;
+            /**
+             * Excluded
+             * @default []
+             */
+            excluded: components["schemas"]["TraitRef"][];
+            /**
+             * Games
+             * @default 3
+             */
+            games: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "none" | "date" | "games";
+        };
+        /** FreeChangesSettingOut */
+        FreeChangesSettingOut: {
+            /**
+             * Days
+             * @default 30
+             */
+            days: number;
+            /**
+             * Excluded
+             * @default []
+             */
+            excluded: components["schemas"]["TraitRef"][];
+            /**
+             * Games
+             * @default 3
+             */
+            games: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "none" | "date" | "games";
+            /** Text */
+            text: string;
+        };
+        /**
          * FreeChoicesChange
          * @description Replace the free traits chosen for a held merit.
          */
@@ -12304,6 +13067,11 @@ export interface components {
         };
         /** GameNight */
         GameNight: {
+            /**
+             * Absentees
+             * @default []
+             */
+            absentees: components["schemas"]["Attendee"][];
             /** Attendees */
             attendees: components["schemas"]["Attendee"][];
             /** Can Award */
@@ -12314,10 +13082,27 @@ export interface components {
              * Format: date-time
              */
             ends_at: string;
+            /**
+             * @default {
+             *       "absentee": false,
+             *       "absentee_by_players": false,
+             *       "absentee_downtime": false,
+             *       "absentee_lookback_days": 60,
+             *       "adjustments": [],
+             *       "bands": [],
+             *       "cap": "warn"
+             *     }
+             */
+            game_xp: components["schemas"]["GameXpSettings"];
             /** Game Xp High */
             game_xp_high: number;
             /** Game Xp Low */
             game_xp_low: number;
+            /**
+             * Given
+             * @default []
+             */
+            given: components["schemas"]["GameXpGiven"][];
             /**
              * Id
              * Format: uuid
@@ -12326,7 +13111,7 @@ export interface components {
             /** Monthly Xp */
             monthly_xp: number;
             /** Others */
-            others: components["schemas"]["Absentee"][];
+            others: components["schemas"]["NotHere"][];
             /** Session Xp */
             session_xp: number;
             /**
@@ -12340,6 +13125,11 @@ export interface components {
              */
             troupe_id: string;
             xp: components["schemas"]["GameXp"];
+            /**
+             * Xp Lines
+             * @default []
+             */
+            xp_lines: components["schemas"]["XpLine"][];
         };
         /** GameOut */
         GameOut: {
@@ -12408,6 +13198,11 @@ export interface components {
         };
         /** GameXpAwarded */
         GameXpAwarded: {
+            /**
+             * Capped
+             * @default []
+             */
+            capped: string[];
             /** Characters */
             characters: number;
             /** Past Monthly */
@@ -12415,10 +13210,46 @@ export interface components {
             /** Total */
             total: number;
         };
-        /** GameXpIn */
-        GameXpIn: {
+        /**
+         * GameXpGiven
+         * @description What one character got for the game, once awarded.
+         */
+        GameXpGiven: {
+            /** Adjustments */
+            adjustments: string[];
             /** Amount */
             amount: number;
+            /** Band */
+            band: string | null;
+            /** Capped */
+            capped: number;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Figure */
+            figure: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "attended" | "absentee";
+            /** Override */
+            override: number | null;
+            /** Override Reason */
+            override_reason: string;
+        };
+        /** GameXpIn */
+        GameXpIn: {
+            /** Absentee Amount */
+            absentee_amount?: number | null;
+            /** Amount */
+            amount: number;
+            /** Characters */
+            characters?: components["schemas"]["CharacterXpIn"][];
             /** Reason */
             reason: string;
             /**
@@ -12426,6 +13257,50 @@ export interface components {
              * @default true
              */
             to_range: boolean;
+        };
+        /**
+         * GameXpSettings
+         * @description A troupe's game XP, as Troupe.game_xp keeps it. The defaults are the book's way.
+         */
+        GameXpSettings: {
+            /**
+             * Absentee
+             * @default false
+             */
+            absentee: boolean;
+            /**
+             * Absentee By Players
+             * @default false
+             */
+            absentee_by_players: boolean;
+            /**
+             * Absentee Downtime
+             * @default false
+             */
+            absentee_downtime: boolean;
+            /**
+             * Absentee Lookback Days
+             * @default 60
+             */
+            absentee_lookback_days: number;
+            /**
+             * Adjustments
+             * @default []
+             */
+            adjustments: components["schemas"]["Adjustment"][];
+            /**
+             * Bands
+             * @default []
+             */
+            bands: components["schemas"]["Band"][];
+            /**
+             * Cap
+             * @default warn
+             * @enum {string}
+             */
+            cap: "warn" | "cap" | "off";
+            /** Monthly Xp */
+            monthly_xp?: number | null;
         };
         /** GatheredOut */
         GatheredOut: {
@@ -12867,6 +13742,11 @@ export interface components {
         HouseCheckOut: {
             /** House */
             house: string;
+            /**
+             * Own
+             * @default false
+             */
+            own: boolean;
             /** Page */
             page: string | null;
             /** Rule */
@@ -12989,6 +13869,11 @@ export interface components {
             backstory_mode: string;
             /** Backstory Required */
             backstory_required: boolean;
+            /**
+             * Book Traits
+             * @default []
+             */
+            book_traits: components["schemas"]["BookTraitOut"][];
             /** Checks */
             checks: components["schemas"]["HouseCheckOut"][];
             /** House Traits */
@@ -12997,6 +13882,11 @@ export interface components {
             other: components["schemas"]["HouseSettingOut"][];
             /** Splats */
             splats: components["schemas"]["SplatHouseRulesOut"][];
+            /**
+             * Teachers
+             * @default []
+             */
+            teachers: string[];
         };
         /**
          * HouseSettingOut
@@ -14792,6 +15682,32 @@ export interface components {
             option: number;
         };
         /**
+         * MissedGame
+         * @description A game that has started, whose XP is still to award, and the caller's characters
+         *     at home in the troupe: for a player to mark one absentee, where the troupe allows.
+         */
+        MissedGame: {
+            /** Absentee */
+            absentee: string[];
+            /** Characters */
+            characters: components["schemas"]["CheckInCharacter"][];
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /**
+             * Game Id
+             * Format: uuid
+             */
+            game_id: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+        };
+        /**
          * ModifierChange
          * @description Whatever of a modifier is changing; the rest stays.
          */
@@ -14905,6 +15821,8 @@ export interface components {
             answers: components["schemas"]["AnswerOut"][];
             /** Breakdown */
             breakdown: components["schemas"]["AllowanceLineOut"][];
+            /** Closed */
+            closed?: string | null;
             /**
              * Closes At
              * Format: date-time
@@ -15172,6 +16090,23 @@ export interface components {
             /** Text */
             text: string | null;
         };
+        /** NotHere */
+        NotHere: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /**
+             * Home
+             * @default true
+             */
+            home: boolean;
+            /** Player Name */
+            player_name: string;
+        };
         /** NoteIn */
         NoteIn: {
             /** Note */
@@ -15252,6 +16187,12 @@ export interface components {
         NpcOut: {
             /** Asking Troupe Id */
             asking_troupe_id: string | null;
+            /**
+             * Assamite Name
+             * @default Banu Haqim
+             * @enum {string}
+             */
+            assamite_name: "Banu Haqim" | "Assamite";
             /** Building Troupe Id */
             building_troupe_id: string | null;
             /** Clan */
@@ -15368,6 +16309,8 @@ export interface components {
         OtherOut: {
             /** Accepted */
             accepted: string | null;
+            /** Carried Source */
+            carried_source?: string | null;
             /**
              * Character Id
              * Format: uuid
@@ -15433,6 +16376,104 @@ export interface components {
              * @enum {string}
              */
             type: "elite" | "underworld";
+        };
+        /** OwnCheckIn */
+        OwnCheckIn: {
+            /** Category */
+            category: string;
+            /** Condition */
+            condition: {
+                [key: string]: unknown;
+            };
+            /** Kind */
+            kind?: string | null;
+            /** Message */
+            message: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "requires" | "forbids";
+            /** Name */
+            name?: string | null;
+            /** Name Prefix */
+            name_prefix?: string | null;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /** Step */
+            step?: string | null;
+            /**
+             * Strength
+             * @default refuse
+             * @enum {string}
+             */
+            strength: "refuse" | "complete" | "review" | "note";
+        };
+        /** OwnCheckOut */
+        OwnCheckOut: {
+            /** Breaking */
+            breaking: components["schemas"]["BreakingOut"][];
+            /** Category */
+            category: string;
+            /** Condition */
+            condition: {
+                [key: string]: unknown;
+            };
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Key */
+            key: string;
+            /** Kind */
+            kind?: string | null;
+            /** Message */
+            message: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "requires" | "forbids";
+            /** Name */
+            name?: string | null;
+            /** Name Prefix */
+            name_prefix?: string | null;
+            /** Problem */
+            problem: string | null;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /** Step */
+            step?: string | null;
+            /**
+             * Strength
+             * @default refuse
+             * @enum {string}
+             */
+            strength: "refuse" | "complete" | "review" | "note";
+            /** Text */
+            text: string;
+        };
+        /** OwnCheckPreviewIn */
+        OwnCheckPreviewIn: {
+            check: components["schemas"]["OwnCheckIn"];
+            /** House Check Id */
+            house_check_id?: string | null;
+        };
+        /** OwnCheckPreviewOut */
+        OwnCheckPreviewOut: {
+            /** Breaking */
+            breaking: components["schemas"]["BreakingOut"][];
+            /** Problem */
+            problem: string | null;
+            /** Text */
+            text: string;
         };
         /**
          * OwnEntryOut
@@ -15760,6 +16801,11 @@ export interface components {
             cost: number;
             /** Detail */
             detail: string;
+            /**
+             * Free Change
+             * @default false
+             */
+            free_change: boolean;
             /** From Rating */
             from_rating: number;
             /**
@@ -16049,6 +17095,11 @@ export interface components {
             source: string | null;
             /** Source Chosen */
             source_chosen: boolean;
+            /**
+             * Source Fixed
+             * @default false
+             */
+            source_fixed: boolean;
             /** Sources */
             sources: components["schemas"]["AbidingSourceOut"][];
             /** Suppressed */
@@ -16091,6 +17142,17 @@ export interface components {
             rating: number | null;
             /** Specialties */
             specialties: string[];
+            /**
+             * Wording
+             * @default
+             */
+            wording: string;
+            /**
+             * Wording Mode
+             * @default added
+             * @enum {string}
+             */
+            wording_mode: "added" | "replaces";
         };
         /** PlayView */
         PlayView: {
@@ -16195,6 +17257,8 @@ export interface components {
             stock?: components["schemas"]["StockNpcOut"] | null;
             vitae?: components["schemas"]["VitaeOut"] | null;
             willpower: components["schemas"]["Tracker"];
+            /** Willpower Lent */
+            willpower_lent?: string | null;
         };
         /** PlayerCharacter */
         PlayerCharacter: {
@@ -16829,6 +17893,11 @@ export interface components {
             troupe_name: string | null;
             /** Troupe Portrait */
             troupe_portrait: string | null;
+            /**
+             * Wording
+             * @default []
+             */
+            wording: components["schemas"]["PrintedWording"][];
         };
         /** PrintedTrait */
         PrintedTrait: {
@@ -16854,6 +17923,24 @@ export interface components {
             specializes: {
                 [key: string]: string;
             } | null;
+        };
+        /**
+         * PrintedWording
+         * @description The troupe's own wording for a trait the character holds (horatio.book_traits),
+         *     printed after the sheet with the book's page.
+         */
+        PrintedWording: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "added" | "replaces";
+            /** Name */
+            name: string;
+            /** Page */
+            page: string | null;
+            /** Text */
+            text: string;
         };
         /**
          * ProblemOut
@@ -17529,6 +18616,11 @@ export interface components {
             /** Asked At */
             asked_at?: string | null;
             /**
+             * Banned
+             * @default []
+             */
+            banned: string[];
+            /**
              * Character Id
              * Format: uuid
              */
@@ -17610,6 +18702,13 @@ export interface components {
         RarityOut: {
             /** Clan */
             clan: string;
+            /** Default */
+            default?: string | null;
+            /**
+             * Default House
+             * @default false
+             */
+            default_house: boolean;
             /** House */
             house: boolean;
             /** Page */
@@ -18299,6 +19398,8 @@ export interface components {
             requirements: components["schemas"]["TraitCheckOut"][];
             /** Troupe Name */
             troupe_name: string | null;
+            /** Written Rules */
+            written_rules?: components["schemas"]["WrittenRuleOut"][];
         };
         /** SampleOut */
         SampleOut: {
@@ -18642,6 +19743,8 @@ export interface components {
              * @default
              */
             teacher: string;
+            /** Teacher Id */
+            teacher_id?: string | null;
         };
         /** Setting */
         Setting: {
@@ -18916,6 +20019,7 @@ export interface components {
              * @default []
              */
             exceptions: components["schemas"]["ExceptionOut"][];
+            free_changes?: components["schemas"]["FreeChangesOut"] | null;
             /** Home Troupe Id */
             home_troupe_id: string | null;
             /** Kind */
@@ -19341,6 +20445,11 @@ export interface components {
             chosen: {
                 [key: string]: string;
             };
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
             /** Source */
             source?: string | null;
         };
@@ -19897,6 +21006,194 @@ export interface components {
             /** Taps */
             taps: components["schemas"]["TapIn"][];
         };
+        /** TeacherChoiceOut */
+        TeacherChoiceOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+        };
+        /**
+         * TeacherNeedOut
+         * @description A troupe's teacher rule asks a teacher for a change (horatio.teaching).
+         */
+        TeacherNeedOut: {
+            /** Games */
+            games: number;
+            /** Rating */
+            rating: number;
+            /** Rule */
+            rule: string;
+            /** Willpower */
+            willpower: number;
+        };
+        /**
+         * TeacherOptionsOut
+         * @description A purchase needs a teacher: the rule, and who in the troupe could teach it.
+         */
+        TeacherOptionsOut: {
+            /** Candidates */
+            candidates: components["schemas"]["TeacherChoiceOut"][];
+            /** Games */
+            games: number;
+            /** Rating */
+            rating: number;
+            /** Rule */
+            rule: string;
+            /** Willpower */
+            willpower: number;
+        };
+        /**
+         * TeacherRuleBriefOut
+         * @description A teacher rule that applies to the character now: what it is about.
+         */
+        TeacherRuleBriefOut: {
+            /** Category */
+            category: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name Prefix */
+            name_prefix: string | null;
+            /** Names */
+            names: string[];
+            /** Text */
+            text: string;
+        };
+        /** TeacherRuleIn */
+        TeacherRuleIn: {
+            /**
+             * Actions
+             * @default 0
+             */
+            actions: number;
+            /**
+             * Always
+             * @default false
+             */
+            always: boolean;
+            /** Category */
+            category: string;
+            /** Condition */
+            condition?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Games
+             * @default 0
+             */
+            games: number;
+            /**
+             * Holds
+             * @default same
+             * @enum {string}
+             */
+            holds: "same" | "rating";
+            /** Name Prefix */
+            name_prefix?: string | null;
+            /** Names */
+            names?: string[];
+            /** Rating */
+            rating?: number | null;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /**
+             * Willpower
+             * @default 0
+             */
+            willpower: number;
+        };
+        /** TeacherRuleOut */
+        TeacherRuleOut: {
+            /**
+             * Actions
+             * @default 0
+             */
+            actions: number;
+            /**
+             * Always
+             * @default false
+             */
+            always: boolean;
+            /** Category */
+            category: string;
+            /** Condition */
+            condition?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Games
+             * @default 0
+             */
+            games: number;
+            /**
+             * Holds
+             * @default same
+             * @enum {string}
+             */
+            holds: "same" | "rating";
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name Prefix */
+            name_prefix?: string | null;
+            /** Names */
+            names?: string[];
+            /** Problem */
+            problem: string | null;
+            /** Rating */
+            rating?: number | null;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /** Text */
+            text: string;
+            /**
+             * Willpower
+             * @default 0
+             */
+            willpower: number;
+        };
+        /** TeacherRulePreviewOut */
+        TeacherRulePreviewOut: {
+            /** Problem */
+            problem: string | null;
+            /** Text */
+            text: string;
+        };
+        /**
+         * TeachingAskOut
+         * @description A purchase asking the character to teach it, at the cost of its Willpower.
+         */
+        TeachingAskOut: {
+            /** Games */
+            games: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Student */
+            student: string;
+            /** What */
+            what: string;
+            /** Willpower */
+            willpower: number;
+        };
         /** TemporaryDerangement */
         TemporaryDerangement: {
             /** Held */
@@ -20243,6 +21540,35 @@ export interface components {
              * @default
              */
             teacher: string;
+            /** Teacher Id */
+            teacher_id?: string | null;
+        };
+        /**
+         * TraitChangeOut
+         * @description A troupe's change to a book trait (horatio.book_traits): banned in the troupe,
+         *     with the reason its players see ("" for none); its own wording, in Markdown ("" for
+         *     none), added to the book's summary or replacing it.
+         */
+        TraitChangeOut: {
+            /** Ban Reason */
+            ban_reason: string;
+            /** Banned */
+            banned: boolean;
+            /** Book Kind */
+            book_kind?: string | null;
+            /** Kind */
+            kind?: string | null;
+            /**
+             * Wording
+             * @default
+             */
+            wording: string;
+            /**
+             * Wording Mode
+             * @default added
+             * @enum {string}
+             */
+            wording_mode: "added" | "replaces";
         };
         /**
          * TraitCheckOut
@@ -20285,6 +21611,21 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * TraitLink
+         * @description A trait of the rule set for `splat`, or one of the troupe's own merits or flaws.
+         */
+        TraitLink: {
+            /** Category */
+            category: string;
+            /** Name */
+            name: string;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+        };
         /** TraitNeed */
         TraitNeed: {
             /**
@@ -20316,6 +21657,7 @@ export interface components {
             attribute: string | null;
             /** Category */
             category: string;
+            changed?: components["schemas"]["TraitChangeOut"] | null;
             /** Choices */
             choices?: string[] | null;
             /** Description */
@@ -20346,6 +21688,15 @@ export interface components {
             weakness?: string | null;
             /** Weakness Page */
             weakness_page?: string | null;
+            /** Written Rules */
+            written_rules?: components["schemas"]["WrittenRuleRef"][];
+        };
+        /** TraitRef */
+        TraitRef: {
+            /** Category */
+            category: string;
+            /** Name */
+            name: string;
         };
         /** TraitRefOut */
         TraitRefOut: {
@@ -20376,6 +21727,8 @@ export interface components {
             session_xp?: number | null;
             /** Starting Xp */
             starting_xp?: number | null;
+            /** Status At Checkin */
+            status_at_checkin?: boolean | null;
             /** Status By */
             status_by?: ("players" | "staff") | null;
             /** Titles By */
@@ -20436,6 +21789,12 @@ export interface components {
             allowed_splats: string[];
             /** Archived */
             archived: boolean;
+            /**
+             * Assamite Name
+             * @default Banu Haqim
+             * @enum {string}
+             */
+            assamite_name: "Banu Haqim" | "Assamite";
             /** Badge Pronouns */
             badge_pronouns: boolean;
             /** Badge Status */
@@ -20511,6 +21870,11 @@ export interface components {
             starting_blood: number | null;
             /** Starting Xp */
             starting_xp: number;
+            /**
+             * Status At Checkin
+             * @default false
+             */
+            status_at_checkin: boolean;
             /** Status By */
             status_by: string;
             /** Titles By */
@@ -20633,6 +21997,8 @@ export interface components {
             schedule: string;
             setting: components["schemas"]["Setting"];
             venue: components["schemas"]["VenueOut"];
+            /** Written Rules */
+            written_rules: components["schemas"]["WrittenRuleOut"][];
         };
         /** TroupeRequestOut */
         TroupeRequestOut: {
@@ -20901,6 +22267,8 @@ export interface components {
             active_title?: string | null;
             /** Bans */
             bans: string[];
+            /** Carried Source */
+            carried_source?: string | null;
             /**
              * Character Id
              * Format: uuid
@@ -21089,6 +22457,83 @@ export interface components {
             /** Body */
             body: string;
         };
+        /** WrittenRuleChange */
+        WrittenRuleChange: {
+            /**
+             * Body
+             * @default
+             */
+            body: string;
+            /** Move */
+            move?: ("up" | "down") | null;
+            /** Page */
+            page?: string | null;
+            /**
+             * Section
+             * @default
+             */
+            section: string;
+            /** Title */
+            title: string;
+            trait?: components["schemas"]["TraitLink"] | null;
+        };
+        /** WrittenRuleIn */
+        WrittenRuleIn: {
+            /**
+             * Body
+             * @default
+             */
+            body: string;
+            /** Page */
+            page?: string | null;
+            /**
+             * Section
+             * @default
+             */
+            section: string;
+            /** Title */
+            title: string;
+            trait?: components["schemas"]["TraitLink"] | null;
+        };
+        /** WrittenRuleOut */
+        WrittenRuleOut: {
+            /** Body */
+            body: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Page */
+            page: string | null;
+            /** Position */
+            position: number;
+            /** Section */
+            section: string;
+            /** Title */
+            title: string;
+            trait: components["schemas"]["TraitLink"] | null;
+        };
+        /**
+         * WrittenRuleRef
+         * @description A troupe's written rule about a trait, to link to where the troupe's players read it.
+         */
+        WrittenRuleRef: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+        };
+        /** WrittenRulesOut */
+        WrittenRulesOut: {
+            /** Public */
+            public: boolean;
+            /** Rules */
+            rules: components["schemas"]["WrittenRuleOut"][];
+        };
         /** XpAward */
         XpAward: {
             /** Amount */
@@ -21178,6 +22623,37 @@ export interface components {
             to_rating: number | null;
             /** Trait */
             trait: string | null;
+        };
+        /**
+         * XpLine
+         * @description What one character would get for the game (horatio.game_xp): its attendance
+         *     kind, its band and the chart's figure, and what the monthly cap leaves.
+         */
+        XpLine: {
+            /** Band */
+            band: string | null;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Earned Xp */
+            earned_xp: number;
+            /** Figure */
+            figure: number | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "attended" | "absentee";
+            /** Month Xp */
+            month_xp: number;
+            /** Used */
+            used: {
+                [key: string]: number;
+            };
         };
         /** XpRangeChange */
         XpRangeChange: {
@@ -21304,6 +22780,25 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /**
+         * TeachingOut
+         * @description Who teaches a purchase a troupe's teacher rule asked a teacher for
+         *     (horatio.teaching), and the teacher's Willpower.
+         */
+        horatio__api__approvals__TeachingOut: {
+            /** Actions */
+            actions: number;
+            /** Games */
+            games: number;
+            /** In Troupe */
+            in_troupe: boolean;
+            /** Status */
+            status: string;
+            /** Teacher */
+            teacher: string;
+            /** Willpower */
+            willpower: number;
+        };
         /** BlockIn */
         horatio__api__influence_effects__BlockIn: {
             /** Activity */
@@ -21348,6 +22843,13 @@ export interface components {
              * @default false
              */
             email: boolean;
+        };
+        /** TeachingOut */
+        horatio__api__teachers__TeachingOut: {
+            /** Asked */
+            asked: components["schemas"]["TeachingAskOut"][];
+            /** Lent */
+            lent: string | null;
         };
     };
     responses: never;
@@ -26544,6 +28046,105 @@ export interface operations {
             };
         };
     };
+    character_teacher_rules_api_characters__character_id__teacher_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherRuleBriefOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    teacher_options_api_characters__character_id__teachers_get: {
+        parameters: {
+            query: {
+                category: string;
+                name: string;
+                rating?: number;
+                detail?: string;
+                current?: number;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherOptionsOut"] | null;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    character_teaching_api_characters__character_id__teaching_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["horatio__api__teachers__TeachingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_titles_api_characters__character_id__titles_get: {
         parameters: {
             query?: never;
@@ -31173,6 +32774,68 @@ export interface operations {
             };
         };
     };
+    confirm_teaching_api_teachings__teaching_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teaching_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["horatio__api__teachers__TeachingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refuse_teaching_api_teachings__teaching_id__refuse_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teaching_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["horatio__api__teachers__TeachingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     all_requests_api_troupe_requests_get: {
         parameters: {
             query?: never;
@@ -31949,6 +33612,72 @@ export interface operations {
             };
         };
     };
+    list_book_traits_api_troupes__troupe_id__book_traits_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookTraitsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_book_trait_api_troupes__troupe_id__book_traits_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookTraitChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookTraitOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     roster_api_troupes__troupe_id__characters_get: {
         parameters: {
             query?: never;
@@ -32141,6 +33870,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_clan_names_api_troupes__troupe_id__clan_names_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClanNamesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
                 };
             };
             /** @description Validation Error */
@@ -32651,6 +34415,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CycleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_default_bloodlines_api_troupes__troupe_id__default_bloodlines_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefaultBloodlinesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_default_bloodlines_api_troupes__troupe_id__default_bloodlines_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DefaultBloodlinesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefaultBloodlinesOut"];
                 };
             };
             /** @description Validation Error */
@@ -33267,6 +35097,138 @@ export interface operations {
             };
         };
     };
+    read_free_changes_api_troupes__troupe_id__free_changes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FreeChangesSettingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_free_changes_api_troupes__troupe_id__free_changes_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FreeChangesSetting"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FreeChangesSettingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_game_xp_api_troupes__troupe_id__game_xp_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameXpSettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_game_xp_api_troupes__troupe_id__game_xp_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GameXpSettings"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameXpSettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_games_api_troupes__troupe_id__games_get: {
         parameters: {
             query?: never;
@@ -33333,6 +35295,37 @@ export interface operations {
             };
         };
     };
+    missed_games_api_troupes__troupe_id__games_missed_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MissedGame"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     past_games_api_troupes__troupe_id__games_past_get: {
         parameters: {
             query?: never;
@@ -33382,6 +35375,72 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_absentee_api_troupes__troupe_id__games__game_id__absentee__character_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                game_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AbsenteeMarked"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unmark_absentee_api_troupes__troupe_id__games__game_id__absentee__character_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                game_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AbsenteeMarked"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -33718,6 +35777,173 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["TroupeOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_own_checks_api_troupes__troupe_id__house_checks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnCheckOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_own_check_api_troupes__troupe_id__house_checks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnCheckIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnCheckOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_own_check_api_troupes__troupe_id__house_checks_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnCheckPreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnCheckPreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_own_check_api_troupes__troupe_id__house_checks__check_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                check_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnCheckIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnCheckOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_own_check_api_troupes__troupe_id__house_checks__check_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                check_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -36233,6 +38459,173 @@ export interface operations {
             };
         };
     };
+    list_teacher_rules_api_troupes__troupe_id__teacher_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherRuleOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_teacher_rule_api_troupes__troupe_id__teacher_rules_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeacherRuleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherRuleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_teacher_rule_api_troupes__troupe_id__teacher_rules_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeacherRuleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherRulePreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_teacher_rule_api_troupes__troupe_id__teacher_rules__rule_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeacherRuleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherRuleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_teacher_rule_api_troupes__troupe_id__teacher_rules__rule_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_titles_api_troupes__troupe_id__titles_get: {
         parameters: {
             query?: never;
@@ -36448,6 +38841,173 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["WorkCycle"][];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_written_rules_api_troupes__troupe_id__written_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrittenRulesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_written_rule_api_troupes__troupe_id__written_rules_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WrittenRuleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrittenRulesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_written_rules_public_api_troupes__troupe_id__written_rules_public_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrittenRulesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_written_rule_api_troupes__troupe_id__written_rules__rule_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WrittenRuleChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrittenRulesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_written_rule_api_troupes__troupe_id__written_rules__rule_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

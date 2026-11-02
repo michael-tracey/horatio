@@ -3,6 +3,7 @@ import { createContext, useContext, useLayoutEffect, useState, type CSSPropertie
 import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { PrintedSheet, TestPool } from "../api/types";
+import { useClanName } from "../components/ClanNames";
 import { Pips } from "../components/ui";
 import { useDates } from "../dates";
 import { HEALTH_RULE, healthRows } from "../health";
@@ -16,6 +17,8 @@ import { changing, damageShort, situations, total, type Modifier } from "./play/
 import { printedRatings } from "../ratings";
 import { bracketed, fitsInline, specialtiesByParent, specialtyName } from "./printSpecialties";
 import { factsText, kindText, playText } from "./troupe/equipment";
+import { pageText } from "./troupe/bookPage";
+import { Markdown } from "../components/Markdown";
 
 type Trait = PrintedSheet["traits"][number];
 
@@ -219,6 +222,7 @@ function TraitList({
 }) {
   const blanks = Math.max(0, empty - traits.length);
   const identityOf = (name: string) => identities.find((i) => i.name === name);
+  const named = useClanName();
   return (
     <ul className="text-[11px] leading-5">
       {traits.map((t) => {
@@ -228,7 +232,7 @@ function TraitList({
           <li key={`${t.category}/${t.name}/${t.detail}`} className="border-b border-dotted border-neutral-400">
             <div className="flex items-baseline justify-between gap-2">
               <span className="min-w-0">
-                {label(t)}
+                {named(label(t))}
                 {brackets && inline && ` ${brackets}`}
                 {t.pending_from !== null && <em className="ml-1 text-neutral-500">(awaiting approval from {t.pending_from})</em>}
                 {t.house && <em className="ml-1 text-neutral-500">★ {t.house}</em>}
@@ -327,6 +331,7 @@ function Changes({ pool, modifiers }: { pool: TestPool; modifiers: Modifier[] })
 function Sheet({ sheet }: { sheet: PrintedSheet }) {
   const paper = usePreferences().paper;
   const dates = useDates();
+  const named = useClanName();
   const t = sheet.traits;
   // The server works Blood out (by Generation, or a ghoul's vitae and human Blood).
   const blood = sheet.blood;
@@ -359,7 +364,7 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
           <dd className="border-b border-black">{sheet.player_name}</dd>
           <dt className="font-bold">Clan</dt>
           <dd className="border-b border-black">
-            {one(t, "clan")}
+            {named(one(t, "clan"))}
             {sheet.domitor && <span className="text-[10px]"> (domitor {sheet.domitor})</span>}
           </dd>
           <dt className="font-bold">Archetype</dt>
@@ -546,6 +551,23 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
               <PrintedRetainer key={r.id ?? `bought${i}`} retainer={r} />
             ))}
           </div>
+        </Section>
+      )}
+
+      {sheet.wording && sheet.wording.length > 0 && (
+        <Section title="House wording">
+          <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] leading-4" aria-label="House wording">
+            {sheet.wording.map((w) => (
+              <li key={w.name} className="break-inside-avoid">
+                <strong>{w.name}</strong>
+                {w.page && <span className="text-neutral-600"> · {pageText(w.page)}</span>}
+                <span className="text-neutral-600"> · {w.mode === "replaces" ? "the troupe's, in place of the book's" : "the troupe's, added to the book's"}</span>
+                <div className="[&_*]:!text-[10px] [&_*]:!leading-4">
+                  <Markdown text={w.text} />
+                </div>
+              </li>
+            ))}
+          </ul>
         </Section>
       )}
 

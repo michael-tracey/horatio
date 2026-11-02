@@ -1,5 +1,6 @@
 import { lazy } from "react";
 import { Navigate, Outlet, Route, Routes, useLocation, useParams } from "react-router";
+import { CharacterRouteClanNames as ForCharacter, TroupeRouteClanNames as ForTroupe } from "./components/ClanNames";
 import { Layout } from "./components/Layout";
 import { Loading } from "./components/ui";
 import { AboutPage } from "./pages/AboutPage";
@@ -60,17 +61,19 @@ export function App() {
   return (
     <Routes>
       {/* The printed sheet stands alone: no header, black on white. So does the
-          Play View, which needs every bit of a phone's screen at a game. */}
+          Play View, which needs every bit of a phone's screen at a game. A page about
+          a troupe or a character names the clan stored as Assamite as that troupe
+          does (ForTroupe, ForCharacter); any other page by the default. */}
       <Route element={<RequireSignIn />}>
-        <Route path="/print/characters/:characterId" element={<PrintPage />} />
-        <Route path="/print/troupes/:troupeId" element={<TroupePrintPage />} />
-        <Route path="/print/troupes/:troupeId/badges" element={<TroupeBadgesPage />} />
+        <Route path="/print/characters/:characterId" element={<ForCharacter><PrintPage /></ForCharacter>} />
+        <Route path="/print/troupes/:troupeId" element={<ForTroupe><TroupePrintPage /></ForTroupe>} />
+        <Route path="/print/troupes/:troupeId/badges" element={<ForTroupe><TroupeBadgesPage /></ForTroupe>} />
         <Route path="/print/troupes/:troupeId/staff-badges" element={<StaffBadgesPage />} />
-        <Route path="/print/troupes/:troupeId/whos-who" element={<WhosWhoPrintPage />} />
-        <Route path="/print/characters/:characterId/badge" element={<CharacterBadgePage />} />
-        <Route path="/play/characters/:characterId" element={<PlayPage />} />
-        <Route path="/play/troupes/:troupeId/scenes" element={<ScenesPage />} />
-        <Route path="/play/troupes/:troupeId/scenes/:sceneId" element={<ScenePage />} />
+        <Route path="/print/troupes/:troupeId/whos-who" element={<ForTroupe><WhosWhoPrintPage /></ForTroupe>} />
+        <Route path="/print/characters/:characterId/badge" element={<ForCharacter><CharacterBadgePage /></ForCharacter>} />
+        <Route path="/play/characters/:characterId" element={<ForCharacter><PlayPage /></ForCharacter>} />
+        <Route path="/play/troupes/:troupeId/scenes" element={<ForTroupe><ScenesPage /></ForTroupe>} />
+        <Route path="/play/troupes/:troupeId/scenes/:sceneId" element={<ForTroupe><ScenePage /></ForTroupe>} />
         {/* The one scene per troupe from before scenes were named (issue #231). */}
         <Route path="/play/troupes/:troupeId/scene" element={<ToScenes />} />
       </Route>
@@ -94,11 +97,11 @@ export function App() {
         <Route element={<RequireSignIn />}>
           <Route index element={<Navigate to="/characters" replace />} />
           <Route path="/characters" element={<CharactersPage />} />
-          <Route path="/characters/:characterId/*" element={<CharacterPage />} />
+          <Route path="/characters/:characterId/*" element={<ForCharacter><CharacterPage /></ForCharacter>} />
           <Route path="/check-in" element={<CheckInPage />} />
           <Route path="/check-in/:code" element={<CheckInPage />} />
           <Route path="/troupes" element={<TroupesPage />} />
-          <Route path="/troupes/:troupeId/*" element={<TroupePage />} />
+          <Route path="/troupes/:troupeId/*" element={<ForTroupe><TroupePage /></ForTroupe>} />
           <Route path="/rules" element={<RulesPage />} />
           <Route path="/cycles/:cycleId/*" element={<CyclePage />} />
           <Route path="/players/:userId" element={<PlayerPage />} />

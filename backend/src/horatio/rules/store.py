@@ -17,14 +17,16 @@ from horatio.models import (
     CreationRule,
     EquipmentQuality,
     EquipmentTemplate,
+    HouseCheck,
     HouseTrait,
     RuleSet,
     StartingTrait,
     TraitCategory,
     TraitDefinition,
+    TraitOverride,
     Troupe,
 )
-from horatio.rules.checks import check_from_dict, check_to_dict
+from horatio.rules.checks import REQUIREMENT_KEY, check_from_dict, check_to_dict
 from horatio.rules.equipment import (
     EquipmentRules,
     GradeData,
@@ -36,6 +38,7 @@ from horatio.rules.equipment import (
     quality_from_dict,
 )
 from horatio.rules.files import (
+    GENERATION_REQUIREMENTS,
     check_allowance_rule,
     check_cost_rule,
     check_creation_rules,
@@ -43,6 +46,12 @@ from horatio.rules.files import (
     feeding_modifier_to_dict,
 )
 from horatio.rules.grants import grant_from_dict, grant_to_dict
+from horatio.rules.house_checks import (
+    HouseCheckData,
+    HouseCheckProblem,
+    check_house_check,
+    to_check,
+)
 from horatio.rules.house_effects import merged
 from horatio.rules.languages import applied, rule_of
 from horatio.rules.model import (
@@ -54,6 +63,7 @@ from horatio.rules.model import (
     HouseTraitData,
     RuleSetData,
     StartingTraitData,
+    TraitChangeData,
     TraitData,
     TroupeRules,
     house_page,
@@ -61,6 +71,8 @@ from horatio.rules.model import (
 from horatio.rules.status import status_rules_from_dict, status_rules_to_dict, titles_from
 
 RULES_CACHE = "horatio.troupe_rules"
+# A clan merit's catalogue type: its requirement names its clan.
+CLAN_TYPE = "Clan"
 
 
 def forget_rules(session: Session) -> None:
@@ -501,6 +513,42 @@ def set_check_override(
 
 
 @changes_rules
+def change_book_trait(
+    session: Session, troupe_id: uuid.UUID, definition_id: uuid.UUID, changes: Mapping[str, Any]
+) -> TraitOverride | None:
+    """Set some of a troupe's changes to one book trait (horatio.book_traits), as
+    columns of its row; the rest stay. A row left changing nothing is removed, and
+    None returned."""
+    row = session.scalar(
+        select(TraitOverride).where(
+            TraitOverride.troupe_id == troupe_id,
+            TraitOverride.trait_definition_id == definition_id,
+        )
+    )
+    if row is None:
+        row = TraitOverride(troupe_id=troupe_id, trait_definition_id=definition_id)
+        session.add(row)
+    for column, value in changes.items():
+        setattr(row, column, value)
+    if not row.banned:
+        row.ban_reason = ""
+    if changes_nothing(row):
+        if row in session.new:
+            session.expunge(row)
+        else:
+            session.delete(row)
+        session.flush()
+        return None
+    session.flush()
+    return row
+
+
+def changes_nothing(row: TraitOverride) -> bool:
+    """Whether a troupe's row for a book trait is left with no change in it."""
+    return not row.banned and not row.wording and row.kind is None
+
+
+@changes_rules
 def add_house_rule(
     session: Session, troupe_id: uuid.UUID, splat: str, rule: CostRuleData
 ) -> CostRule:
@@ -739,6 +787,10 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
     options: set[str | None] = {None}
     if troupe is not None and troupe.golconda_enlightened:
         options.add("golconda_enlightened")
+    # The troupe's changes to the book's traits: a merit or flaw in another category
+    # is read so here, so every rule that asks a trait's type follows it.
+    changes = trait_changes_of(session, troupe_id, definition_keys)
+    recategorised: set[str] = set()
     traits: dict[tuple[str, str], TraitData] = {}
     taken: set[uuid.UUID] = set()
     for d in definitions:
@@ -754,7 +806,9 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
                 name=d.name,
                 description=d.description,
                 page_reference=d.page_reference,
-                properties=d.properties,
+                properties=recategorised_properties(
+                    d.properties, changes.get(key), key, recategorised
+                ),
             )
             if own is None
             else TraitData(
@@ -770,7 +824,6 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
     creation_only = tuple(rule_set.creation_only) + tuple(
         {"category": h.category, "name": h.name} for h in house_data if h.creation_only
     )
-
     data = RuleSetData(
         key=rule_set.key,
         splat=rule_set.splat,
@@ -781,7 +834,7 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         status_rules=status_rules_from_dict(rule_set.status_rules),
         # The two on languages played by the troupe's chart (horatio.rules.languages).
         checks=applied(
-            [check_from_dict(c) for c in rule_set.checks],
+            [check_from_dict(c) for c in rule_set.checks if c["key"] not in recategorised],
             rule_of(troupe),
             house_page(troupe.name if troupe is not None else ""),
         ),
@@ -821,6 +874,17 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         creation_rules=[creation_data(r) for r in creation_rows if r.troupe_id is None],
         starting_traits=[starting_data(r) for r in starting_rows if r.troupe_id is None],
     )
+    # The troupe's own checks (horatio.house_checks), beside the book's: one the rule
+    # set can no longer run (a trait the book has since lost) is left out, and its
+    # staff see why on the Checks page.
+    house_checks = house_checks_of(session, splat, troupe_id)
+    if house_checks:
+        usable = [
+            to_check(c, troupe.name if troupe is not None else "")
+            for c in house_checks
+            if house_check_problem(c, data) is None
+        ]
+        data = replace(data, checks=(*data.checks, *usable))
     # The house traits' effects, as grants, checks, play properties, allowance rules
     # and feeding modifiers beside the book's.
     unmerged = data
@@ -846,7 +910,115 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         else {},
         house_traits=house_data,
         unmerged=unmerged if data is not unmerged else None,
+        trait_changes=changes,
     )
+
+
+def recategorised_properties(
+    properties: Mapping[str, Any],
+    change: TraitChangeData | None,
+    key: tuple[str, str],
+    dropped: set[str],
+) -> Mapping[str, Any]:
+    """A book merit or flaw's properties as a troupe that changed its category reads
+    them: its type swapped. A clan merit moved out of Clan leaves its clan requirement
+    behind, with the check that came of it (horatio.rules.files.derived_checks), whose
+    key goes in `dropped`; any other requirement, and the trait's own checks, stay."""
+    if change is None or change.kind is None or change.kind == properties.get("type"):
+        return properties
+    found = {**properties, "type": change.kind}
+    requirement = properties.get("requirement")
+    if (
+        properties.get("type") == CLAN_TYPE
+        and change.kind != CLAN_TYPE
+        and requirement
+        and requirement not in GENERATION_REQUIREMENTS
+    ):
+        del found["requirement"]
+        dropped.add(f"{key[0]}/{key[1]}{REQUIREMENT_KEY}")
+    return found
+
+
+def trait_changes_of(
+    session: Session,
+    troupe_id: uuid.UUID | None,
+    definition_keys: Mapping[uuid.UUID, tuple[str, str]],
+) -> dict[tuple[str, str], TraitChangeData]:
+    """The troupe's changes to the rule set's traits (horatio.book_traits), by
+    (category, name): those of this rule set alone, as each splat has its own."""
+    if troupe_id is None:
+        return {}
+    found: dict[tuple[str, str], TraitChangeData] = {}
+    rows = list(
+        session.scalars(
+            select(TraitOverride).where(
+                TraitOverride.troupe_id == troupe_id,
+                TraitOverride.trait_definition_id.in_(definition_keys),
+            )
+        )
+    )
+    books = {
+        d.id: d.properties.get("type")
+        for d in session.scalars(
+            select(TraitDefinition).where(
+                TraitDefinition.id.in_([r.trait_definition_id for r in rows if r.kind])
+            )
+        )
+    }
+    for row in rows:
+        category, name = definition_keys[row.trait_definition_id]
+        found[(category, name)] = TraitChangeData(
+            category=category,
+            name=name,
+            banned=row.banned,
+            ban_reason=row.ban_reason,
+            wording=row.wording,
+            wording_mode=row.wording_mode,  # type: ignore[arg-type]  # checked by the database
+            kind=row.kind,
+            book_kind=books.get(row.trait_definition_id),
+        )
+    return found
+
+
+def house_checks_of(
+    session: Session, splat: str, troupe_id: uuid.UUID | None
+) -> list[HouseCheckData]:
+    """A troupe's own checks for a splat, oldest first."""
+    if troupe_id is None:
+        return []
+    return [
+        house_check_data(row)
+        for row in session.scalars(
+            select(HouseCheck)
+            .where(HouseCheck.troupe_id == troupe_id, HouseCheck.splat == splat)
+            .order_by(HouseCheck.created_at, HouseCheck.id)
+        )
+    ]
+
+
+def house_check_data(row: HouseCheck) -> HouseCheckData:
+    return HouseCheckData(
+        id=str(row.id),
+        splat=row.splat,
+        category=row.category,
+        name=row.name,
+        name_prefix=row.name_prefix,
+        kind=row.kind,
+        mode=row.mode,  # type: ignore[arg-type]  # checked by the database
+        condition=row.condition,
+        strength=row.strength,
+        message=row.message,
+        step=row.step,
+    )
+
+
+def house_check_problem(check: HouseCheckData, rule_set: RuleSetData) -> str | None:
+    """Why the rule set cannot run a house check now, or None if it can."""
+    try:
+        check_house_check(check, rule_set)
+    except HouseCheckProblem as problem:
+        return str(problem)
+    return None
 
 
 def house_traits_of(
