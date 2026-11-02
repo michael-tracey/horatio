@@ -379,6 +379,7 @@ test("a lead bans a merit on the Book traits page: it is greyed out with the rea
   await p.goto(`/troupes/${troupeId}/house-rules`);
   const banned = p.locator("section").filter({ has: p.getByRole("heading", { name: "Banned", exact: true }) });
   await expect(banned.getByRole("listitem").filter({ hasText: "Lucky" })).toContainText("Too swingy at our table.");
+});
 
 test("staff call the clan Banu Haqim or Assamite, and the sheet and the rules follow at once, either name found by a search (#430)", async ({ browser }) => {
   const custodian = await person(browser, "haqim-custodian");
