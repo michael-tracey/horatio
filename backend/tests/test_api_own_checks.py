@@ -285,7 +285,9 @@ def test_storytellers_add_change_and_remove_and_the_log_says_so(troupe: Troupe) 
         )
         .order_by(AuditEvent.created_at)
     ).all()
-    assert actions == ["house.check_added", "house.check_changed", "house.check_removed"]
+    # One request after another can share a timestamp under the test database, so the
+    # order rows come back in is not the order they were written.
+    assert sorted(actions) == ["house.check_added", "house.check_changed", "house.check_removed"]
 
 
 @pytest.mark.parametrize(
