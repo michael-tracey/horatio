@@ -2,7 +2,7 @@
 players read, by section; and whether its profile shows them.
 
 Revision ID: 0133
-Revises: 0127
+Revises: 0141
 Create Date: 2026-11-02 10:00:00.000000
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0133"
-down_revision: str | None = "0127"
+down_revision: str | None = "0141"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

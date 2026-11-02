@@ -45,6 +45,9 @@ class WhosWhoEntry(BaseModel):
     titles: list[str]
     # The one of them that gives it status; None if none is active.
     active_title: str | None = None
+    # The source of abiding status it carries into a game on now, where the troupe
+    # fixes it at check-in.
+    carried_source: str | None = None
     # What others can see or sense about it, as its badge says.
     visible: list[str]
     # The status bans that apply to it: "Greater status ban: A known Caitiff.".
@@ -138,6 +141,7 @@ def entry_out(entry: whos_who.Entry, lines_veils: LinesVeils | None = None) -> W
         player_name=entry.player,
         titles=entry.titles,
         active_title=entry.active_title,
+        carried_source=entry.carried_source,
         visible=entry.visible,
         bans=entry.bans,
         negative=entry.negative,

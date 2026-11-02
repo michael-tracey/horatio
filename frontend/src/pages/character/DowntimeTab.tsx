@@ -148,6 +148,14 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
     savedAt && `Saved ${dates.time(savedAt)}`
   );
 
+  // The troupe's absentee downtimes ask for a game attended lately (issue #438).
+  if (d.closed)
+    return (
+      <Card title={d.cycle_name}>
+        <p className="text-sm">{d.closed}</p>
+      </Card>
+    );
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
       <div className="flex flex-col gap-4">

@@ -2,6 +2,7 @@
 and all of it at once for the rules browser, as played in one troupe."""
 
 import uuid
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
@@ -17,7 +18,14 @@ from horatio.rules import conditions, pricing
 from horatio.rules.feeding import clan_family
 from horatio.rules.files import EVERYWHERE
 from horatio.rules.grants import choices
-from horatio.rules.model import CostRuleData, HouseTraitData, RuleSetData, TraitData, TroupeRules
+from horatio.rules.model import (
+    CostRuleData,
+    HouseTraitData,
+    RuleSetData,
+    TraitChangeData,
+    TraitData,
+    TroupeRules,
+)
 from horatio.rules.splats import SPLATS, splat_order
 from horatio.rules.status import GENERAL
 from horatio.rules.store import read_troupe_rules, same_subject
@@ -63,6 +71,20 @@ class HouseOut(BaseModel):
     in_clan: list[str] = Field(default_factory=list[str])
 
 
+class TraitChangeOut(BaseModel):
+    """A troupe's change to a book trait (horatio.book_traits): banned in the troupe,
+    with the reason its players see ("" for none); its own wording, in Markdown ("" for
+    none), added to the book's summary or replacing it."""
+
+    banned: bool
+    ban_reason: str
+    wording: str = ""
+    wording_mode: Literal["added", "replaces"] = "added"
+    # A merit or flaw's category in the troupe (its `kind` here), and the book's.
+    kind: str | None = None
+    book_kind: str | None = None
+
+
 class TraitOut(BaseModel):
     category: str
     name: str
@@ -98,6 +120,8 @@ class TraitOut(BaseModel):
     house: HouseOut | None = None
     # The written house rules about it of the troupe asked about (horatio.written_rules).
     written_rules: list["WrittenRuleRef"] = Field(default_factory=list["WrittenRuleRef"])
+    # The troupe's change to this book trait (horatio.book_traits), if it made one.
+    changed: TraitChangeOut | None = None
 
 
 class WrittenRuleRef(BaseModel):
@@ -211,6 +235,7 @@ def catalogue(
                     WrittenRuleRef(id=r.id, title=r.title)
                     for r in written.get((t.category, t.name), [])
                 ],
+                changed=change_out(rules.trait_changes.get((t.category, t.name))),
             )
             for t in traits
             if category is None or t.category == category
@@ -227,6 +252,19 @@ def clan_weakness(rule_set: RuleSetData, trait: TraitData) -> dict[str, str | No
     if "weakness" not in found:
         found = rule_set.trait_properties("clan", clan_family(trait.name))
     return {"weakness": found.get("weakness"), "weakness_page": found.get("weakness_page")}
+
+
+def change_out(change: TraitChangeData | None) -> TraitChangeOut | None:
+    if change is None:
+        return None
+    return TraitChangeOut(
+        banned=change.banned,
+        ban_reason=change.ban_reason,
+        wording=change.wording,
+        wording_mode=change.wording_mode,
+        kind=change.kind,
+        book_kind=change.book_kind,
+    )
 
 
 def house_out(house: HouseTraitData | None) -> HouseOut | None:

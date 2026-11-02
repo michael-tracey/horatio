@@ -3,7 +3,9 @@
  * each trait, made into one list to search and filter on the page, so typing asks
  * nothing of the server.
  */
+import { bookSummary } from "../../houseWording";
 import type { DisciplinePowerOut, NotAllowedOut, PriceOut, RarityOut, RulesBrowserOut, TraitCheckOut, TraitOut, WrittenRuleOut } from "../../api/types";
+import { withClanNames } from "../../clanNames";
 import { searchText } from "../troupe/writtenRules";
 
 /** A part of the browser, and the catalogue categories it shows, in order. */
@@ -66,8 +68,10 @@ export type Entry = {
   prices: PriceOut[];
   /** The catalogue's entry; null for a power. */
   trait: TraitOut | null;
-  /** Barred by the troupe's house rules. */
+  /** Barred by the troupe's house rules: a price of "cannot be bought", or a ban. */
   barred: NotAllowedOut | null;
+  /** Banned in the troupe (horatio.book_traits), its reason in `barred`. */
+  banned: boolean;
   /** For a clan or bloodline: how rare it is. */
   rarity: RarityOut | null;
   /** For one of the troupe's written rules: the rule. */
@@ -129,16 +133,18 @@ export function entries(data: RulesBrowserOut): Entry[] {
       name: t.name,
       rating: ratingOf(t),
       value: t.fixed_rating ?? null,
-      summary: t.description || t.house?.summary || null,
+      summary: bookSummary(t.description, t.changed) || t.house?.summary || null,
       page: t.page_reference ?? null,
       requirement: t.requirement ?? null,
       clans,
       checks: checks.get(key) ?? [],
       prices: prices.get(key) ?? [],
       trait: t,
-      barred: barred.get(key) ?? null,
+      barred: t.changed?.banned ? { category: t.category, name: t.name, text: t.changed.ban_reason || null } : (barred.get(key) ?? null),
+      banned: !!t.changed?.banned,
       rarity: t.category === "clan" ? (rarity.get(t.name) ?? rarity.get(family(t.name)) ?? null) : null,
-      text: [t.name, t.description, t.requirement, t.kind, t.house?.summary, t.house_rule].filter(Boolean).join(" ").toLowerCase(),
+      // Either name finds the clan stored as Assamite (#430).
+      text: withClanNames([t.name, t.description, t.requirement, t.kind, t.house?.summary, t.house_rule, t.changed?.wording].filter(Boolean).join(" ")).toLowerCase(),
     });
     if (t.category === "disciplines") found.push(...(powers.get(t.name) ?? []).map((p) => powerEntry(p, t, clans)));
   }
@@ -161,6 +167,7 @@ function writtenEntry(rule: WrittenRuleOut): Entry {
     prices: [],
     trait: null,
     barred: null,
+    banned: false,
     rarity: null,
     written: rule,
     text: searchText(rule),
@@ -183,6 +190,7 @@ function powerEntry(power: DisciplinePowerOut, discipline: TraitOut, clans: stri
     prices: [],
     trait: null,
     barred: null,
+    banned: false,
     rarity: null,
     text: `${power.name} ${power.discipline} ${power.note}`.toLowerCase(),
   };

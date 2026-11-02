@@ -56,6 +56,9 @@ class Other:
     same_sect: bool
     accepted: str | None
     titles: tuple[str, ...]
+    # Of the viewer's sect: the source of abiding status it carries into a game on
+    # now, where it was fixed as it checked in (horatio.play_status.carried_tonight).
+    carried_source: str | None = None
 
 
 @dataclass(frozen=True)
@@ -120,10 +123,12 @@ def others(db: Session, viewer: Viewer) -> list[Other]:
         )
         .order_by(Character.name, Character.id)
     )
+    members = [
+        c for c in members if c.kind != "npc" or (c.npc_form == "sheeted" and titled.get(c.id))
+    ]
+    tonight = play_status.carried_tonight(db, [c.id for c in members])
     found: list[Other] = []
     for c in members:
-        if c.kind == "npc" and not (c.npc_form == "sheeted" and titled.get(c.id)):
-            continue
         sect = sect_status.sect_of(db, c)
         same = sect == viewer.found.sect
         found.append(
@@ -133,6 +138,7 @@ def others(db: Session, viewer: Viewer) -> list[Other]:
                 same_sect=same,
                 accepted=viewer.found.accepted if same else None,
                 titles=tuple(titled.get(c.id, [])) if same else (),
+                carried_source=t.source if same and (t := tonight.get(c.id)) else None,
             )
         )
     return found

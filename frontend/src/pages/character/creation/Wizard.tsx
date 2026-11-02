@@ -3,6 +3,7 @@ import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "
 import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../../../api/client";
 import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, TraitOut, TraitRefOut } from "../../../api/types";
+import { useClanName } from "../../../components/ClanNames";
 import { Button, Card, ErrorText, Field, Input, Loading, Notice, Select, Textarea } from "../../../components/ui";
 import { useAction, useRatingRefusals, useRefusals, useUnavailable } from "../../../hooks";
 import { BuildFor } from "../BuildFor";
@@ -112,6 +113,7 @@ function allowedFor(creation: CreationOut, category: string): Allowed {
 export function CreationWizard({ character }: { character: CharacterOut }) {
   const { step: stepKey = "concept" } = useParams();
   const navigate = useNavigate();
+  const named = useClanName();
   const path = { params: { path: { character_id: character.id } } };
   const creation = useQuery({ queryKey: ["creation", character.id], queryFn: () => unwrap(api.GET("/api/characters/{character_id}/creation", path)) });
   const sheet = useQuery({ queryKey: ["sheet", character.id], queryFn: () => unwrap(api.GET("/api/characters/{character_id}/sheet", path)) });
@@ -143,7 +145,7 @@ export function CreationWizard({ character }: { character: CharacterOut }) {
     stuck !== -1 && stuck < steps.length - 1
       ? `Finish ${steps[stuck]!.title} to open the steps after it: ${needs
           .filter((n) => steps[stuck]!.categories.includes(n.step))
-          .map((n) => n.message)
+          .map((n) => named(n.message))
           .join(" ")}`
       : null;
   const go = (i: number) => navigate(`/characters/${character.id}/create/${steps[i]!.key}`);
@@ -302,6 +304,7 @@ function StepView({
   notices: StepNotice[];
   ghoul?: Ghoul;
 }) {
+  const named = useClanName();
   // Keyed by content, so a refetch that brings back the same saved picks (as the last
   // step's save does) doesn't wipe taps on this step that aren't saved yet.
   const savedKey = JSON.stringify(saved(creation));
@@ -497,7 +500,7 @@ function StepView({
       {away.length > 0 && (
         <div className="mb-6 flex flex-col gap-2">
           {away.map((why) => (
-            <Notice key={why}>{why}</Notice>
+            <Notice key={why}>{named(why)}</Notice>
           ))}
         </div>
       )}
@@ -615,7 +618,7 @@ function StepView({
       {savedNote && <p className="mt-4 text-sm text-mist">{savedNote}</p>}
       {needs.length > 0 && (
         <div className="mt-6">
-          <Notice>Before moving on: {needs.map((n) => n.message).join(" ")}</Notice>
+          <Notice>Before moving on: {needs.map((n) => named(n.message)).join(" ")}</Notice>
         </div>
       )}
       <ErrorText error={save.error} />
@@ -661,6 +664,7 @@ function ConceptStep({
   );
   // "Other…" waits for its name and description before it is saved.
   const [makingOwn, setMakingOwn] = useState(false);
+  const named = useClanName();
   const identity = identityChoices(catalogue, sheet);
   // Clan first, the biggest choice, with what it means under it. A ghoul's clan is its
   // domitor's, set with the domitor.
@@ -682,7 +686,9 @@ function ConceptStep({
         {catalogue.traits
           .filter((t) => t.category === c.key)
           .map((t) => (
-            <option key={t.name}>{t.name}</option>
+            <option key={t.name} value={t.name}>
+              {named(t.name)}
+            </option>
           ))}
       </Select>
     </Field>
@@ -733,16 +739,17 @@ function ConceptStep({
 function ClanCard({ clan, creation, catalogue }: { clan: string; creation: CreationOut; catalogue: CatalogueOut }) {
   const about = catalogue.traits.find((t) => t.category === "clan" && t.name === clan);
   const merits = clanMeritsLine(creation);
+  const named = useClanName();
   return (
-    <section aria-label={`About ${clan}`} className="flex flex-col gap-1.5 rounded-md border border-ash bg-night/40 p-3 text-sm">
+    <section aria-label={`About ${named(clan)}`} className="flex flex-col gap-1.5 rounded-md border border-ash bg-night/40 p-3 text-sm">
       <InClanNow creation={creation} />
       {about?.weakness && (
         <p className="text-mist">
-          <span className="text-parchment">Weakness:</span> {about.weakness}
+          <span className="text-parchment">Weakness:</span> {named(about.weakness)}
           {about.weakness_page && <span className="text-gold"> ({pageText(about.weakness_page)})</span>}
         </p>
       )}
-      {merits && <p className="text-mist">{merits}</p>}
+      {merits && <p className="text-mist">{named(merits)}</p>}
     </section>
   );
 }
@@ -809,6 +816,7 @@ function ReviewStep({
   ghoul?: Ghoul;
 }) {
   const navigate = useNavigate();
+  const shown = useClanName();
   const domitor = useDomitor(character, !!ghoul);
   // An in-clan choice still to make (Vestiges of Greatness) is made here, not only on Concept (#216).
   const [choosing, setChoosing] = useState(false);
@@ -876,7 +884,7 @@ function ReviewStep({
                     •
                   </span>
                   <span>
-                    {n.message}
+                    {shown(n.message)}
                     {at && (
                       <>
                         {" "}
@@ -913,7 +921,7 @@ function ReviewStep({
           <ul className="flex flex-col gap-1 text-sm">
             {creation.path_starts.map((s) => (
               <li key={`${s.category}/${s.name}`}>
-                {listed(s.because.map((b) => b.name!))}: your path starts at {s.rating}
+                {shown(listed(s.because.map((b) => b.name!)))}: your path starts at {s.rating}
                 {s.page ? ` (${pageText(s.page)})` : ""}.
               </li>
             ))}
@@ -983,6 +991,7 @@ function CharacterSummary({
   catalogue: CatalogueOut;
   ghoul?: Ghoul;
 }) {
+  const shown = useClanName();
   const named = (t: { name: string; detail: string }) => (t.detail ? `${t.name}: ${t.detail}` : t.name);
   const held = (category: string) =>
     sheet.traits.filter((t) => t.category === category && (t.rating ?? 0) > 0).sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || a.name.localeCompare(b.name));
@@ -1025,7 +1034,7 @@ function CharacterSummary({
         {rows.map(([label, value]) => (
           <Fragment key={label}>
             <dt className="text-mist">{label}</dt>
-            <dd className="mb-1.5 sm:mb-0">{value || "None yet"}</dd>
+            <dd className="mb-1.5 sm:mb-0">{shown(value) || "None yet"}</dd>
           </Fragment>
         ))}
       </dl>
@@ -1048,6 +1057,7 @@ function StepNotices({
   /** This step offers the in-clan choice itself (Merits, under the merit; Disciplines, at the top). */
   choosesHere?: boolean;
 }) {
+  const named = useClanName();
   if (!notices.length) return null;
   return (
     <div aria-label="Changed by other steps" role="group" className="mb-6 flex flex-col gap-2">
@@ -1056,7 +1066,7 @@ function StepNotices({
         const at = n.fix !== step.key && !here ? steps.find((s) => s.key === n.fix) : undefined;
         return (
           <Notice key={n.key}>
-            {n.message}
+            {named(n.message)}
             {here && ` Choose it ${step.key === "merits" ? "under the merit, below" : "below"}.`}
             {at && (
               <>
@@ -1089,6 +1099,7 @@ function CheckedPointsList({
   const barred = useUnavailable(characterId, category, true, { asIf: "empty" });
   const unavailable = Object.fromEntries(Object.entries(refusals).map(([name, r]) => [name, r.message]));
   const before = steps.indexOf(step);
+  const named = useClanName();
   const why = (name: string): ReactNode => {
     const earlier = new Map<Step, TraitRefOut[]>();
     for (const t of refusals[name]?.because ?? []) {
@@ -1100,7 +1111,7 @@ function CheckedPointsList({
     return [...earlier].map(([at, refs], i) => (
       <Fragment key={at.key}>
         {i > 0 && "; "}
-        Refused while you {refs.every((t) => t.category === "clan") ? "are" : "have"} {listed(refs.map((t) => t.name!))} (
+        Refused while you {refs.every((t) => t.category === "clan") ? "are" : "have"} {named(listed(refs.map((t) => t.name!)))} (
         <Link className="text-gold underline" to={`/characters/${characterId}/create/${at.key}`}>
           {at.title}
         </Link>
@@ -1114,13 +1125,14 @@ function CheckedPointsList({
 /** The merits taken that give free traits the player chooses, with the fields to choose them. */
 function FreeTraitsToChoose({ character, sheet }: { character: CharacterOut; sheet: SheetOut }) {
   const merits = withFreeChoices(sheet);
+  const named = useClanName();
   if (!merits.length) return null;
   return (
     <section aria-label="Free traits to choose" className="mb-6 flex flex-col gap-3 rounded-md border border-ash p-3">
       <h3 className="text-sm text-parchment">Free traits to choose</h3>
       {merits.map((t) => (
         <div key={`${t.category}/${t.name}/${t.detail}`} className="flex flex-col gap-1.5">
-          <p className="text-sm text-parchment">{t.name}</p>
+          <p className="text-sm text-parchment">{named(t.name)}</p>
           <FreeChoicesStep character={character} trait={t} />
         </div>
       ))}
