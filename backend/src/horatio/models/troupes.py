@@ -110,6 +110,12 @@ class Troupe(Imported, Record):
     # ("Lasombra": "rare"), over the book's rarity for the setting's sect. A character
     # built here takes the rarity merit it names (horatio.clan_merits).
     clan_rarity: Mapped[dict[str, str]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # House rule: the bloodline each clan plays as by default, by clan ("Tzimisce":
+    # "Tzimisce: Koldun"), or the clan itself for none, over the book's default for the
+    # setting's sect. A clan it leaves out goes by the book (horatio.clan_merits).
+    default_bloodlines: Mapped[dict[str, str]] = mapped_column(
+        JSONB, default=dict, server_default="{}"
+    )
     # House options for Stock Locations (horatio.rules.locations) it has switched
     # off, by key: every other is on. And what going over a character's control
     # limit does: "refuse" it, or "note" it for staff (horatio.locations).

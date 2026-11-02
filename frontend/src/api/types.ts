@@ -71,6 +71,7 @@ export type CreationOut = Schemas["CreationOut"];
 export type PoolOut = Schemas["PoolOut"];
 export type ClanMeritOut = Schemas["ClanMeritOut"];
 export type ClanRarityOut = Schemas["ClanRarityOut"];
+export type DefaultBloodlinesOut = Schemas["DefaultBloodlinesOut"];
 export type RefusalOut = Schemas["RefusalOut"];
 export type TraitRefOut = Schemas["TraitRefOut"];
 export type SheetTroupeOut = Schemas["SheetTroupeOut"];

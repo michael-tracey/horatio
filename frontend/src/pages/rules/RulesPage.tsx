@@ -313,6 +313,17 @@ function EntryRow({ entry: e, troupe }: { entry: Entry; troupe: string | null })
           )}
         </p>
       )}
+      {e.rarity?.default && !e.name.includes(":") && (
+        <p className="text-xs text-mist">
+          Default bloodline: {e.rarity.default}
+          {e.rarity.default_house && (
+            <>
+              {" "}
+              <Badge tone="gold">House rule</Badge>
+            </>
+          )}
+        </p>
+      )}
       {e.prices.length > 0 && (
         <div className="text-xs text-mist">
           <Prices prices={e.prices} label="Costs" />

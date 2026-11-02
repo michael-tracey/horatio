@@ -7106,6 +7106,91 @@
         "title": "Decline",
         "type": "object"
       },
+      "DefaultBloodlineRow": {
+        "properties": {
+          "bloodlines": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Bloodlines",
+            "type": "array"
+          },
+          "book": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Book",
+            "type": "object"
+          },
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "house": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "House"
+          }
+        },
+        "required": [
+          "clan",
+          "bloodlines",
+          "book",
+          "house"
+        ],
+        "title": "DefaultBloodlineRow",
+        "type": "object"
+      },
+      "DefaultBloodlinesIn": {
+        "properties": {
+          "defaults": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Defaults",
+            "type": "object"
+          }
+        },
+        "required": [
+          "defaults"
+        ],
+        "title": "DefaultBloodlinesIn",
+        "type": "object"
+      },
+      "DefaultBloodlinesOut": {
+        "properties": {
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/DefaultBloodlineRow"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "setting": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Setting"
+          }
+        },
+        "required": [
+          "setting",
+          "clans"
+        ],
+        "title": "DefaultBloodlinesOut",
+        "type": "object"
+      },
       "DeliverIn": {
         "properties": {
           "partial": {
@@ -25672,6 +25757,22 @@
           "clan": {
             "title": "Clan",
             "type": "string"
+          },
+          "default": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default"
+          },
+          "default_house": {
+            "default": false,
+            "title": "Default House",
+            "type": "boolean"
           },
           "house": {
             "title": "House",
@@ -53125,6 +53226,102 @@
         "summary": "Create Cycle",
         "tags": [
           "downtimes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/default-bloodlines": {
+      "get": {
+        "description": "The bloodline each clan plays as by default here: the book's for each sect, and\nthe troupe's own where it names one (horatio.clan_merits).",
+        "operationId": "read_default_bloodlines_api_troupes__troupe_id__default_bloodlines_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefaultBloodlinesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Default Bloodlines",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "put": {
+        "description": "Name the bloodline a clan plays as by default here, or the plain clan. Characters\nbeing built here take the clan merits it means straight away; finished characters\nkeep the bloodline and merits they have.",
+        "operationId": "set_default_bloodlines_api_troupes__troupe_id__default_bloodlines_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefaultBloodlinesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefaultBloodlinesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Default Bloodlines",
+        "tags": [
+          "house rules"
         ]
       }
     },
