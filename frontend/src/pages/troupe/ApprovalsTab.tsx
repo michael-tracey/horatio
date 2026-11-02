@@ -179,11 +179,21 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
               ? `asked for free${ex.normal_cost != null ? ` (at normal cost, ${ex.normal_cost} XP)` : " (it has no normal cost)"}.`
               : `for ${d.cost} XP.`}
           </p>
+          {ex.set_aside.map((words) => (
+            <p key={words} className="text-gold">
+              {words}
+            </p>
+          ))}
           {ex.breaks.length > 0 && <p className="text-blood-bright">Against the rules: {named(ex.breaks.join(" "))}</p>}
           {pending && (
             <p className="text-mist">
-              It is on the sheet, waiting on you. Approving keeps it, and the sheet stops flagging these rules for it; declining takes it back
+              It is on the sheet, waiting on you. Approving keeps it{ex.breaks.length ? ", and the sheet stops flagging these rules for it" : ""}; declining takes it back
               {ex.free ? "" : " and refunds the XP"}.
+            </p>
+          )}
+          {pending && ex.bloodline && (
+            <p className="text-mist">
+              Approving also makes {approval.character_name} {named(ex.bloodline)}, with its in-clan disciplines and weakness, as choosing it at creation would.
             </p>
           )}
         </div>
