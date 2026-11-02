@@ -45,7 +45,7 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
   const costs = bySplat((s) => s.costs);
   const starting = bySplat((s) => s.starting);
   const actions = bySplat((s) => s.actions);
-  const nothing = !xp && !costs.length && !starting.length && !actions.length && !r.checks.length && !r.house_traits.length && !r.other.length;
+  const nothing = !xp && !costs.length && !starting.length && !actions.length && !r.checks.length && !r.house_traits.length && !r.other.length && !r.teachers?.length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -129,6 +129,15 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
                 book={c.own ? "Not in the book" : (PLAYED[c.strength] ?? c.strength)}
               />
             ))}
+          </ul>
+        </Card>
+      )}
+
+      {(r.teachers?.length ?? 0) > 0 && (
+        <Card title="Teachers">
+          <p className="mb-2 text-sm text-mist">Beyond discipline dots, these need a teacher here: a character of the troupe who qualifies, or an NPC the storytellers approve.</p>
+          <ul aria-label="Teacher rules" className="list-disc space-y-1 pl-5 text-sm">
+            {r.teachers?.map((t) => <li key={t}>{t}</li>)}
           </ul>
         </Card>
       )}

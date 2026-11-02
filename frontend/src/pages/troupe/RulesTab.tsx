@@ -17,6 +17,7 @@ import { LocationRulesSection } from "./LocationRulesSection";
 import { OwnChecks } from "./OwnChecks";
 import { QuestSettings } from "./QuestSettings";
 import { StartingSection } from "./StartingSection";
+import { TeacherRules } from "./TeacherRules";
 
 type Strength = "refuse" | "complete" | "review" | "note" | "off";
 
@@ -73,6 +74,7 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
           { to: `${base}/locations`, label: "Locations" },
           { to: `${base}/quests`, label: "Quests" },
           { to: `${base}/backstories`, label: "Backstories" },
+          { to: `${base}/teachers`, label: "Teachers" },
         ]}
       />
       <Routes>
@@ -84,6 +86,7 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
         <Route path="locations" element={<LocationRulesSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="quests" element={<QuestSettings troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="backstories" element={<BackstorySettings troupeId={troupeId} />} />
+        <Route path="teachers" element={<TeacherRules troupeId={troupeId} canEdit={canEdit} />} />
       </Routes>
     </>
   );

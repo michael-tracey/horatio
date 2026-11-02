@@ -155,6 +155,70 @@ test("the lead builds a check of the troupe's own from blocks, and it refuses a 
   await expect(p.getByText("Iron Will is for the Ventrue here.")).toBeVisible();
 });
 
+test("a teacher rule asks for a teacher, and a Lore specialisation is bought from one and approved (#440)", async ({ browser }) => {
+  const custodian = await person(browser, "tutor-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "tutor-lead");
+  const mentor = await person(browser, "tutor-mentor");
+  const pupil = await person(browser, "tutor-pupil");
+  const troupeName = `House of Tutors ${run}`;
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  await backstoryOptional(lead.page, troupeId);
+
+  // The lead adds the first example: Lore specialisations after creation, with a downtime action.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules/teachers`);
+  await expect(l.getByText("No teacher rules.")).toBeVisible();
+  await l.getByRole("button", { name: "Add a rule" }).click();
+  const form = l.getByRole("region", { name: "A new teacher rule" });
+  await form.getByLabel("Start from an example (optional)").selectOption({ label: "Lore specialisations after creation, with a downtime action" });
+  const rule = "Lore Specialisations need a teacher who holds it at the rating learned and 1 downtime action, once creation is finished.";
+  await expect(form.getByRole("region", { name: "Preview" })).toContainText(rule);
+  await form.getByRole("button", { name: "Add the rule" }).click();
+  await expect(l.getByRole("list", { name: "Teacher rules" })).toContainText(rule);
+  await l.screenshot(shots("customise-teacher-rule"));
+
+  // Brother Tobiah knows the Sabbat; Wren, his pupil, has a dot of Lore and no subject yet. Both join.
+  const skills = ATTRIBUTES_AND_FOCUSES.skills.map(([name, rating]): [string, number] => [name === "Medicine" ? "Lore" : name, rating]);
+  const build = { ...ATTRIBUTES_AND_FOCUSES, skills, backgrounds: [["Generation", 1], ["Herd", 2], ["Fame", 3]] as [string, number][], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] as [string, number][] };
+  const tobiah = await builtVampire(mentor.page, "Brother Tobiah", "Brujah", build, [["lore_specializations", "Sabbat", 1]]);
+  const wren = await builtVampire(pupil.page, "Wren Hallow", "Brujah", build);
+  for (const [who, id] of [[mentor, tobiah], [pupil, wren]] as const) {
+    const asked = await who.page.request.post(`/api/characters/${id}/home-troupe`, { headers, data: { troupe_id: troupeId } });
+    expect(asked.status(), await asked.text()).toBe(201);
+    const approved = await l.request.post(`/api/approvals/${(await asked.json()).id}/approve`, { headers, data: {} });
+    expect(approved.status(), await approved.text()).toBe(200);
+  }
+
+  // Wren adds the Sabbat to her Lore: the sheet asks who teaches it, offering Brother Tobiah.
+  const p = pupil.page;
+  await p.goto(`/characters/${wren}`);
+  const lore = p.locator("section").filter({ has: p.getByRole("heading", { name: "Skills", exact: true }) }).locator("li[data-trait='Lore']");
+  await lore.getByRole("button", { name: "Add to Lore Specialisations" }).click();
+  await lore.getByRole("button", { name: "Sabbat", exact: true }).click();
+  await expect(lore.getByText("Needs a teacher who holds it at 1 or more.")).toBeVisible();
+  const add = lore.getByRole("button", { name: "Add with this teacher" });
+  await expect(add).toBeDisabled();
+  await lore.getByLabel("Teacher for Sabbat").selectOption({ label: "Brother Tobiah" });
+  await add.click();
+  await expect(lore.getByText("Lore Specialisations 1/1")).toBeVisible();
+  await p.screenshot(shots("teacher-lore-specialisation"));
+
+  // It waits on the troupe, taught by Brother Tobiah; approving owes the downtime action.
+  await l.goto(`/troupes/${troupeId}/approvals`);
+  await expect(l.getByText(/Taught by Brother Tobiah\. Learning takes 1 downtime action, owed when approved\./)).toBeVisible();
+  // Wren's is the only request waiting.
+  await l.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(l.getByText("Taught by Brother Tobiah.", { exact: false })).toHaveCount(0);
+
+  // The players' House rules tab lists the rule.
+  await p.goto(`/troupes/${troupeId}/house-rules`);
+  await expect(p.getByRole("list", { name: "Teacher rules" })).toContainText(rule);
+});
+
 test("a troupe's players read its house rules: a price the lead changes shows there beside the book's", async ({ browser }) => {
   const custodian = await person(browser, "lantern-custodian");
   makeCustodian(custodian.email);

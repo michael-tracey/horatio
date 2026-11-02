@@ -1124,6 +1124,8 @@ class HouseRulesOut(BaseModel):
     checks: list[HouseCheckOut]
     house_traits: list[HouseMeritOut]
     other: list[HouseSettingOut]
+    # Its teacher rules (horatio.teaching), in plain words.
+    teachers: list[str] = []
     # How its backstories are written (free | either | wizard), and whether one must be
     # approved before a character is accepted here.
     backstory_mode: str
@@ -1286,6 +1288,18 @@ def own_checks(db: DbSession, troupe: Troupe) -> list[HouseCheckOut]:
     return found
 
 
+def teacher_rules(db: DbSession, troupe: Troupe) -> list[str]:
+    """The troupe's teacher rules its rules can use, in plain words."""
+    from horatio import teaching  # imports this module
+
+    found: list[str] = []
+    for row in teaching.rule_rows(db, troupe.id):
+        data = teaching.rule_data(row)
+        if teaching.problem_of(db, troupe, data) is None:
+            found.append(teaching.text_of(db, troupe, data))
+    return found
+
+
 @router.get("/house-rules")
 def read_house_rules(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> HouseRulesOut:
     """What the troupe plays differently from the book, for its players to read before
@@ -1334,6 +1348,7 @@ def read_house_rules(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> 
         ],
         house_traits=merits,
         other=other_settings(db, troupe),
+        teachers=teacher_rules(db, troupe),
         backstory_mode=troupe.backstory_mode,
         backstory_required=troupe.backstory_required,
     )

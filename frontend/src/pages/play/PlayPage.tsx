@@ -22,6 +22,7 @@ import { PowersBanner } from "./Powers";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { RetainerPools } from "./RetainerPools";
 import { StatusTab } from "./Status";
+import { TeachingAsks } from "./Teaching";
 import { DRANK, incapacitated, influenceStanding, latestUndoable, tapsToast, type Damage, type Shown, type ShownEntry, type Tap } from "./tracker";
 import { TrackerStrip } from "./TrackerStrip";
 import { usePlay, type Play, type Sync } from "./usePlay";
@@ -153,6 +154,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
       {tab === "equipment" && <EquipmentTab characterId={characterId} view={shown} tap={tap} />}
       {tab === "tracker" && (
         <>
+          <TeachingAsks characterId={characterId} />
           <div className="grid gap-3 md:grid-cols-2">
             {shown.vitae ? (
               <VitaeTracker
@@ -173,7 +175,15 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
                 extra={shown.panels.feed ? <FeedButton onClick={() => setFeeding(true)} /> : undefined}
               />
             )}
-            <BoxTracker title="Willpower" tracker="willpower" value={shown.willpower.value} most={shown.willpower.most} record={record} loud />
+            <BoxTracker
+              title="Willpower"
+              tracker="willpower"
+              value={shown.willpower.value}
+              most={shown.willpower.most}
+              hint={shown.willpower_lent ?? undefined}
+              record={record}
+              loud
+            />
             <HealthTracker view={shown} record={record} />
             <div className="grid gap-3">
               {shown.morality && (
