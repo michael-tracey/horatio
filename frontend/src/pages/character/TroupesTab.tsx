@@ -8,6 +8,7 @@ import { InfoButton } from "../../components/InfoButton";
 import { Button, Card, ErrorText, Field, Loading, Notice, Select, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { describeDifference, settlementLabel } from "../../settlements";
+import { LeaveHome } from "./LeaveHome";
 
 
 const HOME_MEANS =
@@ -49,6 +50,8 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
   const pendingTroupe = troupes.data?.find((t) => t.id === pendingHome?.troupe_id);
   const homeName = memberships.data?.find((m) => m.home)?.troupe_name ?? troupes.data?.find((t) => t.id === character.home_troupe_id)?.name ?? null;
   const buildingFor = troupes.data?.find((t) => t.id === character.building_troupe_id)?.name;
+  // A player may leave the home troupe for none; an NPC stays in its troupe.
+  const home = character.home_troupe_id && homeName && character.kind === "pc" ? { id: character.home_troupe_id, name: homeName } : null;
   // The card opens with where the character's home is now, whatever else it holds.
   const homeNow =
     character.home_troupe_id && homeName ? (
@@ -66,9 +69,12 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
             Waiting for {pendingTroupe?.name ?? "the troupe"}'s storytellers to accept this character.
           </p>
           <p className="mt-1 text-sm text-mist">Nothing for you to do until they decide.</p>
-          <Button variant="secondary" className="mt-3" onClick={() => withdraw.mutate(undefined)}>
-            Withdraw the request
-          </Button>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => withdraw.mutate(undefined)}>
+              Withdraw the request
+            </Button>
+            {home && <LeaveHome character={character} troupeId={home.id} troupeName={home.name} waitingFor={pendingTroupe?.name} />}
+          </div>
           <ErrorText error={withdraw.error} />
         </Card>
       ) : (
@@ -77,6 +83,7 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
             character={character}
             troupes={troupes.data ?? []}
             currentHome={character.home_troupe_id}
+            home={home}
             homeNow={homeNow}
             unbanked={sheet.data?.xp.unbanked ?? 0}
           />
@@ -162,12 +169,15 @@ function HomeTroupe({
   character,
   troupes,
   currentHome,
+  home,
   homeNow,
   unbanked,
 }: {
   character: CharacterOut;
   troupes: { id: string; name: string }[];
   currentHome: string | null;
+  /** The home troupe its player may leave for none, if any. */
+  home: { id: string; name: string } | null;
   /** Where its home is now, which the card opens with. */
   homeNow: ReactNode;
   /** Creation XP lost if a first home troupe accepts the character now. */
@@ -226,7 +236,7 @@ function HomeTroupe({
       <Card title="Home troupe" info={homeInfo}>
         {homeNow}
         <Button variant="secondary" onClick={() => setMoving(true)}>
-          Move to another troupe…
+          {home ? "Move or leave…" : "Move to another troupe…"}
         </Button>
       </Card>
     );
@@ -292,6 +302,12 @@ function HomeTroupe({
             Ask to join as home troupe
           </Button>
           <ErrorText error={request.error} />
+        </div>
+      )}
+      {home && (
+        <div className="mt-4 border-t border-ash pt-3">
+          <p className="mb-2 text-sm text-mist">Or leave, and look for a home later.</p>
+          <LeaveHome character={character} troupeId={home.id} troupeName={home.name} />
         </div>
       )}
     </Card>

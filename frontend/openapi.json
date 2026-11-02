@@ -16994,6 +16994,41 @@
         "title": "Leaving",
         "type": "object"
       },
+      "LeavingOut": {
+        "description": "What leaving a troupe ends, for the player to confirm first.",
+        "properties": {
+          "free_changes_open": {
+            "title": "Free Changes Open",
+            "type": "boolean"
+          },
+          "home": {
+            "title": "Home",
+            "type": "boolean"
+          },
+          "requests": {
+            "items": {
+              "$ref": "#/components/schemas/WithdrawnOut"
+            },
+            "title": "Requests",
+            "type": "array"
+          },
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "home",
+          "titles",
+          "requests",
+          "free_changes_open"
+        ],
+        "title": "LeavingOut",
+        "type": "object"
+      },
       "LedTroupe": {
         "properties": {
           "id": {
@@ -37475,6 +37510,24 @@
         "title": "WindowOut",
         "type": "object"
       },
+      "WithdrawnOut": {
+        "properties": {
+          "refund": {
+            "title": "Refund",
+            "type": "integer"
+          },
+          "what": {
+            "title": "What",
+            "type": "string"
+          }
+        },
+        "required": [
+          "what",
+          "refund"
+        ],
+        "title": "WithdrawnOut",
+        "type": "object"
+      },
       "WithoutDot": {
         "description": "A trait of a restricted pool that takes no pick, though it may be in-clan.",
         "properties": {
@@ -47658,6 +47711,60 @@
           }
         },
         "summary": "Leave Troupe",
+        "tags": [
+          "membership"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/troupes/{troupe_id}/leaving": {
+      "get": {
+        "description": "What leaving the troupe would end: its titles there and its requests waiting\nthere, by name.",
+        "operationId": "leaving_api_characters__character_id__troupes__troupe_id__leaving_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeavingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Leaving",
         "tags": [
           "membership"
         ]
