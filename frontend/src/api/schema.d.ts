@@ -6193,6 +6193,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/free-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Free Changes */
+        get: operations["read_free_changes_api_troupes__troupe_id__free_changes_get"];
+        /**
+         * Set Free Changes
+         * @description Set how long the troupe's new characters stay open to free changes. It applies
+         *     at once to the characters whose free changes are open; turning it on gives them to
+         *     characters accepted from now on.
+         */
+        put: operations["set_free_changes_api_troupes__troupe_id__free_changes_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/games": {
         parameters: {
             query?: never;
@@ -11090,6 +11113,11 @@ export interface components {
             cost: number;
             /** Detail */
             detail: string;
+            /**
+             * Free Change
+             * @default false
+             */
+            free_change: boolean;
             /** From Rating */
             from_rating: number;
             /** House */
@@ -12533,6 +12561,72 @@ export interface components {
             specialization: string;
             /** Times */
             times: number;
+        };
+        /**
+         * FreeChangesOut
+         * @description The character's free changes as a new character, while they are open
+         *     (horatio.free_changes): lowering or removing a trait refunds its full XP.
+         */
+        FreeChangesOut: {
+            /** Ends At */
+            ends_at: string | null;
+            /** Excluded */
+            excluded: string[];
+            /** Games Left */
+            games_left: number | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "date" | "games";
+        };
+        /** FreeChangesSetting */
+        FreeChangesSetting: {
+            /**
+             * Days
+             * @default 30
+             */
+            days: number;
+            /**
+             * Excluded
+             * @default []
+             */
+            excluded: components["schemas"]["TraitRef"][];
+            /**
+             * Games
+             * @default 3
+             */
+            games: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "none" | "date" | "games";
+        };
+        /** FreeChangesSettingOut */
+        FreeChangesSettingOut: {
+            /**
+             * Days
+             * @default 30
+             */
+            days: number;
+            /**
+             * Excluded
+             * @default []
+             */
+            excluded: components["schemas"]["TraitRef"][];
+            /**
+             * Games
+             * @default 3
+             */
+            games: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "none" | "date" | "games";
+            /** Text */
+            text: string;
         };
         /**
          * FreeChoicesChange
@@ -16187,6 +16281,11 @@ export interface components {
             cost: number;
             /** Detail */
             detail: string;
+            /**
+             * Free Change
+             * @default false
+             */
+            free_change: boolean;
             /** From Rating */
             from_rating: number;
             /**
@@ -19386,6 +19485,7 @@ export interface components {
              * @default []
              */
             exceptions: components["schemas"]["ExceptionOut"][];
+            free_changes?: components["schemas"]["FreeChangesOut"] | null;
             /** Home Troupe Id */
             home_troupe_id: string | null;
             /** Kind */
@@ -21034,6 +21134,13 @@ export interface components {
             weakness?: string | null;
             /** Weakness Page */
             weakness_page?: string | null;
+        };
+        /** TraitRef */
+        TraitRef: {
+            /** Category */
+            category: string;
+            /** Name */
+            name: string;
         };
         /** TraitRefOut */
         TraitRefOut: {
@@ -34237,6 +34344,72 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_free_changes_api_troupes__troupe_id__free_changes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FreeChangesSettingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_free_changes_api_troupes__troupe_id__free_changes_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FreeChangesSetting"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FreeChangesSettingOut"];
+                };
             };
             /** @description Validation Error */
             422: {

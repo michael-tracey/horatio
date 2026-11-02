@@ -30,7 +30,7 @@ from datetime import UTC, date, datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, play
+from horatio import audit, free_changes, play
 from horatio.models import Character, GameAttendance, PlayGame, ScheduledGame, User, XpEntry
 from horatio.sheets import unprocessable
 
@@ -189,6 +189,8 @@ def check_in(
         game=when(game),
     )
     db.flush()
+    # The game that uses up its free changes ends them (horatio.free_changes).
+    free_changes.notice(db, character)
     return attendance, True
 
 
