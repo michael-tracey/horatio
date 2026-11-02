@@ -8,6 +8,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
 
+from horatio import written_rules
+from horatio.api.written_rules import WrittenRuleOut, rules_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import RuleSet, Troupe
 from horatio.reference import catalogue as power_catalogue
@@ -94,6 +96,15 @@ class TraitOut(BaseModel):
     instance: str | None = None
     # A troupe's own merit or flaw; its page reference reads "House rule — <troupe>".
     house: HouseOut | None = None
+    # The written house rules about it of the troupe asked about (horatio.written_rules).
+    written_rules: list["WrittenRuleRef"] = Field(default_factory=list["WrittenRuleRef"])
+
+
+class WrittenRuleRef(BaseModel):
+    """A troupe's written rule about a trait, to link to where the troupe's players read it."""
+
+    id: uuid.UUID
+    title: str
 
 
 class CatalogueOut(BaseModel):
@@ -141,6 +152,7 @@ def catalogue(
     except NoResultFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No rules for {splat!r}.") from None
     house_text = {(r.category, r.trait): r.text for r in rules.house_rules if r.trait and r.text}
+    written = written_rules.by_trait(db, troupe_id, rules.splat) if troupe_id else {}
     chooses: dict[tuple[str, str], list[str]] = {}
     for grant in rules.rule_set.grants:
         # The player of a free_choices grant chooses beside the merit, not in its detail.
@@ -195,6 +207,10 @@ def catalogue(
                 and t.properties.get("requirement") == "requires_specialization",
                 instance=t.properties.get("instance"),
                 house=house_out(rules.house_trait(t.category, t.name)),
+                written_rules=[
+                    WrittenRuleRef(id=r.id, title=r.title)
+                    for r in written.get((t.category, t.name), [])
+                ],
             )
             for t in traits
             if category is None or t.category == category
@@ -303,6 +319,8 @@ class RulesBrowserOut(BaseModel):
     not_allowed: list[NotAllowedOut]
     powers: list[DisciplinePowerOut]
     rarities: list[RarityOut]
+    # The troupe's written house rules, to read and search among the rest.
+    written_rules: list[WrittenRuleOut] = Field(default_factory=list[WrittenRuleOut])
 
 
 @router.get("/{splat}/browse")
@@ -352,6 +370,7 @@ def browse(
             for p in powers.get(d, [])
         ],
         rarities=clan_rarities(rule_set, troupe),
+        written_rules=rules_out(db, troupe.id) if troupe is not None else [],
     )
 
 

@@ -27476,6 +27476,13 @@
               }
             ],
             "title": "Troupe Name"
+          },
+          "written_rules": {
+            "items": {
+              "$ref": "#/components/schemas/WrittenRuleOut"
+            },
+            "title": "Written Rules",
+            "type": "array"
           }
         },
         "required": [
@@ -32605,6 +32612,30 @@
         "title": "TraitCondition",
         "type": "object"
       },
+      "TraitLink": {
+        "description": "A trait of the rule set for `splat`, or one of the troupe's own merits or flaws.",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "splat": {
+            "default": "vampire",
+            "title": "Splat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "TraitLink",
+        "type": "object"
+      },
       "TraitNeed": {
         "properties": {
           "category": {
@@ -32817,6 +32848,13 @@
               }
             ],
             "title": "Weakness Page"
+          },
+          "written_rules": {
+            "items": {
+              "$ref": "#/components/schemas/WrittenRuleRef"
+            },
+            "title": "Written Rules",
+            "type": "array"
           }
         },
         "required": [
@@ -33726,6 +33764,13 @@
           },
           "venue": {
             "$ref": "#/components/schemas/VenueOut"
+          },
+          "written_rules": {
+            "items": {
+              "$ref": "#/components/schemas/WrittenRuleOut"
+            },
+            "title": "Written Rules",
+            "type": "array"
           }
         },
         "required": [
@@ -33746,6 +33791,7 @@
           "lead",
           "min_age",
           "content_notes",
+          "written_rules",
           "can_edit",
           "pictures_available"
         ],
@@ -34941,6 +34987,217 @@
           "body"
         ],
         "title": "Writing",
+        "type": "object"
+      },
+      "WrittenRuleChange": {
+        "properties": {
+          "body": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Body",
+            "type": "string"
+          },
+          "move": {
+            "anyOf": [
+              {
+                "enum": [
+                  "up",
+                  "down"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Move"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "section": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Section",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "trait": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TraitLink"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "WrittenRuleChange",
+        "type": "object"
+      },
+      "WrittenRuleIn": {
+        "properties": {
+          "body": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Body",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "section": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Section",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "trait": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TraitLink"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "WrittenRuleIn",
+        "type": "object"
+      },
+      "WrittenRuleOut": {
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "section": {
+            "title": "Section",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "trait": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TraitLink"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "section",
+          "title",
+          "body",
+          "position",
+          "trait",
+          "page"
+        ],
+        "title": "WrittenRuleOut",
+        "type": "object"
+      },
+      "WrittenRuleRef": {
+        "description": "A troupe's written rule about a trait, to link to where the troupe's players read it.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "WrittenRuleRef",
+        "type": "object"
+      },
+      "WrittenRulesOut": {
+        "properties": {
+          "public": {
+            "title": "Public",
+            "type": "boolean"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/WrittenRuleOut"
+            },
+            "title": "Rules",
+            "type": "array"
+          }
+        },
+        "required": [
+          "public",
+          "rules"
+        ],
+        "title": "WrittenRulesOut",
         "type": "object"
       },
       "XpAward": {
@@ -59402,6 +59659,264 @@
         "summary": "Work Cycles",
         "tags": [
           "responses"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/written-rules": {
+      "get": {
+        "description": "The troupe's written house rules, in reading order. Anyone signed in may read\nthem, as they may its other house rules.",
+        "operationId": "read_written_rules_api_troupes__troupe_id__written_rules_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WrittenRulesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Written Rules",
+        "tags": [
+          "written rules"
+        ]
+      },
+      "post": {
+        "description": "Add a written rule, last in its section.",
+        "operationId": "add_written_rule_api_troupes__troupe_id__written_rules_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WrittenRuleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WrittenRulesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Written Rule",
+        "tags": [
+          "written rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/written-rules-public": {
+      "put": {
+        "description": "Show the written rules on the troupe's profile too, or not: off unless staff\nswitch it on. A public profile shows them to anyone at all.",
+        "operationId": "set_written_rules_public_api_troupes__troupe_id__written_rules_public_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WrittenRulesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Written Rules Public",
+        "tags": [
+          "written rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/written-rules/{rule_id}": {
+      "delete": {
+        "operationId": "delete_written_rule_api_troupes__troupe_id__written_rules__rule_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rule Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Written Rule",
+        "tags": [
+          "written rules"
+        ]
+      },
+      "put": {
+        "description": "Change a written rule's words, section or links; or move it up or down its\nsection. Moved to another section, it goes last there.",
+        "operationId": "change_written_rule_api_troupes__troupe_id__written_rules__rule_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rule Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WrittenRuleChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WrittenRulesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Written Rule",
+        "tags": [
+          "written rules"
         ]
       }
     },

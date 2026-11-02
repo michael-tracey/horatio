@@ -5,11 +5,14 @@ import { api, unwrap } from "../../api/client";
 import type { PriceOut, RulesBrowserOut, TraitCheckOut } from "../../api/types";
 import { EmptyState, FilterBar } from "../../components/EmptyState";
 import { HouseMark, HouseSummary } from "../../components/HouseMark";
+import { Markdown } from "../../components/Markdown";
 import { PageRef } from "../../components/TraitInfo";
 import { Badge, Button, Card, ErrorText, Input, Loading, PageTitle, Select } from "../../components/ui";
 import { useSplats } from "../character/splats";
 import { pageText } from "../troupe/bookPage";
 import { PLAYED } from "../troupe/HouseRulesTab";
+import { ruleLink } from "../troupe/writtenRules";
+import { RuleAbout } from "../troupe/WrittenRulesList";
 import { ownFirst } from "../troupeList";
 import {
   applyFilters,
@@ -21,6 +24,7 @@ import {
   ratingLabel,
   SECTIONS,
   sectionCounts,
+  WRITTEN,
   shownChecks,
   type Entry,
   type Filters,
@@ -134,7 +138,10 @@ export function RulesPage() {
             />
             <nav aria-label="Categories" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
               <Chip label="Everything" pressed={!filters.section} onClick={() => set({ category: "", rating: "" })} />
-              {SECTIONS.filter((s) => data?.catalogue.categories.some((c) => s.categories.includes(c.key))).map((s) => (
+              {[
+                ...(data?.written_rules?.length ? [WRITTEN] : []),
+                ...SECTIONS.filter((s) => data?.catalogue.categories.some((c) => s.categories.includes(c.key))),
+              ].map((s) => (
                 <Chip
                   key={s.key}
                   label={s.label}
@@ -201,7 +208,7 @@ export function RulesPage() {
               <p className="text-sm text-mist" aria-live="polite">
                 {shown.length === 1 ? "1 found" : `${shown.length} found`}
               </p>
-              <Results data={data} shown={shown.slice(0, limit)} />
+              <Results data={data} shown={shown.slice(0, limit)} troupeId={troupeId} />
               {shown.length > limit && (
                 <Button variant="secondary" className="self-start" onClick={() => setMore({ key: filterKey, limit: limit + PAGE })}>
                   Show {Math.min(PAGE, shown.length - limit)} more
@@ -216,7 +223,7 @@ export function RulesPage() {
 }
 
 /** The entries under a heading for each category, with what the whole category costs and the rules it keeps. */
-function Results({ data, shown }: { data: RulesBrowserOut; shown: Entry[] }) {
+function Results({ data, shown, troupeId }: { data: RulesBrowserOut; shown: Entry[]; troupeId: string }) {
   const parts: { category: string; entries: Entry[] }[] = [];
   for (const e of shown) {
     const last = parts[parts.length - 1];
@@ -226,6 +233,17 @@ function Results({ data, shown }: { data: RulesBrowserOut; shown: Entry[] }) {
   return (
     <>
       {parts.map((part, n) => {
+        if (part.category === WRITTEN.key) {
+          return (
+            <Card key={`${part.category}/${n}`} title={`${data.troupe_name ?? "The troupe"}'s written rules`} dense>
+              <ul className="divide-y divide-ash">
+                {part.entries.map((e) => (
+                  <WrittenRow key={e.key} entry={e} troupeId={troupeId} />
+                ))}
+              </ul>
+            </Card>
+          );
+        }
         const category = data.catalogue.categories.find((c) => c.key === part.category);
         const prices = categoryPrices(data, part.category);
         const general = generalChecks(data, part.category);
@@ -246,7 +264,7 @@ function Results({ data, shown }: { data: RulesBrowserOut; shown: Entry[] }) {
             )}
             <ul className="divide-y divide-ash">
               {part.entries.map((e) => (
-                <EntryRow key={e.key} entry={e} troupe={data.troupe_name} />
+                <EntryRow key={e.key} entry={e} troupe={data.troupe_name} troupeId={troupeId} />
               ))}
             </ul>
           </Card>
@@ -256,7 +274,27 @@ function Results({ data, shown }: { data: RulesBrowserOut; shown: Entry[] }) {
   );
 }
 
-function EntryRow({ entry: e, troupe }: { entry: Entry; troupe: string | null }) {
+/** One of the troupe's written rules, marked as its house rule, to read in full. */
+function WrittenRow({ entry: e, troupeId }: { entry: Entry; troupeId: string }) {
+  const rule = e.written!;
+  return (
+    <li className="flex flex-col gap-1 py-2.5 text-sm" data-testid="rules-entry">
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <h3 className="font-sans text-sm text-parchment">
+          <Link to={ruleLink(troupeId, rule.id)} className="hover:underline">
+            {rule.title}
+          </Link>
+        </h3>
+        <Badge tone="gold">House rule</Badge>
+        {rule.section && <span className="text-xs text-mist">{rule.section}</span>}
+      </div>
+      {rule.body.trim() && <Markdown text={rule.body} />}
+      <RuleAbout rule={rule} troupeId={troupeId} />
+    </li>
+  );
+}
+
+function EntryRow({ entry: e, troupe, troupeId }: { entry: Entry; troupe: string | null; troupeId: string }) {
   const t = e.trait;
   const checks = shownChecks(e);
   const power = !t;
@@ -293,6 +331,14 @@ function EntryRow({ entry: e, troupe }: { entry: Entry; troupe: string | null })
           <Badge tone="gold">House rule</Badge> {t.house_rule}
         </p>
       )}
+      {t?.written_rules?.map((w) => (
+        <p key={w.id} className="text-xs text-mist">
+          <Badge tone="gold">House rule</Badge>{" "}
+          <Link to={ruleLink(troupeId, w.id)} className="underline hover:text-parchment">
+            {w.title}
+          </Link>
+        </p>
+      ))}
       {t?.attribute && <p className="text-xs text-mist">Usually tested with {t.attribute}.</p>}
       {t?.in_clan && t.in_clan.length > 0 && <p className="text-xs text-mist">In-clan: {t.in_clan.join(", ")}.</p>}
       {t?.weakness && (

@@ -152,6 +152,75 @@ test("a troupe's players read its house rules: a price the lead changes shows th
   await p.screenshot(shots("house-rules"));
 });
 
+test("a troupe's written rules: the lead adds and orders them, and a player reads them by section, in the rules browser and on its profile (#434)", async ({ browser }) => {
+  const custodian = await person(browser, "quill-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "quill-lead");
+  const player = await person(browser, "quill-player");
+  const troupeName = `Court of Quills ${run}`;
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+
+  // The lead writes three rules under Customise › Rules › Written rules, one about a merit.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules`);
+  await l.getByRole("link", { name: "Written rules", exact: true }).click();
+  const add = async (title: string, section: string, body: string, trait?: [string, string]) => {
+    await l.getByRole("button", { name: "Add a rule" }).click();
+    const dialog = l.getByRole("dialog", { name: "Add a written rule" });
+    await dialog.getByLabel("Title").fill(title);
+    await dialog.getByLabel("Section").fill(section);
+    await dialog.getByLabel("The rule, in Markdown").fill(body);
+    if (trait) {
+      await dialog.getByLabel("About a trait").selectOption({ label: trait[0] });
+      await dialog.getByLabel("Which one").fill(trait[1]);
+      await dialog.getByLabel("Book page").fill("312");
+    }
+    await dialog.getByRole("button", { name: "Add it" }).click();
+    await expect(dialog).toBeHidden();
+    await expect(l.getByRole("button", { name: `Edit ${title}` })).toBeVisible();
+  };
+  await add("The Harpy vote", "Status", "The Harpies vote **openly**, at court.", ["Merits", "Calm Heart"]);
+  await add("Crafts difficulties", "Skills", "Crafts tests are against a set difficulty.");
+  await add("Performance difficulties", "Skills", "As Crafts.");
+  // Performance first in its section.
+  await l.getByRole("button", { name: "Move Performance difficulties up" }).click();
+  await expect(l.getByRole("button", { name: "Move Performance difficulties up" })).toBeDisabled();
+  await l.getByLabel(/Show them on the troupe's profile/).click();
+  await expect(l.getByLabel(/Show them on the troupe's profile/)).toBeChecked();
+
+  // A player reads them on the House rules tab, by section, from a contents list.
+  const p = player.page;
+  await p.goto(`/troupes/${troupeId}/house-rules`);
+  const written = p.locator("section").filter({ has: p.getByRole("heading", { name: "Written rules", exact: true }) });
+  const contents = written.getByRole("navigation", { name: "Contents" });
+  await expect(contents.getByRole("link")).toHaveText(["Performance difficulties", "Crafts difficulties", "The Harpy vote"]);
+  await contents.getByRole("link", { name: "The Harpy vote" }).click();
+  await expect(p).toHaveURL(/#written-rule-/);
+  const harpy = written.getByTestId("written-rule").filter({ hasText: "The Harpy vote" });
+  await expect(harpy.locator("strong")).toHaveText("openly");
+  await expect(harpy).toContainText("About Calm Heart, see p. 312.");
+  await p.screenshot(shots("written-rules"));
+
+  // The rules browser finds them as the troupe's house rules, and Calm Heart links to its rule.
+  await p.goto(`/rules?troupe=${troupeId}`);
+  const search = p.getByRole("searchbox", { name: "Search the rules" });
+  await search.fill("openly");
+  const entry = p.getByTestId("rules-entry").filter({ hasText: "The Harpy vote" });
+  await expect(entry.getByText("House rule", { exact: true })).toBeVisible();
+  await search.fill("calm heart");
+  const calm = p.getByTestId("rules-entry").filter({ has: p.getByRole("heading", { name: "Calm Heart", exact: true }) });
+  await calm.getByRole("link", { name: "The Harpy vote" }).click();
+  await expect(p).toHaveURL(new RegExp(`/troupes/${troupeId}/house-rules#written-rule-`));
+
+  // The troupe's profile shows them too.
+  await p.goto(`/troupes/${troupeId}/profile`);
+  const onProfile = p.locator("section").filter({ has: p.getByRole("heading", { name: "House rules", exact: true }) });
+  await expect(onProfile.getByTestId("written-rule")).toHaveCount(3);
+});
+
 test("a player looks up the rules: a power by name and by its summary, then as played in a troupe, a house price shown and a banned merit hidden (#422)", async ({ browser }) => {
   const custodian = await person(browser, "rulebook-custodian");
   makeCustodian(custodian.email);
