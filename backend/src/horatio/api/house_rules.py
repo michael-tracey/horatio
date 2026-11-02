@@ -33,7 +33,7 @@ from horatio.creation import RESTRICTION_TEXT
 from horatio.models import Character, HouseTrait, Troupe, User
 from horatio.permissions import TroupeAction
 from horatio.rules import checks, conditions, languages, pricing
-from horatio.rules.checks import REQUIREMENT_KEY, CheckData
+from horatio.rules.checks import REQUIREMENT_KEY, SECT_KEY, CheckData
 from horatio.rules.files import EVERYWHERE
 from horatio.rules.house_checks import is_house_check
 from horatio.rules.model import (
@@ -82,6 +82,9 @@ class CheckOut(BaseModel):
     # As the rule set has it, and as this troupe plays it.
     strength: str
     house: str | None
+    # As the rule set has it once creation is finished, where that differs (a sect
+    # merit: needed to finish creation, then for review). A house strength is for both.
+    once_finished: str | None = None
 
 
 class CheckChange(BaseModel):
@@ -106,6 +109,7 @@ CHECK_GROUPS = [
     "Flaws",
     "Clan merits, only for their clan or bloodline",
     "Clan flaws, only for their clan or bloodline",
+    "Sect merits and flaws, only for their sect",
     "Merits and flaws for one generation",
     "Other",
 ]
@@ -128,6 +132,8 @@ GROUP_OF_CATEGORY = {
 
 def check_group(check: CheckData) -> str:
     """Which of CHECK_GROUPS a check is in."""
+    if check.key.startswith(SECT_KEY):
+        return "Sect merits and flaws, only for their sect"
     if check.key.endswith(REQUIREMENT_KEY):
         if "generation" in (check.requires or {}):
             return "Merits and flaws for one generation"
@@ -162,6 +168,7 @@ def checks_out(db: DbSession, troupe_id: uuid.UUID) -> list[CheckOut]:
                     page=c.page,
                     strength=c.strength,
                     house=rules.check_overrides.get(c.key),
+                    once_finished=c.once_finished,
                 ),
             )
     return sorted(found.values(), key=lambda c: CHECK_GROUPS.index(c.group))
@@ -1240,6 +1247,8 @@ class HouseCheckOut(BaseModel):
     # note or off.
     strength: str
     house: str
+    # As the rule set has it once creation is finished, where that differs.
+    once_finished: str | None = None
     # The troupe's own check, not a book one played differently (horatio.house_checks).
     own: bool = False
 
@@ -1547,7 +1556,11 @@ def read_house_rules(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> 
             *own_checks(db, troupe),
             *(
                 HouseCheckOut(
-                    rule=c.message or c.about, page=c.page, strength=c.strength, house=c.house
+                    rule=c.message or c.about,
+                    page=c.page,
+                    strength=c.strength,
+                    house=c.house,
+                    once_finished=c.once_finished,
                 )
                 for c in checks_out(db, troupe.id)
                 if c.house

@@ -390,7 +390,10 @@ class TroupeRules:
             strength = self.check_overrides.get(check.key)
             if strength == "off":
                 continue
-            found.append(replace(check, strength=strength) if strength else check)  # type: ignore[arg-type]
+            # A troupe's strength is for before and after creation alike.
+            found.append(
+                replace(check, strength=strength, once_finished=None) if strength else check  # type: ignore[arg-type]
+            )
         found += [ban_check(c) for c in self.trait_changes.values() if c.banned]
         return found
 

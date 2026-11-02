@@ -1373,6 +1373,39 @@ def fixed_once_accepted(name: str) -> str:
     return f"{name} can't change once a home troupe has accepted the character."
 
 
+# When a trait chosen at creation only stops changing (`locks_at`).
+Lock = Literal["finished", "accepted"]
+
+
+def lock_message(lock: Lock, name: str) -> str:
+    """Why a change to a locked trait is refused."""
+    if lock == "accepted":
+        return fixed_once_accepted(name)
+    return f"{name} can only be chosen during character creation."
+
+
+def lock_holds(locked: Lock | None, *, finished: bool, accepted: bool) -> Lock | None:
+    """The lock that holds a trait now, if any: its creation is finished, or a home
+    troupe has accepted the character."""
+    if locked == "accepted" and accepted:
+        return "accepted"
+    if locked == "finished" and finished:
+        return "finished"
+    return None
+
+
+def lock_on(db: Session, character: Character, key: TraitKey) -> Lock | None:
+    """The lock that holds this trait of the character now, if any."""
+    locked = locks_at(rules_for(db, character).rule_set, key[0], key[1])
+    if locked is None:
+        return None
+    return lock_holds(
+        locked,
+        finished=character.creation_completed_at is not None,
+        accepted=ever_accepted(db, character),
+    )
+
+
 def ever_accepted(db: Session, character: Character) -> bool:
     """Whether a home troupe has ever accepted the character: it has entered play.
     Leaving that troupe, or moving to another, changes nothing."""
@@ -1444,6 +1477,10 @@ class Problem:
     # The traits the broken check looks at, as (category, name), with no name
     # for a whole category: a technique's disciplines.
     looks_at: frozenset[tuple[str, str | None]] = frozenset()
+    # An exception for its trait could set it aside: a check, or a lock on a trait
+    # chosen at creation only. Not a category holding too many, nor a choice a
+    # grant still needs.
+    excusable: bool = True
 
 
 def problem(violation: Violation) -> Problem:
@@ -1470,6 +1507,9 @@ class Judgement:
     excepted: dict[TraitKey, list[Violation]] = field(
         default_factory=dict[TraitKey, list[Violation]]
     )
+    # The locks on traits chosen at creation only that it changes, on traits asked
+    # or given by exception, by trait: set aside rather than refusing.
+    unlocked: dict[TraitKey, Lock] = field(default_factory=dict[TraitKey, Lock])
 
 
 def broken_since(
@@ -1488,7 +1528,7 @@ def broken_since(
     the rule set's checks, how many traits a category holds, and grants left
     unchosen; `creation_only` judges traits only chosen during creation. A check a
     trait in `excepting` breaks, that would refuse or wait, is set aside for an
-    exception instead."""
+    exception instead, as is a lock on it as a trait chosen at creation only."""
     db.expire_all()
     now_broken = (
         [
@@ -1501,6 +1541,7 @@ def broken_since(
     )
     asked = set(excepting)
     excepted: dict[TraitKey, list[Violation]] = {}
+    unlocked: dict[TraitKey, Lock] = {}
     for violation in now_broken:
         subject = violation.subject
         key = (subject.category, subject.name, subject.detail)
@@ -1527,6 +1568,7 @@ def broken_since(
                         f"A character holds {category.max_held} {category.name.lower()}; "
                         "only merits can grant more.",
                         key,
+                        excusable=False,
                     )
                 )
     if creation_only:
@@ -1539,13 +1581,15 @@ def broken_since(
         finished = character.creation_completed_at is not None
         accepted = ever_accepted(db, character) if changed else False
         for key in sorted(changed):
-            locked = locks_at(rule_set, key[0], key[1])
-            if locked == "accepted" and accepted:
-                refused.append(Problem(fixed_once_accepted(key[1]), *key))
-            elif locked == "finished" and finished:
-                refused.append(
-                    Problem(f"{key[1]} can only be chosen during character creation.", *key)
-                )
+            lock = lock_holds(
+                locks_at(rule_set, key[0], key[1]), finished=finished, accepted=accepted
+            )
+            if lock is None:
+                continue
+            if key in asked:
+                unlocked[key] = lock
+            else:
+                refused.append(Problem(lock_message(lock, key[1]), *key))
     if checks:
         for trait, grant in sheet_effects(db, character).unchosen:
             # A trait held before its grant needed a choice is left be until changed.
@@ -1563,9 +1607,10 @@ def broken_since(
                     trait.category,
                     trait.name,
                     trait.detail,
+                    excusable=False,
                 )
             )
-    return Judgement(refused, reviewed, excepted)
+    return Judgement(refused, reviewed, excepted, unlocked)
 
 
 def raised_banned(violation: Violation, before: SheetState) -> bool:
@@ -1582,14 +1627,20 @@ def refusal(problems: Sequence[Problem]) -> str:
 
 @contextmanager
 def checked(
-    db: Session, character: Character, user: User | None = None, *, rules: bool = True
+    db: Session,
+    character: Character,
+    user: User | None = None,
+    *,
+    rules: bool = True,
+    excepting: Iterable[TraitKey] = (),
 ) -> Iterator[None]:
     """Make a change to a sheet, then bring its grants into line and refuse the
     change if it breaks a check the sheet did not already break. The change is
     rolled back (to a savepoint taken before it) with the refusal. NPCs get their grants but are
     their staff's to build as they like. With `rules` False, the change is judged
     only on traits chosen during creation: a cart judges the rest once, against
-    the sheet it ends with (`broken_since`)."""
+    the sheet it ends with (`broken_since`). A trait in `excepting` is asked or
+    given by exception, as `broken_since` sets those aside."""
     before = sheet_state(db, character)
     # An NPC's Path may be chosen directly, so only the conversions a change
     # alters are made.
@@ -1614,7 +1665,7 @@ def checked(
     if character.kind != "pc":
         savepoint.commit()
         return
-    refused = broken_since(db, user, character, before, checks=rules).refused
+    refused = broken_since(db, user, character, before, checks=rules, excepting=excepting).refused
     if refused:
         savepoint.rollback()
         raise conflict(refusal(refused))

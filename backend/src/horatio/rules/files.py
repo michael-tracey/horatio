@@ -258,6 +258,11 @@ def load_checks(
                 f"{where}: check {raw['key']} names a step; it must be a category,"
                 " on a complete check"
             )
+        # Once creation is finished, a check refuses, waits for review, or notes.
+        if raw.get("once_finished") not in (None, "refuse", "review", "note"):
+            raise ValueError(
+                f"{where}: check {raw['key']} once_finished must be refuse, review or note"
+            )
         checks.append(check_from_dict(raw))
     keys = [c.key for c in checks]
     if len(keys) != len(set(keys)):
