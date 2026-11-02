@@ -10,6 +10,7 @@ import { Card, ErrorText, Loading } from "../../components/ui";
 import { BookTraitChanges } from "./BookTraitChanges";
 import { pageText } from "./bookPage";
 import { GameXpRules } from "./GameXpSettings";
+import { WrittenRulesList } from "./WrittenRulesList";
 
 /** How a check is played, in a player's words. */
 export const PLAYED: Record<string, string> = {
@@ -41,15 +42,20 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
     queryKey: ["house-rules", troupe.id],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/house-rules", { params: { path: { troupe_id: troupe.id } } })),
   });
+  const written = useQuery({
+    queryKey: ["written-rules", troupe.id],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/written-rules", { params: { path: { troupe_id: troupe.id } } })),
+  });
   if (rules.isPending) return <Loading />;
   if (rules.error) return <ErrorText error={rules.error} />;
   const r = rules.data;
+  const words = written.data?.rules ?? [];
   const xp = troupe.xp_floor !== BOOK_XP;
   const bySplat = (pick: (s: SplatHouseRulesOut) => unknown[]) => r.splats.filter((s) => pick(s).length > 0);
   const costs = bySplat((s) => s.costs);
   const starting = bySplat((s) => s.starting);
   const actions = bySplat((s) => s.actions);
-  const nothing = !xp && !costs.length && !starting.length && !actions.length && !r.checks.length && !r.house_traits.length && !r.other.length && !r.book_traits?.length && !r.teachers?.length;
+  const nothing = !xp && !costs.length && !starting.length && !actions.length && !r.checks.length && !r.house_traits.length && !r.other.length && !r.book_traits?.length && !r.teachers?.length && !words.length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -73,6 +79,12 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
       {nothing && (
         <Card>
           <EmptyState title={`${troupe.name} plays everything as written.`}>Its storytellers have set no house rules yet.</EmptyState>
+        </Card>
+      )}
+
+      {words.length > 0 && (
+        <Card title="Written rules">
+          <WrittenRulesList rules={words} troupeId={troupe.id} />
         </Card>
       )}
 

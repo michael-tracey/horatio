@@ -4,8 +4,9 @@
  * nothing of the server.
  */
 import { bookSummary } from "../../houseWording";
-import type { DisciplinePowerOut, NotAllowedOut, PriceOut, RarityOut, RulesBrowserOut, TraitCheckOut, TraitOut } from "../../api/types";
+import type { DisciplinePowerOut, NotAllowedOut, PriceOut, RarityOut, RulesBrowserOut, TraitCheckOut, TraitOut, WrittenRuleOut } from "../../api/types";
 import { withClanNames } from "../../clanNames";
+import { searchText } from "../troupe/writtenRules";
 
 /** A part of the browser, and the catalogue categories it shows, in order. */
 export type Section = { key: string; label: string; categories: string[] };
@@ -21,6 +22,9 @@ export const SECTIONS: Section[] = [
   { key: "clans", label: "Clans", categories: ["clan"] },
   { key: "paths", label: "Paths", categories: ["paths"] },
 ];
+
+/** The troupe's written house rules (#434): a part of their own, before the catalogue's. */
+export const WRITTEN: Section = { key: "written", label: "Written rules", categories: ["written"] };
 
 /** The section a catalogue category is browsed in, if it is. */
 export function sectionOf(category: string): Section | undefined {
@@ -70,6 +74,8 @@ export type Entry = {
   banned: boolean;
   /** For a clan or bloodline: how rare it is. */
   rarity: RarityOut | null;
+  /** For one of the troupe's written rules: the rule. */
+  written?: WrittenRuleOut;
   /** What a search looks in, in lower case. */
   text: string;
 };
@@ -87,8 +93,9 @@ function ratingOf(trait: TraitOut): string | null {
 }
 
 /**
- * Every entry the browser can show, in reading order: by section, then category,
- * then name, each discipline followed by its powers by dot.
+ * Every entry the browser can show, in reading order: the troupe's written rules
+ * as it orders them, then by section, category and name, each discipline followed
+ * by its powers by dot.
  */
 export function entries(data: RulesBrowserOut): Entry[] {
   const traits = data.catalogue.traits;
@@ -105,7 +112,7 @@ export function entries(data: RulesBrowserOut): Entry[] {
     for (const d of clan.in_clan ?? []) inClanFor.set(d, [...(inClanFor.get(d) ?? []), clan.name]);
   }
   const sorted = [...shown].sort((a, b) => order.get(a.category)! - order.get(b.category)! || a.name.localeCompare(b.name));
-  const found: Entry[] = [];
+  const found: Entry[] = (data.written_rules ?? []).map(writtenEntry);
   for (const t of sorted) {
     const key = `${t.category}/${t.name}`;
     const section = sectionOf(t.category)!.key;
@@ -142,6 +149,29 @@ export function entries(data: RulesBrowserOut): Entry[] {
     if (t.category === "disciplines") found.push(...(powers.get(t.name) ?? []).map((p) => powerEntry(p, t, clans)));
   }
   return found;
+}
+
+function writtenEntry(rule: WrittenRuleOut): Entry {
+  return {
+    key: `written/${rule.id}`,
+    section: WRITTEN.key,
+    category: "written",
+    name: rule.title,
+    rating: null,
+    value: null,
+    summary: null,
+    page: rule.page ?? null,
+    requirement: null,
+    clans: [],
+    checks: [],
+    prices: [],
+    trait: null,
+    barred: null,
+    banned: false,
+    rarity: null,
+    written: rule,
+    text: searchText(rule),
+  };
 }
 
 function powerEntry(power: DisciplinePowerOut, discipline: TraitOut, clans: string[]): Entry {

@@ -83,6 +83,7 @@ from horatio.api import (
     viewing,
     waiting,
     whos_who,
+    written_rules,
     xp_awards,
     xp_range,
 )
@@ -201,6 +202,7 @@ for module in (
     whos_who,
     quests,
     backstories,
+    written_rules,
 ):
     api.include_router(module.router)
 

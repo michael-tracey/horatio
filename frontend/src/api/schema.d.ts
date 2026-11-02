@@ -7903,6 +7903,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/written-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Written Rules
+         * @description The troupe's written house rules, in reading order. Anyone signed in may read
+         *     them, as they may its other house rules.
+         */
+        get: operations["read_written_rules_api_troupes__troupe_id__written_rules_get"];
+        put?: never;
+        /**
+         * Add Written Rule
+         * @description Add a written rule, last in its section.
+         */
+        post: operations["add_written_rule_api_troupes__troupe_id__written_rules_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/written-rules-public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Written Rules Public
+         * @description Show the written rules on the troupe's profile too, or not: off unless staff
+         *     switch it on. A public profile shows them to anyone at all.
+         */
+        put: operations["set_written_rules_public_api_troupes__troupe_id__written_rules_public_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/written-rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change Written Rule
+         * @description Change a written rule's words, section or links; or move it up or down its
+         *     section. Moved to another section, it goes last there.
+         */
+        put: operations["change_written_rule_api_troupes__troupe_id__written_rules__rule_id__put"];
+        post?: never;
+        /** Delete Written Rule */
+        delete: operations["delete_written_rule_api_troupes__troupe_id__written_rules__rule_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/xp-awards": {
         parameters: {
             query?: never;
@@ -19180,6 +19248,8 @@ export interface components {
             requirements: components["schemas"]["TraitCheckOut"][];
             /** Troupe Name */
             troupe_name: string | null;
+            /** Written Rules */
+            written_rules?: components["schemas"]["WrittenRuleOut"][];
         };
         /** SampleOut */
         SampleOut: {
@@ -21391,6 +21461,21 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * TraitLink
+         * @description A trait of the rule set for `splat`, or one of the troupe's own merits or flaws.
+         */
+        TraitLink: {
+            /** Category */
+            category: string;
+            /** Name */
+            name: string;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+        };
         /** TraitNeed */
         TraitNeed: {
             /**
@@ -21453,6 +21538,8 @@ export interface components {
             weakness?: string | null;
             /** Weakness Page */
             weakness_page?: string | null;
+            /** Written Rules */
+            written_rules?: components["schemas"]["WrittenRuleRef"][];
         };
         /** TraitRef */
         TraitRef: {
@@ -21760,6 +21847,8 @@ export interface components {
             schedule: string;
             setting: components["schemas"]["Setting"];
             venue: components["schemas"]["VenueOut"];
+            /** Written Rules */
+            written_rules: components["schemas"]["WrittenRuleOut"][];
         };
         /** TroupeRequestOut */
         TroupeRequestOut: {
@@ -22217,6 +22306,83 @@ export interface components {
         Writing: {
             /** Body */
             body: string;
+        };
+        /** WrittenRuleChange */
+        WrittenRuleChange: {
+            /**
+             * Body
+             * @default
+             */
+            body: string;
+            /** Move */
+            move?: ("up" | "down") | null;
+            /** Page */
+            page?: string | null;
+            /**
+             * Section
+             * @default
+             */
+            section: string;
+            /** Title */
+            title: string;
+            trait?: components["schemas"]["TraitLink"] | null;
+        };
+        /** WrittenRuleIn */
+        WrittenRuleIn: {
+            /**
+             * Body
+             * @default
+             */
+            body: string;
+            /** Page */
+            page?: string | null;
+            /**
+             * Section
+             * @default
+             */
+            section: string;
+            /** Title */
+            title: string;
+            trait?: components["schemas"]["TraitLink"] | null;
+        };
+        /** WrittenRuleOut */
+        WrittenRuleOut: {
+            /** Body */
+            body: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Page */
+            page: string | null;
+            /** Position */
+            position: number;
+            /** Section */
+            section: string;
+            /** Title */
+            title: string;
+            trait: components["schemas"]["TraitLink"] | null;
+        };
+        /**
+         * WrittenRuleRef
+         * @description A troupe's written rule about a trait, to link to where the troupe's players read it.
+         */
+        WrittenRuleRef: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+        };
+        /** WrittenRulesOut */
+        WrittenRulesOut: {
+            /** Public */
+            public: boolean;
+            /** Rules */
+            rules: components["schemas"]["WrittenRuleOut"][];
         };
         /** XpAward */
         XpAward: {
@@ -38393,6 +38559,173 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["WorkCycle"][];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_written_rules_api_troupes__troupe_id__written_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrittenRulesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_written_rule_api_troupes__troupe_id__written_rules_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WrittenRuleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrittenRulesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_written_rules_public_api_troupes__troupe_id__written_rules_public_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrittenRulesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_written_rule_api_troupes__troupe_id__written_rules__rule_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WrittenRuleChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WrittenRulesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_written_rule_api_troupes__troupe_id__written_rules__rule_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

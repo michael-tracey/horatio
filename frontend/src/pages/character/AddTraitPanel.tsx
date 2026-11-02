@@ -16,6 +16,7 @@ import { ChoiceSelect } from "./ChoiceSelect";
 import { FreeChoicesFields } from "./FreeChoices";
 import { sayable, summary, toSend, type FreePick } from "./freeChoices";
 import { rulesLink } from "../rules/rulesBrowser";
+import { ruleLink } from "../troupe/writtenRules";
 import { rulesTroupe } from "./rules";
 import { applyFilter, byKind, countOf, filterChoices, quickPicks } from "./traitFilter";
 import { CategoryMark, HouseWording } from "../../components/TroupeChange";
@@ -248,6 +249,19 @@ export function AddTraitPanel({
           {bookSummary(trait.description, trait.changed) && <p className="text-xs leading-relaxed text-mist">{named(trait.description)}</p>}
           <HouseWording change={trait.changed} />
           {trait.house_rule && <Notice>House rule: {trait.house_rule}</Notice>}
+          {!!trait.written_rules?.length && rulesTroupe(character) && (
+            <p className="text-xs text-mist">
+              House rules about it:{" "}
+              {trait.written_rules.map((w, n) => (
+                <span key={w.id}>
+                  {n > 0 && ", "}
+                  <Link to={ruleLink(rulesTroupe(character)!, w.id)} className="underline hover:text-parchment">
+                    {w.title}
+                  </Link>
+                </span>
+              ))}
+            </p>
+          )}
           {trait.choices ? (
             <Field label="Which?" hint={`${named(trait.name)} gives one of these.`}>
               <ChoiceSelect required choices={trait.choices} fields={fieldSkills(catalogue)} value={detail} onChange={setDetail} />

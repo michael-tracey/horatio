@@ -497,6 +497,11 @@ MESSAGES: dict[str, str] = {
     "house.diablerie_flaws": "{actor} set what diablerie does to Lesser Generation and Thin"
     " Blooded: it {setting}.",
     "house.clan_rarity": "{actor} set how rare clans are here: {rarities}.",
+    "house.written_rule_added": "{actor} added the written rule {title} ({section}).",
+    "house.written_rule_changed": "{actor} changed the written rule {title}.",
+    "house.written_rule_moved": "{actor} moved the written rule {title} {direction}.",
+    "house.written_rule_deleted": "{actor} deleted the written rule {title}.",
+    "house.written_rules_public": "{actor} set the troupe's profile so it {state}.",
     "house.free_changes": "{actor} set free changes for new characters: {setting}; never"
     " refunded: {excluded}.",
     "sheet.free_change": "{actor} made a free change to {character}: {name} {from_rating} →"

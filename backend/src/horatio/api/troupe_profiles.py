@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 from horatio import pictures
 from horatio.api.pictures import CropIn, as_fractions, uploads
 from horatio.api.players import web_address
+from horatio.api.written_rules import WrittenRuleOut, rules_out
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession, MaybeUser
 from horatio.models import GameAttendance, ScheduledGame, Troupe, TroupeStaff, User
@@ -138,6 +139,8 @@ class TroupeProfileOut(BaseModel):
     lead: ProfilePerson
     min_age: int | None
     content_notes: str
+    # Its written house rules, when it chooses to show them here; else none.
+    written_rules: list[WrittenRuleOut]
     # Whether the viewer may edit it, and whether pictures can be uploaded here.
     can_edit: bool
     pictures_available: bool
@@ -214,6 +217,7 @@ def profile_out(db: Session, viewer: User | None, troupe: Troupe) -> TroupeProfi
         lead=someone(db.get_one(User, troupe.lead_user_id)),
         min_age=kept.min_age,
         content_notes=kept.content_notes,
+        written_rules=rules_out(db, troupe.id) if troupe.written_rules_public else [],
         can_edit=can_edit,
         pictures_available=pictures.upload_dir() is not None,
     )
