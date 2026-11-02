@@ -13,7 +13,7 @@ import { inOrder, listed, stepFor, type NoticeSource, type StepNotice } from "./
 const merits = (names: string[]) => names.map((name) => ({ category: "merits", name }));
 const flaws = (names: string[]) => names.map((name) => ({ category: "flaws", name }));
 
-/** Merits that add a focus to choose (Versatile, Expanded Consciousness) or give one, and the flaw that takes one away. */
+/** Merits that add a focus to choose (Versatile, Expanded Consciousness, Angelic Visage) or give one, and the flaw that takes one away. */
 export const FOCUS_MERITS = [
   ...merits([
     "Versatile",

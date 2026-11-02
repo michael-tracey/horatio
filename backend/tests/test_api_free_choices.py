@@ -545,12 +545,14 @@ def test_piece_that_remains_gives_one_clan_merit_of_another_clan(troupe: Troupe)
     character_id = new_character(troupe, troupe.player, clan="Caitiff")
     take(troupe.player, character_id, "merits", "Piece That Remains", 2)
     grant = grant_key(troupe.player, character_id, "Piece That Remains")
-    offered = {
-        o["name"]
-        for o in trait(troupe.player, character_id, "merits", "Piece That Remains")["free_choices"][
-            0
-        ]["options"]
-    }
+    options = trait(troupe.player, character_id, "merits", "Piece That Remains")["free_choices"][0][
+        "options"
+    ]
+    offered = {o["name"] for o in options}
+    # A merit whose own focus is a choice asks for it.
+    asks = {o["name"] for o in options if o["needs_detail"]}
+    assert "Angelic Visage" in asks
+    assert "Aura of Command" not in asks
     # Another clan's 1- or 2-point merits, bloodline-only ones included; not a
     # bloodline, nor one that gives disciplines or paths.
     assert {"Aura of Command", "Rhythm of Battle", "Angelic Visage"} <= offered
@@ -572,24 +574,33 @@ def test_piece_that_remains_gives_one_clan_merit_of_another_clan(troupe: Troupe)
         "Piece That Remains",
         [pick(grant, "Aura of Command"), pick(grant, "Angelic Visage")],
     )
-    chosen = choose(
+    unsaid = choose(
         troupe.player, character_id, "Piece That Remains", [pick(grant, "Angelic Visage")]
+    )
+    chosen = choose(
+        troupe.player,
+        character_id,
+        "Piece That Remains",
+        [pick(grant, "Angelic Visage", detail="Appearance")],
     )
 
     assert two.status_code == 422
+    # Angelic Visage's own focus is a choice (the errata), made in its detail.
+    assert unsaid.status_code == 422
+    assert unsaid.json()["detail"] == "Say which for Angelic Visage: Appearance, Charisma."
     assert chosen.status_code == 200, chosen.text
     # It is a Lasombra merit on a Caitiff: given, so the clan requirement is not held to.
     assert given(troupe.player, character_id, "merits") == {
-        "Angelic Visage": (1, 1, ["Piece That Remains"])
+        "Angelic Visage: Appearance": (1, 1, ["Piece That Remains"])
     }
     assert problems(troupe.player, character_id) == []
     assert balance(troupe.player, character_id) == before
-    # And its own grants apply: the Charisma focus.
-    assert "Charisma" in ratings(troupe.player, character_id, "focus_socials")
+    # And its own grants apply: the Appearance focus.
+    assert "Appearance" in ratings(troupe.player, character_id, "focus_socials")
     # Taking the merit away takes the clan merit with it.
     take(troupe.player, character_id, "merits", "Piece That Remains", 0)
     assert given(troupe.player, character_id, "merits") == {}
-    assert "Charisma" not in ratings(troupe.player, character_id, "focus_socials")
+    assert "Appearance" not in ratings(troupe.player, character_id, "focus_socials")
 
 
 def test_piece_that_remains_does_not_offer_the_characters_own_clan(troupe: Troupe) -> None:

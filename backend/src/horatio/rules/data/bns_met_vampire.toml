@@ -815,7 +815,8 @@ properties = { in_clan = ["Auspex", "Dominate", "Fortitude"] }
 # well (p. 238), but for the bloodline the setting plays as its clan's default
 # (`defaults`), which needs none; the clan's own line then pays the bloodline's 2
 # points instead, as one step rarer (pp. 238, 450-451, 485). Clan and bloodline
-# together costing more than 7 points take Restricted Clan instead (p. 237). A troupe
+# together costing more than 6 points take Restricted Clan instead (p. 237, as the
+# errata in Vol. 2 Issue 1, p. 20 has it; the book said 7). A troupe
 # can name each clan's rarity itself (horatio.clan_merits). The loader keeps each
 # clan's rarity in its properties (horatio.rules.files.fold_clan_rarity).
 

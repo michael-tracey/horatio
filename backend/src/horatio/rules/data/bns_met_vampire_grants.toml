@@ -97,12 +97,13 @@ page = "137"
 # character already has that focus, it is not given twice, so these are free dots up to
 # 1, as Extrasensory Perceptions' is (a pick on the same focus is spent for nothing).
 
+# Appearance or Charisma, the player's choice, by the errata (the book said Charisma).
 [[grants]]
 source = { category = "merits", name = "Angelic Visage" }
 kind = "free_up_to"
-target = { category = "focus_socials", name = "Charisma" }
+target = { category = "focus_socials", choose = ["Appearance", "Charisma"] }
 amount = 1
-page = "241"
+page = "Vol. 2 Issue 1, p. 21 (errata to p. 241)"
 
 [[grants]]
 source = { category = "merits", name = "Expanded Consciousness" }

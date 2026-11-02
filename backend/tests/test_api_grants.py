@@ -153,11 +153,32 @@ def test_one_focus_per_attribute_unless_granted(troupe: Troupe) -> None:
     assert refused.status_code == 409
     assert "only merits can grant more" in refused.json()["detail"]
 
-    assert take(troupe.player, character_id, "merits", "Angelic Visage", 1).status_code == 200
+    assert (
+        take(troupe.player, character_id, "merits", "Angelic Visage", 1, "Charisma").status_code
+        == 200
+    )
     assert ratings(troupe.player, character_id, "focus_socials") == {
         "Charisma": 1,
         "Manipulation": 1,
     }
+
+
+def test_angelic_visage_gives_appearance_or_charisma_as_chosen(troupe: Troupe) -> None:
+    """The errata to p. 241 (Vol. 2 Issue 1, p. 21): the player's choice of the two."""
+    character_id = new_character(troupe, troupe.player, clan="Lasombra")
+
+    refused = take(troupe.player, character_id, "merits", "Angelic Visage", 1)
+    taken = take(troupe.player, character_id, "merits", "Angelic Visage", 1, "Appearance")
+
+    assert refused.status_code == 409
+    assert refused.json()["detail"] == (
+        "Say which for Angelic Visage: put Appearance, Charisma in its detail."
+    )
+    assert taken.status_code == 200, taken.text
+    assert ratings(troupe.player, character_id, "focus_socials") == {"Appearance": 1}
+    catalogue = troupe.player.client.get("/rules/vampire").json()["traits"]
+    visage = next(t for t in catalogue if t["name"] == "Angelic Visage")
+    assert visage["choices"] == ["Appearance", "Charisma"]
 
 
 def test_a_chosen_focus(troupe: Troupe) -> None:

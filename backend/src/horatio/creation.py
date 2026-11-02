@@ -677,6 +677,9 @@ def complete(db: Session, player: User, character: Character) -> None:
     ensure_creating(db, character)
     if SPLATS[character.splat].has_domitor and not (character.domitor_id or character.domitor_name):
         raise conflict("Name the ghoul's domitor first: its clan and disciplines follow from it.")
+    # The clan's merits as the rules now have them, should the rules have changed since
+    # the sheet last did (the errata's Restricted Clan at more than 6 points, #415).
+    clan_merits.sync(db, character)
     every = pools_with_strays(db, character)
     unplaced = [p for p in every if p.kind == "picks" and p.remaining > 0]
     if unplaced:
