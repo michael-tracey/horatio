@@ -50,7 +50,7 @@ from horatio.models import (
     User,
     XpEntry,
 )
-from horatio.rules.checks import Context, Violation, matches, traits_in, violations
+from horatio.rules.checks import Context, Violation, is_ban, matches, traits_in, violations
 from horatio.rules.conditions import describe as describe_condition
 from horatio.rules.grants import (
     Effects,
@@ -1426,7 +1426,13 @@ def broken_since(
     exception instead."""
     db.expire_all()
     now_broken = (
-        [v for v in sheet_violations(db, character) if v.key not in before.broken] if checks else []
+        [
+            v
+            for v in sheet_violations(db, character)
+            if v.key not in before.broken or raised_banned(v, before)
+        ]
+        if checks
+        else []
     )
     asked = set(excepting)
     excepted: dict[TraitKey, list[Violation]] = {}
@@ -1495,6 +1501,14 @@ def broken_since(
                 )
             )
     return Judgement(refused, reviewed, excepted)
+
+
+def raised_banned(violation: Violation, before: SheetState) -> bool:
+    """Whether a change raised a trait the troupe bans: one held already is kept as
+    it is (horatio.book_traits), but buying more of it is refused as buying it is."""
+    subject = violation.subject
+    held = before.ratings.get((subject.category, subject.name, subject.detail), 0)
+    return is_ban(violation.check) and (subject.rating or 0) > held
 
 
 def refusal(problems: Sequence[Problem]) -> str:

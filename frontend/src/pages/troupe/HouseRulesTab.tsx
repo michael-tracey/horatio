@@ -7,6 +7,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { HouseMark, HouseSummary } from "../../components/HouseMark";
 import { useClanName } from "../../components/ClanNames";
 import { Card, ErrorText, Loading } from "../../components/ui";
+import { BookTraitChanges } from "./BookTraitChanges";
 import { pageText } from "./bookPage";
 
 /** How a check is played, in a player's words. */
@@ -47,7 +48,7 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
   const costs = bySplat((s) => s.costs);
   const starting = bySplat((s) => s.starting);
   const actions = bySplat((s) => s.actions);
-  const nothing = !xp && !costs.length && !starting.length && !actions.length && !r.checks.length && !r.house_traits.length && !r.other.length && !r.teachers?.length;
+  const nothing = !xp && !costs.length && !starting.length && !actions.length && !r.checks.length && !r.house_traits.length && !r.other.length && !r.book_traits?.length && !r.teachers?.length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -172,6 +173,8 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
           </ul>
         </Card>
       )}
+
+      <BookTraitChanges changes={r.book_traits ?? []} />
 
       {actions.length > 0 && (
         <Card title="Downtime actions">

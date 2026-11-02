@@ -245,6 +245,17 @@ def house_page(troupe_name: str) -> str:
 
 
 @dataclass(frozen=True)
+class TraitChangeData:
+    """A troupe's own change to one book trait (horatio.book_traits): banned in the
+    troupe, with the reason its players see."""
+
+    category: str
+    name: str
+    banned: bool = False
+    ban_reason: str = ""
+
+
+@dataclass(frozen=True)
 class RuleSetData:
     key: str
     splat: str
@@ -341,6 +352,11 @@ class TroupeRules:
     # The rule set as it is without the house traits' effects, for trying a change
     # to one (horatio.house_traits.preview). None where there are none.
     unmerged: RuleSetData | None = None
+    # The troupe's changes to book traits (horatio.book_traits), by (category, name):
+    # a banned trait is refused by a check of its own (`checks`).
+    trait_changes: Mapping[tuple[str, str], TraitChangeData] = field(
+        default_factory=dict[tuple[str, str], TraitChangeData]
+    )
 
     @property
     def splat(self) -> str:
@@ -355,8 +371,11 @@ class TroupeRules:
         return {(t.category, t.name): t for t in self.house_traits}
 
     def checks(self) -> list["CheckData"]:
-        """The rule set's checks with the troupe's house strengths applied."""
+        """The rule set's checks with the troupe's house strengths applied, and a
+        check refusing each trait the troupe bans."""
         from dataclasses import replace
+
+        from horatio.rules.checks import ban_check
 
         found: list[CheckData] = []
         for check in self.rule_set.checks:
@@ -364,7 +383,13 @@ class TroupeRules:
             if strength == "off":
                 continue
             found.append(replace(check, strength=strength) if strength else check)  # type: ignore[arg-type]
+        found += [ban_check(c) for c in self.trait_changes.values() if c.banned]
         return found
+
+    def banned(self, category: str, name: str) -> TraitChangeData | None:
+        """The troupe's ban on a book trait, if it bans it."""
+        change = self.trait_changes.get((category, name))
+        return change if change is not None and change.banned else None
 
     def action_kinds(self) -> dict[str, ActionKindData]:
         kinds = dict(self.rule_set.action_kinds)
