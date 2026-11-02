@@ -2,6 +2,12 @@ import type { NpcKind } from "./npcKinds";
 
 /** The disciplines and paths a kind's discipline specializations may take: its own
  * list, with "Thaumaturgy: *" standing for every Thaumaturgy path, or all of them. */
+/**
+ * The V20 LARP SRD's specialisation for an infernal Stock NPC of any kind, which
+ * opens every Dark Thaumaturgy ritual to it (horatio.rules.stock).
+ */
+export const INFERNAL_INVESTMENT = "Infernal Investment";
+
 export function allowedPowers(kind: Pick<NpcKind, "any_discipline" | "specializations" | "numina">, disciplines: string[]): string[] {
   const own = kind.numina.map((n) => n.name);
   if (kind.any_discipline) return [...own, ...disciplines];

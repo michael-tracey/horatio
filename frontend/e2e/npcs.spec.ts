@@ -196,8 +196,10 @@ test("storytellers build a Stock NPC from the NPCs tab and see the book's stat b
   await add("power:Dominate");
   await expect(p.getByText("Werewolf Stock NPCs cannot specialise in Dominate.")).toBeVisible();
   await expect(p.getByRole("listitem", { name: "Dominate" })).toHaveCount(0);
-  await add("skill:Stealth");
+  // Any kind may take the SRD's Infernal Investment, which opens Dark Thaumaturgy (#414).
+  await add("power:Infernal Investment");
   await expect(p.getByRole("heading", { name: "Specialisations (3 of 3)" })).toBeVisible();
+  await expect(block.getByText(/^Infernal Investment/)).toContainText("Every Dark Thaumaturgy ritual");
   await add("skill:Melee");
   await expect(p.getByText("as many specialisations as its rating")).toBeVisible();
   await expect(p.getByRole("listitem", { name: "Melee" })).toHaveCount(0);

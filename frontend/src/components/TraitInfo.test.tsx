@@ -60,6 +60,13 @@ describe("TraitInfo", () => {
     expect(screen.getByText("Fighting with your body.").parentElement!.children).toHaveLength(1);
   });
 
+  it("links a page of the V20 LARP SRD, named for it", () => {
+    const page = "https://www.oneworldofdarkness.com/srd-v20/rituals/vile-swarm";
+    render(<TraitInfo name="Dark Thaumaturgy: Vile Swarm" description="Become a swarm." page={page} />);
+    fireEvent.click(screen.getByRole("button", { name: "Dark Thaumaturgy: Vile Swarm" }));
+    expect(screen.getByRole("link", { name: "V20 LARP SRD" }).getAttribute("href")).toBe(page);
+  });
+
   it("keeps what follows the name on the same line", () => {
     render(<TraitInfo name="Contacts" after={<span>: Police</span>} description="People who help." />);
     expect(screen.getByText(": Police")).toBeTruthy();
@@ -78,5 +85,9 @@ describe("pageLabel", () => {
     expect(pageLabel("unknown")).toBeNull();
     expect(pageLabel("")).toBeNull();
     expect(pageLabel(null)).toBeNull();
+  });
+
+  it("names the SRD for a link to one of its pages", () => {
+    expect(pageLabel("https://www.oneworldofdarkness.com/srd-v20/thaumaturgy/dark-thaumaturgy")).toBe("V20 LARP SRD");
   });
 });

@@ -180,6 +180,11 @@ test("a player looks up the rules: a power by name and by its summary, then as p
   await expect(entry("Majesty")).toContainText("Presence 5");
   await search.fill("act against you");
   await expect(entry("Majesty")).toBeVisible();
+  // A Dark Thaumaturgy ritual, from the V20 LARP SRD, links its page there (#414).
+  await search.fill("vile swarm");
+  const swarm = entry("Dark Thaumaturgy: Vile Swarm");
+  await expect(swarm).toContainText("Level 4");
+  await expect(swarm.getByRole("link", { name: "V20 LARP SRD" })).toHaveAttribute("href", "https://www.oneworldofdarkness.com/srd-v20/rituals/vile-swarm");
 
   // The merits a clan needs, and Calm Heart as the book has it.
   await search.fill("");

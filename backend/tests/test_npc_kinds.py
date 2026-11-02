@@ -217,6 +217,18 @@ def test_supernaturals_take_the_disciplines_their_kind_lists() -> None:
     assert allowed("vampire", 1, power("Brawl")) is not None
 
 
+def test_any_kind_may_take_infernal_investment_for_dark_thaumaturgy() -> None:
+    """The V20 LARP SRD's Infernal Investment (issue #414): open to every kind, a
+    mortal's too, giving every Dark Thaumaturgy ritual and no dots."""
+    assert allowed("mortal", 2, skill("Occult"), power("Infernal Investment")) is None
+    assert allowed("werewolf", 1, power("Infernal Investment")) is None
+    cultist = stat_block(KINDS["mortal"], 2, [power("Infernal Investment")])
+    assert dict(cultist.powers) == {}
+    assert [p.name for p in cultist.built_in] == ["Infernal Investment"]
+    assert "Dark Thaumaturgy" in cultist.built_in[0].note
+    assert stat_block(KINDS["mortal"], 2, []).built_in == ()
+
+
 def test_a_custom_kind_is_set_up_by_the_storyteller() -> None:
     base: NpcKind = KINDS["custom"]
     angel = custom_kind(base, "Angel", "supernatural", Resource("Grace", 7, 2, "at dawn"))

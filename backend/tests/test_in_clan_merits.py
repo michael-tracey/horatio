@@ -280,6 +280,14 @@ def test_vestiges_with_none_from_the_uncommon_list_is_flagged() -> None:
             "Abyssal: Echoes in Darkness",
             "An Abyss Mystic learns a ritual of each level before one of the next. (Vol. 2, p. 98)",
         ),
+        (
+            "Dark Thaumaturgy",
+            "Thaumaturgy: Path of Blood",
+            "Dark Thaumaturgy: Apport Object",
+            "Dark Thaumaturgy: Allies Below",
+            "Above level 1, a Dark Thaumaturgy ritual needs a Thaumaturgy ritual, of either kind,"
+            " one level lower. (V20 LARP SRD)",
+        ),
     ],
 )
 def test_a_ritual_needs_one_of_the_level_before(

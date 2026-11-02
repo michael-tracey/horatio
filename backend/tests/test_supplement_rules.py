@@ -155,6 +155,120 @@ def test_abyss_mysticism_needs_walk_the_abyss_and_obtenebration() -> None:
     )
 
 
+# --- Dark Thaumaturgy (the V20 LARP SRD, issue #414) ----------------------------------------
+
+SRD_RULES = "https://www.oneworldofdarkness.com/srd-v20/thaumaturgy/dark-thaumaturgy"
+DARK_LEVELS = {
+    "Apport Object": 1,
+    "Fragments of the Forgotten": 1,
+    "Knotted Chord": 1,
+    "Scribing the Unknown": 1,
+    "Terrorize": 1,
+    "Whispers of Chaos": 1,
+    "Allies Below": 2,
+    "Fires of the Inferno": 2,
+    "Horrifying Spectacle": 2,
+    "Learn the Heart's Pain": 2,
+    "Recrimination": 2,
+    "Blade of the Forgotten": 3,
+    "Mutual Damnation": 3,
+    "Nightmares of the Subconscious": 3,
+    "Waves of Agony": 3,
+    "Fool the Heart's Eye": 4,
+    "Suppression of the Outward Soul": 4,
+    "Vile Swarm": 4,
+    "Call Forth the Host": 5,
+    "House the Maeljin": 5,
+}
+
+
+def dark(name: str) -> SheetTrait:
+    return t("rituals", f"Dark Thaumaturgy: {name}", DARK_LEVELS[name])
+
+
+def test_the_dark_thaumaturgy_rituals_are_a_family_at_the_srds_levels() -> None:
+    found = {
+        n.removeprefix("Dark Thaumaturgy: "): trait
+        for (c, n), trait in rules().traits.items()
+        if c == "rituals" and n.startswith("Dark Thaumaturgy: ")
+    }
+    assert {n: trait.properties["rating"] for n, trait in found.items()} == DARK_LEVELS
+    for trait in found.values():
+        assert trait.description
+        assert (trait.page_reference or "").startswith(
+            "https://www.oneworldofdarkness.com/srd-v20/rituals/"
+        )
+    assert {c.page for c in rules().checks if c.name_prefix == "Dark Thaumaturgy: "} == {SRD_RULES}
+
+
+def test_dark_thaumaturgy_needs_thaumaturgy_and_evil_revelations_or_infernal_power() -> None:
+    ritual = dark("Apport Object")
+    path = t("disciplines", "Thaumaturgy: Path of Blood", 1)
+    needs = (
+        "Dark Thaumaturgy needs a path of Thaumaturgy and the Path of Evil Revelations,"
+        " or Infernal Power. (V20 LARP SRD)"
+    )
+
+    assert broken([clan("Tremere"), path, ritual], ritual.name) == [needs]
+    assert needs in broken(
+        [clan("Tremere"), t("merits", "Path of Evil Revelations", 3), ritual], ritual.name
+    )
+    assert (
+        broken(
+            [clan("Tremere"), path, t("merits", "Path of Evil Revelations", 3), ritual], ritual.name
+        )
+        == []
+    )
+    # Infernal Power, or Infernal Heritage which includes it, opens them with no path.
+    assert broken([clan("Brujah"), t("merits", "Infernal Power", 3), ritual], ritual.name) == []
+    assert broken([clan("Baali"), t("merits", "Infernal Heritage", 1), ritual], ritual.name) == []
+
+
+def test_a_dark_thaumaturgy_ritual_is_no_higher_than_the_path_but_through_infernal_power() -> None:
+    revelations = t("merits", "Path of Evil Revelations", 3)
+    first = dark("Apport Object")
+    second = dark("Allies Below")
+
+    def sheet(*more: SheetTrait, dots: int = 1) -> list[SheetTrait]:
+        return [
+            clan("Tremere"),
+            revelations,
+            t("disciplines", "Thaumaturgy: Path of Blood", dots),
+            *more,
+        ]
+
+    assert broken(sheet(first, second), second.name) == [
+        "A level 2 Dark Thaumaturgy ritual needs a path of Thaumaturgy at 2 or more,"
+        " or Infernal Power. (V20 LARP SRD)"
+    ]
+    assert broken(sheet(first, second, dots=2), second.name) == []
+    assert broken(sheet(first, second, t("merits", "Infernal Power", 3)), second.name) == []
+    # Infernal Power's rituals stop at level 4: a level 5 one needs the path at 5.
+    four, five = dark("Vile Swarm"), dark("Call Forth the Host")
+    infernal = [clan("Brujah"), t("merits", "Infernal Power", 3)]
+    assert broken([*infernal, dark("Waves of Agony"), four], four.name) == []
+    assert broken([*infernal, four, five], five.name) == [
+        "A level 5 Dark Thaumaturgy ritual needs a path of Thaumaturgy at 5 or more. (V20 LARP SRD)"
+    ]
+    assert broken(sheet(four, five, dots=5), five.name) == []
+
+
+def test_a_dark_thaumaturgy_ritual_follows_one_of_either_kind_a_level_lower() -> None:
+    base = [clan("Tremere"), t("merits", "Path of Evil Revelations", 3)]
+    base.append(t("disciplines", "Thaumaturgy: Path of Blood", 3))
+    blade = dark("Blade of the Forgotten")
+    lower = (
+        "Above level 1, a Dark Thaumaturgy ritual needs a Thaumaturgy ritual, of either kind,"
+        " one level lower. (V20 LARP SRD)"
+    )
+
+    assert broken([*base, blade], blade.name) == [lower]
+    # A level 1 is not enough for a level 3: it must be one level lower.
+    assert broken([*base, dark("Terrorize"), blade], blade.name) == [lower]
+    assert broken([*base, dark("Recrimination"), blade], blade.name) == []
+    assert broken([*base, t("rituals", "Thaumaturgy: Blood Walk", 2), blade], blade.name) == []
+
+
 def test_ritual_master_doubles_the_clans_own_rituals() -> None:
     path = t("disciplines", "Thaumaturgy: Path of Blood", 1)
     two = [
