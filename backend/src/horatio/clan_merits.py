@@ -18,7 +18,8 @@ clan. A setting's default bloodline needs no bloodline merit, and its clan's own
 is then one step rarer instead (p. 238). The default is the troupe's house rule for the
 clan (Troupe.default_bloodlines: a bloodline, or the plain clan for none), else the
 book's for that sect (`defaults` in the rule set's `clan_rarity`). A clan and
-bloodline that would cost more than 7 points take Restricted Clan instead (p. 237).
+bloodline that would cost more than 6 points take Restricted Clan instead (p. 237, as
+the errata has it: Vol. 2 Issue 1, p. 20).
 With no rarity to go by (no sect yet, or one the book gives no rarities for, and no
 house rule), the rarity merits are left to the player to pick, and staff to check.
 """
@@ -45,8 +46,9 @@ BLOODLINE = "Bloodline:"
 # The merit each rarity needs; a common clan needs none.
 RARITY_MERITS = {"uncommon": "Uncommon Clan", "rare": "Rare Clan", "restricted": "Restricted Clan"}
 RESTRICTED = "Restricted Clan"
-# The merit limit (p. 237), where the rule set's merits category gives none.
-MERIT_LIMIT = 7
+# A clan and bloodline whose merits come to more than this take Restricted Clan
+# instead: 6 by the errata to p. 237 (Vol. 2 Issue 1, p. 20), where the book said 7.
+RESTRICTED_OVER = 6
 
 
 @dataclass(frozen=True)
@@ -182,15 +184,15 @@ def needed(
     if merit is not None and clan != default:
         merits.append(ClanMerit(merit, value(merit), f"{clan} is a bloodline.", "238"))
     total = sum(m.points for m in merits)
-    if rarity is not None and total > MERIT_LIMIT:
+    if rarity is not None and total > RESTRICTED_OVER:
         names = " and ".join(f"{m.name} ({m.points})" for m in merits)
         return [
             ClanMerit(
                 RESTRICTED,
                 value(RESTRICTED),
-                f"{clan} would cost {total} merit points, {names}, more than {MERIT_LIMIT}:"
-                " Restricted Clan covers it.",
-                "237",
+                f"{clan} would cost {total} merit points, {names}, more than"
+                f" {RESTRICTED_OVER}: Restricted Clan covers it.",
+                "Vol. 2 Issue 1, p. 20 (errata to p. 237)",
             )
         ]
     return merits

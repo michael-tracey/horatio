@@ -2,6 +2,7 @@
 rarity merit its setting asks for, taken from the merit points while the character is
 built, and given back when another clan is chosen."""
 
+import uuid
 from collections.abc import Callable
 from typing import Any
 
@@ -10,7 +11,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from horatio.clan_merits import Setting, needed
+from horatio.models import Character, CharacterTrait
 from horatio.rules.files import DATA_DIR, load_rule_set
+from horatio.sheets import find_definition, sheet_rows
 from tests.api_helpers import Person, Troupe, finish, new_character
 from tests.test_api_creation import FULL_BUILD, creation, pick
 
@@ -241,11 +244,10 @@ def test_a_troupe_chooses_its_own_default_bloodlines(troupe: Troupe) -> None:
         "Tzimisce"
     )
     assert clan_merits(creation(troupe.player, plain)) == [("Rare Clan", 4)]
-    assert clan_merits(creation(troupe.player, carpathian)) == [
-        ("Rare Clan", 4),
-        ("Bloodline: Carpathian", 3),
-    ]
-    assert held_merits(troupe.player, carpathian) == {"Rare Clan": 4, "Bloodline: Carpathian": 3}
+    # Rare Clan and the Carpathians' 3 come to 7, more than 6: Restricted Clan (p. 237,
+    # with the errata).
+    assert clan_merits(creation(troupe.player, carpathian)) == [("Restricted Clan", 6)]
+    assert held_merits(troupe.player, carpathian) == {"Restricted Clan": 6}
     # A finished character keeps its bloodline and merits.
     assert held_merits(troupe.player, finished) == {"Rare Clan": 4}
 
@@ -285,7 +287,8 @@ def test_a_troupe_chooses_its_own_default_bloodlines(troupe: Troupe) -> None:
     assert "The default Tzimisce" not in {s["name"] for s in read["other"]}
 
 
-def test_more_than_seven_points_is_restricted_clan(troupe: Troupe) -> None:
+def test_more_than_six_points_is_restricted_clan(troupe: Troupe) -> None:
+    """The errata to p. 237 (Vol. 2 Issue 1, p. 20): more than 6 points, not 7."""
     character_id = new_character(troupe, troupe.player, finished=False, clan="Tzimisce: Koldun")
     assert choose(troupe.player, character_id, "sect", "Camarilla").status_code == 200
 
@@ -296,10 +299,35 @@ def test_more_than_seven_points_is_restricted_clan(troupe: Troupe) -> None:
             "name": "Restricted Clan",
             "points": 6,
             "why": "Tzimisce: Koldun would cost 8 merit points, Rare Clan (4) and Bloodline:"
-            " Koldun (4), more than 7: Restricted Clan covers it.",
-            "page": "237",
+            " Koldun (4), more than 6: Restricted Clan covers it.",
+            "page": "Vol. 2 Issue 1, p. 20 (errata to p. 237)",
             "detail": "",
         }
+    ]
+
+
+def test_seven_points_is_restricted_clan_and_six_is_not(troupe: Troupe) -> None:
+    # A Salubri is rare in the Camarilla (4) and a Healer's merit is 3: 7 points.
+    healer = new_character(troupe, troupe.player, "Healer", finished=False, clan="Salubri: Healer")
+    corsair = new_character(
+        troupe, troupe.player, "Corsair", finished=False, clan="Lasombra: Corsairs"
+    )
+    for character_id in (healer, corsair):
+        assert choose(troupe.player, character_id, "sect", "Camarilla").status_code == 200
+
+    state = creation(troupe.player, healer)
+
+    assert clan_merits(state) == [("Restricted Clan", 6)]
+    assert state["clan_merits"][0]["why"] == (
+        "Salubri: Healer would cost 7 merit points, Rare Clan (4) and Bloodline: Healer (3),"
+        " more than 6: Restricted Clan covers it."
+    )
+    assert (budget(state)["used"], budget(state)["remaining"]) == (6, 1)
+    assert held_merits(troupe.player, healer) == {"Restricted Clan": 6}
+    # A Lasombra is rare there too, and a Corsair's merit is 2: 6 points, as they are.
+    assert clan_merits(creation(troupe.player, corsair)) == [
+        ("Rare Clan", 4),
+        ("Bloodline: Corsairs", 2),
     ]
 
 
@@ -326,6 +354,47 @@ def test_finishing_with_a_clan_merit(troupe: Troupe) -> None:
     assert held_merits(troupe.player, character_id) == {"Bloodline: Ishtarri": 2}
     # Once finished, the clan cannot change, and the merit stays.
     assert choose(troupe.player, character_id, "clan", "Toreador").status_code == 409
+
+
+def test_finishing_takes_the_clan_merits_the_rules_now_give(
+    troupe: Troupe, session: Session
+) -> None:
+    """A character built before the errata to p. 237 holds a 7-point clan and bloodline
+    as Rare Clan and its bloodline merit; finishing gives it Restricted Clan instead."""
+    character_id = new_character(troupe, troupe.player, finished=False, clan="Salubri: Healer")
+    assert choose(troupe.player, character_id, "sect", "Camarilla").status_code == 200
+    for category, name, rating in FULL_BUILD:
+        if category == "disciplines":
+            continue
+        if name == "Herd":  # a Salubri cannot take Herd (p. 77)
+            name = "Resources"
+        taken = pick(troupe.player, character_id, category, name, rating)
+        assert taken.status_code == 200, (name, taken.text)
+    for name, rating in (("Auspex", 2), ("Fortitude", 1), ("Obeah", 1)):
+        assert pick(troupe.player, character_id, "disciplines", name, rating).status_code == 200
+    # The merits as the book had them before the errata.
+    character = session.get_one(Character, uuid.UUID(character_id))
+    for row in sheet_rows(session, character):
+        if row.definition.name == "Restricted Clan":
+            session.delete(row.trait)
+    for name, points in (("Rare Clan", 4), ("Bloodline: Healer", 3)):
+        definition, _ = find_definition(session, character, "merits", name)
+        session.add(
+            CharacterTrait(
+                character_id=character.id,
+                trait_definition_id=definition.id,
+                rating=points,
+                free_rating=points,
+                creation_pick=points,
+            )
+        )
+    session.flush()
+    assert held_merits(troupe.player, character_id) == {"Rare Clan": 4, "Bloodline: Healer": 3}
+
+    done = troupe.player.client.post(f"/characters/{character_id}/creation/complete")
+
+    assert done.status_code == 200, done.text
+    assert held_merits(troupe.player, character_id) == {"Restricted Clan": 6}
 
 
 def test_the_book_tables() -> None:
@@ -366,10 +435,8 @@ def test_the_book_tables() -> None:
     plain = {"Tzimisce": "Tzimisce"}
     assert names("Tzimisce", "Camarilla") == [("Restricted Clan", 6)]
     assert house("Tzimisce", "Camarilla", plain) == [("Rare Clan", 4)]
-    assert house("Tzimisce: Carpathian", "Camarilla", plain) == [
-        ("Rare Clan", 4),
-        ("Bloodline: Carpathian", 3),
-    ]
+    # Rare Clan and the Carpathians' 3 come to 7: more than 6 (the errata to p. 237).
+    assert house("Tzimisce: Carpathian", "Camarilla", plain) == [("Restricted Clan", 6)]
     koldun = {"Tzimisce": "Tzimisce: Koldun"}
     assert house("Tzimisce: Koldun", "Camarilla", koldun) == [("Rare Clan", 4)]
     assert house("Tzimisce", "Camarilla", koldun) == [("Restricted Clan", 6)]

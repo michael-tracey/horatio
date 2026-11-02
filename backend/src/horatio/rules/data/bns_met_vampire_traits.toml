@@ -2920,7 +2920,7 @@ properties = { rating = 2, type = "General" }
 [[traits]]
 category = "merits"
 name = "Angelic Visage"
-description = "Gain Social attribute focus Charisma in addition to normal attribute focus. Gain alien beauty rather than a monstrous visage w/ low Humanity or Path."
+description = "Gain the Social attribute focus Appearance or Charisma, your choice, on top of the usual one (errata, Vol. 2 Issue 1, p. 21). Gain alien beauty rather than a monstrous visage w/ low Humanity or Path."
 page_reference = "241"
 properties = { rating = 1, type = "Clan", requirement = "Lasombra" }
 
@@ -4410,7 +4410,7 @@ properties = { rating = 2, type = "General" }
 [[traits]]
 category = "merits"
 name = "Restricted Clan"
-description = "Play a clan or bloodline not suited to the setting, or a combination costing more than 7 merit points. Needs the Storyteller's permission."
+description = "Play a clan or bloodline not suited to the setting, or a clan and bloodline whose merits would come to more than 6 points (errata, Vol. 2 Issue 1, p. 20). Needs the Storyteller's permission."
 page_reference = "237"
 properties = { rating = 6 }
 

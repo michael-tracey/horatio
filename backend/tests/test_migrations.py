@@ -262,3 +262,111 @@ def test_the_power_spelling_migration_renames_held_traits_and_moves_collective_c
             ):
                 connection.execute(text(f"delete from {table} where {column} = :id"), {"id": value})
         load_rules(engine)
+
+
+def test_the_angelic_visage_migration_keeps_charisma(
+    engine: Engine, alembic_config: Config
+) -> None:
+    """Migration 0144 (#415): Angelic Visage's focus is now a choice kept in its detail,
+    so those who held it keep Charisma, on the sheet, in the free choice that gave it
+    and in the approved sheet."""
+    with engine.connect() as connection:
+        visage = trait_definition(connection, "merits", "Angelic Visage")
+        piece = trait_definition(connection, "merits", "Piece That Remains")
+    assert visage is not None and piece is not None
+
+    command.downgrade(alembic_config, "0138")
+    user, troupe = uuid.uuid4(), uuid.uuid4()
+    bought, given = uuid.uuid4(), uuid.uuid4()
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "insert into users (id, email, display_name, handle)"
+                    " values (:id, 'visage@example.com', 'Visage', 'visage')"
+                ),
+                {"id": user},
+            )
+            connection.execute(
+                text("insert into troupes (id, name, lead_user_id) values (:id, 'Abyss', :lead)"),
+                {"id": troupe, "lead": user},
+            )
+            for character, name in ((bought, "Bought It"), (given, "Given It")):
+                connection.execute(
+                    text(
+                        "insert into characters (id, player_id, splat, name, home_troupe_id)"
+                        " values (:id, :player, 'vampire', :name, :troupe)"
+                    ),
+                    {"id": character, "player": user, "name": name, "troupe": troupe},
+                )
+            choices = [{"grant": "g", "name": "Angelic Visage", "detail": "", "amount": 0}]
+            for character, definition, chosen in (
+                (bought, visage, []),
+                (given, piece, choices),
+                (given, visage, []),
+            ):
+                connection.execute(
+                    text(
+                        "insert into character_traits (character_id, trait_definition_id,"
+                        " rating, choices) values (:character, :definition, 1,"
+                        " cast(:choices as jsonb))"
+                    ),
+                    {
+                        "character": character,
+                        "definition": definition,
+                        "choices": json.dumps(chosen),
+                    },
+                )
+            snapshot = [{"category": "merits", "name": "Angelic Visage", "detail": "", "rating": 1}]
+            connection.execute(
+                text(
+                    "insert into sheet_versions (character_id, troupe_id, number, snapshot,"
+                    " approved_by) values (:character, :troupe, 1, cast(:snapshot as jsonb),"
+                    " :user)"
+                ),
+                {
+                    "character": bought,
+                    "troupe": troupe,
+                    "snapshot": json.dumps(snapshot),
+                    "user": user,
+                },
+            )
+
+        command.upgrade(alembic_config, "head")
+
+        with engine.connect() as connection:
+            details = connection.execute(
+                text(
+                    "select character_id, detail from character_traits"
+                    " where trait_definition_id = :id and character_id in (:a, :b)"
+                ),
+                {"id": visage, "a": bought, "b": given},
+            ).all()
+            kept = connection.scalar(
+                text(
+                    "select choices from character_traits where trait_definition_id = :id"
+                    " and character_id = :character"
+                ),
+                {"id": piece, "character": given},
+            )
+            approved = connection.scalar(
+                text("select snapshot from sheet_versions where character_id = :id"),
+                {"id": bought},
+            )
+        assert sorted(d for _, d in details) == ["Charisma", "Charisma"]
+        assert [c["detail"] for c in kept] == ["Charisma"]
+        assert approved[0]["detail"] == "Charisma"
+    finally:
+        command.upgrade(alembic_config, "head")
+        with engine.begin() as connection:
+            for table, column, value in (
+                ("sheet_versions", "troupe_id", troupe),
+                ("character_traits", "character_id", bought),
+                ("character_traits", "character_id", given),
+                ("characters", "id", bought),
+                ("characters", "id", given),
+                ("troupes", "id", troupe),
+                ("users", "id", user),
+            ):
+                connection.execute(text(f"delete from {table} where {column} = :id"), {"id": value})
+        load_rules(engine)

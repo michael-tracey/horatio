@@ -173,7 +173,7 @@ def test_a_focus_a_merit_gives_on_the_same_focus_as_the_pick_is_not_given_twice(
     player = troupe.player
     pick(player, character_id, "focus_socials", "Charisma", 1)
 
-    assert merit(player, character_id, "Angelic Visage").status_code == 200
+    assert merit(player, character_id, "Angelic Visage", "Charisma").status_code == 200
 
     charisma = next(t for t in sheet(player, character_id)["traits"] if t["name"] == "Charisma")
     assert (charisma["rating"], charisma["granted_rating"]) == (1, 0)

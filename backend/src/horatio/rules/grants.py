@@ -279,6 +279,20 @@ def grants_disciplines(rule_set: RuleSetData) -> frozenset[str]:
     )
 
 
+def own_choice(rule_set: RuleSetData, category: str, name: str) -> GrantData | None:
+    """The trait's own grant that needs a choice its detail makes (Angelic Visage's
+    focus), if it has one: given as a free choice, the detail is the player's to say."""
+    found: dict[tuple[str, str], GrantData] = rule_set.remembered(
+        ("own_choice",),
+        lambda: {
+            (g.source["category"], g.source["name"]): g
+            for g in rule_set.grants
+            if "choose" in g.target and g.kind != "free_choices"
+        },
+    )
+    return found.get((category, name))
+
+
 def options(
     grant: GrantData,
     rule_set: RuleSetData,
@@ -337,7 +351,8 @@ def options(
             else None,
             needs_detail=name == CUSTOM
             or rule_set.trait_properties(category, name).get("requirement")
-            == "requires_specialization",
+            == "requires_specialization"
+            or own_choice(rule_set, category, name) is not None,
         )
         for name in sorted(names)
         if (category, name) in rule_set.traits
@@ -369,6 +384,11 @@ def check_picks(
         if option is None:
             return f"{pick.name} is not one of the traits {grant.source['name']} can give."
         detail = pick.detail.strip()
+        own = own_choice(rule_set, option.category, pick.name)
+        if own is not None and chosen_target(own, detail, rule_set) is None:
+            listed = choices(own, rule_set)
+            which = ", ".join(listed) if len(listed) <= 8 else "the trait it applies to"
+            return f"Say which for {pick.name}: {which}."
         if option.needs_detail and not detail:
             return f"Say what the {pick.name} is."
         if (pick.name, detail) in seen:
