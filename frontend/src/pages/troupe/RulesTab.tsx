@@ -12,6 +12,7 @@ import { AllowancesSection } from "./AllowancesSection";
 import { BackstorySettings } from "./BackstorySettings";
 import { pageText } from "./bookPage";
 import { CostsSection } from "./CostsSection";
+import { FreeChangesSettings } from "./FreeChangesSettings";
 import { HouseTraitsSection } from "./HouseTraitsSection";
 import { LocationRulesSection } from "./LocationRulesSection";
 import { QuestSettings } from "./QuestSettings";
@@ -72,6 +73,7 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
           { to: `${base}/locations`, label: "Locations" },
           { to: `${base}/quests`, label: "Quests" },
           { to: `${base}/backstories`, label: "Backstories" },
+          { to: `${base}/free-changes`, label: "Free changes" },
         ]}
       />
       <Routes>
@@ -83,6 +85,7 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
         <Route path="locations" element={<LocationRulesSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="quests" element={<QuestSettings troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="backstories" element={<BackstorySettings troupeId={troupeId} />} />
+        <Route path="free-changes" element={<FreeChangesSettings troupeId={troupeId} canEdit={canEdit} />} />
       </Routes>
     </>
   );

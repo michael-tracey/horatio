@@ -8,7 +8,16 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import audit, free_choices, house_traits, sheets, titles, xp_debt, xp_range
+from horatio import (
+    audit,
+    free_changes,
+    free_choices,
+    house_traits,
+    sheets,
+    titles,
+    xp_debt,
+    xp_range,
+)
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
     AppliedHouseTrait,
@@ -240,6 +249,9 @@ class PendingDisciplineOut(BaseModel):
     cost: int
     # The quest staff answered it with, once its requirements are sent.
     quest: str | None = None
+    # Lowered or removed in the character's free changes (horatio.free_changes): cost
+    # is the XP back, negative, or a flaw's buy-off at what it gave.
+    free_change: bool = False
 
 
 class ExceptionOut(BaseModel):
@@ -281,6 +293,18 @@ class PrimaryPathChange(BaseModel):
     path: str | None
 
 
+class FreeChangesOut(BaseModel):
+    """The character's free changes as a new character, while they are open
+    (horatio.free_changes): lowering or removing a trait refunds its full XP."""
+
+    # "date": until `ends_at`; "games": `games_left` more games attended.
+    kind: Literal["date", "games"]
+    ends_at: datetime | None
+    games_left: int | None
+    # The traits its home troupe never refunds so.
+    excluded: list[str]
+
+
 class SheetOut(BaseModel):
     character_id: uuid.UUID
     name: str
@@ -298,6 +322,8 @@ class SheetOut(BaseModel):
     primary_paths: list[PrimaryPathOut] = []
     # Traits held by exception, oldest first.
     exceptions: list[ExceptionOut] = []
+    # Its free changes as a new character, while open; None otherwise.
+    free_changes: FreeChangesOut | None = None
 
 
 class TraitChange(BaseModel):
@@ -482,6 +508,13 @@ def house_mark_out(mark: house_traits.Mark, applied: AppliedHouseTrait | None) -
 
 def sheet_out(db: DbSession, character: Character) -> SheetOut:
     floor = sheets.accepted_ratings(db, character)
+    window = free_changes.window(db, character)
+    if window is not None:
+        # In its free changes, a trait goes down to its free dots, for its XP back.
+        floor = {
+            key: rating if (key[0], key[1]) in window.excluded else 0
+            for key, rating in floor.items()
+        }
     granting = sheets.sheet_effects(db, character).sources
     rows = sheets.sheet_rows(db, character)
     choosing = free_choices_out(db, character)
@@ -646,9 +679,18 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
                 to_rating=d.to_rating,
                 cost=d.cost,
                 quest=questing.get(a.quest_id) if a.quest_id else None,
+                free_change=d.free_change,
             )
             for a, d in held
         ],
+        free_changes=FreeChangesOut(
+            kind=window.kind,
+            ends_at=window.ends_at,
+            games_left=window.games_left,
+            excluded=sorted(name for _, name in window.excluded),
+        )
+        if window is not None
+        else None,
     )
 
 

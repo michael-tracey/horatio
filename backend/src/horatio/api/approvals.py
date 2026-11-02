@@ -74,6 +74,9 @@ class DisciplineOut(BaseModel):
     teacher: str
     # A troupe's own merit or flaw: "House merit of Night Court", shown with a ★.
     house: str | None = None
+    # A trait lowered or removed in the character's free changes (horatio.free_changes),
+    # for its full XP back.
+    free_change: bool = False
 
 
 class ExceptionAskOut(BaseModel):
@@ -391,6 +394,7 @@ def discipline_out(db: DbSession, approval: Approval) -> DisciplineOut | None:
         cost=bought.cost,
         teacher=bought.teacher,
         house=mark.label if mark is not None else None,
+        free_change=bought.free_change,
     )
 
 

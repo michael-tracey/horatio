@@ -8038,6 +8038,11 @@
             "title": "Detail",
             "type": "string"
           },
+          "free_change": {
+            "default": false,
+            "title": "Free Change",
+            "type": "boolean"
+          },
           "from_rating": {
             "title": "From Rating",
             "type": "integer"
@@ -11922,6 +11927,144 @@
           "times"
         ],
         "title": "FoundOut",
+        "type": "object"
+      },
+      "FreeChangesOut": {
+        "description": "The character's free changes as a new character, while they are open\n(horatio.free_changes): lowering or removing a trait refunds its full XP.",
+        "properties": {
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "excluded": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Excluded",
+            "type": "array"
+          },
+          "games_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Games Left"
+          },
+          "kind": {
+            "enum": [
+              "date",
+              "games"
+            ],
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "ends_at",
+          "games_left",
+          "excluded"
+        ],
+        "title": "FreeChangesOut",
+        "type": "object"
+      },
+      "FreeChangesSetting": {
+        "properties": {
+          "days": {
+            "default": 30,
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Days",
+            "type": "integer"
+          },
+          "excluded": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TraitRef"
+            },
+            "maxItems": 100,
+            "title": "Excluded",
+            "type": "array"
+          },
+          "games": {
+            "default": 3,
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Games",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "none",
+              "date",
+              "games"
+            ],
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "FreeChangesSetting",
+        "type": "object"
+      },
+      "FreeChangesSettingOut": {
+        "properties": {
+          "days": {
+            "default": 30,
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Days",
+            "type": "integer"
+          },
+          "excluded": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TraitRef"
+            },
+            "maxItems": 100,
+            "title": "Excluded",
+            "type": "array"
+          },
+          "games": {
+            "default": 3,
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Games",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "none",
+              "date",
+              "games"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "text"
+        ],
+        "title": "FreeChangesSettingOut",
         "type": "object"
       },
       "FreeChoicesChange": {
@@ -20807,6 +20950,11 @@
             "title": "Detail",
             "type": "string"
           },
+          "free_change": {
+            "default": false,
+            "title": "Free Change",
+            "type": "boolean"
+          },
           "from_rating": {
             "title": "From Rating",
             "type": "integer"
@@ -29049,6 +29197,16 @@
             "title": "Exceptions",
             "type": "array"
           },
+          "free_changes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FreeChangesOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "home_troupe_id": {
             "anyOf": [
               {
@@ -32830,6 +32988,24 @@
           "attribute"
         ],
         "title": "TraitOut",
+        "type": "object"
+      },
+      "TraitRef": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "TraitRef",
         "type": "object"
       },
       "TraitRefOut": {
@@ -54232,6 +54408,101 @@
         "summary": "Change Territory",
         "tags": [
           "feeding"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/free-changes": {
+      "get": {
+        "operationId": "read_free_changes_api_troupes__troupe_id__free_changes_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FreeChangesSettingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Free Changes",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "put": {
+        "description": "Set how long the troupe's new characters stay open to free changes. It applies\nat once to the characters whose free changes are open; turning it on gives them to\ncharacters accepted from now on.",
+        "operationId": "set_free_changes_api_troupes__troupe_id__free_changes_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FreeChangesSetting"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FreeChangesSettingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Free Changes",
+        "tags": [
+          "house rules"
         ]
       }
     },

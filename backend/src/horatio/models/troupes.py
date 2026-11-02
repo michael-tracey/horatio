@@ -32,6 +32,7 @@ class Troupe(Imported, Record):
         CheckConstraint("location_limit in ('refuse', 'note')", name="location_limit"),
         CheckConstraint("backstory_mode in ('free', 'either', 'wizard')", name="backstory_mode"),
         CheckConstraint("feeding in ('off', 'book')", name="feeding"),
+        CheckConstraint("free_changes in ('none', 'date', 'games')", name="free_changes"),
     )
 
     name: Mapped[str]
@@ -103,6 +104,19 @@ class Troupe(Imported, Record):
     # may make in a downtime cycle. While off, players see nothing of them.
     quests_enabled: Mapped[bool] = mapped_column(default=False, server_default="false")
     quest_requests_per_cycle: Mapped[int] = mapped_column(default=1, server_default="1")
+    # House rule: free changes for new characters (horatio.free_changes). "none" locks
+    # a character on acceptance; "date" leaves it open for `free_changes_days` days
+    # from acceptance, "games" until it has attended `free_changes_games` games. Only
+    # characters accepted since the troupe last turned it on (`free_changes_since`)
+    # have one, and the traits in `free_changes_excluded` ([{category, name}]) are
+    # never refunded in it.
+    free_changes: Mapped[str] = mapped_column(default="none", server_default="none")
+    free_changes_days: Mapped[int] = mapped_column(default=30, server_default="30")
+    free_changes_games: Mapped[int] = mapped_column(default=3, server_default="3")
+    free_changes_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    free_changes_excluded: Mapped[list[dict[str, str]]] = mapped_column(
+        JSONB, default=list, server_default="[]"
+    )
     # The clans with a seat at its court, by clan without the bloodline; None until
     # staff choose, for the clans whose Primogen is held there (horatio.whos_who).
     seated_clans: Mapped[list[str] | None] = mapped_column(JSONB)
@@ -182,7 +196,10 @@ class GameAttendance(Record):
     record."""
 
     __tablename__ = "game_attendances"
-    __table_args__ = (UniqueConstraint("game_id", "character_id"),)
+    __table_args__ = (
+        UniqueConstraint("game_id", "character_id"),
+        CheckConstraint("kind in ('attended', 'absentee')", name="kind"),
+    )
 
     game_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("scheduled_games.id"))
     character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
@@ -193,6 +210,10 @@ class GameAttendance(Record):
     play_game_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("play_games.id"))
     # Whether its player said it had a full day's rest; None when no night started.
     rested: Mapped[bool | None]
+    # "attended", there in person; or "absentee", a missed game recorded for its XP
+    # (issue #438), which never counts as having been there. Check-in records only
+    # "attended".
+    kind: Mapped[str] = mapped_column(default="attended", server_default="attended")
 
 
 class CalendarFeed(Record):

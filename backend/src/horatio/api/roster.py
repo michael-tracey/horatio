@@ -476,6 +476,11 @@ MESSAGES: dict[str, str] = {
     "house.diablerie_flaws": "{actor} set what diablerie does to Lesser Generation and Thin"
     " Blooded: it {setting}.",
     "house.clan_rarity": "{actor} set how rare clans are here: {rarities}.",
+    "house.free_changes": "{actor} set free changes for new characters: {setting}; never"
+    " refunded: {excluded}.",
+    "sheet.free_change": "{actor} made a free change to {character}: {name} {from_rating} →"
+    " {to_rating}, {refund} XP back.",
+    "character.free_changes_ended": "{character}'s free changes as a new character ended: {why}.",
     "sheet.give": "{actor} gave {character} {name} {rating} by exception ({cost} XP): {reason}",
     "sheet.power_choices": "{actor} changed {character}'s choices for {power}.",
     "creation.pick": "{actor} picked {name} {rating} for {character}.",
