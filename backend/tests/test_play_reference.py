@@ -190,6 +190,46 @@ def test_powers_say_what_using_them_costs(troupe: Troupe, swift: str) -> None:
     assert disciplines["Obfuscate"]["cost"] is None
 
 
+def test_the_path_of_the_graveborn_has_its_five_powers(troupe: Troupe) -> None:
+    """Vol. 2 pp. 116-119 (#413): each power with its note and focus, Use for the
+    ones that cost Blood, and the scythe's aggravated Melee while it is out."""
+    graveborn = "Necromancy: Path of the Graveborn"
+    character_id = created(
+        troupe,
+        "Gravedigger",
+        ("attributes", "Social", 4),
+        ("focus_socials", "Appearance", None),
+        ("skills", "Melee", 2),
+        ("skills", "Occult", 3),
+        ("disciplines", graveborn, 5),
+    )
+
+    found = reference(troupe, character_id)
+    path = next(d for d in found["disciplines"] if d["name"] == graveborn)
+
+    assert [(p["level"], p["name"]) for p in path["powers"]] == [
+        (1, "Lord of the Flies"),
+        (2, "Death's Scythe"),
+        (3, "Reaper's Due"),
+        (4, "Corpulent Discharge"),
+        (5, "Death Perfected"),
+    ]
+    assert path["pool"] == "Social + Occult"
+    blood = {"tracker": "blood", "amount": 1}
+    assert [p["cost"] for p in path["powers"]] == [blood, blood, None, blood, blood]
+    assert all(p["note"] for p in path["powers"])
+    # With Appearance, the focus notes of the powers that have one for it.
+    powers = {p["name"]: p for p in path["powers"]}
+    assert powers["Death Perfected"]["focus"] == (
+        "+2 to the pool of each retest you spend Willpower on."
+    )
+    assert powers["Lord of the Flies"]["focus"] is None  # a Charisma focus
+    melee = pool(found, "attack:Melee")["damage"]
+    assert [(s["switch"], s["type"]) for s in melee["switched"]] == [
+        ("Death's Scythe", "aggravated")
+    ]
+
+
 def test_a_cost_is_read_from_the_start_of_the_note_or_given() -> None:
     plain = Sheet()
     assert cost({"note": "1 Blood, standard action: an illusion."}, plain) == Cost(
@@ -394,9 +434,7 @@ def test_every_discipline_has_notes_for_each_dot() -> None:
     book = catalogue()
     assert set(book.disciplines) == disciplines
     for name in disciplines:
-        # A path no book we use describes has none (the Graveborn, Vol. 2, p. 62).
-        levels = [] if book.disciplines[name].get("unwritten") else [1, 2, 3, 4, 5]
-        assert [p["level"] for p in book.powers.get(name, [])] == levels, name
+        assert [p["level"] for p in book.powers.get(name, [])] == [1, 2, 3, 4, 5], name
     known = ("initiative", "dodge", "attack", "defense", "discipline", "skill", "frenzy", "all")
     entries = [e for d in book.disciplines.values() for e in d.get("pools", [])] + [
         e for ps in book.powers.values() for p in ps for e in p.get("pools", [])

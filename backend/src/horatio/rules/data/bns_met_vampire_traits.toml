@@ -608,13 +608,13 @@ category = "disciplines"
 name = "Necromancy: Path of Soul Bonding"
 description = "Necromancy that binds wraiths, the souls of the dead, and draws on their knowledge and power."
 
-# In-clan for a Nagaraja with Blight of the Ever-Hungry (Vol. 2, p. 62). No book we use
-# describes its powers: staff record them by hand.
+# In-clan for a Nagaraja with Blight of the Ever-Hungry (Vol. 2, p. 62); its powers are
+# on Vol. 2 pp. 116-119.
 [[traits]]
 category = "disciplines"
 name = "Necromancy: Path of the Graveborn"
-description = "A Nagaraja path of Necromancy, in-clan with Blight of the Ever-Hungry. Its powers are in no book Horatio draws on, so staff record them by hand."
-page_reference = "Vol. 2, p. 62"
+description = "Necromancy of death and decay that strengthens your own undead body: insect swarms, a ghostly scythe, bloating gore and a form of perfect death. In-clan for a Nagaraja with Blight of the Ever-Hungry."
+page_reference = "Vol. 2, pp. 116-119"
 
 [[traits]]
 category = "disciplines"

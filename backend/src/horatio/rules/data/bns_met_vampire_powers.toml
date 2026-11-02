@@ -1077,12 +1077,55 @@ focus = { Wits = "Half damage from sunlight." }
 # Core p. 171.
 active = { key = "Stone Strength", form = true, page = 171, notes = ["No damage from fire; flaming attacks do normal damage.", "You can't be staked."] }
 
-# In-clan with Blight of the Ever-Hungry (Vol. 2, p. 62), but no book we use gives its
-# powers: `unwritten`, so it has none here, and staff record them by hand.
+# Vol. 2 pp. 116-119; in-clan with Blight of the Ever-Hungry (Vol. 2, p. 62). The test
+# pool is Necromancy's (core p. 172).
 [[disciplines]]
 name = "Necromancy: Path of the Graveborn"
-note = "The Nagaraja path Blight of the Ever-Hungry makes in-clan. Its powers are in no book Horatio draws on: ask your storyteller."
-unwritten = true
+pool = "Social + Occult"
+versus = "Social + Willpower"
+note = "Death and decay turned to the service of your own undead body."
+
+[[powers]]
+discipline = "Necromancy: Path of the Graveborn"
+level = 1
+name = "Lord of the Flies"
+note = "1 Blood, simple action: carrion insects swarm you until the end of next turn, so no Firearms, thrown attack or Gaze and Focus power can target you; when they go, heal 1 normal damage."
+focus = { Charisma = "The swarm covers zombies you control too, up to your Occult dots." }
+
+[[powers]]
+discipline = "Necromancy: Path of the Graveborn"
+level = 2
+name = "Death's Scythe"
+note = "1 Blood, simple action: a ghostly scythe for an hour that can't be broken, disarmed or passed on; its Melee hits do 1 aggravated, Deadly and Brutal, with your Potence."
+focus = { Appearance = "It gains Reach, and zombies you control (up to your Occult dots) do aggravated Brawl damage." }
+# Vol. 2 p. 118.
+active = { key = "Death's Scythe", page = 118, book = "Vol. 2", notes = ["Deadly and Brutal; works with your Potence powers.", { note = "Reach as well.", focus = "Appearance" }] }
+damage = [{ attacks = ["Melee"], type = "aggravated", when = "Death's Scythe", note = "Aggravated with Death's Scythe", page = 118, book = "Vol. 2" }]
+
+[[powers]]
+discipline = "Necromancy: Path of the Graveborn"
+level = 3
+name = "Reaper's Due"
+note = "Simple action, point at one target: for 10 minutes, +1 wild card to your attacks on them for each Willpower they spend or lose near you (up to +5), and they stay in your Gaze and Focus."
+focus = { Appearance = "Once a turn, when they spend Willpower to retest against you, regain 1 Willpower." }
+
+[[powers]]
+discipline = "Necromancy: Path of the Graveborn"
+level = 4
+name = "Corpulent Discharge"
+note = "1 Blood, simple action: bloat with gore for 15 minutes (a minor transformation); anyone within 2 steps who hits you with Brawl or Melee takes 2 normal damage, and zombies you control explode for 2 when destroyed."
+focus = { Charisma = "3 damage instead of 2, from you and your zombies." }
+# Vol. 2 p. 119.
+active = { key = "Corpulent Discharge", page = 119, book = "Vol. 2", notes = ["Brawl or Melee hits on you from within 2 steps cost the attacker 2 normal damage, and their supernatural concealment until they wipe off the gore.", { note = "3 damage instead of 2.", focus = "Charisma" }] }
+
+[[powers]]
+discipline = "Necromancy: Path of the Graveborn"
+level = 5
+name = "Death Perfected"
+note = "1 Blood, simple action: become a figure of perfect death (a major transformation): defend against Mental and Social challenges with Physical, and heal up to 3 health levels each time you spend Willpower to retest."
+focus = { Appearance = "+2 to the pool of each retest you spend Willpower on." }
+# Vol. 2 p. 119.
+active = { key = "Death Perfected", form = true, page = 119, book = "Vol. 2", notes = ["Defend against Mental and Social challenges with your Physical attribute.", "Each Willpower spent on a retest heals up to 3 health levels, normal or aggravated, at any time.", { note = "+2 to each retest you spend Willpower on.", focus = "Appearance" }] }
 
 [[disciplines]]
 name = "Necromancy: Sepulchre Path"
