@@ -82,6 +82,7 @@ from horatio.models.rules import (
     CreationRule,
     EquipmentQuality,
     EquipmentTemplate,
+    HouseCheck,
     HouseTrait,
     RuleSet,
     StartingTrait,
@@ -92,6 +93,7 @@ from horatio.models.rules import (
 from horatio.models.scenes import Scene, SceneCharacter
 from horatio.models.shared_backgrounds import SharedBackground, SharedBackgroundEntry
 from horatio.models.status import HeldStatus, StatusBanMark, StatusSuppression
+from horatio.models.teachers import TeacherRule, Teaching
 from horatio.models.troupes import (
     CalendarFeed,
     CharacterTitle,
@@ -166,6 +168,9 @@ __all__ = [
     "CharacterTitle",
     "CharacterTrait",
     "CheckOverride",
+    "HouseCheck",
+    "TeacherRule",
+    "Teaching",
     "ClanLogo",
     "CostRule",
     "CreationRule",

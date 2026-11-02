@@ -1,5 +1,6 @@
 import type { CatalogueOut, CategoryOut, EquipmentOut } from "../../api/types";
 import { Button, Input, Select } from "../../components/ui";
+import { useClanName } from "../../components/ClanNames";
 import { blank, COMPARE, isGroup, matchOf, OP_LABELS, STATUSES, WHATS, type Condition, type EquipmentMatch, type Group, type Item, type Op, type What } from "./filters";
 
 /** What the builder offers: the troupe's rules, its titles, the players and characters in its list, and equipment's kinds and qualities. */
@@ -96,6 +97,7 @@ function isChoice(c: CategoryOut): boolean {
 
 function ConditionEditor({ condition: c, onChange, onRemove, choices }: { condition: Condition; onChange: (c: Condition) => void; onRemove: () => void; choices: Choices }) {
   const { catalogue } = choices;
+  const named = useClanName();
   const categories = catalogue.categories.filter((k) => catalogue.traits.some((t) => t.category === k.key));
   const traitsIn = (key: string) => catalogue.traits.filter((t) => t.category === key);
   const set = (change: Partial<Condition>) => onChange({ ...c, ...change });
@@ -159,7 +161,9 @@ function ConditionEditor({ condition: c, onChange, onRemove, choices }: { condit
           >
             <option value="">Trait…</option>
             {traits.map((t) => (
-              <option key={t.name}>{t.name}</option>
+              <option key={t.name} value={t.name}>
+                {named(t.name)}
+              </option>
             ))}
           </Select>
         )}
@@ -196,8 +200,8 @@ function ConditionEditor({ condition: c, onChange, onRemove, choices }: { condit
         {ops(which === "clan" ? ["is", "is_not", "family"] : ["is", "is_not"])}
         {chosen.map((v) => (
           <span key={v} className="inline-flex h-8 items-center gap-1 rounded-full border border-gold/50 px-2 text-xs text-gold">
-            {v}
-            <button type="button" aria-label={`Remove ${v}`} className="text-mist hover:text-parchment" onClick={() => set({ value: chosen.filter((x) => x !== v) })}>
+            {named(v)}
+            <button type="button" aria-label={`Remove ${named(v)}`} className="text-mist hover:text-parchment" onClick={() => set({ value: chosen.filter((x) => x !== v) })}>
               ×
             </button>
           </span>
@@ -207,7 +211,9 @@ function ConditionEditor({ condition: c, onChange, onRemove, choices }: { condit
           {options
             .filter((n) => !chosen.includes(n))
             .map((n) => (
-              <option key={n}>{n}</option>
+              <option key={n} value={n}>
+                {named(n)}
+              </option>
             ))}
         </Select>
       </>

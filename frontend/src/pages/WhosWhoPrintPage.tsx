@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
 import { api, unwrap } from "../api/client";
+import { useClanName } from "../components/ClanNames";
 import { usePreferences } from "../hooks";
 import { PAPERS, pageRule } from "../paper";
 import { clanText, sections, type Section } from "./troupe/whosWho";
@@ -45,9 +46,10 @@ export function WhosWhoPrintPage() {
 }
 
 function PrintedSection({ section }: { section: Section }) {
+  const named = useClanName();
   return (
-    <section aria-label={section.title} className="mb-5 break-inside-auto">
-      <h2 className="mb-1 border-b border-black text-lg font-semibold break-after-avoid">{section.title}</h2>
+    <section aria-label={named(section.title)} className="mb-5 break-inside-auto">
+      <h2 className="mb-1 border-b border-black text-lg font-semibold break-after-avoid">{named(section.title)}</h2>
       {/* The same columns in every section, so they line up down the page. */}
       <table className="w-full table-fixed text-left text-[9pt] leading-snug">
         <colgroup>
@@ -75,19 +77,19 @@ function PrintedSection({ section }: { section: Section }) {
                 {e.visiting && <span className="block text-neutral-600">{e.visiting_from ? `Visiting from ${e.visiting_from}` : "Visiting"}</span>}
               </td>
               <td className="py-0.5 pr-2">
-                {clanText(e.clan)}, {e.social_age}
+                {named(clanText(e.clan))}, {e.social_age}
               </td>
               <td className="py-0.5 pr-2">
                 {e.player_name ?? "NPC"}
                 {e.player_pronouns && ` (${e.player_pronouns})`}
               </td>
-              <td className="py-0.5 pr-2">{section.kind === "other" ? (e.represented_by ?? "Nobody yet") : e.titles.join(", ")}</td>
+              <td className="py-0.5 pr-2">{section.kind === "other" ? (named(e.represented_by) ?? "Nobody yet") : e.titles.join(", ")}</td>
               <td className="py-0.5">
                 {section.kind === "departed"
                   ? e.left_reason
                   : [...e.visible, ...e.bans, ...e.negative.map((n) => `Negative status: ${n}`)].map((line) => (
                       <span key={line} className="block">
-                        {line}
+                        {named(line)}
                       </span>
                     ))}
               </td>

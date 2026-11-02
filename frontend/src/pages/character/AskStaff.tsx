@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { TraitOut } from "../../api/types";
+import { useClanName } from "../../components/ClanNames";
 import { Button, Field, Input } from "../../components/ui";
 import type { Exception } from "./cart";
 import { detailNeed } from "./fields";
@@ -36,13 +37,14 @@ export function AskStaff({
 }) {
   const [reason, setReason] = useState("");
   const [free, setFree] = useState(false);
+  const shown = useClanName();
   const [detail, setDetail] = useState("");
   const need = detailNeed(trait);
   const [rating, setRating] = useState(1);
   const fixed = trait?.fixed_rating ?? null;
   return (
     <form
-      aria-label={`Ask staff for ${name}`}
+      aria-label={`Ask staff for ${shown(name)}`}
       className="flex flex-col gap-3 rounded-md border border-gold/40 bg-night/60 p-3"
       onSubmit={(e) => {
         e.preventDefault();
@@ -50,14 +52,14 @@ export function AskStaff({
       }}
     >
       <div className="text-sm">
-        <p className="text-parchment">Ask staff for {name}</p>
-        <p className="text-xs text-blood-bright">{refusal}</p>
+        <p className="text-parchment">Ask staff for {shown(name)}</p>
+        <p className="text-xs text-blood-bright">{shown(refusal)}</p>
         <p className="mt-1 text-xs text-mist">
-          Staff can make an exception. It goes in the cart; once you spend it, {name} is on the sheet at once, waiting on the home troupe's approval.
+          Staff can make an exception. It goes in the cart; once you spend it, {shown(name)} is on the sheet at once, waiting on the home troupe's approval.
         </p>
       </div>
       {trait?.choices ? (
-        <Field label="Which?" hint={`${trait.name} gives one of these.`}>
+        <Field label="Which?" hint={`${shown(trait.name)} gives one of these.`}>
           <ChoiceSelect required choices={trait.choices} fields={fields} value={detail} onChange={setDetail} />
         </Field>
       ) : (
