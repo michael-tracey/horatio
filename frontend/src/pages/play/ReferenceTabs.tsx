@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import type { DisciplinePowers, PlayItem, PlayReference, PowerSwitch, TestPool } from "../../api/types";
+import { useClanName } from "../../components/ClanNames";
 import { HouseMark } from "../../components/HouseMark";
 import { TraitInfo } from "../../components/TraitInfo";
 import { Rating } from "../../components/ui";
@@ -101,6 +102,7 @@ export function PowerList({ discipline }: { discipline: DisciplinePowers }) {
 export function SheetTab({ reference }: { reference: PlayReference }) {
   // The Retainers listed once, under the last Retainer bought; with none bought, under
   // the first merit that gives one.
+  const named = useClanName();
   const giving = givingMerits(reference.retainers);
   const retainersUnder =
     reference.traits.filter((t) => t.category === "backgrounds" && t.name === "Retainers").at(-1) ??
@@ -118,9 +120,9 @@ export function SheetTab({ reference }: { reference: PlayReference }) {
         <Panel title="Domitor">
           <p className="text-sm text-parchment">
             {reference.domitor.name}
-            {reference.domitor.clan && <span className="text-mist"> · {reference.domitor.clan}</span>}
+            {reference.domitor.clan && <span className="text-mist"> · {named(reference.domitor.clan)}</span>}
           </p>
-          {reference.domitor.weakness && <p className="mt-1 text-xs text-mist">Weakness: {reference.domitor.weakness}</p>}
+          {reference.domitor.weakness && <p className="mt-1 text-xs text-mist">Weakness: {named(reference.domitor.weakness)}</p>}
         </Panel>
       )}
       {[...groups].map(([name, traits]) => (
@@ -296,6 +298,7 @@ export function PoolsTab({
   using?: Using;
 }) {
   const modifiers = useModifiers(characterId);
+  const named = useClanName();
   const on = powers.filter((p) => p.on).map((p) => p.key);
   // The player's own, then what the items equipped make (issue #306).
   const counting = [...modifiers.modifiers, ...equipmentModifiers(items, equipped)];
@@ -321,7 +324,7 @@ export function PoolsTab({
         <Panel title="Also">
           <ul className="list-disc pl-5 text-sm text-mist">
             {reference.notes.map((n) => (
-              <li key={n}>{n}</li>
+              <li key={n}>{named(n)}</li>
             ))}
           </ul>
         </Panel>
@@ -337,7 +340,7 @@ export function PoolsTab({
           <ul className="flex flex-col gap-1.5 text-sm">
             {reference.other_powers.map((o) => (
               <li key={`${o.category_name}/${o.name}`}>
-                <strong className="font-semibold">{o.name}</strong> <span className="text-xs text-mist">{o.category_name}</span>
+                <strong className="font-semibold">{named(o.name)}</strong> <span className="text-xs text-mist">{o.category_name}</span>
                 {o.note && <p className="text-mist">{o.note}</p>}
               </li>
             ))}

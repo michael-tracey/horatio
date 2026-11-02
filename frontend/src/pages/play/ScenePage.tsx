@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { PlayReference, RosterEntry, SceneOut, TestPool } from "../../api/types";
 import { LinesVeilsNote } from "../../components/LinesVeils";
+import { useClanName } from "../../components/ClanNames";
 import { Button, ErrorText, Input } from "../../components/ui";
 import { usePreferences } from "../../hooks";
 import { LogEntries, ResetGame, SyncStatus } from "./PlayPage";
@@ -488,6 +489,7 @@ function SceneCard({ characterId, back, onRemove, onRank }: { characterId: strin
   const { view, shown, tap, sync, accept } = usePlay(characterId);
   const { reference } = useReference(characterId);
   const modifiers = useModifiers(characterId);
+  const named = useClanName();
   const rank = shown && reference ? rankOf(reference, shown, modifiers.modifiers) : undefined;
   const [initiative, mental, physical, social] = rank ? [rank.initiative, rank.mental, rank.physical, rank.social] : [];
   // Its turn order, for the scene to sort by; said again only when it changes.
@@ -525,7 +527,7 @@ function SceneCard({ characterId, back, onRemove, onRank }: { characterId: strin
           <h2 className="truncate text-lg leading-tight text-gold">{name}</h2>
           <p className="text-xs text-mist">
             {shown.kind === "npc" ? "NPC" : shown.player_name}
-            {shown.clan ? ` · ${shown.clan}` : ""}
+            {shown.clan ? ` · ${named(shown.clan)}` : ""}
           </p>
           <LinesVeilsNote value={reference?.lines_veils} who={shown.player_name} />
           {/* The form they are in (issue #200), switched on the full Play View. */}

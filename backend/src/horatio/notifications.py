@@ -25,7 +25,7 @@ from datetime import UTC, datetime
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
-from horatio import notification_emails
+from horatio import clan_names, notification_emails
 from horatio.models import (
     Approval,
     Character,
@@ -345,8 +345,11 @@ def notify(
     character_id: uuid.UUID | None = None,
 ) -> None:
     """Leave a message for each of `user_ids`, in the same transaction as the event,
-    and an email for those who want this kind by email."""
+    and an email for those who want this kind by email. The clan stored as Assamite is
+    named as the troupe calls it then, and stays so (horatio.clan_names)."""
     user_ids = list(dict.fromkeys(user_ids))
+    troupe = db.get(Troupe, troupe_id) if troupe_id is not None else None
+    summary = clan_names.shown(summary, clan_names.troupe_name(troupe))
     for user_id in user_ids:
         db.add(
             Notification(

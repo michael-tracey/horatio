@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { WhosWhoEntry } from "../../api/types";
+import { useClanName } from "../../components/ClanNames";
 import { Button, ErrorText, Input, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 
@@ -17,6 +18,7 @@ export function RepresentedBy({ troupeId, entry, seated, canSet }: { troupeId: s
   const current = entry.represented_by;
   const [choice, setChoice] = useState("");
   const [words, setWords] = useState("");
+  const named = useClanName();
   const save = useAction((represented_by: string | null) =>
     unwrap(
       api.PUT("/api/troupes/{troupe_id}/characters/{character_id}/represented-by", {
@@ -35,7 +37,7 @@ export function RepresentedBy({ troupeId, entry, seated, canSet }: { troupeId: s
   if (!editing)
     return (
       <span className="flex flex-wrap items-baseline gap-x-2 text-mist">
-        Represented by: {current ?? "nobody yet"}
+        Represented by: {current ? named(current) : "nobody yet"}
         {canSet && (
           <button type="button" className="text-xs underline hover:text-gold" aria-label={`Change who represents ${entry.name}`} onClick={start}>
             Change
@@ -55,7 +57,7 @@ export function RepresentedBy({ troupeId, entry, seated, canSet }: { troupeId: s
         <option value="">Nobody yet</option>
         {seated.map((clan) => (
           <option key={clan} value={clan}>
-            {clan}
+            {named(clan)}
           </option>
         ))}
         <option value={OWN_WORDS}>In your own words…</option>
