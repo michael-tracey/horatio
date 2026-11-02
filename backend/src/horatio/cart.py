@@ -109,6 +109,12 @@ class Outcome:
     because: str | None = None
     # A troupe's teacher rule asks a teacher for it (horatio.teaching).
     teacher: teaching.Need | None = None
+    # Refused, but asking it of the home troupe's staff as an exception could
+    # make it: what refuses it is only what an exception sets aside.
+    askable: bool = False
+    # Refused, and asking staff can't help: why, for a raise a player could
+    # otherwise ask for.
+    unaskable: str | None = None
 
 
 def planned(sheet: Sequence[SheetTrait], changes: Sequence[Change]) -> list[SheetTrait]:
@@ -187,7 +193,8 @@ def make(db: Session, user: User, character: Character, change: Change) -> sheet
                     f"{change.name} is at {now} now, not {change.from_rating}: "
                     "the sheet has changed since this went in the cart."
                 )
-        with sheets.checked(db, character, user, rules=False):
+        key = (change.category, change.name, change.detail)
+        with sheets.checked(db, character, user, rules=False, excepting=[key] if asked else []):
             made = sheets.set_trait(
                 db,
                 user,
@@ -262,6 +269,43 @@ def would_cost(db: Session, character: Character, change: Change) -> int | None:
     except HTTPException:
         return None
     return 0
+
+
+def could_ask(character: Character, change: Change) -> bool:
+    """Whether the player could ask staff for the change as an exception: a raise,
+    not asked already, of a player's character with a home troupe."""
+    return (
+        isinstance(change, SetRating)
+        and change.exception is None
+        and change.rating is not None
+        and (change.from_rating is None or change.rating > change.from_rating)
+        and character.kind == "pc"
+        and character.home_troupe_id is not None
+    )
+
+
+def tried_as_asked(db: Session, user: User, character: Character, change: SetRating) -> str | None:
+    """Make a refused change again, as if asked as an exception, then take it back:
+    why it is refused even so, if it is."""
+    savepoint = db.begin_nested()
+    try:
+        make(db, user, character, replace(change, exception=Ask("Tried as an exception")))
+        db.flush()
+    except HTTPException as error:
+        return str(error.detail)
+    finally:
+        savepoint.rollback()
+        db.expire_all()
+    return None
+
+
+def no_help(refused: str, why: str) -> str:
+    """Why asking staff can't help, saying what refuses it unless the line says so."""
+    return (
+        "Asking staff can't help with this."
+        if why == refused
+        else f"Asking staff can't help: {why}"
+    )
 
 
 def waiting(db: Session, character: Character) -> int:
@@ -343,6 +387,8 @@ def apply_changes(
     steps: list[Step] = []
     # What each line given free would have cost.
     normal_costs: dict[int, int | None] = {}
+    # Why asking staff for a refused line can't help, by line.
+    cant_ask: dict[int, str] = {}
     for i, change in enumerate(changes):
         balance = sheets.xp_balance(db, character)
         held = waiting(db, character)
@@ -356,6 +402,10 @@ def apply_changes(
             savepoint.rollback()
             db.expire_all()
             refused = str(error.detail)
+            if isinstance(change, SetRating) and could_ask(character, change):
+                still = tried_as_asked(db, user, character, change)
+                if still is not None:
+                    cant_ask[i] = no_help(refused, still)
             outcomes.append(
                 Outcome(cost=would_cost(db, character, change), refused=refused, teacher=need)
             )
@@ -380,6 +430,36 @@ def apply_changes(
         steps.append(step(traits_before, held_traits(db, character)))
     if character.kind != "pc":
         return outcomes
+    outcomes = judge_finished_sheet(
+        db, user, character, changes, outcomes, steps, start, normal_costs, cant_ask
+    )
+    return [
+        replace(
+            o,
+            askable=could_ask(character, changes[i]) and i not in cant_ask,
+            unaskable=cant_ask.get(i) if could_ask(character, changes[i]) else None,
+        )
+        if o.refused is not None
+        else o
+        for i, o in enumerate(outcomes)
+    ]
+
+
+def judge_finished_sheet(
+    db: Session,
+    user: User,
+    character: Character,
+    changes: Sequence[Change],
+    outcomes: list[Outcome],
+    steps: Sequence[Step],
+    start: sheets.SheetState,
+    normal_costs: dict[int, int | None],
+    cant_ask: dict[int, str],
+) -> list[Outcome]:
+    """Check the sheet the changes end with against the one they started from,
+    refusing each change a broken check is put down to, and ask the lines asked as
+    exceptions. Notes in `cant_ask` the refusals an exception for the line would
+    not set aside."""
     asking = {
         (c.category, c.name, c.detail): i
         for i, c in enumerate(changes)
@@ -392,6 +472,14 @@ def apply_changes(
     for i, found in problems.items():
         reasons = [outcomes[i].refused, sheets.refusal(found)]
         outcomes[i] = replace(outcomes[i], refused=" ".join(r for r in reasons if r))
+        change = changes[i]
+        key = (
+            (change.category, change.name, change.detail) if isinstance(change, SetRating) else None
+        )
+        # An exception for the line sets aside only what is about its own trait.
+        lasting = [p for p in found if not p.excusable or (p.category, p.name, p.detail) != key]
+        if lasting and i not in cant_ask:
+            cant_ask[i] = no_help(outcomes[i].refused or "", sheets.refusal(lasting))
     for problem in judged.reviewed:
         i = culprit(problem, steps)
         outcomes[i] = replace(outcomes[i], needs_approval=True)
@@ -399,12 +487,11 @@ def apply_changes(
         asked = changes[i]
         assert isinstance(asked, SetRating) and asked.exception is not None
         broken = judged.excepted.get(key, [])
-        if trait_exceptions.ask(
+        kept = trait_exceptions.ask(
             db, user, character, key, asked.exception, broken, start, normal_costs.get(i)
-        ):
+        )
+        if kept is not None:
             outcomes[i] = replace(
-                outcomes[i],
-                needs_approval=True,
-                breaks=tuple(c["message"] for c in trait_exceptions.checks_of(broken)),
+                outcomes[i], needs_approval=True, breaks=tuple(c["message"] for c in kept)
             )
     return outcomes

@@ -9776,6 +9776,11 @@ export interface components {
         };
         /** CartLineOut */
         CartLineOut: {
+            /**
+             * Askable
+             * @default false
+             */
+            askable: boolean;
             /** Because */
             because?: string | null;
             /**
@@ -9795,6 +9800,8 @@ export interface components {
              */
             repriced: components["schemas"]["RepricedOut"][];
             teacher?: components["schemas"]["TeacherNeedOut"] | null;
+            /** Unaskable */
+            unaskable?: string | null;
         };
         /** CartOut */
         CartOut: {
@@ -12577,6 +12584,8 @@ export interface components {
          * @description A trait asked for by exception: the rules it breaks, why, and whether free.
          */
         ExceptionAskOut: {
+            /** Bloodline */
+            bloodline?: string | null;
             /** Breaks */
             breaks: string[];
             /** Free */
@@ -12585,6 +12594,11 @@ export interface components {
             normal_cost: number | null;
             /** Reason */
             reason: string;
+            /**
+             * Set Aside
+             * @default []
+             */
+            set_aside: string[];
         };
         /**
          * ExceptionIn

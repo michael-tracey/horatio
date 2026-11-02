@@ -3951,6 +3951,11 @@
       },
       "CartLineOut": {
         "properties": {
+          "askable": {
+            "default": false,
+            "title": "Askable",
+            "type": "boolean"
+          },
           "because": {
             "anyOf": [
               {
@@ -4013,6 +4018,17 @@
                 "type": "null"
               }
             ]
+          },
+          "unaskable": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unaskable"
           }
         },
         "required": [
@@ -11670,6 +11686,17 @@
       "ExceptionAskOut": {
         "description": "A trait asked for by exception: the rules it breaks, why, and whether free.",
         "properties": {
+          "bloodline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bloodline"
+          },
           "breaks": {
             "items": {
               "type": "string"
@@ -11695,6 +11722,14 @@
           "reason": {
             "title": "Reason",
             "type": "string"
+          },
+          "set_aside": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Set Aside",
+            "type": "array"
           }
         },
         "required": [
