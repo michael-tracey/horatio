@@ -13,6 +13,7 @@ import { useAction } from "../../hooks";
 import { CheckInForm } from "../CheckInPage";
 import { checkedInText } from "./checkin";
 import { ANSWERS, answeredText, byAnswer, countsText, webcal, type Answer } from "./games";
+import { MissedGames } from "./MissedGames";
 
 /**
  * The troupe's games still to come, for its members: each says whether they are
@@ -61,6 +62,7 @@ export function GamesCard({ troupe, canAddGames, running }: { troupe: TroupeOut;
           ))}
         </ul>
       )}
+      <MissedGames troupeId={troupe.id} />
       {running && <PastGames troupeId={troupe.id} />}
       <Dialog title="Subscribe to the calendar" open={subscribing} onClose={() => setSubscribing(false)} phoneFull>
         <Subscribe troupe={troupe} />

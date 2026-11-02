@@ -10,6 +10,7 @@ import { ClanNamesSetting } from "./ClanNamesSetting";
 import { DiablerieFlaws } from "./DiablerieFlaws";
 import { FeedingSetting } from "./FeedingSetting";
 import { FeedingTerritories } from "./FeedingTerritories";
+import { GameXpCard } from "./GameXpSettings";
 import { GolcondaSetting } from "./GolcondaSetting";
 import { ExperienceDefaults, StartingBlood } from "./StartingSection";
 import { StatusSetting, TitlesSetting } from "./StatusSetting";
@@ -45,6 +46,7 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
             </Link>
           }
         />
+        <GameXpCard troupeId={troupe.id} canEdit={canEdit} sessionXp={troupe.session_xp} />
       </Group>
       <Group title="Status and titles">
         <StatusSetting troupe={troupe} canEdit={canEdit} />

@@ -18,6 +18,7 @@ from horatio import (
     diablerie,
     feeding,
     free_changes,
+    game_xp,
     rack,
     resonance,
     territories,
@@ -1318,6 +1319,10 @@ def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
                     book_text=book or "Not given",
                 )
             )
+    found.extend(
+        HouseSettingOut(name=name, text=text, book_text=book)
+        for name, text, book in game_xp.house_settings(troupe)
+    )
     return found
 
 

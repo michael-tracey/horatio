@@ -336,7 +336,7 @@ def test_the_games_xp_goes_to_everyone_there_whose_home_it_is(
         path(troupe, tonight, "/xp"), json={"amount": 4, "reason": "Game, 1 November"}
     )
     assert response.status_code == 200, response.text
-    assert response.json() == {"characters": 1, "total": 4, "past_monthly": []}
+    assert response.json() == {"characters": 1, "total": 4, "past_monthly": [], "capped": []}
     assert awarded(troupe.player, agnes) == [("Game, 1 November", 4)]
     # Beatrix wasn't there; Vera's home troupe awards her own.
     assert awarded(troupe.player, beatrix) == []
@@ -381,7 +381,12 @@ def test_an_award_past_the_monthly_guidance_is_warned_of_not_refused(troupe: Tro
         json={"amount": 5, "reason": "Game, 1 November", "to_range": False},
     )
     assert response.status_code == 200, response.text
-    assert response.json() == {"characters": 2, "total": 10, "past_monthly": ["Agnes"]}
+    assert response.json() == {
+        "characters": 2,
+        "total": 10,
+        "past_monthly": ["Agnes"],
+        "capped": [],
+    }
 
 
 def test_who_awards_a_games_xp_and_when(troupe: Troupe) -> None:

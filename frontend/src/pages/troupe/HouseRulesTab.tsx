@@ -9,6 +9,7 @@ import { useClanName } from "../../components/ClanNames";
 import { Card, ErrorText, Loading } from "../../components/ui";
 import { BookTraitChanges } from "./BookTraitChanges";
 import { pageText } from "./bookPage";
+import { GameXpRules } from "./GameXpSettings";
 
 /** How a check is played, in a player's words. */
 export const PLAYED: Record<string, string> = {
@@ -197,6 +198,8 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
           </ul>
         </Card>
       )}
+
+      <GameXpRules troupeId={troupe.id} />
 
       <Card title="Backstories">
         <p className="text-sm">{BACKSTORY[r.backstory_mode] ?? r.backstory_mode}</p>
