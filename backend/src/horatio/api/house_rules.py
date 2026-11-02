@@ -939,6 +939,28 @@ def set_feeding(
     return troupe_out(db, user, troupe)
 
 
+# --- Clan names -------------------------------------------------------------------
+
+
+class ClanNamesIn(BaseModel):
+    # What the clan stored as "Assamite" is called here: its later name, or the books'.
+    assamite: Literal["Banu Haqim", "Assamite"]
+
+
+@router.put("/clan-names")
+def set_clan_names(
+    troupe_id: uuid.UUID, body: ClanNamesIn, db: DbSession, user: CurrentUser
+) -> TroupeOut:
+    """What the troupe calls the clan the books call the Assamites (horatio.clan_names).
+    Only what is shown changes: the rules and the sheets keep "Assamite"."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    if troupe.assamite_name != body.assamite:
+        troupe.assamite_name = body.assamite
+        audit.record(db, user, "house.clan_names", troupe_id=troupe.id, name=body.assamite)
+    db.commit()
+    return troupe_out(db, user, troupe)
+
+
 # --- Clan rarity ------------------------------------------------------------------
 
 Rarity = Literal["common", "uncommon", "rare", "restricted"]

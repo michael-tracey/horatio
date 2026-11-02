@@ -4407,6 +4407,15 @@
             ],
             "title": "Asking Troupe Name"
           },
+          "assamite_name": {
+            "default": "Banu Haqim",
+            "enum": [
+              "Banu Haqim",
+              "Assamite"
+            ],
+            "title": "Assamite Name",
+            "type": "string"
+          },
           "building_troupe_id": {
             "anyOf": [
               {
@@ -4640,6 +4649,15 @@
               }
             ],
             "title": "Asking Troupe Id"
+          },
+          "assamite_name": {
+            "default": "Banu Haqim",
+            "enum": [
+              "Banu Haqim",
+              "Assamite"
+            ],
+            "title": "Assamite Name",
+            "type": "string"
           },
           "building_troupe_id": {
             "anyOf": [
@@ -5604,6 +5622,23 @@
           "why"
         ],
         "title": "ClanMeritOut",
+        "type": "object"
+      },
+      "ClanNamesIn": {
+        "properties": {
+          "assamite": {
+            "enum": [
+              "Banu Haqim",
+              "Assamite"
+            ],
+            "title": "Assamite",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assamite"
+        ],
+        "title": "ClanNamesIn",
         "type": "object"
       },
       "ClanRarityIn": {
@@ -19567,6 +19602,15 @@
             ],
             "title": "Asking Troupe Id"
           },
+          "assamite_name": {
+            "default": "Banu Haqim",
+            "enum": [
+              "Banu Haqim",
+              "Assamite"
+            ],
+            "title": "Assamite Name",
+            "type": "string"
+          },
           "building_troupe_id": {
             "anyOf": [
               {
@@ -33189,6 +33233,15 @@
           "archived": {
             "title": "Archived",
             "type": "boolean"
+          },
+          "assamite_name": {
+            "default": "Banu Haqim",
+            "enum": [
+              "Banu Haqim",
+              "Assamite"
+            ],
+            "title": "Assamite Name",
+            "type": "string"
           },
           "badge_pronouns": {
             "title": "Badge Pronouns",
@@ -52289,6 +52342,60 @@
           }
         },
         "summary": "Change Check",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/clan-names": {
+      "put": {
+        "description": "What the troupe calls the clan the books call the Assamites (horatio.clan_names).\nOnly what is shown changes: the rules and the sheets keep \"Assamite\".",
+        "operationId": "set_clan_names_api_troupes__troupe_id__clan_names_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClanNamesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Clan Names",
         "tags": [
           "house rules"
         ]
