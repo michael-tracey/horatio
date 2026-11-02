@@ -5,11 +5,13 @@ import { pageText } from "./bookPage";
 
 /**
  * The troupe's changes to book traits, for its players on the House rules tab: the
- * traits it bans, with why, and those it gives wording of its own.
+ * traits it bans, with why, those it gives wording of its own, and the merits and
+ * flaws it puts in another category.
  */
 export function BookTraitChanges({ changes }: { changes: BookTraitOut[] }) {
   const banned = changes.filter((c) => c.banned);
   const worded = changes.filter((c) => c.wording);
+  const moved = changes.filter((c) => c.kind);
   const split = new Set(changes.map((c) => c.splat)).size > 1 || changes.some((c) => c.splat !== "vampire");
   return (
     <>
@@ -50,6 +52,29 @@ export function BookTraitChanges({ changes }: { changes: BookTraitOut[] }) {
                   </span>
                 </span>
                 <HouseWording change={c} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+      {moved.length > 0 && (
+        <Card title="Changed categories">
+          <p className="mb-2 text-sm text-mist">These merits and flaws are in another category here, and every rule tied to the category follows it.</p>
+          <ul className="divide-y divide-ash">
+            {moved.map((c) => (
+              <li key={`${c.splat}/${c.category}/${c.name}`} className="flex flex-col gap-0.5 py-2.5 text-sm">
+                <span className="text-parchment">
+                  {c.name}
+                  <span className="text-mist">
+                    {" "}
+                    · {c.category_name}
+                    {split && ` for ${c.splat_label}`}
+                    {c.page && ` ${pageText(c.page)}`}
+                  </span>
+                </span>
+                <span className="text-xs text-mist">
+                  {c.kind} here; {c.book_kind ?? "another category"} in the book.
+                </span>
               </li>
             ))}
           </ul>

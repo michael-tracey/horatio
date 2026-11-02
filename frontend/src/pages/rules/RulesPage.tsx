@@ -11,7 +11,7 @@ import { useSplats } from "../character/splats";
 import { pageText } from "../troupe/bookPage";
 import { PLAYED } from "../troupe/HouseRulesTab";
 import { ownFirst } from "../troupeList";
-import { HouseWording } from "../../components/TroupeChange";
+import { CategoryMark, HouseWording } from "../../components/TroupeChange";
 import {
   applyFilters,
   categoryPrices,
@@ -269,6 +269,7 @@ function EntryRow({ entry: e, troupe }: { entry: Entry; troupe: string | null })
         {e.requirement && <Badge>{e.requirement}</Badge>}
         {t?.kind && t.kind !== e.requirement && <span className="text-xs text-mist">{t.kind}</span>}
         {t?.house && <HouseMark label={t.house.label} />}
+        <CategoryMark change={t?.changed} />
         {e.barred && (
           <>
             <Badge tone="blood">{e.banned ? `Banned in ${troupe}` : `Not allowed in ${troupe}`}</Badge>

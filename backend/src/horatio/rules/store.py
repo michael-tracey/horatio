@@ -25,7 +25,7 @@ from horatio.models import (
     TraitOverride,
     Troupe,
 )
-from horatio.rules.checks import check_from_dict, check_to_dict
+from horatio.rules.checks import REQUIREMENT_KEY, check_from_dict, check_to_dict
 from horatio.rules.equipment import (
     EquipmentRules,
     GradeData,
@@ -37,6 +37,7 @@ from horatio.rules.equipment import (
     quality_from_dict,
 )
 from horatio.rules.files import (
+    GENERATION_REQUIREMENTS,
     check_allowance_rule,
     check_cost_rule,
     check_creation_rules,
@@ -62,6 +63,8 @@ from horatio.rules.model import (
 from horatio.rules.status import status_rules_from_dict, status_rules_to_dict, titles_from
 
 RULES_CACHE = "horatio.troupe_rules"
+# A clan merit's catalogue type: its requirement names its clan.
+CLAN_TYPE = "Clan"
 
 
 def forget_rules(session: Session) -> None:
@@ -534,7 +537,7 @@ def change_book_trait(
 
 def changes_nothing(row: TraitOverride) -> bool:
     """Whether a troupe's row for a book trait is left with no change in it."""
-    return not row.banned and not row.wording
+    return not row.banned and not row.wording and row.kind is None
 
 
 @changes_rules
@@ -776,6 +779,10 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
     options: set[str | None] = {None}
     if troupe is not None and troupe.golconda_enlightened:
         options.add("golconda_enlightened")
+    # The troupe's changes to the book's traits: a merit or flaw in another category
+    # is read so here, so every rule that asks a trait's type follows it.
+    changes = trait_changes_of(session, troupe_id, definition_keys)
+    recategorised: set[str] = set()
     traits: dict[tuple[str, str], TraitData] = {}
     taken: set[uuid.UUID] = set()
     for d in definitions:
@@ -791,7 +798,9 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
                 name=d.name,
                 description=d.description,
                 page_reference=d.page_reference,
-                properties=d.properties,
+                properties=recategorised_properties(
+                    d.properties, changes.get(key), key, recategorised
+                ),
             )
             if own is None
             else TraitData(
@@ -816,7 +825,7 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         starting_xp=rule_set.starting_xp,
         titles=titles_from([*rule_set.titles, *rule_set.status_rules.get("titles", [])]),
         status_rules=status_rules_from_dict(rule_set.status_rules),
-        checks=tuple(check_from_dict(c) for c in rule_set.checks),
+        checks=tuple(check_from_dict(c) for c in rule_set.checks if c["key"] not in recategorised),
         grants=tuple(
             g for g in (grant_from_dict(r) for r in rule_set.grants) if g.option in options
         ),
@@ -878,8 +887,33 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         else {},
         house_traits=house_data,
         unmerged=unmerged if data is not unmerged else None,
-        trait_changes=trait_changes_of(session, troupe_id, definition_keys),
+        trait_changes=changes,
     )
+
+
+def recategorised_properties(
+    properties: Mapping[str, Any],
+    change: TraitChangeData | None,
+    key: tuple[str, str],
+    dropped: set[str],
+) -> Mapping[str, Any]:
+    """A book merit or flaw's properties as a troupe that changed its category reads
+    them: its type swapped. A clan merit moved out of Clan leaves its clan requirement
+    behind, with the check that came of it (horatio.rules.files.derived_checks), whose
+    key goes in `dropped`; any other requirement, and the trait's own checks, stay."""
+    if change is None or change.kind is None or change.kind == properties.get("type"):
+        return properties
+    found = {**properties, "type": change.kind}
+    requirement = properties.get("requirement")
+    if (
+        properties.get("type") == CLAN_TYPE
+        and change.kind != CLAN_TYPE
+        and requirement
+        and requirement not in GENERATION_REQUIREMENTS
+    ):
+        del found["requirement"]
+        dropped.add(f"{key[0]}/{key[1]}{REQUIREMENT_KEY}")
+    return found
 
 
 def trait_changes_of(
@@ -892,12 +926,23 @@ def trait_changes_of(
     if troupe_id is None:
         return {}
     found: dict[tuple[str, str], TraitChangeData] = {}
-    for row in session.scalars(
-        select(TraitOverride).where(
-            TraitOverride.troupe_id == troupe_id,
-            TraitOverride.trait_definition_id.in_(definition_keys),
+    rows = list(
+        session.scalars(
+            select(TraitOverride).where(
+                TraitOverride.troupe_id == troupe_id,
+                TraitOverride.trait_definition_id.in_(definition_keys),
+            )
         )
-    ):
+    )
+    books = {
+        d.id: d.properties.get("type")
+        for d in session.scalars(
+            select(TraitDefinition).where(
+                TraitDefinition.id.in_([r.trait_definition_id for r in rows if r.kind])
+            )
+        )
+    }
+    for row in rows:
         category, name = definition_keys[row.trait_definition_id]
         found[(category, name)] = TraitChangeData(
             category=category,
@@ -906,6 +951,8 @@ def trait_changes_of(
             ban_reason=row.ban_reason,
             wording=row.wording,
             wording_mode=row.wording_mode,  # type: ignore[arg-type]  # checked by the database
+            kind=row.kind,
+            book_kind=books.get(row.trait_definition_id),
         )
     return found
 

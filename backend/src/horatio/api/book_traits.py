@@ -37,6 +37,10 @@ class BookTraitOut(BaseModel):
     # summary or replacing it.
     wording: str
     wording_mode: Literal["added", "replaces"]
+    # A merit or flaw's category in the troupe, and the book's; None where the troupe
+    # keeps the book's.
+    kind: str | None
+    book_kind: str | None
 
 
 class BannedHolderOut(BaseModel):
@@ -55,6 +59,8 @@ class BannedHolderOut(BaseModel):
 class BookTraitsOut(BaseModel):
     changes: list[BookTraitOut]
     holders: list[BannedHolderOut]
+    # The categories a merit or flaw can be moved to, by splat and then category.
+    kinds: dict[str, dict[str, list[str]]] = {}
 
 
 class BookTraitChange(BaseModel):
@@ -67,6 +73,8 @@ class BookTraitChange(BaseModel):
     ban_reason: str | None = Field(default=None, max_length=500)
     wording: str | None = Field(default=None, max_length=4000)
     wording_mode: Literal["added", "replaces"] | None = None
+    # A merit or flaw's category in the troupe; "" goes back to the book's.
+    kind: str | None = Field(default=None, max_length=100)
 
 
 def book_trait_out(
@@ -85,6 +93,8 @@ def book_trait_out(
         ban_reason=change.ban_reason,
         wording=change.wording,
         wording_mode=change.wording_mode,
+        kind=change.kind,
+        book_kind=change.book_kind,
     )
 
 
@@ -111,6 +121,10 @@ def list_book_traits(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> 
             )
             for h in book_traits.holders(db, troupe)
         ],
+        kinds={
+            splat: {c: book_traits.book_kinds(db, splat, c) for c in book_traits.TYPED}
+            for splat in book_traits.splats_of(troupe)
+        },
     )
 
 
@@ -119,7 +133,8 @@ def change_book_trait(
     troupe_id: uuid.UUID, body: BookTraitChange, db: DbSession, user: CurrentUser
 ) -> BookTraitOut:
     """Change a book trait in the troupe: ban it, with a reason, or lift the ban (those
-    who hold it keep it); give it the troupe's own wording, or take it away."""
+    who hold it keep it); give it the troupe's own wording, or take it away; move a
+    merit or flaw to another category."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
     if body.splat not in book_traits.splats_of(troupe):
         book_traits.no_such_trait()
@@ -141,6 +156,10 @@ def change_book_trait(
             body.category,
             wording=before.wording if body.wording is None else body.wording,
             mode=before.wording_mode if body.wording_mode is None else body.wording_mode,
+        )
+    if body.kind is not None:
+        book_traits.set_kind(
+            db, user, troupe, body.splat, definition, body.category, kind=body.kind or None
         )
     db.commit()
     return book_trait_out(

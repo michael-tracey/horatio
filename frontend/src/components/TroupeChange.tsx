@@ -17,6 +17,19 @@ export function BannedMark({ change }: { change?: TraitChangeOut | null }) {
 }
 
 /**
+ * Beside a merit or flaw the character's troupe moved to another category
+ * (horatio.book_traits): "Category changed in this troupe", the book's on hover.
+ */
+export function CategoryMark({ change }: { change?: Pick<TraitChangeOut, "kind" | "book_kind"> | null }) {
+  if (!change?.kind) return null;
+  return (
+    <span className="ml-2" title={`${change.kind} in this troupe; ${change.book_kind ?? "another"} in the book`}>
+      <Badge tone="gold">Category changed in this troupe</Badge>
+    </span>
+  );
+}
+
+/**
  * The troupe's own wording for a book trait, in Markdown with the safe renderer,
  * always marked as the troupe's: under the book's summary, or in its place.
  */
