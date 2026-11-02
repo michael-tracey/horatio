@@ -23,7 +23,9 @@ Learner and Arcane) are never refunded so; they follow the normal rules.
 
 Only a character's first acceptance opens free changes, and only if its home troupe
 gave them when it was accepted: a character moving home brings no new ones, and a
-troupe turning them on gives none to characters it accepted before. Changing between
+troupe turning them on gives none to characters it accepted before. Leaving the home
+troupe ends them (horatio.reconciliation.end_membership), so being accepted again,
+by the same troupe or another, does not bring them back. Changing between
 dates and games, or the number, applies to the characters whose free changes are open,
 worked out from their acceptance and attendance as they stand.
 
@@ -174,8 +176,9 @@ def refunds(db: Session, character: Character, category: str, name: str) -> bool
     return found is not None and (category, name) not in found.excluded
 
 
-def end(db: Session, character: Character, why: str) -> None:
-    """Record that the character's free changes have ended, and tell its player."""
+def end(db: Session, character: Character, why: str, *, tell: bool = True) -> None:
+    """Record that the character's free changes have ended, and tell its player
+    unless they ended them themselves (`tell`)."""
     character.free_changes_ended_at = now()
     audit.record(
         db,
@@ -185,16 +188,17 @@ def end(db: Session, character: Character, why: str) -> None:
         character_id=character.id,
         why=why,
     )
-    notifications.notify(
-        db,
-        [character.player_id],
-        "character.free_changes_ended",
-        f"{character.name}'s free changes have ended ({why}): the troupe's normal rules"
-        " for lowering and removing traits apply now",
-        f"/characters/{character.id}",
-        troupe_id=character.home_troupe_id,
-        character_id=character.id,
-    )
+    if tell:
+        notifications.notify(
+            db,
+            [character.player_id],
+            "character.free_changes_ended",
+            f"{character.name}'s free changes have ended ({why}): the troupe's normal rules"
+            " for lowering and removing traits apply now",
+            f"/characters/{character.id}",
+            troupe_id=character.home_troupe_id,
+            character_id=character.id,
+        )
     db.flush()
 
 

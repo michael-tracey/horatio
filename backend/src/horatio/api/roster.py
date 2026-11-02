@@ -267,6 +267,9 @@ def print_characters(
 MESSAGES: dict[str, str] = {
     "troupe.join": "{character} started visiting the troupe.",
     "troupe.leave": "{character} left the troupe.",
+    "troupe.leave.home": "{character} left {troupe} as its home troupe, and has no home troupe"
+    " now.",
+    "troupe.leave.visit": "{character} stopped visiting {troupe}.",
     "character.deleted": "{character} was deleted by its player.",
     "approval.request": "{actor} asked for {character} to be approved.",
     "approval.request.discipline": "{actor} bought {name} {rating} for {character}; pending.",

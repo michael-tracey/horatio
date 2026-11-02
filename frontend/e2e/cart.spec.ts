@@ -267,6 +267,71 @@ test("once accepted, a merit or flaw is asked of the home troupe: one declined, 
   await expect(p.getByText("Low Pain Threshold 3 → 0", { exact: true })).toBeVisible();
 });
 
+test("a finished Nosferatu asks staff for Bloodline: Creeps by exception, spends it, and the lead approves it", async ({ browser }) => {
+  test.slow();
+  const custodian = await person(browser, "creeps-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "creeps-lead");
+  const player = await person(browser, "creeps-play");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of the Depths ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  await backstoryOptional(custodian.page, (await made.json()).id);
+  const troupeId = (await made.json()).id;
+
+  // Silas, a Nosferatu, is built and accepted by the troupe.
+  const p = player.page;
+  const id = await builtVampire(p, "Silas", "Nosferatu", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]], disciplines: [["Animalism", 2], ["Obfuscate", 1], ["Potence", 1]] });
+  const asked = await p.request.post(`/api/characters/${id}/home-troupe`, { headers, data: { troupe_id: troupeId } });
+  expect(asked.status(), await asked.text()).toBe(201);
+  const accepted = await lead.page.request.post(`/api/approvals/${(await asked.json()).id}/approve`, { headers, data: {} });
+  expect(accepted.status(), await accepted.text()).toBe(200);
+
+  // A bloodline merit is for creation only: the cart refuses it, but offers to ask staff.
+  await p.goto(`/characters/${id}`);
+  const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  const cart = p.getByRole("list", { name: "Changes in the cart" });
+  await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
+  await p.getByLabel("Search Merits").fill("Bloodline: Creeps");
+  await p.getByRole("button", { name: /^Bloodline: Creeps/ }).click();
+  await p.getByRole("button", { name: "Add to cart" }).click();
+  const line = cart.getByRole("listitem").filter({ hasText: "Bloodline: Creeps" });
+  await expect(line).toContainText("Bloodline: Creeps can only be chosen during character creation.", { timeout: 15_000 });
+  await line.getByRole("button", { name: "Ask staff" }).click();
+  const ask = p.getByRole("form", { name: /^Ask staff for/ });
+  await ask.getByLabel("Why").fill("Found in the Depths during the last game");
+  await ask.getByRole("button", { name: "Put it in the cart" }).click();
+
+  // Asked, it is no longer refused: Spend XP sends it to the home troupe.
+  await expect(line.getByText("Exception", { exact: true })).toBeVisible();
+  await expect(line.getByText("Needs approval")).toBeVisible({ timeout: 15_000 });
+  await expect(line).toContainText("Asked of staff: Found in the Depths during the last game");
+  await expect(p.getByText("A change can't be made; see the line marked.")).toHaveCount(0);
+  await p.screenshot(shots("exception-creation-only-cart"));
+  await p.getByRole("button", { name: "Spend XP" }).click();
+  await expect(p.getByText("Some of it waits for the home troupe's approval.")).toBeVisible();
+
+  // The lead has it in the bell and among the approvals, which say what approving does.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}`);
+  await l.getByRole("button", { name: /^Notifications, \d+ waiting$/ }).click();
+  await l.getByRole("button", { name: /Silas asks for Bloodline: Creeps 0 → 2 by exception/ }).click();
+  const card = l.locator("section").filter({ hasText: "Silas" }).filter({ hasText: "Bloodline: Creeps" });
+  await expect(card.getByText("Exception", { exact: true })).toBeVisible();
+  await expect(card).toContainText("Bloodline: Creeps 0 → 2, for 2 XP.");
+  await expect(card).toContainText("Chosen after creation, by exception.");
+  await expect(card).toContainText("Approving also makes Silas Nosferatu: Creeps, with its in-clan disciplines and weakness");
+  await l.screenshot(shots("exception-creation-only-approval"));
+  await card.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(card).toHaveCount(0);
+
+  // Silas is of the bloodline now, as if chosen at creation.
+  const sheet = await (await p.request.get(`/api/characters/${id}/sheet`)).json();
+  const traits = sheet.traits as { category: string; name: string }[];
+  expect(traits.find((t) => t.category === "clan")?.name).toBe("Nosferatu: Creeps");
+  expect(traits.some((t) => t.name === "Bloodline: Creeps")).toBe(true);
+});
+
 test("with free changes by games played, a new character drops a skill for its full XP, which the troupe reviews", async ({ browser }) => {
   test.slow();
   const custodian = await person(browser, "freechg-cust");

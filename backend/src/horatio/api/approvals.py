@@ -10,6 +10,7 @@ from sqlalchemy import select
 
 from horatio import (
     book_traits,
+    clan_merits,
     diablerie,
     embrace,
     free_choices,
@@ -33,6 +34,7 @@ from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
     Approval,
     Character,
+    CharacterTrait,
     DisciplinePurchase,
     HomeTroupeChange,
     Quest,
@@ -106,6 +108,11 @@ class ExceptionAskOut(BaseModel):
     free: bool
     # What it costs at the normal price, where the rules price it.
     normal_cost: int | None
+    # The locks on a trait chosen at creation only it sets aside, in words:
+    # "Chosen after creation, by exception."
+    set_aside: list[str] = []
+    # For a bloodline merit: the bloodline approving makes the character's clan.
+    bloodline: str | None = None
 
 
 class DiablerieAskOut(BaseModel):
@@ -367,11 +374,18 @@ def exception_out(db: DbSession, approval: Approval) -> ExceptionAskOut | None:
     asked = trait_exceptions.asked_for(db, approval)
     if asked is None:
         return None
+    trait = db.get(CharacterTrait, asked.character_trait_id)
+    definition = db.get(TraitDefinition, trait.trait_definition_id) if trait else None
+    character = db.get_one(Character, approval.character_id)
     return ExceptionAskOut(
-        breaks=[c["message"] for c in asked.checks],
+        breaks=trait_exceptions.rules_broken(asked.checks),
         reason=asked.reason,
         free=asked.free,
         normal_cost=asked.normal_cost,
+        set_aside=trait_exceptions.set_aside(asked.checks),
+        bloodline=clan_merits.joins_bloodline(db, character, definition.name)
+        if definition is not None and approval.status == "pending"
+        else None,
     )
 
 
