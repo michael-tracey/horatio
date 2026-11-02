@@ -2,7 +2,7 @@
 starting with a ban and the reason its players see.
 
 Revision ID: 0129
-Revises: 0127
+Revises: 0140
 Create Date: 2026-11-01 23:00:00.000000
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0129"
-down_revision: str | None = "0127"
+down_revision: str | None = "0140"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

@@ -18,6 +18,7 @@ from horatio import (
     pictures,
     sheets,
     social_age,
+    teaching,
     trait_exceptions,
     xp_range,
 )
@@ -63,6 +64,21 @@ class ReconciliationOut(BaseModel):
     extra: bool
 
 
+class TeachingOut(BaseModel):
+    """Who teaches a purchase a troupe's teacher rule asked a teacher for
+    (horatio.teaching), and the teacher's Willpower."""
+
+    teacher: str
+    # A character of the troupe; false for an NPC known only by the name given.
+    in_troupe: bool
+    # Downtime actions learning takes, owed when approved.
+    actions: int
+    willpower: int
+    games: int
+    # not_needed | asked | spent | refused | given_back
+    status: str
+
+
 class DisciplineOut(BaseModel):
     # The trait's category: "disciplines", or "merits" or "flaws" for a merit or
     # flaw request.
@@ -75,6 +91,8 @@ class DisciplineOut(BaseModel):
     teacher: str
     # A troupe's own merit or flaw: "House merit of Night Court", shown with a ★.
     house: str | None = None
+    # A troupe's teacher rule asked a teacher for it.
+    teaching: TeachingOut | None = None
 
 
 class ExceptionAskOut(BaseModel):
@@ -395,6 +413,21 @@ def discipline_out(db: DbSession, approval: Approval) -> DisciplineOut | None:
         cost=bought.cost,
         teacher=bought.teacher,
         house=mark.label if mark is not None else None,
+        teaching=teaching_out(db, approval),
+    )
+
+
+def teaching_out(db: DbSession, approval: Approval) -> TeachingOut | None:
+    found = teaching.of_approval(db, approval)
+    if found is None:
+        return None
+    return TeachingOut(
+        teacher=found.teacher_name,
+        in_troupe=found.teacher_id is not None,
+        actions=found.actions,
+        willpower=found.willpower,
+        games=found.games,
+        status=found.status,
     )
 
 
