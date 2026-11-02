@@ -15,10 +15,12 @@ character's own sect. The clan's rarity there is the troupe's house rule for the
 (Troupe.clan_rarity), else the book's for that sect (`clan_rarity` in the rule set,
 kept in each clan's properties by horatio.rules.files). A bloodline is as rare as its
 clan. A setting's default bloodline needs no bloodline merit, and its clan's own line
-is then one step rarer instead (p. 238). A clan and bloodline that would cost more
-than 7 points take Restricted Clan instead (p. 237). With no rarity to go by (no sect
-yet, or one the book gives no rarities for, and no house rule), the rarity merits are
-left to the player to pick, and staff to check.
+is then one step rarer instead (p. 238). The default is the troupe's house rule for the
+clan (Troupe.default_bloodlines: a bloodline, or the plain clan for none), else the
+book's for that sect (`defaults` in the rule set's `clan_rarity`). A clan and
+bloodline that would cost more than 7 points take Restricted Clan instead (p. 237).
+With no rarity to go by (no sect yet, or one the book gives no rarities for, and no
+house rule), the rarity merits are left to the player to pick, and staff to check.
 """
 
 from collections.abc import Callable, Mapping, Sequence
@@ -60,11 +62,13 @@ class ClanMerit:
 @dataclass(frozen=True)
 class Setting:
     """Where a clan's rarity comes from: the setting's sect, and the troupe's house
-    rule (by clan, without the bloodline), named for the reason it gives."""
+    rule (by clan, without the bloodline), named for the reason it gives; and the
+    troupe's default bloodlines (by clan: a bloodline, or the clan itself for none)."""
 
     sect: str | None = None
     house: Mapping[str, str] | None = None
     troupe: str = ""
+    defaults: Mapping[str, str] | None = None
 
 
 def family_of(clan: str) -> str:
@@ -91,18 +95,30 @@ def book_rarity(rule_set: RuleSetData, family: str, sect: str | None) -> tuple[s
     return (found["rarity"], found["page"]) if found else None
 
 
-def default_bloodline(rule_set: RuleSetData, family: str, sect: str) -> str | None:
-    """The bloodline the sect's setting plays as the clan's default, if any."""
-    return next(
-        (
-            name
-            for (category, name), trait in rule_set.traits.items()
-            if category == "clan"
-            and family_of(name) == family
-            and sect in trait.properties.get("default_in", {})
-        ),
-        None,
-    )
+def book_defaults(rule_set: RuleSetData, family: str) -> dict[str, str]:
+    """The bloodline the book plays as the clan's default in each sect's setting that
+    has one, by sect."""
+    return {
+        sect: name
+        for (category, name), trait in sorted(rule_set.traits.items())
+        if category == "clan" and family_of(name) == family
+        for sect in trait.properties.get("default_in", {})
+    }
+
+
+def book_default(rule_set: RuleSetData, family: str, sect: str | None) -> str | None:
+    """The bloodline the book plays as the clan's default in the sect's setting, if any."""
+    return book_defaults(rule_set, family).get(sect) if sect else None
+
+
+def default_bloodline(rule_set: RuleSetData, family: str, setting: Setting) -> str | None:
+    """The bloodline the setting plays as the clan's default, if any: the troupe's
+    choice where it makes one (None for the plain clan), else the book's for the sect.
+    Every use of a default bloodline goes through here."""
+    house = (setting.defaults or {}).get(family)
+    if house is not None:
+        return house if house != family else None
+    return book_default(rule_set, family, setting.sect)
 
 
 def rarity_known(rule_set: RuleSetData, clan: str | None, setting: Setting) -> bool:
@@ -142,12 +158,17 @@ def needed(
             if rarity != "restricted"
             else f"The {sect} setting does not list {family}, so it is restricted."
         )
-    default = default_bloodline(rule_set, family, sect) if sect else None
+    default = default_bloodline(rule_set, family, setting)
     if rarity is not None and default is not None and clan == family:
         # The default bloodline's merit cost moves to the clan's own line (p. 238).
         rarity = RARITIES[min(RARITIES.index(rarity) + 1, len(RARITIES) - 1)]
+        plays = (
+            f"{setting.troupe or 'The troupe'} plays"
+            if family in (setting.defaults or {})
+            else f"The {sect} setting plays"
+        )
         because = (
-            f"The {sect} setting plays {default} as the default {family}, so {family}'s"
+            f"{plays} {default} as the default {family}, so {family}'s"
             f" own line takes its bloodline's cost: it is {rarity} there."
         )
         page = f"238, {page}" if page else "238"
@@ -158,7 +179,7 @@ def needed(
         name = RARITY_MERITS[rarity]
         merits.append(ClanMerit(name, value(name), because, page))
     merit = bloodline_merit(rule_set, clan)
-    if merit is not None and not (sect and sect in default_in(rule_set, clan)):
+    if merit is not None and clan != default:
         merits.append(ClanMerit(merit, value(merit), f"{clan} is a bloodline.", "238"))
     total = sum(m.points for m in merits)
     if rarity is not None and total > MERIT_LIMIT:
@@ -175,10 +196,6 @@ def needed(
     return merits
 
 
-def default_in(rule_set: RuleSetData, clan: str) -> Mapping[str, str]:
-    return rule_set.trait_properties("clan", clan).get("default_in", {})
-
-
 # --- the character ---------------------------------------------------------------
 
 
@@ -192,7 +209,7 @@ def setting_of(db: Session, character: Character) -> Setting:
         sect = troupe.allowed_sects[0]
     if troupe is None:
         return Setting(sect)
-    return Setting(sect, dict(troupe.clan_rarity), troupe.name)
+    return Setting(sect, dict(troupe.clan_rarity), troupe.name, dict(troupe.default_bloodlines))
 
 
 def valuer(rules: TroupeRules, sheet: Sequence[SheetTrait]) -> Callable[[str], int]:

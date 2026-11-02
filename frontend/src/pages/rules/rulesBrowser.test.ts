@@ -45,7 +45,7 @@ const data = (more: Partial<RulesBrowserOut> = {}): RulesBrowserOut => ({
     { discipline: "Presence", level: 1, name: "Awe", note: "Draw every eye in the room." },
     { discipline: "Presence", level: 5, name: "Majesty", note: "For an hour, no one can act against you without spending Willpower." },
   ],
-  rarities: [{ clan: "Toreador", text: "Common", page: "403", house: false }],
+  rarities: [{ clan: "Toreador", text: "Common", page: "403", house: false, default_house: false }],
   ...more,
 });
 

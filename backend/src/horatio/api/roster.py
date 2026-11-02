@@ -497,6 +497,7 @@ MESSAGES: dict[str, str] = {
     "house.diablerie_flaws": "{actor} set what diablerie does to Lesser Generation and Thin"
     " Blooded: it {setting}.",
     "house.clan_rarity": "{actor} set how rare clans are here: {rarities}.",
+    "house.default_bloodlines": "{actor} set the clans' default bloodlines here: {defaults}.",
     "house.written_rule_added": "{actor} added the written rule {title} ({section}).",
     "house.written_rule_changed": "{actor} changed the written rule {title}.",
     "house.written_rule_moved": "{actor} moved the written rule {title} {direction}.",
