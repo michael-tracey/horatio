@@ -50,6 +50,27 @@ describe("the backstory as its writer has it", () => {
     expect(later.loads).toBe(w.loads + 1);
   });
 
+  it("never restarts the editor for its own draft coming back, so the cursor stays where the player is", () => {
+    let w: Writing = opened(backstory());
+    w = writingReducer(w, { type: "edit", text: "Born in 1890.\n\nShe fled" });
+    w = writingReducer(w, { type: "saved", edit: w.edit, version: 1, draft: draft("Born in 1890.\n\nShe fled", 1, "2026-11-01T21:00:00.123456Z") });
+    // A refetch that crossed the save, its time read later than the answer's.
+    const refetched = writingReducer(w, { type: "loaded", backstory: backstory({ draft: draft("Born in 1890.\n\nShe fled", 1, "2026-11-01T21:00:01Z") }) });
+    expect([refetched.loads, refetched.text, unsaved(refetched)]).toEqual([w.loads, w.text, false]);
+    expect(refetched.savedAt).toBe("2026-11-01T21:00:01Z");
+    // The same words submitted as a newer version, on another device.
+    const submitted = writingReducer(w, { type: "loaded", backstory: backstory({ version: 2, text: "Born in 1890.\n\nShe fled" }) });
+    expect([submitted.loads, submitted.basedOn, behind(submitted)]).toEqual([w.loads, 2, false]);
+  });
+
+  it("restarts the editor only for words new to it, after taking theirs or discarding", () => {
+    let w: Writing = opened(backstory({ draft: draft("Mine", 1, "2026-11-01T21:00:00Z") }));
+    const kept = writingReducer(w, { type: "reset", backstory: backstory({ draft: draft("Mine", 1, "2026-11-01T21:00:00Z") }) });
+    expect(kept.loads).toBe(w.loads);
+    w = writingReducer(w, { type: "reset", backstory: backstory() });
+    expect([w.text, w.loads]).toEqual(["Born in 1890.", 1]);
+  });
+
   it("keeps a save made while typing went on unsaved", () => {
     let w: Writing = opened(backstory());
     w = writingReducer(w, { type: "edit", text: "One" });
