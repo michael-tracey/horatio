@@ -322,7 +322,8 @@ def test_deleting_a_character_after_it_leaves_every_troupe(troupe: Troupe) -> No
     # The storytellers can see what happened, by name.
     messages = log(troupe.lead, troupe.id)
     assert messages[0] == "Agnes was deleted by its player."
-    assert "Agnes left the troupe." in messages
+    left = "Agnes left Lords of the Night as its home troupe, and has no home troupe now."
+    assert left in messages
 
 
 def test_a_character_never_in_a_troupe_is_deleted_quietly(troupe: Troupe) -> None:

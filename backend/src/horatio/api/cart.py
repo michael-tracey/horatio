@@ -130,6 +130,10 @@ class CartLineOut(BaseModel):
     because: str | None = None
     # A troupe's teacher rule asks a teacher for it: the line names one.
     teacher: TeacherNeedOut | None = None
+    # Refused, but it can be asked of the home troupe's staff as an exception.
+    askable: bool = False
+    # Refused, and asking staff can't help: why, for a raise that could otherwise be asked.
+    unaskable: str | None = None
 
 
 class CartOut(BaseModel):
@@ -193,6 +197,8 @@ def spend_cart(character_id: uuid.UUID, body: CartIn, db: DbSession, user: Curre
                 repriced=[RepricedOut(purchase=r.label, cost=r.cost) for r in o.repriced],
                 because=o.because,
                 teacher=teacher_need_out(o.teacher),
+                askable=o.askable,
+                unaskable=o.unaskable,
             )
             for o in outcomes
         ],

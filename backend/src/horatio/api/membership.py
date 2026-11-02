@@ -33,6 +33,25 @@ class MembershipOut(BaseModel):
     home: bool
 
 
+class WithdrawnOut(BaseModel):
+    # What the request asks: "Celerity 1 → 2", "Add Rugged".
+    what: str
+    # XP back when it is withdrawn; negative takes back a free change's refund.
+    refund: int
+
+
+class LeavingOut(BaseModel):
+    """What leaving a troupe ends, for the player to confirm first."""
+
+    home: bool
+    # The titles the character holds there, which end.
+    titles: list[str]
+    # Its requests waiting there, which are withdrawn.
+    requests: list[WithdrawnOut]
+    # Its free changes are open, and leaving its home troupe ends them.
+    free_changes_open: bool
+
+
 class TroupeChoice(BaseModel):
     troupe_id: uuid.UUID
 
@@ -117,6 +136,25 @@ def join_troupe(
     reconciliation.join(db, user, character, troupe)
     db.commit()
     return MembershipOut(troupe_id=troupe.id, troupe_name=troupe.name, home=False)
+
+
+@router.get("/troupes/{troupe_id}/leaving")
+def leaving(
+    character_id: uuid.UUID, troupe_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> LeavingOut:
+    """What leaving the troupe would end: its titles there and its requests waiting
+    there, by name."""
+    character = players_character(db, user, character_id)
+    troupe = db.get(Troupe, troupe_id)
+    if troupe is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
+    found = reconciliation.leaving(db, character, troupe)
+    return LeavingOut(
+        home=found.home,
+        titles=found.titles,
+        requests=[WithdrawnOut(what=r.what, refund=r.refund) for r in found.requests],
+        free_changes_open=found.free_changes_open,
+    )
 
 
 @router.delete("/troupes/{troupe_id}", status_code=status.HTTP_204_NO_CONTENT)

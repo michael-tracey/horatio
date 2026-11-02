@@ -28,14 +28,17 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from horatio.models import Character, CharacterTrait, Troupe
+from horatio import audit
+from horatio.models import Character, CharacterTrait, Troupe, User
 from horatio.rules.files import EVERYWHERE, RARITIES
 from horatio.rules.model import RuleSetData, SheetTrait, TroupeRules
 from horatio.rules.pricing import fixed_rating
 from horatio.sheets import (
+    apply_grants,
     chosen,
     conflict,
     find_definition,
+    replace_choice,
     rules_for,
     rules_troupe,
     sheet_rows,
@@ -85,6 +88,21 @@ def bloodline_merit(rule_set: RuleSetData, clan: str) -> str | None:
 
 def is_clan_merit(name: str) -> bool:
     return name.startswith(BLOODLINE) or name in RARITY_MERITS.values()
+
+
+def bloodline_of(rule_set: RuleSetData, merit: str) -> str | None:
+    """The bloodline a bloodline merit is for: "Nosferatu: Creeps" for "Bloodline:
+    Creeps"."""
+    if not merit.startswith(BLOODLINE):
+        return None
+    return next(
+        (
+            name
+            for category, name in rule_set.traits
+            if category == "clan" and bloodline_merit(rule_set, name) == merit
+        ),
+        None,
+    )
 
 
 def book_rarity(rule_set: RuleSetData, family: str, sect: str | None) -> tuple[str, str] | None:
@@ -329,6 +347,44 @@ def overspent(db: Session, character: Character, found: ClanMerits) -> str | Non
         f"{clan} needs {names}, which does not fit: {spent} of the {budget.allowed} merit"
         " points are spent on other merits. Take some off first, or choose another clan."
     )
+
+
+def joins_bloodline(db: Session, character: Character, merit: str) -> str | None:
+    """The bloodline a character joins by taking its bloodline merit by exception,
+    once built (horatio.trait_exceptions): a character of the bloodline's clan, of
+    its plain line, joins it as if it had chosen it at creation. None for any other
+    merit or character, and for a bloodline that needs a choice of its own."""
+    rule_set = rules_for(db, character).rule_set
+    bloodline = bloodline_of(rule_set, merit)
+    clan = chosen(db, character, "clan")
+    if bloodline is None or clan is None or clan != family_of(bloodline):
+        return None
+    if rule_set.trait_properties("clan", bloodline).get("choices"):
+        return None
+    return bloodline
+
+
+def join_bloodline(db: Session, staff: User, character: Character, merit: str) -> str | None:
+    """Make the bloodline a bloodline merit is for the character's clan, with its
+    in-clan disciplines and weakness, as `joins_bloodline` says. Says which, if any."""
+    bloodline = joins_bloodline(db, character, merit)
+    if bloodline is None:
+        return None
+    definition, category = find_definition(db, character, "clan", bloodline)
+    replace_choice(db, character, definition, category, "")
+    db.flush()
+    audit.record(
+        db,
+        staff,
+        "sheet.choose",
+        troupe_id=character.home_troupe_id,
+        character_id=character.id,
+        category="clan",
+        name=bloodline,
+        because=merit,
+    )
+    apply_grants(db, staff, character)
+    return bloodline
 
 
 def resync(db: Session, characters: Sequence[Character]) -> None:

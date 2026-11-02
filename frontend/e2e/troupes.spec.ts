@@ -1192,8 +1192,9 @@ test("the characters list and each Troupes tab say where a character stands: in 
   await expect(homeCard.getByRole("link", { name: `${hearths}'s house rules` })).toBeVisible();
   await p.screenshot(shots("troupes-home"));
   await expect(homeCard.getByRole("combobox")).toHaveCount(0);
-  await homeCard.getByRole("button", { name: "Move to another troupe…" }).click();
+  await homeCard.getByRole("button", { name: "Move or leave…" }).click();
   await expect(homeCard.getByRole("combobox", { name: "New home troupe" })).toBeVisible();
+  await expect(homeCard.getByRole("button", { name: `Leave ${hearths} and have no home troupe` })).toBeVisible();
 
   await p.goto(`/characters/${asker}/troupes`);
   await expect(homeCard).toContainText("No home troupe yet");
@@ -1209,6 +1210,74 @@ test("the characters list and each Troupes tab say where a character stands: in 
   await expect(homeCard).toContainText(`then ask ${hearths} here`);
   await homeCard.getByRole("link", { name: "Create tab" }).click();
   await expect(p).toHaveURL(new RegExp(`/characters/${halfway}/create`));
+});
+
+test("a player leaves the home troupe after a dialog naming the title that ends, and the card says there is none (#459)", async ({ browser }) => {
+  const custodian = await person(browser, "partings-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "partings-lead");
+  const player = await person(browser, "partings-play");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const partings = `Court of Partings ${run}`;
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: partings, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+
+  // Parting Pell, a Camarilla Brujah built through the API, accepted home, and made Harpy.
+  const p = player.page;
+  const { id } = await send(p, "POST", "/api/characters", { splat: "vampire", name: "Parting Pell", building_troupe_id: troupe.id });
+  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+  const picks: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, list] of Object.entries(picks))
+    await send(p, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+  await send(p, "POST", `/api/characters/${id}/creation/complete`);
+  const asked = await send(p, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/characters/${id}/titles`, { titles: ["Harpy"] });
+
+  // Move or leave opens the move, with leaving beside it; the dialog names what ends.
+  const homeCard = p.locator("main section").filter({ has: p.getByRole("heading", { name: "Home troupe" }) });
+  await p.goto(`/characters/${id}/troupes`);
+  await expect(homeCard).toContainText(`Home now: ${partings}`);
+  await homeCard.getByRole("button", { name: "Move or leave…" }).click();
+  await homeCard.getByRole("button", { name: `Leave ${partings} and have no home troupe` }).click();
+  const dialog = p.getByRole("dialog", { name: `Leave ${partings}?` });
+  await expect(dialog.getByRole("list", { name: "Titles that end" })).toHaveText("Harpy");
+  await expect(dialog.getByText("It has no requests waiting there.")).toBeVisible();
+  await expect(dialog.getByText("Its sheet, XP and history stay as they are, and so do its visits to other troupes.")).toBeVisible();
+  await p.screenshot(shots("troupes-leave-home"));
+  // Cancelling leaves it home.
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(homeCard).toContainText(`Home now: ${partings}`);
+
+  await homeCard.getByRole("button", { name: `Leave ${partings} and have no home troupe` }).click();
+  await dialog.getByRole("button", { name: `Leave ${partings}`, exact: true }).click();
+  await expect(homeCard).toContainText("No home troupe yet");
+  await expect(dialog).toBeHidden();
+  await expect(homeCard.getByRole("combobox", { name: "Troupe", exact: true })).toBeVisible();
+  await expect(homeCard.getByRole("button", { name: /^Leave / })).toHaveCount(0);
+
+  // The title is gone, and the lead is told and reads it in the log.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}/titles`);
+  await expect(l.getByText("No one holds a title yet.")).toBeVisible();
+  await l.goto(`/troupes/${troupe.id}/log`);
+  await expect(l.getByText(`Parting Pell (partings-play) left ${partings} as its home troupe, and has no home troupe now.`)).toBeVisible();
 });
 
 test("a troupe's profile: storytellers fill it in, and people not signed in see it only when it is public", async ({ browser }) => {
