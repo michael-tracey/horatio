@@ -17818,6 +17818,11 @@
           "undone": {
             "title": "Undone",
             "type": "boolean"
+          },
+          "upkeep": {
+            "default": false,
+            "title": "Upkeep",
+            "type": "boolean"
           }
         },
         "required": [
@@ -26850,6 +26855,11 @@
             ],
             "title": "Back On"
           },
+          "banked_xp": {
+            "default": 0,
+            "title": "Banked Xp",
+            "type": "integer"
+          },
           "blood": {
             "default": 0,
             "title": "Blood",
@@ -26943,6 +26953,18 @@
             "title": "Name",
             "type": "string"
           },
+          "neglected_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neglected On"
+          },
           "note": {
             "default": "",
             "title": "Note",
@@ -26970,6 +26992,17 @@
               }
             ],
             "title": "Npc Name"
+          },
+          "npc_xp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Xp"
           },
           "page": {
             "anyOf": [
@@ -27007,6 +27040,17 @@
             "default": "",
             "title": "Tracker",
             "type": "string"
+          },
+          "upkeep": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upkeep"
           }
         },
         "required": [
@@ -27045,6 +27089,90 @@
           "note"
         ],
         "title": "RetainerPower",
+        "type": "object"
+      },
+      "RetainerRulesIn": {
+        "properties": {
+          "growth": {
+            "anyOf": [
+              {
+                "maximum": 20.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Growth"
+          },
+          "upkeep": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UpkeepRule"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "RetainerRulesIn",
+        "type": "object"
+      },
+      "RetainerRulesOut": {
+        "properties": {
+          "growth": {
+            "anyOf": [
+              {
+                "maximum": 20.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Growth"
+          },
+          "growth_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Growth Text"
+          },
+          "upkeep": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UpkeepRule"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "upkeep_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upkeep Text"
+          }
+        },
+        "required": [
+          "upkeep_text",
+          "growth_text"
+        ],
+        "title": "RetainerRulesOut",
         "type": "object"
       },
       "RetainerTrackOut": {
@@ -34051,6 +34179,53 @@
           "subscribed"
         ],
         "title": "Unsubscribe",
+        "type": "object"
+      },
+      "UpkeepRule": {
+        "properties": {
+          "amount": {
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "ghouls_only": {
+            "default": false,
+            "title": "Ghouls Only",
+            "type": "boolean"
+          },
+          "month_at": {
+            "default": "game",
+            "enum": [
+              "game",
+              "downtime"
+            ],
+            "title": "Month At",
+            "type": "string"
+          },
+          "per": {
+            "default": "game",
+            "enum": [
+              "game",
+              "month"
+            ],
+            "title": "Per",
+            "type": "string"
+          },
+          "pool": {
+            "enum": [
+              "blood",
+              "willpower"
+            ],
+            "title": "Pool",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "pool"
+        ],
+        "title": "UpkeepRule",
         "type": "object"
       },
       "ValidationError": {
@@ -43132,6 +43307,60 @@
           }
         },
         "summary": "Save Retainers",
+        "tags": [
+          "retainers"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/retainers/{retainer_id}/neglected": {
+      "delete": {
+        "description": "Clear a Retainer's neglect, once the troupe has dealt with it. Its staff do.",
+        "operationId": "clear_neglect_api_characters__character_id__retainers__retainer_id__neglected_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "retainer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Retainer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetainersOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Clear Neglect",
         "tags": [
           "retainers"
         ]
@@ -57869,6 +58098,101 @@
         "summary": "Reopen Troupe",
         "tags": [
           "troupes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/retainer-rules": {
+      "get": {
+        "description": "Anyone signed in may read them, as they may the troupe's other house rules.",
+        "operationId": "read_retainer_rules_api_troupes__troupe_id__retainer_rules_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetainerRulesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Retainer Rules",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "put": {
+        "operationId": "set_retainer_rules_api_troupes__troupe_id__retainer_rules_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetainerRulesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetainerRulesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Retainer Rules",
+        "tags": [
+          "house rules"
         ]
       }
     },

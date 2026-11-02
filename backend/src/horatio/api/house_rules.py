@@ -12,7 +12,16 @@ from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import audit, clan_merits, diablerie, feeding, rack, resonance, territories
+from horatio import (
+    audit,
+    clan_merits,
+    diablerie,
+    feeding,
+    rack,
+    resonance,
+    retainer_upkeep,
+    territories,
+)
 from horatio.api.downtimes import staff_troupe
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
@@ -1238,6 +1247,10 @@ def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
                     book_text=optional,
                 )
             )
+    found += [
+        HouseSettingOut(name=name, text=text, book_text=book)
+        for name, text, book in retainer_upkeep.house_settings(troupe)
+    ]
     if troupe.influence_lookback_days != 90:
         found.append(
             HouseSettingOut(

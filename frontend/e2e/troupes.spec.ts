@@ -1147,6 +1147,59 @@ test("players check in at the door and land in their Play View, and staff award 
   await expect(p.getByRole("list", { name: "Games attended" })).toContainText(troupeName);
 });
 
+test("with Retainer upkeep on, checking in starts the night with the upkeep as its own line in the log (#442)", async ({ browser }) => {
+  const custodian = await person(browser, "tithe-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "tithe-lead");
+  const player = await person(browser, "tithe-player");
+  const troupeName = `Hall of Tithes ${run}`;
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const { id: troupeId } = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupeId);
+  const start = new Date(Date.now() - 60 * 60_000);
+  const { id: gameId } = await send(lead.page, "POST", `/api/troupes/${troupeId}/games`, { starts_at: start.toISOString(), ends_at: new Date(start.getTime() + 5 * 60 * 60_000).toISOString() });
+  await send(lead.page, "PUT", `/api/troupes/${troupeId}/games/${gameId}/checkin`);
+  // Perpetua has two Retainers, Bocephus and Rook, and calls the troupe home.
+  const p = player.page;
+  const perpetua = await builtVampire(p, "Perpetua", "Brujah", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Haven", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  for (const name of ["Bocephus", "Rook"]) await send(p, "PUT", `/api/characters/${perpetua}/traits`, { category: "backgrounds", name: "Retainers", detail: name, rating: 1 });
+  const asked = await send(p, "POST", `/api/characters/${perpetua}/home-troupe`, { troupe_id: troupeId });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+
+  // The lead switches upkeep on under Customise › Rules › Retainers: 1 Blood a game.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules/retainers`);
+  await expect(l.getByText("None.").first()).toBeVisible();
+  await l.getByRole("button", { name: "Change Retainer rules" }).click();
+  await l.getByLabel("Retainers cost upkeep").check();
+  await l.getByRole("button", { name: "Save" }).click();
+  await expect(l.getByText("1 Blood for each Retainer a game, taken as the night starts")).toBeVisible();
+
+  // The House rules tab shows it; and so does each Retainer on the sheet.
+  await p.goto(`/troupes/${troupeId}/house-rules`);
+  await expect(p.getByText("Retainer upkeep")).toBeVisible();
+  await p.goto(`/characters/${perpetua}`);
+  await expect(p.getByRole("list", { name: "Retainers" }).getByText("· upkeep 1 Blood a game")).toHaveCount(2);
+
+  // Checking in from the game starts her night, with the upkeep taken.
+  await p.goto(`/troupes/${troupeId}`);
+  await p.getByRole("list", { name: "Games to come" }).getByRole("listitem").first().getByRole("button", { name: "Check in" }).click();
+  await p.getByRole("dialog", { name: /^Check in: / }).getByRole("button", { name: "Check in Perpetua" }).click();
+  await expect(p.getByRole("heading", { name: "Perpetua" })).toBeVisible();
+  await expect(p.getByText("Retainer upkeep: −2 Blood (Bocephus, Rook)")).toBeVisible();
+  await expect(p.getByLabel("Blood: 8 of 10")).toBeVisible();
+});
+
 test("a troupe's public page asks a newcomer to make an account, which brings them back to the troupe", async ({ browser }) => {
   const custodian = await person(browser, "joinlink-cust");
   makeCustodian(custodian.email);

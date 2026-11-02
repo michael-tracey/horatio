@@ -369,6 +369,7 @@ export function withPending(view: PlayView, pending: Tap[]): Shown {
       by_staff: false,
       undone: undone.has(tap.id),
       undoes: tap.undoes ?? null,
+      upkeep: false,
       pending: true,
     });
   }
@@ -379,7 +380,8 @@ export function withPending(view: PlayView, pending: Tap[]): Shown {
 
 /** The tap Undo takes back: the newest not already undone, and not itself an undo. */
 export function latestUndoable(log: ShownEntry[]): ShownEntry | undefined {
-  return log.find((e) => e.kind !== "undo" && !e.undone);
+  // Retainer upkeep is the troupe's rule, taken as the night began: a correction is a tap like any other.
+  return log.find((e) => e.kind !== "undo" && !e.undone && !e.upkeep);
 }
 
 /** Where a tracker stands, for a toast: "5/6", "1/9 marked", "1 of 2 left"; null for one with no count. */

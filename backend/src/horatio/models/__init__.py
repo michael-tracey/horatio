@@ -72,7 +72,7 @@ from horatio.models.quests import (
     QuestRequirement,
     QuestScenario,
 )
-from horatio.models.retainers import AlternateIdentity, Retainer
+from horatio.models.retainers import AlternateIdentity, Retainer, RetainerGrowth
 from horatio.models.rules import (
     ActionKind,
     AllowanceRule,
@@ -185,6 +185,7 @@ __all__ = [
     "Session",
     "Suspension",
     "Retainer",
+    "RetainerGrowth",
     "AlternateIdentity",
     "SharedBackground",
     "SharedBackgroundEntry",

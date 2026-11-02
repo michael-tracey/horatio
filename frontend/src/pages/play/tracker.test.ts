@@ -186,6 +186,7 @@ describe("withPending", () => {
           by_staff: false,
           undone: false,
           undoes: null,
+          upkeep: false,
         },
       ],
     });
@@ -242,6 +243,29 @@ describe("latestUndoable", () => {
     const shown = withPending(view(), [change("blood", -1, 1), makeTap({ kind: "note", note: "fed at the club" }, "g1", at(2))]);
 
     expect(latestUndoable(shown.log)?.text).toBe("Note");
+  });
+
+  it("leaves Retainer upkeep alone (#442)", () => {
+    const upkeep = {
+      id: "u1",
+      kind: "change",
+      tracker: "blood",
+      amount: -2,
+      damage: null,
+      before: 10,
+      after: 8,
+      text: "Retainer upkeep: −2 Blood (Bocephus)",
+      note: "",
+      happened_at: at(0).toISOString(),
+      actor_name: "Jane",
+      by_staff: false,
+      undone: false,
+      undoes: null,
+      upkeep: true,
+    };
+    expect(latestUndoable([upkeep])).toBeUndefined();
+    const shown = withPending(view({ log: [upkeep] }), [change("blood", -1, 1)]);
+    expect(latestUndoable(shown.log)?.text).not.toContain("Retainer upkeep");
   });
 });
 
@@ -503,6 +527,7 @@ describe("spending sect status (issue #253)", () => {
         by_staff: false,
         undone: false,
         undoes: null,
+        upkeep: false,
       },
     ];
     const shown = withPending(saved, [makeTap({ kind: "undo", undoes: "t0" }, "g1", at(2))]);

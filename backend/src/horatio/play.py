@@ -967,6 +967,8 @@ def describe(
     said: Sequence[str] = (),
 ) -> str:
     """The tap as the log reads it: "Blood 7 → 6", "Turned into fight form"."""
+    if event.upkeep is not None:
+        return upkeep_text(event, limits)
     if event.kind == "note":
         return "Note"
     if event.kind == "undo":
@@ -1019,6 +1021,15 @@ def describe(
         return f"{name} {event.before} → {event.after}"
     sign = "+" if event.amount > 0 else "−"
     return f"{name} {sign}{abs(event.amount)} (not on the sheet now)"
+
+
+def upkeep_text(event: PlayEvent, limits: Limits) -> str:
+    """Retainer upkeep the night began with (horatio.retainer_upkeep):
+    "Retainer upkeep: −2 Blood (Bocephus, Marta)"."""
+    names = ", ".join((event.upkeep or {}).get("retainers", []))
+    if event.kind == "note":
+        return f"Retainer upkeep not paid: {names} neglected"
+    return f"Retainer upkeep: −{abs(event.amount)} {limits.name(event.tracker)} ({names})"
 
 
 # --- Games -------------------------------------------------------------------
@@ -1144,6 +1155,8 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
     character's lock. Influence spent, and undone, is logged and owed as it
     arrives (horatio.play_influence). A character whose player is suspended takes
     none (horatio.suspensions)."""
+    from horatio import retainer_upkeep  # imports this module
+
     suspensions.refuse_character(db, character)
     ids = [t.id for t in taps] + [t.undoes for t in taps if t.undoes is not None]
     existing = {
@@ -1160,6 +1173,10 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
         g.id: g for g in db.scalars(select(PlayGame).where(PlayGame.character_id == character.id))
     }
     touched: dict[uuid.UUID, PlayGame] = {}
+    # The night's first taps begin it, and its Retainer upkeep is taken then.
+    open_game = next((g for g in games.values() if g.ended_at is None), None)
+    beginning = open_game is None or (open_game.upkeep is None and not game_events(db, open_game))
+    first_at: dict[uuid.UUID, datetime] = {}
     vitae = SPLATS[character.splat].vitae is not None
     # The earliest game whose Derangement traits (or a ghoul's vitae) these taps change.
     carried: int | None = None
@@ -1201,6 +1218,7 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
         )
         db.add(event)
         db.flush()
+        first_at[game.id] = min(first_at.get(game.id, event.happened_at), event.happened_at)
         if target is not None:
             play_influence.cancel(db, actor, target)
             if target.held_status is not None:
@@ -1222,8 +1240,14 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
         if carries((target or event).tracker, vitae):
             carried = game.number if carried is None else min(carried, game.number)
     for game in touched.values():
-        # A game's first tap begins it: the titles held then are kept with it.
+        # A game's first tap begins it: the titles held then are kept with it, and
+        # its Retainer upkeep is taken. One begun before upkeep was played takes none.
         play_status.begin(db, character, game)
+        if game.ended_at is None and game.upkeep is None:
+            if beginning:
+                retainer_upkeep.begin(db, character, actor, game, at=first_at[game.id])
+            else:
+                game.upkeep = {}
         refresh(db, game, limits(db, character, game))
     # Derangement traits and a ghoul's vitae carry from game to game, so a late tap
     # in a game already over moves where each game after it started them.

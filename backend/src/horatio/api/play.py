@@ -197,6 +197,9 @@ class LogEntryOut(BaseModel):
     undoes: uuid.UUID | None
     # Influence spent: what the troupe's influence log has for it.
     influence: InfluenceSpendOut | None = None
+    # Retainer upkeep the night began with (horatio.retainer_upkeep), which the
+    # Undo button leaves alone: a correction is a tap like any other.
+    upkeep: bool = False
 
 
 class PowerOut(reference.Switch):
@@ -517,6 +520,7 @@ def log_out(
             undone=event.id in undone,
             undoes=undid.client_id if (undid := target(event)) else None,
             influence=spend.out if (spend := spends.get(event.id)) else None,
+            upkeep=event.upkeep is not None,
         )
         for event in reversed(play.in_order(events))
     ]
