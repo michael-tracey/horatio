@@ -14,7 +14,7 @@ import { describeDifference, settlementLabel } from "../../settlements";
 import { joining, type XpChoice } from "./xpRange";
 import { useBackstoryStanding } from "../character/BackstoryTab";
 import { ApprovalBackstory } from "./ApprovalBackstory";
-import { askedLine } from "./approvals";
+import { askedLine, teachingText } from "./approvals";
 import { generationText } from "../../generation";
 
 type State = "pending" | "approved" | "declined" | "withdrawn";
@@ -132,7 +132,9 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
           {joining
             ? "Asking to make this home"
             : approval.kind === "discipline"
-              ? "Discipline"
+              ? d?.teaching && d.category !== "disciplines"
+                ? "Taught"
+                : "Discipline"
               : approval.kind === "review"
                 ? "Rule review"
                 : approval.kind === "exception"
@@ -195,7 +197,7 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
           {named(d.name)}
           {d.detail && `: ${d.detail}`}
           {d.house && <HouseMark label={d.house} />} {d.from_rating} → {d.to_rating}, for {d.cost} XP.{" "}
-          {d.teacher && <>Taught by {d.teacher}. </>}
+          {d.teaching ? <>{teachingText(d.teaching)} </> : d.teacher && <>Taught by {d.teacher}. </>}
           <span className="text-mist">The XP is spent; declining refunds it and takes the dots back.</span>
         </p>
       )}

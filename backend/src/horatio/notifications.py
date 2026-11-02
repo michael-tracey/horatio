@@ -254,10 +254,34 @@ def quest_request_tasks(db: Session, user: User) -> list[Item]:
     ]
 
 
+def teaching_tasks(db: Session, user: User) -> list[Item]:
+    """Teaching asked of the person's characters, at the cost of their Willpower
+    (horatio.teaching): theirs to confirm or refuse."""
+    from horatio import teaching  # imports this module
+
+    return [
+        Item(
+            id=f"teaching:{t.id}",
+            kind="teaching",
+            task=True,
+            troupe_id=t.troupe_id,
+            troupe_name=db.get_one(Troupe, t.troupe_id).name,
+            summary=f"{teacher.name}: {teaching.what_taught(db, t)}? "
+            f"It costs {t.willpower} Willpower.",
+            link=f"/play/characters/{teacher.id}?tab=tracker",
+            at=t.created_at,
+            read=False,
+            picture=picture_url(teacher.id, teacher.picture_id),
+        )
+        for t, teacher in teaching.waiting_for(db, user)
+    ]
+
+
 TASK_SOURCES: list[Callable[[Session, User], list[Item]]] = [
     approval_tasks,
     troupe_request_tasks,
     quest_request_tasks,
+    teaching_tasks,
 ]
 
 

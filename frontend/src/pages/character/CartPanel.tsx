@@ -9,7 +9,8 @@ import { StepButton } from "../../components/StepButton";
 import { Badge, Button, Card, ErrorText, Notice } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { AskStaff } from "./AskStaff";
-import { askException, costText, describe, toChange, type Cart, type CartLine } from "./cart";
+import { askException, chooseTeacher, costText, describe, teacherOf, toChange, type Cart, type CartLine } from "./cart";
+import { TeacherPicker } from "./TeacherPicker";
 
 type CartOut = components["schemas"]["CartOut"];
 
@@ -175,6 +176,19 @@ export function CartPanel({
                     </span>
                     {priced?.refused && <span className="text-xs text-blood-bright">{named(priced.refused)}</span>}
                     {!priced?.refused && priced?.because && <span className="text-xs text-gold">{named(priced.because)}</span>}
+                    {/* Kept while the line is priced again, so typing an NPC's name keeps its place. */}
+                    {line.kind === "set" && (priced?.teacher || line.teacher_id || line.npc_teacher) && (
+                      <TeacherPicker
+                        characterId={character.id}
+                        bought={{ category: line.category, name: line.name, detail: line.detail, rating: line.to, current: line.from }}
+                        label={describe(line)}
+                        value={teacherOf(line)}
+                        onChange={(choice) => {
+                          setMessage(null);
+                          cart.update((ls) => chooseTeacher(ls, line, choice));
+                        }}
+                      />
+                    )}
                     {priced && priced.repriced.length > 0 && <Repriced lines={priced.repriced} />}
                     {exception && (
                       <span className="text-xs text-mist">

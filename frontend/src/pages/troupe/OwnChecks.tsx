@@ -358,14 +358,15 @@ function OwnCheckEditor({ troupeId, editing, onClose }: { troupeId: string; edit
   );
 }
 
-/** Blocks side by side, all of which must hold, with a picker to add another. */
-function Blocks({
+/** Blocks side by side, all of which must hold, with a picker to add another. Teacher rules use them too (TeacherRules). */
+export function Blocks({
   name,
   blocks,
   catalogue,
   subject,
   onChange,
   depth = 0,
+  legend = "The condition (every block must hold)",
 }: {
   name: string;
   blocks: CondBlock[];
@@ -373,11 +374,12 @@ function Blocks({
   subject: string;
   onChange: (blocks: CondBlock[]) => void;
   depth?: number;
+  legend?: string;
 }) {
   const offered = COND_TYPES.filter((t) => depth < 4 || !["not", "any_of", "all_of"].includes(t.type));
   return (
     <fieldset className={`flex flex-col gap-2 ${depth ? "border-l-2 border-ash pl-3" : ""}`}>
-      {depth === 0 && <legend className="mb-1 text-sm text-mist">The condition (every block must hold)</legend>}
+      {depth === 0 && <legend className="mb-1 text-sm text-mist">{legend}</legend>}
       {blocks.length > 0 && (
         <ul className="flex flex-col gap-2">
           {blocks.map((b, i) => (
