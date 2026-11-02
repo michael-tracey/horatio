@@ -420,5 +420,6 @@ def test_own_checks_are_listed_apart_and_for_players(troupe: Troupe) -> None:
         "page": None,
         "strength": "refuse",
         "house": "refuse",
+        "once_finished": None,
         "own": True,
     } in rules["checks"]

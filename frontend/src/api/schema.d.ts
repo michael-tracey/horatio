@@ -10424,6 +10424,8 @@ export interface components {
             key: string;
             /** Message */
             message: string;
+            /** Once Finished */
+            once_finished?: string | null;
             /** Page */
             page: string | null;
             /** Strength */
@@ -13908,6 +13910,8 @@ export interface components {
         HouseCheckOut: {
             /** House */
             house: string;
+            /** Once Finished */
+            once_finished?: string | null;
             /**
              * Own
              * @default false

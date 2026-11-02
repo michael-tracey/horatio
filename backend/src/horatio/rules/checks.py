@@ -91,7 +91,11 @@ the change; "complete" lets it be while the character is being built, but
 creation cannot be finished until it holds; "review" lets it through once the
 character has a home troupe, waiting on that troupe's approval (and freely
 before, as acceptance reviews the whole sheet); "note" only shows on the sheet.
-A troupe can change any check's strength, or switch it off.
+A check can play otherwise once the character's creation is finished: its
+`once_finished` strength then takes over ("complete" while the character is
+built, "review" after, for a sect's merits and flaws).
+A troupe can change any check's strength, or switch it off; a troupe's strength
+is for before and after creation alike.
 
 A check's message can name its subject as {name}: "{name} is not in-clan".
 
@@ -101,7 +105,7 @@ vampire's Generation, on Backgrounds).
 """
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import cached_property
 from typing import Any, Literal, cast
 
@@ -160,6 +164,10 @@ NO_CONTEXT = Context()
 # only for that clan). A merit another trait gives is not held to it.
 REQUIREMENT_KEY = "/requirement"
 
+# The start of the keys of the checks that keep a sect's merits and flaws to its
+# members (bns_met_vampire_checks.toml).
+SECT_KEY = "sect/"
+
 # The start of the key of the check a troupe's ban on a trait makes (ban_check).
 BAN_KEY = "ban/"
 
@@ -181,6 +189,8 @@ class CheckData:
     page: str | None = None
     # The creation step (a category's picks) that must meet a "complete" check.
     step: str | None = None
+    # The strength once the character's creation is finished, where it differs.
+    once_finished: Strength | None = None
 
     def about(self, trait: SheetTrait) -> bool:
         if trait.category != self.category or (trait.rating == 0):
@@ -522,6 +532,8 @@ def violations(
         by_name.setdefault((trait.category, trait.name), []).append(trait)
     found: list[Violation] = []
     for check in checks:
+        if context.finished and check.once_finished is not None:
+            check = replace(check, strength=check.once_finished)
         about = (
             by_category.get(check.category, ())
             if check.name is None
@@ -605,6 +617,7 @@ def check_from_dict(raw: Mapping[str, Any]) -> CheckData:
         message=raw.get("message", ""),
         page=raw.get("page"),
         step=raw.get("step"),
+        once_finished=raw.get("once_finished"),
     )
 
 
