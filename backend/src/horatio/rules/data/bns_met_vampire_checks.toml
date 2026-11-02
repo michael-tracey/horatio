@@ -1745,6 +1745,16 @@ page = "Vol. 2 Issue 1, p. 64"
 
 [[checks]]
 category = "techniques"
+name = "Ensnaring Force"
+requires = { has_all = [
+  { category = "disciplines", name = "Kineticism", rating = 4 },
+  { category = "disciplines", name = "Celerity", rating = 2 },
+] }
+message = "Ensnaring Force needs Kineticism 4 and Celerity 2."
+page = "Vol. 2, p. 75"
+
+[[checks]]
+category = "techniques"
 name = "Escape Clause"
 requires = { has_all = [
   { category = "disciplines", name = "Daimoinon", rating = 2 },
@@ -3215,12 +3225,20 @@ strength = "refuse"
 message = "Each dot of Haven gives one advantage."
 page = "102"
 
+# Athenaeum of the Hive gives a Baali two fields of study a dot (Vol. 2, p. 259).
 [[checks]]
 category = "academics_specializations"
-forbids = { more_than_dots = { count = { category = "academics_specializations" }, dots = { category = "skills", name_prefix = "Academics" } } }
+forbids = { more_than_dots = { count = { category = "academics_specializations" }, dots = { category = "skills", name_prefix = "Academics" } }, not = { has = { category = "merits", name = "Athenaeum of the Hive" } } }
 strength = "refuse"
 message = "Each dot of Academics gives one field of study."
 page = "92"
+
+[[checks]]
+category = "academics_specializations"
+forbids = { more_than_dots = { count = { category = "academics_specializations" }, dots = { category = "skills", name_prefix = "Academics" }, per_dot = 2 } }
+strength = "refuse"
+message = "Athenaeum of the Hive gives two fields of study per dot of Academics, no more."
+page = "Vol. 2, p. 259"
 
 [[checks]]
 category = "drive_specializations"

@@ -82,6 +82,21 @@ def test_a_supplement_technique_needs_its_disciplines() -> None:
     )
 
 
+def test_ensnaring_force_needs_kineticism_4_and_celerity_2() -> None:
+    """Vol. 2, p. 75 (#412)."""
+    force = t("techniques", "Ensnaring Force")
+    celerity = t("disciplines", "Celerity", 2)
+
+    assert broken([force, t("disciplines", "Kineticism", 3), celerity], force.name) == [
+        "Ensnaring Force needs Kineticism 4 and Celerity 2. (Vol. 2, p. 75)"
+    ]
+    assert broken(
+        [force, t("disciplines", "Kineticism", 4), t("disciplines", "Celerity")], force.name
+    )
+    assert broken([force, t("disciplines", "Kineticism", 4), celerity], force.name) == []
+    assert rules().traits[("techniques", "Ensnaring Force")].page_reference == "Vol. 2, p. 75"
+
+
 def test_either_or_prerequisites() -> None:
     coven = t("techniques", "Press-Ganged Coven")
     dominate = t("disciplines", "Dominate", 4)
@@ -299,6 +314,37 @@ def test_supplement_clan_merits_are_for_their_clan_or_bloodline() -> None:
     sight = t("merits", "Sight Beyond Sight")
     assert broken([clan("Salubri"), sight], sight.name) == []
     assert broken([clan("Salubri: Healer"), sight], sight.name)
+
+
+def test_athenaeum_of_the_hive_is_a_baali_merit_of_two_points() -> None:
+    """Vol. 2, p. 259 (#412): for the Baali and their bloodline, with two fields of
+    study for each dot of Academics."""
+    athenaeum = t("merits", "Athenaeum of the Hive")
+    trait = rules().traits[("merits", athenaeum.name)]
+
+    assert trait.properties == {"rating": 2, "type": "Clan", "requirement": "Baali"}
+    assert trait.page_reference == "Vol. 2, p. 259"
+    assert broken([clan("Lasombra"), athenaeum], athenaeum.name)
+    assert broken([clan("Baali"), athenaeum], athenaeum.name) == []
+    assert broken([clan("Baali: Angelis Ater"), athenaeum], athenaeum.name) == []
+
+    def fields(count: int, *more: SheetTrait) -> list[str]:
+        sheet = [
+            clan("Baali"),
+            t("skills", "Academics", 2),
+            *more,
+            *(t("academics_specializations", f"Field {n}") for n in range(count)),
+        ]
+        found = violations(rules().checks, sheet, Context())
+        return sorted({v.message for v in found if v.check.category == "academics_specializations"})
+
+    assert fields(2) == []
+    assert fields(3) == ["Each dot of Academics gives one field of study. (p. 92)"]
+    assert fields(4, athenaeum) == []
+    assert fields(5, athenaeum) == [
+        "Athenaeum of the Hive gives two fields of study per dot of Academics, no more."
+        " (Vol. 2, p. 259)"
+    ]
 
 
 def test_alternative_clan_flaws_are_for_their_clan() -> None:

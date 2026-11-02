@@ -160,6 +160,27 @@ def select_definition(category: str, name: str) -> Any:
     )
 
 
+def test_athenaeum_of_the_hive_gives_two_fields_of_study_a_dot(troupe: Troupe) -> None:
+    """Vol. 2, p. 259 (#412): a Baali with the merit has two Academics
+    specialisations for each dot of Academics."""
+    academics = "academics_specializations"
+    character_id = new_character(troupe, troupe.player, clan="Baali")
+    assert take(troupe.player, character_id, "skills", "Academics", 1).status_code == 200
+    assert take(troupe.player, character_id, academics, "Anthropology").status_code == 200
+    assert take(troupe.player, character_id, academics, "Archaeology").status_code == 409
+
+    bought = take(troupe.player, character_id, "merits", "Athenaeum of the Hive", 2)
+
+    assert bought.status_code == 200, bought.text
+    assert take(troupe.player, character_id, academics, "Archaeology").status_code == 200
+    refused = take(troupe.player, character_id, academics, "Arts")
+    assert refused.status_code == 409
+    assert "two fields of study per dot of Academics" in refused.json()["detail"]
+    kinds = troupe.player.client.get(f"/characters/{character_id}/specializations").json()
+    mine = next(k for k in kinds if k["category"] == academics)
+    assert (mine["allowed"], mine["counted"]) == (2, 2)
+
+
 def test_influences_offer_the_standard_areas(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
 

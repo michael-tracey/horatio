@@ -160,6 +160,22 @@ def test_power_notes_follow_dots_and_focus(troupe: Troupe, swift: str) -> None:
     assert any(t["name"] == "Celerity" for t in found["traits"])
 
 
+def test_ensnaring_force_is_listed_with_what_it_does(troupe: Troupe) -> None:
+    """A technique from Vol. 2 (p. 75, #412): the Play View lists it with its note."""
+    character_id = created(
+        troupe,
+        "Snare",
+        ("disciplines", "Kineticism", 4),
+        ("disciplines", "Celerity", 2),
+        ("techniques", "Ensnaring Force", None),
+    )
+
+    found = {o["name"]: o for o in reference(troupe, character_id)["other_powers"]}
+
+    assert found["Ensnaring Force"]["category_name"] == "Techniques"
+    assert "Physical + Athletics" in found["Ensnaring Force"]["note"]
+
+
 def test_powers_say_what_using_them_costs(troupe: Troupe, swift: str) -> None:
     """A Use button on the Pools tab (issue #370) needs the cost, and the switch
     using the power turns on."""
