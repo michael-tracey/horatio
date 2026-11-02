@@ -1,5 +1,6 @@
 import { api, unwrap } from "../../../api/client";
 import type { CatalogueOut, CharacterOut, ClanMeritOut } from "../../../api/types";
+import { useClanName } from "../../../components/ClanNames";
 import { ErrorText, Select } from "../../../components/ui";
 import { useAction } from "../../../hooks";
 import { clanMeritWhy } from "./clanMerits";
@@ -18,6 +19,7 @@ export function ClanMerits({ character, merits, catalogue }: { character: Charac
       }),
     ),
   );
+  const named = useClanName();
   if (!merits.length) return null;
   return (
     <section aria-label="From the clan" className="flex flex-col gap-1">
@@ -27,10 +29,10 @@ export function ClanMerits({ character, merits, catalogue }: { character: Charac
           const choices = catalogue.traits.find((t) => t.category === "merits" && t.name === m.name)?.choices;
           return (
             <li key={m.name} className="flex items-start gap-2 rounded bg-ash/60 px-2 py-1.5 text-sm">
-              <input type="checkbox" className="mt-1" checked disabled aria-label={`${m.name}, given by the clan`} />
+              <input type="checkbox" className="mt-1" checked disabled aria-label={`${named(m.name)}, given by the clan`} />
               <span className="min-w-0">
-                <span className="text-parchment">{m.name}</span> <span className="text-gold">({m.points})</span>
-                <span className="mt-0.5 block text-xs text-mist">{clanMeritWhy(m)}</span>
+                <span className="text-parchment">{named(m.name)}</span> <span className="text-gold">({m.points})</span>
+                <span className="mt-0.5 block text-xs text-mist">{named(clanMeritWhy(m))}</span>
                 {!!choices?.length && (
                   <Select
                     aria-label={`${m.name}: which?`}

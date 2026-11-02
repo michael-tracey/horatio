@@ -6,17 +6,25 @@ import type { CheckOut } from "../../api/types";
 import { EmptyState } from "../../components/EmptyState";
 import { Explainer } from "../../components/Explainer";
 import { useToast } from "../../components/Toast";
+import { withClanNames } from "../../clanNames";
+import { useClanName } from "../../components/ClanNames";
 import { Badge, Button, ErrorText, Input, Loading, PageTabs, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { AllowancesSection } from "./AllowancesSection";
 import { BackstorySettings } from "./BackstorySettings";
+import { BookTraitsSection } from "./BookTraitsSection";
 import { pageText } from "./bookPage";
 import { CostsSection } from "./CostsSection";
+import { FreeChangesSettings } from "./FreeChangesSettings";
 import { HouseTraitsSection } from "./HouseTraitsSection";
+import { LanguagesSection } from "./LanguagesSection";
 import { LocationRulesSection } from "./LocationRulesSection";
+import { OwnChecks } from "./OwnChecks";
 import { QuestSettings } from "./QuestSettings";
 import { RetainerRules } from "./RetainerRules";
 import { StartingSection } from "./StartingSection";
+import { TeacherRules } from "./TeacherRules";
+import { WrittenRulesSection } from "./WrittenRulesSection";
 
 type Strength = "refuse" | "complete" | "review" | "note" | "off";
 
@@ -55,7 +63,8 @@ const strength = (value: string) => STRENGTHS.find((s) => s.value === value);
 /**
  * The troupe's house rules, part by part: how it plays the rule set's checks,
  * what traits cost here, what new characters start with, how many downtime
- * actions characters get, and the troupe's own merits and flaws. The status of
+ * actions characters get, how many languages Linguistics gives, and the troupe's
+ * own merits and flaws. The status of
  * each sect is a reference of its own, on the Troupe group's Status tab.
  */
 export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
@@ -69,11 +78,16 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
           { to: `${base}/costs`, label: "Costs" },
           { to: `${base}/starting`, label: "Starting points" },
           { to: `${base}/actions`, label: "Downtime actions" },
+          { to: `${base}/languages`, label: "Languages" },
           { to: `${base}/house-traits`, label: "House merits and flaws" },
+          { to: `${base}/written`, label: "Written rules" },
+          { to: `${base}/book-traits`, label: "Book traits" },
           { to: `${base}/locations`, label: "Locations" },
           { to: `${base}/quests`, label: "Quests" },
           { to: `${base}/retainers`, label: "Retainers" },
           { to: `${base}/backstories`, label: "Backstories" },
+          { to: `${base}/free-changes`, label: "Free changes" },
+          { to: `${base}/teachers`, label: "Teachers" },
         ]}
       />
       <Routes>
@@ -81,11 +95,16 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
         <Route path="costs" element={<CostsSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="starting" element={<StartingSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="actions" element={<AllowancesSection troupeId={troupeId} canEdit={canEdit} />} />
+        <Route path="languages" element={<LanguagesSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="house-traits" element={<HouseTraitsSection troupeId={troupeId} canEdit={canEdit} />} />
+        <Route path="written" element={<WrittenRulesSection troupeId={troupeId} canEdit={canEdit} />} />
+        <Route path="book-traits" element={<BookTraitsSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="locations" element={<LocationRulesSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="quests" element={<QuestSettings troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="retainers" element={<RetainerRules troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="backstories" element={<BackstorySettings troupeId={troupeId} />} />
+        <Route path="free-changes" element={<FreeChangesSettings troupeId={troupeId} canEdit={canEdit} />} />
+        <Route path="teachers" element={<TeacherRules troupeId={troupeId} canEdit={canEdit} />} />
       </Routes>
     </>
   );
@@ -125,7 +144,7 @@ function ChecksSection({ troupeId, canEdit }: { troupeId: string; canEdit: boole
   const q = query.trim().toLowerCase();
   const changed = checks.data.filter((c) => c.house).length;
   const shown = checks.data.filter((c) =>
-    q ? `${c.group} ${c.about} ${c.message}`.toLowerCase().includes(q) : view === "all" || c.house || touched.has(c.key),
+    q ? withClanNames(`${c.group} ${c.about} ${c.message}`).toLowerCase().includes(q) : view === "all" || c.house || touched.has(c.key),
   );
   const groups = groupChecks(shown);
   const totals = groupChecks(checks.data);
@@ -174,6 +193,8 @@ function ChecksSection({ troupeId, canEdit }: { troupeId: string; canEdit: boole
           ))}
         </dl>
       </Explainer>
+
+      <OwnChecks troupeId={troupeId} canEdit={canEdit} />
 
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-3">
@@ -285,10 +306,11 @@ const strengthLabel = (value: string) => strength(value)?.label ?? value;
 
 function RuleRow({ rule, canEdit, onChange }: { rule: CheckOut; canEdit: boolean; onChange: (value: Strength | null) => void }) {
   const played = strength(rule.house ?? rule.strength);
+  const named = useClanName();
   return (
     <li className="flex flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:gap-4">
       <span className="min-w-0 flex-1 text-sm">
-        <span className="text-parchment">{rule.message || rule.about}</span>
+        <span className="text-parchment">{named(rule.message || rule.about)}</span>
         {rule.page && <span className="text-mist"> {pageText(rule.page)}</span>}
         {rule.house && (
           <span className="ml-2">
@@ -300,7 +322,7 @@ function RuleRow({ rule, canEdit, onChange }: { rule: CheckOut; canEdit: boolean
         {played && !canEdit && <Badge tone={played.tone}>{played.label}</Badge>}
         {canEdit && (
           <Select
-            aria-label={`Setting for: ${rule.message || rule.about}`}
+            aria-label={`Setting for: ${named(rule.message || rule.about)}`}
             value={rule.house ?? ""}
             onChange={(e) => onChange((e.target.value || null) as Strength | null)}
             className={`min-h-8 w-56 py-1 text-sm ${rule.house ? "border-gold/60 text-gold" : ""}`}

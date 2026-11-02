@@ -26,6 +26,7 @@ from horatio import (
     retainers,
     sect_status,
     sheets,
+    teaching,
 )
 from horatio.api.downtimes import staff_troupe
 from horatio.api.equipment import EquipmentModifierOut, modifier_out
@@ -56,6 +57,7 @@ from horatio.permissions import (
 )
 from horatio.pool_modifiers import ModifierOut, modifiers_out
 from horatio.rules.feeding import clan_family
+from horatio.rules.model import TraitChangeData
 from horatio.rules.npc_kinds import kind_name
 
 router = APIRouter(tags=["play"])
@@ -264,6 +266,10 @@ class PlayTrait(BaseModel):
     house: str | None = None
     # What its effects do, in words: shown under its description.
     house_summary: str | None = None
+    # The home troupe's own wording for it (horatio.book_traits), in Markdown, added to
+    # the book's summary or in its place; "" for none.
+    wording: str = ""
+    wording_mode: Literal["added", "replaces"] = "added"
 
 
 class PlayView(BaseModel):
@@ -307,6 +313,9 @@ class PlayView(BaseModel):
     # Blood started at half: the character fed short last downtime.
     half_blood: bool = False
     willpower: Tracker
+    # Willpower out teaching that rest does not bring back yet (horatio.teaching), in
+    # words: "1 Willpower out teaching Firearms 2 to Elmer: back after 2 more games".
+    willpower_lent: str | None = None
     health: Health
     morality: Morality | None
     beast: Tracker
@@ -560,8 +569,17 @@ def spends_out(db: Session, entries: dict[uuid.UUID, InfluenceEntry]) -> dict[uu
     return found
 
 
+def wording_of(change: TraitChangeData | None) -> dict[str, Any]:
+    """A trait's house wording as a PlayTrait carries it, if the troupe gave it some."""
+    if change is None or not change.wording:
+        return {}
+    return {"wording": change.wording, "wording_mode": change.wording_mode}
+
+
 def sheet_traits(db: Session, character: Character) -> list[PlayTrait]:
-    rule_set = sheets.rules_for(db, character).rule_set
+    rules = sheets.rules_for(db, character)
+    rule_set = rules.rule_set
+    changes = rules.trait_changes
     rows = sheets.sheet_rows(db, character)
     specialties: dict[tuple[str, str], list[str]] = {}
     for row in rows:
@@ -589,6 +607,7 @@ def sheet_traits(db: Session, character: Character) -> list[PlayTrait]:
             house_summary=house[row.definition.id].summary or None
             if row.definition.id in house
             else None,
+            **wording_of(changes.get((row.category.key, row.definition.name))),
         )
         for row in rows
         if row.category.key in rule_set.categories
@@ -657,6 +676,7 @@ def play_view(db: Session, character: Character) -> PlayView:
         willpower=Tracker(
             value=state["willpower"], most=limits.willpower, start=limits.starting_willpower()
         ),
+        willpower_lent=teaching.lent_text(db, character),
         health=Health(
             levels=[HealthLevel(name=n, boxes=b) for n, b in limits.health],
             marks=state["health"],
@@ -935,6 +955,7 @@ def choose_status(
         source=body.source,
         chosen=body.chosen,
         absent=body.absent,
+        reason=body.reason,
     )
     db.commit()
     return play_view(db, character)

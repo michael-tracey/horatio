@@ -1,6 +1,7 @@
 """Game-night check-in (issue #421, horatio.checkin): staff open a game's check-in
 for the door, players check in and land in their Play View, staff see who came and
-award the game's XP to everyone there in one go."""
+award the game's XP to everyone there in one go: the same to each, or by the
+troupe's game XP chart, with absentee games (issue #438, horatio.game_xp)."""
 
 import uuid
 from datetime import datetime
@@ -10,13 +11,16 @@ from pydantic import BaseModel, Field
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, checkin, sheets, suspensions, xp_range
+from horatio import audit, checkin, game_xp, play_status, sheets, suspensions, xp_range
 from horatio.api.games import member_troupe
+from horatio.api.play_status import AbidingSourceOut, source_status
 from horatio.api.troupe_profiles import ProfilePerson, someone
 from horatio.auth.deps import CurrentUser, DbSession
+from horatio.game_xp import GameXpSettings
 from horatio.models import (
     Character,
     GameAttendance,
+    GameXpAward,
     PlayGame,
     ScheduledGame,
     Troupe,
@@ -41,6 +45,12 @@ class CheckInCharacter(BaseModel):
     id: uuid.UUID
     name: str
     checked_in: bool
+    # Its troupe chooses its source of abiding status as it checks in (issue #441):
+    # its sources to choose from, and the one fixed at this check-in already, if any
+    # (checked out and in again).
+    status_at_checkin: bool = False
+    status_sources: list[AbidingSourceOut] = []
+    status_source: str | None = None
 
 
 class CheckInOffer(BaseModel):
@@ -60,6 +70,9 @@ class CheckInIn(BaseModel):
     # A full day's rest since the last game: Willpower starts full (MET: VtM core,
     # p. 288). Without one, it starts where the last game left it.
     rested: bool = True
+    # The source of abiding status it carries tonight, where its troupe chooses it at
+    # check-in and it has more than one (horatio.play_status.fix_at_checkin).
+    source: str | None = Field(default=None, max_length=200)
 
 
 class CheckedIn(BaseModel):
@@ -92,12 +105,53 @@ class Attendee(BaseModel):
     rested: bool | None
     # XP earned in the calendar month so far (horatio.checkin.earned_this_month).
     month_xp: int
+    # "attended", or "absentee": it missed the game, recorded as an absentee game.
+    kind: game_xp.Kind = "attended"
+    # Where its source of abiding status was fixed as it checked in: that source, or
+    # `status_to_choose` while staff are still to choose one of several.
+    status_source: str | None = None
+    status_to_choose: bool = False
 
 
-class Absentee(BaseModel):
+class NotHere(BaseModel):
     character_id: uuid.UUID
     character_name: str
     player_name: str
+    # Its home is this troupe, so it can be marked absentee here.
+    home: bool = True
+
+
+class XpLine(BaseModel):
+    """What one character would get for the game (horatio.game_xp): its attendance
+    kind, its band and the chart's figure, and what the monthly cap leaves."""
+
+    character_id: uuid.UUID
+    character_name: str
+    kind: game_xp.Kind
+    # XP earned in all, which picks the band, and this calendar month.
+    earned_xp: int
+    month_xp: int
+    # Its band on the chart and the chart's figure; None with no chart, when the
+    # game's flat amount (or absentee amount) is its figure.
+    band: str | None
+    figure: int | None
+    # How often each adjustment was ticked for it this month, by key.
+    used: dict[str, int]
+
+
+class GameXpGiven(BaseModel):
+    """What one character got for the game, once awarded."""
+
+    character_id: uuid.UUID
+    character_name: str
+    kind: game_xp.Kind
+    band: str | None
+    figure: int
+    adjustments: list[str]
+    capped: int
+    override: int | None
+    override_reason: str
+    amount: int
 
 
 class GameXp(BaseModel):
@@ -113,8 +167,10 @@ class GameNight(BaseModel):
     ends_at: datetime
     checkin: CheckInState
     attendees: list[Attendee]
+    # Characters recorded as absentee for it (horatio.game_xp): never counted as here.
+    absentees: list[Attendee] = []
     # The troupe's other active player characters, to check in by hand.
-    others: list[Absentee]
+    others: list[NotHere]
     # The troupe's usual XP for a game, and the game's XP once awarded.
     session_xp: int
     xp: GameXp
@@ -122,7 +178,13 @@ class GameNight(BaseModel):
     # The book's guidance (MET: VtM core, p. 108).
     game_xp_low: int
     game_xp_high: int
+    # The monthly figure the troupe works to: the book's 10 unless it sets its own.
     monthly_xp: int
+    # The troupe's game XP chart, adjustments, cap and absentee settings.
+    game_xp: GameXpSettings = GameXpSettings()
+    # Each character the award would go to, before it is made; what each got, after.
+    xp_lines: list[XpLine] = []
+    given: list[GameXpGiven] = []
 
 
 class PastGame(BaseModel):
@@ -133,19 +195,47 @@ class PastGame(BaseModel):
     xp_awarded: int | None
 
 
+class CharacterXpIn(BaseModel):
+    """Staff's choice for one character: adjustments ticked, or its figure set by hand."""
+
+    character_id: uuid.UUID
+    ticks: list[str] = Field(default_factory=list, max_length=20)
+    override: int | None = Field(default=None, ge=0, le=1000)
+    override_reason: str = Field(default="", max_length=300)
+
+
 class GameXpIn(BaseModel):
+    # The XP for each character there, with no chart (horatio.game_xp: "Flat"). With a
+    # chart, each character's band gives it, and this is not used.
     amount: int = Field(ge=1, le=1000)
+    # With no chart, the XP for an absentee game.
+    absentee_amount: int | None = Field(default=None, ge=0, le=1000)
     # The reason on each character's XP history, such as "Game, 18 October".
     reason: str = Field(min_length=1, max_length=500)
-    # Add the amount to the troupe's XP floor and ceiling, as a game's XP.
+    # Add the game's XP to the troupe's XP floor and ceiling.
     to_range: bool = True
+    characters: list[CharacterXpIn] = Field(default_factory=list)
 
 
 class GameXpAwarded(BaseModel):
     characters: int
     total: int
-    # Those it took past the book's monthly guidance, by name.
+    # Those it took past the monthly figure, by name, while the troupe warns.
     past_monthly: list[str]
+    # Those the cap held some back from, by name, while the troupe caps.
+    capped: list[str] = []
+
+
+class MissedGame(BaseModel):
+    """A game that has started, whose XP is still to award, and the caller's characters
+    at home in the troupe: for a player to mark one absentee, where the troupe allows."""
+
+    game_id: uuid.UUID
+    starts_at: datetime
+    ends_at: datetime
+    characters: list[CheckInCharacter]
+    # Those of them marked absentee.
+    absentee: list[uuid.UUID]
 
 
 class AttendedGame(BaseModel):
@@ -209,6 +299,7 @@ def offer(db: Session, user: User, troupe: Troupe, game: ScheduledGame) -> Check
             select(GameAttendance.character_id).where(
                 GameAttendance.game_id == game.id,
                 GameAttendance.character_id.in_([c.id for c in mine]),
+                checkin.ATTENDED,
             )
         )
     )
@@ -218,8 +309,70 @@ def offer(db: Session, user: User, troupe: Troupe, game: ScheduledGame) -> Check
         game_id=game.id,
         starts_at=game.starts_at,
         ends_at=game.ends_at,
-        characters=[CheckInCharacter(id=c.id, name=c.name, checked_in=c.id in here) for c in mine],
+        characters=[offered(db, c, game, c.id in here) for c in mine],
     )
+
+
+def offered(
+    db: Session, character: Character, game: ScheduledGame, checked_in: bool
+) -> CheckInCharacter:
+    """A character the caller can check in, with the sources of abiding status to
+    choose from where its troupe chooses one at check-in."""
+    found = CheckInCharacter(id=character.id, name=character.name, checked_in=checked_in)
+    if checked_in or not play_status.at_checkin(play_status.troupe_of(db, character)):
+        return found
+    night = checkin.joined_night(db, character, game)
+    at = play_status.at_game(db, character, night)
+    found.status_at_checkin = True
+    found.status_sources = [
+        AbidingSourceOut(name=s.name, kind=s.kind, status=source_status(s.status))
+        for s in at.sources
+    ]
+    found.status_source = play_status.fixed_for(at.choices, game)
+    return found
+
+
+def to_award(db: Session, troupe: Troupe, game: ScheduledGame) -> list[tuple[Character, str]]:
+    """The characters the game's XP goes to, with their attendance kind: those checked
+    in or absentee whose home is this troupe, active player characters."""
+    return [
+        (c, kind)
+        for c, kind in db.execute(
+            select(Character, GameAttendance.kind)
+            .join(GameAttendance, GameAttendance.character_id == Character.id)
+            .where(
+                GameAttendance.game_id == game.id,
+                Character.home_troupe_id == troupe.id,
+                Character.kind == "pc",
+                Character.status == "active",
+            )
+            .order_by(Character.name)
+        )
+    ]
+
+
+def given_out(db: Session, game: ScheduledGame) -> list[GameXpGiven]:
+    rows = db.execute(
+        select(GameXpAward, Character.name)
+        .join(Character, GameXpAward.character_id == Character.id)
+        .where(GameXpAward.game_id == game.id)
+        .order_by(Character.name)
+    )
+    return [
+        GameXpGiven(
+            character_id=a.character_id,
+            character_name=name,
+            kind="absentee" if a.kind == "absentee" else "attended",
+            band=a.band,
+            figure=a.figure,
+            adjustments=[f"{t['name']} {game_xp.signed(int(t['amount']))}" for t in a.adjustments],
+            capped=a.capped,
+            override=a.override,
+            override_reason=a.override_reason,
+            amount=a.amount,
+        )
+        for a, name in rows
+    ]
 
 
 def night_out(db: Session, user: User, troupe: Troupe, game: ScheduledGame) -> GameNight:
@@ -243,6 +396,34 @@ def night_out(db: Session, user: User, troupe: Troupe, game: ScheduledGame) -> G
     ]
     others.sort(key=lambda r: r[0].name.lower())
     awarded_by = db.get(User, game.xp_awarded_by) if game.xp_awarded_by else None
+    found = game_xp.settings(troupe)
+    nights = {
+        g.id: play_status.Choices.of(g)
+        for g in db.scalars(
+            select(PlayGame).where(
+                PlayGame.id.in_([a.play_game_id for a, _, _ in rows if a.play_game_id])
+            )
+        )
+    }
+    lines = game_xp.lines(db, troupe, to_award(db, troupe, game)) if game.xp_awarded is None else []
+
+    def attendee(a: GameAttendance, c: Character, u: User) -> Attendee:
+        night = nights.get(a.play_game_id) if a.play_game_id else None
+        fixed = night is not None and night.checked_in == str(game.id)
+        return Attendee(
+            character_id=c.id,
+            character_name=c.name,
+            player=someone(u),
+            home=c.home_troupe_id == troupe.id,
+            checked_in_at=a.created_at,
+            by_staff=a.by_staff,
+            rested=a.rested,
+            month_xp=month[c.id],
+            kind="absentee" if a.kind == "absentee" else "attended",
+            status_source=night.source if night and fixed else None,
+            status_to_choose=night.to_choose if night and fixed else False,
+        )
+
     return GameNight(
         id=game.id,
         troupe_id=troupe.id,
@@ -254,21 +435,15 @@ def night_out(db: Session, user: User, troupe: Troupe, game: ScheduledGame) -> G
             can_open=checkin.can_open(game),
             opens_at=checkin.opens_at(game),
         ),
-        attendees=[
-            Attendee(
+        attendees=[attendee(a, c, u) for a, c, u in rows if a.kind != "absentee"],
+        absentees=[attendee(a, c, u) for a, c, u in rows if a.kind == "absentee"],
+        others=[
+            NotHere(
                 character_id=c.id,
                 character_name=c.name,
-                player=someone(u),
+                player_name=u.display_name,
                 home=c.home_troupe_id == troupe.id,
-                checked_in_at=a.created_at,
-                by_staff=a.by_staff,
-                rested=a.rested,
-                month_xp=month[c.id],
             )
-            for a, c, u in rows
-        ],
-        others=[
-            Absentee(character_id=c.id, character_name=c.name, player_name=u.display_name)
             for c, u in others
         ],
         session_xp=troupe.session_xp,
@@ -282,7 +457,22 @@ def night_out(db: Session, user: User, troupe: Troupe, game: ScheduledGame) -> G
         ),
         game_xp_low=checkin.GAME_XP[0],
         game_xp_high=checkin.GAME_XP[1],
-        monthly_xp=checkin.MONTHLY_XP,
+        monthly_xp=game_xp.monthly_limit(found),
+        game_xp=found,
+        xp_lines=[
+            XpLine(
+                character_id=line.character.id,
+                character_name=line.character.name,
+                kind="absentee" if line.kind == "absentee" else "attended",
+                earned_xp=line.earned,
+                month_xp=line.month,
+                band=line.band,
+                figure=line.figure,
+                used=line.used,
+            )
+            for line in lines
+        ],
+        given=given_out(db, game) if game.xp_awarded is not None else [],
     )
 
 
@@ -304,7 +494,9 @@ def past_games(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[P
     )
     counts: dict[uuid.UUID, int] = {}
     for game_id in db.scalars(
-        select(GameAttendance.game_id).where(GameAttendance.game_id.in_([g.id for g in games]))
+        select(GameAttendance.game_id).where(
+            GameAttendance.game_id.in_([g.id for g in games]), checkin.ATTENDED
+        )
     ):
         counts[game_id] = counts.get(game_id, 0) + 1
     return [
@@ -411,7 +603,7 @@ def check_in(
     suspensions.refuse_character(db, character)
     character = sheets.lock_character(db, character.id)
     attendance, new = checkin.check_in(
-        db, user, game, character, by_staff=not mine, rested=body.rested
+        db, user, game, character, by_staff=not mine, rested=body.rested, source=body.source
     )
     db.commit()
     return CheckedIn(
@@ -462,48 +654,81 @@ def award_game_xp(
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, "A game's XP is awarded once it has started."
         )
-    present = list(
-        db.scalars(
-            select(Character)
-            .join(GameAttendance, GameAttendance.character_id == Character.id)
-            .where(
-                GameAttendance.game_id == game.id,
-                Character.home_troupe_id == troupe.id,
-                Character.kind == "pc",
-                Character.status == "active",
-            )
-            .order_by(Character.name)
-        )
-    )
+    present = to_award(db, troupe, game)
     if not present:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             "Nobody checked in calls this troupe home, so there is nobody to award here.",
         )
-    before = checkin.earned_this_month(db, [c.id for c in present])
-    for character in present:
-        sheets.award_xp(db, user, character, body.amount, reason)
+    found = game_xp.settings(troupe)
+    choices = {c.character_id: c for c in body.characters}
+    if len(choices) != len(body.characters):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "A character is listed more than once."
+        )
+    if set(choices) - {c.id for c, _ in present}:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "Only characters at the game whose home is this troupe can be awarded here.",
+        )
+    given = [
+        game_xp.work_out(
+            found,
+            line,
+            game_xp.Choice(
+                ticks=choice.ticks,
+                override=choice.override,
+                override_reason=choice.override_reason,
+            )
+            if (choice := choices.get(line.character.id))
+            else game_xp.Choice(),
+            flat=body.amount,
+            flat_absentee=body.absentee_amount,
+            reason=reason,
+        )
+        for line in game_xp.lines(db, troupe, present)
+    ]
+    game_xp.give(db, user, game, given)
+    figure = game_xp.range_figure(db, troupe, body.amount)
     if body.to_range:
-        xp_range.add_game(db, user, troupe, body.amount, reason)
+        xp_range.add_game(db, user, troupe, figure, reason)
     # Awarding the XP ends check-in: everyone there has had it.
     checkin.close_checkin(db, user, game)
-    game.xp_awarded = body.amount
+    game.xp_awarded = figure
     game.xp_awarded_at = checkin.now()
     game.xp_awarded_by = user.id
-    audit.record(
-        db,
-        user,
-        "xp.game_award",
-        troupe_id=troupe.id,
-        amount=body.amount,
-        characters=len(present),
-        game=checkin.when(game),
-    )
+    total = sum(g.amount for g in given)
+    if all(g.amount == body.amount for g in given):
+        audit.record(
+            db,
+            user,
+            "xp.game_award",
+            troupe_id=troupe.id,
+            amount=body.amount,
+            characters=len(given),
+            game=checkin.when(game),
+        )
+    else:
+        audit.record(
+            db,
+            user,
+            "xp.game_award_chart",
+            troupe_id=troupe.id,
+            total=total,
+            characters=len([g for g in given if g.amount > 0]),
+            game=checkin.when(game),
+        )
     db.commit()
+    limit = game_xp.monthly_limit(found)
     return GameXpAwarded(
-        characters=len(present),
-        total=body.amount * len(present),
-        past_monthly=[c.name for c in present if before[c.id] + body.amount > checkin.MONTHLY_XP],
+        characters=len([g for g in given if g.amount > 0]),
+        total=total,
+        past_monthly=[
+            g.line.character.name for g in given if g.line.month + g.amount > limit and g.amount
+        ]
+        if found.cap == "warn"
+        else [],
+        capped=[g.line.character.name for g in given if g.capped],
     )
 
 
@@ -516,7 +741,7 @@ def attended(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[
         .join(GameAttendance, GameAttendance.game_id == ScheduledGame.id)
         .join(Troupe, ScheduledGame.troupe_id == Troupe.id)
         .outerjoin(PlayGame, GameAttendance.play_game_id == PlayGame.id)
-        .where(GameAttendance.character_id == character.id)
+        .where(GameAttendance.character_id == character.id, checkin.ATTENDED)
         .order_by(ScheduledGame.starts_at.desc())
     )
     return [
@@ -530,3 +755,142 @@ def attended(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[
         )
         for g, name, number in rows
     ]
+
+
+class AbsenteeMarked(BaseModel):
+    character_id: uuid.UUID
+    character_name: str
+    absentee: bool
+
+
+def absentee_character(
+    db: Session, user: User, troupe: Troupe, game: ScheduledGame, character_id: uuid.UUID
+) -> tuple[Character, bool]:
+    """The character to mark absentee for the game, or take it back, and whether the
+    caller is running staff: its player may too, where the troupe allows."""
+    found = game_xp.settings(troupe)
+    if not found.absentee:
+        raise HTTPException(status.HTTP_409_CONFLICT, "This troupe doesn't record absentee games.")
+    character = db.scalar(
+        in_troupe(troupe).where(Character.id == character_id, Character.home_troupe_id == troupe.id)
+    )
+    if character is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such character at home in this troupe.")
+    staff = runs_checkin(db, user, troupe)
+    if not staff:
+        if character.player_id != user.id:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "Only its player or the storytellers can mark it absentee.",
+            )
+        if not found.absentee_by_players:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "In this troupe, only the storytellers mark a character absentee.",
+            )
+        member_troupe(db, user, troupe.id)
+    if checkin.now() < game.starts_at:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "A character is marked absentee once the game has started.",
+        )
+    if game.xp_awarded is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "This game's XP has been awarded already, so who came is settled. Award an"
+            " absentee game late from Award XP.",
+        )
+    return character, staff
+
+
+@router.put("/troupes/{troupe_id}/games/{game_id}/absentee/{character_id}")
+def mark_absentee(
+    troupe_id: uuid.UUID,
+    game_id: uuid.UUID,
+    character_id: uuid.UUID,
+    db: DbSession,
+    user: CurrentUser,
+) -> AbsenteeMarked:
+    """Record a character as absentee for a game it missed (horatio.game_xp): the
+    troupe's running staff, or its player where the troupe allows. Payments aren't
+    tracked here: marking it is the record."""
+    troupe, game = troupe_game(db, troupe_id, game_id)
+    character, staff = absentee_character(db, user, troupe, game, character_id)
+    suspensions.refuse_character(db, character)
+    checkin.mark_absentee(db, user, game, character, by_staff=staff)
+    db.commit()
+    return AbsenteeMarked(character_id=character.id, character_name=character.name, absentee=True)
+
+
+@router.delete("/troupes/{troupe_id}/games/{game_id}/absentee/{character_id}")
+def unmark_absentee(
+    troupe_id: uuid.UUID,
+    game_id: uuid.UUID,
+    character_id: uuid.UUID,
+    db: DbSession,
+    user: CurrentUser,
+) -> AbsenteeMarked:
+    """Take back a character's absentee game. One checked in is left as it is."""
+    troupe, game = troupe_game(db, troupe_id, game_id)
+    character, _ = absentee_character(db, user, troupe, game, character_id)
+    found = checkin.attendance_of(db, game, character)
+    if found is not None and found.kind == "absentee":
+        checkin.check_out(db, user, game, character)
+        db.commit()
+    return AbsenteeMarked(character_id=character.id, character_name=character.name, absentee=False)
+
+
+@router.get("/troupes/{troupe_id}/games/missed")
+def missed_games(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[MissedGame]:
+    """The troupe's games that have started and whose XP is still to award, newest
+    first, with the caller's characters at home here that didn't check in: for a player
+    to mark one absentee, where the troupe lets players. Empty where it doesn't."""
+    troupe = member_troupe(db, user, troupe_id)
+    found = game_xp.settings(troupe)
+    if not (found.absentee and found.absentee_by_players):
+        return []
+    mine = list(
+        db.scalars(
+            in_troupe(troupe)
+            .where(Character.player_id == user.id, Character.home_troupe_id == troupe.id)
+            .order_by(Character.name)
+        )
+    )
+    if not mine:
+        return []
+    games = list(
+        db.scalars(
+            select(ScheduledGame)
+            .where(
+                ScheduledGame.troupe_id == troupe.id,
+                ScheduledGame.starts_at <= checkin.now(),
+                ScheduledGame.xp_awarded.is_(None),
+            )
+            .order_by(ScheduledGame.starts_at.desc())
+            .limit(PAST_GAMES)
+        )
+    )
+    kinds: dict[tuple[uuid.UUID, uuid.UUID], str] = {
+        (game_id, character_id): kind
+        for game_id, character_id, kind in db.execute(
+            select(GameAttendance.game_id, GameAttendance.character_id, GameAttendance.kind).where(
+                GameAttendance.game_id.in_([g.id for g in games]),
+                GameAttendance.character_id.in_([c.id for c in mine]),
+            )
+        )
+    }
+    out: list[MissedGame] = []
+    for g in games:
+        away = [c for c in mine if kinds.get((g.id, c.id)) != "attended"]
+        if not away:
+            continue
+        out.append(
+            MissedGame(
+                game_id=g.id,
+                starts_at=g.starts_at,
+                ends_at=g.ends_at,
+                characters=[CheckInCharacter(id=c.id, name=c.name, checked_in=False) for c in away],
+                absentee=[c.id for c in away if kinds.get((g.id, c.id)) == "absentee"],
+            )
+        )
+    return out

@@ -50,7 +50,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, notifications, repricing, sheets, xp_debt
+from horatio import audit, clan_merits, notifications, repricing, sheets, xp_debt
 from horatio.models import (
     AppliedHouseTrait,
     Character,
@@ -63,6 +63,7 @@ from horatio.models import (
     User,
     XpEntry,
 )
+from horatio.rules.checks import is_ban
 from horatio.rules.model import SheetTrait, TroupeRules
 from horatio.rules.pricing import PricingError, fixed_rating, points, purchase_cost
 from horatio.rules.splats import DOMITOR_IN_CLAN, SPLATS
@@ -401,10 +402,11 @@ def is_clan_merit(name: str) -> bool:
     return name in RARITY or name.startswith(BLOODLINE)
 
 
-def suggested_clan_merits(rules: TroupeRules, clan: str) -> list[str]:
-    """The bloodline merit a bloodline's clan trait points to; the rarity is the
-    setting's, for staff to choose."""
-    if ":" not in clan:
+def suggested_clan_merits(rules: TroupeRules, clan: str, default: str | None = None) -> list[str]:
+    """The bloodline merit a bloodline's clan trait points to, but for the bloodline
+    the setting plays as its clan's `default`, which needs none (p. 238); the rarity
+    is the setting's, for staff to choose."""
+    if ":" not in clan or clan == default:
         return []
     merit = f"{BLOODLINE} {clan.split(':', 1)[1].strip()}"
     return [merit] if ("merits", merit) in rules.rule_set.traits else []
@@ -749,6 +751,13 @@ class Run:
                 self.db.delete(row.trait)
         self.db.flush()
 
+    def default_bloodline(self) -> str | None:
+        """The bloodline the character's setting plays as its sire's clan's default."""
+        setting = clan_merits.setting_of(self.db, self.character)
+        family = clan_merits.family_of(self.sire.clan)
+        rule_set = vampire_rules(self.db, self.character).rule_set
+        return clan_merits.default_bloodline(rule_set, family, setting)
+
     def buy_clan_merits(self, step: Step) -> None:
         """1, once a vampire: the merits its sire's clan and rarity need."""
         rules = self.rules
@@ -758,7 +767,7 @@ class Run:
             else list(
                 self.choices.clan_merits
                 if self.choices.clan_merits is not None
-                else suggested_clan_merits(rules, self.sire.clan)
+                else suggested_clan_merits(rules, self.sire.clan, self.default_bloodline())
             )
         )
         held = {r.definition.name for r in self.rows()}
@@ -1082,11 +1091,14 @@ class Run:
         )
 
     def judge(self) -> None:
-        """The sheet as it now stands: what the rules refuse stops it; the rest is noted."""
+        """The sheet as it now stands: what the rules refuse stops it; the rest is noted.
+        Of the troupe's bans, only its new clan's stops it: a trait the ghoul held
+        already is kept and flagged, as for any character (horatio.book_traits)."""
         self.db.expire_all()
         refusals: list[sheets.Problem] = []
         for violation in sheets.sheet_violations(self.db, self.character):
-            if sheets.blocking(violation, self.character):
+            kept = is_ban(violation.check) and violation.subject.category != "clan"
+            if sheets.blocking(violation, self.character) and not kept:
                 refusals.append(sheets.problem(violation))
             else:
                 self.plan.notes.append(violation.message)

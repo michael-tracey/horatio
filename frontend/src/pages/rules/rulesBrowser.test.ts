@@ -45,7 +45,7 @@ const data = (more: Partial<RulesBrowserOut> = {}): RulesBrowserOut => ({
     { discipline: "Presence", level: 1, name: "Awe", note: "Draw every eye in the room." },
     { discipline: "Presence", level: 5, name: "Majesty", note: "For an hour, no one can act against you without spending Willpower." },
   ],
-  rarities: [{ clan: "Toreador", text: "Common", page: "403", house: false }],
+  rarities: [{ clan: "Toreador", text: "Common", page: "403", house: false, default_house: false }],
   ...more,
 });
 
@@ -77,6 +77,18 @@ describe("entries", () => {
     expect(by.get("Thaumaturgy: Ward")?.rating).toBe("Level 2");
     expect(by.get("Majesty")?.rating).toBe("Presence 5");
     expect(by.get("Presence")?.rating).toBeNull();
+  });
+
+  it("puts the troupe's written rules first, as house rules found by a word in their body", () => {
+    const harpy = { id: "h1", section: "Status", title: "The Harpy vote", body: "Harpies vote **openly** at court.", position: 1, trait: null, page: "312" };
+    const all = entries(data({ troupe_name: "Lords of the Night", written_rules: [harpy] }));
+    expect(all[0]).toMatchObject({ key: "written/h1", section: "written", name: "The Harpy vote", page: "312", written: harpy });
+    expect(names(applyFilters(all, { ...none, query: "openly" }))).toEqual(["The Harpy vote"]);
+    expect(names(applyFilters(all, { ...none, query: "status harpy" }))).toEqual(["The Harpy vote"]);
+    expect(names(applyFilters(all, { ...none, section: "written" }))).toEqual(["The Harpy vote"]);
+    // A written rule is for no clan.
+    expect(names(applyFilters(all, { ...none, clan: "Toreador" }))).not.toContain("The Harpy vote");
+    expect(sectionCounts(all, none).get("written")).toBe(1);
   });
 
   it("gives a bloodline its clan's rarity", () => {
@@ -111,6 +123,26 @@ describe("applyFilters", () => {
     ]);
   });
 
+  it("finds the clan stored as Assamite by either name (#430)", () => {
+    const assamites = entries(
+      data({
+        catalogue: {
+          ...data().catalogue,
+          traits: [
+            trait("clan", "Assamite: Vizier", { in_clan: ["Auspex"] }),
+            trait("rituals", "Thaumaturgy: Kiss of the Asp (Assamite)", { fixed_rating: 2 }),
+            trait("merits", "Calm Heart", { fixed_rating: 1, kind: "General" }),
+          ],
+        },
+        powers: [],
+      }),
+    );
+    for (const query of ["assamite", "banu haqim", "Banu Haqim: Vizier"]) {
+      expect(names(applyFilters(assamites, { ...none, section: "clans", query }))).toEqual(["Assamite: Vizier"]);
+    }
+    expect(names(applyFilters(assamites, { ...none, query: "asp banu" }))).toEqual(["Thaumaturgy: Kiss of the Asp (Assamite)"]);
+  });
+
   it("narrows to points or a level", () => {
     expect(names(applyFilters(all, { ...none, section: "merits", rating: 3 }))).toEqual(["Absent Sway"]);
     expect(names(applyFilters(all, { ...none, section: "disciplines", rating: 5 }))).toEqual(["Majesty"]);
@@ -120,6 +152,24 @@ describe("applyFilters", () => {
     const barred = entries(data({ not_allowed: [{ category: "merits", name: "Calm Heart", text: null }] }));
     expect(names(applyFilters(barred, { ...none, section: "merits" }))).toEqual(["Absent Sway", "Volgirre Grace"]);
     expect(names(applyFilters(barred, { ...none, section: "merits", barred: true }))).toContain("Calm Heart");
+  });
+
+  it("reads the troupe's wording in place of the book's summary, and finds it by a word of it", () => {
+    const base = data();
+    const worded = { banned: false, ban_reason: "", wording: "Only one target here.", wording_mode: "replaces" as const };
+    const traits = base.catalogue.traits.map((t) => (t.name === "Presence" ? { ...t, changed: worded } : t));
+    const found = entries({ ...base, catalogue: { ...base.catalogue, traits } });
+    expect(found.find((e) => e.name === "Presence")!.summary).toBeNull();
+    expect(names(applyFilters(found, { ...none, query: "one target" }))).toEqual(["Presence"]);
+  });
+
+  it("treats a trait the troupe bans as not allowed, with its reason", () => {
+    const base = data();
+    const traits = base.catalogue.traits.map((t) => (t.name === "Calm Heart" ? { ...t, changed: { banned: true, ban_reason: "Not here.", wording: "", wording_mode: "added" as const } } : t));
+    const found = entries({ ...base, catalogue: { ...base.catalogue, traits } });
+    expect(names(applyFilters(found, { ...none, section: "merits" }))).toEqual(["Absent Sway", "Volgirre Grace"]);
+    const calm = found.find((e) => e.name === "Calm Heart")!;
+    expect([calm.banned, calm.barred?.text]).toEqual([true, "Not here."]);
   });
 });
 

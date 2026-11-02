@@ -82,20 +82,24 @@ from horatio.models.rules import (
     CreationRule,
     EquipmentQuality,
     EquipmentTemplate,
+    HouseCheck,
     HouseTrait,
     RuleSet,
     StartingTrait,
     TraitCategory,
     TraitDefinition,
+    TraitOverride,
 )
 from horatio.models.scenes import Scene, SceneCharacter
 from horatio.models.shared_backgrounds import SharedBackground, SharedBackgroundEntry
 from horatio.models.status import HeldStatus, StatusBanMark, StatusSuppression
+from horatio.models.teachers import TeacherRule, Teaching
 from horatio.models.troupes import (
     CalendarFeed,
     CharacterTitle,
     GameAttendance,
     GameRsvp,
+    GameXpAward,
     ScheduledGame,
     Troupe,
     TroupeMembership,
@@ -106,8 +110,10 @@ from horatio.models.troupes import (
     XpRangeEntry,
 )
 from horatio.models.viewing import Viewing
+from horatio.models.written_rules import WrittenRule
 
 __all__ = [
+    "WrittenRule",
     "Backstory",
     "BackstoryAnswer",
     "BackstoryFeedback",
@@ -165,6 +171,9 @@ __all__ = [
     "CharacterTitle",
     "CharacterTrait",
     "CheckOverride",
+    "HouseCheck",
+    "TeacherRule",
+    "Teaching",
     "ClanLogo",
     "CostRule",
     "CreationRule",
@@ -179,6 +188,7 @@ __all__ = [
     "ScheduledGame",
     "GameRsvp",
     "GameAttendance",
+    "GameXpAward",
     "CalendarFeed",
     "Scene",
     "SceneCharacter",
@@ -195,6 +205,7 @@ __all__ = [
     "TraitCategory",
     "TraitDefinition",
     "TraitException",
+    "TraitOverride",
     "Troupe",
     "TroupeMembership",
     "TroupeRequest",

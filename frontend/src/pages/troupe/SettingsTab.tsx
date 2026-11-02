@@ -6,20 +6,22 @@ import type { TroupeOut } from "../../api/types";
 import { Card, ErrorText } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { BadgeSetting } from "./BadgeSetting";
+import { ClanNamesSetting } from "./ClanNamesSetting";
 import { DiablerieFlaws } from "./DiablerieFlaws";
 import { FeedingSetting } from "./FeedingSetting";
 import { FeedingTerritories } from "./FeedingTerritories";
+import { GameXpCard } from "./GameXpSettings";
 import { GolcondaSetting } from "./GolcondaSetting";
 import { ExperienceDefaults, StartingBlood } from "./StartingSection";
-import { StatusSetting, TitlesSetting } from "./StatusSetting";
+import { StatusAtCheckinSetting, StatusSetting, TitlesSetting } from "./StatusSetting";
 import { WhosWhoSetting } from "./WhosWhoSetting";
 import { XpRangeCard } from "./XpRange";
 
 /**
  * The settings for the whole troupe, set once a season or so, by what they are
- * for: who may join, XP, status and titles, what happens at game, and feeding. Its
- * storytellers change them; the troupe's other running staff read them. The
- * troupe's rules for traits are on the Rules tab beside it.
+ * for: who may join, XP, status and titles, what happens at game, feeding, and
+ * what a clan is called. Its storytellers change them; the troupe's other running
+ * staff read them. The troupe's rules for traits are on the Rules tab beside it.
  */
 export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
   const base = `/troupes/${troupe.id}`;
@@ -44,10 +46,12 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
             </Link>
           }
         />
+        <GameXpCard troupeId={troupe.id} canEdit={canEdit} sessionXp={troupe.session_xp} />
       </Group>
       <Group title="Status and titles">
         <StatusSetting troupe={troupe} canEdit={canEdit} />
         <TitlesSetting troupe={troupe} canEdit={canEdit} />
+        <StatusAtCheckinSetting troupe={troupe} canEdit={canEdit} />
         {troupe.whos_who && <WhosWhoSetting troupe={troupe} canEdit={canEdit} />}
         <GolcondaSetting troupeId={troupe.id} canEdit={canEdit} />
       </Group>
@@ -61,6 +65,9 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
         {troupe.feeding !== "off" && troupe.feeding_territories && (
           <FeedingTerritories troupeId={troupe.id} canManage={!troupe.archived && (canEdit || troupe.my_role === "assistant_storyteller")} />
         )}
+      </Group>
+      <Group title="Names">
+        <ClanNamesSetting troupeId={troupe.id} canEdit={canEdit} />
       </Group>
     </div>
   );

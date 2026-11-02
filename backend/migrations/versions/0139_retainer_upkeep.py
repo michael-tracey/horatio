@@ -3,7 +3,7 @@ day a Retainer was left neglected, what upkeep each Play View night took, the
 upkeep a downtime charged to the next game, and the XP each Retainer gained.
 
 Revision ID: 0139
-Revises: 0127
+Revises: 0137
 Create Date: 2026-11-01 23:00:00.000000
 """
 
@@ -14,7 +14,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0139"
-down_revision: str | None = "0127"
+down_revision: str | None = "0137"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

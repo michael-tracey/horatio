@@ -78,6 +78,9 @@ class DisciplinePurchase(Record):
     # For a merit asked for: the free traits its player chose with it, given when
     # it is approved ([{grant, name, detail, amount}]).
     choices: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, server_default="[]")
+    # A free change (horatio.free_changes): a trait lowered or removed while the
+    # character's free changes were open, refunding its full XP.
+    free_change: Mapped[bool] = mapped_column(default=False, server_default="false")
 
 
 class HomeTroupeChange(Record):

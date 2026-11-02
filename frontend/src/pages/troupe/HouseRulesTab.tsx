@@ -5,8 +5,13 @@ import { api, unwrap } from "../../api/client";
 import type { SplatHouseRulesOut, TroupeOut } from "../../api/types";
 import { EmptyState } from "../../components/EmptyState";
 import { HouseMark, HouseSummary } from "../../components/HouseMark";
+import { useClanName } from "../../components/ClanNames";
 import { Card, ErrorText, Loading } from "../../components/ui";
+import { BookTraitChanges } from "./BookTraitChanges";
 import { pageText } from "./bookPage";
+import { GameXpRules } from "./GameXpSettings";
+import { Chart } from "./LanguagesSection";
+import { WrittenRulesList } from "./WrittenRulesList";
 
 /** How a check is played, in a player's words. */
 export const PLAYED: Record<string, string> = {
@@ -33,19 +38,25 @@ const BOOK_XP = 30;
  * only; its storytellers change them under Customise.
  */
 export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boolean }) {
+  const named = useClanName();
   const rules = useQuery({
     queryKey: ["house-rules", troupe.id],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/house-rules", { params: { path: { troupe_id: troupe.id } } })),
   });
+  const written = useQuery({
+    queryKey: ["written-rules", troupe.id],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/written-rules", { params: { path: { troupe_id: troupe.id } } })),
+  });
   if (rules.isPending) return <Loading />;
   if (rules.error) return <ErrorText error={rules.error} />;
   const r = rules.data;
+  const words = written.data?.rules ?? [];
   const xp = troupe.xp_floor !== BOOK_XP;
   const bySplat = (pick: (s: SplatHouseRulesOut) => unknown[]) => r.splats.filter((s) => pick(s).length > 0);
   const costs = bySplat((s) => s.costs);
   const starting = bySplat((s) => s.starting);
   const actions = bySplat((s) => s.actions);
-  const nothing = !xp && !costs.length && !starting.length && !actions.length && !r.checks.length && !r.house_traits.length && !r.other.length;
+  const nothing = !xp && !costs.length && !starting.length && !actions.length && !r.checks.length && !r.house_traits.length && !r.other.length && !r.book_traits?.length && !r.teachers?.length && !words.length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -72,6 +83,12 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
         </Card>
       )}
 
+      {words.length > 0 && (
+        <Card title="Written rules">
+          <WrittenRulesList rules={words} troupeId={troupe.id} />
+        </Card>
+      )}
+
       {costs.length > 0 && (
         <Card title="Costs">
           {costs.map((s) => (
@@ -81,7 +98,7 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
                   key={`${c.category}/${c.subject}`}
                   subject={
                     <>
-                      {c.subject}
+                      {named(c.subject)}
                       {c.page && <span className="text-mist"> {pageText(c.page)}</span>}
                     </>
                   }
@@ -124,10 +141,20 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
                     {c.page && <span className="text-mist"> {pageText(c.page)}</span>}
                   </>
                 }
+                note={c.own ? "the troupe's own check" : null}
                 now={PLAYED[c.house] ?? c.house}
-                book={PLAYED[c.strength] ?? c.strength}
+                book={c.own ? "Not in the book" : (PLAYED[c.strength] ?? c.strength)}
               />
             ))}
+          </ul>
+        </Card>
+      )}
+
+      {(r.teachers?.length ?? 0) > 0 && (
+        <Card title="Teachers">
+          <p className="mb-2 text-sm text-mist">Beyond discipline dots, these need a teacher here: a character of the troupe who qualifies, or an NPC the storytellers approve.</p>
+          <ul aria-label="Teacher rules" className="list-disc space-y-1 pl-5 text-sm">
+            {r.teachers?.map((t) => <li key={t}>{t}</li>)}
           </ul>
         </Card>
       )}
@@ -161,6 +188,8 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
         </Card>
       )}
 
+      <BookTraitChanges changes={r.book_traits ?? []} />
+
       {actions.length > 0 && (
         <Card title="Downtime actions">
           {actions.map((s) => (
@@ -177,11 +206,15 @@ export function HouseRulesTab({ troupe, staff }: { troupe: TroupeOut; staff: boo
         <Card title="Other house rules">
           <ul className="divide-y divide-ash">
             {r.other.map((o) => (
-              <Row key={o.name} subject={o.name} now={o.text} book={o.book_text} />
+              <Row key={o.name} subject={o.name} now={o.text} book={o.book_text}>
+                {o.table && <Chart ratings={o.table} doubled={false} className="mt-1" />}
+              </Row>
             ))}
           </ul>
         </Card>
       )}
+
+      <GameXpRules troupeId={troupe.id} />
 
       <Card title="Backstories">
         <p className="text-sm">{BACKSTORY[r.backstory_mode] ?? r.backstory_mode}</p>
@@ -215,16 +248,18 @@ function SplatPart({ label, split, children }: { label: string; split: boolean; 
 }
 
 /** A house rule: what it is about, how the troupe plays it, and how the book does. */
-function Row({ subject, now, book, note }: { subject: ReactNode; now: string; book?: string | null; note?: string | null }) {
+function Row({ subject, now, book, note, children }: { subject: ReactNode; now: string; book?: string | null; note?: string | null; children?: ReactNode }) {
+  const named = useClanName();
   return (
     <li className="flex flex-col gap-0.5 py-2.5 text-sm sm:flex-row sm:items-baseline sm:gap-4">
       <span className="min-w-0 flex-1">
-        <span className="text-parchment">{subject}</span>
-        {note && <span className="block text-xs text-mist">House rule: {note}</span>}
+        <span className="text-parchment">{typeof subject === "string" ? named(subject) : subject}</span>
+        {note && <span className="block text-xs text-mist">House rule: {named(note)}</span>}
+        {children}
       </span>
       <span className="flex flex-col sm:items-end sm:text-right">
-        <span className="text-gold">{now}</span>
-        {book && <span className="text-xs text-mist">By the book: {book}</span>}
+        <span className="text-gold">{named(now)}</span>
+        {book && <span className="text-xs text-mist">By the book: {named(book)}</span>}
       </span>
     </li>
   );

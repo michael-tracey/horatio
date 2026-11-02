@@ -26,6 +26,7 @@ its staff (horatio.merit_requests): it is tried on the sheet as it stands at tha
 line, then taken back, so the lines after it see the sheet without it.
 """
 
+import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 
@@ -33,7 +34,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import creation, free_choices, repricing, sheets, trait_exceptions
+from horatio import creation, free_choices, repricing, sheets, teaching, trait_exceptions
 from horatio.models import Approval, Character, CharacterTrait, User
 from horatio.rules.model import FreeChoice, SheetTrait
 from horatio.sheets import TraitKey
@@ -55,6 +56,9 @@ class SetRating:
     exception: Ask | None = None
     # For a merit that gives free traits the player chooses: their choices, made with it.
     picks: tuple[FreeChoice, ...] = ()
+    # The teacher a troupe's teacher rule asks for, as a character of the troupe
+    # (or an NPC named in `teacher`).
+    teacher_id: uuid.UUID | None = None
 
 
 @dataclass(frozen=True)
@@ -103,6 +107,8 @@ class Outcome:
     repriced: tuple[repricing.Repriced, ...] = ()
     # A power a merit opened past a check: "Hard as Steel: 20 XP".
     because: str | None = None
+    # A troupe's teacher rule asks a teacher for it (horatio.teaching).
+    teacher: teaching.Need | None = None
 
 
 def planned(sheet: Sequence[SheetTrait], changes: Sequence[Change]) -> list[SheetTrait]:
@@ -191,6 +197,7 @@ def make(db: Session, user: User, character: Character, change: Change) -> sheet
                 change.detail,
                 change.rating,
                 teacher=change.teacher,
+                teacher_id=change.teacher_id,
                 free=asked.reason if asked and asked.free else None,
                 by_exception="asked" if asked else None,
                 picks=change.picks,
@@ -214,6 +221,23 @@ def make(db: Session, user: User, character: Character, change: Change) -> sheet
     else:
         creation.remove_pick(db, user, character, change.category, change.name, change.detail)
     return None
+
+
+def needs_teacher(
+    db: Session, character: Character, change: Change, held: dict[TraitKey, int | None]
+) -> teaching.Need | None:
+    """Whether a troupe's teacher rule asks a teacher for the change, as the sheet
+    stands before it."""
+    if not isinstance(change, SetRating) or change.exception is not None:
+        return None
+    try:
+        definition, _ = sheets.find_definition(db, character, change.category, change.name)
+    except HTTPException:
+        return None
+    current = held.get((change.category, definition.name, change.detail)) or 0
+    return teaching.need_for(
+        db, character, change.category, definition.name, change.detail, current, change.rating
+    )
 
 
 def would_cost(db: Session, character: Character, change: Change) -> int | None:
@@ -323,6 +347,7 @@ def apply_changes(
         balance = sheets.xp_balance(db, character)
         held = waiting(db, character)
         traits_before = held_traits(db, character)
+        need = needs_teacher(db, character, change, traits_before)
         savepoint = db.begin_nested()
         try:
             made = make(db, user, character, change)
@@ -331,7 +356,9 @@ def apply_changes(
             savepoint.rollback()
             db.expire_all()
             refused = str(error.detail)
-            outcomes.append(Outcome(cost=would_cost(db, character, change), refused=refused))
+            outcomes.append(
+                Outcome(cost=would_cost(db, character, change), refused=refused, teacher=need)
+            )
             steps.append(Step())
             continue
         savepoint.commit()
@@ -347,6 +374,7 @@ def apply_changes(
                 else made.quote.opening.because
                 if made is not None and made.quote is not None and made.quote.opening is not None
                 else None,
+                teacher=need,
             )
         )
         steps.append(step(traits_before, held_traits(db, character)))

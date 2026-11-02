@@ -144,9 +144,12 @@ def test_a_games_upkeep_is_taken_as_the_night_starts_at_check_in(
     assert view(troupe.player, character_id)["game"]["number"] == 2
     # The House rules tab shows it, and the troupe's log has the change.
     house = troupe.player.client.get(f"/troupes/{troupe.id}/house-rules").json()["other"]
-    assert {"name": "Retainer upkeep", "text": rules["upkeep_text"], "book_text": "No upkeep"} in (
-        house
-    )
+    assert {
+        "name": "Retainer upkeep",
+        "text": rules["upkeep_text"],
+        "book_text": "No upkeep",
+        "table": None,
+    } in (house)
     assert "house.retainer_rules" in actions(session, troupe)
 
 

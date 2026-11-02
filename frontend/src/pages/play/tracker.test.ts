@@ -481,6 +481,7 @@ describe("spending sect status (issue #253)", () => {
         source: "Prince",
         source_chosen: false,
         choosing: false,
+        source_fixed: false,
         conditions: [],
         titles: [],
         carried: [carried("status:Authority", "Authority", "Abiding", spent), carried("held:h1", "Loyal", "Fleeting")],
