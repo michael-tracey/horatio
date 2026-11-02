@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { RosterEntry, TitlesOut } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
+import { useClanName } from "../../components/ClanNames";
 import { LinesVeilsNote } from "../../components/LinesVeils";
 import { AtHandle } from "../../components/PersonPicker";
 import { Dialog } from "../../components/Dialog";
@@ -23,6 +24,7 @@ import { asksEquipment, columnLabel, columnOf, columns, decode, encode, ready, s
  */
 export function RosterTab({ troupeId }: { troupeId: string }) {
   const path = { params: { path: { troupe_id: troupeId } } };
+  const named = useClanName();
   const roster = useQuery({ queryKey: ["roster", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/characters", path)) });
   const catalogue = useQuery({
     queryKey: ["catalogue", "vampire", troupeId],
@@ -168,10 +170,10 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
           )}
           {filter.items.map((item, i) => (
             <span key={i} className="inline-flex items-center gap-1 rounded-full border border-ash px-2 py-0.5 text-xs">
-              {sentence({ match: filter.match, items: [item] }, names)}
+              {named(sentence({ match: filter.match, items: [item] }, names))}
               <button
                 type="button"
-                aria-label={`Remove “${sentence({ match: filter.match, items: [item] }, names)}”`}
+                aria-label={`Remove “${named(sentence({ match: filter.match, items: [item] }, names))}”`}
                 className="text-mist hover:text-parchment"
                 onClick={() => setFilter({ ...filter, items: filter.items.filter((_, j) => j !== i) })}
               >
@@ -251,6 +253,7 @@ function RosterRow({
   /** With a filter on equipment, the items it asks about that the character holds. */
   equipment?: string[];
 }) {
+  const named = useClanName();
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
       <input type="checkbox" aria-label={`Select ${entry.character_name}`} checked={selected} onChange={onSelect} />
@@ -271,9 +274,9 @@ function RosterRow({
         )}
       </span>
       <span className="text-xs whitespace-nowrap text-parchment/80">
-        {entry.clan ?? "No clan yet"} · {entry.social_age}
+        {named(entry.clan) ?? "No clan yet"} · {entry.social_age}
       </span>
-      {!entry.seated && <span className="text-xs text-mist">Represented by: {entry.represented_by ?? "nobody yet"}</span>}
+      {!entry.seated && <span className="text-xs text-mist">Represented by: {named(entry.represented_by) ?? "nobody yet"}</span>}
       {entry.kind === "npc" ? <Badge>NPC</Badge> : entry.home ? <Badge tone="gold">Home</Badge> : <Badge>Visiting</Badge>}
       {entry.player_suspended && <Badge tone="blood">Player suspended</Badge>}
       {entry.waiting && (

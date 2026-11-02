@@ -32,6 +32,8 @@ class Troupe(Imported, Record):
         CheckConstraint("location_limit in ('refuse', 'note')", name="location_limit"),
         CheckConstraint("backstory_mode in ('free', 'either', 'wizard')", name="backstory_mode"),
         CheckConstraint("feeding in ('off', 'book')", name="feeding"),
+        CheckConstraint("free_changes in ('none', 'date', 'games')", name="free_changes"),
+        CheckConstraint("assamite_name in ('Banu Haqim', 'Assamite')", name="assamite_name"),
     )
 
     name: Mapped[str]
@@ -82,6 +84,10 @@ class Troupe(Imported, Record):
     # Blood Resonance, as its vessels each carry one (horatio.territories, horatio.rack).
     feeding_territories: Mapped[bool] = mapped_column(default=False, server_default="false")
     feeding_rack: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # What the clan stored as "Assamite" is called here (horatio.clan_names): "Banu
+    # Haqim", its later name, or "Assamite", the books'. Only what is shown changes;
+    # the rules and sheets keep "Assamite".
+    assamite_name: Mapped[str] = mapped_column(default="Banu Haqim", server_default="Banu Haqim")
     # Status on sheets (horatio.sect_status): who adds and removes fleeting and
     # negative status on its characters' sheets: "players", each on their own, naming
     # the patron; or "staff", its running staff only. Running staff always can.
@@ -106,6 +112,19 @@ class Troupe(Imported, Record):
     # may make in a downtime cycle. While off, players see nothing of them.
     quests_enabled: Mapped[bool] = mapped_column(default=False, server_default="false")
     quest_requests_per_cycle: Mapped[int] = mapped_column(default=1, server_default="1")
+    # House rule: free changes for new characters (horatio.free_changes). "none" locks
+    # a character on acceptance; "date" leaves it open for `free_changes_days` days
+    # from acceptance, "games" until it has attended `free_changes_games` games. Only
+    # characters accepted since the troupe last turned it on (`free_changes_since`)
+    # have one, and the traits in `free_changes_excluded` ([{category, name}]) are
+    # never refunded in it.
+    free_changes: Mapped[str] = mapped_column(default="none", server_default="none")
+    free_changes_days: Mapped[int] = mapped_column(default=30, server_default="30")
+    free_changes_games: Mapped[int] = mapped_column(default=3, server_default="3")
+    free_changes_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    free_changes_excluded: Mapped[list[dict[str, str]]] = mapped_column(
+        JSONB, default=list, server_default="[]"
+    )
     # The clans with a seat at its court, by clan without the bloodline; None until
     # staff choose, for the clans whose Primogen is held there (horatio.whos_who).
     seated_clans: Mapped[list[str] | None] = mapped_column(JSONB)
