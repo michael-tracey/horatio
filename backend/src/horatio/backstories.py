@@ -1,11 +1,18 @@
 """A character's backstory (issue #343).
 
 **The text.** One per character, in Markdown, kept in its own table so that loading
-the sheet or the Play View never loads it. It saves only when its writer presses
-Save, naming the version they opened: if it has changed since, the save is refused
-rather than overwriting the newer one. A save goes in the character's log, without
-the text. A PC's player writes it; an NPC's troupe's storytellers and assistant
-storytellers do.
+the sheet or the Play View never loads it. A new version is made only when its writer
+submits it, naming the version they started from: if it has changed since, the
+submission is refused rather than overwriting the newer one. A submission goes in the
+character's log, without the text. A PC's player writes it; an NPC's troupe's
+storytellers and assistant storytellers do.
+
+**The draft** (issue #426). While writing, the editor saves a draft a moment after
+typing stops, so a long story is never lost and can be carried on from another
+device. A draft is not a version: storytellers approve and compare versions, and
+never read the draft. It remembers the version it was started from, so a newer
+version arriving meanwhile is shown beside it rather than either being lost.
+Submitting makes the draft the next version.
 
 **Who reads it** (horatio.permissions.can_read_backstory): its player, the custodian,
 and the storytellers and assistant storytellers of its home troupe and of a troupe it
@@ -248,14 +255,54 @@ def write(
 
 
 def save(db: Session, user: User, character: Character, text: str, version: int) -> Backstory:
+    """Submit `text` as the next version, started from `version`. The draft it was
+    goes; a draft saying something else (written on another device since) stays, to
+    be seen beside the new version rather than lost."""
     backstory = held(db, character)
     if version != backstory.version:
         raise conflict(
-            "The backstory has changed since you opened it, perhaps on another device."
-            " Copy your text somewhere safe, then load the newer version."
+            "A newer version of the backstory was submitted since you started,"
+            " perhaps on another device. Your draft is kept: choose which to keep first."
         )
     write(db, user, character, backstory, text, "saved")
+    if backstory.draft_text == text:
+        drop(backstory)
     return backstory
+
+
+def has_draft(backstory: Backstory | None) -> bool:
+    return backstory is not None and backstory.draft_text is not None
+
+
+def drop(backstory: Backstory) -> None:
+    backstory.draft_text = None
+    backstory.draft_version = None
+    backstory.draft_at = None
+
+
+def save_draft(db: Session, character: Character, text: str, based_on: int) -> Backstory:
+    """Keep the writer's draft, started from version `based_on`. Not logged, and not a
+    version. A draft saying the same as the latest version is no draft at all."""
+    if len(text) > MAX_LENGTH:
+        raise unprocessable(f"A backstory can be at most {MAX_LENGTH:,} characters.")
+    backstory = held(db, character)
+    if not 0 <= based_on <= backstory.version:
+        raise unprocessable("There is no such version of the backstory.")
+    if based_on == backstory.version and text == backstory.text:
+        drop(backstory)
+    else:
+        backstory.draft_text = text
+        backstory.draft_version = based_on
+        backstory.draft_at = now()
+    db.flush()
+    return backstory
+
+
+def discard_draft(db: Session, character: Character) -> None:
+    backstory = find(db, character, lock=True)
+    if backstory is not None:
+        drop(backstory)
+        db.flush()
 
 
 # --- feedback and approval -------------------------------------------------------------------
@@ -927,14 +974,20 @@ def splice(text: str, set_id: uuid.UUID, sections: str) -> str:
 
 
 def edited_sets(backstory: Backstory | None) -> list[str]:
-    """The sets whose sections the player has changed since they were last built."""
+    """The sets whose sections the player has changed since they were last built, in
+    the backstory or in their draft."""
     if backstory is None:
         return []
+    texts = [backstory.text]
+    if backstory.draft_text is not None:
+        texts.append(backstory.draft_text)
     found: list[str] = []
     for set_id, sections in backstory.built.items():
-        at = between_marks(backstory.text, uuid.UUID(set_id))
-        if at is not None and backstory.text[at[0] : at[1]] != sections:
-            found.append(set_id)
+        for text in texts:
+            at = between_marks(text, uuid.UUID(set_id))
+            if at is not None and text[at[0] : at[1]] != sections:
+                found.append(set_id)
+                break
     return found
 
 
@@ -982,6 +1035,9 @@ def build(
             " Building again replaces them; your writing outside them stays."
         )
     sections = built_sections(question_set, questions, given)
+    # A draft started from the version being built on gets the sections too, and
+    # moves on to the new version, so building doesn't leave it behind.
+    draft = backstory.draft_text if backstory.draft_version == backstory.version else None
     write(
         db,
         user,
@@ -991,5 +1047,12 @@ def build(
         "built",
     )
     backstory.built = {**backstory.built, str(question_set.id): sections}
+    if draft is not None:
+        draft = splice(draft, question_set.id, sections)
+        if draft == backstory.text:
+            drop(backstory)
+        else:
+            backstory.draft_text = draft
+            backstory.draft_version = backstory.version
     db.flush()
     return backstory

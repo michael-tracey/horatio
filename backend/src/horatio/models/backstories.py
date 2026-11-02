@@ -37,6 +37,12 @@ class Backstory(Record):
     approved_text: Mapped[str | None] = mapped_column(Text)
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     approved_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    # Its writer's draft, saved as they type and not yet submitted as a version
+    # (issue #426); the version it was started from, and when it was last saved.
+    # Staff never read it.
+    draft_text: Mapped[str | None] = mapped_column(Text)
+    draft_version: Mapped[int | None]
+    draft_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class BackstoryFeedback(Record):

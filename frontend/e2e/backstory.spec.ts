@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { ATTRIBUTES_AND_FOCUSES, builtVampire, closeContextsAfterEach, makeCustodian, person, run, shots, characterTab } from "./support";
 
-/** A character's backstory: written in Markdown or built from the troupe's questions, and approved as part of accepting the character. */
+/** A character's backstory: written in the editor or built from the troupe's questions, and approved as part of accepting the character. */
 
 closeContextsAfterEach();
 
@@ -16,6 +16,16 @@ async function send(page: Page, method: "POST" | "PUT", url: string, data: objec
   expect(response.status(), await response.text()).toBeLessThan(300);
   return response.json();
 }
+
+/** The backstory as the API has it, for its writer: the latest version and the draft. */
+async function stored(page: Page, id: string): Promise<{ text: string; version: number; draft: { text: string; behind: boolean } | null }> {
+  const response = await page.request.get(`/api/characters/${id}/backstory`);
+  expect(response.status()).toBe(200);
+  return response.json();
+}
+
+/** The formatted editor, as a screen reader finds it. */
+const richEditor = (page: Page) => page.getByRole("textbox", { name: "Your backstory", exact: true });
 
 test("a troupe asks its questions only: the lead loads the template and rewords one, and a neonate's player builds a backstory of a section each", async ({ browser }) => {
   const custodian = await person(browser, "quiz-custodian");
@@ -91,18 +101,146 @@ test("a troupe asks its questions only: the lead loads the template and rewords 
   await expect(main.getByText("More Action than Intrigue")).toBeVisible();
   await p.screenshot(shots("backstory-built"));
 
-  // The player then edits it freely: their own words outside the sections stay when they answer again.
+  // The player then edits it freely in the formatted editor, where the marks around the built sections show as
+  // dividers. Their own words after the sections stay when they answer again.
   await p.getByRole("button", { name: "Edit the backstory" }).click();
-  const editor = p.getByLabel("Your backstory, in Markdown");
-  await editor.fill(`${await editor.inputValue()}\n\n## A word of my own\n\nWren never forgave him.`);
-  await p.getByRole("button", { name: "Save the backstory" }).click();
+  const editor = richEditor(p);
+  await expect(editor.getByText("From the troupe's questions")).toBeVisible();
+  await expect(editor.getByText("End of the troupe's questions")).toBeVisible();
+  await expect(editor.getByRole("heading", { name: "My sire" })).toBeVisible();
+  await editor.click();
+  await p.keyboard.press("Control+End");
+  await p.getByRole("button", { name: "Subheading" }).click();
+  await p.keyboard.type("A word of my own");
+  await p.keyboard.press("Enter");
+  await p.keyboard.type("Wren never forgave him.");
+  await expect(p.getByText(/^Saved \d/)).toBeVisible();
+  await p.getByRole("button", { name: "Submit the backstory", exact: true }).click();
+  await expect(editor).toHaveCount(0);
   await expect(main.getByRole("heading", { name: "A word of my own" })).toBeVisible();
+  // The marks came through the edit exactly, once each, with the player's words after them.
+  const edited = (await stored(p, id)).text;
+  expect(edited.match(/<!-- questions:[\w-]+ -->/g)).toHaveLength(1);
+  expect(edited.match(/<!-- \/questions:[\w-]+ -->/g)).toHaveLength(1);
+  expect(edited).toMatch(/<!-- \/questions:[\w-]+ -->\n\n## A word of my own\n\nWren never forgave him\.$/);
   await p.getByRole("button", { name: "Answer the troupe's questions" }).click();
   await p.getByRole("group", { name: "Question sets" }).getByRole("button", { name: /^Short Form/ }).click();
   await wizard.getByRole("textbox").first().fill("Answered again");
   await wizard.getByRole("button", { name: "Build the backstory from Short Form" }).click();
   await expect(main.getByText("Answered again")).toBeVisible();
   await expect(main.getByRole("heading", { name: "A word of my own" })).toBeVisible();
+  // Built again between its marks, not added a second time at the end.
+  await expect(text.locator("h4")).toHaveCount(19);
+});
+
+test("a player writes a backstory in the formatted editor: it saves as a draft, comes back after a reload, warns before leaving, and only Submit makes a version", async ({ browser }) => {
+  const player = await person(browser, "draft-player");
+  const p = player.page;
+  const id = await builtVampire(p, "Mireille", "Brujah", BRUJAH_NEONATE);
+  await p.goto(`/characters/${id}/backstory`);
+  await p.getByRole("button", { name: "Write the backstory" }).click();
+
+  // No Markdown needed: the toolbar formats it.
+  const editor = richEditor(p);
+  const toolbar = p.getByRole("toolbar", { name: "Formatting" });
+  if ((p.viewportSize()?.width ?? 1280) < 640) {
+    // Big enough for a thumb on a phone, and all of it on the screen.
+    const bold = await toolbar.getByRole("button", { name: "Bold" }).boundingBox();
+    expect(bold!.height).toBeGreaterThanOrEqual(40);
+    const bar = await toolbar.boundingBox();
+    expect(bar!.x + bar!.width).toBeLessThanOrEqual(p.viewportSize()!.width);
+  }
+  await editor.click();
+  await toolbar.getByRole("button", { name: "Subheading" }).click();
+  await p.keyboard.type("My sire");
+  await p.keyboard.press("Enter");
+  await p.keyboard.type("He was ");
+  await toolbar.getByRole("button", { name: "Bold" }).click();
+  await p.keyboard.type("cruel");
+  await toolbar.getByRole("button", { name: "Bold" }).click();
+  await p.keyboard.type(".");
+  await p.keyboard.press("Enter");
+  await toolbar.getByRole("button", { name: "Bulleted list" }).click();
+  await p.keyboard.type("I fled");
+  await p.keyboard.press("Enter");
+  await p.keyboard.type("I hid");
+
+  // It saves itself as a draft a moment after typing stops: kept as Markdown, and not yet a version.
+  await expect(p.getByText(/^Saved \d/)).toBeVisible();
+  await expect(p.getByText("Draft, not yet submitted")).toBeVisible();
+  const markdown = "## My sire\n\nHe was **cruel**.\n\n- I fled\n- I hid";
+  await expect.poll(async () => (await stored(p, id)).draft?.text).toBe(markdown);
+  expect(await stored(p, id)).toMatchObject({ version: 0, text: "" });
+  await p.screenshot(shots("backstory-editor"));
+
+  // Reloading (or coming back on another device) opens the draft where it was left.
+  await p.reload();
+  await expect(editor.getByRole("heading", { name: "My sire" })).toBeVisible();
+  await expect(editor.locator("strong", { hasText: "cruel" })).toBeVisible();
+  await expect(p.getByText("Draft, not yet submitted")).toBeVisible();
+
+  // Leaving with writing not yet saved asks first.
+  await editor.getByText("I hid").click();
+  await p.keyboard.press("End");
+  await p.keyboard.type(" in the docks");
+  const asked = new Promise<string>((resolve) =>
+    p.once("dialog", (dialog) => {
+      resolve(dialog.type());
+      void dialog.dismiss();
+    }),
+  );
+  await p.close({ runBeforeUnload: true });
+  expect(await asked).toBe("beforeunload");
+  await expect.poll(async () => (await stored(p, id)).draft?.text).toBe(`${markdown} in the docks`);
+  await expect(p.getByText(/^Saved \d/)).toBeVisible();
+
+  // The Markdown view shows the same writing, for those who prefer it.
+  await p.getByRole("button", { name: "Markdown", exact: true }).click();
+  await expect(p.getByLabel("Your backstory, in Markdown")).toHaveValue(`${markdown} in the docks`);
+  await p.getByRole("button", { name: "Formatted", exact: true }).click();
+
+  // Autosaves made no version: Submit makes exactly one, and the draft goes.
+  await p.getByRole("button", { name: "Submit the backstory", exact: true }).click();
+  await expect(p.getByText(/^Last changed /)).toBeVisible();
+  await expect(p.getByRole("listitem").filter({ hasText: "I hid in the docks" })).toBeVisible();
+  expect(await stored(p, id)).toMatchObject({ version: 1, text: `${markdown} in the docks`, draft: null });
+});
+
+test("a version submitted on another device while the player writes never loses their draft: they compare the two and keep their own", async ({ browser }) => {
+  const player = await person(browser, "clash-player");
+  const p = player.page;
+  const id = await builtVampire(p, "Odile", "Brujah", BRUJAH_NEONATE);
+  await send(p, "PUT", `/api/characters/${id}/backstory`, { text: "Born in 1890.", version: 0 });
+  await p.goto(`/characters/${id}/backstory`);
+  await p.getByRole("button", { name: "Edit the backstory" }).click();
+  const editor = richEditor(p);
+  await editor.click();
+  await p.keyboard.press("Control+End");
+  await p.keyboard.press("Enter");
+  await p.keyboard.type("She fled to Chicago.");
+  await expect.poll(async () => (await stored(p, id)).draft?.text).toBe("Born in 1890.\n\nShe fled to Chicago.");
+
+  // Meanwhile, on another device, the player submits something else.
+  await send(p, "PUT", `/api/characters/${id}/backstory`, { text: "Born in 1900, in Cork.", version: 1 });
+  expect((await stored(p, id)).draft).toMatchObject({ text: "Born in 1890.\n\nShe fled to Chicago.", behind: true });
+
+  // Writing on here finds the newer version: both are kept, and the player chooses.
+  await p.keyboard.type(" Then Paris.");
+  const newer = p.getByRole("region", { name: "A newer version" });
+  await expect(newer).toBeVisible();
+  await expect(p.getByRole("button", { name: "Submit the backstory", exact: true })).toBeDisabled();
+  await newer.getByRole("button", { name: "Compare them" }).click();
+  const compared = newer.getByLabel("Your draft against the newer version");
+  await expect(compared).toContainText("Only in the newer version: Born in 1900, in Cork.");
+  await expect(compared).toContainText("Only in your draft: She fled to Chicago. Then Paris.");
+  await p.screenshot(shots("backstory-newer-version"));
+
+  await newer.getByRole("button", { name: "Keep mine" }).click();
+  await expect(newer).toHaveCount(0);
+  await expect(editor).toContainText("She fled to Chicago. Then Paris.");
+  await p.getByRole("button", { name: "Submit the backstory", exact: true }).click();
+  await expect(p.getByText(/^Last changed /)).toBeVisible();
+  expect(await stored(p, id)).toMatchObject({ version: 3, text: "Born in 1890.\n\nShe fled to Chicago. Then Paris.", draft: null });
 });
 
 test("staff read a joining character's backstory, send it back on one section, and approve it once revised before accepting the character", async ({ browser }) => {
@@ -117,15 +255,16 @@ test("staff read a joining character's backstory, send it back on one section, a
   const p = player.page;
   const id = await builtVampire(p, "Isolde", "Brujah", BRUJAH_NEONATE);
 
-  // Isolde's player writes her backstory in Markdown, previews it, and saves it.
+  // Isolde's player writes her backstory in Markdown, sees it formatted, and submits it.
   await p.goto(`/characters/${id}`);
   await characterTab(p, "Backstory");
   await p.getByRole("button", { name: "Write the backstory" }).click();
+  await p.getByRole("button", { name: "Markdown", exact: true }).click();
   await p.getByLabel("Your backstory, in Markdown").fill("## My sire\n\nHe was **cruel**.\n\n## Since\n\n- I fled\n- I hid");
-  await p.getByRole("button", { name: "Preview" }).click();
-  await expect(p.getByRole("heading", { name: "My sire" })).toBeVisible();
-  await expect(p.locator("main strong", { hasText: "cruel" })).toBeVisible();
-  await p.getByRole("button", { name: "Save the backstory" }).click();
+  await p.getByRole("button", { name: "Formatted", exact: true }).click();
+  await expect(richEditor(p).getByRole("heading", { name: "My sire" })).toBeVisible();
+  await expect(richEditor(p).locator("strong", { hasText: "cruel" })).toBeVisible();
+  await p.getByRole("button", { name: "Submit the backstory", exact: true }).click();
   await expect(p.getByText(/^Last changed /)).toBeVisible();
   await expect(p.getByRole("listitem").filter({ hasText: "I hid" })).toBeVisible();
 
@@ -157,8 +296,10 @@ test("staff read a joining character's backstory, send it back on one section, a
   await expect(thread).toContainText("on “My sire”");
   await expect(thread).toContainText("More about the sire, please");
   await p.getByRole("button", { name: "Edit the backstory" }).click();
+  await p.getByRole("button", { name: "Markdown", exact: true }).click();
   await p.getByLabel("Your backstory, in Markdown").fill("## My sire\n\nHe was **cruel**, and taught me to hunt the docks.\n\n## Since\n\n- I fled\n- I hid");
-  await p.getByRole("button", { name: "Save the backstory" }).click();
+  await p.getByRole("button", { name: "Submit the backstory", exact: true }).click();
+  await expect(p.getByLabel("Your backstory, in Markdown")).toHaveCount(0);
   await expect(p.getByText("taught me to hunt the docks")).toBeVisible();
   await p.getByLabel("Reply to the storytellers").fill("Added the docks.");
   await p.getByRole("button", { name: "Resubmit the backstory" }).click();

@@ -1,18 +1,16 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
-import { api, ApiError, unwrap } from "../../api/client";
+import { api, unwrap } from "../../api/client";
 import type { AnsweredSetOut, BackstoryOut, CharacterOut } from "../../api/types";
 import { Markdown } from "../../components/Markdown";
-import { Badge, Button, Card, Empty, ErrorText, Field, Loading, Select, Textarea } from "../../components/ui";
+import { Badge, Button, Card, Empty, ErrorText, Field, Loading, Notice, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { headings } from "../../markdown";
+import { Differences } from "./BackstoryDifferences";
+import { BackstoryEditor } from "./BackstoryEditor";
 import { backstoryStatus } from "./backstoryStatus";
 import { BackstoryWizard } from "./BackstoryWizard";
-
-/** The most a backstory holds (the API's cap), and how near it the editor starts counting down. */
-export const MAX_LENGTH = 500_000;
-const COUNT_FROM = 50_000;
 
 export function useBackstory(characterId: string, enabled = true) {
   return useQuery({
@@ -39,7 +37,7 @@ export function useBackstoryQuestions(characterId: string, enabled = true) {
 }
 
 /**
- * The character's backstory: read, written in Markdown, or built from the troupe's
+ * The character's backstory: read, written in the editor, or built from the troupe's
  * questions, with the thread of staff feedback. Staff reading it send it back or
  * approve it here too.
  */
@@ -47,12 +45,14 @@ export function BackstoryTab({ character }: { character: CharacterOut }) {
   const backstory = useBackstory(character.id);
   const writer = !!backstory.data?.write;
   const questions = useBackstoryQuestions(character.id, !!backstory.data && (backstory.data.mode !== "free" || !writer));
-  const [editing, setEditing] = useState(false);
+  const [editingChoice, setEditing] = useState<boolean | null>(null);
   const [answering, setAnswering] = useState<boolean | null>(null);
 
   if (backstory.isPending) return <Loading />;
   if (backstory.error) return <ErrorText error={backstory.error} />;
   const b = backstory.data;
+  // A draft not yet submitted opens in the editor, to carry on with.
+  const editing = editingChoice ?? (writer && !!b.draft && character.status !== "retired");
   const sets = questions.data?.sets ?? [];
   const asked = writer && b.mode !== "free" && sets.length > 0;
   // Under "the wizard only", the player starts from the questions until a set is built.
@@ -63,7 +63,7 @@ export function BackstoryTab({ character }: { character: CharacterOut }) {
   return (
     <div className="flex flex-col gap-4">
       <ReviewStatus backstory={b} asking={!!b.troupe_id && character.asking_troupe_id === b.troupe_id} />
-      {writer && b.state === "returned" && <Resubmit characterId={character.id} />}
+      {writer && b.state === "returned" && <Resubmit characterId={character.id} drafted={!!b.draft} />}
       {choosing ? (
         <Card title="Backstory">
           <p className="mb-3 text-sm">{questions.data?.troupe_name} lets you write your backstory freely, or build it by answering its questions.</p>
@@ -84,7 +84,7 @@ export function BackstoryTab({ character }: { character: CharacterOut }) {
           onClose={b.written ? () => setAnswering(false) : undefined}
         />
       ) : editing ? (
-        <BackstoryEditor key={b.version} characterId={character.id} backstory={b} onDone={() => setEditing(false)} />
+        <BackstoryEditor characterId={character.id} backstory={b} onDone={() => setEditing(false)} />
       ) : (
         <BackstoryText
           backstory={b}
@@ -93,6 +93,7 @@ export function BackstoryTab({ character }: { character: CharacterOut }) {
             b.written &&
             `Answering ${questions.data?.troupe_name ?? "the troupe"}'s questions again rebuilds the parts made from them; editing changes any of the text.`
           }
+          drafted={writer && !!b.draft}
           actions={
             writer && (
               <div className="flex flex-wrap gap-2">
@@ -102,7 +103,7 @@ export function BackstoryTab({ character }: { character: CharacterOut }) {
                   </Button>
                 )}
                 <Button variant="secondary" onClick={() => setEditing(true)}>
-                  {b.written ? "Edit the backstory" : "Write the backstory"}
+                  {b.draft ? "Carry on writing" : b.written ? "Edit the backstory" : "Write the backstory"}
                 </Button>
               </div>
             )
@@ -134,18 +135,28 @@ export function BackstoryText({
   backstory: b,
   actions,
   note,
+  drafted = false,
   title = "Backstory",
 }: {
   backstory: BackstoryOut;
   actions?: ReactNode;
   /** A line about the actions, under the title. */
   note?: ReactNode;
+  /** Its writer has a draft, not yet submitted. */
+  drafted?: boolean;
   title?: string;
 }) {
   const dates = useDates();
   return (
     <Card title={title} actions={actions}>
       {note && <p className="mb-2 text-xs text-mist">{note}</p>}
+      {drafted && (
+        <div className="mb-3">
+          <Notice>
+            <Badge tone="gold">Draft, not yet submitted</Badge> You have a draft saved. This is the version the storytellers read until you submit it.
+          </Notice>
+        </div>
+      )}
       {b.changed_at && (
         <p className="mb-3 text-xs text-mist">
           Last changed {dates.date(b.changed_at)}
@@ -157,83 +168,8 @@ export function BackstoryText({
   );
 }
 
-/** Writing it, in Markdown, with a preview. It saves only on Save, and never over a newer version. */
-function BackstoryEditor({ characterId, backstory, onDone }: { characterId: string; backstory: BackstoryOut; onDone: () => void }) {
-  const [draft, setDraft] = useState(backstory.text);
-  const [preview, setPreview] = useState(false);
-  const client = useQueryClient();
-  const save = useAction(async () => {
-    await unwrap(
-      api.PUT("/api/characters/{character_id}/backstory", { params: { path: { character_id: characterId } }, body: { text: draft, version: backstory.version } }),
-    );
-    onDone();
-  });
-  const stale = save.error instanceof ApiError && save.error.status === 409;
-  const left = MAX_LENGTH - draft.length;
-
-  return (
-    <Card
-      title="Backstory"
-      actions={
-        <div className="flex gap-1" role="group" aria-label="Editor view">
-          <Button variant={preview ? "ghost" : "secondary"} aria-pressed={!preview} className="min-h-8 px-3" onClick={() => setPreview(false)}>
-            Write
-          </Button>
-          <Button variant={preview ? "secondary" : "ghost"} aria-pressed={preview} className="min-h-8 px-3" onClick={() => setPreview(true)}>
-            Preview
-          </Button>
-        </div>
-      }
-    >
-      {preview ? (
-        <div className="min-h-40 rounded-md border border-ash p-3">{draft.trim() ? <Markdown text={draft} /> : <Empty>Nothing to preview yet.</Empty>}</div>
-      ) : (
-        <Field
-          label="Your backstory, in Markdown"
-          hint={
-            <>
-              # for a heading, **bold**, *italic*, - for a list, [words](https://…) for a link. HTML is shown as written.
-              {backstory.edited_sets.length > 0 || backstory.text.includes("<!-- questions:")
-                ? " Lines like <!-- questions:… --> mark the sections built from the troupe's questions: answering again replaces what is between them, and keeps the rest."
-                : ""}
-            </>
-          }
-        >
-          <Textarea rows={18} value={draft} maxLength={MAX_LENGTH} onChange={(e) => setDraft(e.target.value)} />
-        </Field>
-      )}
-      {left < COUNT_FROM && (
-        <p className={`mt-2 text-xs ${left < 5_000 ? "text-blood-bright" : "text-mist"}`}>{left.toLocaleString()} characters left</p>
-      )}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button onClick={() => save.mutate(undefined)} disabled={save.isPending || draft === backstory.text}>
-          Save the backstory
-        </Button>
-        <Button variant="ghost" onClick={onDone}>
-          Cancel
-        </Button>
-      </div>
-      <div className="mt-3">
-        <ErrorText error={save.error} />
-        {stale && (
-          <Button
-            variant="secondary"
-            className="mt-2"
-            onClick={async () => {
-              await client.invalidateQueries({ queryKey: ["backstory", characterId] });
-              onDone();
-            }}
-          >
-            Load the newer version (your changes here are lost)
-          </Button>
-        )}
-      </div>
-    </Card>
-  );
-}
-
 /** The player sends it back to staff once revised, with a reply. */
-function Resubmit({ characterId }: { characterId: string }) {
+function Resubmit({ characterId, drafted }: { characterId: string; drafted: boolean }) {
   const [note, setNote] = useState("");
   const send = useAction(() =>
     unwrap(api.POST("/api/characters/{character_id}/backstory/resubmit", { params: { path: { character_id: characterId } }, body: { note } })),
@@ -245,9 +181,10 @@ function Resubmit({ characterId }: { characterId: string }) {
         <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
       <div className="mt-3 flex flex-wrap gap-2">
-        <Button onClick={() => send.mutate(undefined)} disabled={send.isPending}>
+        <Button onClick={() => send.mutate(undefined)} disabled={send.isPending || drafted}>
           Resubmit the backstory
         </Button>
+        {drafted && <p className="self-center text-xs text-mist">Submit your draft first: the storytellers read the submitted version.</p>}
       </div>
       <ErrorText error={send.error} />
     </Card>
@@ -330,33 +267,6 @@ export function BackstoryReview({ characterId, backstory: b }: { characterId: st
         )}
       </div>
     </Card>
-  );
-}
-
-/** What changed since it was approved, line by line. */
-function Differences({ lines }: { lines: NonNullable<BackstoryOut["differences"]> }) {
-  return (
-    <div className="mb-4">
-      <h3 className="mb-1 font-sans text-xs tracking-wide text-mist uppercase">Changed since it was approved</h3>
-      <div className="overflow-x-auto rounded-md border border-ash bg-night p-2 font-mono text-xs" aria-label="Changes since it was approved">
-        {lines.map((line, i) =>
-          line.change === "skipped" ? (
-            <p key={i} className="py-1 text-mist italic">
-              … {line.count} unchanged lines …
-            </p>
-          ) : (
-            <p
-              key={i}
-              className={`whitespace-pre-wrap ${line.change === "added" ? "bg-gold/15 text-parchment" : line.change === "removed" ? "bg-blood/20 text-mist line-through" : "text-mist"}`}
-            >
-              <span aria-hidden>{line.change === "added" ? "+ " : line.change === "removed" ? "− " : "  "}</span>
-              <span className="sr-only">{line.change === "added" ? "Added: " : line.change === "removed" ? "Removed: " : ""}</span>
-              {line.text || " "}
-            </p>
-          ),
-        )}
-      </div>
-    </div>
   );
 }
 
