@@ -1,4 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { withClanNames } from "../../../clanNames";
+import { useClanName } from "../../../components/ClanNames";
 import { HouseMark, HouseSummary } from "../../../components/HouseMark";
 import type { TraitOut } from "../../../api/types";
 import { Badge, Input, Select } from "../../../components/ui";
@@ -15,7 +17,7 @@ function useFiltered(traits: TraitOut[], picks: Picks) {
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     const picked = new Set(Object.keys(picks).map(traitOf));
-    return traits.filter((t) => !q || t.name.toLowerCase().includes(q) || picked.has(t.name));
+    return traits.filter((t) => !q || withClanNames(t.name).toLowerCase().includes(q) || picked.has(t.name));
   }, [traits, picks, query]);
   return { query, setQuery, shown };
 }
@@ -95,6 +97,7 @@ export function DotGrid({
   const pickableAt = (dot: number) => (budget ? dot <= budget.max : dot in allowed);
   const tappable = (key: string, dot: number) => (budget ? canTapDots(picks, budget.dots, key, dot) : canTap(picks, allowed, key, dot));
   const { query, setQuery, shown } = useFiltered(traits, picks);
+  const named = useClanName();
   const groups: [string | null, TraitOut[]][] = sections
     ? [...sections.order, "Other"]
         .map((h): [string, TraitOut[]] => [
@@ -136,7 +139,7 @@ export function DotGrid({
                 type="button"
                 aria-expanded={shown}
                 aria-controls={about}
-                aria-label={`About ${trait.name}`}
+                aria-label={`About ${named(trait.name)}`}
                 onClick={() => toggle(trait.name)}
                 className="-ml-1 grid h-7 w-6 place-items-center rounded text-mist hover:bg-ash hover:text-parchment"
               >
@@ -145,7 +148,7 @@ export function DotGrid({
             ) : (
               <span className="w-5" aria-hidden />
             )}
-            <span className={rating ? "text-parchment" : barred ? "text-line" : "text-mist"}>{trait.name}</span>
+            <span className={rating ? "text-parchment" : barred ? "text-line" : "text-mist"}>{named(trait.name)}</span>
             {label && <span className="text-xs text-gold">{label}</span>}
             {fielded && (
               <Input
@@ -200,7 +203,7 @@ export function DotGrid({
         </div>
         {barred && (
           <p className="mt-0.5 pl-6 text-xs text-blood-bright">
-            {barred}
+            {named(barred)}
             {why?.(trait.name)}
           </p>
         )}
@@ -210,11 +213,11 @@ export function DotGrid({
             Not at {bar.ratings.length > 1 ? `${bar.ratings.slice(0, -1).join(", ")} or ${bar.ratings.at(-1)}` : bar.ratings[0]}: {bar.note}
           </p>
         ))}
-        {marked && <p className="mt-0.5 pl-6 text-xs text-blood-bright">{marked} Clear it and place it on another.</p>}
+        {marked && <p className="mt-0.5 pl-6 text-xs text-blood-bright">{named(marked)} Clear it and place it on another.</p>}
         {problems[key] && <p className="mt-0.5 pl-6 text-xs text-blood-bright">{problems[key].message}</p>}
         {about && (
           <p id={about} hidden={!shown} className="mt-1 pl-6 text-xs leading-relaxed text-mist">
-            {trait.description}
+            {named(trait.description)}
           </p>
         )}
       </div>
@@ -348,6 +351,7 @@ export function PointsList({
   const filtered = filterable ? applyFilter(traits, filter, barred ?? unavailable) : traits;
   const listed = filtered.concat(traits.filter((t) => t.name in picks && !filtered.includes(t)));
   const { query, setQuery, shown } = useFiltered(listed, picks);
+  const named = useClanName();
   const used = spent(picks) + givenPoints;
   // Every one is listed, picks first: the filter, quick picks and search narrow it (#310).
   const visible = query.trim() ? shown : shown.filter((t) => t.name in picks).concat(shown.filter((t) => !(t.name in picks)));
@@ -371,7 +375,7 @@ export function PointsList({
           <Select aria-label={`Show ${title}`} value={filter} onChange={(e) => setFilter(e.target.value)} className="w-auto">
             {filterChoices(traits, true).map((choice) => (
               <option key={choice.value} value={choice.value}>
-                {choice.label}
+                {named(choice.label)}
               </option>
             ))}
           </Select>
@@ -402,15 +406,15 @@ export function PointsList({
                   onChange={() => onChange(togglePoints(picks, budget - givenPoints, t.name, points))}
                 />
                 <span className="min-w-0">
-                  <span className="text-parchment">{t.name}</span> <span className="text-gold">({points})</span>
-                  {t.requirement && <span className="ml-2 text-xs text-mist">{t.requirement}</span>}
+                  <span className="text-parchment">{named(t.name)}</span> <span className="text-gold">({points})</span>
+                  {t.requirement && <span className="ml-2 text-xs text-mist">{named(t.requirement)}</span>}
                   {t.house && <HouseMark label={t.house.label} summary={t.house.summary} />}
-                  {barred && <span className="mt-0.5 block text-xs text-blood-bright">{barred}</span>}
+                  {barred && <span className="mt-0.5 block text-xs text-blood-bright">{named(barred)}</span>}
                   {barred && why?.(t.name) && <span className="mt-0.5 block text-xs text-mist">{why(t.name)}</span>}
                   {chosen && t.choices && onDetail && (
                     <span className="mt-1 block">
                       <ChoiceSelect
-                        label={`${t.name}: which?`}
+                        label={`${named(t.name)}: which?`}
                         placeholder="Which?"
                         className="h-8 py-0"
                         choices={t.choices}
@@ -420,7 +424,7 @@ export function PointsList({
                       />
                     </span>
                   )}
-                  {t.description && <span className="mt-0.5 block text-xs text-mist">{t.description}</span>}
+                  {t.description && <span className="mt-0.5 block text-xs text-mist">{named(t.description)}</span>}
                   <HouseSummary summary={t.house?.summary} />
                 </span>
               </label>
@@ -454,6 +458,7 @@ export function QuickPicks({
   onFilter: (filter: string) => void;
   title: string;
 }) {
+  const named = useClanName();
   if (!picks.length) return null;
   return (
     <div role="group" aria-label={`Quick picks for ${title}`} className="flex flex-wrap items-center gap-1.5">
@@ -467,7 +472,7 @@ export function QuickPicks({
             onClick={() => onFilter(on ? "can" : p.value)}
             className={`h-10 rounded-full border px-3 text-sm ${on ? "border-gold bg-gold/15 text-gold" : "border-ash text-mist hover:border-mist hover:text-parchment"}`}
           >
-            {p.label} {title.toLowerCase()}
+            {named(p.label)} {title.toLowerCase()}
           </button>
         );
       })}

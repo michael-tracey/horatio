@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetTraitOut, TraitOut } from "../../api/types";
+import { withClanNames } from "../../clanNames";
+import { useClanName } from "../../components/ClanNames";
 import { HouseMark, HouseSummary } from "../../components/HouseMark";
 import { Button, ErrorText, Field, Input, Notice, Select } from "../../components/ui";
 import { AskStaff } from "./AskStaff";
@@ -61,6 +63,7 @@ export function AddTraitPanel({
 }) {
   const [category, setCategory] = useState(initial ?? categories[0] ?? "");
   const [query, setQuery] = useState("");
+  const named = useClanName();
   const [filter, setFilter] = useState("can");
   const [name, setName] = useState("");
   const [detail, setDetail] = useState("");
@@ -80,10 +83,11 @@ export function AddTraitPanel({
   const q = query.trim().toLowerCase();
   const barred = useBarred(character.id, current);
   const shown = applyFilter(all, filter, barred).filter((t) => !mine.has(t.name));
-  const matching = shown.filter((t) => !q || t.name.toLowerCase().includes(q));
+  // Either name finds the clan stored as Assamite (#430).
+  const matching = shown.filter((t) => !q || withClanNames(t.name).toLowerCase().includes(q));
   // What "can take" leaves out, a tap away: greyed with the reason under Everything.
   const leftOut =
-    filter === "can" && current?.ready ? all.filter((t) => !mine.has(t.name) && (!q || t.name.toLowerCase().includes(q))).length - matching.length : 0;
+    filter === "can" && current?.ready ? all.filter((t) => !mine.has(t.name) && (!q || withClanNames(t.name).toLowerCase().includes(q))).length - matching.length : 0;
   // Nothing here: perhaps it lives in another category.
   const elsewhere = matching.length === 0 ? foundElsewhere(choices, category, query, held).slice(0, 5) : [];
   const switchTo = (key: string, can = true) => {
@@ -152,7 +156,7 @@ export function AddTraitPanel({
         <Select aria-label="Show" value={filter} onChange={(e) => setFilter(e.target.value)} className="w-auto">
           {filterChoices(all, true).map((choice) => (
             <option key={choice.value} value={choice.value}>
-              {choice.label}
+              {named(choice.label)}
             </option>
           ))}
         </Select>
@@ -191,7 +195,7 @@ export function AddTraitPanel({
               onClick={() => switchTo(found.category.key, found.canTake)}
               className="w-full rounded px-2 py-1.5 text-left text-sm text-mist hover:bg-ash/40 hover:text-parchment"
             >
-              Found in {found.category.name}: <span className="text-parchment">{found.trait.name}</span>
+              Found in {found.category.name}: <span className="text-parchment">{named(found.trait.name)}</span>
             </button>
           </li>
         ))}
@@ -235,11 +239,11 @@ export function AddTraitPanel({
             add();
           }}
         >
-          <p className="text-sm text-parchment">{trait.name}</p>
-          {trait.description && <p className="text-xs leading-relaxed text-mist">{trait.description}</p>}
+          <p className="text-sm text-parchment">{named(trait.name)}</p>
+          {trait.description && <p className="text-xs leading-relaxed text-mist">{named(trait.description)}</p>}
           {trait.house_rule && <Notice>House rule: {trait.house_rule}</Notice>}
           {trait.choices ? (
-            <Field label="Which?" hint={`${trait.name} gives one of these.`}>
+            <Field label="Which?" hint={`${named(trait.name)} gives one of these.`}>
               <ChoiceSelect required choices={trait.choices} fields={fieldSkills(catalogue)} value={detail} onChange={setDetail} />
             </Field>
           ) : (
@@ -338,6 +342,7 @@ function TraitChoice({
   onChoose: () => void;
   onAsk?: () => void;
 }) {
+  const named = useClanName();
   return (
     <li>
       <button
@@ -347,13 +352,13 @@ function TraitChoice({
         className={`flex w-full flex-col rounded px-2 py-1.5 text-left text-sm ${chosen ? "bg-ash/60" : "hover:bg-ash/40"} ${refused ? "opacity-50" : ""}`}
       >
         <span>
-          {trait.name}
+          {named(trait.name)}
           {trait.fixed_rating ? <span className="text-gold"> ({trait.fixed_rating})</span> : null}
-          {trait.requirement && <span className="ml-2 text-xs text-mist">{trait.requirement}</span>}
+          {trait.requirement && <span className="ml-2 text-xs text-mist">{named(trait.requirement)}</span>}
           {trait.house && <HouseMark label={trait.house.label} summary={trait.house.summary} />}
         </span>
         <HouseSummary summary={trait.house?.summary} />
-        {refused && <span className="text-xs text-blood-bright">{refused}</span>}
+        {refused && <span className="text-xs text-blood-bright">{named(refused)}</span>}
         {!refused && opened && <span className="text-xs text-gold">{opened}</span>}
       </button>
       {refused && onAsk && (

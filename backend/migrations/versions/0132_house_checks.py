@@ -2,7 +2,7 @@
 a strength, the message the player sees, and an optional creation step
 
 Revision ID: 0132
-Revises: 0127
+Revises: 0128
 Create Date: 2026-11-01 23:00:00.000000
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0132"
-down_revision: str | None = "0127"
+down_revision: str | None = "0128"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

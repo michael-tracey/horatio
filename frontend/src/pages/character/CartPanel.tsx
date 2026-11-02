@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { components } from "../../api/schema";
 import type { CharacterOut } from "../../api/types";
+import { useClanName } from "../../components/ClanNames";
 import { HouseMark } from "../../components/HouseMark";
 import { StepButton } from "../../components/StepButton";
 import { Badge, Button, Card, ErrorText, Notice } from "../../components/ui";
@@ -91,6 +92,7 @@ export function CartPanel({
 }) {
   const prices = useCartPrices(character.id, cart.lines);
   const client = useQueryClient();
+  const named = useClanName();
   const [message, setMessage] = useState<ReactNode>(null);
   // A refused line being asked of staff as an exception.
   const [asking, setAsking] = useState<CartLine | null>(null);
@@ -151,7 +153,7 @@ export function CartPanel({
                   <li key={`${describe(line)}/${i}`} className="flex flex-col gap-0.5">
                     <span className="flex items-start justify-between gap-2">
                       <span className={priced?.refused ? "text-blood-bright" : undefined}>
-                        {describe(line)}
+                        {named(describe(line))}
                         {"name" in line && houseLabels?.get(`${line.category}/${line.name}`) && (
                           <HouseMark label={houseLabels.get(`${line.category}/${line.name}`)!} short />
                         )}
@@ -162,7 +164,7 @@ export function CartPanel({
                         {exception && <Badge tone="gold">Exception</Badge>}
                         {priced?.needs_approval && <Badge tone="gold">Needs approval</Badge>}
                         <StepButton
-                          label={`Take ${describe(line)} out of the cart`}
+                          label={`Take ${named(describe(line))} out of the cart`}
                           onClick={() => {
                             setMessage(null);
                             cart.remove(line);
@@ -172,8 +174,8 @@ export function CartPanel({
                         </StepButton>
                       </span>
                     </span>
-                    {priced?.refused && <span className="text-xs text-blood-bright">{priced.refused}</span>}
-                    {!priced?.refused && priced?.because && <span className="text-xs text-gold">{priced.because}</span>}
+                    {priced?.refused && <span className="text-xs text-blood-bright">{named(priced.refused)}</span>}
+                    {!priced?.refused && priced?.because && <span className="text-xs text-gold">{named(priced.because)}</span>}
                     {/* Kept while the line is priced again, so typing an NPC's name keeps its place. */}
                     {line.kind === "set" && (priced?.teacher || line.teacher_id || line.npc_teacher) && (
                       <TeacherPicker
@@ -191,7 +193,7 @@ export function CartPanel({
                     {exception && (
                       <span className="text-xs text-mist">
                         Asked of staff{exception.free ? ", free" : ""}: {exception.reason}
-                        {priced?.breaks.length ? <span className="block">Against the rules: {priced.breaks.join(" ")}</span> : null}
+                        {priced?.breaks.length ? <span className="block">Against the rules: {named(priced.breaks.join(" "))}</span> : null}
                       </span>
                     )}
                     {askable && asking !== line && (

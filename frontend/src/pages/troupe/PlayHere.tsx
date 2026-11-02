@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
+import { useClanName } from "../../components/ClanNames";
 import type { CharacterOut, TroupeOut } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
 import { AtHandle } from "../../components/PersonPicker";
@@ -91,6 +92,7 @@ export function PlayHere({ troupe }: { troupe: TroupeOut }) {
 
 /** One of the player's characters, with the way to ask this troupe to make it home. */
 function Bring({ character: c, troupeId }: { character: CharacterOut; troupeId: string }) {
+  const named = useClanName();
   return (
     <li className="flex flex-wrap items-center justify-between gap-2 py-2">
       <span className="flex min-w-0 items-center gap-3">
@@ -99,7 +101,7 @@ function Bring({ character: c, troupeId }: { character: CharacterOut; troupeId: 
           {c.name}
           <span className="ml-2 text-mist capitalize">
             {c.splat}
-            {c.clan && ` · ${c.clan}`}
+            {c.clan && ` · ${named(c.clan)}`}
           </span>
         </span>
       </span>
