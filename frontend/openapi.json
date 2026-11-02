@@ -5743,6 +5743,17 @@
             "title": "Message",
             "type": "string"
           },
+          "once_finished": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Once Finished"
+          },
           "page": {
             "anyOf": [
               {
@@ -14745,6 +14756,17 @@
           "house": {
             "title": "House",
             "type": "string"
+          },
+          "once_finished": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Once Finished"
           },
           "own": {
             "default": false,
