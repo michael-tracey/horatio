@@ -3,6 +3,7 @@
  * each trait, made into one list to search and filter on the page, so typing asks
  * nothing of the server.
  */
+import { bookSummary } from "../../houseWording";
 import type { DisciplinePowerOut, NotAllowedOut, PriceOut, RarityOut, RulesBrowserOut, TraitCheckOut, TraitOut } from "../../api/types";
 
 /** A part of the browser, and the catalogue categories it shows, in order. */
@@ -124,7 +125,7 @@ export function entries(data: RulesBrowserOut): Entry[] {
       name: t.name,
       rating: ratingOf(t),
       value: t.fixed_rating ?? null,
-      summary: t.description || t.house?.summary || null,
+      summary: bookSummary(t.description, t.changed) || t.house?.summary || null,
       page: t.page_reference ?? null,
       requirement: t.requirement ?? null,
       clans,
@@ -134,7 +135,7 @@ export function entries(data: RulesBrowserOut): Entry[] {
       barred: t.changed?.banned ? { category: t.category, name: t.name, text: t.changed.ban_reason || null } : (barred.get(key) ?? null),
       banned: !!t.changed?.banned,
       rarity: t.category === "clan" ? (rarity.get(t.name) ?? rarity.get(family(t.name)) ?? null) : null,
-      text: [t.name, t.description, t.requirement, t.kind, t.house?.summary, t.house_rule].filter(Boolean).join(" ").toLowerCase(),
+      text: [t.name, t.description, t.requirement, t.kind, t.house?.summary, t.house_rule, t.changed?.wording].filter(Boolean).join(" ").toLowerCase(),
     });
     if (t.category === "disciplines") found.push(...(powers.get(t.name) ?? []).map((p) => powerEntry(p, t, clans)));
   }

@@ -11,6 +11,7 @@ import { useSplats } from "../character/splats";
 import { pageText } from "../troupe/bookPage";
 import { PLAYED } from "../troupe/HouseRulesTab";
 import { ownFirst } from "../troupeList";
+import { HouseWording } from "../../components/TroupeChange";
 import {
   applyFilters,
   categoryPrices,
@@ -281,6 +282,7 @@ function EntryRow({ entry: e, troupe }: { entry: Entry; troupe: string | null })
         )}
       </div>
       {e.summary && <p className="text-mist">{e.summary}</p>}
+      <HouseWording change={t?.changed} />
       {t?.house && (
         <>
           <HouseSummary summary={t.description ? t.house.summary : null} />

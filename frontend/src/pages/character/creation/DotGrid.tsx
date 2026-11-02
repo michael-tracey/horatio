@@ -6,6 +6,8 @@ import { applyFilter, filterChoices } from "../traitFilter";
 import { detailNeed } from "../fields";
 import { ChoiceSelect } from "../ChoiceSelect";
 import { canTap, canTapDots, clear, fieldProblems, keysOf, left, traitOf, nextCopy, spent, tap, tapDots, togglePoints, type Allowed, type Picks } from "./logic";
+import { HouseWording } from "../../../components/TroupeChange";
+import { bookSummary } from "../../../houseWording";
 
 // Long lists get a search box.
 const SEARCH_FROM = 12;
@@ -213,9 +215,10 @@ export function DotGrid({
         {marked && <p className="mt-0.5 pl-6 text-xs text-blood-bright">{marked} Clear it and place it on another.</p>}
         {problems[key] && <p className="mt-0.5 pl-6 text-xs text-blood-bright">{problems[key].message}</p>}
         {about && (
-          <p id={about} hidden={!shown} className="mt-1 pl-6 text-xs leading-relaxed text-mist">
-            {trait.description}
-          </p>
+          <div id={about} hidden={!shown} className="mt-1 pl-6 text-xs leading-relaxed text-mist">
+            {bookSummary(trait.description, trait.changed) && <p>{trait.description}</p>}
+            <HouseWording change={trait.changed} className="mt-1" />
+          </div>
         )}
       </div>
     );
@@ -420,7 +423,8 @@ export function PointsList({
                       />
                     </span>
                   )}
-                  {t.description && <span className="mt-0.5 block text-xs text-mist">{t.description}</span>}
+                  {bookSummary(t.description, t.changed) && <span className="mt-0.5 block text-xs text-mist">{t.description}</span>}
+                  <HouseWording change={t.changed} className="mt-1 text-xs" />
                   <HouseSummary summary={t.house?.summary} />
                 </span>
               </label>

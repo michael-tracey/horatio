@@ -459,6 +459,8 @@ MESSAGES: dict[str, str] = {
     "house.trait_removed": "{actor} took the {what} {name} off {character}: {reason}",
     "house.trait_banned": "{actor} banned {what} in the troupe (reason: {reason}).",
     "house.trait_unbanned": "{actor} lifted the troupe's ban on {what}.",
+    "house.trait_worded": "{actor} set the troupe's wording for {what}, {how}.",
+    "house.trait_wording_removed": "{actor} removed the troupe's wording for {what}.",
     "troupe.specializations": "{actor} set the troupe's {kind}: {count} options.",
     "sheet.primary_path": "{actor} named {path} {character}'s primary path of {discipline}.",
     "sheet.detail": "{actor} set {character}'s {name} detail to {detail}.",

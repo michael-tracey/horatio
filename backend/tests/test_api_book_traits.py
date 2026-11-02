@@ -2,6 +2,7 @@
 characters, at creation and after, as a refusing check does; those who hold it keep
 it, flagged; an exception still lets one character have it."""
 
+import uuid
 from collections.abc import Callable
 from typing import Any
 
@@ -9,9 +10,11 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from horatio.models import Character
 from tests.api_helpers import Person, Troupe, finish, new_character
 from tests.test_api_creation import pick
 from tests.test_api_exceptions import give
+from tests.test_api_renames import other_troupe, visit
 from tests.test_api_sheets import buy, make_home_troupe_member, sheet
 
 pytestmark = pytest.mark.usefixtures("without_bank")
@@ -83,7 +86,10 @@ def test_storytellers_ban_a_trait_and_players_read_it(troupe: Troupe) -> None:
     ]
     catalogue = troupe.player.client.get(f"/rules/vampire?troupe_id={troupe.id}").json()
     lucky = next(t for t in catalogue["traits"] if t["name"] == "Lucky")
-    assert lucky["changed"] == {"banned": True, "ban_reason": "Too swingy at our table."}
+    assert (lucky["changed"]["banned"], lucky["changed"]["ban_reason"]) == (
+        True,
+        "Too swingy at our table.",
+    )
     plain = troupe.player.client.get("/rules/vampire").json()
     assert next(t for t in plain["traits"] if t["name"] == "Lucky")["changed"] is None
     log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
@@ -213,3 +219,70 @@ def test_a_joining_character_holding_a_banned_trait_is_flagged(troupe: Troupe) -
     assert asked.status_code in (200, 201), asked.text
     [request] = troupe.lead.client.get(f"/troupes/{troupe.id}/approvals").json()
     assert request["banned"] == ["Lucky"]
+
+
+# --- House wording ----------------------------------------------------------------------------
+
+AWE = "Draws every eye; **one** target per turn here."
+
+
+def test_storytellers_give_a_trait_house_wording_and_players_read_it(troupe: Troupe) -> None:
+    body: dict[str, Any] = {"category": "disciplines", "name": "Presence", "wording": AWE}
+    assert change(troupe, troupe.assistant, **body).status_code == 403
+
+    worded = change(troupe, **body)
+
+    assert worded.status_code == 200, worded.text
+    assert (worded.json()["wording"], worded.json()["wording_mode"]) == (AWE, "added")
+    catalogue = troupe.player.client.get(f"/rules/vampire?troupe_id={troupe.id}").json()
+    presence = next(t for t in catalogue["traits"] if t["name"] == "Presence")
+    assert presence["changed"] == {
+        "banned": False,
+        "ban_reason": "",
+        "wording": AWE,
+        "wording_mode": "added",
+    }
+    read = troupe.player.client.get(f"/troupes/{troupe.id}/house-rules").json()
+    assert [(b["name"], b["wording"]) for b in read["book_traits"]] == [("Presence", AWE)]
+    log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
+    assert "storyteller set the troupe's wording for Presence, added to the book's." in log
+
+    replaced = change(troupe, category="disciplines", name="Presence", wording_mode="replaces")
+    assert (replaced.json()["wording"], replaced.json()["wording_mode"]) == (AWE, "replaces")
+    # A ban and wording are kept together: removing the wording leaves the ban.
+    change(troupe, category="disciplines", name="Presence", banned=True)
+    removed = change(troupe, category="disciplines", name="Presence", wording="  ")
+    assert (removed.json()["wording"], removed.json()["banned"]) == ("", True)
+    log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
+    assert "storyteller removed the troupe's wording for Presence." in log
+    change(troupe, category="disciplines", name="Presence", banned=False)
+    assert troupe.storyteller.client.get(f"/troupes/{troupe.id}/book-traits").json() == {
+        "changes": [],
+        "holders": [],
+    }
+
+
+def test_house_wording_is_the_troupes_own_and_follows_the_home_troupe(troupe: Troupe) -> None:
+    change(troupe, category="disciplines", name="Presence", wording=AWE)
+    elsewhere = other_troupe(troupe)
+    home = homed(troupe)
+    bought(troupe, home, "disciplines", "Presence", 1)
+    # A character at home elsewhere, visiting this troupe, reads its home troupe's.
+    visitor = new_character(troupe, troupe.player, "Cora")
+    assert buy(troupe.player, visitor, "disciplines", "Presence", 1).status_code == 200
+    troupe.session.get_one(Character, uuid.UUID(visitor)).home_troupe_id = uuid.UUID(elsewhere)
+    troupe.session.flush()
+    visit(troupe.player, visitor, troupe.id)
+
+    def play_wording(character_id: str) -> str:
+        reference = troupe.player.client.get(f"/characters/{character_id}/play/reference").json()
+        return next(t["wording"] for t in reference["traits"] if t["name"] == "Presence")
+
+    assert play_wording(home) == AWE
+    assert play_wording(visitor) == ""
+    printed = troupe.player.client.get(f"/characters/{home}/print").json()
+    assert [(w["name"], w["text"], w["mode"]) for w in printed["wording"]] == [
+        ("Presence", AWE, "added")
+    ]
+    other = troupe.player.client.get(f"/rules/vampire?troupe_id={elsewhere}").json()
+    assert next(t for t in other["traits"] if t["name"] == "Presence")["changed"] is None

@@ -534,7 +534,7 @@ def change_book_trait(
 
 def changes_nothing(row: TraitOverride) -> bool:
     """Whether a troupe's row for a book trait is left with no change in it."""
-    return not row.banned
+    return not row.banned and not row.wording
 
 
 @changes_rules
@@ -900,7 +900,12 @@ def trait_changes_of(
     ):
         category, name = definition_keys[row.trait_definition_id]
         found[(category, name)] = TraitChangeData(
-            category=category, name=name, banned=row.banned, ban_reason=row.ban_reason
+            category=category,
+            name=name,
+            banned=row.banned,
+            ban_reason=row.ban_reason,
+            wording=row.wording,
+            wording_mode=row.wording_mode,  # type: ignore[arg-type]  # checked by the database
         )
     return found
 

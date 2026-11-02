@@ -1,6 +1,7 @@
-"""A troupe's own changes to book traits (issue #431): its storytellers ban a merit,
-flaw, power, ritual, technique, path, background, clan or bloodline in the troupe,
-with a reason its players see.
+"""A troupe's own changes to book traits: its storytellers ban a merit, flaw, power,
+ritual, technique, path, background, clan or bloodline in the troupe, with a reason
+its players see (issue #431), and give any of them wording of the troupe's own
+(issue #433), added to the book's summary or in its place.
 
 The changes are kept one row per troupe and trait (`TraitOverride`), and read into
 the troupe's rules where they are put together (horatio.rules.store), so whatever
@@ -10,6 +11,10 @@ cannot be bought or picked, at creation or after, and lists show it greyed with 
 reason. Characters who already hold it keep it; their sheet lists it under "Against
 the rules", staff see who holds a banned trait (`holders`), and an exception can
 still let one character have it. Staff building an NPC may use a banned trait.
+
+House wording is the troupe's own text, in Markdown, never the book's: players read
+it wherever they read the trait, marked as the troupe's, with the book's page still
+shown. A character plays by its home troupe's rules, so it reads that troupe's.
 """
 
 import uuid
@@ -117,6 +122,40 @@ def set_ban(
         )
     else:
         audit.record(db, user, "house.trait_unbanned", troupe_id=troupe.id, what=what)
+
+
+def set_wording(
+    db: Session,
+    user: User,
+    troupe: Troupe,
+    splat: str,
+    definition: TraitDefinition,
+    category: str,
+    *,
+    wording: str,
+    mode: str,
+) -> None:
+    """Give a book trait the troupe's own wording, added to the book's summary or in
+    its place, or (with none) take it away."""
+    before = change_of(db, troupe, splat, category, definition.name)
+    wording = wording.strip()
+    if not wording:
+        mode = "added"
+    if (before.wording, before.wording_mode) == (wording, mode):
+        return
+    change_book_trait(db, troupe.id, definition.id, {"wording": wording, "wording_mode": mode})
+    what = for_splat(definition.name, splat)
+    if not wording:
+        audit.record(db, user, "house.trait_wording_removed", troupe_id=troupe.id, what=what)
+    else:
+        audit.record(
+            db,
+            user,
+            "house.trait_worded",
+            troupe_id=troupe.id,
+            what=what,
+            how="in place of the book's" if mode == "replaces" else "added to the book's",
+        )
 
 
 def for_splat(name: str, splat: str) -> str:

@@ -5471,8 +5471,8 @@ export interface paths {
         get: operations["list_book_traits_api_troupes__troupe_id__book_traits_get"];
         /**
          * Change Book Trait
-         * @description Change a book trait in the troupe: ban it, with a reason, or lift the ban. Those
-         *     who hold it keep it.
+         * @description Change a book trait in the troupe: ban it, with a reason, or lift the ban (those
+         *     who hold it keep it); give it the troupe's own wording, or take it away.
          */
         put: operations["change_book_trait_api_troupes__troupe_id__book_traits_put"];
         post?: never;
@@ -8955,6 +8955,10 @@ export interface components {
              * @default vampire
              */
             splat: string;
+            /** Wording */
+            wording?: string | null;
+            /** Wording Mode */
+            wording_mode?: ("added" | "replaces") | null;
         };
         /**
          * BookTraitOut
@@ -8977,6 +8981,13 @@ export interface components {
             splat: string;
             /** Splat Label */
             splat_label: string;
+            /** Wording */
+            wording: string;
+            /**
+             * Wording Mode
+             * @enum {string}
+             */
+            wording_mode: "added" | "replaces";
         };
         /** BookTraitsOut */
         BookTraitsOut: {
@@ -16103,6 +16114,17 @@ export interface components {
             rating: number | null;
             /** Specialties */
             specialties: string[];
+            /**
+             * Wording
+             * @default
+             */
+            wording: string;
+            /**
+             * Wording Mode
+             * @default added
+             * @enum {string}
+             */
+            wording_mode: "added" | "replaces";
         };
         /** PlayView */
         PlayView: {
@@ -16841,6 +16863,11 @@ export interface components {
             troupe_name: string | null;
             /** Troupe Portrait */
             troupe_portrait: string | null;
+            /**
+             * Wording
+             * @default []
+             */
+            wording: components["schemas"]["PrintedWording"][];
         };
         /** PrintedTrait */
         PrintedTrait: {
@@ -16866,6 +16893,24 @@ export interface components {
             specializes: {
                 [key: string]: string;
             } | null;
+        };
+        /**
+         * PrintedWording
+         * @description The troupe's own wording for a trait the character holds (horatio.book_traits),
+         *     printed after the sheet with the book's page.
+         */
+        PrintedWording: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "added" | "replaces";
+            /** Name */
+            name: string;
+            /** Page */
+            page: string | null;
+            /** Text */
+            text: string;
         };
         /**
          * ProblemOut
@@ -20264,13 +20309,25 @@ export interface components {
         /**
          * TraitChangeOut
          * @description A troupe's change to a book trait (horatio.book_traits): banned in the troupe,
-         *     with the reason its players see ("" for none).
+         *     with the reason its players see ("" for none); its own wording, in Markdown ("" for
+         *     none), added to the book's summary or replacing it.
          */
         TraitChangeOut: {
             /** Ban Reason */
             ban_reason: string;
             /** Banned */
             banned: boolean;
+            /**
+             * Wording
+             * @default
+             */
+            wording: string;
+            /**
+             * Wording Mode
+             * @default added
+             * @enum {string}
+             */
+            wording_mode: "added" | "replaces";
         };
         /**
          * TraitCheckOut

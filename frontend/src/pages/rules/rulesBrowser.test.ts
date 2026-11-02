@@ -122,9 +122,18 @@ describe("applyFilters", () => {
     expect(names(applyFilters(barred, { ...none, section: "merits", barred: true }))).toContain("Calm Heart");
   });
 
+  it("reads the troupe's wording in place of the book's summary, and finds it by a word of it", () => {
+    const base = data();
+    const worded = { banned: false, ban_reason: "", wording: "Only one target here.", wording_mode: "replaces" as const };
+    const traits = base.catalogue.traits.map((t) => (t.name === "Presence" ? { ...t, changed: worded } : t));
+    const found = entries({ ...base, catalogue: { ...base.catalogue, traits } });
+    expect(found.find((e) => e.name === "Presence")!.summary).toBeNull();
+    expect(names(applyFilters(found, { ...none, query: "one target" }))).toEqual(["Presence"]);
+  });
+
   it("treats a trait the troupe bans as not allowed, with its reason", () => {
     const base = data();
-    const traits = base.catalogue.traits.map((t) => (t.name === "Calm Heart" ? { ...t, changed: { banned: true, ban_reason: "Not here." } } : t));
+    const traits = base.catalogue.traits.map((t) => (t.name === "Calm Heart" ? { ...t, changed: { banned: true, ban_reason: "Not here.", wording: "", wording_mode: "added" as const } } : t));
     const found = entries({ ...base, catalogue: { ...base.catalogue, traits } });
     expect(names(applyFilters(found, { ...none, section: "merits" }))).toEqual(["Absent Sway", "Volgirre Grace"]);
     const calm = found.find((e) => e.name === "Calm Heart")!;

@@ -56,6 +56,7 @@ from horatio.permissions import (
 )
 from horatio.pool_modifiers import ModifierOut, modifiers_out
 from horatio.rules.feeding import clan_family
+from horatio.rules.model import TraitChangeData
 from horatio.rules.npc_kinds import kind_name
 
 router = APIRouter(tags=["play"])
@@ -261,6 +262,10 @@ class PlayTrait(BaseModel):
     house: str | None = None
     # What its effects do, in words: shown under its description.
     house_summary: str | None = None
+    # The home troupe's own wording for it (horatio.book_traits), in Markdown, added to
+    # the book's summary or in its place; "" for none.
+    wording: str = ""
+    wording_mode: Literal["added", "replaces"] = "added"
 
 
 class PlayView(BaseModel):
@@ -556,8 +561,17 @@ def spends_out(db: Session, entries: dict[uuid.UUID, InfluenceEntry]) -> dict[uu
     return found
 
 
+def wording_of(change: TraitChangeData | None) -> dict[str, Any]:
+    """A trait's house wording as a PlayTrait carries it, if the troupe gave it some."""
+    if change is None or not change.wording:
+        return {}
+    return {"wording": change.wording, "wording_mode": change.wording_mode}
+
+
 def sheet_traits(db: Session, character: Character) -> list[PlayTrait]:
-    rule_set = sheets.rules_for(db, character).rule_set
+    rules = sheets.rules_for(db, character)
+    rule_set = rules.rule_set
+    changes = rules.trait_changes
     rows = sheets.sheet_rows(db, character)
     specialties: dict[tuple[str, str], list[str]] = {}
     for row in rows:
@@ -585,6 +599,7 @@ def sheet_traits(db: Session, character: Character) -> list[PlayTrait]:
             house_summary=house[row.definition.id].summary or None
             if row.definition.id in house
             else None,
+            **wording_of(changes.get((row.category.key, row.definition.name))),
         )
         for row in rows
         if row.category.key in rule_set.categories

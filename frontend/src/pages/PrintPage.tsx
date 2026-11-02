@@ -16,6 +16,8 @@ import { changing, damageShort, situations, total, type Modifier } from "./play/
 import { printedRatings } from "../ratings";
 import { bracketed, fitsInline, specialtiesByParent, specialtyName } from "./printSpecialties";
 import { factsText, kindText, playText } from "./troupe/equipment";
+import { pageText } from "./troupe/bookPage";
+import { Markdown } from "../components/Markdown";
 
 type Trait = PrintedSheet["traits"][number];
 
@@ -546,6 +548,23 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
               <PrintedRetainer key={r.id ?? `bought${i}`} retainer={r} />
             ))}
           </div>
+        </Section>
+      )}
+
+      {sheet.wording && sheet.wording.length > 0 && (
+        <Section title="House wording">
+          <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] leading-4" aria-label="House wording">
+            {sheet.wording.map((w) => (
+              <li key={w.name} className="break-inside-avoid">
+                <strong>{w.name}</strong>
+                {w.page && <span className="text-neutral-600"> · {pageText(w.page)}</span>}
+                <span className="text-neutral-600"> · {w.mode === "replaces" ? "the troupe's, in place of the book's" : "the troupe's, added to the book's"}</span>
+                <div className="[&_*]:!text-[10px] [&_*]:!leading-4">
+                  <Markdown text={w.text} />
+                </div>
+              </li>
+            ))}
+          </ul>
         </Section>
       )}
 
