@@ -98,6 +98,9 @@ class Character(Imported, Record):
     # Its pronouns, as its player (or an NPC's staff) wrote them: "she/her", "any".
     # None for none given (horatio.pronouns).
     pronouns: Mapped[str | None]
+    # When its free changes as a new character ended and its player was told
+    # (horatio.free_changes); None while they are open, or if it never had any.
+    free_changes_ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class CharacterTrait(Record):

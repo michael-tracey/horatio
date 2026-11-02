@@ -12,7 +12,16 @@ from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import audit, clan_merits, diablerie, feeding, rack, resonance, territories
+from horatio import (
+    audit,
+    clan_merits,
+    diablerie,
+    feeding,
+    free_changes,
+    rack,
+    resonance,
+    territories,
+)
 from horatio.api.downtimes import staff_troupe
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
@@ -1173,6 +1182,18 @@ def splat_house_rules(db: DbSession, troupe_id: uuid.UUID, splat: str) -> SplatH
     )
 
 
+def free_changes_setting(troupe: Troupe) -> HouseSettingOut:
+    """Free changes for new characters (horatio.free_changes), in words."""
+    kept = [e["name"] for e in troupe.free_changes_excluded]
+    return HouseSettingOut(
+        name="Free changes for new characters",
+        text=f"{free_changes.setting_text(troupe)}, lowering or removing a trait refunds its"
+        " full XP, as during creation, and the troupe reviews each change"
+        + (f"; never for {', '.join(kept)}" if kept else ""),
+        book_text=free_changes.LOCKED_TEXT,
+    )
+
+
 def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
     """The troupe's other house rules that differ from the book."""
     found: list[HouseSettingOut] = []
@@ -1192,6 +1213,8 @@ def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
                 book_text=f"Diablerie {diablerie.SETTING_TEXT['leave']}",
             )
         )
+    if troupe.free_changes != "none":
+        found.append(free_changes_setting(troupe))
     if troupe.golconda_enlightened:
         found.append(
             HouseSettingOut(

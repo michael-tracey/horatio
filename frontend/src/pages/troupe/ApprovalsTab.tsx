@@ -132,7 +132,9 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
             : approval.kind === "discipline"
               ? "Discipline"
               : approval.kind === "review"
-                ? "Rule review"
+                ? d?.free_change
+                  ? "Free change"
+                  : "Rule review"
                 : approval.kind === "exception"
                   ? ex?.free
                     ? "Exception, free"
@@ -157,7 +159,7 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
           </Button>
         </Link>
       </div>
-      {approval.player_note && <p className="mb-3 text-sm italic">"{approval.player_note}"</p>}
+      {approval.player_note && !d?.free_change && <p className="mb-3 text-sm italic">"{approval.player_note}"</p>}
       {d && ex && (
         <div className="mb-3 flex flex-col gap-1 text-sm">
           <p>
@@ -188,7 +190,17 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
           {questing && <span className="text-mist">Completing it approves this; failing or closing it declines it and refunds any XP held.</span>}
         </p>
       )}
-      {d && !ex && !merit && (
+      {d && !ex && !merit && d.free_change && (
+        <p className="mb-3 text-sm">
+          {d.name}
+          {d.detail && `: ${d.detail}`}
+          {d.house && <HouseMark label={d.house} />} {d.from_rating} → {d.to_rating}, a free change for {-d.cost} XP back.{" "}
+          <span className="text-mist">
+            Lowered while the character's free changes as a new character are open, and already refunded; declining puts the dots back and takes the XP back.
+          </span>
+        </p>
+      )}
+      {d && !ex && !merit && !d.free_change && (
         <p className="mb-3 text-sm">
           {d.name}
           {d.detail && `: ${d.detail}`}
@@ -323,13 +335,14 @@ function MeritFlawAsk({ ask: m, pending }: { ask: NonNullable<QueuedApproval["di
         {name} ({points} {points === 1 ? "point" : "points"})
         {adding && !flaw && `, for ${m.cost} XP`}
         {adding && flaw && `, which gives ${-m.cost} XP`}
-        {!adding && flaw && `, for ${m.cost} XP: twice what it gave`}
-        {!adding && !flaw && ", with no XP back (MET: VTM p. 236)"}.
+        {!adding && flaw && (m.free_change ? `, a free change for ${m.cost} XP: what it gave` : `, for ${m.cost} XP: twice what it gave`)}
+        {!adding && !flaw && (m.free_change ? `, a free change for ${-m.cost} XP back` : ", with no XP back (MET: VTM p. 236)")}.
       </p>
       {pending && (
         <p className="text-mist">
           It isn't on the sheet yet. Approving {adding ? "puts it on the sheet" : "takes it off the sheet"}
-          {(adding && !flaw) || (!adding && !flaw) ? " and takes a downtime action" : ""}
+          {adding && !flaw ? " and takes a downtime action" : ""}
+          {!adding && !flaw ? (m.free_change ? ` and gives back ${-m.cost} XP` : " and takes a downtime action") : ""}
           {m.cost > 0 ? "; declining refunds the XP held." : "; declining leaves the sheet as it is."}
         </p>
       )}

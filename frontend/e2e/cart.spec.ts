@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab, tapMid } from "./support";
 
 /** The XP cart: changes on the sheet wait in it until Spend XP makes them. */
 
@@ -265,6 +265,70 @@ test("once accepted, a merit or flaw is asked of the home troupe: one declined, 
   await p.locator("main").getByRole("link", { name: "Experience", exact: true }).click();
   await expect(p.getByText("Rugged 3 → 0 (declined)")).toBeVisible();
   await expect(p.getByText("Low Pain Threshold 3 → 0", { exact: true })).toBeVisible();
+});
+
+test("with free changes by games played, a new character drops a skill for its full XP, which the troupe reviews", async ({ browser }) => {
+  test.slow();
+  const custodian = await person(browser, "freechg-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "freechg-lead");
+  const player = await person(browser, "freechg-play");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Second Thoughts ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  await backstoryOptional(custodian.page, troupeId);
+
+  // The lead gives new characters free changes for their first 3 games, under Rules.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules/free-changes`);
+  await l.getByRole("button", { name: "Change free changes" }).click();
+  await l.getByLabel(/^By games played/).check();
+  await l.getByLabel("Games attended").fill("3");
+  await l.getByRole("button", { name: "Save" }).click();
+  await expect(l.getByText("Until a character has attended 3 games after the troupe accepts it.")).toBeVisible();
+
+  // Philippa bought Stealth with XP before the troupe accepted her.
+  const p = player.page;
+  const id = await builtVampire(p, "Philippa", "Toreador", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]], disciplines: [["Auspex", 2], ["Celerity", 1], ["Presence", 1]] }, [
+    ["skills", "Stealth", 2],
+  ]);
+  const asked = await p.request.post(`/api/characters/${id}/home-troupe`, { headers, data: { troupe_id: troupeId } });
+  expect(asked.status(), await asked.text()).toBe(201);
+  const accepted = await l.request.post(`/api/approvals/${(await asked.json()).id}/approve`, { headers, data: {} });
+  expect(accepted.status(), await accepted.text()).toBe(200);
+
+  // Her sheet says how much of her free changes is left, and she drops Stealth for the 3 XP it cost.
+  await p.goto(`/characters/${id}`);
+  const free = p.getByRole("region", { name: "Free changes" });
+  // The sheet takes a while on a busy server.
+  await expect(free).toContainText("Free changes: 3 games left", { timeout: 15_000 });
+  await expect(free).toContainText("A game counts once the character checks in.");
+  await tapMid(p, "Lower Stealth");
+  await tapMid(p, "Lower Stealth");
+  const cart = p.getByRole("list", { name: "Changes in the cart" });
+  const line = cart.getByRole("listitem").filter({ hasText: "Stealth" });
+  await expect(line).toContainText("A free change: 3 XP back, which the home troupe reviews.", { timeout: 15_000 });
+  await expect(line).toContainText("Needs approval");
+  await p.screenshot(shots("free-change-cart"));
+  await p.getByRole("button", { name: "Spend XP" }).click();
+  await expect(p.getByText("Some of it waits for the home troupe's approval.")).toBeVisible();
+  await expect(p.getByText("Stealth 2 → 0 (a free change, 3 XP back)")).toBeVisible();
+
+  // The lead sees it in the queue as a free change, already refunded, and approves it.
+  await l.goto(`/troupes/${troupeId}/approvals`);
+  const card = l.locator("section").filter({ hasText: "Philippa" });
+  await expect(card.getByText("Free change", { exact: true })).toBeVisible();
+  await expect(card).toContainText("Stealth 2 → 0, a free change for 3 XP back.");
+  await l.screenshot(shots("free-change-approval"));
+  await card.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(card).toHaveCount(0);
+
+  await p.reload();
+  await expect(p.getByText("Stealth 2 → 0 (a free change, 3 XP back)")).toHaveCount(0);
+  await expect(p.locator('li[data-trait="Stealth"]')).toHaveCount(0);
+  await characterTab(p, "Experience");
+  await expect(p.getByText("Stealth 2 → 0, a free change")).toBeVisible();
 });
 
 test("changes on the sheet wait in a cart, and only Spend XP makes them, all or none", async ({ browser }) => {

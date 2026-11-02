@@ -42,6 +42,7 @@ import { added, pick, plannedRating, setRating, swap, swappedTo, unpick, useCart
 import { CartBar, CartPanel, FinishCreation, useCartPrices, useLeaveWarning } from "./CartPanel";
 import { DiablerieWaiting } from "./Diablerie";
 import { ExceptionMark, ExceptionsCard } from "./Exceptions";
+import { FreeChangesNotice } from "./FreeChanges";
 import { FreeChoicesRow } from "./FreeChoices";
 import { GivePanel } from "./GivePanel";
 import { HouseTraitsCard } from "./HouseTraitsCard";
@@ -380,6 +381,7 @@ export function SheetTab({
         {character.kind === "pc" && (
           <XpLine available={available} afterCart={lines.length > 0 && left != null} mine={mine} sheet={s} />
         )}
+        {s.free_changes && <FreeChangesNotice free={s.free_changes} />}
         {mine &&
           character.kind === "pc" &&
           !character.creation_complete &&
@@ -1095,7 +1097,8 @@ function TroupesCard({
                   ) : (
                     <>
                       {d.name}
-                      {d.detail && `: ${d.detail}`} {d.from_rating} → {d.to_rating} ({d.cost} XP)
+                      {d.detail && `: ${d.detail}`} {d.from_rating} → {d.to_rating}{" "}
+                      {d.free_change ? `(a free change, ${-d.cost} XP back)` : `(${d.cost} XP)`}
                     </>
                   )}
                 </span>
@@ -1124,6 +1127,9 @@ export function askedText(d: SheetOut["pending_disciplines"][number]): string {
   const flaw = d.category === "flaws";
   if (d.to_rating > d.from_rating) {
     return flaw ? `Take on ${name} (gives ${-d.cost} XP once approved)` : `Add ${name} (${d.cost} XP held)`;
+  }
+  if (d.free_change) {
+    return flaw ? `Buy off ${name} as a free change (${d.cost} XP held)` : `Remove ${name} as a free change (${-d.cost} XP back once approved)`;
   }
   return flaw ? `Buy off ${name} (${d.cost} XP held)` : `Remove ${name} (no XP back)`;
 }

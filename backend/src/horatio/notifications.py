@@ -151,6 +151,13 @@ def approval_items(
         elif approval.kind == "merit_flaw" and approval.id in disciplines:
             name, bought = disciplines[approval.id]
             summary = f"{character} asks {merit_flaw_ask(name, bought)}"
+        elif approval.id in disciplines and disciplines[approval.id][1].free_change:
+            name, bought = disciplines[approval.id]
+            detail = f": {bought.detail}" if bought.detail else ""
+            summary = (
+                f"{character} lowered {name}{detail} {bought.from_rating} → {bought.to_rating}"
+                f" as a free change ({-bought.cost} XP back)"
+            )
         elif approval.id in disciplines:
             name, bought = disciplines[approval.id]
             detail = f": {bought.detail}" if bought.detail else ""
@@ -188,6 +195,10 @@ def merit_flaw_ask(name: str, bought: DisciplinePurchase) -> str:
     if bought.to_rating > bought.from_rating:
         paid = f"{bought.cost} XP" if bought.cost >= 0 else f"gives {-bought.cost} XP"
         return f"to add {label} ({paid})"
+    if bought.free_change and bought.cost > 0:
+        return f"to buy off {label} as a free change ({bought.cost} XP)"
+    if bought.free_change:
+        return f"to remove {label} as a free change ({-bought.cost} XP back)"
     if bought.cost:
         return f"to buy off {label} ({bought.cost} XP)"
     return f"to remove {label} (no XP back)"

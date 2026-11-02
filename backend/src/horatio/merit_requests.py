@@ -15,6 +15,9 @@ sheet while it waits: the sheet shows it as awaiting approval.
   refused if that sheet can't.
 - **Approving** makes the change: a merit's effects begin, a flaw's end. Gaining a
   merit, or removing one, takes a downtime action (p. 236).
+- **Free changes** (horatio.free_changes): while the character's are open, removing a
+  merit refunds what its dots cost once approved, buying off a flaw costs what it gave
+  rather than twice that, and neither takes a downtime action; as during creation.
 - **Integral** merits and flaws, which stand for the character's Embrace, clan or
   bloodline (the rules' `creation_only`), can't be asked away, nor taken on.
 - **A quest** (horatio.quests): staff may answer with one instead of a yes or no. The
@@ -27,14 +30,14 @@ before acceptance the player changes merits and flaws freely.
 """
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Literal
 
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, free_choices, notifications, quests, sheets, xp_debt
+from horatio import audit, free_changes, free_choices, notifications, quests, sheets, xp_debt
 from horatio.models import (
     Approval,
     Character,
@@ -47,7 +50,7 @@ from horatio.models import (
     XpEntry,
 )
 from horatio.rules.model import FreeChoice, SheetTrait
-from horatio.rules.pricing import points
+from horatio.rules.pricing import PricingError, points, trait_cost
 
 OPEN_QUEST = ("draft", "active")
 
@@ -63,6 +66,8 @@ class Asked:
     from_rating: int
     to_rating: int
     choices: tuple[FreeChoice, ...] = ()
+    # A removal made as a free change (horatio.free_changes).
+    free: bool = False
 
     @property
     def key(self) -> sheets.TraitKey:
@@ -93,6 +98,13 @@ def integral(name: str, adding: bool) -> str:
 
 def what_happens(asked: Asked, cost: int) -> str:
     """What asking does with the XP, in words, for the cart to say before it is asked."""
+    if asked.free and asked.flaw:
+        return (
+            f"Asked of the home troupe as a free change: buying it off costs {cost} XP, "
+            "what it gave, held until they decide."
+        )
+    if asked.free:
+        return f"Asked of the home troupe as a free change: {-cost} XP back once they approve."
     if asked.adding and cost < 0:
         return f"Asked of the home troupe: it gives {-cost} XP once they approve."
     if asked.adding:
@@ -150,7 +162,8 @@ def ask(
             )
         if asked.flaw and rating:
             raise sheets.conflict(f"{name} is bought off whole, not in part.")
-        cost = buy_off(db, character, asked) if asked.flaw else 0
+        asked = replace(asked, free=free_changes.refunds(db, character, category.key, name))
+        cost = removal_cost(db, character, asked, existing)
     if cost > 0:
         balance = sheets.xp_balance(db, character)
         if balance < cost:
@@ -182,6 +195,7 @@ def ask(
                 {"grant": p.grant, "name": p.name, "detail": p.detail, "amount": p.amount}
                 for p in picks
             ],
+            free_change=asked.free,
         )
     )
     db.flush()
@@ -213,7 +227,32 @@ def would_cost(
     if row is None or rating >= current:
         return None
     asked = Asked(row.category, row.definition, detail, current, rating)
-    return buy_off(db, character, asked) if asked.flaw else 0
+    asked = replace(asked, free=free_changes.refunds(db, character, category, name))
+    return removal_cost(db, character, asked, row.trait)
+
+
+def removal_cost(db: Session, character: Character, asked: Asked, existing: CharacterTrait) -> int:
+    """What asking to remove a merit or flaw holds: nothing for a merit, and twice its
+    points to buy off a flaw. As a free change, a merit's dots refunded (negative) and
+    a flaw's points once."""
+    if not asked.free:
+        return buy_off(db, character, asked) if asked.flaw else 0
+    rules = sheets.rules_for(db, character)
+    sheet = [r.as_rules_trait() for r in sheets.sheet_rows(db, character)]
+    if asked.flaw:
+        held = SheetTrait(asked.category.key, asked.definition.name, asked.from_rating, 0)
+        return points(rules, sheet, held)
+    held = SheetTrait(
+        asked.category.key,
+        asked.definition.name,
+        asked.from_rating,
+        min(existing.free_rating, asked.from_rating),
+        asked.detail,
+    )
+    try:
+        return -trait_cost(rules, sheet, held).cost
+    except PricingError:
+        return 0
 
 
 def buy_off(db: Session, character: Character, asked: Asked) -> int:
@@ -269,8 +308,9 @@ def make(db: Session, actor: User, character: Character, asked: Asked) -> list[s
         if asked.choices:
             free_choices.set_choices(db, character, *asked.key, asked.choices)
     elif trait is not None:
-        # What it opened goes with it, and the XP spent on that is lost (p. 236).
-        sheets.lose_opened(db, actor, character, asked.key, refund=False)
+        # What it opened goes with it, and the XP spent on that is lost (p. 236), but
+        # for a free change.
+        sheets.lose_opened(db, actor, character, asked.key, refund=asked.free)
         if asked.to_rating == 0:
             sheets.forget_opened(db, character, asked.key)
             db.delete(trait)
@@ -326,6 +366,7 @@ def asked_of(db: Session, approval: Approval) -> tuple[Asked, DisciplinePurchase
         bought.from_rating,
         bought.to_rating,
         tuple(FreeChoice(**c) for c in bought.choices),
+        bought.free_change,
     )
     return asked, bought
 
@@ -360,11 +401,25 @@ def decided(
             db, character, asked.category, asked.to_rating - asked.from_rating, True, name
         )
         sheets.owe(db, staff, character, owed.actions, owed.reason(f"Gaining {name}"))
-    elif asked.category.downtime_actions and character.home_troupe_id is not None:
-        # Removing a merit takes a downtime action too (p. 236).
+    elif (
+        asked.category.downtime_actions and character.home_troupe_id is not None and not asked.free
+    ):
+        # Removing a merit takes a downtime action too (p. 236), but not as a free change.
         sheets.owe(db, staff, character, asked.category.downtime_actions, f"Removing {name}")
     if bought.cost < 0:
         db.add(xp_line(character, staff, asked, -bought.cost, {"approved": True}))
+    if asked.free:
+        audit.record(
+            db,
+            staff,
+            "sheet.free_change",
+            troupe_id=approval.troupe_id,
+            character_id=character.id,
+            name=asked.label,
+            from_rating=asked.from_rating,
+            to_rating=asked.to_rating,
+            refund=-bought.cost,
+        )
     db.flush()
 
 
