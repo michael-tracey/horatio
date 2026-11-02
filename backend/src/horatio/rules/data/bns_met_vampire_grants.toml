@@ -1020,6 +1020,12 @@ why = "A discipline's focus benefit without the focus; the focus is not given."
 
 [[rules_only]]
 category = "merits"
+name = "Athenaeum of the Hive"
+page = "Vol. 2, p. 259"
+why = "A discipline's focus benefit without the focus, in the opposed challenges on a Mental attribute the character starts; the focus is not given. Its two Academics specialisations a dot are in the checks."
+
+[[rules_only]]
+category = "merits"
 name = "Arcane Branding"
 page = "Vol. 2 Issue 1, p. 53"
 why = "Magic Resistance's benefits except against Tremere blood magic; the merit is not given, and cannot be held with it."

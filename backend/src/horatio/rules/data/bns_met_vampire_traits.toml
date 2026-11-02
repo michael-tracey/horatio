@@ -6558,6 +6558,12 @@ name = "Enhance the Wild Ride"
 
 [[traits]]
 category = "techniques"
+name = "Ensnaring Force"
+description = "Standard action and 1 or more Kineticism charges: Physical + Athletics against a target's Physical + Dodge to push them 2 steps, and 2 more for each extra charge; slamming into something solid hurts them and whoever they hit for 1."
+page_reference = "Vol. 2, p. 75"
+
+[[traits]]
+category = "techniques"
 name = "Escape Clause"
 
 [[traits]]
@@ -7173,6 +7179,13 @@ name = "Thaumaturgic Expertise"
 description = "Learn another Thaumaturgy path without a teacher at in-clan cost, though it is not in-clan. May be bought more than once."
 page_reference = "243"
 properties = { rating = 1, type = "Clan", requirement = "Tremere" }
+
+[[traits]]
+category = "merits"
+name = "Athenaeum of the Hive"
+description = "The memories of the souls the Baali have bought give you two Academics specialisations for each dot of Academics. In an opposed discipline challenge you start on a Mental attribute, you get the power's focus benefit without the focus."
+page_reference = "Vol. 2, p. 259"
+properties = { rating = 2, type = "Clan", requirement = "Baali" }
 
 [[traits]]
 category = "merits"
