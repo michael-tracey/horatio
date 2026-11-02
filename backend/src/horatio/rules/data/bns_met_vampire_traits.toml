@@ -114,7 +114,7 @@ name = "Computer Sciences"
 [[traits]]
 category = "academics_specializations"
 name = "Custom"
-properties = { requirement = "requires_specialization" }
+properties = { requires_specialization = true }
 
 [[traits]]
 category = "academics_specializations"
@@ -512,7 +512,7 @@ name = "Retainers"
 description = "Loyal servants, often ghouls, who serve you directly. A Retainer's test pool is twice its rating, with a health level and a specialty for each dot: +5 in one skill, or (just one) a discipline in-clan for you, to its rating. Bought once for each Retainer."
 page_reference = "104-105"
 # Bought once for each Retainer, each with its own name and up to 5 dots (p. 104).
-properties = { requirement = "requires_specialization", instance = "Retainer" }
+properties = { requires_specialization = true, instance = "Retainer" }
 
 [[traits]]
 category = "backgrounds"
@@ -526,7 +526,7 @@ category = "backgrounds"
 name = "Shared Haven"
 description = "A haven you share with others, each of you adding to it."
 page_reference = "102"
-properties = { requirement = "requires_specialization" }
+properties = { requires_specialization = true }
 
 [[traits]]
 category = "disciplines"
@@ -765,7 +765,7 @@ name = "Chariots"
 [[traits]]
 category = "drive_specializations"
 name = "Custom"
-properties = { requirement = "requires_specialization" }
+properties = { requires_specialization = true }
 
 [[traits]]
 category = "drive_specializations"
@@ -1633,7 +1633,7 @@ category = "flaws"
 name = "Derangement"
 description = "You suffer a derangement, a lasting mental disorder; name it in the trait's detail."
 page_reference = "266"
-properties = { rating = 2, type = "General", requirement = "requires_specialization" }
+properties = { rating = 2, type = "General", requires_specialization = true }
 
 [[traits]]
 category = "flaws"
@@ -1662,7 +1662,7 @@ category = "flaws"
 name = "Eerie Presence"
 description = "Radiate an otherworldly air, making people nervous. Can be taken up to 3 times for different aspects of character's strange nature, but each must be distinctive and unconnected from the rest."
 page_reference = "262"
-properties = { rating = 1, type = "General", requirement = "requires_specialization", visible = "Eerie Presence: {detail}" }
+properties = { rating = 1, type = "General", requires_specialization = true, visible = "Eerie Presence: {detail}" }
 
 [[traits]]
 category = "flaws"
@@ -2418,7 +2418,7 @@ name = "Bengali"
 [[traits]]
 category = "linguistics_specializations"
 name = "Custom"
-properties = { requirement = "requires_specialization" }
+properties = { requires_specialization = true }
 
 [[traits]]
 category = "linguistics_specializations"
@@ -2531,7 +2531,7 @@ name = "Cappadocians: Samedi"
 [[traits]]
 category = "lore_specializations"
 name = "Custom"
-properties = { requirement = "requires_specialization" }
+properties = { requires_specialization = true }
 
 [[traits]]
 category = "lore_specializations"
@@ -3693,10 +3693,12 @@ description = "Gain the innate status Purified, +3 to  resist all infernal power
 page_reference = "453"
 properties = { rating = 2, type = "Sabbat", pools = [{ pool = "defense", amount = 3, when = "against infernal powers and merits" }, { pool = "dodge", amount = 3, when = "against demons and infernalists" }] }
 
+# A 3-point merit that Neonates and Ancillae buy for 2 (p. 251): one entry for each
+# price, the cheaper only for them.
 [[traits]]
 category = "merits"
 name = "Intense Vitality"
-description = "Can spend 1 more Blood per turn than Generation allows."
+description = "Can spend 1 more Blood per turn than Generation allows. Neonates and Ancillae buy it for 2 points; elders take Intense Vitality (Elder), at the full 3."
 page_reference = "251"
 properties = { rating = 2, type = "General", requirement = "Neonate or Ancilla" }
 tags = ["vampire_only"]
@@ -3704,7 +3706,7 @@ tags = ["vampire_only"]
 [[traits]]
 category = "merits"
 name = "Intense Vitality (Elder)"
-description = "Can spend 1 more Blood per turn than Generation allows."
+description = "Can spend 1 more Blood per turn than Generation allows. The full 3 points, as elders pay; Neonates and Ancillae take Intense Vitality, for 2."
 page_reference = "251"
 properties = { rating = 3, type = "General" }
 tags = ["vampire_only"]
@@ -3756,7 +3758,7 @@ category = "merits"
 name = "Keeper of a Sacred Text"
 description = "Free Lore specialization above what you are normally allowed in one of; Sabbat Doctrine, Quotes of Caine, or Cainite Heresy. Receive a +5 bonus on pools involving your bonus Lore specialization, and the innate status Anointed."
 page_reference = "453"
-properties = { rating = 1, type = "Sabbat", requirement = "requires_specialization" }
+properties = { rating = 1, type = "Sabbat", requires_specialization = true }
 
 [[traits]]
 category = "merits"
@@ -3855,7 +3857,7 @@ category = "merits"
 name = "Made"
 description = "All members of the IA that aren’t Giovanni, Setite, or Lasombra suffer from a Lesser Status Ban. With this merit, one of the three founding clans have declared you to be proper member of their clan. You are treated as a full member of their clan and no longer suffer the Lesser Status Ban, but are expected to follow the dictates of your sponsoring clan."
 unsourced = "No book we have describes it (not MET: VTM, Vol. 2 or Vol. 2 Issue 1); it came from Yorick."
-properties = { rating = 1, type = "Independent Alliance", requirement = "requires_specialization" }
+properties = { rating = 1, type = "Independent Alliance", requires_specialization = true }
 
 [[traits]]
 category = "merits"
@@ -4002,14 +4004,14 @@ category = "merits"
 name = "Necromantic Prowess"
 description = "Learn another path of Necromancy besides the Ash Path without a teacher, at in-clan cost (it is not in-clan). May be bought more than once."
 page_reference = "Vol. 2, p. 61"
-properties = { rating = 1, type = "Clan", requirement = "requires_specialization" }
+properties = { rating = 1, type = "Clan", requirement = "Nagaraja", requires_specialization = true }
 
 [[traits]]
 category = "merits"
 name = "Necromantic Training"
 description = "Learn one path of Necromancy at out-of-clan cost; without this merit you can never have Necromancy."
 page_reference = "252"
-properties = { rating = 5, type = "General", requirement = "requires_specialization" }
+properties = { rating = 5, type = "General", requires_specialization = true }
 tags = ["vampire_only"]
 
 [[traits]]
@@ -4778,7 +4780,7 @@ category = "merits"
 name = "Thaumaturgic Training"
 description = "Learn one path of Thaumaturgy at out-of-clan cost; without this merit you can never have Thaumaturgy."
 page_reference = "253"
-properties = { rating = 4, type = "General", requirement = "requires_specialization" }
+properties = { rating = 4, type = "General", requires_specialization = true }
 tags = ["vampire_only"]
 
 [[traits]]
@@ -6284,7 +6286,7 @@ category = "skills"
 name = "Crafts"
 description = "Making things with skill, from fine art to mechanical repair. Taken for one field at a time, such as Carpentry or Painting. 2 downtime actions, to make something and sell it, give you +1 Resources for a month, up to 5."
 page_reference = "93"
-properties = { attribute = "Mental", requirement = "requires_specialization" }
+properties = { attribute = "Mental", requires_specialization = true }
 
 [[traits]]
 category = "skills"
@@ -6376,14 +6378,14 @@ category = "skills"
 name = "Performance"
 description = "Entertaining an audience with talent and technique. Taken for one field at a time, such as Singing or Acting. 2 downtime actions, to promote a performance and give it, give you +1 Fame for a month, up to 5."
 page_reference = "96"
-properties = { attribute = "Social", requirement = "requires_specialization" }
+properties = { attribute = "Social", requires_specialization = true }
 
 [[traits]]
 category = "skills"
 name = "Science"
 description = "Formal study of a scientific field. Taken for one field at a time, such as Chemistry or Physics. Each Science gives you 1 more downtime action, spent only on something its field covers."
 page_reference = "96-97"
-properties = { attribute = "Mental", requirement = "requires_specialization" }
+properties = { attribute = "Mental", requires_specialization = true }
 
 [[traits]]
 category = "skills"
@@ -6731,7 +6733,7 @@ name = "Predatory Senses"
 [[traits]]
 category = "techniques"
 name = "Press-Ganged Coven"
-properties = { requirement = "requires_specialization" }
+properties = { requires_specialization = true }
 
 [[traits]]
 category = "techniques"
@@ -6861,7 +6863,7 @@ name = "Terror of Tentacles"
 [[traits]]
 category = "techniques"
 name = "That Damn Cat"
-properties = { requirement = "requires_specialization" }
+properties = { requires_specialization = true }
 
 [[traits]]
 category = "techniques"
