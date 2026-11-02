@@ -35,6 +35,7 @@ function entry(id: string, undone: boolean): ShownEntry {
     by_staff: false,
     undone,
     undoes: null,
+    upkeep: false,
   };
 }
 

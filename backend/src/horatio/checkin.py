@@ -14,7 +14,8 @@ a reset ends the last game, kept with its log, and starts the next. Blood starts
 the Play View has it: the troupe's "Blood at the start of a game", or half if the
 character fed short and the troupe tracks feeding. Willpower starts full after a
 complete day's rest (MET: VtM core, p. 288). The player says whether the character
-had one; if not, it starts where the last game left it.
+had one; if not, it starts where the last game left it. Checking in begins the night,
+so the troupe's Retainer upkeep is taken then (horatio.retainer_upkeep).
 
 Attendance is fact, apart from the RSVP (intent), and is what staff award a game's
 XP from (horatio.api.checkin). The book suggests 3 to 5 XP a game, and no more than
@@ -37,7 +38,7 @@ from datetime import UTC, date, datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, free_changes, play, play_status
+from horatio import audit, free_changes, play, play_status, retainer_upkeep
 from horatio.models import Character, GameAttendance, PlayGame, ScheduledGame, User, XpEntry
 from horatio.sheets import conflict, unprocessable
 
@@ -161,6 +162,7 @@ def start_night(
     night = play.start_game(db, character)
     night.willpower_start = None if rested else left_willpower(db, character, night)
     db.flush()
+    retainer_upkeep.begin(db, character, actor, night, at=now())
     return night
 
 

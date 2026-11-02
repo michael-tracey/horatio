@@ -22,6 +22,7 @@ from horatio import (
     play_status,
     rack,
     resonance,
+    retainer_upkeep,
     territories,
 )
 from horatio.api.book_traits import BookTraitOut, book_traits_out
@@ -1432,6 +1433,10 @@ def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
                     book_text=optional,
                 )
             )
+    found += [
+        HouseSettingOut(name=name, text=text, book_text=book)
+        for name, text, book in retainer_upkeep.house_settings(troupe)
+    ]
     if troupe.influence_lookback_days != 90:
         found.append(
             HouseSettingOut(

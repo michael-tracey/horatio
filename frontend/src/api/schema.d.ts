@@ -2539,6 +2539,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/retainers/{retainer_id}/neglected": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Clear Neglect
+         * @description Clear a Retainer's neglect, once the troupe has dealt with it. Its staff do.
+         */
+        delete: operations["clear_neglect_api_characters__character_id__retainers__retainer_id__neglected_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/retire": {
         parameters: {
             query?: never;
@@ -7468,6 +7488,27 @@ export interface paths {
          * @description The custodian reopens an archived troupe. Its characters do not come back.
          */
         post: operations["reopen_troupe_api_troupes__troupe_id__reopen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/retainer-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Retainer Rules
+         * @description Anyone signed in may read them, as they may the troupe's other house rules.
+         */
+        get: operations["read_retainer_rules_api_troupes__troupe_id__retainer_rules_get"];
+        /** Set Retainer Rules */
+        put: operations["set_retainer_rules_api_troupes__troupe_id__retainer_rules_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -15472,6 +15513,11 @@ export interface components {
             undoes: string | null;
             /** Undone */
             undone: boolean;
+            /**
+             * Upkeep
+             * @default false
+             */
+            upkeep: boolean;
         };
         /** LogIn */
         LogIn: {
@@ -19160,6 +19206,11 @@ export interface components {
             /** Back On */
             back_on?: string | null;
             /**
+             * Banked Xp
+             * @default 0
+             */
+            banked_xp: number;
+            /**
              * Blood
              * @default 0
              */
@@ -19210,6 +19261,8 @@ export interface components {
             lost_on: string | null;
             /** Name */
             name: string;
+            /** Neglected On */
+            neglected_on?: string | null;
             /**
              * Note
              * @default
@@ -19219,6 +19272,8 @@ export interface components {
             npc_id: string | null;
             /** Npc Name */
             npc_name: string | null;
+            /** Npc Xp */
+            npc_xp?: number | null;
             /** Page */
             page?: string | null;
             /**
@@ -19241,6 +19296,8 @@ export interface components {
              * @default
              */
             tracker: string;
+            /** Upkeep */
+            upkeep?: string | null;
         };
         /** RetainerPower */
         RetainerPower: {
@@ -19250,6 +19307,22 @@ export interface components {
             name: string;
             /** Note */
             note: string;
+        };
+        /** RetainerRulesIn */
+        RetainerRulesIn: {
+            /** Growth */
+            growth?: number | null;
+            upkeep?: components["schemas"]["UpkeepRule"] | null;
+        };
+        /** RetainerRulesOut */
+        RetainerRulesOut: {
+            /** Growth */
+            growth?: number | null;
+            /** Growth Text */
+            growth_text: string | null;
+            upkeep?: components["schemas"]["UpkeepRule"] | null;
+            /** Upkeep Text */
+            upkeep_text: string | null;
         };
         /**
          * RetainerTrackOut
@@ -22116,6 +22189,33 @@ export interface components {
             email: string;
             /** Subscribed */
             subscribed: boolean;
+        };
+        /** UpkeepRule */
+        UpkeepRule: {
+            /** Amount */
+            amount: number;
+            /**
+             * Ghouls Only
+             * @default false
+             */
+            ghouls_only: boolean;
+            /**
+             * Month At
+             * @default game
+             * @enum {string}
+             */
+            month_at: "game" | "downtime";
+            /**
+             * Per
+             * @default game
+             * @enum {string}
+             */
+            per: "game" | "month";
+            /**
+             * Pool
+             * @enum {string}
+             */
+            pool: "blood" | "willpower";
         };
         /** ValidationError */
         ValidationError: {
@@ -27623,6 +27723,38 @@ export interface operations {
                 "application/json": components["schemas"]["RetainersIn"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetainersOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clear_neglect_api_characters__character_id__retainers__retainer_id__neglected_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                retainer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -37692,6 +37824,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_retainer_rules_api_troupes__troupe_id__retainer_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetainerRulesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_retainer_rules_api_troupes__troupe_id__retainer_rules_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetainerRulesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetainerRulesOut"];
                 };
             };
             /** @description Validation Error */

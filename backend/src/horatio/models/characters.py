@@ -68,6 +68,9 @@ class Character(Imported, Record):
     # Beast traits a diablerie adds to its next Play View game (horatio.diablerie),
     # which start there and are cleared when that game starts.
     beast_next_game: Mapped[int] = mapped_column(default=0, server_default="0")
+    # Retainer upkeep a downtime cycle's close charged (horatio.retainer_upkeep),
+    # taken from its next Play View game as that night begins; None for none.
+    upkeep_next_game: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     # With the Rack, a feeding restriction such as Prey Exclusion or the Ventrue clan
     # weakness, as staff set it (horatio.rack, Vol. 2, p. 301): the last digits of the
     # Feeding Card numbers it may "only" or may "never" feed from, as

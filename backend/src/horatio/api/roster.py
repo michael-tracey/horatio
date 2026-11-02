@@ -490,6 +490,8 @@ MESSAGES: dict[str, str] = {
     "house.languages": "{actor} set how many languages Linguistics gives: {setting}.",
     "house.clan_names": "{actor} chose to call the Assamites {name}.",
     "house.feeding": "{actor} set feeding to {feeding}, with optional rules: {rules}.",
+    "house.retainer_rules": "{actor} set the house rules for Retainers: upkeep {upkeep};"
+    " growth {growth}.",
     "house.territory_saved": "{actor} added the feeding territory {name} ({size}): {holders}.",
     "house.territory_changed": "{actor} changed the feeding territory {name} ({size}): {holders}.",
     "house.territory_archived": "{actor} took the feeding territory {name} off the list.",
@@ -592,6 +594,13 @@ MESSAGES: dict[str, str] = {
     "retainer.restored": "{actor} marked {name}, one of {character}'s Retainers, as serving again.",
     "retainer.linked": "{actor} linked {name}, one of {character}'s Retainers, to an NPC.",
     "retainer.unlinked": "{actor} unlinked {name}, one of {character}'s Retainers, from its NPC.",
+    "retainer.neglected": "{name}, one of {character}'s Retainers, is neglected: its {cost}"
+    " upkeep wasn't paid.",
+    "retainer.neglect_cleared": "{actor} cleared the neglect of {name}, one of {character}'s"
+    " Retainers.",
+    "retainer.upkeep_charged": "{actor} closed {cycle}, charging {character} {amount} of"
+    " Retainer upkeep for the next game.",
+    "retainer.grew": "{name}, one of {character}'s Retainers, gained {xp} XP ({where}).",
     "identity.accepted": "{actor} noted {character}'s identity {name} as Accepted by {by}.",
     "identity.unaccepted": "{actor} noted {character}'s identity {name} as Accepted by no one.",
     "character.visible_note": "{actor} set what others see on {character}'s badge: {note}",

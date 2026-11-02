@@ -120,6 +120,9 @@ class Troupe(Imported, Record):
     # may make in a downtime cycle. While off, players see nothing of them.
     quests_enabled: Mapped[bool] = mapped_column(default=False, server_default="false")
     quest_requests_per_cycle: Mapped[int] = mapped_column(default=1, server_default="1")
+    # House rules for Retainers (horatio.retainer_upkeep): upkeep, in Blood or
+    # Willpower, and growth, in XP a month. Each is off while it is absent.
+    retainer_rules: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
     # House rule: free changes for new characters (horatio.free_changes). "none" locks
     # a character on acceptance; "date" leaves it open for `free_changes_days` days
     # from acceptance, "games" until it has attended `free_changes_games` games. Only

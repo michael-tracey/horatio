@@ -45,6 +45,9 @@ class PlayGame(Record):
     # abiding status, a title's status chosen for it, the titles whose holders are
     # away, and the titles it held as the game began.
     status: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # Retainer upkeep as the night began (horatio.retainer_upkeep): what was taken,
+    # and the Retainers left neglected. None until the night begins.
+    upkeep: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
 class PlayEvent(Record):
@@ -88,6 +91,9 @@ class PlayEvent(Record):
     # went to, and its history's event, so Undo takes it back; or why it was refused.
     # On an undo, why the item stayed where it was, if it did.
     equipment: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    # Retainer upkeep the server took as the night began (horatio.retainer_upkeep):
+    # the period and the Retainers paid for, or, on a note, those left neglected.
+    upkeep: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
 class PlayCounter(Record):

@@ -21,6 +21,7 @@ import { LanguagesSection } from "./LanguagesSection";
 import { LocationRulesSection } from "./LocationRulesSection";
 import { OwnChecks } from "./OwnChecks";
 import { QuestSettings } from "./QuestSettings";
+import { RetainerRules } from "./RetainerRules";
 import { StartingSection } from "./StartingSection";
 import { TeacherRules } from "./TeacherRules";
 import { WrittenRulesSection } from "./WrittenRulesSection";
@@ -83,6 +84,7 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
           { to: `${base}/book-traits`, label: "Book traits" },
           { to: `${base}/locations`, label: "Locations" },
           { to: `${base}/quests`, label: "Quests" },
+          { to: `${base}/retainers`, label: "Retainers" },
           { to: `${base}/backstories`, label: "Backstories" },
           { to: `${base}/free-changes`, label: "Free changes" },
           { to: `${base}/teachers`, label: "Teachers" },
@@ -99,6 +101,7 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
         <Route path="book-traits" element={<BookTraitsSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="locations" element={<LocationRulesSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="quests" element={<QuestSettings troupeId={troupeId} canEdit={canEdit} />} />
+        <Route path="retainers" element={<RetainerRules troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="backstories" element={<BackstorySettings troupeId={troupeId} />} />
         <Route path="free-changes" element={<FreeChangesSettings troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="teachers" element={<TeacherRules troupeId={troupeId} canEdit={canEdit} />} />
