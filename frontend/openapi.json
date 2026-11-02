@@ -2773,6 +2773,51 @@
         "title": "BanOut",
         "type": "object"
       },
+      "BannedHolderOut": {
+        "description": "A character playing by the troupe's rules who holds a trait it bans.",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "excepted": {
+            "title": "Excepted",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "splat": {
+            "title": "Splat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "splat",
+          "category",
+          "name",
+          "detail",
+          "excepted"
+        ],
+        "title": "BannedHolderOut",
+        "type": "object"
+      },
       "BlockChoicesOut": {
         "properties": {
           "entries": {
@@ -3094,6 +3139,135 @@
           "file"
         ],
         "title": "Body_upload_portrait_api_troupes__troupe_id__portrait_post",
+        "type": "object"
+      },
+      "BookTraitChange": {
+        "description": "A change to one book trait. Only the fields given change; the rest stay.",
+        "properties": {
+          "ban_reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ban Reason"
+          },
+          "banned": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Banned"
+          },
+          "category": {
+            "maxLength": 100,
+            "title": "Category",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "splat": {
+            "default": "vampire",
+            "title": "Splat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "BookTraitChange",
+        "type": "object"
+      },
+      "BookTraitOut": {
+        "description": "A troupe's change to one book trait.",
+        "properties": {
+          "ban_reason": {
+            "title": "Ban Reason",
+            "type": "string"
+          },
+          "banned": {
+            "title": "Banned",
+            "type": "boolean"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "category_name": {
+            "title": "Category Name",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "splat": {
+            "title": "Splat",
+            "type": "string"
+          },
+          "splat_label": {
+            "title": "Splat Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "splat",
+          "splat_label",
+          "category",
+          "category_name",
+          "name",
+          "page",
+          "banned",
+          "ban_reason"
+        ],
+        "title": "BookTraitOut",
+        "type": "object"
+      },
+      "BookTraitsOut": {
+        "properties": {
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/BookTraitOut"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "holders": {
+            "items": {
+              "$ref": "#/components/schemas/BannedHolderOut"
+            },
+            "title": "Holders",
+            "type": "array"
+          }
+        },
+        "required": [
+          "changes",
+          "holders"
+        ],
+        "title": "BookTraitsOut",
         "type": "object"
       },
       "BudgetChange": {
@@ -13900,6 +14074,14 @@
           "backstory_required": {
             "title": "Backstory Required",
             "type": "boolean"
+          },
+          "book_traits": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BookTraitOut"
+            },
+            "title": "Book Traits",
+            "type": "array"
           },
           "checks": {
             "items": {
@@ -25410,6 +25592,14 @@
             ],
             "title": "Asked At"
           },
+          "banned": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Banned",
+            "type": "array"
+          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -32497,6 +32687,25 @@
         "title": "TraitChange",
         "type": "object"
       },
+      "TraitChangeOut": {
+        "description": "A troupe's change to a book trait (horatio.book_traits): banned in the troupe,\nwith the reason its players see (\"\" for none).",
+        "properties": {
+          "ban_reason": {
+            "title": "Ban Reason",
+            "type": "string"
+          },
+          "banned": {
+            "title": "Banned",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "banned",
+          "ban_reason"
+        ],
+        "title": "TraitChangeOut",
+        "type": "object"
+      },
       "TraitCheckOut": {
         "description": "A check, in the words a player reads when a change breaks it: about one trait,\nevery trait whose name starts with `prefix`, or (neither) a whole category.",
         "properties": {
@@ -32671,6 +32880,16 @@
           "category": {
             "title": "Category",
             "type": "string"
+          },
+          "changed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TraitChangeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "choices": {
             "anyOf": [
@@ -51948,6 +52167,102 @@
         "summary": "Banner File",
         "tags": [
           "troupe profiles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/book-traits": {
+      "get": {
+        "description": "The troupe's changes to book traits, and the characters holding a trait it bans.",
+        "operationId": "list_book_traits_api_troupes__troupe_id__book_traits_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookTraitsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Book Traits",
+        "tags": [
+          "book traits"
+        ]
+      },
+      "put": {
+        "description": "Change a book trait in the troupe: ban it, with a reason, or lift the ban. Those\nwho hold it keep it.",
+        "operationId": "change_book_trait_api_troupes__troupe_id__book_traits_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookTraitChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookTraitOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Book Trait",
+        "tags": [
+          "book traits"
         ]
       }
     },

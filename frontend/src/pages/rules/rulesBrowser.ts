@@ -62,8 +62,10 @@ export type Entry = {
   prices: PriceOut[];
   /** The catalogue's entry; null for a power. */
   trait: TraitOut | null;
-  /** Barred by the troupe's house rules. */
+  /** Barred by the troupe's house rules: a price of "cannot be bought", or a ban. */
   barred: NotAllowedOut | null;
+  /** Banned in the troupe (horatio.book_traits), its reason in `barred`. */
+  banned: boolean;
   /** For a clan or bloodline: how rare it is. */
   rarity: RarityOut | null;
   /** What a search looks in, in lower case. */
@@ -129,7 +131,8 @@ export function entries(data: RulesBrowserOut): Entry[] {
       checks: checks.get(key) ?? [],
       prices: prices.get(key) ?? [],
       trait: t,
-      barred: barred.get(key) ?? null,
+      barred: t.changed?.banned ? { category: t.category, name: t.name, text: t.changed.ban_reason || null } : (barred.get(key) ?? null),
+      banned: !!t.changed?.banned,
       rarity: t.category === "clan" ? (rarity.get(t.name) ?? rarity.get(family(t.name)) ?? null) : null,
       text: [t.name, t.description, t.requirement, t.kind, t.house?.summary, t.house_rule].filter(Boolean).join(" ").toLowerCase(),
     });
@@ -154,6 +157,7 @@ function powerEntry(power: DisciplinePowerOut, discipline: TraitOut, clans: stri
     prices: [],
     trait: null,
     barred: null,
+    banned: false,
     rarity: null,
     text: `${power.name} ${power.discipline} ${power.note}`.toLowerCase(),
   };

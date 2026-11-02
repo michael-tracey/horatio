@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from horatio import audit, clan_merits, diablerie, feeding, rack, resonance, territories
+from horatio.api.book_traits import BookTraitOut, book_traits_out
 from horatio.api.downtimes import staff_troupe
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
@@ -1122,6 +1123,8 @@ class HouseRulesOut(BaseModel):
     # approved before a character is accepted here.
     backstory_mode: str
     backstory_required: bool
+    # Its changes to book traits: those it bans (horatio.book_traits).
+    book_traits: list[BookTraitOut] = []
 
 
 def splat_house_rules(db: DbSession, troupe_id: uuid.UUID, splat: str) -> SplatHouseRulesOut:
@@ -1312,4 +1315,5 @@ def read_house_rules(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> 
         other=other_settings(db, troupe),
         backstory_mode=troupe.backstory_mode,
         backstory_required=troupe.backstory_required,
+        book_traits=book_traits_out(db, troupe),
     )

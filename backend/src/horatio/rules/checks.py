@@ -101,7 +101,7 @@ from typing import Any, Literal, cast
 
 from horatio.rules.conditions import OPERATORS
 from horatio.rules.conditions import describe as describe_facts
-from horatio.rules.model import SheetTrait
+from horatio.rules.model import SheetTrait, TraitChangeData
 
 Strength = Literal["refuse", "complete", "review", "note"]
 Condition = Mapping[str, Any]
@@ -153,6 +153,9 @@ NO_CONTEXT = Context()
 # The end of the key of a check derived from a merit's requirement (a clan merit
 # only for that clan). A merit another trait gives is not held to it.
 REQUIREMENT_KEY = "/requirement"
+
+# The start of the key of the check a troupe's ban on a trait makes (ban_check).
+BAN_KEY = "ban/"
 
 
 @dataclass(frozen=True)
@@ -570,3 +573,23 @@ def check_from_dict(raw: Mapping[str, Any]) -> CheckData:
 
 def check_to_dict(check: CheckData) -> dict[str, Any]:
     return {k: v for k, v in vars(check).items() if v is not None and v != ""}
+
+
+def ban_check(change: TraitChangeData) -> CheckData:
+    """The check a troupe's ban on a book trait makes (horatio.book_traits): it
+    refuses the trait to the troupe's characters, as any refusing check does, so
+    lists show it greyed with the reason. Staff building an NPC may still use it;
+    an exception sets it aside for one character, and those who already hold it
+    keep it, flagged on their sheet."""
+    reason = change.ban_reason.strip()
+    return CheckData(
+        key=f"{BAN_KEY}{change.category}/{change.name}",
+        category=change.category,
+        name=change.name,
+        forbids={"npc": False},
+        message="{name} is banned in this troupe." + (f" {reason}" if reason else ""),
+    )
+
+
+def is_ban(check: CheckData) -> bool:
+    return check.key.startswith(BAN_KEY)

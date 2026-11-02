@@ -121,6 +121,15 @@ describe("applyFilters", () => {
     expect(names(applyFilters(barred, { ...none, section: "merits" }))).toEqual(["Absent Sway", "Volgirre Grace"]);
     expect(names(applyFilters(barred, { ...none, section: "merits", barred: true }))).toContain("Calm Heart");
   });
+
+  it("treats a trait the troupe bans as not allowed, with its reason", () => {
+    const base = data();
+    const traits = base.catalogue.traits.map((t) => (t.name === "Calm Heart" ? { ...t, changed: { banned: true, ban_reason: "Not here." } } : t));
+    const found = entries({ ...base, catalogue: { ...base.catalogue, traits } });
+    expect(names(applyFilters(found, { ...none, section: "merits" }))).toEqual(["Absent Sway", "Volgirre Grace"]);
+    const calm = found.find((e) => e.name === "Calm Heart")!;
+    expect([calm.banned, calm.barred?.text]).toEqual([true, "Not here."]);
+  });
 });
 
 describe("sectionCounts and ratingChoices", () => {

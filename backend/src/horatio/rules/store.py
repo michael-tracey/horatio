@@ -22,6 +22,7 @@ from horatio.models import (
     StartingTrait,
     TraitCategory,
     TraitDefinition,
+    TraitOverride,
     Troupe,
 )
 from horatio.rules.checks import check_from_dict, check_to_dict
@@ -53,6 +54,7 @@ from horatio.rules.model import (
     HouseTraitData,
     RuleSetData,
     StartingTraitData,
+    TraitChangeData,
     TraitData,
     TroupeRules,
     house_page,
@@ -500,6 +502,42 @@ def set_check_override(
 
 
 @changes_rules
+def change_book_trait(
+    session: Session, troupe_id: uuid.UUID, definition_id: uuid.UUID, changes: Mapping[str, Any]
+) -> TraitOverride | None:
+    """Set some of a troupe's changes to one book trait (horatio.book_traits), as
+    columns of its row; the rest stay. A row left changing nothing is removed, and
+    None returned."""
+    row = session.scalar(
+        select(TraitOverride).where(
+            TraitOverride.troupe_id == troupe_id,
+            TraitOverride.trait_definition_id == definition_id,
+        )
+    )
+    if row is None:
+        row = TraitOverride(troupe_id=troupe_id, trait_definition_id=definition_id)
+        session.add(row)
+    for column, value in changes.items():
+        setattr(row, column, value)
+    if not row.banned:
+        row.ban_reason = ""
+    if changes_nothing(row):
+        if row in session.new:
+            session.expunge(row)
+        else:
+            session.delete(row)
+        session.flush()
+        return None
+    session.flush()
+    return row
+
+
+def changes_nothing(row: TraitOverride) -> bool:
+    """Whether a troupe's row for a book trait is left with no change in it."""
+    return not row.banned
+
+
+@changes_rules
 def add_house_rule(
     session: Session, troupe_id: uuid.UUID, splat: str, rule: CostRuleData
 ) -> CostRule:
@@ -840,7 +878,31 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         else {},
         house_traits=house_data,
         unmerged=unmerged if data is not unmerged else None,
+        trait_changes=trait_changes_of(session, troupe_id, definition_keys),
     )
+
+
+def trait_changes_of(
+    session: Session,
+    troupe_id: uuid.UUID | None,
+    definition_keys: Mapping[uuid.UUID, tuple[str, str]],
+) -> dict[tuple[str, str], TraitChangeData]:
+    """The troupe's changes to the rule set's traits (horatio.book_traits), by
+    (category, name): those of this rule set alone, as each splat has its own."""
+    if troupe_id is None:
+        return {}
+    found: dict[tuple[str, str], TraitChangeData] = {}
+    for row in session.scalars(
+        select(TraitOverride).where(
+            TraitOverride.troupe_id == troupe_id,
+            TraitOverride.trait_definition_id.in_(definition_keys),
+        )
+    ):
+        category, name = definition_keys[row.trait_definition_id]
+        found[(category, name)] = TraitChangeData(
+            category=category, name=name, banned=row.banned, ban_reason=row.ban_reason
+        )
+    return found
 
 
 def house_traits_of(

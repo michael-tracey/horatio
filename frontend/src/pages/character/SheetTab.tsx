@@ -23,6 +23,7 @@ import {
   Select,
 } from "../../components/ui";
 import { HouseMark } from "../../components/HouseMark";
+import { BannedMark } from "../../components/TroupeChange";
 import { StepButton, StepButtons } from "../../components/StepButton";
 import { InfoButton } from "../../components/InfoButton";
 import { houseLabels } from "../../houseTraits";
@@ -831,6 +832,7 @@ function TraitRow({
               <GrantedBy trait={trait} points />
               <Opened trait={trait} />
               {exception && <ExceptionMark exception={exception} />}
+              <BannedMark change={about?.changed} />
               {houseLabel && <HouseMark label={houseLabel} summary={houseSummary} />}
               {trait.house?.applied && (
                 <span className="ml-2 text-xs text-mist">given by staff{trait.house.applied.free ? ", free" : ""}</span>
@@ -919,6 +921,7 @@ function TraitRow({
             <GrantedBy trait={trait} />
             <Opened trait={trait} />
             {exception && <ExceptionMark exception={exception} />}
+            <BannedMark change={about?.changed} />
           </>
         }
         description={about?.description}
