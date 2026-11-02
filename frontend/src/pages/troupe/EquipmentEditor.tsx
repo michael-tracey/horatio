@@ -6,6 +6,7 @@ import { Button, ErrorText, Field, Input, Loading, Notice, Select, Textarea } fr
 import { useAction } from "../../hooks";
 import { pageLabel } from "../../components/TraitInfo";
 import { NEW_ITEM, body, factsText, fromItem, fromTemplate, gradesOf, qualityChoices, qualityOf, type Draft, type Grade, type Kind } from "./equipment";
+import { expiryBody, fromExpiry, type ExpiryDraft } from "./expiry";
 
 /** The book's rules for a splat's equipment: kinds, grades, qualities and templates. */
 export function useEquipmentRules(splat: string) {
@@ -21,6 +22,14 @@ export function useTroupeTemplates(troupeId: string) {
   return useQuery({
     queryKey: ["equipment-templates", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/equipment/templates", { params: { path: { troupe_id: troupeId } } })),
+  });
+}
+
+/** Whether the troupe lets items expire, and its open downtime cycle an item can expire with (#443). */
+export function useExpiryChoices(troupeId: string) {
+  return useQuery({
+    queryKey: ["item-expiry", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/equipment/expiry", { params: { path: { troupe_id: troupeId } } })),
   });
 }
 
@@ -60,6 +69,10 @@ export function EquipmentEditor({
   const [reason, setReason] = useState("");
   const [savedTemplate, setSavedTemplate] = useState<string | null>(null);
   const set = (change: Partial<Draft>) => setDraft({ ...draft, ...change });
+  const choices = useExpiryChoices(troupeId);
+  const [expiry, setExpiry] = useState<ExpiryDraft>(fromExpiry(item?.expiry));
+  // Sent only while the troupe lets items expire: left out, a change keeps the expiry.
+  const expires = choices.data?.on ? { expiry: expiryBody(expiry) } : {};
 
   const checked = body(draft);
   const check = useQuery({
@@ -79,14 +92,14 @@ export function EquipmentEditor({
       await unwrap(
         api.PUT("/api/troupes/{troupe_id}/equipment/{item_id}", {
           params: { path: { troupe_id: troupeId, item_id: item.id } },
-          body: { ...checked, reason },
+          body: { ...checked, reason, ...expires },
         }),
       );
     } else {
       await unwrap(
         api.POST("/api/troupes/{troupe_id}/equipment", {
           params: { path: { troupe_id: troupeId } },
-          body: { ...checked, character_id: holderId, template },
+          body: { ...checked, character_id: holderId, template, ...expires },
         }),
       );
     }
@@ -102,7 +115,7 @@ export function EquipmentEditor({
   if (rules.error) return <ErrorText error={rules.error} />;
   const book = rules.data;
   const own = templates.data ?? [];
-  const choices = qualityChoices(book, draft.kind, draft.qualities);
+  const qualities = qualityChoices(book, draft.kind, draft.qualities);
   const problems = check.data?.problems ?? [];
   const label = item ? `Change ${item.name}` : "Give equipment";
   const text = draft.kind === "text";
@@ -250,7 +263,7 @@ export function EquipmentEditor({
               }}
             >
               <option value="">Choose…</option>
-              {choices.map((q) => (
+              {qualities.map((q) => (
                 <option key={q.name} value={q.name}>
                   {q.name}
                 </option>
@@ -318,6 +331,8 @@ export function EquipmentEditor({
         )}
       </div>
 
+      {choices.data?.on && <ExpiryFields expiry={expiry} setExpiry={setExpiry} cycleName={choices.data.cycle_name} />}
+
       <Field label="Description (optional)" hint="Where it came from, or what it looks like. Its holder's player sees it.">
         <Textarea rows={2} value={draft.description} onChange={(e) => set({ description: e.target.value })} />
       </Field>
@@ -345,5 +360,41 @@ export function EquipmentEditor({
         </Button>
       </div>
     </form>
+  );
+}
+
+/** When the item expires, if ever (#443): on a day, after the holder's next games, or with the open downtime cycle; and what happens then. */
+function ExpiryFields({ expiry, setExpiry, cycleName }: { expiry: ExpiryDraft; setExpiry: (expiry: ExpiryDraft) => void; cycleName: string | null }) {
+  const set = (change: Partial<ExpiryDraft>) => setExpiry({ ...expiry, ...change });
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="mb-1 text-sm text-mist">Expiry</legend>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label="Expires">
+          <Select value={expiry.kind} onChange={(e) => set({ kind: e.target.value as ExpiryDraft["kind"] })}>
+            <option value="never">Never</option>
+            <option value="date">On a day</option>
+            <option value="games">After a number of games</option>
+            {(cycleName || expiry.kind === "cycle") && <option value="cycle">At the end of the downtime cycle{cycleName ? ` ${cycleName}` : ""}</option>}
+          </Select>
+        </Field>
+        {expiry.kind === "date" && (
+          <Field label="Last day it is held" hint="It expires once the day is over.">
+            <Input type="date" value={expiry.on} onChange={(e) => set({ on: e.target.value })} />
+          </Field>
+        )}
+        {expiry.kind === "games" && (
+          <Field label="Games" hint="The holder's games from now, from check-in. It expires once the last has ended.">
+            <Input type="number" min={1} max={100} value={expiry.games} onChange={(e) => set({ games: e.target.value })} />
+          </Field>
+        )}
+      </div>
+      {!cycleName && <p className="text-xs text-mist">No downtime cycle is open, so it can't expire at the end of one.</p>}
+      {expiry.kind !== "never" && (
+        <Field label="What happens (optional)" hint="Its holder sees it, and is warned a week or a game before it expires.">
+          <Input value={expiry.note} placeholder="The blessing fades" onChange={(e) => set({ note: e.target.value })} />
+        </Field>
+      )}
+    </fieldset>
   );
 }

@@ -3,6 +3,7 @@ import type { EquipmentItemOut } from "../../api/types";
 import { pageLabel } from "../../components/TraitInfo";
 import { Badge, Button, ErrorText } from "../../components/ui";
 import { NO_EQUIPMENT } from "../character/EquipmentTab";
+import { ExpiryLine } from "../character/ExpiryLine";
 import { ItemActions } from "../character/ItemActions";
 import {
   combatFirst,
@@ -200,6 +201,11 @@ function ItemCard({
           </span>
         )}
       </button>
+      {item.expiry && (
+        <div className="mt-1">
+          <ExpiryLine expiry={item.expiry} />
+        </div>
+      )}
       {more && (
         <div
           className={cx(

@@ -30,6 +30,7 @@ from horatio import (
     audit,
     feeding,
     influence,
+    item_expiry,
     notifications,
     responses,
     retainer_upkeep,
@@ -386,6 +387,8 @@ def close_cycle(db: Session, staff: User, cycle: DowntimeCycle) -> None:
     audit.record(db, staff, "downtime.cycle_closed", troupe_id=cycle.troupe_id, cycle_id=cycle.id)
     # The troupe's Retainer upkeep kept as a downtime cost, and Retainer growth.
     retainer_upkeep.cycle_closed(db, staff, cycle)
+    # Items that expire with the cycle go now (horatio.item_expiry).
+    item_expiry.check_due(db, cycle_ids=[cycle.id])
 
 
 # --- participants -----------------------------------------------------------------------

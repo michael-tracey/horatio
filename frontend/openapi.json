@@ -4302,6 +4302,16 @@
             "title": "Effects",
             "type": "array"
           },
+          "expiry": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExpiryIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "grade": {
             "enum": [
               "cheap",
@@ -10697,6 +10707,16 @@
             "title": "Effects",
             "type": "array"
           },
+          "expiry": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExpiryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "facts": {
             "$ref": "#/components/schemas/EquipmentFactsOut"
           },
@@ -10912,6 +10932,16 @@
             },
             "title": "Effects",
             "type": "array"
+          },
+          "expiry": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExpiryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "facts": {
             "$ref": "#/components/schemas/EquipmentFactsOut"
@@ -11854,6 +11884,130 @@
           "counter_id"
         ],
         "title": "ExpendableOut",
+        "type": "object"
+      },
+      "ExpiryIn": {
+        "description": "When an item expires (horatio.item_expiry): on a day (`on`, the last day it is\nheld), after a number of the holder's games from now (`games`), or at the end of\nthe troupe's open downtime cycle; with a note on what happens.",
+        "properties": {
+          "games": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Games"
+          },
+          "kind": {
+            "enum": [
+              "date",
+              "games",
+              "cycle"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Note",
+            "type": "string"
+          },
+          "on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "ExpiryIn",
+        "type": "object"
+      },
+      "ExpiryOut": {
+        "description": "When a held item expires, for whoever sees it; shown only while its holder's\nhome troupe lets items expire.",
+        "properties": {
+          "cycle_closes_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Closes At"
+          },
+          "cycle_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Name"
+          },
+          "games_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Games Left"
+          },
+          "kind": {
+            "enum": [
+              "date",
+              "games",
+              "cycle"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On"
+          }
+        },
+        "required": [
+          "kind",
+          "on",
+          "games_left",
+          "cycle_name",
+          "cycle_closes_at",
+          "note"
+        ],
+        "title": "ExpiryOut",
         "type": "object"
       },
       "FeedingAdjustmentIn": {
@@ -13618,6 +13772,16 @@
             "maxItems": 20,
             "title": "Effects",
             "type": "array"
+          },
+          "expiry": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExpiryIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "grade": {
             "enum": [
@@ -16440,6 +16604,58 @@
         "title": "Invite",
         "type": "object"
       },
+      "ItemExpiryOut": {
+        "description": "What the item editor offers for an expiry.",
+        "properties": {
+          "cycle_closes_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Closes At"
+          },
+          "cycle_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Id"
+          },
+          "cycle_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Name"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on",
+          "cycle_id",
+          "cycle_name",
+          "cycle_closes_at"
+        ],
+        "title": "ItemExpiryOut",
+        "type": "object"
+      },
       "ItemSpend": {
         "properties": {
           "item": {
@@ -16490,6 +16706,19 @@
           }
         },
         "title": "ItemTapIn",
+        "type": "object"
+      },
+      "ItemsExpireIn": {
+        "properties": {
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "title": "ItemsExpireIn",
         "type": "object"
       },
       "KindOut": {
@@ -35656,6 +35885,11 @@
           "influence_lookback_days": {
             "title": "Influence Lookback Days",
             "type": "integer"
+          },
+          "items_expire": {
+            "default": false,
+            "title": "Items Expire",
+            "type": "boolean"
           },
           "lead_user_id": {
             "format": "uuid",
@@ -56987,6 +57221,50 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/equipment/expiry": {
+      "get": {
+        "description": "Whether the troupe lets items expire, and the downtime cycle an item can\nexpire with: what the item editor offers.",
+        "operationId": "item_expiry_choices_api_troupes__troupe_id__equipment_expiry_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemExpiryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Item Expiry Choices",
+        "tags": [
+          "equipment"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/equipment/templates": {
       "get": {
         "description": "The troupe's own templates. The book's are with the rules (GET\n/rules/{splat}/equipment).",
@@ -60058,6 +60336,60 @@
         "summary": "Set Lookback",
         "tags": [
           "influence lookups"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/item-expiry": {
+      "put": {
+        "description": "Switch on or off \"Items can expire\". Off, no expiry shows or runs, and those\nalready set wait until it is switched on again.",
+        "operationId": "set_items_expire_api_troupes__troupe_id__item_expiry_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemsExpireIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemExpiryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Items Expire",
+        "tags": [
+          "equipment"
         ]
       }
     },

@@ -36,7 +36,8 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, notifications
+from horatio import audit, item_expiry, notifications
+from horatio.item_expiry import Expiry
 from horatio.models import (
     Character,
     CharacterTitle,
@@ -409,14 +410,18 @@ def give(
     fields: ItemFields,
     *,
     template: str | None = None,
+    expiry: Expiry | None = None,
 ) -> EquipmentItem:
     """Give a home character an item, checked by the rules it plays by. `template`:
-    the template it was started from, kept in its history."""
+    the template it was started from, kept in its history. `expiry`: when it expires,
+    if the troupe lets items expire (horatio.item_expiry)."""
     require_home(troupe, character)
     if character.status != "active":
         raise conflict(f"{character.name} is retired.")
     rules = equipment_rules(db, character.splat, troupe.id)
     fields = checked(rules, fields)
+    if expiry:
+        item_expiry.checked(db, troupe, expiry, item_expiry.now())
     item = EquipmentItem(
         character_id=character.id,
         troupe_id=troupe.id,
@@ -428,16 +433,13 @@ def give(
     apply(item, fields)
     db.add(item)
     db.flush()
-    record(
-        db,
-        item,
-        "given",
-        staff,
-        troupe,
-        after=character,
-        changes={"template": template} if template else None,
-    )
+    expires = item_expiry.set_expiry(db, troupe, item, character, expiry) if expiry else None
+    kept: dict[str, Any] = {"template": template} if template else {}
+    if expires:
+        kept["expiry"] = expires["to"]
+    record(db, item, "given", staff, troupe, after=character, changes=kept)
     what = describe(rules, fields)
+    then = f" It expires {item_expiry.when_text(expires['to'])}." if expires else ""
     audit.record(
         db,
         staff,
@@ -452,14 +454,24 @@ def give(
         character,
         troupe,
         "equipment.given",
-        f"{staff.display_name} gave {character.name} {item.name} ({what}).",
+        f"{staff.display_name} gave {character.name} {item.name} ({what}).{then}",
     )
     return item
 
 
 # The fields a change is told for, in this order. The staff note is kept in the
 # item's history, but never told to the player.
-TOLD = ("name", "kind", "grade", "qualities", "crafted", "archaic", "effects", "description")
+TOLD = (
+    "name",
+    "kind",
+    "grade",
+    "qualities",
+    "crafted",
+    "archaic",
+    "effects",
+    "description",
+    "expiry",
+)
 
 
 def as_recorded(fields: ItemFields) -> dict[str, Any]:
@@ -508,6 +520,8 @@ def changes_text(rules: EquipmentRules, changes: Mapping[str, Any], *, staff: bo
             told.append(f"special effects now {listed}" if listed else "no special effects now")
         elif name == "description":
             told.append("a new description")
+        elif name == "expiry":
+            told.append(item_expiry.change_text(old, new))
         else:
             told.append("a new staff note")
     return "; ".join(told)
@@ -520,9 +534,14 @@ def change(
     item: EquipmentItem,
     fields: ItemFields,
     reason: str,
+    *,
+    expiry: Expiry | None = None,
+    change_expiry: bool = False,
 ) -> EquipmentItem:
     """Change a held item, with a reason, checked by the rules its holder plays by.
-    Its holder's player is told, unless only the staff note changed."""
+    Its holder's player is told, unless only the staff note changed. With
+    `change_expiry`, its expiry is set to `expiry`: extended, shortened, or with
+    None removed (horatio.item_expiry)."""
     character = db.get_one(Character, item.character_id)
     require_home(troupe, character)
     if item.status != "held":
@@ -530,6 +549,8 @@ def change(
     rules = equipment_rules(db, character.splat, troupe.id)
     fields = checked(rules, fields)
     changes = differences(fields_of(item), fields)
+    if change_expiry and (expires := item_expiry.planned(db, troupe, item, expiry)):
+        changes["expiry"] = expires
     if not changes:
         raise unprocessable("Nothing has changed.")
     reason = reason.strip()
@@ -542,6 +563,8 @@ def change(
         item.special_troupe_id = troupe.id
     was = item.name
     apply(item, fields)
+    if "expiry" in changes:
+        item_expiry.set_expiry(db, troupe, item, character, expiry)
     record(
         db,
         item,
@@ -969,9 +992,13 @@ def event_summary(rules: EquipmentRules, event: EquipmentEvent, troupe: str | No
     if event.action == "given":
         template = event.changes.get("template")
         source = f", from the template {template}" if template else ""
-        return f"Given to {event.to_name} by {troupe or 'a troupe'}{source}"
+        expires = event.changes.get("expiry")
+        until = f"; it expires {item_expiry.when_text(expires)}" if expires else ""
+        return f"Given to {event.to_name} by {troupe or 'a troupe'}{source}{until}"
     if event.action == "changed":
         return f"Changed: {changes_text(rules, event.changes, staff=True)}"
+    if event.action == "taken_back" and "expired" in event.changes:
+        return f"Expired, and taken back from {event.from_name}"
     if event.action == "taken_back":
         return f"Taken back from {event.from_name}"
     undone = bool(event.changes.get("undoes"))

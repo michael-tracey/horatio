@@ -97,6 +97,8 @@ class TroupeOut(BaseModel):
     # a downtime cycle.
     quests_enabled: bool
     quest_requests_per_cycle: int
+    # Its staff can give items that expire (horatio.item_expiry).
+    items_expire: bool = False
     # The caller may see its Who's Who: its staff, and the players of its characters.
     whos_who: bool
     # Its portrait (add "/48.webp", "/128.webp" or "/512.webp"), or None.
@@ -315,6 +317,7 @@ def one_out(
         whos_who_negative=troupe.whos_who_negative,
         quests_enabled=troupe.quests_enabled,
         quest_requests_per_cycle=troupe.quest_requests_per_cycle,
+        items_expire=troupe.items_expire,
         whos_who=whos_who,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
         banner=pictures.banner_url(troupe.id, troupe.banner_id),

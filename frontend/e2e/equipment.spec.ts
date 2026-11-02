@@ -246,6 +246,74 @@ test("a player reads their character's equipment and what each quality does, on 
   await expect(p.getByText("Cursed")).toHaveCount(0);
 });
 
+test("a storyteller gives a blessing that expires with the downtime cycle, its player sees when, and closing the cycle takes it back", async ({ browser }) => {
+  const custodian = await person(browser, "fade-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "fade-lead");
+  const player = await person(browser, "fade-player");
+  const send = async (page: Page, method: "GET" | "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data: method === "GET" ? undefined : data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Fading Relics ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  const { id: maud } = await send(player.page, "POST", "/api/characters", { splat: "vampire", name: "Maud" });
+  await send(player.page, "PUT", `/api/characters/${maud}/traits`, { category: "clan", name: "Brujah", rating: null });
+  for (const [category, picks] of Object.entries({ ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Haven", 2], ["Generation", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] }))
+    await send(player.page, "PUT", `/api/characters/${maud}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await send(player.page, "POST", `/api/characters/${maud}/creation/complete`);
+  const asked = await send(player.page, "POST", `/api/characters/${maud}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+  const now = Date.now();
+  const cycle = await send(lead.page, "POST", `/api/troupes/${troupe.id}/cycles`, {
+    name: "Relic month",
+    closes_at: new Date(now + 14 * 86400e3).toISOString(),
+    grace_ends_at: new Date(now + 16 * 86400e3).toISOString(),
+  });
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/open`);
+
+  // Items don't expire until the lead switches it on, in the troupe's settings.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}/settings`);
+  const setting = l.locator("section").filter({ has: l.getByRole("heading", { name: "Items that expire", exact: true }) });
+  await setting.getByRole("checkbox", { name: /^Items can expire/ }).click();
+  await expect(setting.getByRole("checkbox", { name: /^Items can expire/ })).toBeChecked();
+
+  // From Maud's page, a special blessing that fades when the cycle closes.
+  await l.goto(`/characters/${maud}`);
+  await l.getByRole("button", { name: "Give equipment" }).click();
+  const form = l.getByRole("dialog").getByRole("form", { name: "Give equipment" });
+  await form.getByLabel("Name", { exact: true }).fill("Blessing of the Ashes");
+  await form.getByLabel("Kind").selectOption({ label: "Miscellaneous gear" });
+  await form.getByLabel("Grade").selectOption({ label: "Special (any number)" });
+  await form.getByLabel("Expires").selectOption({ label: "At the end of the downtime cycle Relic month" });
+  await form.getByLabel("What happens (optional)").fill("The ashes scatter.");
+  await form.getByRole("button", { name: "Give to Maud" }).click();
+  await expect(l.getByText("Gave Maud Blessing of the Ashes.")).toBeVisible();
+
+  // Its player sees when, on the sheet and the Play View.
+  const p = player.page;
+  await p.goto(`/characters/${maud}/equipment`);
+  const blessing = p.getByRole("list", { name: "Equipment" }).getByRole("listitem", { name: "Blessing of the Ashes" });
+  await expect(blessing.getByLabel("Expiry")).toHaveText(/^Expires when the downtime cycle Relic month closes \(due .+\)\.The ashes scatter\.$/);
+  await p.goto(`/play/characters/${maud}`);
+  await p.getByRole("tab", { name: "Equipment" }).click();
+  await expect(p.getByRole("listitem", { name: "Blessing of the Ashes" }).getByLabel("Expiry")).toContainText("Expires when the downtime cycle Relic month closes");
+
+  // The cycle closes: the blessing is taken back as expired, its history kept.
+  await send(l, "POST", `/api/cycles/${cycle.id}/close`, { add_to_ceiling: false });
+  await p.goto(`/characters/${maud}/equipment`);
+  await expect(p.getByText("No equipment yet.")).toBeVisible();
+  const told = (await send(p, "GET", "/api/notifications")).items.map((i: { summary: string }) => i.summary);
+  expect(told).toContain("Maud's Blessing of the Ashes has expired and is no longer held. The ashes scatter.");
+  const items = await send(l, "GET", `/api/troupes/${troupe.id}/equipment?status=taken_back`);
+  const item = items.items.find((i: { name: string }) => i.name === "Blessing of the Ashes");
+  const detail = await send(l, "GET", `/api/troupes/${troupe.id}/equipment/${item.id}`);
+  expect(detail.history.at(-1)).toMatchObject({ action: "taken_back", reason: "Expired", summary: "Expired, and taken back from Maud" });
+});
+
 test("a player equips a katana and a flak vest in the Pools drawer, and the pools change by the book's amounts until they are put away", async ({ browser }) => {
   const custodian = await person(browser, "gear-custodian");
   makeCustodian(custodian.email);
