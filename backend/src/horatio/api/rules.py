@@ -2,6 +2,7 @@
 and all of it at once for the rules browser, as played in one troupe."""
 
 import uuid
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
@@ -70,10 +71,13 @@ class HouseOut(BaseModel):
 
 class TraitChangeOut(BaseModel):
     """A troupe's change to a book trait (horatio.book_traits): banned in the troupe,
-    with the reason its players see ("" for none)."""
+    with the reason its players see ("" for none); its own wording, in Markdown ("" for
+    none), added to the book's summary or replacing it."""
 
     banned: bool
     ban_reason: str
+    wording: str = ""
+    wording_mode: Literal["added", "replaces"] = "added"
 
 
 class TraitOut(BaseModel):
@@ -234,7 +238,12 @@ def clan_weakness(rule_set: RuleSetData, trait: TraitData) -> dict[str, str | No
 def change_out(change: TraitChangeData | None) -> TraitChangeOut | None:
     if change is None:
         return None
-    return TraitChangeOut(banned=change.banned, ban_reason=change.ban_reason)
+    return TraitChangeOut(
+        banned=change.banned,
+        ban_reason=change.ban_reason,
+        wording=change.wording,
+        wording_mode=change.wording_mode,
+    )
 
 
 def house_out(house: HouseTraitData | None) -> HouseOut | None:

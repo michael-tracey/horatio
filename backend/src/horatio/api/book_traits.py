@@ -2,6 +2,7 @@
 them and who holds a banned trait; its storytellers make them."""
 
 import uuid
+from typing import Literal
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
@@ -32,6 +33,10 @@ class BookTraitOut(BaseModel):
     banned: bool
     # Why, in the troupe's words, for its players; "" for no reason given.
     ban_reason: str
+    # The troupe's own wording, in Markdown ("" for none), added to the book's
+    # summary or replacing it.
+    wording: str
+    wording_mode: Literal["added", "replaces"]
 
 
 class BannedHolderOut(BaseModel):
@@ -60,6 +65,8 @@ class BookTraitChange(BaseModel):
     name: str = Field(max_length=200)
     banned: bool | None = None
     ban_reason: str | None = Field(default=None, max_length=500)
+    wording: str | None = Field(default=None, max_length=4000)
+    wording_mode: Literal["added", "replaces"] | None = None
 
 
 def book_trait_out(
@@ -76,6 +83,8 @@ def book_trait_out(
         page=trait.page_reference if trait else None,
         banned=change.banned,
         ban_reason=change.ban_reason,
+        wording=change.wording,
+        wording_mode=change.wording_mode,
     )
 
 
@@ -109,8 +118,8 @@ def list_book_traits(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> 
 def change_book_trait(
     troupe_id: uuid.UUID, body: BookTraitChange, db: DbSession, user: CurrentUser
 ) -> BookTraitOut:
-    """Change a book trait in the troupe: ban it, with a reason, or lift the ban. Those
-    who hold it keep it."""
+    """Change a book trait in the troupe: ban it, with a reason, or lift the ban (those
+    who hold it keep it); give it the troupe's own wording, or take it away."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
     if body.splat not in book_traits.splats_of(troupe):
         book_traits.no_such_trait()
@@ -121,6 +130,17 @@ def change_book_trait(
         reason = before.ban_reason if body.ban_reason is None else body.ban_reason
         book_traits.set_ban(
             db, user, troupe, body.splat, definition, body.category, banned=banned, reason=reason
+        )
+    if body.wording is not None or body.wording_mode is not None:
+        book_traits.set_wording(
+            db,
+            user,
+            troupe,
+            body.splat,
+            definition,
+            body.category,
+            wording=before.wording if body.wording is None else body.wording,
+            mode=before.wording_mode if body.wording_mode is None else body.wording_mode,
         )
     db.commit()
     return book_trait_out(

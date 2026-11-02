@@ -31,7 +31,7 @@ describe("findTraits", () => {
   });
 
   it("puts the troupe's changed traits first", () => {
-    const changed = all.map((t) => (t.name === "Lucky" ? { ...t, changed: { banned: true, ban_reason: "" } } : t));
+    const changed = all.map((t) => (t.name === "Lucky" ? { ...t, changed: { banned: true, ban_reason: "", wording: "", wording_mode: "added" as const } } : t));
     expect(findTraits(changed, "u", "merits").map((t) => t.name)).toEqual(["Lucky", "Acute Sense"]);
   });
 });
@@ -41,5 +41,13 @@ describe("changeSummary", () => {
     expect(changeSummary({ banned: true, ban_reason: "Too swingy" })).toEqual(["Banned: Too swingy"]);
     expect(changeSummary({ banned: true, ban_reason: "" })).toEqual(["Banned"]);
     expect(changeSummary({ banned: false, ban_reason: "" })).toEqual([]);
+  });
+
+  it("says the troupe's wording, and how it reads beside the book's", () => {
+    expect(changeSummary({ banned: false, ban_reason: "", wording: "One target.", wording_mode: "added" })).toEqual(["Own wording, added to the book's"]);
+    expect(changeSummary({ banned: true, ban_reason: "", wording: "One target.", wording_mode: "replaces" })).toEqual([
+      "Banned",
+      "Own wording, in place of the book's",
+    ]);
   });
 });

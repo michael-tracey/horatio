@@ -18,6 +18,8 @@ import { sayable, summary, toSend, type FreePick } from "./freeChoices";
 import { rulesLink } from "../rules/rulesBrowser";
 import { rulesTroupe } from "./rules";
 import { applyFilter, byKind, countOf, filterChoices, quickPicks } from "./traitFilter";
+import { HouseWording } from "../../components/TroupeChange";
+import { bookSummary } from "../../houseWording";
 
 /** A new trait for the cart. */
 export type NewTrait = {
@@ -240,7 +242,8 @@ export function AddTraitPanel({
           }}
         >
           <p className="text-sm text-parchment">{named(trait.name)}</p>
-          {trait.description && <p className="text-xs leading-relaxed text-mist">{named(trait.description)}</p>}
+          {bookSummary(trait.description, trait.changed) && <p className="text-xs leading-relaxed text-mist">{named(trait.description)}</p>}
+          <HouseWording change={trait.changed} />
           {trait.house_rule && <Notice>House rule: {trait.house_rule}</Notice>}
           {trait.choices ? (
             <Field label="Which?" hint={`${named(trait.name)} gives one of these.`}>

@@ -32,9 +32,10 @@ export function findTraits(traits: TraitOut[], query: string, category: string):
   return [...found.filter((t) => t.changed), ...found.filter((t) => !t.changed)];
 }
 
-/** A trait's change, as the list of changes says it: "Banned: too swingy". */
-export function changeSummary(change: { banned: boolean; ban_reason: string }): string[] {
+/** A trait's change, as the list of changes says it: "Banned: too swingy", "Own wording, added to the book's". */
+export function changeSummary(change: { banned: boolean; ban_reason: string; wording?: string; wording_mode?: string }): string[] {
   const parts: string[] = [];
   if (change.banned) parts.push(change.ban_reason ? `Banned: ${change.ban_reason}` : "Banned");
+  if (change.wording) parts.push(change.wording_mode === "replaces" ? "Own wording, in place of the book's" : "Own wording, added to the book's");
   return parts;
 }
