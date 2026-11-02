@@ -1,4 +1,4 @@
-import type { Attendee } from "../../api/types";
+import type { AbidingSourceOut, Attendee, CheckInCharacter } from "../../api/types";
 
 /**
  * Game-night check-in (issue #421): the door's code, the link its QR code holds, and
@@ -35,6 +35,27 @@ export function pastMonthly(attendees: Attendee[], amount: number, monthly: numb
   return toAward(attendees)
     .filter((a) => a.month_xp + amount > monthly)
     .map((a) => a.character_name);
+}
+
+/**
+ * What check-in asks about a character's status tonight, where its troupe chooses the
+ * source of abiding status at check-in (issue #441): nothing; the one it carries, its
+ * only source or one chosen tonight already; or which of several it carries.
+ */
+export type StatusQuestion = { kind: "none" } | { kind: "carries"; source: string } | { kind: "choose"; sources: AbidingSourceOut[] };
+
+export function statusQuestion(c: CheckInCharacter): StatusQuestion {
+  if (!c.status_at_checkin || c.checked_in) return { kind: "none" };
+  if (c.status_source) return { kind: "carries", source: c.status_source };
+  const [only, ...more] = c.status_sources;
+  if (!only) return { kind: "none" };
+  return more.length === 0 ? { kind: "carries", source: only.name } : { kind: "choose", sources: c.status_sources };
+}
+
+/** The attendance list's word on a character's source of abiding status, where it was fixed at check-in; null where it was not. */
+export function attendeeStatus(a: Attendee): string | null {
+  if (a.status_source) return `Status from ${a.status_source}`;
+  return a.status_to_choose ? "Status to choose" : null;
 }
 
 /** "Agnes", "Agnes and Bram", "Agnes, Bram and Cleo". */

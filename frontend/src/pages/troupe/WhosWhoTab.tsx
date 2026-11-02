@@ -154,7 +154,7 @@ function EntryCard({ entry: e, kind, seated, represent }: { entry: WhosWhoEntry;
             <Badge>NPC</Badge>
           )}
         </span>
-        {(e.titles.length > 0 || e.visiting) && (
+        {(e.titles.length > 0 || e.visiting || e.carried_source) && (
           <span className="flex flex-wrap gap-1">
             {e.titles.map((t) => (
               <Badge key={t} tone={e.titles.length > 1 && t !== e.active_title ? "mist" : "gold"}>
@@ -163,6 +163,7 @@ function EntryCard({ entry: e, kind, seated, represent }: { entry: WhosWhoEntry;
               </Badge>
             ))}
             {e.visiting && <Badge>{e.visiting_from ? `Visiting from ${e.visiting_from}` : "Visiting"}</Badge>}
+            {e.carried_source && <Badge tone="gold">Status from {e.carried_source} tonight</Badge>}
           </span>
         )}
         {e.player_name && <LinesVeilsNote value={e.lines_veils} who={e.player_name} />}

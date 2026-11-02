@@ -23,6 +23,10 @@ past MONTHLY_XP earned in the calendar month is warned of, never refused. A trou
 may chart its game XP instead, cap it monthly, and record absentee games
 (horatio.game_xp). An absentee game is its own kind of attendance, never counted as
 having been there: ATTENDED picks out the characters who came.
+
+Where the troupe chooses each character's source of abiding status at check-in
+(issue #441), checking in fixes it for the night (horatio.play_status.fix_at_checkin).
+An absentee game starts no night, so chooses none.
 """
 
 import secrets
@@ -33,7 +37,7 @@ from datetime import UTC, date, datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, free_changes, play
+from horatio import audit, free_changes, play, play_status
 from horatio.models import Character, GameAttendance, PlayGame, ScheduledGame, User, XpEntry
 from horatio.sheets import conflict, unprocessable
 
@@ -135,16 +139,24 @@ def left_willpower(db: Session, character: Character, night: PlayGame) -> int | 
     return value if isinstance(value, int) else None
 
 
+def joined_night(db: Session, character: Character, game: ScheduledGame) -> PlayGame | None:
+    """The character's game now on the Play View, if checking in to `game` would join
+    it: it has no taps from before tonight."""
+    current = play.current_game(db, character)
+    if current is None or any(
+        tap.happened_at < opens_at(game) for tap in play.game_events(db, current)
+    ):
+        return None
+    return current
+
+
 def start_night(
     db: Session, character: Character, actor: User, game: ScheduledGame, *, rested: bool
 ) -> PlayGame:
     """Start or join the character's night on the Play View: its game now, unless that
     has taps from before tonight, when a reset ends it and starts the next. The caller
     holds the character's lock."""
-    current = play.current_game(db, character)
-    if current is not None and any(
-        tap.happened_at < opens_at(game) for tap in play.game_events(db, current)
-    ):
+    if play.current_game(db, character) is not None and joined_night(db, character, game) is None:
         play.reset(db, character, actor, troupe_id=game.troupe_id)
     night = play.start_game(db, character)
     night.willpower_start = None if rested else left_willpower(db, character, night)
@@ -168,10 +180,12 @@ def check_in(
     *,
     by_staff: bool,
     rested: bool,
+    source: str | None = None,
 ) -> tuple[GameAttendance, bool]:
     """Record the character at the game and, while the game is not over, start its
-    night. Says whether it is new: checking in twice changes nothing. The caller holds
-    the character's lock."""
+    night, with its source of abiding status (`source`) where the troupe fixes it at
+    check-in. Says whether it is new: checking in twice changes nothing. The caller
+    holds the character's lock."""
     found = attendance_of(db, game, character)
     if found is not None and found.kind == "absentee":
         # It came after all: staff put right an absentee game.
@@ -180,6 +194,8 @@ def check_in(
     elif found is not None:
         return found, False
     night = start_night(db, character, actor, game, rested=rested) if now() < game.ends_at else None
+    if night is not None:
+        play_status.fix_at_checkin(db, actor, character, night, game, source, by_staff=by_staff)
     attendance = GameAttendance(
         game_id=game.id,
         character_id=character.id,

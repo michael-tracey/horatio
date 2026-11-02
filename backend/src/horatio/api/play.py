@@ -951,6 +951,7 @@ def choose_status(
         source=body.source,
         chosen=body.chosen,
         absent=body.absent,
+        reason=body.reason,
     )
     db.commit()
     return play_view(db, character)

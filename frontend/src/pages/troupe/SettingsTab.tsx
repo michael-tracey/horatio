@@ -13,7 +13,7 @@ import { FeedingTerritories } from "./FeedingTerritories";
 import { GameXpCard } from "./GameXpSettings";
 import { GolcondaSetting } from "./GolcondaSetting";
 import { ExperienceDefaults, StartingBlood } from "./StartingSection";
-import { StatusSetting, TitlesSetting } from "./StatusSetting";
+import { StatusAtCheckinSetting, StatusSetting, TitlesSetting } from "./StatusSetting";
 import { WhosWhoSetting } from "./WhosWhoSetting";
 import { XpRangeCard } from "./XpRange";
 
@@ -51,6 +51,7 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
       <Group title="Status and titles">
         <StatusSetting troupe={troupe} canEdit={canEdit} />
         <TitlesSetting troupe={troupe} canEdit={canEdit} />
+        <StatusAtCheckinSetting troupe={troupe} canEdit={canEdit} />
         {troupe.whos_who && <WhosWhoSetting troupe={troupe} canEdit={canEdit} />}
         <GolcondaSetting troupeId={troupe.id} canEdit={canEdit} />
       </Group>

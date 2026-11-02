@@ -103,7 +103,17 @@ def test_staff_open_check_in_and_a_player_checks_in_with_the_code(troupe: Troupe
     assert offered.status_code == 200, offered.text
     assert offered.json()["game_id"] == tonight
     assert offered.json()["troupe_name"] == "Lords of the Night"
-    assert offered.json()["characters"] == [{"id": agnes, "name": "Agnes", "checked_in": False}]
+    assert offered.json()["characters"] == [
+        {
+            "id": agnes,
+            "name": "Agnes",
+            "checked_in": False,
+            # The troupe does not choose the night's status at check-in (issue #441).
+            "status_at_checkin": False,
+            "status_sources": [],
+            "status_source": None,
+        }
+    ]
 
     response = check_in(troupe.player, troupe, tonight, agnes)
     assert response.status_code == 200, response.text

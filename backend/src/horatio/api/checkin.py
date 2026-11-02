@@ -11,8 +11,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, checkin, game_xp, sheets, suspensions, xp_range
+from horatio import audit, checkin, game_xp, play_status, sheets, suspensions, xp_range
 from horatio.api.games import member_troupe
+from horatio.api.play_status import AbidingSourceOut, source_status
 from horatio.api.troupe_profiles import ProfilePerson, someone
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.game_xp import GameXpSettings
@@ -44,6 +45,12 @@ class CheckInCharacter(BaseModel):
     id: uuid.UUID
     name: str
     checked_in: bool
+    # Its troupe chooses its source of abiding status as it checks in (issue #441):
+    # its sources to choose from, and the one fixed at this check-in already, if any
+    # (checked out and in again).
+    status_at_checkin: bool = False
+    status_sources: list[AbidingSourceOut] = []
+    status_source: str | None = None
 
 
 class CheckInOffer(BaseModel):
@@ -63,6 +70,9 @@ class CheckInIn(BaseModel):
     # A full day's rest since the last game: Willpower starts full (MET: VtM core,
     # p. 288). Without one, it starts where the last game left it.
     rested: bool = True
+    # The source of abiding status it carries tonight, where its troupe chooses it at
+    # check-in and it has more than one (horatio.play_status.fix_at_checkin).
+    source: str | None = Field(default=None, max_length=200)
 
 
 class CheckedIn(BaseModel):
@@ -97,6 +107,10 @@ class Attendee(BaseModel):
     month_xp: int
     # "attended", or "absentee": it missed the game, recorded as an absentee game.
     kind: game_xp.Kind = "attended"
+    # Where its source of abiding status was fixed as it checked in: that source, or
+    # `status_to_choose` while staff are still to choose one of several.
+    status_source: str | None = None
+    status_to_choose: bool = False
 
 
 class NotHere(BaseModel):
@@ -295,8 +309,27 @@ def offer(db: Session, user: User, troupe: Troupe, game: ScheduledGame) -> Check
         game_id=game.id,
         starts_at=game.starts_at,
         ends_at=game.ends_at,
-        characters=[CheckInCharacter(id=c.id, name=c.name, checked_in=c.id in here) for c in mine],
+        characters=[offered(db, c, game, c.id in here) for c in mine],
     )
+
+
+def offered(
+    db: Session, character: Character, game: ScheduledGame, checked_in: bool
+) -> CheckInCharacter:
+    """A character the caller can check in, with the sources of abiding status to
+    choose from where its troupe chooses one at check-in."""
+    found = CheckInCharacter(id=character.id, name=character.name, checked_in=checked_in)
+    if checked_in or not play_status.at_checkin(play_status.troupe_of(db, character)):
+        return found
+    night = checkin.joined_night(db, character, game)
+    at = play_status.at_game(db, character, night)
+    found.status_at_checkin = True
+    found.status_sources = [
+        AbidingSourceOut(name=s.name, kind=s.kind, status=source_status(s.status))
+        for s in at.sources
+    ]
+    found.status_source = play_status.fixed_for(at.choices, game)
+    return found
 
 
 def to_award(db: Session, troupe: Troupe, game: ScheduledGame) -> list[tuple[Character, str]]:
@@ -364,9 +397,19 @@ def night_out(db: Session, user: User, troupe: Troupe, game: ScheduledGame) -> G
     others.sort(key=lambda r: r[0].name.lower())
     awarded_by = db.get(User, game.xp_awarded_by) if game.xp_awarded_by else None
     found = game_xp.settings(troupe)
+    nights = {
+        g.id: play_status.Choices.of(g)
+        for g in db.scalars(
+            select(PlayGame).where(
+                PlayGame.id.in_([a.play_game_id for a, _, _ in rows if a.play_game_id])
+            )
+        )
+    }
     lines = game_xp.lines(db, troupe, to_award(db, troupe, game)) if game.xp_awarded is None else []
 
     def attendee(a: GameAttendance, c: Character, u: User) -> Attendee:
+        night = nights.get(a.play_game_id) if a.play_game_id else None
+        fixed = night is not None and night.checked_in == str(game.id)
         return Attendee(
             character_id=c.id,
             character_name=c.name,
@@ -377,6 +420,8 @@ def night_out(db: Session, user: User, troupe: Troupe, game: ScheduledGame) -> G
             rested=a.rested,
             month_xp=month[c.id],
             kind="absentee" if a.kind == "absentee" else "attended",
+            status_source=night.source if night and fixed else None,
+            status_to_choose=night.to_choose if night and fixed else False,
         )
 
     return GameNight(
@@ -558,7 +603,7 @@ def check_in(
     suspensions.refuse_character(db, character)
     character = sheets.lock_character(db, character.id)
     attendance, new = checkin.check_in(
-        db, user, game, character, by_staff=not mine, rested=body.rested
+        db, user, game, character, by_staff=not mine, rested=body.rested, source=body.source
     )
     db.commit()
     return CheckedIn(

@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CarriedOut, ConditionOut, PlayStatusOut, PlayView, StatusChoiceIn, StatusIn } from "../../api/types";
 import { pageLabel } from "../../components/TraitInfo";
-import { Badge, Button, ErrorText } from "../../components/ui";
+import { Badge, Button, ErrorText, Input } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { capText, endingText, NO_RULES_YET, outsiderText, suppressedText } from "../character/status";
@@ -68,7 +68,7 @@ export function StatusTab({
   const [adding, setAdding] = useState(false);
   const path = { params: { path: { character_id: view.character_id } } };
   const choose = useAction(async (choice: Choice) =>
-    onChange(await unwrap(api.PUT("/api/characters/{character_id}/play/status/choice", { ...path, body: { chosen: {}, absent: {}, ...choice } }))),
+    onChange(await unwrap(api.PUT("/api/characters/{character_id}/play/status/choice", { ...path, body: { chosen: {}, absent: {}, reason: "", ...choice } }))),
   );
   if (!status) return <p className="py-8 text-center text-mist">This character has no sect status.</p>;
   const staff = standing.data?.staff ?? false;
@@ -140,6 +140,8 @@ function Suppressed({ status }: { status: PlayStatusOut }) {
 /**
  * As the game begins: the one source of abiding status (MET: VTM p. 311), and its
  * title's status for the night. Each is the holder's to choose once; staff change it.
+ * Where the troupe chooses the source at check-in (issue #441), it shows here fixed:
+ * only staff choose or change it, giving a reason for the game's log.
  */
 function ThisGame({
   status,
@@ -155,25 +157,38 @@ function ThisGame({
   choose: (body: Choice) => void;
 }) {
   const [changing, setChanging] = useState(false);
-  if (status.sources.length < 2 && status.conditions.length === 0) return null;
-  const picking = status.choosing || changing;
+  const [reason, setReason] = useState("");
+  const fixed = status.source_fixed;
+  const showSource = status.sources.length > 1 || (fixed && !!status.source);
+  if (!showSource && status.conditions.length === 0) return null;
+  const picking = (status.choosing && (!fixed || staff)) || changing;
+  // Staff changing a source fixed at check-in say why, for the game's log.
+  const needsReason = fixed && status.source_chosen;
   const disabled = !online || pending;
   return (
     <Panel title="This game">
-      {status.sources.length > 1 &&
+      {showSource &&
         (picking ? (
           <div className="flex flex-col gap-2">
-            <p className="text-sm">Choose your one source of abiding status for this game (MET: VTM p. 311). Innate status always applies.</p>
+            <p className="text-sm">
+              {fixed
+                ? "Choose the character's one source of abiding status for this game (MET: VTM p. 311). The troupe fixes it at check-in, so only staff choose it here."
+                : "Choose your one source of abiding status for this game (MET: VTM p. 311). Innate status always applies."}
+            </p>
+            {needsReason && (
+              <Input aria-label="Why change it? (for the game's log)" placeholder="Why change it? (for the game's log)" maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} />
+            )}
             <ul className="grid gap-2 sm:grid-cols-2">
               {status.sources.map((s) => (
                 <li key={s.name}>
                   <button
                     type="button"
-                    disabled={disabled}
+                    disabled={disabled || (needsReason && !reason.trim())}
                     aria-label={`Choose ${s.name}`}
                     onClick={() => {
-                      choose({ source: s.name });
+                      choose(needsReason ? { source: s.name, reason: reason.trim() } : { source: s.name });
                       setChanging(false);
+                      setReason("");
                     }}
                     className={cx(
                       "flex min-h-12 w-full flex-col items-start rounded-md border px-3 py-2 text-left disabled:opacity-50",
@@ -188,19 +203,34 @@ function ThisGame({
             </ul>
             {!online && <p className="text-xs text-mist">Choosing needs a connection.</p>}
             {changing && (
-              <Button variant="ghost" className="self-start" onClick={() => setChanging(false)}>
+              <Button
+                variant="ghost"
+                className="self-start"
+                onClick={() => {
+                  setChanging(false);
+                  setReason("");
+                }}
+              >
                 Cancel
               </Button>
             )}
           </div>
+        ) : fixed && !status.source_chosen && status.choosing ? (
+          <p className="text-sm">
+            Your source of abiding status is chosen as you check in, and fixed for the game. <span className="text-mist">None is chosen yet: ask the storytellers.</span>
+          </p>
         ) : (
           <p className="flex flex-wrap items-center gap-2 text-sm">
             <span>
               Abiding status from <span className="text-gold">{status.source ?? "no source"}</span>
-              {status.source_chosen && <span className="text-mist">, chosen for this game</span>}
+              {fixed ? (
+                <span className="text-mist">, chosen at check-in and fixed for this game</span>
+              ) : (
+                status.source_chosen && <span className="text-mist">, chosen for this game</span>
+              )}
               {status.source_chosen && !status.source && <span className="text-mist">: the title is gone</span>}.
             </span>
-            {staff && (
+            {staff && status.sources.length > 1 && (
               <Button variant="ghost" className="min-h-8 px-2 text-xs" onClick={() => setChanging(true)}>
                 Change
               </Button>
