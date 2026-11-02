@@ -204,7 +204,7 @@ test("a teacher rule asks for a teacher, and a Lore specialisation is bought fro
   await expect(add).toBeDisabled();
   await lore.getByLabel("Teacher for Sabbat").selectOption({ label: "Brother Tobiah" });
   await add.click();
-  await expect(lore.getByText("Lore Specialisations 1/1")).toBeVisible();
+  await expect(lore.getByText("Lore Specialisations 1 of 1")).toBeVisible();
   await p.screenshot(shots("teacher-lore-specialisation"));
 
   // It waits on the troupe, taught by Brother Tobiah; approving owes the downtime action.
