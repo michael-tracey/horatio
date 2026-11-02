@@ -1,4 +1,5 @@
 import type { CatalogueOut, TraitOut } from "../../api/types";
+import { withClanNames } from "../../clanNames";
 import { usePlannedOpened, usePlannedUnavailable, useUnavailable } from "../../hooks";
 import { toChange, type CartLine } from "./cart";
 import { byKind, takeable } from "./traitFilter";
@@ -98,7 +99,8 @@ export function foundElsewhere(choices: Choices[], current: string, query: strin
     .filter((c) => c.key !== current)
     .flatMap((c) =>
       c.traits
-        .filter((t) => t.name.toLowerCase().includes(q) && !held.some((h) => h.category === c.key && h.name === t.name && !h.detail))
+        .filter((t) => withClanNames(t.name).toLowerCase().includes(q) && !held.some
+((h) => h.category === c.key && h.name === t.name && !h.detail))
         .map((t) => ({ category: c, trait: t, canTake: c.canTake.includes(t) })),
     );
 }

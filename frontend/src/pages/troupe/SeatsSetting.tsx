@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "../../api/client";
+import { useClanName } from "../../components/ClanNames";
 import { Button, Card, ErrorText, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
 
@@ -13,6 +14,7 @@ export function SeatsSetting({ troupeId }: { troupeId: string }) {
   const path = { params: { path: { troupe_id: troupeId } } };
   const seats = useQuery({ queryKey: ["seats", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/seats", path)) });
   const save = useAction((clans: string[] | null) => unwrap(api.PUT("/api/troupes/{troupe_id}/seats", { ...path, body: { clans } })));
+  const named = useClanName();
   if (seats.isPending) return <Loading />;
   if (seats.error) return <ErrorText error={seats.error} />;
   const { clans, seated, chosen, primogen } = seats.data;
@@ -43,7 +45,7 @@ export function SeatsSetting({ troupeId }: { troupeId: string }) {
                 disabled={save.isPending || (on && now.length === 1)}
                 onChange={(e) => toggle(clan, e.target.checked)}
               />
-              {clan}
+              {named(clan)}
             </label>
           );
         })}

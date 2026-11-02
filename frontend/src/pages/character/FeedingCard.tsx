@@ -1,4 +1,5 @@
 import type { FeedingIn, MyDowntime, MyFeedingOut } from "../../api/types";
+import { useClanName } from "../../components/ClanNames";
 import { Button, Card, Field, Input, Notice, Select } from "../../components/ui";
 import { herdShared, needText, tally } from "../../feeding";
 import { Patrols, RackFeeding, TerritoryChoice } from "./FeedingVessels";
@@ -28,6 +29,7 @@ export function FeedingCard({
   /** The downtime as taking a vessel left it. */
   onDowntime: (saved: MyDowntime) => void;
 }) {
+  const named = useClanName();
   const { needed, reasons } = needText(feeding.need);
   const territory = feeding.territories.find((t) => t.id === value.territory);
   const counted = tally(feeding.need, value, feeding.received, territory?.name);
@@ -57,7 +59,7 @@ export function FeedingCard({
   return (
     <Card title="Feeding">
       <p className="mb-3 text-sm">
-        You need <strong className="text-gold">{needed}</strong> feeding this cycle: {reasons}.
+        You need <strong className="text-gold">{needed}</strong> feeding this cycle: {named(reasons)}.
       </p>
       {locked && <Notice>A storyteller has answered your feeding, so it can no longer change.</Notice>}
       <div className="grid gap-3 sm:grid-cols-[12rem_1fr]">

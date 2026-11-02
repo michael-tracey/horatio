@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CharacterFeedingOut, CycleOut, CycleFeedingOut, HumorOut } from "../../api/types";
 import { EmptyState } from "../../components/EmptyState";
+import { useClanName } from "../../components/ClanNames";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { staffTallyText } from "../../feeding";
 import { useAction } from "../../hooks";
@@ -93,6 +94,7 @@ function ClanRows({ clans, cycleId, editable }: { clans: Clan[]; cycleId: string
 function ClanRow({ clan, cycleId, editable }: { clan: Clan; cycleId: string; editable: boolean }) {
   const [amount, setAmount] = useState(clan.amount);
   const [reason, setReason] = useState(clan.reason);
+  const named = useClanName();
   const save = useAction(() =>
     unwrap(api.PUT("/api/cycles/{cycle_id}/feeding/clans/{clan}", { params: { path: { cycle_id: cycleId, clan: clan.clan } }, body: { amount, reason } })),
   );
@@ -100,11 +102,12 @@ function ClanRow({ clan, cycleId, editable }: { clan: Clan; cycleId: string; edi
   return (
     <li className="grid items-center gap-2 py-2 text-sm sm:grid-cols-[10rem_5rem_1fr_auto]">
       <span>
-        {clan.clan}
+        {named(clan.clan)}
         {clan.characters > 0 && <span className="text-mist"> · {clan.characters} taking part</span>}
       </span>
-      <Input aria-label={`Feeding for ${clan.clan}`} type="number" min={0} max={10} disabled={!editable} value={amount} onChange={(e) => setAmount(Math.max(0, Number(e.target.value) || 0))} />
-      <Input aria-label={`Reason for ${clan.clan}`} placeholder="Reason" disabled={!editable} value={reason} onChange={(e) => setReason(e.target.value)} />
+      <Input aria-label={`Feeding for ${named(clan.clan)}`} type="number" min={0} max={10} disabled={!editable} value={amount} onChange={(e) => setAmount(Math.max(0, Number(e.target.value) || 0))} />
+      <Input aria-label={`Reason for ${named(clan.clan)}`}
+ placeholder="Reason" disabled={!editable} value={reason} onChange={(e) => setReason(e.target.value)} />
       {editable && (
         <Button variant="secondary" disabled={!changed || save.isPending} onClick={() => save.mutate(undefined)}>
           Save

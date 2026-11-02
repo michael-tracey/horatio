@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "../../api/client";
 import type { StatusRuleOut, TroupeOut } from "../../api/types";
+import { useClanName } from "../../components/ClanNames";
 import { Explainer } from "../../components/Explainer";
 import { pageLabel } from "../../components/TraitInfo";
 import { Badge, ErrorText, Loading } from "../../components/ui";
@@ -82,7 +83,8 @@ export function StatusRulesTab({ troupe }: { troupe: TroupeOut }) {
 
 function StatusRow({ rule }: { rule: StatusRuleOut }) {
   const page = pageLabel(rule.page);
-  const given = givenByText(rule.given_by);
+  const named = useClanName();
+  const given = named(givenByText(rule.given_by));
   return (
     <li aria-label={rule.name} className="flex flex-col gap-0.5 py-2.5 text-sm">
       <span className="flex flex-wrap items-center gap-2">
@@ -93,12 +95,12 @@ function StatusRow({ rule }: { rule: StatusRuleOut }) {
       </span>
       <span className="flex flex-col text-xs text-mist">
         {rule.no_rules_yet && <span>{NO_RULES_YET}</span>}
-        {rule.passive && <span>Held: {rule.passive}</span>}
-        {rule.spent && <span>Spent: {rule.spent}</span>}
-        {rule.censure && <span>Censure: {rule.censure}</span>}
-        {rule.punishment && <span>Punishment: {rule.punishment}</span>}
+        {rule.passive && <span>Held: {named(rule.passive)}</span>}
+        {rule.spent && <span>Spent: {named(rule.spent)}</span>}
+        {rule.censure && <span>Censure: {named(rule.censure)}</span>}
+        {rule.punishment && <span>Punishment: {named(rule.punishment)}</span>}
         {rule.duration && <span>Lasts: {rule.duration}</span>}
-        {rule.source && <span>Comes from: {rule.source}</span>}
+        {rule.source && <span>Comes from: {named(rule.source)}</span>}
         {given && <span className="text-parchment/80">{given}</span>}
       </span>
     </li>

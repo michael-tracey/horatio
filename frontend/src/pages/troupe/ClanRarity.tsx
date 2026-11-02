@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { ClanRarityOut } from "../../api/types";
+import { useClanName } from "../../components/ClanNames";
 import { Button, Card, ErrorText, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 
@@ -33,6 +34,7 @@ export function ClanRarity({ troupeId, canEdit }: { troupeId: string; canEdit: b
   const path = { params: { path: { troupe_id: troupeId } } };
   const rarity = useQuery({ queryKey: ["clan-rarity", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/clan-rarity", path)) });
   const [editing, setEditing] = useState<Record<string, string> | null>(null);
+  const named = useClanName();
   const save = useAction(async (rarities: Record<string, string>) => {
     await unwrap(api.PUT("/api/troupes/{troupe_id}/clan-rarity", { ...path, body: { rarities: rarities as Record<string, (typeof RARITIES)[number]> } }));
     setEditing(null);
@@ -65,7 +67,7 @@ export function ClanRarity({ troupeId, canEdit }: { troupeId: string; canEdit: b
         <ul className="flex flex-col divide-y divide-ash text-sm">
           {clans.map((c) => (
             <li key={c.clan} className="flex flex-wrap justify-between gap-x-3 py-1">
-              <span>{c.clan}</span>
+              <span>{named(c.clan)}</span>
               <span className={c.house ? "text-parchment" : "text-mist"}>{c.house ? `${c.house} (house rule)` : bookRarity(c, setting)}</span>
             </li>
           ))}
@@ -81,9 +83,9 @@ export function ClanRarity({ troupeId, canEdit }: { troupeId: string; canEdit: b
           <ul className="flex flex-col divide-y divide-ash text-sm">
             {clans.map((c) => (
               <li key={c.clan} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-1">
-                <span>{c.clan}</span>
+                <span>{named(c.clan)}</span>
                 <Select
-                  aria-label={`${c.clan} rarity`}
+                  aria-label={`${named(c.clan)} rarity`}
                   className="h-9 w-auto py-0"
                   value={editing[c.clan] ?? ""}
                   onChange={(e) => {

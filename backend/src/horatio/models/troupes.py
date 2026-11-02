@@ -32,6 +32,7 @@ class Troupe(Imported, Record):
         CheckConstraint("location_limit in ('refuse', 'note')", name="location_limit"),
         CheckConstraint("backstory_mode in ('free', 'either', 'wizard')", name="backstory_mode"),
         CheckConstraint("feeding in ('off', 'book')", name="feeding"),
+        CheckConstraint("assamite_name in ('Banu Haqim', 'Assamite')", name="assamite_name"),
     )
 
     name: Mapped[str]
@@ -82,6 +83,10 @@ class Troupe(Imported, Record):
     # Blood Resonance, as its vessels each carry one (horatio.territories, horatio.rack).
     feeding_territories: Mapped[bool] = mapped_column(default=False, server_default="false")
     feeding_rack: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # What the clan stored as "Assamite" is called here (horatio.clan_names): "Banu
+    # Haqim", its later name, or "Assamite", the books'. Only what is shown changes;
+    # the rules and sheets keep "Assamite".
+    assamite_name: Mapped[str] = mapped_column(default="Banu Haqim", server_default="Banu Haqim")
     # Status on sheets (horatio.sect_status): who adds and removes fleeting and
     # negative status on its characters' sheets: "players", each on their own, naming
     # the patron; or "staff", its running staff only. Running staff always can.

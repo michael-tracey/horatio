@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { PriceOut, RulesBrowserOut, TraitCheckOut } from "../../api/types";
+import { ClanNames, useClanName, useTroupeClanName } from "../../components/ClanNames";
+import { clanNamed } from "../../clanNames";
 import { EmptyState, FilterBar } from "../../components/EmptyState";
 import { HouseMark, HouseSummary } from "../../components/HouseMark";
 import { PageRef } from "../../components/TraitInfo";
@@ -59,6 +61,8 @@ export function RulesPage() {
     barred: shownBy.barred === "1",
   };
 
+  // The clan stored as Assamite, as the troupe chosen calls it; the default for the book.
+  const clanName = useTroupeClanName(troupeId || null);
   const splats = useSplats();
   // A key of its own, as the Troupes page has: a list asked for earlier lacks a troupe made since.
   const troupes = useQuery({ queryKey: ["troupes", "rules"], queryFn: () => unwrap(api.GET("/api/troupes")) });
@@ -84,7 +88,7 @@ export function RulesPage() {
   const limit = more.key === filterKey ? more.limit : PAGE;
 
   return (
-    <>
+    <ClanNames name={clanName}>
       <PageTitle subtitle="Every trait, power, ritual, merit and flaw, with its book page and a short summary. Choose a troupe to see it as played there.">
         Rules
       </PageTitle>
@@ -150,7 +154,7 @@ export function RulesPage() {
                 {data &&
                   clanChoices(data).map((c) => (
                     <option key={c} value={c}>
-                      For {c}
+                      For {clanNamed(c, clanName)}
                     </option>
                   ))}
               </Select>
@@ -211,7 +215,7 @@ export function RulesPage() {
           )
         )}
       </div>
-    </>
+    </ClanNames>
   );
 }
 
@@ -257,15 +261,16 @@ function Results({ data, shown }: { data: RulesBrowserOut; shown: Entry[] }) {
 }
 
 function EntryRow({ entry: e, troupe }: { entry: Entry; troupe: string | null }) {
+  const named = useClanName();
   const t = e.trait;
   const checks = shownChecks(e);
   const power = !t;
   return (
     <li className={`flex flex-col gap-1 py-2.5 text-sm ${power ? "pl-3 sm:pl-5" : ""}`} data-testid="rules-entry">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <h3 className="font-sans text-sm text-parchment">{e.name}</h3>
+        <h3 className="font-sans text-sm text-parchment">{named(e.name)}</h3>
         {e.rating && <span className="text-xs text-gold">{e.rating}</span>}
-        {e.requirement && <Badge>{e.requirement}</Badge>}
+        {e.requirement && <Badge>{named(e.requirement)}</Badge>}
         {t?.kind && t.kind !== e.requirement && <span className="text-xs text-mist">{t.kind}</span>}
         {t?.house && <HouseMark label={t.house.label} />}
         {e.barred && (
@@ -280,30 +285,30 @@ function EntryRow({ entry: e, troupe }: { entry: Entry; troupe: string | null })
           </span>
         )}
       </div>
-      {e.summary && <p className="text-mist">{e.summary}</p>}
+      {e.summary && <p className="text-mist">{named(e.summary)}</p>}
       {t?.house && (
         <>
           <HouseSummary summary={t.description ? t.house.summary : null} />
           <span className="text-xs text-mist">{t.house.availability === "staff" ? "Given by the storytellers only." : "Available when building for the troupe."}</span>
         </>
       )}
-      {e.barred?.text && <p className="text-xs text-mist">House rule: {e.barred.text}</p>}
+      {e.barred?.text && <p className="text-xs text-mist">House rule: {named(e.barred.text)}</p>}
       {t?.house_rule && (
         <p className="text-xs text-mist">
-          <Badge tone="gold">House rule</Badge> {t.house_rule}
+          <Badge tone="gold">House rule</Badge> {named(t.house_rule)}
         </p>
       )}
       {t?.attribute && <p className="text-xs text-mist">Usually tested with {t.attribute}.</p>}
       {t?.in_clan && t.in_clan.length > 0 && <p className="text-xs text-mist">In-clan: {t.in_clan.join(", ")}.</p>}
       {t?.weakness && (
         <p className="text-xs text-mist">
-          Weakness: {t.weakness}
+          Weakness: {named(t.weakness)}
           {t.weakness_page && ` ${pageText(t.weakness_page)}`}
         </p>
       )}
       {e.rarity && (
         <p className="text-xs text-mist">
-          Rarity: {e.rarity.text}
+          Rarity: {named(e.rarity.text)}
           {e.rarity.page && ` ${pageText(e.rarity.page)}`}
           {e.rarity.house && (
             <>
@@ -329,18 +334,19 @@ function EntryRow({ entry: e, troupe }: { entry: Entry; troupe: string | null })
 
 /** Prices in words, each house price marked with the book's beside it. */
 function Prices({ prices, label }: { prices: PriceOut[]; label: string }) {
+  const named = useClanName();
   return (
     <ul className="flex flex-col gap-0.5">
       {prices.map((p, n) => (
         <li key={n}>
           {label}
-          {p.when && ` (${p.when})`}: <span className={p.house ? "text-gold" : "text-parchment"}>{p.price}</span>
+          {p.when && ` (${named(p.when)})`}: <span className={p.house ? "text-gold" : "text-parchment"}>{p.price}</span>
           {p.house && (
             <>
               {" "}
               <Badge tone="gold">House rule</Badge>
               {p.book && ` By the book: ${p.book}.`}
-              {p.text && ` ${p.text}`}
+              {p.text && ` ${named(p.text)}`}
             </>
           )}
         </li>
@@ -351,11 +357,12 @@ function Prices({ prices, label }: { prices: PriceOut[]; label: string }) {
 
 /** Checks in the words a player meets when one refuses a change, with how the troupe plays any it changed. */
 function Checks({ checks }: { checks: TraitCheckOut[] }) {
+  const named = useClanName();
   return (
     <ul className="flex flex-col gap-0.5">
       {checks.map((c) => (
         <li key={c.key} className={c.house === "off" ? "line-through decoration-mist/60" : undefined}>
-          {c.message}
+          {named(c.message)}
           {c.page && (
             <>
               {" "}

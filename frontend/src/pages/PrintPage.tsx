@@ -3,6 +3,7 @@ import { createContext, useContext, useLayoutEffect, useState, type CSSPropertie
 import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { PrintedSheet, TestPool } from "../api/types";
+import { useClanName } from "../components/ClanNames";
 import { Pips } from "../components/ui";
 import { useDates } from "../dates";
 import { HEALTH_RULE, healthRows } from "../health";
@@ -219,6 +220,7 @@ function TraitList({
 }) {
   const blanks = Math.max(0, empty - traits.length);
   const identityOf = (name: string) => identities.find((i) => i.name === name);
+  const named = useClanName();
   return (
     <ul className="text-[11px] leading-5">
       {traits.map((t) => {
@@ -228,7 +230,7 @@ function TraitList({
           <li key={`${t.category}/${t.name}/${t.detail}`} className="border-b border-dotted border-neutral-400">
             <div className="flex items-baseline justify-between gap-2">
               <span className="min-w-0">
-                {label(t)}
+                {named(label(t))}
                 {brackets && inline && ` ${brackets}`}
                 {t.pending_from !== null && <em className="ml-1 text-neutral-500">(awaiting approval from {t.pending_from})</em>}
                 {t.house && <em className="ml-1 text-neutral-500">★ {t.house}</em>}
@@ -327,6 +329,7 @@ function Changes({ pool, modifiers }: { pool: TestPool; modifiers: Modifier[] })
 function Sheet({ sheet }: { sheet: PrintedSheet }) {
   const paper = usePreferences().paper;
   const dates = useDates();
+  const named = useClanName();
   const t = sheet.traits;
   // The server works Blood out (by Generation, or a ghoul's vitae and human Blood).
   const blood = sheet.blood;
@@ -359,7 +362,7 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
           <dd className="border-b border-black">{sheet.player_name}</dd>
           <dt className="font-bold">Clan</dt>
           <dd className="border-b border-black">
-            {one(t, "clan")}
+            {named(one(t, "clan"))}
             {sheet.domitor && <span className="text-[10px]"> (domitor {sheet.domitor})</span>}
           </dd>
           <dt className="font-bold">Archetype</dt>

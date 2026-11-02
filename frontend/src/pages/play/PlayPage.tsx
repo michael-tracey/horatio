@@ -11,6 +11,7 @@ import { useAction, usePreferences } from "../../hooks";
 import { offered, reachNote, TYPE_NAMES } from "../../influence";
 import { choiceName } from "../character/creation/logic";
 import { ChoiceInfo } from "../character/Info";
+import { useClanName } from "../../components/ClanNames";
 import { Derangements, showsDerangements } from "./Derangements";
 import { EquipmentTab } from "./Equipment";
 import { Feed, FeedButton } from "./Feed";
@@ -439,19 +440,20 @@ export function SyncStatus({ sync }: { sync: Sync }) {
  */
 function Identity({ view }: { view: PlayView }) {
   const { reference } = useReference(view.character_id);
+  const named = useClanName();
   const choices = reference?.traits.filter((t) => t.group === "Identity") ?? [];
   const facts: ReactNode[] = [
     ...(choices.length > 0
       ? choices.map((t) => (
           <span key={t.category} className="whitespace-nowrap">
-            <span className="text-parchment/90">{choiceName(t)}</span>
-            <ChoiceInfo choice={t} shown={choiceName(t)} about={t} />
+            <span className="text-parchment/90">{named(choiceName(t))}</span>
+            <ChoiceInfo choice={t} shown={named(choiceName(t))} about={t} />
           </span>
         ))
-      : [view.clan, view.sect]),
+      : [named(view.clan), view.sect]),
     // A ghoul's domitor, beside the clan it takes from it.
     reference?.domitor ? (
-      <span key="domitor" className="whitespace-nowrap" title={reference.domitor.weakness ?? undefined}>
+      <span key="domitor" className="whitespace-nowrap" title={named(reference.domitor.weakness) ?? undefined}>
         Domitor: <span className="text-parchment/90">{reference.domitor.name}</span>
       </span>
     ) : null,

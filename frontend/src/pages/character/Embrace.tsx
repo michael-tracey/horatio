@@ -3,6 +3,7 @@ import { useDeferredValue, useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, EmbraceOut, EmbracePlanOut, EmbraceStepOut } from "../../api/types";
+import { useClanName } from "../../components/ClanNames";
 import { DateInput } from "../../components/DateInput";
 import { Dialog } from "../../components/Dialog";
 import { Button, Card, ErrorText, Field, Input, Select, Textarea } from "../../components/ui";
@@ -54,6 +55,7 @@ export function EmbraceCard({ character, catalogue }: { character: CharacterOut;
 }
 
 function EmbraceEntry({ entry, day }: { entry: EmbraceOut; day: string }) {
+  const named = useClanName();
   const sire = entry.sire_id ? (
     <Link className="text-gold underline" to={`/characters/${entry.sire_id}`}>
       {entry.sire_name}
@@ -74,7 +76,7 @@ function EmbraceEntry({ entry, day }: { entry: EmbraceOut; day: string }) {
   return (
     <li>
       <p className="text-parchment">
-        Embraced {day} by {sire}, of {entry.sire_clan}
+        Embraced {day} by {sire}, of {named(entry.sire_clan)}
         {entry.sire_generation ? `, ${ordinal(entry.sire_generation)} generation` : ""}.
       </p>
       {entry.note && <p className="text-xs text-mist">{entry.note}</p>}
@@ -87,7 +89,7 @@ function EmbraceEntry({ entry, day }: { entry: EmbraceOut; day: string }) {
 }
 
 /** Each step's lines with their XP. */
-function StepList({ steps }: { steps: EmbraceStepOut[] }) {
+function StepList({ steps, named }: { steps: EmbraceStepOut[]; named?: (text: string) => string }) {
   return (
     <ol className="mt-1 flex flex-col gap-2">
       {steps.map((s) => (
@@ -95,19 +97,20 @@ function StepList({ steps }: { steps: EmbraceStepOut[] }) {
           <p className="text-parchment">
             {s.title} {s.xp !== 0 && <span className="font-mono text-xs">{xpText(s.xp)}</span>}
           </p>
-          <StepLines step={s} />
+          <StepLines step={s} named={named} />
         </li>
       ))}
     </ol>
   );
 }
 
-function StepLines({ step }: { step: EmbraceStepOut }) {
+/** A step's lines: as recorded, for an Embrace in the log; `named` shows a plan's as the troupe calls the clan. */
+function StepLines({ step, named = (text) => text }: { step: EmbraceStepOut; named?: (text: string) => string }) {
   return (
     <ul className="flex flex-col gap-0.5 text-xs text-mist">
       {step.lines.map((l, i) => (
         <li key={i} className="flex justify-between gap-3">
-          <span>{l.text}</span>
+          <span>{named(l.text)}</span>
           {l.xp !== 0 && <span className={`shrink-0 font-mono ${l.xp < 0 ? "text-blood-bright" : "text-gold"}`}>{xpText(l.xp)}</span>}
         </li>
       ))}
@@ -137,6 +140,7 @@ function today(dates: ReturnType<typeof useDates>) {
  */
 function EmbraceForm({ character, catalogue, onClose }: { character: CharacterOut; catalogue: CatalogueOut; onClose: () => void }) {
   const dates = useDates();
+  const named = useClanName();
   const [page, setPage] = useState(0);
   const [outcome, setOutcome] = useState<"vampire" | "died">("vampire");
   const [when, setWhen] = useState(today(dates));
@@ -243,7 +247,7 @@ function EmbraceForm({ character, catalogue, onClose }: { character: CharacterOu
           ) : (
             <>
               <p className="text-sm text-mist">
-                Its domitor's clan and rarity merits are stripped, and their XP refunded. It buys the merits {p.sire_clan} needs in the setting: its rarity, and the bloodline merit if
+                Its domitor's clan and rarity merits are stripped, and their XP refunded. It buys the merits {named(p.sire_clan)} needs in the setting: its rarity, and the bloodline merit if
                 the setting has one.
               </p>
               <fieldset className="grid gap-1 text-sm sm:grid-cols-2">
@@ -260,7 +264,7 @@ function EmbraceForm({ character, catalogue, onClose }: { character: CharacterOu
                           set({ clanMerits: chosen ? now.filter((m) => m !== merit) : [...now, merit] });
                         }}
                       />
-                      {merit}
+                      {named(merit)}
                     </label>
                   );
                 })}
@@ -313,7 +317,7 @@ function EmbraceForm({ character, catalogue, onClose }: { character: CharacterOu
 
       {name === "Finishing touches" && p && (
         <>
-          <Field label="Clan weakness" hint={`As the player takes it for ${p.sire_clan}: a Malkavian's derangement, say.`}>
+          <Field label="Clan weakness" hint={`As the player takes it for ${named(p.sire_clan)}: a Malkavian's derangement, say.`}>
             <Input maxLength={1000} value={draft.weakness} onChange={(e) => set({ weakness: e.target.value })} />
           </Field>
           <fieldset className="flex flex-col gap-1 text-sm">
@@ -341,7 +345,7 @@ function EmbraceForm({ character, catalogue, onClose }: { character: CharacterOu
 
       {name === "Confirm" && p && (
         <>
-          <StepList steps={p.steps} />
+          <StepList steps={p.steps} named={named} />
           <p className="text-sm">
             {balanceText(p.balance_before)} before; {balanceText(p.balance_after)} after.
             {p.debt > 0 && ` All the XP ${character.name} earns goes to its debt of ${p.debt} until it is paid off.`}
@@ -353,7 +357,7 @@ function EmbraceForm({ character, catalogue, onClose }: { character: CharacterOu
               ))}
             </ul>
           )}
-          <p className="text-xs text-mist">Confirming makes {character.name} a vampire of {p.clan}, by the vampire rules, with no domitor. Every step goes in its log, and its player is told.</p>
+          <p className="text-xs text-mist">Confirming makes {character.name} a vampire of {named(p.clan)}, by the vampire rules, with no domitor. Every step goes in its log, and its player is told.</p>
         </>
       )}
 
@@ -396,10 +400,11 @@ function removedNow(draft: EmbraceDraft, plan: EmbracePlanOut) {
 /** One step of the plan, with its XP and what the character has after it. */
 function PlanStep({ plan, step }: { plan: EmbracePlanOut; step: string }) {
   const found = running(plan).find((r) => r.step.key === step);
+  const named = useClanName();
   if (!found) return null;
   return (
     <div className="rounded-md border border-ash p-2" aria-label="This step">
-      <StepLines step={found.step} />
+      <StepLines step={found.step} named={named} />
       <p className="mt-2 flex justify-between border-t border-ash pt-1 text-xs">
         <span>
           This step: <span className="font-mono">{xpText(found.step.xp) || "no XP"}</span>
@@ -433,6 +438,7 @@ function SirePage({
     placeholderData: (previous) => previous,
   });
   const domitor = useDomitor(character);
+  const shown = useClanName();
   const sire = draft.sire;
   const named = sire.kind === "named" ? sire : { kind: "named" as const, name: "", clan: "", generation: null };
   return (
@@ -462,7 +468,7 @@ function SirePage({
                     <input type="radio" name="sire-choice" checked={sire.choice?.character_id === c.character_id} onChange={() => set({ sire: { kind: "linked", choice: c }, clanMerits: null })} />
                     <span className="text-parchment">{c.name}</span>
                     <span className="text-mist">
-                      {c.clan} · {c.generation ? `${ordinal(c.generation)} generation` : "no Generation"} · {c.kind === "npc" ? "NPC" : "PC"}
+                      {shown(c.clan)} · {c.generation ? `${ordinal(c.generation)} generation` : "no Generation"} · {c.kind === "npc" ? "NPC" : "PC"}
                     </span>
                   </label>
                 </li>
@@ -480,7 +486,9 @@ function SirePage({
             <Select value={named.clan} onChange={(e) => set({ sire: { ...named, clan: e.target.value }, clanMerits: null })}>
               <option value="">Choose…</option>
               {clansOf(catalogue).map((clan) => (
-                <option key={clan}>{clan}</option>
+                <option key={clan} value={clan}>
+                  {shown(clan)}
+                </option>
               ))}
             </Select>
           </Field>
@@ -498,7 +506,8 @@ function SirePage({
       )}
       {plan?.generation && (
         <p className="text-sm text-mist">
-          {character.name} would be a vampire of {plan.clan}, {ordinal(plan.generation)} generation. In-clan: {listed(plan.in_clan)}.
+          {character.name} would be a vampire of {shown(plan.clan)}, {ordinal
+(plan.generation)} generation. In-clan: {listed(plan.in_clan)}.
         </p>
       )}
     </>

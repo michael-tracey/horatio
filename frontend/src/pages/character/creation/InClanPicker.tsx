@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../../api/client";
 import type { CatalogueOut, CharacterOut, CreationOut, SheetOut } from "../../../api/types";
+import { useClanName } from "../../../components/ClanNames";
 import { Button, ErrorText } from "../../../components/ui";
 import { useAction, useUnavailable } from "../../../hooks";
 import { EXTRA_IN_CLAN, either, inClanChoice, inClanOptions, sheetKey, whenTapped } from "./inClan";
@@ -156,6 +157,7 @@ export function ClanChoice({ character, creation, catalogue }: { character: Char
   const choice = creation.clan_choice;
   // The one tapped shows as chosen at once, while it is saved and the sheet read again.
   const [tapped, setTapped] = useState<string | null>(null);
+  const named = useClanName();
   const choose = useAction((detail: string) =>
     unwrap(
       api.PUT("/api/characters/{character_id}/traits", {
@@ -172,7 +174,8 @@ export function ClanChoice({ character, creation, catalogue }: { character: Char
     <fieldset className="flex flex-col gap-2 rounded-md border border-ash p-3">
       <legend className="px-1 text-sm text-parchment">In-clan choice{chosen ? "" : " (0 of 1)"}</legend>
       <p className="text-xs text-mist">
-        {choice.clan}: {own.length ? `${own.join(", ")}, and one of ` : "one of "}
+        {named(choice.clan)}: {own.length
+ ? `${own.join(", ")}, and one of ` : "one of "}
         {either(choice.choices)}
         {page}.
       </p>
