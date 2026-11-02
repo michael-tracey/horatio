@@ -19,7 +19,10 @@ had one; if not, it starts where the last game left it.
 Attendance is fact, apart from the RSVP (intent), and is what staff award a game's
 XP from (horatio.api.checkin). The book suggests 3 to 5 XP a game, and no more than
 8 to 10 a month (core, p. 108, "XP for Playing"), so an award that takes a character
-past MONTHLY_XP earned in the calendar month is warned of, never refused.
+past MONTHLY_XP earned in the calendar month is warned of, never refused. A troupe
+may chart its game XP instead, cap it monthly, and record absentee games
+(horatio.game_xp). An absentee game is its own kind of attendance, never counted as
+having been there: ATTENDED picks out the characters who came.
 """
 
 import secrets
@@ -32,7 +35,7 @@ from sqlalchemy.orm import Session
 
 from horatio import audit, play
 from horatio.models import Character, GameAttendance, PlayGame, ScheduledGame, User, XpEntry
-from horatio.sheets import unprocessable
+from horatio.sheets import conflict, unprocessable
 
 # Check-in can open this long before a game starts, and taps made on the Play View
 # since then are tonight's.
@@ -51,6 +54,8 @@ MONTHLY_XP = 10
 # (horatio.sheets.start_character), and the top-up and extra a troupe gives on
 # joining (horatio.xp_range.top_up, give_extra). Matched by how their reasons start.
 NOT_EARNED = ("Starting experience", "Top-up to ", "Extra XP on joining ")
+# Attendance that was being there: not an absentee game (horatio.game_xp).
+ATTENDED = GameAttendance.kind == "attended"
 
 
 def now() -> datetime:
@@ -168,7 +173,11 @@ def check_in(
     night. Says whether it is new: checking in twice changes nothing. The caller holds
     the character's lock."""
     found = attendance_of(db, game, character)
-    if found is not None:
+    if found is not None and found.kind == "absentee":
+        # It came after all: staff put right an absentee game.
+        db.delete(found)
+        db.flush()
+    elif found is not None:
         return found, False
     night = start_night(db, character, actor, game, rested=rested) if now() < game.ends_at else None
     attendance = GameAttendance(
@@ -192,8 +201,39 @@ def check_in(
     return attendance, True
 
 
+def mark_absentee(
+    db: Session, actor: User, game: ScheduledGame, character: Character, *, by_staff: bool
+) -> GameAttendance:
+    """Record the character as absentee for the game (horatio.game_xp). Marking it
+    twice changes nothing; a character who checked in came, and is not absentee."""
+    found = attendance_of(db, game, character)
+    if found is not None:
+        if found.kind != "absentee":
+            raise conflict(f"{character.name} checked in to this game, so it came.")
+        return found
+    attendance = GameAttendance(
+        game_id=game.id,
+        character_id=character.id,
+        checked_in_by=actor.id,
+        by_staff=by_staff,
+        kind="absentee",
+    )
+    db.add(attendance)
+    audit.record(
+        db,
+        actor,
+        "play.absentee_marked",
+        troupe_id=game.troupe_id,
+        character_id=character.id,
+        game=when(game),
+    )
+    db.flush()
+    return attendance
+
+
 def check_out(db: Session, actor: User, game: ScheduledGame, character: Character) -> None:
-    """Take the character off the game's attendance. Its Play View is left as it is."""
+    """Take the character off the game's attendance, checked in or absentee. Its Play
+    View is left as it is."""
     found = attendance_of(db, game, character)
     if found is None:
         return
@@ -201,7 +241,7 @@ def check_out(db: Session, actor: User, game: ScheduledGame, character: Characte
     audit.record(
         db,
         actor,
-        "play.checked_out",
+        "play.absentee_unmarked" if found.kind == "absentee" else "play.checked_out",
         troupe_id=game.troupe_id,
         character_id=character.id,
         game=when(game),
@@ -213,25 +253,32 @@ def month_start(today: date) -> date:
     return today.replace(day=1)
 
 
-def earned_this_month(
-    db: Session, character_ids: Iterable[uuid.UUID], today: date | None = None
+def earned(
+    db: Session, character_ids: Iterable[uuid.UUID], since: date | None = None
 ) -> dict[uuid.UUID, int]:
-    """XP each character has been awarded in the calendar month so far, corrections
-    included: what the book's monthly guidance counts. Starting XP and what joining a
-    troupe gave are left out, as they were not earned in play."""
+    """XP each character has been awarded, since a day or in all, corrections included.
+    Starting XP and what joining a troupe gave are left out, as they were not earned in
+    play. A game XP chart's bands count it in all (horatio.game_xp)."""
     ids = list(character_ids)
     if not ids:
         return {}
-    since = month_start(today or now().date())
     rows = db.execute(
         select(XpEntry.character_id, func.sum(XpEntry.amount))
         .where(
             XpEntry.character_id.in_(ids),
             XpEntry.kind.in_(("award", "correction")),
-            XpEntry.entered_on >= since,
+            *([XpEntry.entered_on >= since] if since is not None else []),
             *(~XpEntry.reason.startswith(start, autoescape=True) for start in NOT_EARNED),
         )
         .group_by(XpEntry.character_id)
     )
     found = {character_id: int(total or 0) for character_id, total in rows}
     return {i: found.get(i, 0) for i in ids}
+
+
+def earned_this_month(
+    db: Session, character_ids: Iterable[uuid.UUID], today: date | None = None
+) -> dict[uuid.UUID, int]:
+    """XP each character has earned in the calendar month so far: what the book's
+    monthly guidance counts."""
+    return earned(db, character_ids, month_start(today or now().date()))

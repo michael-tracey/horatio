@@ -12,7 +12,16 @@ from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import audit, clan_merits, diablerie, feeding, rack, resonance, territories
+from horatio import (
+    audit,
+    clan_merits,
+    diablerie,
+    feeding,
+    game_xp,
+    rack,
+    resonance,
+    territories,
+)
 from horatio.api.downtimes import staff_troupe
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
@@ -1262,6 +1271,10 @@ def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
                     book_text=book or "Not given",
                 )
             )
+    found.extend(
+        HouseSettingOut(name=name, text=text, book_text=book)
+        for name, text, book in game_xp.house_settings(troupe)
+    )
     return found
 
 

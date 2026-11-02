@@ -1147,6 +1147,108 @@ test("players check in at the door and land in their Play View, and staff award 
   await expect(p.getByRole("list", { name: "Games attended" })).toContainText(troupeName);
 });
 
+test("staff set a tapering game XP chart and award a game by it, with an absentee and an adjustment", async ({ browser }) => {
+  const custodian = await person(browser, "chart-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "chart-lead");
+  const player = await person(browser, "chart-player");
+  const troupeName = `Tapers of the Teme ${run}`;
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const { id: troupeId } = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupeId);
+  const start = new Date(Date.now() - 60 * 60_000);
+  await send(lead.page, "POST", `/api/troupes/${troupeId}/games`, { starts_at: start.toISOString(), ends_at: new Date(start.getTime() + 5 * 60 * 60_000).toISOString() });
+  // Tamsin and Ulric are at home in the troupe; Tamsin has earned 250 XP, Ulric none.
+  const picks: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Haven", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  const homed = async (name: string) => {
+    const { id } = await send(player.page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(player.page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+    for (const [category, list] of Object.entries(picks))
+      await send(player.page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+    await send(player.page, "POST", `/api/characters/${id}/creation/complete`);
+    const asked = await send(player.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    return id as string;
+  };
+  const tamsin = await homed("Tamsin");
+  await homed("Ulric");
+  await send(lead.page, "POST", `/api/characters/${tamsin}/xp`, { amount: 250, reason: "Games before Horatio" });
+
+  // The lead starts from AIT's taper, records absentee games, adds an adjustment, and switches the monthly cap off.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/settings`);
+  const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Game XP chart", exact: true }) });
+  await expect(card.getByText(/^Flat: everyone there gets the same XP/)).toBeVisible();
+  await card.getByRole("button", { name: "Change the game XP chart" }).click();
+  await card.getByRole("button", { name: "AIT taper" }).click();
+  await expect(card.getByLabel("Band 2: earned XP up to")).toHaveValue("300");
+  await card.getByLabel("Record absentee games").check();
+  await card.getByRole("button", { name: "Add an adjustment" }).click();
+  await card.getByLabel("Adjustment 1: name").fill("Helped");
+  await card.getByLabel("Adjustment 1: times a month").fill("1");
+  await card.getByLabel(/^Off/).check();
+  await expect(card.getByText(/^Payments aren't tracked in Horatio/)).toBeVisible();
+  await l.screenshot(shots("game-xp-chart-editor"));
+  await card.getByRole("button", { name: "Save" }).click();
+  await expect(l.getByText("Game XP saved.")).toBeVisible();
+  const chart = card.getByRole("table", { name: "Game XP chart" });
+  await expect(chart.getByRole("row")).toHaveCount(6);
+  await expect(chart.getByRole("row", { name: "201–300 4 XP 3 XP" })).toBeVisible();
+  await expect(card.getByText("Helped +1, once a month")).toBeVisible();
+
+  // Players see it on the House rules tab.
+  await player.page.goto(`/troupes/${troupeId}/house-rules`);
+  await expect(player.page.getByRole("table", { name: "Game XP chart" }).getByRole("row", { name: "501+ 1 XP 0 XP" })).toBeVisible();
+
+  // At the game: Tamsin is checked in by hand, Ulric marked absentee.
+  await l.goto(`/troupes/${troupeId}`);
+  await l.getByRole("list", { name: "Games to come" }).getByRole("listitem").first().getByRole("link", { name: "Check-in and attendance" }).click();
+  await expect(l.getByRole("heading", { name: "Game night" })).toBeVisible();
+  const choose = l.getByLabel("Check someone in by hand, or mark them absentee");
+  await choose.selectOption({ label: "Tamsin (chart-player)" });
+  await l.getByRole("button", { name: "Check in", exact: true }).click();
+  await expect(l.getByText("Checked in: Tamsin")).toBeVisible();
+  await choose.selectOption({ label: "Ulric (chart-player)" });
+  await l.getByRole("button", { name: "Mark absentee" }).click();
+  await expect(l.getByText("Marked absentee: Ulric")).toBeVisible();
+  await expect(l.getByRole("heading", { name: "Who came (1)" })).toBeVisible();
+  await expect(l.getByRole("list", { name: "Absentee" })).toContainText("Ulric");
+
+  // Each character's XP comes from the chart: Tamsin is in the 201–300 band, and helped; Ulric gets the absentee figure.
+  const each = l.getByRole("list", { name: "Each character's XP" });
+  const tamsinRow = each.getByRole("listitem").filter({ hasText: "Tamsin" });
+  await expect(tamsinRow).toContainText("Attended, 201–300 band (250 earned): 4 XP");
+  await expect(each.getByRole("listitem").filter({ hasText: "Ulric" })).toContainText("Absentee, 0–200 band (0 earned): 4 XP");
+  await tamsinRow.getByLabel("Helped +1").check();
+  await expect(l.getByLabel("Tamsin gets 5 XP")).toBeVisible();
+  await l.getByRole("button", { name: "Award…" }).click();
+  await l.screenshot(shots("game-night-chart-award"));
+  await l.getByRole("button", { name: "Yes, award 9 XP to 2 characters" }).click();
+  await expect(l.getByText("Awarded 9 XP in all to 2 characters.")).toBeVisible();
+  const got = l.getByRole("list", { name: "What each character got" });
+  await expect(got.getByRole("listitem").filter({ hasText: "Tamsin" })).toContainText("attended, 201–300 band, Helped +1");
+  await expect(got.getByRole("listitem").filter({ hasText: "Ulric" })).toContainText("4 XP");
+
+  // Tamsin's Experience tab has the award, its reason naming her band.
+  await player.page.goto(`/characters/${tamsin}`);
+  await characterTab(player.page, "Experience");
+  await expect(player.page.getByRole("cell", { name: /: attended, 201–300 band, Helped \+1/ })).toBeVisible();
+});
+
 test("a troupe's public page asks a newcomer to make an account, which brings them back to the troupe", async ({ browser }) => {
   const custodian = await person(browser, "joinlink-cust");
   makeCustodian(custodian.email);

@@ -135,6 +135,10 @@ class Troupe(Imported, Record):
     profile: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
     # Who new players should contact: one of its staff.
     contact_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    # Game XP (horatio.game_xp): a chart of XP by earned-XP band and attendance kind,
+    # adjustments, the monthly cap and absentee games, as GameXpSettings writes it.
+    # Empty is the book's way: the session XP for everyone there, warned past 10 a month.
+    game_xp: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
 
 
 class ScheduledGame(Record):
@@ -182,7 +186,10 @@ class GameAttendance(Record):
     record."""
 
     __tablename__ = "game_attendances"
-    __table_args__ = (UniqueConstraint("game_id", "character_id"),)
+    __table_args__ = (
+        UniqueConstraint("game_id", "character_id"),
+        CheckConstraint("kind in ('attended', 'absentee')", name="kind"),
+    )
 
     game_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("scheduled_games.id"))
     character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
@@ -193,6 +200,42 @@ class GameAttendance(Record):
     play_game_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("play_games.id"))
     # Whether its player said it had a full day's rest; None when no night started.
     rested: Mapped[bool | None]
+    # "attended": the character was there. "absentee": it missed the game, and staff
+    # (or its player, where the troupe allows) recorded it as an absentee game
+    # (horatio.game_xp), which earns the chart's absentee XP. Only "attended" is having
+    # been there (horatio.checkin.ATTENDED).
+    kind: Mapped[str] = mapped_column(default="attended", server_default="attended")
+
+
+class GameXpAward(Record):
+    """What one character got for one game's XP (horatio.game_xp): its attendance
+    kind, its band on the troupe's chart, the adjustments ticked, any cap and any
+    figure staff set by hand, and the XP entry it made. Adjustments' monthly limits
+    count from here."""
+
+    __tablename__ = "game_xp_awards"
+    __table_args__ = (UniqueConstraint("game_id", "character_id"),)
+
+    game_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("scheduled_games.id"))
+    character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
+    kind: Mapped[str]
+    # The band's label ("201–300"); None with no chart.
+    band: Mapped[str | None]
+    # The chart's figure (or the flat amount), before adjustments and the cap.
+    figure: Mapped[int]
+    # Each adjustment ticked: {"key", "name", "amount"}.
+    adjustments: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, default=list, server_default="[]"
+    )
+    # What the monthly cap held back.
+    capped: Mapped[int] = mapped_column(default=0, server_default="0")
+    # A figure staff set by hand, and why.
+    override: Mapped[int | None]
+    override_reason: Mapped[str] = mapped_column(default="", server_default="")
+    amount: Mapped[int]
+    # None when it gave nothing.
+    xp_entry_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("xp_entries.id"))
+    awarded_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
 
 
 class CalendarFeed(Record):

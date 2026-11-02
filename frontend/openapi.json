@@ -33,8 +33,12 @@
         "title": "AbidingSourceOut",
         "type": "object"
       },
-      "Absentee": {
+      "AbsenteeMarked": {
         "properties": {
+          "absentee": {
+            "title": "Absentee",
+            "type": "boolean"
+          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -43,18 +47,14 @@
           "character_name": {
             "title": "Character Name",
             "type": "string"
-          },
-          "player_name": {
-            "title": "Player Name",
-            "type": "string"
           }
         },
         "required": [
           "character_id",
           "character_name",
-          "player_name"
+          "absentee"
         ],
-        "title": "Absentee",
+        "title": "AbsenteeMarked",
         "type": "object"
       },
       "ActionKindChoiceOut": {
@@ -124,6 +124,48 @@
           "name"
         ],
         "title": "ActiveIn",
+        "type": "object"
+      },
+      "Adjustment": {
+        "description": "XP staff tick for a character when awarding a game: \"Helped +1\", at most\n`per_month` times a calendar month (None for no limit).",
+        "properties": {
+          "amount": {
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "key": {
+            "default": "",
+            "maxLength": 40,
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "per_month": {
+            "anyOf": [
+              {
+                "maximum": 31.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Month"
+          }
+        },
+        "required": [
+          "name",
+          "amount"
+        ],
+        "title": "Adjustment",
         "type": "object"
       },
       "AdjustmentIn": {
@@ -1063,6 +1105,15 @@
           "home": {
             "title": "Home",
             "type": "boolean"
+          },
+          "kind": {
+            "default": "attended",
+            "enum": [
+              "attended",
+              "absentee"
+            ],
+            "title": "Kind",
+            "type": "string"
           },
           "month_xp": {
             "title": "Month Xp",
@@ -2771,6 +2822,42 @@
           "applies"
         ],
         "title": "BanOut",
+        "type": "object"
+      },
+      "Band": {
+        "description": "One row of the chart: earned XP up to and including `up_to` (None for the last\nrow, which has no top), and the XP for a game attended and an absentee game.",
+        "properties": {
+          "absentee": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Absentee",
+            "type": "integer"
+          },
+          "attended": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Attended",
+            "type": "integer"
+          },
+          "up_to": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Up To"
+          }
+        },
+        "required": [
+          "attended",
+          "absentee"
+        ],
+        "title": "Band",
         "type": "object"
       },
       "BlockChoicesOut": {
@@ -5043,6 +5130,48 @@
           "choices"
         ],
         "title": "CharacterTitlesOut",
+        "type": "object"
+      },
+      "CharacterXpIn": {
+        "description": "Staff's choice for one character: adjustments ticked, or its figure set by hand.",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "override": {
+            "anyOf": [
+              {
+                "maximum": 1000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override"
+          },
+          "override_reason": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Override Reason",
+            "type": "string"
+          },
+          "ticks": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Ticks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_id"
+        ],
+        "title": "CharacterXpIn",
         "type": "object"
       },
       "CheckChange": {
@@ -12241,6 +12370,14 @@
       },
       "GameNight": {
         "properties": {
+          "absentees": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Attendee"
+            },
+            "title": "Absentees",
+            "type": "array"
+          },
           "attendees": {
             "items": {
               "$ref": "#/components/schemas/Attendee"
@@ -12260,6 +12397,18 @@
             "title": "Ends At",
             "type": "string"
           },
+          "game_xp": {
+            "$ref": "#/components/schemas/GameXpSettings",
+            "default": {
+              "absentee": false,
+              "absentee_by_players": false,
+              "absentee_downtime": false,
+              "absentee_lookback_days": 60,
+              "adjustments": [],
+              "bands": [],
+              "cap": "warn"
+            }
+          },
           "game_xp_high": {
             "title": "Game Xp High",
             "type": "integer"
@@ -12267,6 +12416,14 @@
           "game_xp_low": {
             "title": "Game Xp Low",
             "type": "integer"
+          },
+          "given": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/GameXpGiven"
+            },
+            "title": "Given",
+            "type": "array"
           },
           "id": {
             "format": "uuid",
@@ -12279,7 +12436,7 @@
           },
           "others": {
             "items": {
-              "$ref": "#/components/schemas/Absentee"
+              "$ref": "#/components/schemas/NotHere"
             },
             "title": "Others",
             "type": "array"
@@ -12300,6 +12457,14 @@
           },
           "xp": {
             "$ref": "#/components/schemas/GameXp"
+          },
+          "xp_lines": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/XpLine"
+            },
+            "title": "Xp Lines",
+            "type": "array"
           }
         },
         "required": [
@@ -12517,6 +12682,14 @@
       },
       "GameXpAwarded": {
         "properties": {
+          "capped": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Capped",
+            "type": "array"
+          },
           "characters": {
             "title": "Characters",
             "type": "integer"
@@ -12541,13 +12714,114 @@
         "title": "GameXpAwarded",
         "type": "object"
       },
+      "GameXpGiven": {
+        "description": "What one character got for the game, once awarded.",
+        "properties": {
+          "adjustments": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Adjustments",
+            "type": "array"
+          },
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "band": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Band"
+          },
+          "capped": {
+            "title": "Capped",
+            "type": "integer"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "figure": {
+            "title": "Figure",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "attended",
+              "absentee"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "override": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override"
+          },
+          "override_reason": {
+            "title": "Override Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "kind",
+          "band",
+          "figure",
+          "adjustments",
+          "capped",
+          "override",
+          "override_reason",
+          "amount"
+        ],
+        "title": "GameXpGiven",
+        "type": "object"
+      },
       "GameXpIn": {
         "properties": {
+          "absentee_amount": {
+            "anyOf": [
+              {
+                "maximum": 1000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Absentee Amount"
+          },
           "amount": {
             "maximum": 1000.0,
             "minimum": 1.0,
             "title": "Amount",
             "type": "integer"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterXpIn"
+            },
+            "title": "Characters",
+            "type": "array"
           },
           "reason": {
             "maxLength": 500,
@@ -12566,6 +12840,76 @@
           "reason"
         ],
         "title": "GameXpIn",
+        "type": "object"
+      },
+      "GameXpSettings": {
+        "description": "A troupe's game XP, as Troupe.game_xp keeps it. The defaults are the book's way.",
+        "properties": {
+          "absentee": {
+            "default": false,
+            "title": "Absentee",
+            "type": "boolean"
+          },
+          "absentee_by_players": {
+            "default": false,
+            "title": "Absentee By Players",
+            "type": "boolean"
+          },
+          "absentee_downtime": {
+            "default": false,
+            "title": "Absentee Downtime",
+            "type": "boolean"
+          },
+          "absentee_lookback_days": {
+            "default": 60,
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Absentee Lookback Days",
+            "type": "integer"
+          },
+          "adjustments": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Adjustment"
+            },
+            "maxItems": 12,
+            "title": "Adjustments",
+            "type": "array"
+          },
+          "bands": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Band"
+            },
+            "maxItems": 20,
+            "title": "Bands",
+            "type": "array"
+          },
+          "cap": {
+            "default": "warn",
+            "enum": [
+              "warn",
+              "cap",
+              "off"
+            ],
+            "title": "Cap",
+            "type": "string"
+          },
+          "monthly_xp": {
+            "anyOf": [
+              {
+                "maximum": 1000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monthly Xp"
+          }
+        },
+        "title": "GameXpSettings",
         "type": "object"
       },
       "GatheredOut": {
@@ -18385,6 +18729,50 @@
         "title": "MetIn",
         "type": "object"
       },
+      "MissedGame": {
+        "description": "A game that has started, whose XP is still to award, and the caller's characters\nat home in the troupe: for a player to mark one absentee, where the troupe allows.",
+        "properties": {
+          "absentee": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Absentee",
+            "type": "array"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CheckInCharacter"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "game_id": {
+            "format": "uuid",
+            "title": "Game Id",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "game_id",
+          "starts_at",
+          "ends_at",
+          "characters",
+          "absentee"
+        ],
+        "title": "MissedGame",
+        "type": "object"
+      },
       "ModifierChange": {
         "description": "Whatever of a modifier is changing; the rest stays.",
         "properties": {
@@ -18699,6 +19087,17 @@
             },
             "title": "Breakdown",
             "type": "array"
+          },
+          "closed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed"
           },
           "closes_at": {
             "format": "date-time",
@@ -19319,6 +19718,35 @@
           "text"
         ],
         "title": "NotAllowedOut",
+        "type": "object"
+      },
+      "NotHere": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "home": {
+            "default": true,
+            "title": "Home",
+            "type": "boolean"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "player_name"
+        ],
+        "title": "NotHere",
         "type": "object"
       },
       "NoteIn": {
@@ -35153,6 +35581,77 @@
           "to_rating"
         ],
         "title": "XpEntryOut",
+        "type": "object"
+      },
+      "XpLine": {
+        "description": "What one character would get for the game (horatio.game_xp): its attendance\nkind, its band and the chart's figure, and what the monthly cap leaves.",
+        "properties": {
+          "band": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Band"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "earned_xp": {
+            "title": "Earned Xp",
+            "type": "integer"
+          },
+          "figure": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Figure"
+          },
+          "kind": {
+            "enum": [
+              "attended",
+              "absentee"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "month_xp": {
+            "title": "Month Xp",
+            "type": "integer"
+          },
+          "used": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Used",
+            "type": "object"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "kind",
+          "earned_xp",
+          "month_xp",
+          "band",
+          "figure",
+          "used"
+        ],
+        "title": "XpLine",
         "type": "object"
       },
       "XpRangeChange": {
@@ -54235,6 +54734,102 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/game-xp": {
+      "get": {
+        "description": "The troupe's game XP settings. Like its house rules, anyone signed in may read them.",
+        "operationId": "read_game_xp_api_troupes__troupe_id__game_xp_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameXpSettings"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Game Xp",
+        "tags": [
+          "game xp"
+        ]
+      },
+      "put": {
+        "description": "Set the troupe's game XP, all of it at once. The defaults are the book's way.",
+        "operationId": "save_game_xp_api_troupes__troupe_id__game_xp_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GameXpSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameXpSettings"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Game Xp",
+        "tags": [
+          "game xp"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/games": {
       "get": {
         "description": "The troupe's games still to come (or under way), soonest first, with how\nmany are coming: for its members.",
@@ -54335,6 +54930,54 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/games/missed": {
+      "get": {
+        "description": "The troupe's games that have started and whose XP is still to award, newest\nfirst, with the caller's characters at home here that didn't check in: for a player\nto mark one absentee, where the troupe lets players. Empty where it doesn't.",
+        "operationId": "missed_games_api_troupes__troupe_id__games_missed_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MissedGame"
+                  },
+                  "title": "Response Missed Games Api Troupes  Troupe Id  Games Missed Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Missed Games",
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/games/past": {
       "get": {
         "description": "The troupe's latest games already over, newest first, with how many came: for\nits staff, to see who came and award the XP.",
@@ -54426,6 +55069,132 @@
         "summary": "Remove Game",
         "tags": [
           "troupe profiles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/games/{game_id}/absentee/{character_id}": {
+      "delete": {
+        "description": "Take back a character's absentee game. One checked in is left as it is.",
+        "operationId": "unmark_absentee_api_troupes__troupe_id__games__game_id__absentee__character_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "game_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Game Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbsenteeMarked"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unmark Absentee",
+        "tags": [
+          "check-in"
+        ]
+      },
+      "put": {
+        "description": "Record a character as absentee for a game it missed (horatio.game_xp): the\ntroupe's running staff, or its player where the troupe allows. Payments aren't\ntracked here: marking it is the record.",
+        "operationId": "mark_absentee_api_troupes__troupe_id__games__game_id__absentee__character_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "game_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Game Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbsenteeMarked"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mark Absentee",
+        "tags": [
+          "check-in"
         ]
       }
     },

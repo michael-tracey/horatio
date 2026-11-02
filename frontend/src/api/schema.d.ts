@@ -6043,6 +6043,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/game-xp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Game Xp
+         * @description The troupe's game XP settings. Like its house rules, anyone signed in may read them.
+         */
+        get: operations["read_game_xp_api_troupes__troupe_id__game_xp_get"];
+        /**
+         * Save Game Xp
+         * @description Set the troupe's game XP, all of it at once. The defaults are the book's way.
+         */
+        put: operations["save_game_xp_api_troupes__troupe_id__game_xp_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/games": {
         parameters: {
             query?: never;
@@ -6062,6 +6086,28 @@ export interface paths {
          * @description A game the troupe will run, for its profile's schedule.
          */
         post: operations["add_game_api_troupes__troupe_id__games_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/games/missed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Missed Games
+         * @description The troupe's games that have started and whose XP is still to award, newest
+         *     first, with the caller's characters at home here that didn't check in: for a player
+         *     to mark one absentee, where the troupe lets players. Empty where it doesn't.
+         */
+        get: operations["missed_games_api_troupes__troupe_id__games_missed_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6101,6 +6147,32 @@ export interface paths {
         post?: never;
         /** Remove Game */
         delete: operations["remove_game_api_troupes__troupe_id__games__game_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/games/{game_id}/absentee/{character_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Mark Absentee
+         * @description Record a character as absentee for a game it missed (horatio.game_xp): the
+         *     troupe's running staff, or its player where the troupe allows. Payments aren't
+         *     tracked here: marking it is the record.
+         */
+        put: operations["mark_absentee_api_troupes__troupe_id__games__game_id__absentee__character_id__put"];
+        post?: never;
+        /**
+         * Unmark Absentee
+         * @description Take back a character's absentee game. One checked in is left as it is.
+         */
+        delete: operations["unmark_absentee_api_troupes__troupe_id__games__game_id__absentee__character_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -7674,8 +7746,10 @@ export interface components {
             /** Status */
             status: components["schemas"]["SourceStatus"][];
         };
-        /** Absentee */
-        Absentee: {
+        /** AbsenteeMarked */
+        AbsenteeMarked: {
+            /** Absentee */
+            absentee: boolean;
             /**
              * Character Id
              * Format: uuid
@@ -7683,8 +7757,6 @@ export interface components {
             character_id: string;
             /** Character Name */
             character_name: string;
-            /** Player Name */
-            player_name: string;
         };
         /** ActionKindChoiceOut */
         ActionKindChoiceOut: {
@@ -7717,6 +7789,24 @@ export interface components {
         ActiveIn: {
             /** Name */
             name: string;
+        };
+        /**
+         * Adjustment
+         * @description XP staff tick for a character when awarding a game: "Helped +1", at most
+         *     `per_month` times a calendar month (None for no limit).
+         */
+        Adjustment: {
+            /** Amount */
+            amount: number;
+            /**
+             * Key
+             * @default
+             */
+            key: string;
+            /** Name */
+            name: string;
+            /** Per Month */
+            per_month?: number | null;
         };
         /** AdjustmentIn */
         AdjustmentIn: {
@@ -8140,6 +8230,12 @@ export interface components {
             checked_in_at: string;
             /** Home */
             home: boolean;
+            /**
+             * Kind
+             * @default attended
+             * @enum {string}
+             */
+            kind: "attended" | "absentee";
             /** Month Xp */
             month_xp: number;
             player: components["schemas"]["ProfilePerson"];
@@ -8770,6 +8866,19 @@ export interface components {
             page: string | null;
             /** Reason */
             reason: string;
+        };
+        /**
+         * Band
+         * @description One row of the chart: earned XP up to and including `up_to` (None for the last
+         *     row, which has no top), and the XP for a game attended and an absentee game.
+         */
+        Band: {
+            /** Absentee */
+            absentee: number;
+            /** Attended */
+            attended: number;
+            /** Up To */
+            up_to?: number | null;
         };
         /** BlockChoicesOut */
         BlockChoicesOut: {
@@ -9541,6 +9650,26 @@ export interface components {
             troupe_name: string | null;
             /** Why */
             why: string | null;
+        };
+        /**
+         * CharacterXpIn
+         * @description Staff's choice for one character: adjustments ticked, or its figure set by hand.
+         */
+        CharacterXpIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Override */
+            override?: number | null;
+            /**
+             * Override Reason
+             * @default
+             */
+            override_reason: string;
+            /** Ticks */
+            ticks?: string[];
         };
         /** CheckChange */
         CheckChange: {
@@ -12278,6 +12407,11 @@ export interface components {
         };
         /** GameNight */
         GameNight: {
+            /**
+             * Absentees
+             * @default []
+             */
+            absentees: components["schemas"]["Attendee"][];
             /** Attendees */
             attendees: components["schemas"]["Attendee"][];
             /** Can Award */
@@ -12288,10 +12422,27 @@ export interface components {
              * Format: date-time
              */
             ends_at: string;
+            /**
+             * @default {
+             *       "absentee": false,
+             *       "absentee_by_players": false,
+             *       "absentee_downtime": false,
+             *       "absentee_lookback_days": 60,
+             *       "adjustments": [],
+             *       "bands": [],
+             *       "cap": "warn"
+             *     }
+             */
+            game_xp: components["schemas"]["GameXpSettings"];
             /** Game Xp High */
             game_xp_high: number;
             /** Game Xp Low */
             game_xp_low: number;
+            /**
+             * Given
+             * @default []
+             */
+            given: components["schemas"]["GameXpGiven"][];
             /**
              * Id
              * Format: uuid
@@ -12300,7 +12451,7 @@ export interface components {
             /** Monthly Xp */
             monthly_xp: number;
             /** Others */
-            others: components["schemas"]["Absentee"][];
+            others: components["schemas"]["NotHere"][];
             /** Session Xp */
             session_xp: number;
             /**
@@ -12314,6 +12465,11 @@ export interface components {
              */
             troupe_id: string;
             xp: components["schemas"]["GameXp"];
+            /**
+             * Xp Lines
+             * @default []
+             */
+            xp_lines: components["schemas"]["XpLine"][];
         };
         /** GameOut */
         GameOut: {
@@ -12382,6 +12538,11 @@ export interface components {
         };
         /** GameXpAwarded */
         GameXpAwarded: {
+            /**
+             * Capped
+             * @default []
+             */
+            capped: string[];
             /** Characters */
             characters: number;
             /** Past Monthly */
@@ -12389,10 +12550,46 @@ export interface components {
             /** Total */
             total: number;
         };
-        /** GameXpIn */
-        GameXpIn: {
+        /**
+         * GameXpGiven
+         * @description What one character got for the game, once awarded.
+         */
+        GameXpGiven: {
+            /** Adjustments */
+            adjustments: string[];
             /** Amount */
             amount: number;
+            /** Band */
+            band: string | null;
+            /** Capped */
+            capped: number;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Figure */
+            figure: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "attended" | "absentee";
+            /** Override */
+            override: number | null;
+            /** Override Reason */
+            override_reason: string;
+        };
+        /** GameXpIn */
+        GameXpIn: {
+            /** Absentee Amount */
+            absentee_amount?: number | null;
+            /** Amount */
+            amount: number;
+            /** Characters */
+            characters?: components["schemas"]["CharacterXpIn"][];
             /** Reason */
             reason: string;
             /**
@@ -12400,6 +12597,50 @@ export interface components {
              * @default true
              */
             to_range: boolean;
+        };
+        /**
+         * GameXpSettings
+         * @description A troupe's game XP, as Troupe.game_xp keeps it. The defaults are the book's way.
+         */
+        GameXpSettings: {
+            /**
+             * Absentee
+             * @default false
+             */
+            absentee: boolean;
+            /**
+             * Absentee By Players
+             * @default false
+             */
+            absentee_by_players: boolean;
+            /**
+             * Absentee Downtime
+             * @default false
+             */
+            absentee_downtime: boolean;
+            /**
+             * Absentee Lookback Days
+             * @default 60
+             */
+            absentee_lookback_days: number;
+            /**
+             * Adjustments
+             * @default []
+             */
+            adjustments: components["schemas"]["Adjustment"][];
+            /**
+             * Bands
+             * @default []
+             */
+            bands: components["schemas"]["Band"][];
+            /**
+             * Cap
+             * @default warn
+             * @enum {string}
+             */
+            cap: "warn" | "cap" | "off";
+            /** Monthly Xp */
+            monthly_xp?: number | null;
         };
         /** GatheredOut */
         GatheredOut: {
@@ -14721,6 +14962,32 @@ export interface components {
             option: number;
         };
         /**
+         * MissedGame
+         * @description A game that has started, whose XP is still to award, and the caller's characters
+         *     at home in the troupe: for a player to mark one absentee, where the troupe allows.
+         */
+        MissedGame: {
+            /** Absentee */
+            absentee: string[];
+            /** Characters */
+            characters: components["schemas"]["CheckInCharacter"][];
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /**
+             * Game Id
+             * Format: uuid
+             */
+            game_id: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+        };
+        /**
          * ModifierChange
          * @description Whatever of a modifier is changing; the rest stays.
          */
@@ -14834,6 +15101,8 @@ export interface components {
             answers: components["schemas"]["AnswerOut"][];
             /** Breakdown */
             breakdown: components["schemas"]["AllowanceLineOut"][];
+            /** Closed */
+            closed?: string | null;
             /**
              * Closes At
              * Format: date-time
@@ -15100,6 +15369,23 @@ export interface components {
             name: string;
             /** Text */
             text: string | null;
+        };
+        /** NotHere */
+        NotHere: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /**
+             * Home
+             * @default true
+             */
+            home: boolean;
+            /** Player Name */
+            player_name: string;
         };
         /** NoteIn */
         NoteIn: {
@@ -21089,6 +21375,37 @@ export interface components {
             to_rating: number | null;
             /** Trait */
             trait: string | null;
+        };
+        /**
+         * XpLine
+         * @description What one character would get for the game (horatio.game_xp): its attendance
+         *     kind, its band and the chart's figure, and what the monthly cap leaves.
+         */
+        XpLine: {
+            /** Band */
+            band: string | null;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Earned Xp */
+            earned_xp: number;
+            /** Figure */
+            figure: number | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "attended" | "absentee";
+            /** Month Xp */
+            month_xp: number;
+            /** Used */
+            used: {
+                [key: string]: number;
+            };
         };
         /** XpRangeChange */
         XpRangeChange: {
@@ -33178,6 +33495,72 @@ export interface operations {
             };
         };
     };
+    read_game_xp_api_troupes__troupe_id__game_xp_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameXpSettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_game_xp_api_troupes__troupe_id__game_xp_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GameXpSettings"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameXpSettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_games_api_troupes__troupe_id__games_get: {
         parameters: {
             query?: never;
@@ -33244,6 +33627,37 @@ export interface operations {
             };
         };
     };
+    missed_games_api_troupes__troupe_id__games_missed_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MissedGame"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     past_games_api_troupes__troupe_id__games_past_get: {
         parameters: {
             query?: never;
@@ -33293,6 +33707,72 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_absentee_api_troupes__troupe_id__games__game_id__absentee__character_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                game_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AbsenteeMarked"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unmark_absentee_api_troupes__troupe_id__games__game_id__absentee__character_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                game_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AbsenteeMarked"];
+                };
             };
             /** @description Validation Error */
             422: {

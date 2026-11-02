@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { GameNight } from "../../api/types";
+import type { GameNight, XpLine } from "../../api/types";
 import { Dialog } from "../../components/Dialog";
 import { EmptyState } from "../../components/EmptyState";
 import { QrCode } from "../../components/QrCode";
@@ -10,13 +10,16 @@ import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { checkInUrl, names, pastMonthly, spacedCode, toAward } from "./checkin";
+import { checkInUrl, names, spacedCode } from "./checkin";
+import { BOOK_MONTHLY, figureFor, NO_CHOICE, signed, usesLeft, type Choice } from "./gameXp";
+import { PAYMENTS_NOTE } from "./GameXpSettings";
 import { Stepper } from "./XpAwardsTab";
 
 /**
  * One game's night, for the troupe's running staff (issue #421): check-in at the
  * door with its code and QR code, who came (checked in or out by hand), and the
- * game's XP for everyone there in one go.
+ * game's XP for everyone there in one go: the same for each, or by the troupe's game
+ * XP chart, with absentee games and adjustments (issue #438).
  */
 export function GameNightPage({ troupeId }: { troupeId: string }) {
   const { gameId = "" } = useParams();
@@ -138,7 +141,7 @@ function DoorCard({ night }: { night: GameNight }) {
   );
 }
 
-/** Who came, each checked out by hand if need be, and anyone else checked in by hand. */
+/** Who came, each checked out by hand if need be, and anyone else checked in by hand or (where the troupe records them) marked absentee. */
 function AttendanceCard({ night }: { night: GameNight }) {
   const toast = useToast();
   const path = usePath(night);
@@ -146,6 +149,9 @@ function AttendanceCard({ night }: { night: GameNight }) {
   const [rested, setRested] = useState(true);
   const awarded = night.xp.amount !== null;
   const notYet = new Date(night.checkin.opens_at) > new Date();
+  const started = new Date(night.starts_at) <= new Date();
+  const absentee = night.game_xp.absentee;
+  const chosenOther = night.others.find((o) => o.character_id === chosen);
   const checkIn = useAction(
     async () => {
       const done = await unwrap(api.POST("/api/troupes/{troupe_id}/games/{game_id}/attendance", { ...path, body: { character_id: chosen, rested } }));
@@ -163,6 +169,17 @@ function AttendanceCard({ night }: { night: GameNight }) {
         }),
       );
       toast({ message: `Checked out: ${name}` });
+    },
+    [["game-night", night.id]],
+  );
+  const markAbsentee = useAction(
+    async ({ id, on }: { id: string; on: boolean }) => {
+      const params = { params: { path: { ...path.params.path, character_id: id } } };
+      const done = await unwrap(
+        on ? api.PUT("/api/troupes/{troupe_id}/games/{game_id}/absentee/{character_id}", params) : api.DELETE("/api/troupes/{troupe_id}/games/{game_id}/absentee/{character_id}", params),
+      );
+      toast({ message: on ? `Marked absentee: ${done.character_name}` : `No longer absentee: ${done.character_name}` });
+      if (on) setChosen("");
     },
     [["game-night", night.id]],
   );
@@ -201,6 +218,38 @@ function AttendanceCard({ night }: { night: GameNight }) {
             ))}
           </ul>
         )}
+        {night.absentees.length > 0 && (
+          <section aria-labelledby="absentees" className="flex flex-col gap-1">
+            <h3 id="absentees" className="text-sm text-mist">
+              Absentee ({night.absentees.length})
+            </h3>
+            <ul aria-label="Absentee" className="divide-y divide-ash border-y border-ash">
+              {night.absentees.map((a) => (
+                <li key={a.character_id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2 text-sm">
+                  <span className="min-w-0">
+                    <Link to={`/characters/${a.character_id}`} className="text-parchment hover:text-gold">
+                      {a.character_name}
+                    </Link>
+                    <span className="ml-2 text-xs text-mist">{a.player.display_name}</span>
+                    <span className="ml-2 align-middle">
+                      <Badge>{a.by_staff ? "Absentee, by staff" : "Absentee, by its player"}</Badge>
+                    </span>
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="px-2"
+                    disabled={awarded || markAbsentee.isPending}
+                    aria-label={`Take back ${a.character_name}'s absentee game`}
+                    onClick={() => markAbsentee.mutate({ id: a.character_id, on: false })}
+                  >
+                    Take back
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         {awarded ? (
           <p className="text-xs text-mist">The game's XP has been awarded, so who came is settled. Correct a character's award from its Experience tab.</p>
         ) : notYet ? null : night.others.length === 0 ? (
@@ -215,7 +264,7 @@ function AttendanceCard({ night }: { night: GameNight }) {
           >
             <div className="flex flex-wrap items-end gap-3">
               <div className="min-w-60 flex-1">
-                <Field label="Check someone in by hand">
+                <Field label={absentee ? "Check someone in by hand, or mark them absentee" : "Check someone in by hand"}>
                   <Select value={chosen} onChange={(e) => setChosen(e.target.value)}>
                     <option value="">Choose a character…</option>
                     {night.others.map((o) => (
@@ -229,61 +278,109 @@ function AttendanceCard({ night }: { night: GameNight }) {
               <Button type="submit" variant="secondary" disabled={!chosen || checkIn.isPending}>
                 Check in
               </Button>
+              {absentee && started && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={!chosenOther?.home || markAbsentee.isPending}
+                  title={chosenOther && !chosenOther.home ? "A visitor's home troupe awards its XP." : undefined}
+                  onClick={() => markAbsentee.mutate({ id: chosen, on: true })}
+                >
+                  Mark absentee
+                </Button>
+              )}
             </div>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={rested} onChange={(e) => setRested(e.target.checked)} />
               Had a full day's rest
               <span className="text-xs text-mist">(Willpower starts full)</span>
             </label>
+            {absentee && (
+              <p className="text-xs text-mist">
+                An absentee game is a game the character missed: it never counts as attended, and gets the chart's absentee XP. {PAYMENTS_NOTE}
+              </p>
+            )}
           </form>
         )}
-        <ErrorText error={checkIn.error ?? checkOut.error} />
+        <ErrorText error={checkIn.error ?? checkOut.error ?? markAbsentee.error} />
       </div>
     </Card>
   );
 }
 
-/** The game's XP for everyone there whose home this troupe is, once, with the book's guidance and the monthly warning. */
+/** "1 character", "3 characters". */
+const plural = (n: number) => (n === 1 ? "1 character" : `${n} characters`);
+
+/**
+ * The game's XP for everyone there whose home this troupe is, once. Each character's
+ * figure is the game's amount (and, for an absentee game, the absentee amount) or,
+ * with a chart, its band's; then any adjustments ticked, and the monthly cap. Staff
+ * can set any one figure by hand, with a reason. With nothing set, as the book has it:
+ * the same for everyone, with the monthly warning.
+ */
 function AwardCard({ night }: { night: GameNight }) {
   const dates = useDates();
   const toast = useToast();
   const path = usePath(night);
+  const settings = night.game_xp;
+  const chart = settings.bands.length > 0;
   const [amount, setAmount] = useState(night.session_xp);
+  const [absenteeAmount, setAbsenteeAmount] = useState(Math.max(0, night.session_xp - 1));
   const [reason, setReason] = useState(`Game, ${dates.dueDay(night.starts_at)}`);
   const [toRange, setToRange] = useState(true);
   const [confirming, setConfirming] = useState(false);
-  const getting = toAward(night.attendees);
+  const [choices, setChoices] = useState<Record<string, Choice>>({});
+  const lines = night.xp_lines;
   const visitors = night.attendees.filter((a) => !a.home).map((a) => a.character_name);
-  const past = pastMonthly(night.attendees, amount, night.monthly_xp);
   const started = new Date(night.starts_at) <= new Date();
+  const anyAbsentee = lines.some((l) => l.kind === "absentee");
+  // As the book has it: the same for everyone, so no per-character list.
+  const plain = !chart && !settings.adjustments.length && !anyAbsentee && settings.cap !== "cap";
+  const choiceOf = (id: string) => choices[id] ?? NO_CHOICE;
+  const worked = lines.map((l) => ({ line: l, ...figureFor(settings, l, { attended: amount, absentee: absenteeAmount }, choiceOf(l.character_id)) }));
+  const total = worked.reduce((sum, w) => sum + w.amount, 0);
+  const getting = worked.filter((w) => w.amount > 0);
+  const past = settings.cap === "warn" ? worked.filter((w) => w.amount > 0 && w.line.month_xp + w.amount > night.monthly_xp).map((w) => w.line.character_name) : [];
+  const unexplained = worked.find((w) => choiceOf(w.line.character_id).override !== null && !choiceOf(w.line.character_id).reason.trim());
+  const book = settings.monthly_xp == null;
+  const choose = (id: string, change: Partial<Choice>) => {
+    setChoices({ ...choices, [id]: { ...choiceOf(id), ...change } });
+    setConfirming(false);
+  };
   const award = useAction(
     async () => {
-      const done = await unwrap(api.POST("/api/troupes/{troupe_id}/games/{game_id}/xp", { ...path, body: { amount, reason, to_range: toRange } }));
+      const done = await unwrap(
+        api.POST("/api/troupes/{troupe_id}/games/{game_id}/xp", {
+          ...path,
+          body: {
+            amount,
+            absentee_amount: chart ? null : absenteeAmount,
+            reason,
+            to_range: toRange,
+            characters: Object.entries(choices)
+              .filter(([, c]) => c.ticks.length || c.override !== null)
+              .map(([id, c]) => ({ character_id: id, ticks: c.ticks, override: c.override, override_reason: c.reason })),
+          },
+        }),
+      );
       setConfirming(false);
       toast({
         message:
-          `Awarded ${amount} XP to ${done.characters} character${done.characters === 1 ? "" : "s"}.` +
-          (done.past_monthly.length ? ` ${names(done.past_monthly)} now ${done.past_monthly.length === 1 ? "has" : "have"} more than ${night.monthly_xp} this month.` : ""),
+          (plain ? `Awarded ${amount} XP to ${plural(done.characters)}.` : `Awarded ${done.total} XP in all to ${plural(done.characters)}.`) +
+          (done.past_monthly.length ? ` ${names(done.past_monthly)} now ${done.past_monthly.length === 1 ? "has" : "have"} more than ${night.monthly_xp} this month.` : "") +
+          (done.capped.length ? ` The monthly cap held some back from ${names(done.capped)}.` : ""),
       });
     },
     [["game-night", night.id]],
   );
   const guidance = (
     <p className="text-xs text-mist">
-      The book suggests {night.game_xp_low} to {night.game_xp_high} XP a game, and no more than 8 to {night.monthly_xp} a month (MET: VtM core, p. 108).
+      The book suggests {night.game_xp_low} to {night.game_xp_high} XP a game, and no more than 8 to {BOOK_MONTHLY} a month (MET: VtM core, p. 108).
+      {!book && settings.cap !== "off" && ` This troupe's monthly figure is ${night.monthly_xp}.`}
     </p>
   );
 
-  if (night.xp.amount !== null)
-    return (
-      <Card title="The game's XP" className="md:col-span-2">
-        <p className="text-sm">
-          {night.xp.amount} XP awarded to everyone here who calls this troupe home
-          {night.xp.awarded_at && <> on {dates.dateTime(night.xp.awarded_at)}</>}
-          {night.xp.awarded_by && <> by {night.xp.awarded_by.display_name}</>}.
-        </p>
-      </Card>
-    );
+  if (night.xp.amount !== null) return <Awarded night={night} />;
 
   return (
     <Card title="Award the game's XP" className="md:col-span-2">
@@ -298,25 +395,42 @@ function AwardCard({ night }: { night: GameNight }) {
         {guidance}
         {!started ? (
           <p className="text-sm text-mist">Award it once the game has started.</p>
-        ) : getting.length === 0 ? (
+        ) : lines.length === 0 ? (
           <EmptyState title="Nobody to award yet.">
             {visitors.length ? "Only visitors have checked in, and their home troupes award their XP." : "Everyone checked in whose home is this troupe gets the game's XP."}
           </EmptyState>
         ) : (
           <>
+            {chart && <p className="text-sm">Each character's XP comes from the troupe's chart, by the XP it has earned in all.</p>}
             <div className="flex flex-wrap items-end gap-4">
-              <Field label="Everyone here gets">
-                <Stepper
-                  label="XP for the game"
-                  value={amount}
-                  onChange={(n) => {
-                    setAmount(Math.max(1, n));
-                    setConfirming(false);
-                  }}
-                />
-              </Field>
+              {chart ? null : (
+                <>
+                  <Field label="Everyone here gets">
+                    <Stepper
+                      label="XP for the game"
+                      value={amount}
+                      onChange={(n) => {
+                        setAmount(Math.max(1, n));
+                        setConfirming(false);
+                      }}
+                    />
+                  </Field>
+                  {anyAbsentee && (
+                    <Field label="Absentees get">
+                      <Stepper
+                        label="XP for an absentee game"
+                        value={absenteeAmount}
+                        onChange={(n) => {
+                          setAbsenteeAmount(Math.max(0, n));
+                          setConfirming(false);
+                        }}
+                      />
+                    </Field>
+                  )}
+                </>
+              )}
               <div className="min-w-60 flex-1">
-                <Field label="Note everyone gets" hint="The reason on each character's XP history.">
+                <Field label="Note everyone gets" hint={chart || anyAbsentee ? "The reason on each character's XP history, with its attendance and band added." : "The reason on each character's XP history."}>
                   <Input
                     required
                     maxLength={500}
@@ -329,13 +443,33 @@ function AwardCard({ night }: { night: GameNight }) {
                 </Field>
               </div>
             </div>
-            <p className="text-sm">
-              {getting.length === 1 ? "1 character" : `${getting.length} characters`}: {names(getting.map((a) => a.character_name))}.
-              {visitors.length > 0 && <span className="text-mist"> {names(visitors)} visiting: their home troupes award their XP.</span>}
-            </p>
+            {plain ? (
+              <p className="text-sm">
+                {plural(lines.length)}: {names(lines.map((l) => l.character_name))}.
+                {visitors.length > 0 && <span className="text-mist"> {names(visitors)} visiting: their home troupes award their XP.</span>}
+              </p>
+            ) : (
+              <>
+                <ul aria-label="Each character's XP" className="divide-y divide-ash border-y border-ash">
+                  {worked.map((w) => (
+                    <LineRow
+                      key={w.line.character_id}
+                      line={w.line}
+                      night={night}
+                      figure={w.figure}
+                      amount={w.amount}
+                      capped={w.capped}
+                      choice={choiceOf(w.line.character_id)}
+                      onChange={(change) => choose(w.line.character_id, change)}
+                    />
+                  ))}
+                </ul>
+                {visitors.length > 0 && <p className="text-sm text-mist">{names(visitors)} visiting: their home troupes award their XP.</p>}
+              </>
+            )}
             {past.length > 0 && (
               <p role="alert" className="rounded-md border border-gold/50 px-3 py-2 text-sm text-gold">
-                This takes {names(past)} past {night.monthly_xp} XP this month, more than the book suggests. You can still award it.
+                This takes {names(past)} past {night.monthly_xp} XP this month, more than {book ? "the book suggests" : "this troupe's monthly figure"}. You can still award it.
               </p>
             )}
             <label className="flex items-center gap-2 text-sm">
@@ -348,34 +482,163 @@ function AwardCard({ night }: { night: GameNight }) {
                 }}
               />
               Also add to floor and ceiling
+              {chart && <span className="text-xs text-mist">(the chart's figure for a character at the floor)</span>}
             </label>
+            {unexplained && <p className="text-sm text-blood-bright">Say why {unexplained.line.character_name}'s XP is set by hand.</p>}
             <div className="flex flex-wrap items-center gap-3">
               {confirming ? (
                 <>
                   <Button type="submit" disabled={award.isPending}>
-                    Yes, award {amount} XP to {getting.length === 1 ? "1 character" : `${getting.length} characters`}
+                    {plain ? `Yes, award ${amount} XP to ${plural(lines.length)}` : `Yes, award ${total} XP to ${plural(getting.length)}`}
                   </Button>
                   <Button type="button" variant="ghost" onClick={() => setConfirming(false)}>
                     Back
                   </Button>
                 </>
               ) : (
-                <Button type="submit" disabled={!reason.trim()}>
+                <Button type="submit" disabled={!reason.trim() || !!unexplained}>
                   Award…
                 </Button>
               )}
             </div>
             {confirming && (
               <p role="status" className="text-sm text-gold">
-                Each gets an award entry of {amount} XP for “{reason.trim()}”, once for this game, and check-in closes. A mistake can be corrected from the character's
-                Experience tab.
-                {toRange && ` The troupe's XP floor and ceiling go up by ${amount}.`}
+                {plain ? `Each gets an award entry of ${amount} XP` : "Each gets an award entry of their own XP"} for “{reason.trim()}”, once for this game, and check-in closes. A
+                mistake can be corrected from the character's Experience tab.
+                {toRange && !chart && ` The troupe's XP floor and ceiling go up by ${amount}.`}
               </p>
             )}
           </>
         )}
         <ErrorText error={award.error} />
       </form>
+    </Card>
+  );
+}
+
+/** One character's XP before the award: its kind and band, the adjustments to tick, and its figure, which staff can set by hand. */
+function LineRow({
+  line,
+  night,
+  figure,
+  amount,
+  capped,
+  choice,
+  onChange,
+}: {
+  line: XpLine;
+  night: GameNight;
+  figure: number;
+  amount: number;
+  capped: number;
+  choice: Choice;
+  onChange: (change: Partial<Choice>) => void;
+}) {
+  const name = line.character_name;
+  const settings = night.game_xp;
+  const byHand = choice.override !== null;
+  return (
+    <li className="flex flex-col gap-2 py-2.5 text-sm">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <span>
+          <span className="text-parchment">{name}</span>
+          <span className="ml-2 text-xs text-mist">
+            {line.kind === "absentee" ? "Absentee" : "Attended"}
+            {line.band !== null && `, ${line.band} band (${line.earned_xp} earned)`}: {figure} XP
+          </span>
+        </span>
+        <span className="text-gold" aria-label={`${name} gets ${amount} XP`}>
+          {amount} XP
+          {capped > 0 && <span className="ml-1 text-xs text-mist">({capped} held back by the cap)</span>}
+          {byHand && <span className="ml-1 text-xs text-mist">(set by hand)</span>}
+        </span>
+      </div>
+      {!byHand && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1" role="group" aria-label={`Adjustments for ${name}`}>
+          {settings.adjustments.map((a) => {
+            const left = usesLeft(a, line);
+            const ticked = choice.ticks.includes(a.key);
+            return (
+              <label key={a.key} className={`flex min-h-8 items-center gap-1.5 ${left === 0 ? "opacity-60" : ""}`}>
+                <input
+                  type="checkbox"
+                  checked={ticked}
+                  disabled={left === 0 && !ticked}
+                  onChange={(e) => onChange({ ticks: e.target.checked ? [...choice.ticks, a.key] : choice.ticks.filter((k) => k !== a.key) })}
+                />
+                {a.name} {signed(a.amount)}
+                {left === 0 && <span className="text-xs text-mist">(had it this month)</span>}
+              </label>
+            );
+          })}
+          <Button type="button" variant="ghost" className="min-h-8 text-xs" aria-label={`Set ${name}'s XP by hand`} onClick={() => onChange({ override: amount, ticks: [] })}>
+            Set by hand…
+          </Button>
+        </div>
+      )}
+      {byHand && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            type="number"
+            min={0}
+            max={1000}
+            aria-label={`XP for ${name}, set by hand`}
+            value={choice.override ?? 0}
+            onChange={(e) => onChange({ override: Math.max(0, Number(e.target.value) || 0) })}
+            className="w-20"
+          />
+          <Input aria-label={`Why ${name}'s XP is set by hand`} placeholder="Why" maxLength={300} value={choice.reason} onChange={(e) => onChange({ reason: e.target.value })} className="min-w-48 flex-1" />
+          <Button type="button" variant="ghost" className="min-h-8 px-2" onClick={() => onChange({ override: null, reason: "" })}>
+            Use the {settings.bands.length ? "chart" : "figure"}
+          </Button>
+        </div>
+      )}
+    </li>
+  );
+}
+
+/** The game's XP once awarded: the same for everyone, or what each character got. */
+function Awarded({ night }: { night: GameNight }) {
+  const dates = useDates();
+  const same = night.given.every((g) => g.amount === night.xp.amount && g.band === null && g.kind === "attended" && !g.adjustments.length && g.override === null);
+  const when = (
+    <>
+      {night.xp.awarded_at && <> on {dates.dateTime(night.xp.awarded_at)}</>}
+      {night.xp.awarded_by && <> by {night.xp.awarded_by.display_name}</>}
+    </>
+  );
+  return (
+    <Card title="The game's XP" className="md:col-span-2">
+      {same ? (
+        <p className="text-sm">
+          {night.xp.amount} XP awarded to everyone here who calls this troupe home{when}.
+        </p>
+      ) : (
+        <>
+          <p className="text-sm">Awarded{when}.</p>
+          <ul aria-label="What each character got" className="mt-2 divide-y divide-ash border-y border-ash text-sm">
+            {night.given.map((g) => (
+              <li key={g.character_id} className="flex flex-wrap justify-between gap-x-3 py-1.5">
+                <span>
+                  {g.character_name}
+                  <span className="ml-2 text-xs text-mist">
+                    {[
+                      g.kind === "absentee" ? "absentee" : "attended",
+                      g.band && `${g.band} band`,
+                      ...g.adjustments,
+                      g.capped > 0 && `${g.capped} held back by the cap`,
+                      g.override !== null && `set by hand: ${g.override_reason}`,
+                    ]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </span>
+                </span>
+                <span className="text-gold">{g.amount} XP</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </Card>
   );
 }

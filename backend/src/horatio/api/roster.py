@@ -314,6 +314,10 @@ MESSAGES: dict[str, str] = {
     "troupe.xp_range_game": "{actor} added a game's {amount} XP to the floor and ceiling.",
     "xp.game_award": "{actor} awarded the game on {game}: {amount} XP to each of the"
     " {characters} characters there who call this troupe home.",
+    "xp.game_award_chart": "{actor} awarded the game on {game} by the troupe's chart:"
+    " {total} XP in all to the {characters} characters who call this troupe home.",
+    "troupe.xp_game_settings": "{actor} set the troupe's game XP: {chart}; adjustments:"
+    " {adjustments}; monthly XP {cap}; absentee games {absentee}.",
     "troupe.xp_range_downtime": "{actor} added a downtime's {amount} XP to the ceiling.",
     "troupe.xp_range_set": "{actor} set the XP floor to {floor} and the ceiling to {ceiling}:"
     " {reason}",
@@ -571,6 +575,8 @@ MESSAGES: dict[str, str] = {
     "play.checkin_closed": "{actor} closed check-in for the game on {game}.",
     "play.checked_in": "{actor} checked {character} in to the game on {game}.",
     "play.checked_out": "{actor} checked {character} out of the game on {game}.",
+    "play.absentee_marked": "{actor} marked {character} absentee for the game on {game}.",
+    "play.absentee_unmarked": "{actor} took back {character}'s absentee game on {game}.",
     "play.modifier_added": "{actor} added the modifier {label} to {character}.",
     "play.modifier_changed": "{actor} changed {character}'s modifier {label}.",
     "play.modifier_removed": "{actor} removed {character}'s modifier {label}.",

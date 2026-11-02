@@ -12,6 +12,7 @@ const attendee = (name: string, month_xp: number, home = true): Attendee => ({
   by_staff: false,
   rested: true,
   month_xp,
+  kind: "attended",
 });
 
 describe("the door's code", () => {

@@ -36,6 +36,7 @@ from horatio.models import (
     FeedingAdjustment,
     FeedingCard,
     GameAttendance,
+    GameXpAward,
     HomeTroupeChange,
     Location,
     PlayCounter,
@@ -101,6 +102,8 @@ def delete_character(db: Session, player: User, character: Character) -> None:
         .values(taken_by=None, taken_at=None)
     )
     db.execute(delete(CycleParticipant).where(CycleParticipant.character_id == cid))
+    # Its game XP awards, which point at its XP entries.
+    db.execute(delete(GameXpAward).where(GameXpAward.character_id == cid))
     db.execute(delete(XpEntry).where(XpEntry.character_id == cid))
     db.execute(
         delete(ReconciliationItem).where(ReconciliationItem.home_troupe_change_id.in_(changes))
