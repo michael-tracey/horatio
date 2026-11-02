@@ -50,6 +50,16 @@ export function opened(b: BackstoryOut, loads = 0): Writing {
   };
 }
 
+/**
+ * The writing as the server now has it, with the edits counted on. The editor starts
+ * afresh only when the text itself is new to it: the player's own draft coming back
+ * (a refetch, an autosave answered) leaves their cursor where it is.
+ */
+function taken(w: Writing, b: BackstoryOut): Writing {
+  const next = opened(b, w.loads);
+  return { ...next, edit: w.edit, loads: next.text === w.text ? w.loads : w.loads + 1 };
+}
+
 export function writingReducer(w: Writing, change: WritingChange): Writing {
   switch (change.type) {
     case "loaded": {
@@ -59,10 +69,10 @@ export function writingReducer(w: Writing, change: WritingChange): Writing {
       const newer = b.version > w.version || time(b.draft?.saved_at) > time(w.savedAt);
       if (!newer) return w;
       if (unsaved(w)) return { ...w, version: Math.max(w.version, b.version) };
-      return { ...opened(b, w.loads + 1), edit: w.edit, saved: w.saved };
+      return { ...taken(w, b), saved: w.saved };
     }
     case "reset":
-      return { ...opened(change.backstory, w.loads + 1), edit: w.edit, saved: w.edit };
+      return { ...taken(w, change.backstory), saved: w.edit };
     case "edit":
       return change.text === w.text ? w : { ...w, text: change.text, edit: w.edit + 1, urgent: false };
     case "keep mine":

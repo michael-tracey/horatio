@@ -206,6 +206,33 @@ test("a player writes a backstory in the formatted editor: it saves as a draft, 
   expect(await stored(p, id)).toMatchObject({ version: 1, text: `${markdown} in the docks`, draft: null });
 });
 
+test("the cursor stays where the player writes: an autosave coming back never moves it, on the same line or after Enter", async ({ browser }) => {
+  const player = await person(browser, "steady-writer");
+  const p = player.page;
+  const id = await builtVampire(p, "Margit", "Brujah", BRUJAH_NEONATE);
+  await send(p, "PUT", `/api/characters/${id}/backstory`, { text: "Born in 1890.", version: 0 });
+  await p.goto(`/characters/${id}/backstory`);
+  await p.getByRole("button", { name: "Edit the backstory" }).click();
+  const editor = richEditor(p);
+  await editor.click();
+  await p.keyboard.press("Control+End");
+  await p.keyboard.type(" In Dublin.");
+  await expect.poll(async () => (await stored(p, id)).draft?.text).toBe("Born in 1890. In Dublin.");
+  await expect(p.getByText(/^Saved \d/)).toBeVisible();
+
+  // Writing on after the save carries on where it left off, on the same line and after Enter.
+  await p.keyboard.type(" Then Cork.");
+  await p.keyboard.press("Enter");
+  await p.keyboard.type("She fled to Chicago.");
+  await expect(p.getByText("Not saved yet")).toBeVisible();
+  const written = "Born in 1890. In Dublin. Then Cork.\n\nShe fled to Chicago.";
+  await expect.poll(async () => (await stored(p, id)).draft?.text).toBe(written);
+  await expect(p.getByText(/^Saved \d/)).toBeVisible();
+  await p.keyboard.type(" Then Paris.");
+  await expect.poll(async () => (await stored(p, id)).draft?.text).toBe(`${written} Then Paris.`);
+  await expect(editor.getByRole("paragraph")).toHaveText(["Born in 1890. In Dublin. Then Cork.", "She fled to Chicago. Then Paris."]);
+});
+
 test("a version submitted on another device while the player writes never loses their draft: they compare the two and keep their own", async ({ browser }) => {
   const player = await person(browser, "clash-player");
   const p = player.page;

@@ -1,10 +1,29 @@
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
-import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { Selection } from "@tiptap/pm/state";
+import type { EditorView } from "@tiptap/pm/view";
+import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { keepUnchanged, toDoc, toMarkdown } from "../../backstoryMarkdown";
 import { Button, Input } from "../../components/ui";
 import { SAFE_LINK } from "../../markdown";
 import "./RichEditor.css";
 import { editorExtensions } from "./richEditorSchema";
+
+/**
+ * Takes in where the browser has put the caret before a key acts. A click or a key
+ * the browser handles itself (Ctrl+End, say) moves the caret at once, but ProseMirror
+ * hears of it only from a later "selectionchange" event; when the page is busy, keys
+ * pressed straight after can come first, and Enter would then split the paragraph
+ * where the cursor was before the click. (ProseMirror's selectionchange handler, and
+ * Tiptap's own Enter on phones, make the same call; domObserver isn't in ProseMirror's
+ * published types.) Only for a key really pressed: ProseMirror sends a made-up Enter
+ * while it is reading what a phone's keyboard did, and reading again then would take
+ * that Enter twice.
+ */
+function readCaret(view: EditorView, event: globalThis.KeyboardEvent) {
+  const observer = (view as unknown as { domObserver?: { flush?: () => void } }).domObserver;
+  if (event.isTrusted && !view.composing && view.hasFocus()) observer?.flush?.();
+  return false;
+}
 
 /**
  * The backstory's formatted editor (issue #426), loaded only when someone writes a
@@ -21,7 +40,13 @@ export default function RichEditor({ initial, onChange, label, describedBy }: { 
   const [fixed] = useState(() => ({
     extensions: editorExtensions({ placeholder: "Write your backstory here…", onRefused: () => setRefused(true) }),
     content: toDoc(initial),
+    // Made once the editor is on the page, not while rendering: one made while
+    // rendering can be thrown away by Tiptap before React finishes mounting it (as
+    // happens here, the editor being loaded lazily), and a second takes its place
+    // just as the player starts typing.
+    immediatelyRender: false,
     editorProps: {
+      handleKeyDown: readCaret,
       attributes: {
         role: "textbox",
         "aria-multiline": "true",
@@ -32,9 +57,6 @@ export default function RichEditor({ initial, onChange, label, describedBy }: { 
   }));
   const editor = useEditor({
     ...fixed,
-    onCreate: ({ editor }) => {
-      start.current = { original: initial, normalised: toMarkdown(editor.getJSON()) };
-    },
     onUpdate: ({ editor }) => {
       setRefused(false);
       const s = start.current ?? { original: initial, normalised: initial };
@@ -42,10 +64,21 @@ export default function RichEditor({ initial, onChange, label, describedBy }: { 
     },
   });
 
+  // The cursor starts at the end of the writing, to carry on from, not before its first
+  // word. Set as the editor goes onto the page, before a click or key can reach it.
+  useLayoutEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    start.current = { original: initial, normalised: toMarkdown(editor.getJSON()) };
+    const { doc } = editor.state;
+    // In text: the troupe's question marks are lines that can't be typed over.
+    editor.view.dispatch(editor.state.tr.setSelection(Selection.findFrom(doc.resolve(doc.content.size), -1, true) ?? Selection.atEnd(doc)));
+  }, [editor]);
+
   return (
     <div className="rounded-md border border-line bg-night focus-within:border-gold/60">
       <Toolbar editor={editor} />
-      <EditorContent editor={editor} className="rich-editor" />
+      {/* Its height kept while the editor is being made, so the page doesn't jump. */}
+      <EditorContent editor={editor} className="rich-editor min-h-60" />
       {refused && (
         <p role="status" className="border-t border-line px-3 py-2 text-xs text-mist">
           The lines marking the troupe's questions stay where they are: answering the questions again finds its sections by them. Edit around them, or remove one in the Markdown
