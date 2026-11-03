@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut } from "../../api/types";
+import { ActionMenu, MENU_ITEM, MenuGroup, MenuItem } from "../../components/ActionMenu";
 import { Dialog } from "../../components/Dialog";
 import { usePopover } from "../../components/InfoButton";
 import { Button, ErrorText } from "../../components/ui";
@@ -40,7 +41,6 @@ export function CharacterMenu({
   canDelete: boolean;
   canMove?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
   const [retiring, setRetiring] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [moving, setMoving] = useState(false);
@@ -48,156 +48,29 @@ export function CharacterMenu({
   const dates = useDates();
   const diablerieList = useDiablerie(character);
   const diablerieItem = diablerieAction(diablerieList.data);
-  const menu = useRef<HTMLDivElement>(null);
-  // It opens under the ⋯, lined up with its right edge; on a phone, where the ⋯ sits
-  // left of centre, it slides back on screen.
-  const list = useRef<HTMLDivElement>(null);
-  const [shift, setShift] = useState(0);
-  useLayoutEffect(() => {
-    if (!open) return setShift(0);
-    if (!list.current) return;
-    const left = list.current.getBoundingClientRect().left;
-    setShift(left < 8 ? 8 - left : 0);
-  }, [open]);
-  // The server deletes a PC only once it is in no troupe (horatio.deletion).
-  const pc = character.kind === "pc";
-  const troupes = useQuery({
-    queryKey: ["memberships", character.id],
-    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/troupes", { params: { path: { character_id: character.id } } })),
-    enabled: open && canDelete && pc,
-  });
-  // The troupes a PC must leave before it can be deleted; undefined while asking.
-  const inTroupes = pc ? troupes.data?.map((t) => t.troupe_name) : [];
-  useEffect(() => {
-    if (!open) return;
-    const away = (e: MouseEvent) => {
-      if (!menu.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const escape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", away);
-    document.addEventListener("keydown", escape);
-    return () => {
-      document.removeEventListener("mousedown", away);
-      document.removeEventListener("keydown", escape);
-    };
-  }, [open]);
   if (!canRename && !renameOn && !onPronouns && !canRetire && !canDelete && !canMove && !diablerieItem) return null;
-  const item = "block w-full px-3 py-2 text-left text-sm hover:bg-ash disabled:cursor-default disabled:text-mist disabled:hover:bg-transparent";
 
   return (
-    <div ref={menu} className="relative">
-      <Button variant="secondary" aria-label={`More for ${character.name}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
-        ⋯
-      </Button>
-      {open && (
-        <div
-          ref={list}
-          role="menu"
-          style={shift ? { transform: `translateX(${shift}px)` } : undefined}
-          className="absolute right-0 z-20 mt-1 w-64 overflow-hidden rounded-md border border-ash bg-dusk py-1 shadow-xl [&>[role=group]:not(:empty)~[role=group]:not(:empty)]:border-t [&>[role=group]:not(:empty)~[role=group]:not(:empty)]:border-ash"
-        >
-          <div role="group" aria-label="Name">
-            {renameOn ? (
-              <button type="button" role="menuitem" disabled className={item}>
-                Rename
-                <span className="block text-xs">You can rename {character.name} again on {dates.longDay(renameOn)}.</span>
-              </button>
-            ) : (
-              canRename && (
-                <button
-                  type="button"
-                  role="menuitem"
-                  className={item}
-                  onClick={() => {
-                    setOpen(false);
-                    onRename();
-                  }}
-                >
-                  Rename…
-                </button>
-              )
-            )}
-            {onPronouns && (
-              <button
-                type="button"
-                role="menuitem"
-                className={item}
-                onClick={() => {
-                  setOpen(false);
-                  onPronouns();
-                }}
-              >
-                Pronouns…
-              </button>
-            )}
-            {canMove && (
-              <button
-                type="button"
-                role="menuitem"
-                className={item}
-                onClick={() => {
-                  setOpen(false);
-                  setMoving(true);
-                }}
-              >
-                Move to another player…
-              </button>
-            )}
-          </div>
-          <div role="group" aria-label="Diablerie">
-            {diablerieItem && (
-              <button
-                type="button"
-                role="menuitem"
-                className={item}
-                onClick={() => {
-                  setOpen(false);
-                  setDiablerie(true);
-                }}
-              >
-                {diablerieItem}
-              </button>
-            )}
-          </div>
-          <div role="group" aria-label="Leaving">
-            {canRetire && (
-              <button
-                type="button"
-                role="menuitem"
-                className={item}
-                onClick={() => {
-                  setOpen(false);
-                  setRetiring(true);
-                }}
-              >
-                Retire…
-              </button>
-            )}
-            {canDelete &&
-              (inTroupes === undefined ? (
-                <button type="button" role="menuitem" disabled className={item}>
-                  Delete…
-                </button>
-              ) : inTroupes.length > 0 ? (
-                <DeleteLater troupes={inTroupes} className={item} />
-              ) : (
-                <button
-                  type="button"
-                  role="menuitem"
-                  className={`${item} text-blood-bright`}
-                  onClick={() => {
-                    setOpen(false);
-                    setDeleting(true);
-                  }}
-                >
-                  Delete…
-                </button>
-              ))}
-          </div>
-        </div>
-      )}
+    <div>
+      <ActionMenu label={`More for ${character.name}`}>
+        <MenuGroup label="Name">
+          {renameOn ? (
+            <MenuItem disabled>
+              Rename
+              <span className="block text-xs">You can rename {character.name} again on {dates.longDay(renameOn)}.</span>
+            </MenuItem>
+          ) : (
+            canRename && <MenuItem onSelect={onRename}>Rename…</MenuItem>
+          )}
+          {onPronouns && <MenuItem onSelect={onPronouns}>Pronouns…</MenuItem>}
+          {canMove && <MenuItem onSelect={() => setMoving(true)}>Move to another player…</MenuItem>}
+        </MenuGroup>
+        <MenuGroup label="Diablerie">{diablerieItem && <MenuItem onSelect={() => setDiablerie(true)}>{diablerieItem}</MenuItem>}</MenuGroup>
+        <MenuGroup label="Leaving">
+          {canRetire && <MenuItem onSelect={() => setRetiring(true)}>Retire…</MenuItem>}
+          {canDelete && <DeleteItem character={character} onDelete={() => setDeleting(true)} />}
+        </MenuGroup>
+      </ActionMenu>
       <Dialog title={`Move ${character.name} to another player`} open={moving} onClose={() => setMoving(false)}>
         <MoveCharacter characterId={character.id} characterName={character.name} playerId={character.player_id} onDone={() => setMoving(false)} />
       </Dialog>
@@ -219,6 +92,27 @@ export function CharacterMenu({
   );
 }
 
+/** Delete, in the open menu. The server deletes a PC only once it is in no troupe
+ * (horatio.deletion), so for a PC it asks which troupes it is in, and is greyed
+ * while asking and while it is in any. */
+function DeleteItem({ character, onDelete }: { character: CharacterOut; onDelete: () => void }) {
+  const pc = character.kind === "pc";
+  const troupes = useQuery({
+    queryKey: ["memberships", character.id],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/troupes", { params: { path: { character_id: character.id } } })),
+    enabled: pc,
+  });
+  // The troupes a PC must leave before it can be deleted; undefined while asking.
+  const inTroupes = pc ? troupes.data?.map((t) => t.troupe_name) : [];
+  if (inTroupes === undefined) return <MenuItem disabled>Delete…</MenuItem>;
+  if (inTroupes.length > 0) return <DeleteLater troupes={inTroupes} />;
+  return (
+    <MenuItem danger onSelect={onDelete}>
+      Delete…
+    </MenuItem>
+  );
+}
+
 /** Why a PC in a troupe can't be deleted yet. */
 export function deleteLaterReason(troupes: string[]): string {
   const names = troupes.length === 1 ? troupes[0] : `${troupes.slice(0, -1).join(", ")} and ${troupes.at(-1)}`;
@@ -226,7 +120,7 @@ export function deleteLaterReason(troupes: string[]): string {
 }
 
 /** Delete, greyed: a tap shows why under it, as a hover title never shows on a phone. */
-function DeleteLater({ troupes, className }: { troupes: string[]; className: string }) {
+function DeleteLater({ troupes }: { troupes: string[] }) {
   const { open, toggle, id, root, button } = usePopover();
   return (
     <span ref={root} className="block">
@@ -238,7 +132,7 @@ function DeleteLater({ troupes, className }: { troupes: string[]; className: str
         aria-describedby={id}
         aria-expanded={open}
         onClick={toggle}
-        className={`${className} cursor-not-allowed text-mist hover:bg-transparent`}
+        className={`${MENU_ITEM} cursor-not-allowed text-mist hover:bg-transparent`}
       >
         Delete…
       </button>

@@ -35,11 +35,15 @@ export function Dialog({
     <dialog
       ref={ref}
       aria-labelledby={titleId}
-      onClose={onClose}
+      // React passes a dialog's close up to the dialogs around it: a dialog opened
+      // from another (Move from a person's Characters) closes only itself.
+      onClose={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      className={`m-auto ${wide ? "w-[min(48rem,calc(100vw-2rem))]" : "w-[min(28rem,calc(100vw-2rem))]"} rounded-lg border border-ash bg-dusk p-0 text-parchment shadow-xl backdrop:bg-black/60 ${phoneFull ? PHONE_FULL : ""}`}
+      className={`m-auto text-left ${wide ? "w-[min(48rem,calc(100vw-2rem))]" : "w-[min(28rem,calc(100vw-2rem))]"} rounded-lg border border-ash bg-dusk p-0 text-parchment shadow-xl backdrop:bg-black/60 ${phoneFull ? PHONE_FULL : ""}`}
     >
       <div className="flex items-center justify-between gap-3 border-b border-ash px-4 py-3">
         <h2 id={titleId} className="font-display text-gold">

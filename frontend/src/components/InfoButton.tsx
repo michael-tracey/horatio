@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 /**
@@ -6,15 +6,17 @@ import type { ReactNode } from "react";
  * outside, or Escape closes it. Put `root` on what holds both, `button` on the
  * button and `popover` on the popover, and `shift` as its translateX: it opens
  * beside the button, then slides back inside the screen if it runs off an edge
- * (a phone).
+ * (a phone). `Root` and `Pop` are the elements `root` and `popover` go on: spans
+ * unless said otherwise. `close` shuts it from inside, as a menu does once a choice
+ * is made.
  */
-export function usePopover() {
+export function usePopover<Root extends HTMLElement = HTMLSpanElement, Pop extends HTMLElement = HTMLSpanElement>() {
   const [open, setOpen] = useState(false);
   const [shift, setShift] = useState(0);
   const id = useId();
-  const root = useRef<HTMLSpanElement>(null);
+  const root = useRef<Root>(null);
   const button = useRef<HTMLButtonElement>(null);
-  const popover = useRef<HTMLSpanElement>(null);
+  const popover = useRef<Pop>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -46,7 +48,8 @@ export function usePopover() {
     setShift(0);
     setOpen(!open);
   };
-  return { open, toggle, id, root, button, popover, style: shift ? { transform: `translateX(${shift}px)` } : undefined };
+  const close = useCallback(() => setOpen(false), []);
+  return { open, toggle, close, id, root, button, popover, style: shift ? { transform: `translateX(${shift}px)` } : undefined };
 }
 
 /**

@@ -6,19 +6,12 @@ import { Button, ErrorText, Field, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
 
 /** "View as" on People: see Horatio as the person sees it, read-only, for up to 30
- * minutes, saying why. Never another custodian. */
-export function ViewAs({ person }: { person: PlayerSummary }) {
-  const [open, setOpen] = useState(false);
-  if (person.is_custodian) return null;
+ * minutes, saying why. Never another custodian: People offers it only for others. */
+export function ViewAs({ person, open, onClose }: { person: PlayerSummary; open: boolean; onClose: () => void }) {
   return (
-    <>
-      <Button type="button" variant="ghost" className="min-h-8 px-2 text-xs" aria-label={`View as ${person.display_name}`} onClick={() => setOpen(true)}>
-        View as
-      </Button>
-      <Dialog title={`View as @${person.handle}`} open={open} onClose={() => setOpen(false)}>
-        <StartViewing person={person} />
-      </Dialog>
-    </>
+    <Dialog title={`View as @${person.handle}`} open={open} onClose={onClose}>
+      <StartViewing person={person} />
+    </Dialog>
   );
 }
 
