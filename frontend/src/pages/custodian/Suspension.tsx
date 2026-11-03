@@ -25,9 +25,10 @@ type Person = { id: string; display_name: string; suspended?: boolean };
 /**
  * Suspend someone, with a reason only the custodian sees and an end date if it
  * has one; or lift their suspension, with a reason too. Used in the Custodian
- * menu's People list.
+ * menu's People list, which closes it with `onDone` once it is done, unless they
+ * could not be emailed: that stays to be read.
  */
-export function SuspendPerson({ person }: { person: Person }) {
+export function SuspendPerson({ person, onDone }: { person: Person; onDone?: () => void }) {
   const dates = useDates();
   const [reason, setReason] = useState("");
   const [until, setUntil] = useState("");
@@ -42,11 +43,13 @@ export function SuspendPerson({ person }: { person: Person }) {
     setEmailError(done.email_error ?? null);
     setReason("");
     setUntil("");
+    if (!done.email_error) onDone?.();
   });
   const lift = useAction(async () => {
     const done = await unwrap(api.POST("/api/players/{user_id}/suspension/lift", { params: { path: { user_id: person.id } }, body: { reason } }));
     setEmailError(done.email_error ?? null);
     setReason("");
+    if (!done.email_error) onDone?.();
   });
   const action = person.suspended ? lift : suspend;
 

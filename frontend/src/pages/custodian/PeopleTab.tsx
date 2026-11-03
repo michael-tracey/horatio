@@ -3,8 +3,10 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { LiveReset, PlayerSummary } from "../../api/types";
+import { ActionMenu, MenuGroup, MenuItem } from "../../components/ActionMenu";
 import { Dialog } from "../../components/Dialog";
 import { LogList } from "../../components/LogList";
+import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { memberSince } from "../players";
@@ -16,9 +18,9 @@ import { SuspendedPeople, SuspendPerson } from "./Suspension";
 import { ViewAs } from "./ViewAs";
 
 /** Every account, for the custodian: find someone by name, handle or email, or by the troupe an active character
- * of theirs is home in, open their
- * profile, or reset their password here. Below, the reset links out now and who
- * has reset their password. */
+ * of theirs is home in, open their profile, or act on their account from the ⋯ on
+ * their row. Below, who is suspended, the reset links out now and who has reset
+ * their password, and the email changes. */
 export function PeopleTab() {
   const [q, setQ] = useState("");
   const [troupeId, setTroupeId] = useState("");
@@ -48,11 +50,26 @@ export function PeopleTab() {
         {people.isPending ? (
           <Loading />
         ) : people.data?.length ? (
-          <ul className="divide-y divide-ash text-sm">
-            {people.data.map((p) => (
-              <Person key={p.id} person={p} />
-            ))}
-          </ul>
+          <table aria-label="People" className="w-full text-sm">
+            {/* On a phone or a narrow window each row folds into a card, under the one heading. */}
+            <thead className="max-lg:sr-only">
+              <tr className="border-b border-ash text-left text-xs text-mist">
+                <th className="py-2 pr-3 font-normal">Name</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Handle</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Email</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Member since</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Status</th>
+                <th className="py-2 font-normal">
+                  <span className="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-ash">
+              {people.data.map((p) => (
+                <Person key={p.id} person={p} />
+              ))}
+            </tbody>
+          </table>
         ) : (
           <Empty>No one matches.</Empty>
         )}
@@ -65,96 +82,83 @@ export function PeopleTab() {
   );
 }
 
+/** A column shown only on a wide screen; on a narrow one it folds in under the name. */
+const WIDE = "hidden lg:table-cell";
+
+type Opened = "view" | "characters" | "email" | "reset" | "suspend" | "merge";
+
+/** One account: its details, and what the custodian can do with it behind ⋯, each in a dialog. */
 function Person({ person }: { person: PlayerSummary }) {
-  const [changing, setChanging] = useState(false);
-  const [open, setOpen] = useState<"reset" | "suspend" | null>(null);
-  const [characters, setCharacters] = useState(false);
-  const [merging, setMerging] = useState(false);
+  const [open, setOpen] = useState<Opened | null>(null);
+  const close = () => setOpen(null);
+  const toast = useToast();
   const dates = useDates();
+  const name = person.display_name;
+  const since = memberSince(person.member_since, dates);
+  const badges = (
+    <>
+      {person.suspended && <Badge tone="blood">Suspended</Badge>}
+      {person.reset_expires_at && <Badge tone="gold">Reset link out</Badge>}
+      {person.email_change_to && <Badge tone="gold">New email waiting</Badge>}
+    </>
+  );
   return (
-    <li className="py-2">
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-        <Link to={`/players/${person.id}`} className="flex min-w-0 flex-col gap-0.5 hover:text-gold sm:flex-row sm:items-center sm:gap-3">
-          <span>{person.display_name}</span>
-          <span className="text-xs break-all text-mist">
-            @{person.handle} · {person.email} · since {memberSince(person.member_since, dates)}
-          </span>
-        </Link>
-        <span className="flex flex-wrap items-center gap-2">
-          {person.suspended && <Badge tone="blood">Suspended</Badge>}
-          {person.reset_expires_at && <Badge tone="gold">Reset link out</Badge>}
-          {person.email_change_to && <Badge tone="gold">New email waiting</Badge>}
-          <ViewAs person={person} />
-          <Button
-            type="button"
-            variant="ghost"
-            className="min-h-8 px-2 text-xs"
-            aria-expanded={changing}
-            aria-label={`Change email for ${person.display_name}`}
-            onClick={() => setChanging(!changing)}
-          >
-            Change email
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className="min-h-8 px-2 text-xs"
-            aria-expanded={characters}
-            aria-label={`Characters of ${person.display_name}`}
-            onClick={() => setCharacters(!characters)}
-          >
-            Characters
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className="min-h-8 px-2 text-xs"
-            aria-expanded={open === "reset"}
-            aria-label={`Reset password for ${person.display_name}`}
-            onClick={() => setOpen(open === "reset" ? null : "reset")}
-          >
-            Reset password
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className="min-h-8 px-2 text-xs"
-            aria-expanded={open === "suspend"}
-            aria-label={`${person.suspended ? "Lift the suspension of" : "Suspend"} ${person.display_name}`}
-            onClick={() => setOpen(open === "suspend" ? null : "suspend")}
-          >
-            {person.suspended ? "Lift suspension" : "Suspend"}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className="min-h-8 px-2 text-xs"
-            aria-label={`Merge ${person.display_name} with another account`}
-            onClick={() => setMerging(true)}
-          >
-            Merge…
-          </Button>
+    <tr>
+      <td className="py-2.5 pr-3 align-top">
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <Link to={`/players/${person.id}`} className="text-parchment hover:text-gold">
+            {name}
+          </Link>
+          <span className="flex flex-wrap gap-1 lg:hidden">{badges}</span>
         </span>
-      </div>
-      {open && (
-        <div className="mt-2 rounded-md border border-ash bg-night/40 p-3">
-          {open === "reset" ? <ResetPassword player={person} /> : <SuspendPerson person={person} />}
-        </div>
-      )}
-      {characters && (
-        <div className="mt-2 rounded-md border border-ash bg-night/40 p-3">
+        <span className="mt-0.5 block text-xs text-mist wrap-anywhere lg:hidden">
+          @{person.handle} · {person.email} · since {since}
+        </span>
+      </td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top text-mist wrap-anywhere`}>@{person.handle}</td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top text-mist wrap-anywhere`}>{person.email}</td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top text-mist`}>{since}</td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top`}>
+        <span className="flex flex-wrap gap-1">{badges}</span>
+      </td>
+      <td className="w-px py-1 text-right align-top">
+        <ActionMenu label={`Actions for ${name}`} variant="ghost">
+          <MenuGroup label="Help with the account">
+            {!person.is_custodian && <MenuItem onSelect={() => setOpen("view")}>View as…</MenuItem>}
+            <MenuItem onSelect={() => setOpen("characters")}>Characters</MenuItem>
+            <MenuItem onSelect={() => setOpen("email")}>Change email…</MenuItem>
+            <MenuItem onSelect={() => setOpen("reset")}>Reset password…</MenuItem>
+          </MenuGroup>
+          <MenuGroup label="Suspend or merge">
+            <MenuItem onSelect={() => setOpen("suspend")}>{person.suspended ? "Lift suspension…" : "Suspend…"}</MenuItem>
+            <MenuItem onSelect={() => setOpen("merge")}>Merge…</MenuItem>
+          </MenuGroup>
+        </ActionMenu>
+        {/* The dialogs sit here, as nothing but cells may sit in a row (Dialog sets its own text-left). */}
+        <ViewAs person={person} open={open === "view"} onClose={close} />
+        <Dialog title={`${name}'s characters`} open={open === "characters"} onClose={close}>
           <PersonCharacters playerId={person.id} />
-        </div>
-      )}
-      {changing && (
-        <div className="mt-2 rounded-md border border-ash bg-night/40 p-3">
+        </Dialog>
+        <Dialog title={`Change ${name}'s email`} open={open === "email"} onClose={close}>
           <ChangeEmail person={person} />
-        </div>
-      )}
-      <Dialog title={`Merge ${person.display_name} with another account`} open={merging} onClose={() => setMerging(false)}>
-        {merging && <MergeAccounts person={person} onDone={() => setMerging(false)} />}
-      </Dialog>
-    </li>
+        </Dialog>
+        <Dialog title={`Reset ${name}'s password`} open={open === "reset"} onClose={close}>
+          <ResetPassword player={person} />
+        </Dialog>
+        <Dialog title={person.suspended ? `Lift ${name}'s suspension` : `Suspend ${name}`} open={open === "suspend"} onClose={close}>
+          <SuspendPerson
+            person={person}
+            onDone={() => {
+              toast({ message: person.suspended ? `${name} can sign in again.` : `${name} is suspended.` });
+              close();
+            }}
+          />
+        </Dialog>
+        <Dialog title={`Merge ${name} with another account`} open={open === "merge"} onClose={close}>
+          <MergeAccounts person={person} onDone={close} />
+        </Dialog>
+      </td>
+    </tr>
   );
 }
 

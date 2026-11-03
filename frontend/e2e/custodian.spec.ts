@@ -1,9 +1,20 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { closeContextsAfterEach, run, PASSWORD, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab } from "./support";
 
 /** What the custodian does with people's accounts and characters. */
 
 closeContextsAfterEach();
+
+/** Chooses `item` from the ⋯ on `name`'s row of Custodian → People. */
+async function personAction(row: Locator, name: string, item: string) {
+  await row.getByRole("button", { name: `Actions for ${name}` }).click();
+  await row.page().getByRole("menu", { name: `Actions for ${name}` }).getByRole("menuitem", { name: item }).click();
+}
+
+/** A badge on a row of People: in its Status column on a wide screen, under the name on a phone. */
+function badge(row: Locator, text: string) {
+  return row.getByText(text, { exact: true }).filter({ visible: true });
+}
 
 test("a player fills in their profile, and the custodian resets their password", async ({ browser }) => {
   const custodian = await person(browser, "people-custodian");
@@ -29,27 +40,35 @@ test("a player fills in their profile, and the custodian resets their password",
   await c.getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(player.email);
-  const row = c.locator("main li").filter({ hasText: player.email });
-  await expect(row.getByText(`@${player.handle} · ${player.email}`, { exact: false })).toBeVisible();
-  await row.getByRole("button", { name: "Reset password for people-player" }).click();
-  await expect(row.getByText("Send it to them yourself.")).toBeVisible();
-  await row.getByRole("button", { name: "Make a reset link" }).click();
-  const cancelled = await row.getByLabel("Reset link", { exact: true }).inputValue();
+  const row = c.locator("main tr").filter({ hasText: player.email });
+  await expect(row).toContainText(`@${player.handle}`);
+  // Everything they can do with the account waits behind the ⋯ on its row.
+  await row.getByRole("button", { name: "Actions for people-player" }).click();
+  await c.screenshot(shots("people-menu"));
+  await c.getByRole("menuitem", { name: "Reset password…" }).click();
+  const reset = c.getByRole("dialog", { name: "Reset people-player's password" });
+  await expect(reset.getByText("Send it to them yourself.")).toBeVisible();
+  await reset.getByRole("button", { name: "Make a reset link" }).click();
+  const cancelled = await reset.getByLabel("Reset link", { exact: true }).inputValue();
   expect(cancelled).toContain("/reset-password/");
-  await expect(row.getByText(/^people-player has a reset link, unused, until /)).toBeVisible();
-  await expect(row.getByText("Reset link out")).toBeVisible();
+  await expect(reset.getByText(/^people-player has a reset link, unused, until /)).toBeVisible();
+  await expect(badge(row, "Reset link out")).toBeVisible();
   const resets = c.locator("section", { has: c.getByRole("heading", { name: "Password resets" }) });
   await expect(resets.getByRole("button", { name: "Cancel people-player's reset link" }).first()).toBeVisible();
   await expect(resets.getByText("people-custodian made a password reset link for people-player.").first()).toBeVisible();
   await c.screenshot(shots("people-reset"));
 
   // They think better of it and cancel it.
-  await row.getByRole("button", { name: "Cancel link" }).click();
-  await expect(row.getByText("Make a link that lets people-player set a new password", { exact: false })).toBeVisible();
+  await reset.getByRole("button", { name: "Cancel link" }).click();
+  await expect(reset.getByText("Make a link that lets people-player set a new password", { exact: false })).toBeVisible();
   await expect(row.getByText("Reset link out")).toHaveCount(0);
+  await reset.getByRole("button", { name: "Close" }).click();
+  await expect(reset).toBeHidden();
+  // Closing gives focus back to the ⋯ it was opened from.
+  await expect(row.getByRole("button", { name: "Actions for people-player" })).toBeFocused();
 
   // They open the profile.
-  await c.locator("main").getByRole("link", { name: new RegExp(player.email) }).click();
+  await row.getByRole("link", { name: "people-player", exact: true }).click();
   await expect(c.getByRole("heading", { name: "people-player" })).toBeVisible();
   await expect(c.getByText(new RegExp(`^@${player.handle} · Member since .+\\(new this month\\)$`))).toBeVisible();
   await expect(c.getByText("Playing since the Masquerade was young.")).toBeVisible();
@@ -112,24 +131,22 @@ test("the custodian changes a player's email, and the player confirms it from th
   await c.getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(player.email);
-  const row = c
-    .locator("main li")
-    .filter({ hasText: player.email })
-    .filter({ has: c.getByRole("button", { name: "Change email for chmail-player" }) });
-  await row.getByRole("button", { name: "Change email for chmail-player" }).click();
-  await row.getByLabel("New email").fill(custodian.email);
-  await row.getByLabel("Reason").fill("Lost access to the old address");
-  await row.getByRole("button", { name: "Change email", exact: true }).click();
-  await expect(row.getByText(`uses ${custodian.email} already. If both accounts are the same person's, merge them instead.`, { exact: false })).toBeVisible();
-  await row.getByLabel("New email").fill(newEmail);
-  await row.getByRole("button", { name: "Change email", exact: true }).click();
+  const row = c.locator("main tr").filter({ hasText: player.email });
+  await personAction(row, "chmail-player", "Change email…");
+  const change = c.getByRole("dialog", { name: "Change chmail-player's email" });
+  await change.getByLabel("New email").fill(custodian.email);
+  await change.getByLabel("Reason").fill("Lost access to the old address");
+  await change.getByRole("button", { name: "Change email", exact: true }).click();
+  await expect(change.getByText(`uses ${custodian.email} already. If both accounts are the same person's, merge them instead.`, { exact: false })).toBeVisible();
+  await change.getByLabel("New email").fill(newEmail);
+  await change.getByRole("button", { name: "Change email", exact: true }).click();
 
   // Nothing changes until the link is opened: the custodian sends it on.
-  await expect(row.getByText(`Waiting for chmail-player to confirm ${newEmail}`, { exact: false })).toBeVisible();
-  await expect(row.getByText("New email waiting")).toBeVisible();
+  await expect(change.getByText(`Waiting for chmail-player to confirm ${newEmail}`, { exact: false })).toBeVisible();
+  await expect(badge(row, "New email waiting")).toBeVisible();
   const changes = c.locator("section", { has: c.getByRole("heading", { name: "Email changes" }) });
   await expect(changes.getByText(`${player.email} → ${newEmail}`, { exact: false })).toBeVisible();
-  const url = await row.getByLabel("Link to confirm the new email").inputValue();
+  const url = await change.getByLabel("Link to confirm the new email").inputValue();
   expect(url).toContain("/confirm-email/");
   await expect(changes.getByText(`chmail-custodian started changing chmail-player's email from ${player.email} to ${newEmail} (Lost access to the old address).`)).toBeVisible();
   await c.screenshot(shots("email-change"));
@@ -196,7 +213,7 @@ test("the custodian filters People by the troupe a player's active character is 
   await c.reload();
   await c.getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
-  const list = c.locator("main li");
+  const list = c.locator("main tr");
   const filter = c.getByLabel("Active character in");
   await expect(filter.locator("option").first()).toHaveText("Any troupe");
 
@@ -232,8 +249,8 @@ test("the custodian views Horatio as a player, read-only, and the player sees th
   await c.getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(player.email);
-  const row = c.locator("main li").filter({ hasText: player.email });
-  await row.getByRole("button", { name: "View as viewas-player" }).click();
+  const row = c.locator("main tr").filter({ hasText: player.email });
+  await personAction(row, "viewas-player", "View as…");
   const dialog = c.getByRole("dialog", { name: `View as @${player.handle}` });
   await dialog.getByLabel("Reason").fill("Can't find her character");
   await dialog.getByRole("button", { name: "Start viewing" }).click();
@@ -370,11 +387,14 @@ test("the custodian suspends a lead storyteller, who can't sign in until it is l
   await c.getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(lead.email);
-  const row = c.locator("main li").filter({ hasText: lead.email });
-  await row.getByRole("button", { name: "Suspend susp-lead" }).click();
-  await row.getByLabel("Reason").fill("Threatened another player at the last game");
-  await row.getByRole("button", { name: "Suspend susp-lead" }).last().click();
-  await expect(row.getByText("Suspended", { exact: true })).toBeVisible();
+  const row = c.locator("main tr").filter({ hasText: lead.email });
+  await personAction(row, "susp-lead", "Suspend…");
+  const suspend = c.getByRole("dialog", { name: "Suspend susp-lead" });
+  await suspend.getByLabel("Reason").fill("Threatened another player at the last game");
+  await suspend.getByRole("button", { name: "Suspend susp-lead" }).click();
+  await expect(suspend).toBeHidden();
+  await expect(c.getByText("susp-lead is suspended.", { exact: true })).toBeVisible();
+  await expect(badge(row, "Suspended")).toBeVisible();
 
   // They are listed as suspended, with the troupe that wants a new lead, and it is logged.
   // Other tests may suspend people at the same time, so look only at this one.
@@ -402,9 +422,11 @@ test("the custodian suspends a lead storyteller, who can't sign in until it is l
   await c.getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(lead.email);
-  await row.getByRole("button", { name: "Lift the suspension of susp-lead" }).click();
-  await row.getByLabel("Why lift it").fill("Apologised and agreed to the code of conduct");
-  await row.getByRole("button", { name: "Lift suspension", exact: true }).click();
+  await personAction(row, "susp-lead", "Lift suspension…");
+  const lift = c.getByRole("dialog", { name: "Lift susp-lead's suspension" });
+  await lift.getByLabel("Why lift it").fill("Apologised and agreed to the code of conduct");
+  await lift.getByRole("button", { name: "Lift suspension", exact: true }).click();
+  await expect(lift).toBeHidden();
   await expect(row.getByText("Suspended", { exact: true })).toHaveCount(0);
   await expect(suspended).toHaveCount(0);
   await l.getByRole("button", { name: "Sign in" }).click();
@@ -441,10 +463,11 @@ test("the custodian moves a character to another player, not while its game is u
   await c.getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(before.email);
-  const row = c.locator("main li").filter({ hasText: before.email }).first();
-  await row.getByRole("button", { name: "Characters of mvc-before" }).click();
-  await expect(row.getByRole("link", { name: /Ottilie Marsh/ })).toContainText(troupeName);
-  await row.getByRole("button", { name: "Move Ottilie Marsh to another player" }).click();
+  const row = c.locator("main tr").filter({ hasText: before.email });
+  await personAction(row, "mvc-before", "Characters");
+  const characters = c.getByRole("dialog", { name: "mvc-before's characters" });
+  await expect(characters.getByRole("link", { name: /Ottilie Marsh/ })).toContainText(troupeName);
+  await characters.getByRole("button", { name: "Move Ottilie Marsh to another player" }).click();
   const dialog = c.getByRole("dialog", { name: "Move Ottilie Marsh to another player" });
   await expect(dialog.getByText(`Ottilie Marsh is played by mvc-before @${before.handle}.`)).toBeVisible();
   await dialog.getByLabel("New player").fill(after.handle);
@@ -468,6 +491,8 @@ test("the custodian moves a character to another player, not while its game is u
   await c.screenshot(shots("move-character-confirm"));
   await confirm.click();
   await expect(dialog).toBeHidden();
+  // The list of their characters stays open behind it, now without it.
+  await expect(characters.getByText("No characters.")).toBeVisible();
 
   // The new player has it in their vault, with its history and the move in its log.
   const a = after.page;
@@ -543,8 +568,8 @@ test("the custodian merges two accounts of one person: the characters and staff 
   await c.getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(twice.email);
-  const row = c.locator("main li").filter({ hasText: twice.email }).first();
-  await row.getByRole("button", { name: "Merge mga-twice with another account" }).click();
+  const row = c.locator("main tr").filter({ hasText: twice.email });
+  await personAction(row, "mga-twice", "Merge…");
   const dialog = c.getByRole("dialog", { name: "Merge mga-twice with another account" });
   await dialog.getByLabel("The same person's other account").fill(real.handle);
   await dialog.getByRole("listbox", { name: "People" }).getByRole("option", { name: `@${real.handle}` }).click();
@@ -562,9 +587,9 @@ test("the custodian merges two accounts of one person: the characters and staff 
   await expect(dialog).toBeHidden();
   // The closed account is no longer listed; searching its handle finds the other.
   await c.getByLabel("Search people").fill(twice.handle);
-  await expect(c.locator("main li").filter({ hasText: real.email })).toBeVisible();
+  await expect(c.locator("main tr").filter({ hasText: real.email })).toBeVisible();
   // (Its email is still in the log of recent account events below.)
-  await expect(c.getByRole("button", { name: "Merge mga-twice with another account" })).toHaveCount(0);
+  await expect(c.getByRole("button", { name: "Actions for mga-twice" })).toHaveCount(0);
 
   // The closed account is signed out, and can't sign in again.
   const t = twice.page;
