@@ -195,7 +195,7 @@ A character's [home troupe](glossary.md#home-troupe) holds its sheet: it accepts
 4. Settle any differences (below), and add **A note for the storytellers** if you like.
 5. Press **Ask to join as home troupe**.
 
-Asking also makes the character visit the troupe, so its staff can see the sheet. The card then says it's waiting for the troupe's storytellers. There's nothing more to do until they decide, but you can **Withdraw the request**. While a request waits, the sheet is locked, so the differences you settled stay as they were. Many troupes also want the backstory approved before they accept a character (see [Backstory](#backstory)).
+Asking also makes the character visit the troupe, so its staff can see the sheet. The card then says it's waiting for the troupe's storytellers. There's nothing more to do until they decide, but you can **Withdraw the request**. While a request waits, the sheet is locked, so the differences you settled stay as they were. Many troupes also want the backstory approved before they accept a character (see [Backstory](#your-backstory)).
 
 A troupe's page may have a **Play here** link that opens this form with the troupe chosen.
 
@@ -239,7 +239,7 @@ The home troupe's storytellers and assistant storytellers decide:
 
 You're told when they decide. Narrators never see character sheets, and a visiting troupe's staff can see the sheet but decide nothing on it. The staff's side is in [Running a troupe](running-a-troupe.md).
 
-## Backstory
+## Your backstory
 
 The **Backstory** tab holds the character's story. Only you, the custodian, and the storytellers and assistant storytellers of its home troupe (or of a troupe it's asking to join) can read it. Never narrators, other players or visiting troupes.
 
@@ -276,7 +276,7 @@ A troupe can require the backstory approved before it accepts a character; most 
 
 ## Downtimes
 
-Downtimes come from the character's home troupe, one [cycle](glossary.md#cycle) at a time. While one is open for your character, its **Downtime** tab shows **1 due**, and the Characters page shows **Downtime due**. A character with no home troupe takes no downtimes.
+Downtimes come from the character's home troupe, one [cycle](glossary.md#downtime-cycle) at a time. While one is open for your character, its **Downtime** tab shows **1 due**, and the Characters page shows **Downtime due**. A character with no home troupe takes no downtimes.
 
 ### The downtime form
 
