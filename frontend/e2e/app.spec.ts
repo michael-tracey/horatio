@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { closeContextsAfterEach, PASSWORD, shots, person } from "./support";
 
-/** The app itself: About, signing in on the way to a link, and reloading after a deploy. */
+/** The app itself: About, the Help pages, signing in on the way to a link, and reloading after a deploy. */
 
 closeContextsAfterEach();
 
@@ -16,6 +16,56 @@ test("anyone can read About, with the Dark Pack Agreement's notices", async ({ b
   await expect(page.getByText(/not official World of Darkness material/)).toBeVisible();
   await expect(page.getByRole("link", { name: "Dark Pack Agreement" })).toBeVisible();
   await page.screenshot(shots("about"));
+});
+
+test("Help opens the user manual from the top menu, signed out or in, with links to sections and search", async ({ browser }) => {
+  // Signed out, from the sign-in page's menu.
+  const page = await (await browser.newContext()).newPage();
+  await page.goto("/sign-in");
+  await page.getByRole("banner").getByRole("link", { name: "Help", exact: true }).click();
+  await expect(page).toHaveURL(/\/help$/);
+  await expect(page.getByRole("heading", { name: "Help", level: 1 })).toBeVisible();
+  // The part for them is marked: signed out, the players'.
+  await expect(page.getByRole("article").getByRole("link", { name: "Players for you" })).toBeVisible();
+
+  // A link between pages to a section opens there.
+  await page.getByRole("main").getByRole("link", { name: "Getting started", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Getting started", level: 1 })).toBeVisible();
+  await page.getByRole("main").getByRole("article").getByRole("link", { name: "custodian", exact: true }).click();
+  await expect(page).toHaveURL(/\/help\/glossary#custodian$/);
+  await expect(page.getByRole("heading", { name: "Custodian", exact: true })).toBeInViewport();
+
+  // A section that isn't there says so.
+  await page.goto("/help/glossary#no-such-section");
+  await expect(page.getByText(/There's no section “no-such-section” on this page/)).toBeVisible();
+  await page.goto("/help/no-such-page");
+  await expect(page.getByText("There's no help page called “no-such-page”.")).toBeVisible();
+
+  // Signed in, from the top menu, and search across every part.
+  const { page: p } = await person(browser, "helpmenu-player");
+  await p.getByRole("banner").getByRole("link", { name: "Help", exact: true }).click();
+  await expect(p.getByRole("heading", { name: "Help", level: 1 })).toBeVisible();
+  await p.getByRole("searchbox", { name: "Search the manual" }).fill("calendar link");
+  const results = p.getByRole("region", { name: "Search results" });
+  const hit = results.getByRole("link", { name: "Getting started › The calendar link" });
+  await expect(hit).toBeVisible();
+  await expect(results.locator("mark").first()).toBeVisible();
+  await hit.click();
+  await expect(p).toHaveURL(/\/help\/getting-started#the-calendar-link$/);
+  await expect(p.getByRole("heading", { name: "The calendar link" })).toBeInViewport();
+  // Its sections are listed: beside it on a computer, at the top on a phone.
+  if ((p.viewportSize()?.width ?? 1280) < 1024) await p.locator("summary", { hasText: "On this page" }).click();
+  const sectionList = p.getByRole("navigation", { name: "On this page" }).filter({ visible: true });
+  await expect(sectionList.getByRole("link", { name: "The calendar link" })).toHaveAttribute("aria-current", "location");
+  await p.screenshot({ path: `test-results/screens/${test.info().project.name}-help-sections.png` });
+  // Its screenshot comes from the bundle.
+  const image = p.getByRole("img", { name: /^Subscribe to the calendar/ });
+  await image.scrollIntoViewIfNeeded();
+  await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+  await p.screenshot(shots("help"));
+  // Back goes to the results as they were.
+  await p.goBack();
+  await expect(p.getByRole("searchbox", { name: "Search the manual" })).toHaveValue("calendar link");
 });
 
 test("a link opened signed out goes there once signed in, and never to another site", async ({ browser }) => {

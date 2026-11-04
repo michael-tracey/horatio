@@ -17,7 +17,9 @@ frontend/playwright-report/
 backend/tests/
 **/.env
 deploy/production.env
-docs/
+# Only the user manual, which the frontend build bundles.
+docs/*
+!docs/manual/
 branding/
 # Copied to the server by the playbook, never built into the image.
 dark-pack/
