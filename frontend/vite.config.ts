@@ -10,6 +10,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: { "/api": `http://localhost:${apiPort}` },
+    // The user manual is bundled from ../docs/manual (src/manual/content.ts).
+    fs: { allow: [".", "../docs/manual"] },
   },
   test: {
     environment: "jsdom",

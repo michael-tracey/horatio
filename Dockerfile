@@ -6,6 +6,8 @@ WORKDIR /frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY frontend/ ./
+# The user manual, which the build bundles from ../docs/manual (src/manual/content.ts).
+COPY docs/manual /docs/manual
 RUN npm run build
 
 FROM python:3.12-slim

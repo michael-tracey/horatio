@@ -75,7 +75,7 @@ The new lead takes over at once. If they were already on the troupe's staff, the
 
 ## Archived troupes
 
-Archiving is how a troupe ends (see [the glossary](glossary.md#archived-troupe)). Troupes are never truly deleted.
+Archiving is how a troupe ends (see [Archiving a troupe](#archiving-a-troupe)). Troupes are never truly deleted.
 
 ### Archiving a troupe
 
