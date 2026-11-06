@@ -17,6 +17,7 @@ import { CharacterLogTab } from "./LogTab";
 import { NpcBuilder } from "./NpcBuilder";
 import { KindBadge } from "./NpcKindBadge";
 import { CharacterMenu } from "./Actions";
+import { givable } from "../troupe/GiveNpc";
 import { LeavingCard } from "./Leaving";
 import { RenameCharacter } from "./Rename";
 import { CharacterPronouns } from "./Pronouns";
@@ -65,6 +66,14 @@ export function CharacterPage() {
     queryKey: ["troupe", homeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: homeId! } } })),
     enabled: !!homeId,
+  });
+
+  // An NPC's storytellers can give it to a player (#481).
+  const npcTroupeId = character.data?.kind === "npc" ? character.data.home_troupe_id : null;
+  const npcTroupe = useQuery({
+    queryKey: ["troupe", npcTroupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: npcTroupeId! } } })),
+    enabled: !!npcTroupeId,
   });
 
   // The Backstory tab shows to its player and the storytellers deciding on or keeping it.
@@ -121,6 +130,7 @@ export function CharacterPage() {
                   canRetire={c.status === "active"}
                   onPronouns={saying ? undefined : () => setSaying(true)}
                   canDelete
+                  canGive={!!npcTroupe.data && abilities(npcTroupe.data.my_role, custodian).storyteller && !npcTroupe.data.archived && givable(c)}
                 />
               </div>
             }

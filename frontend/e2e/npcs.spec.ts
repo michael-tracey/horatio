@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian } from "./support";
+import { expect, test, type Page } from "@playwright/test";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, PASSWORD } from "./support";
 
 /** Storytellers building NPCs, of every kind and form. */
 
@@ -116,9 +116,106 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await expect(p.getByRole("button", { name: "Actions for Prince Vasquez" })).toBeFocused();
   await p.getByRole("button", { name: "Actions for Sheriff Ilse" }).click();
   await p.screenshot(shots("npcs"));
-  await p.getByRole("menuitem", { name: "Play" }).click();
+  await p.getByRole("menuitem", { name: "Play", exact: true }).click();
   await expect(p.getByRole("heading", { name: "Sheriff Ilse" })).toBeVisible();
   await expect(p.getByRole("tab", { name: "Tracker" })).toBeVisible();
+});
+
+/** A troupe led by `lead`, made by the custodian, with a sheeted vampire NPC built in it. */
+async function troupeWithNpc(custodian: Page, lead: string, troupe: string, npc: string): Promise<{ troupeId: string; npcId: string }> {
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.request.post("/api/troupes", { headers, data: { name: `${troupe} ${run}`, lead_handle: lead } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const built = await custodian.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: npc, wizard: false } });
+  expect(built.status(), await built.text()).toBe(201);
+  const npcId = (await built.json()).id;
+  for (const [category, name, rating] of [
+    ["attributes", "Physical", 5],
+    ["skills", "Brawl", 3],
+  ] as const) {
+    const rated = await custodian.request.put(`/api/characters/${npcId}/npc/ratings`, { headers, data: { category, name, rating } });
+    expect(rated.status(), await rated.text()).toBe(200);
+  }
+  return { troupeId, npcId };
+}
+
+test("a storyteller gives an NPC to a player, who finds it among their characters", async ({ browser }) => {
+  const custodian = await person(browser, "gift-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "gift-lead");
+  const heir = await person(browser, "gift-heir");
+  const { troupeId, npcId } = await troupeWithNpc(custodian.page, lead.handle, "Court of Gifts", "Odette Lamarr");
+
+  const p = lead.page;
+  await p.goto(`/troupes/${troupeId}/npcs`);
+  await p.getByRole("button", { name: "Actions for Odette Lamarr" }).click();
+  await p.getByRole("menuitem", { name: "Give to a player…" }).click();
+  const dialog = p.getByRole("dialog", { name: "Give Odette Lamarr to a player" });
+  await dialog.getByLabel("Player").fill(heir.handle);
+  await dialog.getByRole("listbox", { name: "People" }).getByRole("option", { name: `@${heir.handle}` }).click();
+  await dialog.getByLabel("Unspent XP to carry over").fill("6");
+  await dialog.getByLabel("Why").fill("Banked in our old records");
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await expect(dialog.getByText(/^It becomes .*'s character, at home in Court of Gifts/)).toBeVisible();
+  await expect(dialog.getByText(/Then 6 XP carried over/)).toBeVisible();
+  await p.screenshot(shots("give-npc"));
+  await dialog.getByRole("button", { name: `Give Odette Lamarr to @${heir.handle}` }).click();
+  await expect(dialog).toBeHidden();
+  await expect(p.getByText("No NPCs yet.")).toBeVisible();
+
+  // The player is told, and has it: at home in the troupe, its XP balanced plus what was carried over.
+  const h = heir.page;
+  await h.reload();
+  await expect(h.getByRole("link", { name: /Odette Lamarr/ }).first()).toBeVisible();
+  await h.goto(`/characters/${npcId}/xp`);
+  await expect(h.getByText("Unspent XP carried over: Banked in our old records")).toBeVisible();
+  await expect(h.getByText(/^Imported: what Odette Lamarr's sheet cost/)).toBeVisible();
+  const xp = await (await h.request.get(`/api/characters/${npcId}/xp`)).json();
+  expect(xp.reduce((sum: number, e: { amount: number }) => sum + e.amount, 0)).toBe(6);
+  const character = await (await h.request.get(`/api/characters/${npcId}`)).json();
+  expect([character.kind, character.home_troupe_id]).toEqual(["pc", troupeId]);
+  const notes = await (await h.request.get("/api/notifications")).json();
+  expect(notes.items.map((n: { summary: string }) => n.summary)).toContain(`Odette Lamarr is yours now: Court of Gifts ${run} gave it to you, at home there and accepted`);
+});
+
+test("a storyteller sends a claim link, and a newcomer signs up through it and claims the NPC", async ({ browser }) => {
+  const custodian = await person(browser, "claim-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "claim-lead");
+  const { troupeId, npcId } = await troupeWithNpc(custodian.page, lead.handle, "Court of Claims", "Bastien Roux");
+
+  // From the NPC's own page this time.
+  const p = lead.page;
+  await p.goto(`/characters/${npcId}`);
+  await p.getByRole("button", { name: "More for Bastien Roux" }).click();
+  await p.getByRole("menuitem", { name: "Claim link…" }).click();
+  const dialog = p.getByRole("dialog", { name: "Claim link for Bastien Roux" });
+  await dialog.getByRole("button", { name: "Make a claim link" }).click();
+  const url = await dialog.getByLabel("Claim link").inputValue();
+  await p.screenshot(shots("claim-link"));
+  await dialog.getByRole("button", { name: "Close" }).click();
+  await p.goto(`/troupes/${troupeId}/npcs`);
+  await expect(p.getByRole("row", { name: /Bastien Roux/ }).getByText("Claim link out")).toBeVisible();
+
+  // Someone with no account opens it, sees whose it is, and signs up to claim it.
+  const n = await (await browser.newContext()).newPage();
+  await n.goto(new URL(url).pathname);
+  await expect(n.getByText("Bastien Roux", { exact: true })).toBeVisible();
+  await n.getByRole("link", { name: "Sign up to claim it" }).click();
+  await n.getByLabel("Your name").fill("claim-newcomer");
+  await n.getByLabel("Handle").fill(`claim-newcomer_${run.slice(-10)}`);
+  await n.getByLabel("Email").fill(`claim-newcomer-${run}@example.com`);
+  await n.getByLabel("Password").fill(PASSWORD);
+  await n.getByRole("button", { name: "Create account" }).click();
+  await n.screenshot(shots("claim"));
+  await n.getByRole("button", { name: "Claim Bastien Roux" }).click();
+  await expect(n.getByRole("heading", { name: "Bastien Roux", level: 1 })).toBeVisible();
+  await expect(n).toHaveURL(new RegExp(`/characters/${npcId}`));
+
+  // Used, the link stops working.
+  await n.goto(new URL(url).pathname);
+  await expect(n.getByText("This claim link has expired or been used. Ask the troupe for a new one.")).toBeVisible();
 });
 
 test("storytellers make NPCs of other kinds, sheeted or Stock, and filter the list by kind and form", async ({ browser }) => {
@@ -148,7 +245,7 @@ test("storytellers make NPCs of other kinds, sheeted or Stock, and filter the li
   await expect(shows(wolf, /^(Rating )?3$/)).toBeVisible();
   // A Stock NPC plays from a Play View of its own.
   await p.getByRole("button", { name: "Actions for Bites-the-Hand" }).click();
-  await expect(p.getByRole("menuitem", { name: "Play" })).toBeVisible();
+  await expect(p.getByRole("menuitem", { name: "Play", exact: true })).toBeVisible();
   await p.keyboard.press("Escape");
 
   // A sheeted mage goes to its quick build, on the Vampire sheet.
@@ -163,7 +260,7 @@ test("storytellers make NPCs of other kinds, sheeted or Stock, and filter the li
   await expect(shows(mage, "Mage")).toBeVisible();
   await expect(shows(mage, "Sheeted")).toBeVisible();
   await p.getByRole("button", { name: "Actions for Sarah Juniper" }).click();
-  await expect(p.getByRole("menuitem", { name: "Play" })).toBeVisible();
+  await expect(p.getByRole("menuitem", { name: "Play", exact: true })).toBeVisible();
   await p.keyboard.press("Escape");
   await p.screenshot(shots("npc-kinds"));
 

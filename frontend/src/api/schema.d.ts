@@ -806,6 +806,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/claim-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Claim Link
+         * @description The NPC's open claim link, if it has one: when it expires, and who made it.
+         */
+        get: operations["read_claim_link_api_characters__character_id__claim_link_get"];
+        put?: never;
+        /**
+         * Make Claim Link
+         * @description A new claim link for the NPC, for 30 days, replacing any it had. The link is
+         *     shown only now.
+         */
+        post: operations["make_claim_link_api_characters__character_id__claim_link_post"];
+        /** Cancel Claim Link */
+        delete: operations["cancel_claim_link_api_characters__character_id__claim_link_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/creation": {
         parameters: {
             query?: never;
@@ -1460,6 +1486,32 @@ export interface paths {
          *     a reason. Nothing waits on approval; the player is told.
          */
         post: operations["give_api_characters__character_id__give_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/give-to-player": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview Give
+         * @description What giving the NPC to whoever has `handle` would do, for staff to confirm;
+         *     without a handle, what giving it to anyone would (for a claim link).
+         */
+        get: operations["preview_give_api_characters__character_id__give_to_player_get"];
+        put?: never;
+        /**
+         * Give Npc
+         * @description Give the sheeted NPC to whoever has the handle: it becomes their character, at
+         *     home and accepted in the troupe, its XP balanced, plus any carried over.
+         */
+        post: operations["give_npc_api_characters__character_id__give_to_player_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3349,6 +3401,51 @@ export interface paths {
          *     characters there.
          */
         get: operations["read_code_api_checkin__code__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Claim
+         * @description The character a claim link is for: its name, troupe and portrait. Anyone with
+         *     the link may see them, so they can sign up to claim it.
+         */
+        get: operations["read_claim_api_claims__token__get"];
+        put?: never;
+        /**
+         * Claim
+         * @description Claim the character: it becomes yours, at home and accepted in its troupe.
+         */
+        post: operations["claim_api_claims__token__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/claims/{token}/pictures/{picture_id}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Claim Picture
+         * @description One of the portrait's files, through the claim link.
+         */
+        get: operations["claim_picture_api_claims__token__pictures__picture_id___name__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -10134,6 +10231,19 @@ export interface components {
             /** Type */
             type: string;
         };
+        /** CarriedXp */
+        CarriedXp: {
+            /**
+             * Carried Reason
+             * @default
+             */
+            carried_reason: string;
+            /**
+             * Carried Xp
+             * @default 0
+             */
+            carried_xp: number;
+        };
         /** CartIn */
         CartIn: {
             /** Changes */
@@ -10871,6 +10981,42 @@ export interface components {
             active: boolean;
             /** Name */
             name: string;
+        };
+        /** ClaimLinkOut */
+        ClaimLinkOut: {
+            /** Carried Reason */
+            carried_reason: string;
+            /** Carried Xp */
+            carried_xp: number;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            made_by: components["schemas"]["Someone"];
+        };
+        /**
+         * ClaimOut
+         * @description What a claim link is for, for whoever opens it, signed in or not.
+         */
+        ClaimOut: {
+            /** Carried Xp */
+            carried_xp: number;
+            /** Character Name */
+            character_name: string;
+            /** Clan */
+            clan: string | null;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Picture */
+            picture: string | null;
+            /** Signed In */
+            signed_in: boolean;
+            /** Troupe Name */
+            troupe_name: string;
         };
         /**
          * ClanChoiceOut
@@ -13980,37 +14126,6 @@ export interface components {
             /** Template */
             template?: string | null;
         };
-        /** GiveIn */
-        GiveIn: {
-            /** Category */
-            category: string;
-            /**
-             * Despite
-             * @default false
-             */
-            despite: boolean;
-            /**
-             * Detail
-             * @default
-             */
-            detail: string;
-            /**
-             * Free
-             * @default false
-             */
-            free: boolean;
-            /** Name */
-            name: string;
-            /** Rating */
-            rating: number;
-            /** Reason */
-            reason: string;
-            /**
-             * Trial
-             * @default false
-             */
-            trial: boolean;
-        };
         /** GiveOut */
         GiveOut: {
             /** Breaks */
@@ -14022,6 +14137,27 @@ export interface components {
             /** Refused */
             refused: string | null;
             sheet: components["schemas"]["SheetOut"];
+        };
+        /** GivePreview */
+        GivePreview: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Free */
+            free: string[];
+            /** Refusal */
+            refusal: string | null;
+            /** Retainers */
+            retainers: components["schemas"]["LinkedRetainer"][];
+            to_player: components["schemas"]["Someone"] | null;
+            /** Troupe Name */
+            troupe_name: string;
+            /** Xp */
+            xp: number;
         };
         /** GiveToIn */
         GiveToIn: {
@@ -15293,6 +15429,13 @@ export interface components {
             /** Url */
             url: string;
         };
+        /** LinkedRetainer */
+        LinkedRetainer: {
+            /** Character Name */
+            character_name: string;
+            /** Name */
+            name: string;
+        };
         /** Listed */
         Listed: {
             /** Listed */
@@ -16216,6 +16359,16 @@ export interface components {
             /** Refund */
             refund: number;
         };
+        /** MadeClaimLink */
+        MadeClaimLink: {
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Url */
+            url: string;
+        };
         /** MatchIn */
         MatchIn: {
             /** Location Id */
@@ -16967,6 +17120,8 @@ export interface components {
             assamite_name: "Banu Haqim" | "Assamite";
             /** Building Troupe Id */
             building_troupe_id: string | null;
+            /** Claim Expires At */
+            claim_expires_at?: string | null;
             /** Clan */
             clan: string | null;
             /** Creation Complete */
@@ -23863,6 +24018,21 @@ export interface components {
              */
             reason: string;
         };
+        /** GiveIn */
+        horatio__api__npc_gifts__GiveIn: {
+            /**
+             * Carried Reason
+             * @default
+             */
+            carried_reason: string;
+            /**
+             * Carried Xp
+             * @default 0
+             */
+            carried_xp: number;
+            /** Handle */
+            handle: string;
+        };
         /** ResetIn */
         horatio__api__play__ResetIn: {
             /** Game Id */
@@ -23882,6 +24052,37 @@ export interface components {
             asked: components["schemas"]["TeachingAskOut"][];
             /** Lent */
             lent: string | null;
+        };
+        /** GiveIn */
+        horatio__api__trait_exceptions__GiveIn: {
+            /** Category */
+            category: string;
+            /**
+             * Despite
+             * @default false
+             */
+            despite: boolean;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /**
+             * Free
+             * @default false
+             */
+            free: boolean;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
+            /** Reason */
+            reason: string;
+            /**
+             * Trial
+             * @default false
+             */
+            trial: boolean;
         };
     };
     responses: never;
@@ -25413,6 +25614,101 @@ export interface operations {
             };
         };
     };
+    read_claim_link_api_characters__character_id__claim_link_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimLinkOut"] | null;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    make_claim_link_api_characters__character_id__claim_link_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CarriedXp"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MadeClaimLink"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_claim_link_api_characters__character_id__claim_link_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_creation_api_characters__character_id__creation_get: {
         parameters: {
             query?: never;
@@ -26680,7 +26976,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GiveIn"];
+                "application/json": components["schemas"]["horatio__api__trait_exceptions__GiveIn"];
             };
         };
         responses: {
@@ -26692,6 +26988,72 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["GiveOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_give_api_characters__character_id__give_to_player_get: {
+        parameters: {
+            query?: {
+                handle?: string | null;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GivePreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    give_npc_api_characters__character_id__give_to_player_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["horatio__api__npc_gifts__GiveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -30300,6 +30662,99 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["CheckInOffer"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_claim_api_claims__token__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    claim_api_claims__token__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    claim_picture_api_claims__token__pictures__picture_id___name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+                picture_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

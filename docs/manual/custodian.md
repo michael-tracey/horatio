@@ -164,6 +164,8 @@ Sometimes a character belongs with a different player: it was built on the wrong
 
 The old player can no longer open the character; the new one can at once. A character in a game on the Play View can't be moved until the game ends with **Reset for next game**, and an NPC can't be moved at all: it belongs to its troupe. To undo a move, move it back.
 
+To hand an NPC to a player, give it instead: from the troupe's **Characters › NPCs**, or the NPC's own page, choose **⋯ › Give to a player…** or **⋯ › Claim link…**. You can do this in any troupe, as its storytellers can (see [Giving an NPC to a player](running-a-troupe.md#giving-an-npc-to-a-player)). It becomes the player's character, at home and accepted in its troupe. If it went to the wrong person, move it to the right one as above. It can't be turned back into an NPC.
+
 ### Changing someone's email
 
 For a player who has lost their old address:

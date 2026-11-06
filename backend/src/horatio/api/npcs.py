@@ -3,6 +3,7 @@ Each has a kind and a form: sheeted, or a Stock NPC (horatio.rules.stock)."""
 
 import uuid
 from dataclasses import asdict
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, status
@@ -14,7 +15,7 @@ from horatio.api.characters import CharacterOut, character_out, characters_out
 from horatio.api.downtimes import staff_troupe
 from horatio.api.sheets import players_character
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Character, RuleSet, StockNpc
+from horatio.models import Character, NpcClaim, RuleSet, StockNpc
 from horatio.permissions import TroupeAction
 from horatio.rules import stock
 from horatio.rules.npc_kinds import BuiltInPower, NpcKind, Resource, npc_kinds
@@ -78,6 +79,8 @@ class NpcOut(CharacterOut):
     stock_rating: int | None
     # Staff list it on the troupe's Who's Who though it holds no title there.
     on_whos_who: bool
+    # When its open claim link expires (horatio.npc_gifts), if it has one.
+    claim_expires_at: datetime | None = None
 
 
 class ResourceOut(BaseModel):
@@ -295,8 +298,22 @@ def list_npcs(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Np
         )
     }
     listed = {c.id for c in found if c.on_whos_who}
+    claims = {
+        row.character_id: row.expires_at
+        for row in db.scalars(
+            select(NpcClaim).where(
+                NpcClaim.character_id.in_([c.id for c in found]),
+                NpcClaim.expires_at > datetime.now(UTC),
+            )
+        )
+    }
     return [
-        NpcOut(**out.model_dump(), stock_rating=ratings.get(out.id), on_whos_who=out.id in listed)
+        NpcOut(
+            **out.model_dump(),
+            stock_rating=ratings.get(out.id),
+            on_whos_who=out.id in listed,
+            claim_expires_at=claims.get(out.id),
+        )
         for out in characters_out(db, found)
     ]
 

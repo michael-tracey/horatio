@@ -21,6 +21,7 @@ Every troupe has exactly one **lead storyteller**, and as many **storytellers**,
 | Award XP, correct it, run check-in at a game | Yes | Yes | Yes | No |
 | Run downtime cycles: open, assign, deliver, close | Yes | Yes | Yes | No |
 | Make and play NPCs, run scenes, reset the Play Views | Yes | Yes | Yes | No |
+| Give an NPC to a player, or make a claim link for it | Yes | Yes | No | No |
 | Give titles, status and equipment; keep locations, quests, shared backgrounds and the influence log | Yes | Yes | Yes | No |
 | Read the troupe log | Yes | Yes | Yes | No |
 | Answer downtime actions assigned to them, or to any narrator | Yes | Yes | Yes | Yes |
@@ -164,7 +165,8 @@ The **⋯** at the end of each row holds:
 
 - **Play**, which opens its Play View at a game;
 - **List on the Who's Who** or **Take off the Who's Who**, for an NPC without a title (one with a title is listed anyway);
-- **Badge…**, which shows what others can see of it, takes a note for its badge, and prints it.
+- **Badge…**, which shows what others can see of it, takes a note for its badge, and prints it;
+- **Give to a player…** and **Claim link…**, for storytellers, on a finished sheeted vampire or ghoul (see [Giving an NPC to a player](#giving-an-npc-to-a-player)).
 
 **Game badges** prints badges for the NPCs ticked, or all of them.
 
@@ -183,6 +185,34 @@ Under **New NPC**:
 ### Stock NPCs
 
 A Stock NPC's page shows its **Stat block** worked out from its kind and rating, and a rules card for its kind. Change its name, kind or rating, add up to as many **Specialisations** as its rating, and keep **Notes**; each change saves as you make it. **Make this a full sheet…** turns it into a sheeted NPC. That cannot be undone.
+
+### Giving an NPC to a player
+
+A troupe moving to Horatio can load its existing characters as NPCs, then give each one to its player as that person signs up. The lead storyteller and storytellers can give an NPC (the custodian can too); assistant storytellers can't. Only a finished, sheeted vampire or ghoul can be given: a Stock NPC has no sheet to play, so make it a full sheet first.
+
+Giving it makes it the player's character, at home in your troupe and already accepted:
+
+- its sheet as it stands becomes its accepted sheet, so later changes go through your approvals and [free changes](#free-changes) as any new character's do;
+- its XP balances: each trait's dots are bought at your troupe's prices, and an **Imported** award gives that much, so nothing is left unspent. A trait your costs don't price is kept as free dots;
+- XP the player had banked elsewhere goes in **Unspent XP to carry over**, as its own entry with your reason. Neither is checked against your [XP floor and ceiling](#xp-settings);
+- it leaves the NPCs list and shows on the Who's Who as a player's character. A Retainer linked to it is unlinked, with a line in its owner's log;
+- the player is told *"name is yours now"*, and it's in the troupe log.
+
+To give it to someone who has signed up:
+
+1. Choose **⋯ › Give to a player…** on its row of the NPCs list, or **⋯ › Give to a player…** on its own page.
+2. Pick the **Player**, and fill in any **Unspent XP to carry over** and **Why**.
+3. Choose **Continue** to see what will happen, then **Give *name* to @handle**.
+
+For someone who hasn't signed up yet, send a **claim link** instead:
+
+1. Choose **⋯ › Claim link…**, fill in any XP to carry over, and choose **Make a claim link**.
+2. Copy the link and send it to them. It shows only now, works once, and lasts 30 days.
+3. Whoever opens it sees the character's name and portrait, signs up or signs in, and chooses **Claim *name***. The character is given to them as above, and whoever made the link is told.
+
+While a link is out, the NPC's row says **Claim link out**. **Claim link…** shows when it expires and who made it; **Cancel the link** stops it working, and **Make a new link** replaces it. Giving the NPC directly also ends its link.
+
+A character given to the wrong person is put right by the custodian [moving it to the right player](custodian.md#moving-a-character-to-another-player). It can't be turned back into an NPC.
 
 ## Titles and status
 

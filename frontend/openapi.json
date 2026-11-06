@@ -3972,6 +3972,25 @@
         "title": "CarriedOut",
         "type": "object"
       },
+      "CarriedXp": {
+        "properties": {
+          "carried_reason": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Carried Reason",
+            "type": "string"
+          },
+          "carried_xp": {
+            "default": 0,
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Carried Xp",
+            "type": "integer"
+          }
+        },
+        "title": "CarriedXp",
+        "type": "object"
+      },
       "CartIn": {
         "properties": {
           "changes": {
@@ -6044,6 +6063,93 @@
           "name"
         ],
         "title": "ChooseIn",
+        "type": "object"
+      },
+      "ClaimLinkOut": {
+        "properties": {
+          "carried_reason": {
+            "title": "Carried Reason",
+            "type": "string"
+          },
+          "carried_xp": {
+            "title": "Carried Xp",
+            "type": "integer"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "made_by": {
+            "$ref": "#/components/schemas/Someone"
+          }
+        },
+        "required": [
+          "expires_at",
+          "made_by",
+          "carried_xp",
+          "carried_reason"
+        ],
+        "title": "ClaimLinkOut",
+        "type": "object"
+      },
+      "ClaimOut": {
+        "description": "What a claim link is for, for whoever opens it, signed in or not.",
+        "properties": {
+          "carried_xp": {
+            "title": "Carried Xp",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "signed_in": {
+            "title": "Signed In",
+            "type": "boolean"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_name",
+          "troupe_name",
+          "clan",
+          "picture",
+          "expires_at",
+          "carried_xp",
+          "signed_in"
+        ],
+        "title": "ClaimOut",
         "type": "object"
       },
       "ClanChoiceOut": {
@@ -14148,58 +14254,6 @@
         "title": "GiveEquipmentIn",
         "type": "object"
       },
-      "GiveIn": {
-        "properties": {
-          "category": {
-            "title": "Category",
-            "type": "string"
-          },
-          "despite": {
-            "default": false,
-            "title": "Despite",
-            "type": "boolean"
-          },
-          "detail": {
-            "default": "",
-            "maxLength": 200,
-            "title": "Detail",
-            "type": "string"
-          },
-          "free": {
-            "default": false,
-            "title": "Free",
-            "type": "boolean"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "rating": {
-            "minimum": 1.0,
-            "title": "Rating",
-            "type": "integer"
-          },
-          "reason": {
-            "maxLength": 500,
-            "minLength": 1,
-            "title": "Reason",
-            "type": "string"
-          },
-          "trial": {
-            "default": false,
-            "title": "Trial",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "category",
-          "name",
-          "rating",
-          "reason"
-        ],
-        "title": "GiveIn",
-        "type": "object"
-      },
       "GiveOut": {
         "properties": {
           "breaks": {
@@ -14240,6 +14294,74 @@
           "sheet"
         ],
         "title": "GiveOut",
+        "type": "object"
+      },
+      "GivePreview": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "free": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Free",
+            "type": "array"
+          },
+          "refusal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refusal"
+          },
+          "retainers": {
+            "items": {
+              "$ref": "#/components/schemas/LinkedRetainer"
+            },
+            "title": "Retainers",
+            "type": "array"
+          },
+          "to_player": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Someone"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          },
+          "xp": {
+            "title": "Xp",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "troupe_name",
+          "to_player",
+          "xp",
+          "free",
+          "retainers",
+          "refusal"
+        ],
+        "title": "GivePreview",
         "type": "object"
       },
       "GiveToIn": {
@@ -17446,6 +17568,24 @@
         "title": "Link",
         "type": "object"
       },
+      "LinkedRetainer": {
+        "properties": {
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_name",
+          "name"
+        ],
+        "title": "LinkedRetainer",
+        "type": "object"
+      },
       "Listed": {
         "properties": {
           "listed": {
@@ -19778,6 +19918,25 @@
         "title": "LossOut",
         "type": "object"
       },
+      "MadeClaimLink": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expires_at"
+        ],
+        "title": "MadeClaimLink",
+        "type": "object"
+      },
       "MatchIn": {
         "properties": {
           "location_id": {
@@ -21689,6 +21848,18 @@
               }
             ],
             "title": "Building Troupe Id"
+          },
+          "claim_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claim Expires At"
           },
           "clan": {
             "anyOf": [
@@ -39645,6 +39816,32 @@
         "title": "RemoveIn",
         "type": "object"
       },
+      "horatio__api__npc_gifts__GiveIn": {
+        "properties": {
+          "carried_reason": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Carried Reason",
+            "type": "string"
+          },
+          "carried_xp": {
+            "default": 0,
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Carried Xp",
+            "type": "integer"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          }
+        },
+        "required": [
+          "handle"
+        ],
+        "title": "GiveIn",
+        "type": "object"
+      },
       "horatio__api__play__ResetIn": {
         "properties": {
           "game_id": {
@@ -39700,6 +39897,58 @@
           "lent"
         ],
         "title": "TeachingOut",
+        "type": "object"
+      },
+      "horatio__api__trait_exceptions__GiveIn": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "despite": {
+            "default": false,
+            "title": "Despite",
+            "type": "boolean"
+          },
+          "detail": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "free": {
+            "default": false,
+            "title": "Free",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "trial": {
+            "default": false,
+            "title": "Trial",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "rating",
+          "reason"
+        ],
+        "title": "GiveIn",
         "type": "object"
       }
     }
@@ -42060,6 +42309,144 @@
         ]
       }
     },
+    "/api/characters/{character_id}/claim-link": {
+      "delete": {
+        "operationId": "cancel_claim_link_api_characters__character_id__claim_link_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Claim Link",
+        "tags": [
+          "npcs"
+        ]
+      },
+      "get": {
+        "description": "The NPC's open claim link, if it has one: when it expires, and who made it.",
+        "operationId": "read_claim_link_api_characters__character_id__claim_link_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ClaimLinkOut"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Read Claim Link Api Characters  Character Id  Claim Link Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Claim Link",
+        "tags": [
+          "npcs"
+        ]
+      },
+      "post": {
+        "description": "A new claim link for the NPC, for 30 days, replacing any it had. The link is\nshown only now.",
+        "operationId": "make_claim_link_api_characters__character_id__claim_link_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarriedXp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MadeClaimLink"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Make Claim Link",
+        "tags": [
+          "npcs"
+        ]
+      }
+    },
     "/api/characters/{character_id}/creation": {
       "get": {
         "operationId": "read_creation_api_characters__character_id__creation_get",
@@ -44054,7 +44441,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GiveIn"
+                "$ref": "#/components/schemas/horatio__api__trait_exceptions__GiveIn"
               }
             }
           },
@@ -44085,6 +44472,111 @@
         "summary": "Give",
         "tags": [
           "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/give-to-player": {
+      "get": {
+        "description": "What giving the NPC to whoever has `handle` would do, for staff to confirm;\nwithout a handle, what giving it to anyone would (for a claim link).",
+        "operationId": "preview_give_api_characters__character_id__give_to_player_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "handle",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Handle"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GivePreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Give",
+        "tags": [
+          "npcs"
+        ]
+      },
+      "post": {
+        "description": "Give the sheeted NPC to whoever has the handle: it becomes their character, at\nhome and accepted in the troupe, its XP balanced, plus any carried over.",
+        "operationId": "give_npc_api_characters__character_id__give_to_player_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/horatio__api__npc_gifts__GiveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Give Npc",
+        "tags": [
+          "npcs"
         ]
       }
     },
@@ -49861,6 +50353,145 @@
         "summary": "Read Code",
         "tags": [
           "check-in"
+        ]
+      }
+    },
+    "/api/claims/{token}": {
+      "get": {
+        "description": "The character a claim link is for: its name, troupe and portrait. Anyone with\nthe link may see them, so they can sign up to claim it.",
+        "operationId": "read_claim_api_claims__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Claim",
+        "tags": [
+          "npcs"
+        ]
+      },
+      "post": {
+        "description": "Claim the character: it becomes yours, at home and accepted in its troupe.",
+        "operationId": "claim_api_claims__token__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Claim",
+        "tags": [
+          "npcs"
+        ]
+      }
+    },
+    "/api/claims/{token}/pictures/{picture_id}/{name}": {
+      "get": {
+        "description": "One of the portrait's files, through the claim link.",
+        "operationId": "claim_picture_api_claims__token__pictures__picture_id___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "picture_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Picture Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Claim Picture",
+        "tags": [
+          "npcs"
         ]
       }
     },

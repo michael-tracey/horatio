@@ -2,13 +2,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { api, unwrap } from "../../api/client";
-import { ActionMenu, MenuItem, MenuLink } from "../../components/ActionMenu";
+import { ActionMenu, MenuGroup, MenuItem, MenuLink } from "../../components/ActionMenu";
 import { Avatar } from "../../components/Avatar";
 import { Dialog } from "../../components/Dialog";
 import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { BadgeNote } from "../character/Badge";
+import { ClaimLink, GiveToPlayer, givable } from "./GiveNpc";
 import { FORM_NAMES, type Npc, type NpcFilter, type NpcForm, type NpcKind, filterNpcs, groupedKinds, kindPages, kindsIn, resourceText } from "./npcKinds";
 
 type Custom = { name: string; nature: "mortal" | "supernatural"; resource: { name: string; size: number; per_turn: number; regains: string } };
@@ -16,7 +17,7 @@ const NEW_CUSTOM: Custom = { name: "", nature: "supernatural", resource: { name:
 
 /** The troupe's NPCs, with their kind and form, each sheeted one with a way into
  * its Play View, badges to print for them, and the fast way to make another. */
-export function NpcsTab({ troupeId }: { troupeId: string }) {
+export function NpcsTab({ troupeId, canGive = false }: { troupeId: string; canGive?: boolean }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const path = { params: { path: { troupe_id: troupeId } } };
@@ -114,7 +115,7 @@ export function NpcsTab({ troupeId }: { troupeId: string }) {
             </thead>
             <tbody className="divide-y divide-ash">
               {shown.map((n) => (
-                <NpcRow key={n.id} npc={n} troupeId={troupeId} selected={selected.has(n.id)} onToggle={() => toggle(n.id)} />
+                <NpcRow key={n.id} npc={n} troupeId={troupeId} canGive={canGive} selected={selected.has(n.id)} onToggle={() => toggle(n.id)} />
               ))}
             </tbody>
           </table>
@@ -200,8 +201,10 @@ export function NpcsTab({ troupeId }: { troupeId: string }) {
 const WIDE = "hidden lg:table-cell";
 
 /** One NPC: what it is, and what staff can do with it behind ⋯. */
-function NpcRow({ npc, troupeId, selected, onToggle }: { npc: Npc; troupeId: string; selected: boolean; onToggle: () => void }) {
-  const [badge, setBadge] = useState(false);
+function NpcRow({ npc, troupeId, canGive, selected, onToggle }: { npc: Npc; troupeId: string; canGive: boolean; selected: boolean; onToggle: () => void }) {
+  const [open, setOpen] = useState<"badge" | "give" | "claim" | null>(null);
+  const close = () => setOpen(null);
+  const giving = canGive && givable(npc);
   const toast = useToast();
   const listed = npc.on_whos_who;
   const list = useAction(async () => {
@@ -225,10 +228,13 @@ function NpcRow({ npc, troupeId, selected, onToggle }: { npc: Npc; troupeId: str
         <input type="checkbox" className="mt-2.5" aria-label={`Select ${npc.name}`} checked={selected} onChange={onToggle} />
       </td>
       <td className="py-2.5 pr-3 align-top">
-        <Link to={to} className="flex min-w-0 items-center gap-3 text-parchment hover:text-gold">
-          <Avatar name={npc.name} picture={npc.picture} clan={npc.clan} />
-          <span className="wrap-anywhere">{npc.name}</span>
-        </Link>
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <Link to={to} className="flex min-w-0 items-center gap-3 text-parchment hover:text-gold">
+            <Avatar name={npc.name} picture={npc.picture} clan={npc.clan} />
+            <span className="wrap-anywhere">{npc.name}</span>
+          </Link>
+          {npc.claim_expires_at && <Badge>Claim link out</Badge>}
+        </span>
         <span className="mt-1 flex flex-wrap items-center gap-1 text-xs text-mist lg:hidden">
           <Badge tone="gold">{kind}</Badge>
           <Badge>{form}</Badge>
@@ -248,13 +254,29 @@ function NpcRow({ npc, troupeId, selected, onToggle }: { npc: Npc; troupeId: str
           <MenuItem disabled={list.isPending} onSelect={() => list.mutate(undefined)}>
             {listed ? "Take off the Who’s Who" : "List on the Who’s Who"}
           </MenuItem>
-          <MenuItem onSelect={() => setBadge(true)}>Badge…</MenuItem>
+          <MenuItem onSelect={() => setOpen("badge")}>Badge…</MenuItem>
+          {giving && (
+            <MenuGroup label="Give to a player">
+              <MenuItem onSelect={() => setOpen("give")}>Give to a player…</MenuItem>
+              <MenuItem onSelect={() => setOpen("claim")}>Claim link…</MenuItem>
+            </MenuGroup>
+          )}
         </ActionMenu>
         <ErrorText error={list.error} />
         {/* The dialog sits here, as nothing but cells may sit in a row (Dialog sets its own text-left). */}
-        <Dialog title={`${npc.name}'s badge`} open={badge} onClose={() => setBadge(false)}>
-          <BadgeNote character={npc} onDone={() => setBadge(false)} />
+        <Dialog title={`${npc.name}'s badge`} open={open === "badge"} onClose={close}>
+          <BadgeNote character={npc} onDone={close} />
         </Dialog>
+        {giving && (
+          <>
+            <Dialog title={`Give ${npc.name} to a player`} open={open === "give"} onClose={close}>
+              {open === "give" && <GiveToPlayer npcId={npc.id} npcName={npc.name} troupeId={troupeId} onDone={close} />}
+            </Dialog>
+            <Dialog title={`Claim link for ${npc.name}`} open={open === "claim"} onClose={close}>
+              {open === "claim" && <ClaimLink npcId={npc.id} />}
+            </Dialog>
+          </>
+        )}
       </td>
     </tr>
   );
