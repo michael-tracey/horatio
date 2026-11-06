@@ -14,7 +14,7 @@ For signing up, your account, your settings and notifications, see [Getting star
 - **No home troupe yet**: it's finished, but no troupe has accepted it.
 - **Waiting for** a troupe: you've asked that troupe to be its home, and its storytellers haven't decided.
 - **Home:** a troupe: it plays there.
-- **Downtime due** (or **Downtime overdue**): a downtime is waiting for you to submit.
+- **Downtime due**, with its day and time (or **Downtime overdue**): a downtime is waiting for you to submit.
 - **New results**: downtime results have arrived that you haven't opened on this device.
 - **Retired**: see [Retiring a character](#retiring-a-character).
 
@@ -307,6 +307,20 @@ Each action question has **Add an action** with how many are left of that kind, 
 - **Influence.** An action of an influence kind also asks for the **Specialisation** and the **Action**, offering the actions the character can reach with its influence.
 - **Quests.** *If your troupe runs quests:* the **Quest action** asks **Which quest** it's for: one the character is in or leads, or one shared with it or posted to the troupe, which it joins by choosing it.
 
+### Player Nominations
+
+> **If your troupe uses this:** the form has a **Player Nominations** section.
+
+Write a line or two praising someone's roleplaying in **New nomination**, choose who it's **About** if you like (a character in the troupe, a storyteller, or no one in particular), and choose **Add nomination**. Add as many as you like; they don't use any actions. Each saves as you add it. Until it's published, **Change** edits it and **Take out** removes it.
+
+The storytellers read them once you submit your downtime, and may take out any that aren't kind or lightly edit one. Once the cycle is past Due, they publish them to the troupe's players without your name.
+
+### Remembrances
+
+> **If your troupe uses this:** when a character has left play, the downtime after may have a **Remembrances** section.
+
+It lists each character the troupe is remembering, with their portrait and why they left. Write a memory of them in **Your memory of** their name and choose **Save memory**; one each, which you can change or **Take out** until it's published. They don't use actions, and the storytellers read them first. Published, they appear without your name on the troupe's month page, on the character's own page for its player, and from its entry under "No longer with us" on the Who's Who.
+
 ### Saving and submitting
 
 The form saves itself a couple of seconds after you stop typing, and when you switch away; the line by the buttons says **Saving…**, **Saved** or **Not saved yet**. **Save draft** saves at once. **Submit downtime** saves and submits. You can keep editing after submitting: the button becomes **Save and resubmit**.
@@ -315,7 +329,7 @@ If the cycle gives XP for completing it, the card says **Submitting it earns** s
 
 ### The due date and the grace period
 
-The card says when the downtime is **Due**, and **Accepted until** the end of the grace period. A downtime submitted after the due date is accepted, but marked late (**Submitted (late)**). After the grace period ends, only a storyteller can let one in. You can edit a submitted downtime until the grace period ends.
+The card says when the downtime is **Due** and when it is **Accepted until** (the end of the grace period), each with its day and time in your time zone, such as "Due Sat 14 Nov, 6:00 pm EST". Set your time zone in [Settings](getting-started.md#settings) if it isn't your device's. A downtime submitted after the due date is accepted, but marked late (**Submitted (late)**). After the grace period ends, only a storyteller can let one in. You can edit a submitted downtime until the grace period ends.
 
 *If your troupe uses this:* with absentee downtimes, only a character that came to a game recently can submit; the form says so.
 
@@ -324,6 +338,14 @@ The card says when the downtime is **Due**, and **Accepted until** the end of th
 When the storytellers deliver the cycle's results, the **Results** tab shows how many are new, and the Characters page says **New results**. Each cycle's results are under its name and date, newest first and open: each answer sits under the action it answers. Older cycles fold away. A cycle re-delivered after a change says **Updated**. Your troupe may also send results by email or Discord.
 
 ![The Results tab: a cycle's results, with the storytellers' answer under the action](images/players/results.png)
+
+### Reading the nominations
+
+> **If your troupe uses this:** a troupe with Player Nominations has a **Nominations** tab, for its players and staff.
+
+The troupe's **Nominations** tab lists each month's published nominations, newest month first, with any [remembrances](#remembrances) above them. Each month's are in an order shuffled once when they were published, without names; one linked to someone says **About** them, and a ★ marks those the storytellers starred. Starred ones also rotate in a quiet line at the foot of the troupe's pages: **Pause** stops it, **Next** moves on, and it never moves by itself if your device asks for less motion.
+
+On your character's page, **Nominations about** your character gathers those linked to it, newest first. A player whose character only visits the troupe can write nominations there but doesn't read its Nominations tab.
 
 ## At game
 
@@ -430,6 +452,8 @@ When you stop playing a character, retire it: open **⋯** beside its name and c
 - **Inactive**: you stopped playing it. It says nothing in game.
 
 Add a **Note** for the character's log if you like, and choose whether to list it under **No longer with us** on the Who's Who of its troupes, where their players and staff see its name, clan, social age, player and why it left. It's listed by default, except when Inactive. Then press **Retire** and the character's name.
+
+> **If your troupe uses this:** with Remembrances, tick **Ask the storytellers to open remembrances in the next downtime**, and the troupe is asked for memories of the character once they confirm. The retired character's page keeps a **Remembrances** card with what the troupe wrote, newest month first, without names.
 
 A retired character is hidden from everyday lists and out of all downtimes, and its sheet can no longer change, but it's kept with its full history, and stays on your Characters page marked **Retired**. Its page shows why it left; you, or its home troupe's storytellers, can **Change…** that, or whether it's listed, later. There's no way to bring a retired character back into play from the app.
 

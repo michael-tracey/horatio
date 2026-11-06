@@ -17,6 +17,14 @@ export function cycleStatus(status: string): string {
   return CYCLE_STATUS[status] ?? status;
 }
 
+/** Each action kind as the rules name it, "Downtime action"; a quest or custom question
+ * as itself; one the rules no longer have, as its key reads, sentence case. */
+export function kindLabels(keys: string[], named: Record<string, string>): Record<string, string> {
+  const own: Record<string, string> = { quest: "Quest", custom: "Custom question" };
+  const plain = (key: string) => key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ");
+  return Object.fromEntries(keys.map((k) => [k, named[k] ?? own[k] ?? plain(k)]));
+}
+
 export function standing(p: { removed: boolean; submission_status?: string | null }): Standing {
   if (p.removed) return "removed";
   if (p.submission_status === "submitted") return "submitted";
@@ -50,28 +58,42 @@ export function nameList(names: string[], most = 5): string {
 }
 
 /**
- * How long is left to submit: "7 days left · grace to Mon 9 Nov", then once it
- * is due, "Overdue · late downtimes taken until Mon 9 Nov", then "The grace period is over".
+ * Whether a cycle is past Due (#469): its Due time, `closes_at`, has come. A
+ * submission from then on is late, and Player Nominations and Remembrances can be
+ * published.
  */
-export function timeLeft(closesAt: string, graceEndsAt: string, dueDay: (at: string) => string, now: Date = new Date()): string {
+export function pastDue(cycle: { closes_at: string }, now: Date = new Date()): boolean {
+  return new Date(cycle.closes_at).getTime() <= now.getTime();
+}
+
+/**
+ * How long is left to submit: "7 days left · accepted until Mon 9 Nov, 6:00 pm",
+ * then once it is past Due, "Past Due · accepted until Mon 9 Nov, 6:00 pm", then
+ * "The grace period is over". `due` writes a moment with its time (Dates.due).
+ */
+export function timeLeft(closesAt: string, graceEndsAt: string, due: (at: string) => string, now: Date = new Date()): string {
   const toClose = new Date(closesAt).getTime() - now.getTime();
   const toGrace = new Date(graceEndsAt).getTime() - now.getTime();
   const grace = toGrace > toClose;
   if (toClose > 0) {
     const days = Math.floor(toClose / DAY);
     const left = days === 0 ? "Less than a day left" : `${plural(days, "day", "days")} left`;
-    return grace ? `${left} · grace to ${dueDay(graceEndsAt)}` : left;
+    return grace ? `${left} · accepted until ${due(graceEndsAt)}` : left;
   }
-  if (toGrace > 0) return `Overdue · late downtimes taken until ${dueDay(graceEndsAt)}`;
+  if (toGrace > 0) return `Past Due · accepted until ${due(graceEndsAt)}`;
   return "The grace period is over";
 }
 
 type Summary = { status: string; closes_at: string; participants: number; submitted: number; responses: number; written: number };
 
-/** A cycle's line in the troupe's list: "Due Sat 7 Nov · 3 of 8 submitted", or once closed, "8 submitted · 5 of 20 responses written". */
-export function cycleLine(c: Summary, dueDay: (at: string) => string): string {
-  if (c.status === "draft") return `Due ${dueDay(c.closes_at)} · not open yet`;
-  if (c.status === "open") return `Due ${dueDay(c.closes_at)} · ${c.submitted} of ${c.participants} submitted`;
+/**
+ * A cycle's line in the troupe's list: "Due Sat 7 Nov, 6:00 pm · 3 of 8
+ * submitted", or once closed, "8 submitted · 5 of 20 responses written". `due`
+ * writes a moment with its time (Dates.due).
+ */
+export function cycleLine(c: Summary, due: (at: string) => string): string {
+  if (c.status === "draft") return `Due ${due(c.closes_at)} · not open yet`;
+  if (c.status === "open") return `Due ${due(c.closes_at)} · ${c.submitted} of ${c.participants} submitted`;
   return `${c.submitted} submitted · ${c.written} of ${plural(c.responses, "response", "responses")} written`;
 }
 

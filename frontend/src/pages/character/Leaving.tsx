@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut } from "../../api/types";
 import { Dialog } from "../../components/Dialog";
 import { Button, Card, ErrorText, Field, Textarea } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useAction, useMe } from "../../hooks";
+import { abilities } from "../troupe/roles";
 
 type Reason = "final_death" | "off_field" | "inactive";
 
@@ -33,6 +35,7 @@ function LeavingForm({
   error,
   onSubmit,
   onCancel,
+  children,
 }: {
   character: CharacterOut;
   initial: { reason: Reason | null; listed: boolean | null };
@@ -41,6 +44,8 @@ function LeavingForm({
   error: unknown;
   onSubmit: (body: LeavingBody) => void;
   onCancel: () => void;
+  /** More choices, after the listing. */
+  children?: ReactNode;
 }) {
   const [reason, setReason] = useState<Reason | null>(initial.reason);
   const [note, setNote] = useState("");
@@ -80,6 +85,7 @@ function LeavingForm({
           </span>
         </span>
       </label>
+      {children}
       <ErrorText error={error} />
       <div className="flex justify-end gap-2">
         <Button type="button" variant="ghost" onClick={onCancel}>
@@ -95,9 +101,20 @@ function LeavingForm({
 
 /** Retiring, from the character's ⋯ menu: hidden from everyday lists and out of all downtimes, kept with its history. */
 export function RetireCharacter({ character, onDone }: { character: CharacterOut; onDone: () => void }) {
-  const retire = useAction((body: LeavingBody) =>
+  const retire = useAction((body: LeavingBody & { remembrances: boolean }) =>
     unwrap(api.POST("/api/characters/{character_id}/retire", { params: { path: { character_id: character.id } }, body })),
   );
+  // Its home troupe's Remembrances (#471): its running staff open them; its player asks.
+  const homeId = character.kind === "pc" ? character.home_troupe_id : null;
+  const home = useQuery({
+    queryKey: ["troupe", homeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: homeId! } } })),
+    enabled: !!homeId,
+  });
+  const me = useMe();
+  const [remember, setRemember] = useState(false);
+  const offered = !!home.data?.remembrances && !home.data.archived;
+  const opens = !!home.data && abilities(home.data.my_role, me.data?.is_custodian ?? false).running;
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm">
@@ -109,9 +126,21 @@ export function RetireCharacter({ character, onDone }: { character: CharacterOut
         submit={`Retire ${character.name}`}
         pending={retire.isPending}
         error={retire.error}
-        onSubmit={(body) => retire.mutate(body, { onSuccess: onDone })}
+        onSubmit={(body) => retire.mutate({ ...body, remembrances: offered && remember }, { onSuccess: onDone })}
         onCancel={onDone}
-      />
+      >
+        {offered && (
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" className="mt-1" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+            <span>
+              {opens ? "Open remembrances in the next downtime" : "Ask the storytellers to open remembrances in the next downtime"}
+              <span className="block text-xs text-mist">
+                Everyone in {home.data!.name} is asked for a memory of {character.name}. The storytellers read them first, and publish them without names.
+              </span>
+            </span>
+          </label>
+        )}
+      </LeavingForm>
     </div>
   );
 }

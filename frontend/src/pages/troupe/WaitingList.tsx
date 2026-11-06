@@ -15,7 +15,7 @@ export function useWaiting(troupeId: string, enabled = true) {
   });
 }
 
-/** One line per kind of work, each a link straight to it: the open cycle with when it is due, then the rest with their counts. */
+/** One line per kind of work, each a link straight to it: the open cycle with its Due and its time, then the rest with their counts. */
 export function WaitingList({ lines, label }: { lines: WaitingLine[]; label: string }) {
   const dates = useDates();
   const today = dates.toInput(new Date()).slice(0, 10);
@@ -26,7 +26,7 @@ export function WaitingList({ lines, label }: { lines: WaitingLine[]; label: str
           <Link to={line.link} className="flex items-center justify-between gap-3 py-2 text-sm hover:text-gold">
             <span>
               {line.label}
-              {line.due_at && <span className="whitespace-nowrap text-mist"> · {dueText(today, dates.toInput(line.due_at).slice(0, 10))}</span>}
+              {line.due_at && <span className="whitespace-nowrap text-mist"> · {dueText(today, dates.toInput(line.due_at).slice(0, 10), dates.due(line.due_at))}</span>}
             </span>
             {line.count !== null && (
               <span className="min-w-8 rounded-full border border-gold/50 px-2 py-0.5 text-center text-xs text-gold tabular-nums">{line.count}</span>
