@@ -223,14 +223,14 @@ A character given to the wrong person is put right by the custodian [moving it t
 
 ## Titles and status
 
-**Characters › Titles** lists the titles the troupe gives: those held first, with who holds them, then the vacant ones by sect. A title the troupe added is marked **House rule**; one only a single character can hold at a time is marked **One at a time**.
+**Characters › Titles** lists the titles the troupe gives in tables: those held first, with who holds them, then the vacant ones by sect, folded away under **Show vacant**. Each row has the title, its sect, the status it gives, whether it is a **House rule** (a title the troupe added) and whether it is **One at a time** (only a single character can hold it at once). On a phone each row folds into a short card.
 
 - **Add a title** makes a title of the troupe's own: its name, its sect (or any sect), and the status it gives.
-- A title the troupe added can be changed or removed. A change is for everyone who holds it, from their next game.
+- The **⋯** at the end of a row holds **Give…** (a vacant title, or one more than one character may hold), **Move to another holder…**, **Take from** each holder, and, for a title the troupe added, **Change…** and **Remove…**. Give and Move offer only characters of the title's sect. A change is for everyone who holds it, from their next game.
 - **Court order of our titles** sets where the troupe's own titles come in the Who's Who's court, after the rule set's.
 - **Seats at court** chooses which clans have a seat. Until you choose, the clans whose Primogen is held here have one. Characters of other clans are listed under Other on the Who's Who, each with who represents them.
 
-Give a title from **Titles…** on a character's ⋯ on the [Characters list](#giving-xp-and-titles-from-the-list), or from the character's Status & Titles tab. Whether players choose their own titles, and keep their own status, is set under [Troupe settings](#customise-troupe-settings).
+You can also give a title from **Titles…** on a character's ⋯ on the [Characters list](#giving-xp-and-titles-from-the-list), or from the character's Status & Titles tab. Whether players choose their own titles, and keep their own status, is set under [Troupe settings](#customise-troupe-settings).
 
 The **Status** tab in the Troupe group is a reference for everyone in the troupe: every status of the sects the troupe takes, what it does and where it comes from. There is nothing to set there.
 

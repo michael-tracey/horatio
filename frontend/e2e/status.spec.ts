@@ -421,7 +421,7 @@ test("titles say what they give, or why not, and the troupe's rules list every s
   // The troupe's Titles page says the same, once its vacant titles are shown.
   await p.goto(`/troupes/${troupeId}/titles`);
   await p.getByRole("button", { name: /^Show vacant \(\d+\)$/ }).click();
-  const title = (name: string) => p.getByRole("listitem", { name, exact: true });
+  const title = (name: string) => p.getByRole("row", { name, exact: true });
   await expect(title("Abbot")).toContainText("An Abbot gains no abiding status for the office · MET: VTM p. 421");
   await expect(title("Paladin")).toContainText("another name for Templar");
   await expect(title("Trustee").getByText("No rules yet", { exact: true })).toBeVisible();
@@ -861,7 +861,7 @@ test("titles by sect: a Camarilla troupe gives Camarilla titles only to its own,
   await expect(p.getByRole("heading", { name: "Camarilla titles" })).toBeVisible();
   await expect(p.getByRole("heading", { name: "Titles of any sect" })).toBeVisible();
   await expect(p.getByRole("heading", { name: "Sabbat titles" })).toHaveCount(0);
-  await expect(p.getByRole("listitem", { name: "Prince", exact: true }).getByText("Gives Authority · Commander · Sovereign")).toBeVisible();
+  await expect(p.getByRole("row", { name: "Prince", exact: true }).getByText("Gives Authority · Commander · Sovereign").filter({ visible: true })).toBeVisible();
 
   // A house title of the Camarilla, giving Guardian.
   const adding = p.locator("section").filter({ has: p.getByRole("heading", { name: "Add a title" }) });
@@ -869,10 +869,11 @@ test("titles by sect: a Camarilla troupe gives Camarilla titles only to its own,
   await adding.getByLabel("Sect").selectOption("Camarilla");
   await adding.getByLabel("Guardian").check();
   await adding.getByRole("button", { name: "Add", exact: true }).click();
-  const master = p.getByRole("listitem", { name: "Master of Elysium" });
-  await expect(master.getByText("Gives Guardian")).toBeVisible();
-  await expect(master.getByText("House rule")).toBeVisible();
-  await expect(master.getByText("No one")).toBeVisible();
+  const master = p.getByRole("row", { name: "Master of Elysium" });
+  await expect(master.getByText("Gives Guardian").filter({ visible: true })).toBeVisible();
+  await expect(master.getByText("House rule").filter({ visible: true })).toBeVisible();
+  // No one holds it yet, so it is among the vacant Camarilla titles.
+  await expect(p.getByRole("table", { name: "Camarilla titles" }).getByRole("row", { name: "Master of Elysium" })).toBeVisible();
 
   // The picker offers each character the titles of its sect and of any sect.
   await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
@@ -899,17 +900,44 @@ test("titles by sect: a Camarilla troupe gives Camarilla titles only to its own,
 
   // Held titles come first, and only those: the vacant ones stay folded away below.
   await p.goto(`/troupes/${troupeId}/titles`);
-  const held = p.getByRole("list", { name: "Held titles" });
-  await expect(held.getByRole("listitem")).toHaveCount(1);
-  await expect(held.getByRole("listitem", { name: "Master of Elysium" })).toContainText("Camarilla");
-  await expect(p.getByRole("listitem", { name: "Prince", exact: true })).toHaveCount(0);
+  const held = p.getByRole("table", { name: "Held titles" });
+  await expect(held.locator("tbody").getByRole("row")).toHaveCount(1);
+  await expect(held.getByRole("row", { name: "Master of Elysium" })).toContainText("Camarilla");
+  await expect(p.getByRole("row", { name: "Prince", exact: true })).toHaveCount(0);
   const showVacant = p.getByRole("button", { name: /^Show vacant \(\d+\)$/ });
   expect((await held.boundingBox())!.y).toBeLessThan((await showVacant.boundingBox())!.y);
   // Who holds what; and changing what the house title gives changes it for its holders.
   await expect(master.getByRole("link", { name: "Elena Varga" })).toBeVisible();
-  await master.getByRole("button", { name: "Change the title Master of Elysium" }).click();
+  await master.getByRole("button", { name: "Actions for Master of Elysium" }).click();
+  await p.getByRole("menuitem", { name: "Change…" }).click();
   await dialog.getByLabel("Prominent").check();
   await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(master.getByText("Gives Guardian · Prominent")).toBeVisible();
+  await expect(master.getByText("Gives Guardian · Prominent").filter({ visible: true })).toBeVisible();
   await p.screenshot(shots("titles-by-sect"));
+
+  // Its ⋯ moves it to another holder of the sect, in a dialog: an Anarch isn't offered.
+  await master.getByRole("button", { name: "Actions for Master of Elysium" }).click();
+  await p.getByRole("menuitem", { name: "Move to another holder…" }).click();
+  const moving = p.getByRole("dialog", { name: "Move Master of Elysium to another holder" });
+  await expect(moving.getByText("From Elena Varga.")).toBeVisible();
+  await expect(moving.getByRole("option", { name: "Tomas Reyes" })).toHaveCount(0);
+  await expect(moving.getByText("No other Camarilla character here can hold it.")).toBeVisible();
+  await moving.getByRole("button", { name: "Close" }).click();
+
+  // Taken from Elena, it is vacant again, and given back to her from the vacant list.
+  await master.getByRole("button", { name: "Actions for Master of Elysium" }).click();
+  await p.getByRole("menuitem", { name: "Take from Elena Varga" }).click();
+  await expect(p.getByText("Master of Elysium taken from Elena Varga.")).toBeVisible();
+  await expect(p.getByText("No one holds a title yet.")).toBeVisible();
+  await p.getByRole("button", { name: /^Show vacant \(\d+\)$/ }).click();
+  const vacant = p.getByRole("table", { name: "Camarilla titles" }).getByRole("row", { name: "Master of Elysium" });
+  await vacant.getByRole("button", { name: "Actions for Master of Elysium" }).click();
+  await p.getByRole("menuitem", { name: "Give…" }).click();
+  const giving = p.getByRole("dialog", { name: "Give Master of Elysium" });
+  await giving.getByLabel("To").selectOption({ label: "Elena Varga" });
+  await giving.getByRole("button", { name: "Give", exact: true }).click();
+  await expect(giving).toBeHidden();
+  await expect(held.getByRole("row", { name: "Master of Elysium" }).getByRole("link", { name: "Elena Varga" })).toBeVisible();
+  const wide = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(wide).toBeLessThanOrEqual(0);
 });
