@@ -214,7 +214,9 @@ What it shows of sect status is set under [Troupe settings](#customise-troupe-se
 **World › Locations** is the troupe's record of the places that matter in its chronicle, and its characters' havens, with who controls each. Storytellers and assistant storytellers keep it; players and narrators never see it.
 
 - **Add a location** adds one.
+- The list is a table of each location's name, type, controller, qualities (negative ones in red), influence area and whether it is locked. On a phone each row folds into a short card.
 - Filter the list by controller, type, quality, influence, feeding block, locked or not, and negative qualities.
+- The **⋯** at the end of a row holds **Open**, **Edit…** (the form opens over the list), **Build a quest for it** (when quests are on) and **Remove…**.
 - Open a location to change it, forfeit it, remove a negative quality, add subsidiaries, and read its log.
 
 The troupe's house options for locations are under [Location rules](#location-rules).
