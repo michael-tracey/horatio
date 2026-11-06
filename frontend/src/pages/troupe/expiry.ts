@@ -9,7 +9,7 @@ export function expiryText(expiry: ExpiryOut, dates: Dates, now: Date = new Date
     if (left <= 0) return "Expires now";
     return `Expires after ${left} more ${left === 1 ? "game" : "games"}`;
   }
-  const due = expiry.cycle_closes_at ? ` (due ${dates.dueDay(expiry.cycle_closes_at, now)})` : "";
+  const due = expiry.cycle_closes_at ? ` (due ${dates.due(expiry.cycle_closes_at, now)})` : "";
   return `Expires when the downtime cycle ${expiry.cycle_name ?? ""} closes${due}`;
 }
 

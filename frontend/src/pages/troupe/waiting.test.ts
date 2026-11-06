@@ -29,18 +29,20 @@ describe("tabCounts", () => {
 });
 
 describe("dueText", () => {
-  it("says how many days are left, by the calendar", () => {
-    expect(dueText("2026-10-31", "2026-11-07")).toBe("due in 7 days");
-    expect(dueText("2026-10-31", "2026-11-01")).toBe("due tomorrow");
-    expect(dueText("2026-10-31", "2026-10-31")).toBe("due today");
+  const when = "Sat 7 Nov, 6:00 pm";
+
+  it("gives the Due with its time, and how many days are left, by the calendar", () => {
+    expect(dueText("2026-10-31", "2026-11-07", when)).toBe("Due Sat 7 Nov, 6:00 pm (in 7 days)");
+    expect(dueText("2026-10-31", "2026-11-01", when)).toBe("Due Sat 7 Nov, 6:00 pm (tomorrow)");
+    expect(dueText("2026-10-31", "2026-10-31", when)).toBe("Due Sat 7 Nov, 6:00 pm (today)");
   });
 
   it("and how long ago it was due", () => {
-    expect(dueText("2026-11-08", "2026-11-07")).toBe("due yesterday");
-    expect(dueText("2026-11-10", "2026-11-07")).toBe("due 3 days ago");
+    expect(dueText("2026-11-08", "2026-11-07", when)).toBe("Due Sat 7 Nov, 6:00 pm (yesterday)");
+    expect(dueText("2026-11-10", "2026-11-07", when)).toBe("Due Sat 7 Nov, 6:00 pm (3 days ago)");
   });
 
   it("counts across a change of clocks", () => {
-    expect(dueText("2026-10-30", "2026-11-02")).toBe("due in 3 days");
+    expect(dueText("2026-10-30", "2026-11-02", when)).toBe("Due Sat 7 Nov, 6:00 pm (in 3 days)");
   });
 });

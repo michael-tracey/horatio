@@ -188,10 +188,22 @@ def test_the_custodian_appoints_a_new_lead(troupe: Troupe) -> None:
     assert response.status_code == 200
     staff = troupe.storyteller.client.get(f"/troupes/{troupe.id}/staff").json()
     roles = {m["user_id"]: m["role"] for m in staff}
-    # The new lead is no longer also listed as a storyteller, and the old lead is not staff.
+    # The new lead is no longer also listed as a storyteller, and the old lead has left the staff.
     assert roles[troupe.storyteller.id] == "lead_storyteller"
     assert list(roles.values()).count("lead_storyteller") == 1
     assert troupe.lead.id not in roles
+    log = troupe.storyteller.client.get(f"/troupes/{troupe.id}/log").json()
+    assert log[0]["message"] == (
+        "custodian appointed storyteller lead storyteller in place of lead, who has left the staff."
+    )
+
+    # Appointing the lead again changes nothing, and says nothing of anyone leaving.
+    again = troupe.custodian.client.put(
+        f"/troupes/{troupe.id}/lead", json={"handle": troupe.storyteller.handle}
+    )
+    assert again.status_code == 200
+    log = troupe.storyteller.client.get(f"/troupes/{troupe.id}/log").json()
+    assert log[0]["message"] == "custodian appointed storyteller lead storyteller."
 
 
 def test_removing_staff(troupe: Troupe) -> None:

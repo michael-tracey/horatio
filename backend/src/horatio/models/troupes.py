@@ -123,6 +123,14 @@ class Troupe(Imported, Record):
     # Its staff can give items that expire (horatio.item_expiry, #443). Off, no expiry
     # shows or runs; those set before wait until it is switched on again.
     items_expire: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Player Nominations (horatio.nominations, #470): players praise others'
+    # roleplaying in their downtimes, published monthly without names. While off,
+    # nothing of them shows anywhere.
+    player_nominations: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Remembrances (horatio.remembrances, #471): staff open them for a character who
+    # leaves play, and the next downtime asks for memories of them. While off, nothing
+    # of them shows, but those already published stay with the characters.
+    remembrances: Mapped[bool] = mapped_column(default=False, server_default="false")
     # House rules for Retainers (horatio.retainer_upkeep): upkeep, in Blood or
     # Willpower, and growth, in XP a month. Each is off while it is absent.
     retainer_rules: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")

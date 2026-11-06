@@ -184,7 +184,7 @@ test("screenshots for the Players part of the manual", async ({ browser }) => {
   await expect(p.getByText(/^Saved \d/)).toBeVisible({ timeout: 15_000 });
   await p.locator("main").screenshot(shot("downtime"));
   await p.getByRole("button", { name: "Submit downtime" }).click();
-  await expect(p.getByText("Submitted. You can keep editing until the grace period ends.")).toBeVisible();
+  await expect(p.getByText(/^Submitted. You can keep editing until .+\.$/)).toBeVisible();
 
   // The results arrive.
   await send(l, "POST", `/api/cycles/${cycle.id}/close`, { add_to_ceiling: true });

@@ -177,7 +177,7 @@ def test_the_feed_is_icalendar_with_the_games_and_the_open_cycles_dates(
     assert set(events) == {
         "Game: Lords of the Night",
         "Downtimes due: November nights (Lords of the Night)",
-        "Late downtimes close: November nights (Lords of the Night)",
+        "Downtimes accepted until: November nights (Lords of the Night)",
     }
     played = events["Game: Lords of the Night"]
     assert str(played["UID"]) == f"game-{soon}@horatio"
@@ -187,8 +187,14 @@ def test_the_feed_is_icalendar_with_the_games_and_the_open_cycles_dates(
     assert str(played["LOCATION"]) == "The Crypt, 12 Mill Lane, Leeds LS1 4AB, Leeds"
     assert f"/troupes/{troupe.id}" in str(played["URL"])
     due = events["Downtimes due: November nights (Lords of the Night)"]
-    late = events["Late downtimes close: November nights (Lords of the Night)"]
+    late = events["Downtimes accepted until: November nights (Lords of the Night)"]
     assert late.decoded("DTSTART") - due.decoded("DTSTART") == timedelta(days=3)
+    # Due is a moment with its time, not a whole day (#469), so the calendar app
+    # shows it at its hour in the subscriber's zone.
+    for deadline in (due, late):
+        assert isinstance(deadline.decoded("DTSTART"), datetime)
+        assert deadline.decoded("DTSTART").tzinfo is not None
+    assert "DTSTART:" in text and "DTSTART;VALUE=DATE" not in text
     # No one is named in it.
     for person in (troupe.player, troupe.lead, troupe.storyteller):
         assert person.email not in text and person.handle not in text

@@ -142,7 +142,17 @@ export function datesFor(settings: DateSettings) {
       const withYear = settings.date_format === "iso" || p.year !== partsIn(now, zone).year;
       return `${weekday(p)} ${dayText(p, settings, withYear)}, ${timeText(p, settings)} ${zoneName(when, zone)}`;
     },
-    /** The day a deadline falls on, for a short note: "Sat 7 Nov" (with the year when it isn't this one). */
+    /**
+     * A downtime cycle's Due, or another deadline, for a short note: the day and
+     * its time, "Sat 14 Nov, 6:00 pm" or "Sat 14 Nov, 18:00" (#469). The year
+     * shows when it isn't this one (always, in ISO).
+     */
+    due: (at: Date | string, now: Date = new Date()) => {
+      const p = partsIn(moment(at), zone);
+      const withYear = settings.date_format === "iso" || p.year !== partsIn(now, zone).year;
+      return `${weekday(p)} ${dayText(p, settings, withYear)}, ${timeText(p, settings)}`;
+    },
+    /** The day a date falls on, for a short note: "Sat 7 Nov" (with the year when it isn't this one). */
     dueDay: (at: Date | string, now: Date = new Date()) => {
       const p = partsIn(moment(at), zone);
       const withYear = settings.date_format === "iso" || p.year !== partsIn(now, zone).year;

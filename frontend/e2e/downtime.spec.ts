@@ -362,7 +362,9 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("link", { name: "Troupe", exact: true }).click();
   await lead.page.getByRole("link", { name: "Log", exact: true }).click();
   await expect(lead.page.getByText("lead accepted Agnes (player); this is its home.")).toBeVisible();
-  await expect(lead.page.getByText("Agnes (player) started visiting the troupe.")).toBeVisible();
+  // Asking to make the troupe home is one entry, though it started Agnes visiting too.
+  await expect(lead.page.getByText(`player asked for ${troupeName} to be Agnes's home troupe, and it started visiting.`)).toBeVisible();
+  await expect(lead.page.getByText("Agnes (player) started visiting the troupe.")).toBeHidden();
   await expect(lead.page.getByText(/lead approved Agnes \(player\)'s Celerity/)).toBeVisible();
   await lead.page.screenshot(shots("log"));
   // The troupe's rules: the lead can play a check differently.
@@ -473,7 +475,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await narrator.page.getByRole("link", { name: /^Downtimes( \d+ waiting)?$/ }).click();
   await narrator.page.getByRole("link", { name: "My work" }).click();
   // Each cycle says when it is due and what is left to write.
-  await expect(narrator.page.getByRole("link", { name: "November" }).getByText(/^Due .* · 1 for you to write$/)).toBeVisible();
+  await expect(narrator.page.getByRole("link", { name: "November" }).getByText(/^Due .*, \d{1,2}:\d{2} [ap]m · 1 for you to write$/)).toBeVisible();
   await narrator.page.getByRole("link", { name: "November" }).click();
   await narrator.page.getByLabel("Response to Agnes").fill("The docks are crowded tonight; you feed well and unseen.");
   await narrator.page.getByRole("button", { name: "Save response" }).click();
@@ -826,7 +828,7 @@ test("staff add a character to an open cycle, filter to those not submitted, and
   const l = lead.page;
   await l.goto(`/troupes/${troupe.id}/downtimes`);
   const row = l.getByRole("link", { name: /Chase month/ });
-  await expect(row.getByText(/^Due [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}( \d{4})? · 1 of 1 submitted$/)).toBeVisible();
+  await expect(row.getByText(/^Due [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}( \d{4})?, \d{1,2}:\d{2} [ap]m · 1 of 1 submitted$/)).toBeVisible();
   await expect(l.getByRole("heading", { name: "New cycle" })).toHaveCount(0);
   await expect(l.getByRole("button", { name: "New cycle" })).toBeVisible();
   await l.screenshot(shots("troupe-cycles"));
@@ -838,7 +840,7 @@ test("staff add a character to an open cycle, filter to those not submitted, and
   await expect(trail.getByRole("link", { name: "Downtimes" })).toHaveAttribute("href", `/troupes/${troupe.id}/downtimes`);
   await expect(l.getByText("1 of 1 submitted")).toBeVisible();
   await expect(l.getByRole("progressbar", { name: "Submitted" })).toBeVisible();
-  await expect(l.getByText(/^7 days left · grace to [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}/)).toBeVisible();
+  await expect(l.getByText(/^7 days left · accepted until [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}( \d{4})?, \d{1,2}:\d{2} [ap]m$/)).toBeVisible();
   await expect(l.getByText("By who")).toHaveCount(0);
   await l.screenshot(shots("cycle-overview-open"));
 

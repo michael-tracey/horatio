@@ -120,7 +120,9 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     # and taking it back, and keeping the troupe's own templates (horatio.equipment).
     TroupeAction.MANAGE_EQUIPMENT: frozenset(_RUNNING),
     # Seeing and keeping the troupe's locations, and their log. Narrators and players
-    # never see the record (horatio.locations).
+    # never see the record (horatio.locations). Also keeping the feeding territories
+    # (horatio.territories): who holds which changes in play, as the Authority
+    # proclaims it, so it isn't one of the storytellers' settings.
     TroupeAction.MANAGE_LOCATIONS: frozenset(_RUNNING),
     # The troupe's quest requests and quests: building, checking and sending them
     # (horatio.quests). Narrators work on those assigned to them, as for downtimes.

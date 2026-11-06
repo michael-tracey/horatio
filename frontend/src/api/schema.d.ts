@@ -1111,6 +1111,87 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/downtime/nominations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Nominations
+         * @description The nominations the character has written in its open downtime, and who they
+         *     can be about.
+         */
+        get: operations["my_nominations_api_characters__character_id__downtime_nominations_get"];
+        put?: never;
+        /** Write Nomination */
+        post: operations["write_nomination_api_characters__character_id__downtime_nominations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/downtime/nominations/{nomination_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Nomination */
+        put: operations["change_nomination_api_characters__character_id__downtime_nominations__nomination_id__put"];
+        post?: never;
+        /** Delete Nomination */
+        delete: operations["delete_nomination_api_characters__character_id__downtime_nominations__nomination_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/downtime/remembrances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Remembrances
+         * @description Those the character's open downtime asks memories of, and its own.
+         */
+        get: operations["my_remembrances_api_characters__character_id__downtime_remembrances_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/downtime/remembrances/{remembrance_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Write Memory
+         * @description Write the character's memory of someone remembered, or change it.
+         */
+        put: operations["write_memory_api_characters__character_id__downtime_remembrances__remembrance_id__put"];
+        post?: never;
+        /** Delete Memory */
+        delete: operations["delete_memory_api_characters__character_id__downtime_remembrances__remembrance_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/downtime/results": {
         parameters: {
             query?: never;
@@ -1721,6 +1802,27 @@ export interface paths {
          *     only with a reason.
          */
         post: operations["move_character_api_characters__character_id__move_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/nominations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Nominations About
+         * @description The published nominations about the character, newest month first, without
+         *     names: for its player.
+         */
+        get: operations["nominations_about_api_characters__character_id__nominations_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2516,6 +2618,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/remembrances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Remembrances
+         * @description The character's remembrances: whether they are open, and in which cycle, and
+         *     the memories published, without names. For its player, and its home troupe's
+         *     staff and players.
+         */
+        get: operations["character_remembrances_api_characters__character_id__remembrances_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/remembrances/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Open Remembrances
+         * @description Open remembrances for a retired character: its home troupe's running staff.
+         */
+        post: operations["open_remembrances_api_characters__character_id__remembrances_open_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/retainers": {
         parameters: {
             query?: never;
@@ -2572,7 +2716,8 @@ export interface paths {
          * Retire Character
          * @description Characters are never deleted, only retired: for a reason, which goes in the log
          *     with the note, and listed on its troupes' Who's Who if the player chooses. With
-         *     no reason it is not listed.
+         *     no reason it is not listed. While its home troupe uses Remembrances, its player
+         *     can ask for them, and running staff open them.
          */
         post: operations["retire_character_api_characters__character_id__retire_post"];
         delete?: never;
@@ -3401,6 +3546,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cycles/{cycle_id}/nominations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cycle Nominations
+         * @description Every nomination in the cycle's submitted downtimes, with who wrote it, for
+         *     running staff to review.
+         */
+        get: operations["cycle_nominations_api_cycles__cycle_id__nominations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cycles/{cycle_id}/nominations/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish Nominations
+         * @description Publish the cycle's nominations, or those written since they were, once it is
+         *     past Due.
+         */
+        post: operations["publish_nominations_api_cycles__cycle_id__nominations_publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cycles/{cycle_id}/open": {
         parameters: {
             query?: never;
@@ -4098,6 +4285,80 @@ export interface paths {
          *     if it can't.
          */
         post: operations["plan_quest_api_locations__location_id__quest_plan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/nominations/{nomination_id}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Remove Nomination */
+        post: operations["remove_nomination_api_nominations__nomination_id__remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/nominations/{nomination_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Nomination */
+        post: operations["restore_nomination_api_nominations__nomination_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/nominations/{nomination_id}/star": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Star Nomination
+         * @description Star it for the footer of the troupe's pages, or unstar it.
+         */
+        put: operations["star_nomination_api_nominations__nomination_id__star_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/nominations/{nomination_id}/text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Edit Nomination
+         * @description A light edit by staff, marked as theirs.
+         */
+        put: operations["edit_nomination_api_nominations__nomination_id__text_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6990,7 +7251,9 @@ export interface paths {
         get?: never;
         /**
          * Appoint Lead
-         * @description The custodian appoints a troupe's lead storyteller.
+         * @description The custodian appoints a troupe's lead storyteller. The one they replace leaves
+         *     the staff: a lead who is suspended or stepping down shouldn't keep a role without
+         *     anyone choosing it, and the Staff tab can add them back.
          */
         put: operations["appoint_lead_api_troupes__troupe_id__lead_put"];
         post?: never;
@@ -7207,6 +7470,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/nominations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Published Nominations
+         * @description Each month's published nominations, newest month first, shuffled and without
+         *     names: for the troupe's players and staff.
+         */
+        get: operations["published_nominations_api_troupes__troupe_id__nominations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/nominations/starred": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Starred Nominations
+         * @description Every starred nomination of the troupe's, from every month: what its footer
+         *     rotates through. Empty for anyone who doesn't read them.
+         */
+        get: operations["starred_nominations_api_troupes__troupe_id__nominations_starred_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/npcs": {
         parameters: {
             query?: never;
@@ -7279,6 +7584,27 @@ export interface paths {
          * @description Reset every character in the troupe for the next game, after one.
          */
         post: operations["reset_troupe_api_troupes__troupe_id__play_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/player-nominations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Player Nominations
+         * @description Switch Player Nominations on or off. Off, nothing of them shows anywhere; what
+         *     was written and published is kept for when it is on again.
+         */
+        put: operations["set_player_nominations_api_troupes__troupe_id__player_nominations_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -7531,6 +7857,27 @@ export interface paths {
         put?: never;
         /** Roll Table */
         post: operations["roll_table_api_troupes__troupe_id__random_tables__name__roll_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/remembrances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Remembrances
+         * @description Switch Remembrances on or off. Off, none can be opened or written and nothing
+         *     of them shows, but those published stay on the characters and the Who's Who.
+         */
+        put: operations["set_remembrances_api_troupes__troupe_id__remembrances_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8257,6 +8604,29 @@ export interface components {
             name: string;
             /** Status */
             status: components["schemas"]["SourceStatus"][];
+        };
+        /** AboutOut */
+        AboutOut: {
+            /** Character Id */
+            character_id: string | null;
+            /** Name */
+            name: string;
+            /** User Id */
+            user_id: string | null;
+        };
+        /** AboutYouOut */
+        AboutYouOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Month */
+            month: string;
+            /** Text */
+            text: string;
+            /** Troupe Name */
+            troupe_name: string;
         };
         /** AbsenteeMarked */
         AbsenteeMarked: {
@@ -10281,6 +10651,22 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** CharacterRemembrancesOut */
+        CharacterRemembrancesOut: {
+            /** Can Open */
+            can_open: boolean;
+            /** Cycle Name */
+            cycle_name: string | null;
+            /** Months */
+            months: components["schemas"]["RememberedMonthOut"][];
+            /** On */
+            on: boolean;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "none" | "asked" | "open";
+        };
         /** CharacterTitlesOut */
         CharacterTitlesOut: {
             /** Acting */
@@ -10970,6 +11356,32 @@ export interface components {
              */
             territories: components["schemas"]["TerritoryUseOut"][];
         };
+        /** CycleNominationsOut */
+        CycleNominationsOut: {
+            /** Nominations */
+            nominations: components["schemas"]["ReviewedOut"][];
+            /** Past Due */
+            past_due: boolean;
+            /** Player Nominations */
+            player_nominations: boolean;
+            /** Published At */
+            published_at: string | null;
+            /**
+             * Remembrances
+             * @default []
+             */
+            remembrances: components["schemas"]["RememberedReviewOut"][];
+            /** Remembrances On */
+            remembrances_on: boolean;
+            /** Removed */
+            removed: number;
+            /** Starred */
+            starred: number;
+            /** Waiting */
+            waiting: number;
+            /** Written */
+            written: number;
+        };
         /** CycleOut */
         CycleOut: {
             /**
@@ -11007,6 +11419,11 @@ export interface components {
             name: string;
             /** Opened At */
             opened_at: string | null;
+            /**
+             * Player Nominations
+             * @default false
+             */
+            player_nominations: boolean;
             /** Questions */
             questions: components["schemas"]["QuestionOut"][];
             /**
@@ -11014,6 +11431,11 @@ export interface components {
              * @default false
              */
             quests_enabled: boolean;
+            /**
+             * Remembrances
+             * @default false
+             */
+            remembrances: boolean;
             /** Status */
             status: string;
             /**
@@ -11692,6 +12114,11 @@ export interface components {
             /** Summary */
             summary: string;
         };
+        /** EditIn */
+        EditIn: {
+            /** Text */
+            text: string;
+        };
         /**
          * EffectBlock
          * @description One thing a house merit or flaw does on the sheet, at a game or between games
@@ -12114,6 +12541,24 @@ export interface components {
             this_game: boolean;
             /** While Held */
             while_held: string | null;
+        };
+        /** EntryOut */
+        EntryOut: {
+            /** About */
+            about: string | null;
+            /** Edited */
+            edited: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Order */
+            order: number;
+            /** Starred */
+            starred: boolean;
+            /** Text */
+            text: string;
         };
         /** EquipmentCheckIn */
         EquipmentCheckIn: {
@@ -15832,6 +16277,23 @@ export interface components {
             /** Troupe Name */
             troupe_name: string;
         };
+        /** MemoryIn */
+        MemoryIn: {
+            /** Text */
+            text: string;
+        };
+        /** MemoryOut */
+        MemoryOut: {
+            /** Edited */
+            edited: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Text */
+            text: string;
+        };
         /** MergeCharacter */
         MergeCharacter: {
             /**
@@ -15968,6 +16430,28 @@ export interface components {
             /** When */
             when: string;
         };
+        /** MonthOut */
+        MonthOut: {
+            /**
+             * Cycle Id
+             * Format: uuid
+             */
+            cycle_id: string;
+            /** Name */
+            name: string;
+            /** Nominations */
+            nominations: components["schemas"]["EntryOut"][];
+            /**
+             * Published At
+             * Format: date-time
+             */
+            published_at: string;
+            /**
+             * Remembrances
+             * @default []
+             */
+            remembrances: components["schemas"]["RememberedOut"][];
+        };
         /** Morality */
         Morality: {
             /** Name */
@@ -16060,6 +16544,11 @@ export interface components {
             influence: components["schemas"]["InfluenceStandingOut"][];
             /** Late */
             late: boolean;
+            /**
+             * Player Nominations
+             * @default false
+             */
+            player_nominations: boolean;
             /** Questions */
             questions: components["schemas"]["QuestionOut"][];
             /**
@@ -16067,6 +16556,11 @@ export interface components {
              * @default []
              */
             quests: components["schemas"]["QuestChoiceOut"][];
+            /**
+             * Remembrances
+             * @default false
+             */
+            remembrances: boolean;
             /**
              * Short
              * @default {}
@@ -16119,6 +16613,67 @@ export interface components {
              * @default []
              */
             territories: components["schemas"]["TerritoryOut"][];
+        };
+        /**
+         * MyMemoryOut
+         * @description A character the downtime asks a memory of, and the writer's memory, if any.
+         */
+        MyMemoryOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Clan */
+            clan: string | null;
+            /** Name */
+            name: string;
+            /** Picture */
+            picture: string | null;
+            /** Published */
+            published: boolean;
+            /** Reason */
+            reason: string | null;
+            /**
+             * Remembrance Id
+             * Format: uuid
+             */
+            remembrance_id: string;
+            /** Text */
+            text: string | null;
+        };
+        /** MyNominationOut */
+        MyNominationOut: {
+            about: components["schemas"]["AboutOut"] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Published */
+            published: boolean;
+            /** Text */
+            text: string;
+        };
+        /** MyNominationsOut */
+        MyNominationsOut: {
+            /** Choices */
+            choices: components["schemas"]["AboutOut"][];
+            /** Most */
+            most: number;
+            /** Nominations */
+            nominations: components["schemas"]["MyNominationOut"][];
+            /** Submitted */
+            submitted: boolean;
+        };
+        /** MyRemembrancesOut */
+        MyRemembrancesOut: {
+            /** Most */
+            most: number;
+            /** Remembered */
+            remembered: components["schemas"]["MyMemoryOut"][];
+            /** Submitted */
+            submitted: boolean;
         };
         /**
          * NeedLineOut
@@ -16284,6 +16839,15 @@ export interface components {
              * @default
              */
             note: string;
+        };
+        /** NominationIn */
+        NominationIn: {
+            /** About Character Id */
+            about_character_id?: string | null;
+            /** About User Id */
+            about_user_id?: string | null;
+            /** Text */
+            text: string;
         };
         /**
          * NotAllowedOut
@@ -17482,6 +18046,16 @@ export interface components {
             /** Retired */
             retired: boolean;
         };
+        /** PlayerNominationsIn */
+        PlayerNominationsIn: {
+            /** On */
+            on: boolean;
+        };
+        /** PlayerNominationsOut */
+        PlayerNominationsOut: {
+            /** On */
+            on: boolean;
+        };
         /** PlayerOut */
         PlayerOut: {
             /** Bio */
@@ -18253,6 +18827,11 @@ export interface components {
             /** Public */
             public: boolean;
         };
+        /** PublishedOut */
+        PublishedOut: {
+            /** Count */
+            count: number;
+        };
         /**
          * QuestActionOut
          * @description The quest a Quest action names (horatio.quest_actions), as staff answer it.
@@ -19014,6 +19593,78 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** RememberedMonthOut */
+        RememberedMonthOut: {
+            /**
+             * Cycle Id
+             * Format: uuid
+             */
+            cycle_id: string;
+            /** Memories */
+            memories: components["schemas"]["MemoryOut"][];
+            /** Month */
+            month: string;
+            /**
+             * Published At
+             * Format: date-time
+             */
+            published_at: string;
+        };
+        /**
+         * RememberedOut
+         * @description A character remembered in a month, with the memories of them.
+         */
+        RememberedOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Clan */
+            clan: string | null;
+            /** Memories */
+            memories: components["schemas"]["EntryOut"][];
+            /** Name */
+            name: string;
+            /** Picture */
+            picture: string | null;
+            /** Reason */
+            reason: string | null;
+        };
+        /**
+         * RememberedReviewOut
+         * @description A character the cycle asks memories of, with those written so far.
+         */
+        RememberedReviewOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Memories */
+            memories: components["schemas"]["ReviewedOut"][];
+            /** Name */
+            name: string;
+            /** Picture */
+            picture: string | null;
+            /** Reason */
+            reason: string | null;
+            /**
+             * Remembrance Id
+             * Format: uuid
+             */
+            remembrance_id: string;
+        };
+        /** RemembrancesIn */
+        RemembrancesIn: {
+            /** On */
+            on: boolean;
+        };
+        /** RemembrancesSettingOut */
+        RemembrancesSettingOut: {
+            /** On */
+            on: boolean;
+        };
         /** RemindedOut */
         RemindedOut: {
             /** Characters */
@@ -19032,11 +19683,6 @@ export interface components {
             by: string;
             /** Players */
             players: number;
-        };
-        /** RemoveIn */
-        RemoveIn: {
-            /** Reason */
-            reason: string;
         };
         /** RemoveNegativeIn */
         RemoveNegativeIn: {
@@ -19524,6 +20170,63 @@ export interface components {
              * @default []
              */
             skills: string[];
+        };
+        /** Retiring */
+        Retiring: {
+            /** Listed */
+            listed: boolean;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "final_death" | "off_field" | "inactive";
+            /**
+             * Remembrances
+             * @default false
+             */
+            remembrances: boolean;
+        };
+        /** ReviewedOut */
+        ReviewedOut: {
+            about: components["schemas"]["AboutOut"] | null;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Edited */
+            edited: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Player Handle */
+            player_handle: string;
+            /** Player Name */
+            player_name: string;
+            /** Published */
+            published: boolean;
+            /** Removed */
+            removed: boolean;
+            /** Removed Reason */
+            removed_reason: string;
+            /** Starred */
+            starred: boolean;
+            /** Text */
+            text: string;
+            /**
+             * Written At
+             * Format: date-time
+             */
+            written_at: string;
         };
         /**
          * Role
@@ -20531,6 +21234,23 @@ export interface components {
         StaffRole: {
             role: components["schemas"]["Role"];
             troupe: components["schemas"]["MoveTroupe"];
+        };
+        /** StarIn */
+        StarIn: {
+            /** Starred */
+            starred: boolean;
+        };
+        /** StarredOut */
+        StarredOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Month */
+            month: string;
+            /** Text */
+            text: string;
         };
         /** StartingBlood */
         StartingBlood: {
@@ -22094,8 +22814,18 @@ export interface components {
             name: string;
             /** New Players */
             new_players: ("welcoming" | "closed") | null;
+            /**
+             * Nominations
+             * @default false
+             */
+            nominations: boolean;
             /** Place */
             place: string;
+            /**
+             * Player Nominations
+             * @default false
+             */
+            player_nominations: boolean;
             /** Portrait */
             portrait: string | null;
             /** Public */
@@ -22104,6 +22834,11 @@ export interface components {
             quest_requests_per_cycle: number;
             /** Quests Enabled */
             quests_enabled: boolean;
+            /**
+             * Remembrances
+             * @default false
+             */
+            remembrances: boolean;
             /** Session Xp */
             session_xp: number;
             /** Starting Blood */
@@ -22562,6 +23297,16 @@ export interface components {
             player_pronouns: string | null;
             /** Pronouns */
             pronouns: string | null;
+            /**
+             * Remembered
+             * @default false
+             */
+            remembered: boolean;
+            /**
+             * Remembrances Openable
+             * @default false
+             */
+            remembrances_openable: boolean;
             /** Represented By */
             represented_by: string | null;
             /** Sect */
@@ -23073,6 +23818,11 @@ export interface components {
             /** Willpower */
             willpower: number;
         };
+        /** RemoveIn */
+        horatio__api__house_traits__RemoveIn: {
+            /** Reason */
+            reason: string;
+        };
         /** BlockIn */
         horatio__api__influence_effects__BlockIn: {
             /** Activity */
@@ -23104,6 +23854,14 @@ export interface components {
              * Format: uuid
              */
             entry_id: string;
+        };
+        /** RemoveIn */
+        horatio__api__nominations__RemoveIn: {
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
         };
         /** ResetIn */
         horatio__api__play__ResetIn: {
@@ -25244,6 +26002,239 @@ export interface operations {
             };
         };
     };
+    my_nominations_api_characters__character_id__downtime_nominations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyNominationsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_nomination_api_characters__character_id__downtime_nominations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NominationIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyNominationsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_nomination_api_characters__character_id__downtime_nominations__nomination_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                nomination_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NominationIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyNominationsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_nomination_api_characters__character_id__downtime_nominations__nomination_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                nomination_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyNominationsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_remembrances_api_characters__character_id__downtime_remembrances_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyRemembrancesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_memory_api_characters__character_id__downtime_remembrances__remembrance_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                remembrance_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemoryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyRemembrancesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_memory_api_characters__character_id__downtime_remembrances__remembrance_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                remembrance_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyRemembrancesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     my_results_api_characters__character_id__downtime_results_get: {
         parameters: {
             query?: never;
@@ -25956,7 +26947,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RemoveIn"];
+                "application/json": components["schemas"]["horatio__api__house_traits__RemoveIn"];
             };
         };
         responses: {
@@ -26367,6 +27358,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    nominations_about_api_characters__character_id__nominations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AboutYouOut"][];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -27852,6 +28874,68 @@ export interface operations {
             };
         };
     };
+    character_remembrances_api_characters__character_id__remembrances_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterRemembrancesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    open_remembrances_api_characters__character_id__remembrances_open_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterRemembrancesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_retainers_api_characters__character_id__retainers_get: {
         parameters: {
             query?: never;
@@ -27961,7 +29045,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["Leaving"] | null;
+                "application/json": components["schemas"]["Retiring"] | null;
             };
         };
         responses: {
@@ -29605,6 +30689,68 @@ export interface operations {
             };
         };
     };
+    cycle_nominations_api_cycles__cycle_id__nominations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CycleNominationsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_nominations_api_cycles__cycle_id__nominations_publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublishedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     open_cycle_api_cycles__cycle_id__open_post: {
         parameters: {
             query?: never;
@@ -30971,6 +32117,142 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LocationQuestPlanOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_nomination_api_nominations__nomination_id__remove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nomination_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["horatio__api__nominations__RemoveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CycleNominationsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_nomination_api_nominations__nomination_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nomination_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CycleNominationsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    star_nomination_api_nominations__nomination_id__star_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nomination_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StarIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CycleNominationsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_nomination_api_nominations__nomination_id__text_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nomination_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CycleNominationsOut"];
                 };
             };
             /** @description Validation Error */
@@ -37381,6 +38663,68 @@ export interface operations {
             };
         };
     };
+    published_nominations_api_troupes__troupe_id__nominations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonthOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    starred_nominations_api_troupes__troupe_id__nominations_starred_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StarredOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_npcs_api_troupes__troupe_id__npcs_get: {
         parameters: {
             query?: never;
@@ -37532,6 +38876,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TroupeReset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_player_nominations_api_troupes__troupe_id__player_nominations_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlayerNominationsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerNominationsOut"];
                 };
             };
             /** @description Validation Error */
@@ -38061,6 +39440,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Roll"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_remembrances_api_troupes__troupe_id__remembrances_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemembrancesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemembrancesSettingOut"];
                 };
             };
             /** @description Validation Error */

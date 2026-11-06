@@ -36,8 +36,9 @@ export function BackupsTab() {
       }
     >
       <p className="mb-3 text-sm text-mist">
-        A backup is the whole database: every account, character and troupe. One is made every night, and copied to cloud storage for 30 days. The server keeps a week of
-        backups, nightly or made here; download one to keep it longer. Making or downloading a backup is recorded in the audit log.
+        A backup is the whole database: every account, character and troupe. Uploaded pictures, such as portraits and clan logos, are not in it. Where the server runs a
+        nightly backup, those are listed here too; how long backups are kept, and whether they are also copied elsewhere, depends on how the server is set up. Download
+        one to keep it safe. Making or downloading a backup is recorded in the audit log.
       </p>
       <ErrorText error={make.error} />
       {make.data && (
