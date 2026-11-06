@@ -103,7 +103,7 @@ A number on a tab is how much waits on you there, such as approvals to decide.
 The **About** tab is the troupe at a glance. For staff it starts with **Waiting on you**: one line for each kind of work, each a link straight to it. The lines you may see are:
 
 - **Approvals waiting** and **Backstories to read**;
-- the open cycle, with how many have submitted and when it is due;
+- the open cycle, with how many have submitted and when it is **Due**, its day and time, such as "Due Sat 14 Nov, 6:00 pm (in 7 days)";
 - late downtimes to accept, responses to assign, responses not yet written, responses for you to write, and results ready to deliver;
 - allowance shortfalls in a cycle;
 - **Quest requests to answer**;
@@ -549,8 +549,8 @@ A downtime cycle is one round of downtimes. Storytellers and assistant storytell
 
 1. Choose **New cycle**.
 2. Give it a **Name**, such as the month.
-3. Set **Due**, in your time zone; players see it in theirs.
-4. Set **Accepted until**: the grace period, while late downtimes are still taken.
+3. Set **Due**, a day and a time, in your time zone; everyone sees it in theirs. Wherever the cycle shows, its Due shows with its time, such as "Due Sat 14 Nov, 6:00 pm".
+4. Set **Accepted until**: the end of the grace period, while late downtimes are still taken.
 5. Set **XP for completing**: what each character gets when it submits its downtime. It starts at the troupe's usual amount.
 
 The new cycle starts as a draft, with a copy of the last cycle's form.
@@ -567,7 +567,7 @@ On the cycle's **Overview**, choose **Open for submissions**. Opening fixes who 
 
 The **Participants** tab shows each character, its player, where its downtime stands (**Not started**, **Started**, **Submitted** or **Removed**) and when it was last saved.
 
-- **Remind those not submitted** sends each player a notification, and an email if they've chosen to.
+- **Remind those not submitted** sends each player a notification, and an email if they've chosen to. It names the cycle's **Due**, or once that has passed, its **Accepted until**, in the player's own time zone.
 - **Add a character** adds one whose home is this troupe that joined after the cycle opened.
 - A character's ⋯ shows its actions, and lets you **Adjust** its allowance for this cycle with a reason, **Log influence**, **Accept late** (after the grace period, or when the troupe's absentee downtimes would shut it out), or **Remove from cycle**.
 

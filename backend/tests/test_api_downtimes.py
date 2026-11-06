@@ -9,6 +9,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from horatio import downtimes
+from horatio.models import User
 from horatio.rules.model import ActionKindData, AllowanceRuleData
 from horatio.rules.store import add_house_action_kind, add_house_allowance_rule
 from tests.api_helpers import Person, Troupe, new_character, sign_up
@@ -320,15 +322,18 @@ def test_staff_remind_the_players_who_have_not_submitted(troupe: Troupe) -> None
         items = person.client.get("/notifications").json()["items"]
         return [i for i in items if i["kind"] == "downtime.reminder"]
 
+    # Each names the Due with its time, in the player's own zone (#469).
+    due = downtimes.due_text(User(preferences={}), datetime.fromisoformat(cycle["closes_at"]))
+    assert due.endswith(" UTC")
     assert sorted((i["kind"], i["summary"], i["link"]) for i in reminders(troupe.player)) == [
         (
             "downtime.reminder",
-            "Agnes's downtime for October 2026 isn't submitted yet",
+            f"Agnes's downtime for October 2026 isn't submitted yet. Due {due}.",
             f"/characters/{agnes}/downtime",
         ),
         (
             "downtime.reminder",
-            "Bram's downtime for October 2026 isn't submitted yet",
+            f"Bram's downtime for October 2026 isn't submitted yet. Due {due}.",
             f"/characters/{bram}/downtime",
         ),
     ]
@@ -345,6 +350,30 @@ def test_staff_remind_the_players_who_have_not_submitted(troupe: Troupe) -> None
     ):
         assert person.client.post(f"/characters/{character}/downtime/submit").status_code == 200
     assert troupe.assistant.client.post(f"/cycles/{cycle['id']}/reminders").status_code == 409
+
+
+def test_a_reminder_past_due_names_when_late_ones_are_accepted_until(troupe: Troupe) -> None:
+    member_character(troupe, troupe.player, "Agnes")
+    cycle = open_cycle(troupe, new_cycle(troupe, closes_in=timedelta(days=-1)))
+    # The player reads times in New York, on a 24-hour clock.
+    assert (
+        troupe.player.client.patch(
+            "/preferences", json={"time_zone": "America/New_York", "clock": "24"}
+        ).status_code
+        == 200
+    )
+    assert troupe.assistant.client.post(f"/cycles/{cycle['id']}/reminders").status_code == 200
+    [reminder] = [
+        i
+        for i in troupe.player.client.get("/notifications").json()["items"]
+        if i["kind"] == "downtime.reminder"
+    ]
+    player = User(preferences={"time_zone": "America/New_York", "clock": "24"})
+    until = downtimes.due_text(player, datetime.fromisoformat(cycle["grace_ends_at"]))
+    assert reminder["summary"] == (
+        f"Agnes's downtime for October 2026 isn't submitted yet. Accepted until {until}."
+    )
+    assert until.endswith((" EST", " EDT"))
 
 
 def test_adjusting_an_allowance(troupe: Troupe) -> None:

@@ -25,9 +25,9 @@ describe("expiryText", () => {
     expect(expiryText(expiry({ games_left: 1 }), dates)).toBe("Expires after 1 more game");
   });
 
-  it("names the cycle and its deadline", () => {
+  it("names the cycle and its Due, with the time", () => {
     const cycle = expiry({ kind: "cycle", cycle_name: "November 2026", cycle_closes_at: "2026-11-28T23:59:00Z" });
-    expect(expiryText(cycle, dates, NOW)).toBe("Expires when the downtime cycle November 2026 closes (due Sat 28 Nov)");
+    expect(expiryText(cycle, dates, NOW)).toBe("Expires when the downtime cycle November 2026 closes (due Sat 28 Nov, 11:59 pm)");
   });
 });
 

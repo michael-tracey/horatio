@@ -1167,7 +1167,7 @@ test("the characters list and each Troupes tab say where a character stands: in 
   await expect(row("Halfway Hester")).toContainText("In creation");
   await expect(row("Asking Aldous")).toContainText(`Waiting for ${farShores}`);
   await expect(row("Settled Seraphine")).toContainText(`Home: ${hearths}`);
-  await expect(row("Settled Seraphine").getByText(/^Downtime due \w{3} /)).toBeVisible();
+  await expect(row("Settled Seraphine").getByText(/^Downtime due \w{3} .+, \d{1,2}:\d{2} [ap]m$/)).toBeVisible();
   await expect(row("Lone Lucan")).toContainText("No home troupe yet");
   await expect(p.getByText("Active", { exact: true })).toHaveCount(0);
   await p.screenshot(shots("characters-standing"));
@@ -1972,7 +1972,7 @@ test("Waiting on you shows the open cycle, a quest request and a backstory waiti
   await l.goto("/");
   await expect(l.getByRole("heading", { name: "Your troupes" })).toBeVisible();
   const home = l.getByRole("list", { name: `Waiting on you in ${troupeName}` });
-  await expect(home.getByRole("link", { name: /^November downtime: 0 of 1 submitted · due in \d+ days$/ })).toBeVisible();
+  await expect(home.getByRole("link", { name: /^November downtime: 0 of 1 submitted · Due [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}( \d{4})?, \d{1,2}:\d{2} [ap]m \(in \d+ days\)$/ })).toBeVisible();
   await expect(l.getByRole("link", { name: troupeName }).getByLabel("2 waiting")).toBeVisible();
   await expect(l.getByText("No characters of your own yet.", { exact: false })).toBeVisible();
   await l.screenshot(shots("characters-home-staff"));
@@ -1980,7 +1980,7 @@ test("Waiting on you shows the open cycle, a quest request and a backstory waiti
   // About's Waiting on you: the open cycle first, then the backstory and the quest request.
   await l.getByRole("link", { name: troupeName }).click();
   const waiting = l.getByRole("list", { name: "Waiting on you" });
-  await expect(waiting.getByRole("link")).toHaveText([/^November downtime: 0 of 1 submitted · due in \d+ days$/, /^Backstories to read\s*1$/, /^Quest requests to answer\s*1$/]);
+  await expect(waiting.getByRole("link")).toHaveText([/^November downtime: 0 of 1 submitted · Due [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}( \d{4})?, \d{1,2}:\d{2} [ap]m \(in \d+ days\)$/, /^Backstories to read\s*1$/, /^Quest requests to answer\s*1$/]);
   await l.screenshot(shots("troupe-about-waiting"));
   // The tabs count the same: the backstory on the roster, the request on Quests.
   const sections = l.getByRole("navigation", { name: "Troupe sections" });

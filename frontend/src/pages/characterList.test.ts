@@ -40,8 +40,8 @@ describe("standing", () => {
 });
 
 describe("waiting", () => {
-  it("gives the day a downtime is due, or says it is overdue", () => {
-    expect(labels(waiting(character({ downtime_due: "2026-11-08T04:59:00Z" }), null, dates, now))).toEqual(["Downtime due Sat 7 Nov"]);
+  it("gives the day and time a downtime is due, or says it is overdue", () => {
+    expect(labels(waiting(character({ downtime_due: "2026-11-08T04:59:00Z" }), null, dates, now))).toEqual(["Downtime due Sat 7 Nov, 11:59 pm"]);
     expect(labels(waiting(character({ downtime_due: "2026-11-01T04:59:00Z" }), null, dates, now))).toEqual(["Downtime overdue"]);
   });
 

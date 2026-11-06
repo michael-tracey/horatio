@@ -25,7 +25,7 @@ export function WorkTab({ troupeId }: { troupeId: string }) {
               <span className="min-w-0">
                 <span className="block group-hover:text-gold">{c.name}</span>
                 <span className="block text-xs text-mist">
-                  {c.status === "open" && `Due ${dates.dueDay(c.closes_at)} · `}
+                  {c.status === "open" && `Due ${dates.due(c.closes_at)} · `}
                   {workLine(c)}
                 </span>
               </span>
