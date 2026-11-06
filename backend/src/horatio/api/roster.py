@@ -408,6 +408,10 @@ MESSAGES: dict[str, str] = {
     " rated {rating}; specializations: {specializations}; left off the sheet: {left_out})."
     " Its notes: {notes}",
     "npc.deleted": "{actor} deleted the NPC {character}.",
+    "npc.imported": "{actor} imported the NPC {character} from Yorick (its id there: {legacy_id};"
+    " label: {label}; printed lines left to staff: {unmatched}).",
+    "npc.reimported": "{actor} imported the NPC {character} from Yorick again (its id there:"
+    " {legacy_id}; label: {label}; printed lines left to staff: {unmatched}).",
     "npc.stock_changed": "{actor} changed the Stock NPC {character}.",
     "npc.given": "{actor} gave the NPC {character} to @{to_handle}, at home here and accepted,"
     " with {xp} XP for its sheet{carried}.",
