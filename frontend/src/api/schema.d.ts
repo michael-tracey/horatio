@@ -6990,7 +6990,9 @@ export interface paths {
         get?: never;
         /**
          * Appoint Lead
-         * @description The custodian appoints a troupe's lead storyteller.
+         * @description The custodian appoints a troupe's lead storyteller. The one they replace leaves
+         *     the staff: a lead who is suspended or stepping down shouldn't keep a role without
+         *     anyone choosing it, and the Staff tab can add them back.
          */
         put: operations["appoint_lead_api_troupes__troupe_id__lead_put"];
         post?: never;

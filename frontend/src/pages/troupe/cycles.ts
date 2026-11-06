@@ -17,6 +17,14 @@ export function cycleStatus(status: string): string {
   return CYCLE_STATUS[status] ?? status;
 }
 
+/** Each action kind as the rules name it, "Downtime action"; a quest or custom question
+ * as itself; one the rules no longer have, as its key reads, sentence case. */
+export function kindLabels(keys: string[], named: Record<string, string>): Record<string, string> {
+  const own: Record<string, string> = { quest: "Quest", custom: "Custom question" };
+  const plain = (key: string) => key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ");
+  return Object.fromEntries(keys.map((k) => [k, named[k] ?? own[k] ?? plain(k)]));
+}
+
 export function standing(p: { removed: boolean; submission_status?: string | null }): Standing {
   if (p.removed) return "removed";
   if (p.submission_status === "submitted") return "submitted";

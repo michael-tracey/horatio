@@ -60655,7 +60655,7 @@
     },
     "/api/troupes/{troupe_id}/lead": {
       "put": {
-        "description": "The custodian appoints a troupe's lead storyteller.",
+        "description": "The custodian appoints a troupe's lead storyteller. The one they replace leaves\nthe staff: a lead who is suspended or stepping down shouldn't keep a role without\nanyone choosing it, and the Staff tab can add them back.",
         "operationId": "appoint_lead_api_troupes__troupe_id__lead_put",
         "parameters": [
           {

@@ -106,13 +106,13 @@ export function StaffTab({ troupe, canManage }: { troupe: TroupeOut; canManage: 
           ))}
         </dl>
       </Card>
-      {me.data?.is_custodian && <AppointLead troupe={troupe} />}
+      {me.data?.is_custodian && <AppointLead troupe={troupe} lead={staff.data?.find((m) => m.role === "lead_storyteller")?.display_name} />}
     </div>
   );
 }
 
-/** The custodian appoints the troupe's lead storyteller. */
-function AppointLead({ troupe }: { troupe: TroupeOut }) {
+/** The custodian appoints the troupe's lead storyteller. The one replaced leaves the staff. */
+function AppointLead({ troupe, lead }: { troupe: TroupeOut; lead?: string }) {
   const [handle, setHandle] = useState("");
   const appoint = useAction(() =>
     unwrap(api.PUT("/api/troupes/{troupe_id}/lead", { params: { path: { troupe_id: troupe.id } }, body: { handle } })),
@@ -129,6 +129,10 @@ function AppointLead({ troupe }: { troupe: TroupeOut }) {
         <Field label="Appoint a new lead" hint="Pick them from the list, or type a name or handle to find them.">
           <PersonPicker required value={handle} onChange={setHandle} />
         </Field>
+        <p className="text-sm text-mist">
+          {lead ?? "The current lead"} will leave the staff, with no role in the troupe. To keep them on, add them back under Add staff once the new lead is
+          appointed.
+        </p>
         <ErrorText error={appoint.error} />
         <Button type="submit" variant="secondary" disabled={appoint.isPending}>
           Appoint

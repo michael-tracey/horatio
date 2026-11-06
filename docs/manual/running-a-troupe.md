@@ -713,7 +713,7 @@ A character's **XP debt** card, on its Experience tab, shows what it owes, from 
 
 With nothing set, a game gives everyone there the same XP, and staff are warned past 10 a month, as the book has it. Storytellers can change that under **Customise › Troupe settings › Game XP chart**:
 
-- **By earned XP**: bands of earned XP, each with XP for a game attended (and an absentee game). **Start from** *Flat* or a ready-made taper, **Add a band**, or remove one. Earned XP doesn't count starting XP or what joining gave.
+- **By earned XP**: bands of earned XP, each with XP for a game attended (and an absentee game). **Start from** *Flat* or *Tapering* (less XP a game as earned XP grows), **Add a band**, or remove one. Earned XP doesn't count starting XP or what joining gave.
 - **Adjustments**: extras staff tick for a character when awarding, such as "Helped +1, once a month", each with an optional limit a month.
 - **Monthly XP**: **Warn** (the default), **Cap** or **Off**, at the book's 10 a month or your own figure.
 - **Absentee games**: **Record absentee games**, whether players can mark their own characters absentee, and **Absentee downtimes**: a character can submit a cycle's downtime only if it attended a game in the last so many days before the cycle closes.
