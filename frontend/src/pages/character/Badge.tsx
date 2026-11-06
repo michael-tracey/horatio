@@ -58,7 +58,8 @@ export function BadgeButton({ character }: { character: CharacterOut }) {
   );
 }
 
-function BadgeNote({ character, onDone }: { character: CharacterOut; onDone: () => void }) {
+/** What others see of the character, a note staff add to it, and printing the badge. */
+export function BadgeNote({ character, onDone }: { character: CharacterOut; onDone: () => void }) {
   const path = { params: { path: { character_id: character.id } } };
   const note = useQuery({
     queryKey: ["visible-note", character.id],

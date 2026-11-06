@@ -208,7 +208,7 @@ test("screenshots for Running a troupe", async ({ browser }) => {
 
   // NPCs, with the New NPC form.
   await l.goto(`${base}/npcs`);
-  await expect(l.getByRole("listitem", { name: "Aurelia Vance" })).toBeVisible();
+  await expect(l.getByRole("row", { name: "Aurelia Vance" })).toBeVisible();
   await shot(l, "npcs", undefined, 900);
 
   // Rules › Checks, on the troupe's house rules.

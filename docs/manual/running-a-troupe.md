@@ -158,7 +158,15 @@ Printing opens in a new tab, so what you ticked stays.
 
 ## NPCs
 
-**Characters › NPCs** lists the troupe's NPCs, for storytellers and assistant storytellers. NPCs belong to the troupe, need no approval and take no part in downtimes. Filter the list by kind and by form, open one, or choose **Play** to open its Play View at a game. Tick **Who's Who** to list an NPC without a title on the Who's Who (one with a title is listed anyway). **Game badges** prints badges for the NPCs ticked, or all of them.
+**Characters › NPCs** lists the troupe's NPCs, for storytellers and assistant storytellers. NPCs belong to the troupe, need no approval and take no part in downtimes. Each row shows the NPC's kind, its form (sheeted or stock), a Stock NPC's rating, and whether it is listed on the Who's Who. On a phone these fold in under the name. Filter the list by kind and by form, or open an NPC by its name.
+
+The **⋯** at the end of each row holds:
+
+- **Play**, which opens its Play View at a game;
+- **List on the Who's Who** or **Take off the Who's Who**, for an NPC without a title (one with a title is listed anyway);
+- **Badge…**, which shows what others can see of it, takes a note for its badge, and prints it.
+
+**Game badges** prints badges for the NPCs ticked, or all of them.
 
 ![The NPCs tab with the New NPC form.](images/running-a-troupe/npcs.png)
 
