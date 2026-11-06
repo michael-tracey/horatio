@@ -66,6 +66,22 @@
     background: white;
     color: black;
   }
+  /* A page of the manual prints as the page alone, black on white: no menu or footer. */
+  body:has(.help-page) :is(header, footer):not(.help-page *) {
+    display: none;
+  }
+  .help-page,
+  .help-page * {
+    color: black !important;
+    background: transparent !important;
+    border-color: #999 !important;
+  }
+  .help-page :is(h1, h2, h3, h4) {
+    break-after: avoid;
+  }
+  .help-page :is(img, table, blockquote, pre) {
+    break-inside: avoid;
+  }
 }
 
 /* Feeding's finish on the Play View: blood rises from the bottom, then the

@@ -5,6 +5,10 @@
  * an HTML comment, such as the marks around sections built from a troupe's
  * questions, is left out. A single line break is kept as one, as people writing in
  * a box expect.
+ *
+ * The user manual (`parseManual`) reads a little more: images, simple pipe tables,
+ * and links without a scheme, such as `players.md#downtimes`, which the manual
+ * turns into its own pages. Nothing else reads those.
  */
 
 export type Inline =
@@ -13,18 +17,29 @@ export type Inline =
   | { t: "em"; c: Inline[] }
   | { t: "code"; v: string }
   | { t: "link"; href: string; c: Inline[] }
-  | { t: "br" };
+  | { t: "br" }
+  /** The manual's only: an image, by its path in docs/manual. */
+  | { t: "image"; src: string; alt: string };
+
+export type Align = "left" | "center" | "right" | null;
 
 export type Block =
-  | { t: "heading"; level: number; c: Inline[]; text: string }
+  /** `id` is the anchor, set only on the manual's headings. */
+  | { t: "heading"; level: number; c: Inline[]; text: string; id?: string }
   | { t: "p"; c: Inline[] }
-  | { t: "ul"; items: Inline[][] }
-  | { t: "ol"; start: number; items: Inline[][] }
+  /** `children` are each item's nested blocks: the manual's only. */
+  | { t: "ul"; items: Inline[][]; children?: (Block[] | undefined)[] }
+  | { t: "ol"; start: number; items: Inline[][]; children?: (Block[] | undefined)[] }
   | { t: "quote"; c: Block[] }
   | { t: "code"; v: string }
   | { t: "hr" }
   /** A line that is only an HTML comment, as written: kept only when asked for (the editor keeps them). */
-  | { t: "comment"; v: string };
+  | { t: "comment"; v: string }
+  /** The manual's only: a simple pipe table. */
+  | { t: "table"; align: Align[]; head: Inline[][]; rows: Inline[][][] };
+
+/** What the manual reads beyond a backstory's Markdown. */
+type Options = { keepComments: boolean; manual: boolean };
 
 export const COMMENT = /^\s*<!--.*-->\s*$/;
 const HEADING = /^ {0,3}(#{1,6})(?:\s+(.*?))?\s*#*\s*$/;
@@ -33,7 +48,10 @@ const BULLET = /^ {0,3}[-*+]\s+(.*)$/;
 const NUMBER = /^ {0,3}(\d{1,9})[.)]\s+(.*)$/;
 const QUOTE = /^ {0,3}>\s?(.*)$/;
 const FENCE = /^ {0,3}(```|~~~)/;
+const TABLE_DELIMITER = /^ {0,3}\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
 export const SAFE_LINK = /^(https?:\/\/|mailto:)/i;
+/** A link with a scheme (`javascript:`, `data:`…) or a host (`//x`): the manual's own links have neither. */
+const NOT_RELATIVE = /^([a-z][a-z0-9+.-]*:|\/\/|\\)/i;
 const ESCAPABLE = "\\`*_{}[]()#+-.!>~|<";
 
 /** The heading lines of a backstory, as their text: the sections feedback can be on. */
@@ -45,6 +63,18 @@ export function headings(text: string): string[] {
 }
 
 export function parseBlocks(text: string, keepComments = false): Block[] {
+  return blocksOf(text, { keepComments, manual: false });
+}
+
+/** A page of the user manual: images, tables and relative links too. Headings have no ids yet. */
+export function parseManual(text: string): Block[] {
+  return blocksOf(text, { keepComments: false, manual: true });
+}
+
+function blocksOf(text: string, options: Options): Block[] {
+  const { keepComments, manual } = options;
+  const parseInline = (s: string) => inlineOf(s, manual);
+  const inlineLines = (lines: string[]) => linesOf(lines, manual);
   const lines = text.replace(/\r\n?/g, "\n").split("\n");
   const blocks: Block[] = [];
   let i = 0;
@@ -96,8 +126,23 @@ export function parseBlocks(text: string, keepComments = false): Block[] {
       endParagraph();
       const inner: string[] = [];
       while (i < lines.length && QUOTE.test(lines[i]!)) inner.push(lines[i++]!.match(QUOTE)![1]!);
-      blocks.push({ t: "quote", c: parseBlocks(inner.join("\n"), keepComments) });
+      blocks.push({ t: "quote", c: blocksOf(inner.join("\n"), options) });
       continue;
+    }
+    if (manual && line.includes("|") && i + 1 < lines.length && TABLE_DELIMITER.test(lines[i + 1]!)) {
+      const head = cells(line);
+      const align = cells(lines[i + 1]!).map((c): Align => (c.startsWith(":") ? (c.endsWith(":") ? "center" : "left") : c.endsWith(":") ? "right" : null));
+      if (align.length === head.length) {
+        endParagraph();
+        i += 2;
+        const rows: Inline[][][] = [];
+        while (i < lines.length && lines[i]!.trim() && lines[i]!.includes("|")) {
+          const row = cells(lines[i++]!);
+          rows.push(head.map((_, n) => parseInline(row[n] ?? "")));
+        }
+        blocks.push({ t: "table", align, head: head.map(parseInline), rows });
+        continue;
+      }
     }
     const bullet = line.match(BULLET);
     const number = line.match(NUMBER);
@@ -105,22 +150,41 @@ export function parseBlocks(text: string, keepComments = false): Block[] {
       endParagraph();
       const pattern = bullet ? BULLET : NUMBER;
       const items: string[][] = [];
+      // The manual's lists nest: lines indented under an item, from a list marker
+      // on, are that item's own blocks.
+      const base = indentOf(line);
+      const nested: string[][] = [];
+      const sibling = (l: string) => pattern.test(l) && (!manual || indentOf(l) <= base + 1);
+      const under = (l: string) => manual && items.length > 0 && indentOf(l) >= base + 2;
       while (i < lines.length) {
         const here = lines[i]!;
-        const item = here.match(pattern);
+        const item = sibling(here) ? here.match(pattern) : null;
+        const inner = nested[nested.length - 1];
         if (item) {
           items.push([bullet ? item[1]! : item[2]!]);
+          nested.push([]);
+          i++;
+        } else if (here.trim() && under(here) && (inner!.length || BULLET.test(here.trimStart()) || NUMBER.test(here.trimStart()))) {
+          inner!.push(here);
           i++;
         } else if (here.trim() && /^\s{2,}/.test(here) && items.length) {
           // An indented line goes on with the item above it.
           items[items.length - 1]!.push(here.trim());
           i++;
-        } else if (!here.trim() && i + 1 < lines.length && pattern.test(lines[i + 1]!)) {
+        } else if (!here.trim() && i + 1 < lines.length && sibling(lines[i + 1]!)) {
+          i++;
+        } else if (!here.trim() && i + 1 < lines.length && lines[i + 1]!.trim() && under(lines[i + 1]!)) {
+          // A blank line, then more indented under the item: still the item's.
+          inner!.push("");
           i++;
         } else break;
       }
       const parsed = items.map((item) => inlineLines(item));
-      blocks.push(number ? { t: "ol", start: Number(number[1]), items: parsed } : { t: "ul", items: parsed });
+      const list: Block = number ? { t: "ol", start: Number(number[1]), items: parsed } : { t: "ul", items: parsed };
+      if (nested.some((n) => n.length) && (list.t === "ul" || list.t === "ol")) {
+        list.children = nested.map((n) => (n.length ? blocksOf(dedent(n).join("\n"), options) : undefined));
+      }
+      blocks.push(list);
       continue;
     }
     paragraph.push(line.trim());
@@ -130,18 +194,37 @@ export function parseBlocks(text: string, keepComments = false): Block[] {
   return blocks;
 }
 
-function inlineLines(lines: string[]): Inline[] {
+function indentOf(line: string): number {
+  return line.match(/^ */)![0].length;
+}
+
+/** Lines less the indent they all share. */
+function dedent(lines: string[]): string[] {
+  const indent = Math.min(...lines.filter((l) => l.trim()).map(indentOf));
+  return lines.map((l) => l.slice(Math.min(indent, indentOf(l))));
+}
+
+/** A table row's cells, split on each `|` not escaped as `\|`, without the ones at either end. */
+function cells(line: string): string[] {
+  let row = line.trim();
+  if (row.startsWith("|")) row = row.slice(1);
+  if (row.endsWith("|") && !row.endsWith("\\|")) row = row.slice(0, -1);
+  return row.split(/(?<!\\)\|/).map((c) => c.trim());
+}
+
+function linesOf(lines: string[], manual: boolean): Inline[] {
   const out: Inline[] = [];
   lines.forEach((line, n) => {
     if (n > 0) out.push({ t: "br" });
-    out.push(...parseInline(line));
+    out.push(...inlineOf(line, manual));
   });
   return out;
 }
 
-function plain(inline: Inline[]): string {
+/** Inline Markdown as plain text: emphasis and links as their words, an image as its alt text. */
+export function plain(inline: Inline[]): string {
   return inline
-    .map((n) => (n.t === "text" || n.t === "code" ? n.v : n.t === "br" ? " " : "c" in n ? plain(n.c) : ""))
+    .map((n) => (n.t === "text" || n.t === "code" ? n.v : n.t === "br" ? " " : n.t === "image" ? n.alt : "c" in n ? plain(n.c) : ""))
     .join("");
 }
 
@@ -163,6 +246,11 @@ function closing(s: string, from: number, mark: string): number {
 }
 
 export function parseInline(s: string): Inline[] {
+  return inlineOf(s, false);
+}
+
+function inlineOf(s: string, manual: boolean): Inline[] {
+  const parseInline = (t: string) => inlineOf(t, manual);
   const out: Inline[] = [];
   let text = "";
   const flush = () => {
@@ -202,6 +290,19 @@ export function parseInline(s: string): Inline[] {
         }
       }
     }
+    if (manual && ch === "!" && s[i + 1] === "[") {
+      const close = s.indexOf("]", i + 2);
+      if (close > i && s[close + 1] === "(") {
+        const end = s.indexOf(")", close + 2);
+        const src = s.slice(close + 2, end).trim();
+        if (end > close && src && !NOT_RELATIVE.test(src)) {
+          flush();
+          out.push({ t: "image", src, alt: plain(parseInline(s.slice(i + 2, close))).trim() });
+          i = end + 1;
+          continue;
+        }
+      }
+    }
     if (ch === "[") {
       const close = s.indexOf("]", i + 1);
       if (close > i && s[close + 1] === "(") {
@@ -209,7 +310,7 @@ export function parseInline(s: string): Inline[] {
         if (end > close) {
           const href = s.slice(close + 2, end).trim();
           const label = parseInline(s.slice(i + 1, close));
-          if (SAFE_LINK.test(href)) {
+          if (SAFE_LINK.test(href) || (manual && href && !NOT_RELATIVE.test(href))) {
             flush();
             out.push({ t: "link", href, c: label });
             i = end + 1;

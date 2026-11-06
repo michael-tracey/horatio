@@ -60,6 +60,8 @@ function block(b: Block): JSONContent[] {
       return [{ type: "horizontalRule" }];
     case "comment":
       return [{ type: "comment", attrs: { line: b.v } }];
+    case "table":
+      return []; // the manual's only: a backstory never has one
   }
 }
 
@@ -102,6 +104,8 @@ function inline(nodes: Inline[], marks: Mark[] = []): JSONContent[] {
         return n.v ? [text(n.v, [{ type: "code" }])] : [];
       case "link":
         return inline(n.c, add({ type: "link", attrs: { href: n.href } }));
+      case "image":
+        return []; // the manual's only
     }
   });
 }

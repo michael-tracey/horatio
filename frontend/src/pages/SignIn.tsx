@@ -4,6 +4,7 @@ import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import { Button, Card, ErrorText, Field, Input, Loading, Notice } from "../components/ui";
 import { useAction, useMe } from "../hooks";
+import { manualLink } from "../manualLink";
 import { useNext, withNext } from "../next";
 
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
@@ -54,6 +55,12 @@ export function SignInPage() {
           New here?{" "}
           <Link to={withNext("/sign-up", next)} className="text-gold underline">
             Create an account
+          </Link>
+        </p>
+        <p className="text-center text-sm text-mist">
+          Not sure how it works?{" "}
+          <Link to={manualLink("getting-started")} className="text-gold underline">
+            Read the manual
           </Link>
         </p>
       </form>

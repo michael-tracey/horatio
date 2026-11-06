@@ -28,6 +28,14 @@ export function Layout() {
             <img src="/mark-64.png" alt="" width={32} height={32} className="h-8 w-8" />
             Horatio
           </Link>
+          {/* Signed out, the manual is the one place to go: it's for anyone. */}
+          {!me.data && (
+            <nav className="flex items-center gap-4 text-sm">
+              <NavLink to="/help" className={link}>
+                Help
+              </NavLink>
+            </nav>
+          )}
           {me.data && (
             <nav className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
               <NavLink to="/characters" className={link}>
@@ -39,6 +47,9 @@ export function Layout() {
               {/* Named apart from a troupe's own Rules tab under Customise. */}
               <NavLink to="/rules" className={link} aria-label="Rules reference">
                 Rules
+              </NavLink>
+              <NavLink to="/help" className={link}>
+                Help
               </NavLink>
               {me.data.is_custodian && (
                 <NavLink to="/custodian" className={link}>

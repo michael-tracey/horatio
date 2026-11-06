@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { Link } from "react-router";
 import { api, unwrap } from "../api/client";
 import { Card, PageTitle } from "../components/ui";
 import { useMe } from "../hooks";
+import { manualLink } from "../manualLink";
 
 const SOURCE = "https://github.com/michael-tracey/horatio";
 const DARK_PACK = "https://www.paradoxinteractive.com/games/world-of-darkness/community/dark-pack-agreement";
@@ -43,6 +45,13 @@ export function AboutPage() {
           <p>
             The rules Horatio follows come from <em>Mind's Eye Theatre: Vampire The Masquerade</em>, published by By Night Studios. Horatio describes traits and
             powers in its own words, briefly; you still need the books to play.
+          </p>
+          <p>
+            How to use it, for players, troupe staff and the custodian, is in the{" "}
+            <Link to={manualLink()} className="text-gold underline hover:text-parchment">
+              user manual
+            </Link>
+            , under Help in the menu.
           </p>
         </div>
       </Card>
