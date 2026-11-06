@@ -393,11 +393,13 @@ Starting XP, the XP floor and ceiling, and blood at the start of a game are unde
 
 **House merits and flaws** are the troupe's own, marked ★ wherever they show. Only characters whose home troupe this is, or that are being built for it, and its NPCs can hold one.
 
-Choose **Add a merit or flaw**, then give it a **Name**, choose **Merit or flaw**, its **Points**, its **Type** and a **Requirement** in your words, and **Who can take it**: **Given by staff only**, or **Available when building for the troupe**. Write its **Description**, which players see.
+The list is a table of each one's name and description, whether it is a merit or a flaw, its points, who can take it (**Staff only** or **Players**), whether it is for creation only, whether it is archived, and how many characters hold it. On a phone each row folds into a short card.
+
+Choose **Add a merit or flaw** (the form opens over the list), then give it a **Name**, choose **Merit or flaw**, its **Points**, its **Type** and a **Requirement** in your words, and **Who can take it**: **Given by staff only**, or **Available when building for the troupe**. Write its **Description**, which players see.
 
 Under **What it does**, add effect blocks: free dots, raising a maximum, changing an XP price, an extra in-clan discipline, health levels, requirements, pool bonuses, uses per game, extra downtime actions or a change to feeding. One with no effects does what its description says, for you to rule on at the table. The preview tries it on a sheet.
 
-Changing one changes it for everyone who holds it (Horatio asks first). **Archive** stops anyone new taking it; **Delete** is only for one nobody holds.
+The **⋯** at the end of a row holds **Change…**, **Archive** (or **Bring back**) and **Delete…**. Changing one changes it for everyone who holds it (Horatio asks first). **Archive** stops anyone new taking it; **Delete…** is only for one nobody holds, and says so when someone does.
 
 ### Written rules
 
