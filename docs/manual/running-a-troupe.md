@@ -307,6 +307,7 @@ NPCs are never limited by either.
 ### Downtimes
 
 - **Player Nominations**: let players praise each other's roleplaying in their downtimes, for you to review and publish each month (see [Player Nominations](#player-nominations)). Off by default. Switched off, none of it shows anywhere; what was written and published is kept for when it's on again.
+- **Remembrances**: ask the troupe for memories of a character who leaves play (see [Remembrances](#remembrances)). Off by default, and independent of Player Nominations. Switched off, none can be opened or written and nothing of them shows, except those already published: they stay on the characters' pages and the Who's Who, because they belong to the people remembered.
 
 ### Feeding
 
@@ -541,7 +542,7 @@ Narrators and visiting troupes' staff never read backstories. The player's side 
 
 ### Characters leaving or retiring
 
-A player can leave the home troupe for none, from the character's Home troupe card; its titles there end and its requests waiting there are withdrawn. A player can also retire a character, with a reason: **Final Death**, **Off-field** or **Inactive**. Storytellers and assistant storytellers of its home troupe can change why a retired character left, and whether the Who's Who lists it under "No longer with us", from the **Retired** card on its page.
+A player can leave the home troupe for none, from the character's Home troupe card; its titles there end and its requests waiting there are withdrawn. A player can also retire a character, with a reason: **Final Death**, **Off-field** or **Inactive**. Storytellers and assistant storytellers of its home troupe can change why a retired character left, and whether the Who's Who lists it under "No longer with us", from the **Retired** card on its page. *If your troupe uses this:* they can also open [Remembrances](#remembrances) for it there.
 
 ## Downtime cycles
 
@@ -627,6 +628,20 @@ Each downtime form gets a **Player Nominations** section, where players write sh
 **Publish nominations** works once the cycle is past **Due**, and once only. It publishes the cycle's nominations to the troupe's players, shuffled once and without names, on the troupe's **Nominations** tab, and tells them in the bell. The player of each character named in one, and each member of staff named, gets a line saying so. Nominations written afterwards, during the grace period, wait on the tab for **Publish … more**. You can still remove a published nomination: it disappears for players at once.
 
 Every starred nomination, from every month, rotates in a quiet line at the foot of the troupe's pages for its players and staff, until someone unstars it, here or from the **Nominations** tab. Removing, putting back, starring, editing and publishing go in the troupe's log.
+
+### Remembrances
+
+> **If your troupe uses this:** switch on **Remembrances** under [Customise › Troupe settings](#downtimes).
+
+When a character leaves play, the troupe can ask everyone in the next downtime for a memory of them.
+
+- **Opening them.** Storytellers and assistant storytellers open them for a retired character with **Open remembrances**: from the **Remembrances** card on its page, or from its entry under "No longer with us" on the Who's Who. A player retiring their own character can tick **Ask the storytellers to open remembrances in the next downtime**; you're told in the bell, and confirm by opening them. Staff retiring a character tick **Open remembrances in the next downtime** to open them at once.
+- **Which cycle asks.** The cycle that's open now, if it isn't yet past Due; otherwise the next cycle that opens. The card says which before and after you open them.
+- **Writing.** That cycle's downtime form has a **Remembrances** section with each character remembered: their portrait, why they left, and a box for a memory. Everyone submitting a downtime in the troupe can write one memory of each, the remembered character's own player included.
+- **Reviewing.** The cycle's **Nominations** tab (**Remembrances**, if the troupe doesn't use Player Nominations) has a card for each character remembered, with each memory and who wrote it. Remove, put back and edit them as nominations; they're never starred.
+- **Publishing.** The same **Publish** publishes the cycle's nominations and memories together, once it's past Due. Memories are shuffled within each character. The troupe's players are told that remembrances for the character are up, and the character's own player gets a notification of their own.
+
+Published memories show without names on the month's page, above its nominations, on the retired character's **Remembrances** card, and from its entry on the Who's Who. Its player, the troupe's players and its staff read them. Removing one after publishing takes it away everywhere. Opening, removing, putting back, editing and publishing go in the troupe's log.
 
 ## Game nights
 

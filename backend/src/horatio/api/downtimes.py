@@ -17,6 +17,7 @@ from horatio import (
     quest_actions,
     quests,
     rack,
+    remembrances,
     resonance,
     social_age,
     territories,
@@ -105,6 +106,8 @@ class CycleOut(BaseModel):
     # The troupe uses Player Nominations (horatio.nominations), so the cycle has its
     # Nominations tab.
     player_nominations: bool = False
+    # The troupe uses Remembrances (horatio.remembrances), reviewed on the same tab.
+    remembrances: bool = False
 
 
 class CycleSummaryOut(BaseModel):
@@ -408,6 +411,9 @@ class MyDowntime(BaseModel):
     # The troupe uses Player Nominations, so the form has its section
     # (horatio.api.nominations).
     player_nominations: bool = False
+    # The troupe uses Remembrances and this cycle asks for some, so the form has its
+    # Remembrances section (horatio.api.remembrances).
+    remembrances: bool = False
 
 
 # --- helpers ----------------------------------------------------------------------------
@@ -445,6 +451,7 @@ def cycle_out(db: DbSession, cycle: DowntimeCycle) -> CycleOut:
         quests_enabled=troupe.quests_enabled,
         feeding=feeding.tracked(troupe),
         player_nominations=troupe.player_nominations,
+        remembrances=troupe.remembrances,
     )
 
 
@@ -968,6 +975,8 @@ def my_downtime_out(
         else [],
         closed=downtimes.closed_to(db, cycle, participant),
         player_nominations=db.get_one(Troupe, cycle.troupe_id).player_nominations,
+        remembrances=remembrances.on(db.get_one(Troupe, cycle.troupe_id))
+        and bool(remembrances.in_cycle(db, cycle)),
     )
 
 

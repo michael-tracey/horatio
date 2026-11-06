@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { excerpt, firstShown, monthOrder, nextShown, rotates } from "./nominations";
+import { excerpt, firstShown, monthOrder, nextShown, publishedWhat, rotates } from "./nominations";
 
 const entry = (id: string, order: number) => ({ id, order, text: `Kind word ${id}` });
 
@@ -55,5 +55,13 @@ describe("naming a nomination by its start", () => {
   it("keeps a short one whole, on one line, and cuts a long one at its first words", () => {
     expect(excerpt("A fine  duel,\nwell fought")).toBe("A fine duel, well fought");
     expect(excerpt("The court scene was magnificent and everyone in it shone", 20)).toBe("The court scene was…");
+  });
+});
+
+describe("what one Publish publishes", () => {
+  it("names what the troupe uses: nominations, remembrances or both", () => {
+    expect(publishedWhat(true, false).button).toBe("Publish nominations");
+    expect(publishedWhat(false, true)).toMatchObject({ title: "Remembrances", button: "Publish remembrances", one: "memory" });
+    expect(publishedWhat(true, true)).toMatchObject({ title: "Nominations and remembrances", button: "Publish nominations and remembrances", many: "entries" });
   });
 });

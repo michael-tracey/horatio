@@ -47,7 +47,7 @@ from horatio.models.influence import InfluenceEntry
 from horatio.models.influence_blocks import InfluenceBlock
 from horatio.models.influence_effects import InfluenceEffect
 from horatio.models.locations import Location, TroupeLocationQuality
-from horatio.models.nominations import Nomination
+from horatio.models.nominations import Nomination, Remembrance
 from horatio.models.notifications import EmailNotice, Notification
 from horatio.models.npcs import StockNpc
 from horatio.models.people import (
@@ -148,6 +148,7 @@ __all__ = [
     "RandomTable",
     "Response",
     "Nomination",
+    "Remembrance",
     "Notification",
     "OwedAction",
     "PasswordReset",

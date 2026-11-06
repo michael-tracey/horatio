@@ -5465,6 +5465,54 @@
         "title": "CharacterRef",
         "type": "object"
       },
+      "CharacterRemembrancesOut": {
+        "properties": {
+          "can_open": {
+            "title": "Can Open",
+            "type": "boolean"
+          },
+          "cycle_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Name"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/RememberedMonthOut"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "state": {
+            "enum": [
+              "none",
+              "asked",
+              "open"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "on",
+          "state",
+          "cycle_name",
+          "can_open",
+          "months"
+        ],
+        "title": "CharacterRemembrancesOut",
+        "type": "object"
+      },
       "CharacterTitlesOut": {
         "properties": {
           "acting": {
@@ -7349,6 +7397,10 @@
             "title": "Past Due",
             "type": "boolean"
           },
+          "player_nominations": {
+            "title": "Player Nominations",
+            "type": "boolean"
+          },
           "published_at": {
             "anyOf": [
               {
@@ -7360,6 +7412,18 @@
               }
             ],
             "title": "Published At"
+          },
+          "remembrances": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RememberedReviewOut"
+            },
+            "title": "Remembrances",
+            "type": "array"
+          },
+          "remembrances_on": {
+            "title": "Remembrances On",
+            "type": "boolean"
           },
           "removed": {
             "title": "Removed",
@@ -7379,6 +7443,8 @@
           }
         },
         "required": [
+          "player_nominations",
+          "remembrances_on",
           "nominations",
           "written",
           "removed",
@@ -7467,6 +7533,11 @@
           "quests_enabled": {
             "default": false,
             "title": "Quests Enabled",
+            "type": "boolean"
+          },
+          "remembrances": {
+            "default": false,
+            "title": "Remembrances",
             "type": "boolean"
           },
           "status": {
@@ -19863,6 +19934,44 @@
         "title": "MembershipOut",
         "type": "object"
       },
+      "MemoryIn": {
+        "properties": {
+          "text": {
+            "maxLength": 1000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "MemoryIn",
+        "type": "object"
+      },
+      "MemoryOut": {
+        "properties": {
+          "edited": {
+            "title": "Edited",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "edited"
+        ],
+        "title": "MemoryOut",
+        "type": "object"
+      },
       "MergeCharacter": {
         "properties": {
           "id": {
@@ -20243,6 +20352,14 @@
             "format": "date-time",
             "title": "Published At",
             "type": "string"
+          },
+          "remembrances": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RememberedOut"
+            },
+            "title": "Remembrances",
+            "type": "array"
           }
         },
         "required": [
@@ -20510,6 +20627,11 @@
             "title": "Quests",
             "type": "array"
           },
+          "remembrances": {
+            "default": false,
+            "title": "Remembrances",
+            "type": "boolean"
+          },
           "short": {
             "additionalProperties": {
               "type": "integer"
@@ -20622,6 +20744,85 @@
         "title": "MyFeedingOut",
         "type": "object"
       },
+      "MyMemoryOut": {
+        "description": "A character the downtime asks a memory of, and the writer's memory, if any.",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "published": {
+            "title": "Published",
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "remembrance_id": {
+            "format": "uuid",
+            "title": "Remembrance Id",
+            "type": "string"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "required": [
+          "remembrance_id",
+          "character_id",
+          "name",
+          "picture",
+          "clan",
+          "reason",
+          "text",
+          "published"
+        ],
+        "title": "MyMemoryOut",
+        "type": "object"
+      },
       "MyNominationOut": {
         "properties": {
           "about": {
@@ -20689,6 +20890,32 @@
           "most"
         ],
         "title": "MyNominationsOut",
+        "type": "object"
+      },
+      "MyRemembrancesOut": {
+        "properties": {
+          "most": {
+            "title": "Most",
+            "type": "integer"
+          },
+          "remembered": {
+            "items": {
+              "$ref": "#/components/schemas/MyMemoryOut"
+            },
+            "title": "Remembered",
+            "type": "array"
+          },
+          "submitted": {
+            "title": "Submitted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "remembered",
+          "submitted",
+          "most"
+        ],
+        "title": "MyRemembrancesOut",
         "type": "object"
       },
       "NeedLineOut": {
@@ -28313,6 +28540,187 @@
         "title": "RefusalOut",
         "type": "object"
       },
+      "RememberedMonthOut": {
+        "properties": {
+          "cycle_id": {
+            "format": "uuid",
+            "title": "Cycle Id",
+            "type": "string"
+          },
+          "memories": {
+            "items": {
+              "$ref": "#/components/schemas/MemoryOut"
+            },
+            "title": "Memories",
+            "type": "array"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "published_at": {
+            "format": "date-time",
+            "title": "Published At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cycle_id",
+          "month",
+          "published_at",
+          "memories"
+        ],
+        "title": "RememberedMonthOut",
+        "type": "object"
+      },
+      "RememberedOut": {
+        "description": "A character remembered in a month, with the memories of them.",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "memories": {
+            "items": {
+              "$ref": "#/components/schemas/EntryOut"
+            },
+            "title": "Memories",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "picture",
+          "clan",
+          "reason",
+          "memories"
+        ],
+        "title": "RememberedOut",
+        "type": "object"
+      },
+      "RememberedReviewOut": {
+        "description": "A character the cycle asks memories of, with those written so far.",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "memories": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewedOut"
+            },
+            "title": "Memories",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "remembrance_id": {
+            "format": "uuid",
+            "title": "Remembrance Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "remembrance_id",
+          "character_id",
+          "name",
+          "picture",
+          "reason",
+          "memories"
+        ],
+        "title": "RememberedReviewOut",
+        "type": "object"
+      },
+      "RemembrancesIn": {
+        "properties": {
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "title": "RemembrancesIn",
+        "type": "object"
+      },
+      "RemembrancesSettingOut": {
+        "properties": {
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "title": "RemembrancesSettingOut",
+        "type": "object"
+      },
       "RemindedOut": {
         "properties": {
           "characters": {
@@ -29615,6 +30023,40 @@
           "can_link"
         ],
         "title": "RetainersOut",
+        "type": "object"
+      },
+      "Retiring": {
+        "properties": {
+          "listed": {
+            "title": "Listed",
+            "type": "boolean"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "final_death",
+              "off_field",
+              "inactive"
+            ],
+            "title": "Reason",
+            "type": "string"
+          },
+          "remembrances": {
+            "default": false,
+            "title": "Remembrances",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "reason",
+          "listed"
+        ],
+        "title": "Retiring",
         "type": "object"
       },
       "ReviewedOut": {
@@ -36536,6 +36978,11 @@
             "title": "Quests Enabled",
             "type": "boolean"
           },
+          "remembrances": {
+            "default": false,
+            "title": "Remembrances",
+            "type": "boolean"
+          },
           "session_xp": {
             "title": "Session Xp",
             "type": "integer"
@@ -37796,6 +38243,16 @@
               }
             ],
             "title": "Pronouns"
+          },
+          "remembered": {
+            "default": false,
+            "title": "Remembered",
+            "type": "boolean"
+          },
+          "remembrances_openable": {
+            "default": false,
+            "title": "Remembrances Openable",
+            "type": "boolean"
           },
           "represented_by": {
             "anyOf": [
@@ -42729,6 +43186,165 @@
         ]
       }
     },
+    "/api/characters/{character_id}/downtime/remembrances": {
+      "get": {
+        "description": "Those the character's open downtime asks memories of, and its own.",
+        "operationId": "my_remembrances_api_characters__character_id__downtime_remembrances_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyRemembrancesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "My Remembrances",
+        "tags": [
+          "remembrances"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/downtime/remembrances/{remembrance_id}": {
+      "delete": {
+        "operationId": "delete_memory_api_characters__character_id__downtime_remembrances__remembrance_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "remembrance_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Remembrance Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyRemembrancesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Memory",
+        "tags": [
+          "remembrances"
+        ]
+      },
+      "put": {
+        "description": "Write the character's memory of someone remembered, or change it.",
+        "operationId": "write_memory_api_characters__character_id__downtime_remembrances__remembrance_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "remembrance_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Remembrance Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemoryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyRemembrancesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Write Memory",
+        "tags": [
+          "remembrances"
+        ]
+      }
+    },
     "/api/characters/{character_id}/downtime/results": {
       "get": {
         "description": "Delivered downtime results for the player's character, newest first: for\neach cycle, the latest delivery, which has every response as it was then.",
@@ -46968,6 +47584,94 @@
         ]
       }
     },
+    "/api/characters/{character_id}/remembrances": {
+      "get": {
+        "description": "The character's remembrances: whether they are open, and in which cycle, and\nthe memories published, without names. For its player, and its home troupe's\nstaff and players.",
+        "operationId": "character_remembrances_api_characters__character_id__remembrances_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterRemembrancesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Remembrances",
+        "tags": [
+          "remembrances"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/remembrances/open": {
+      "post": {
+        "description": "Open remembrances for a retired character: its home troupe's running staff.",
+        "operationId": "open_remembrances_api_characters__character_id__remembrances_open_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterRemembrancesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Open Remembrances",
+        "tags": [
+          "remembrances"
+        ]
+      }
+    },
     "/api/characters/{character_id}/retainers": {
       "get": {
         "operationId": "read_retainers_api_characters__character_id__retainers_get",
@@ -47119,7 +47823,7 @@
     },
     "/api/characters/{character_id}/retire": {
       "post": {
-        "description": "Characters are never deleted, only retired: for a reason, which goes in the log\nwith the note, and listed on its troupes' Who's Who if the player chooses. With\nno reason it is not listed.",
+        "description": "Characters are never deleted, only retired: for a reason, which goes in the log\nwith the note, and listed on its troupes' Who's Who if the player chooses. With\nno reason it is not listed. While its home troupe uses Remembrances, its player\ncan ask for them, and running staff open them.",
         "operationId": "retire_character_api_characters__character_id__retire_post",
         "parameters": [
           {
@@ -47139,7 +47843,7 @@
               "schema": {
                 "anyOf": [
                   {
-                    "$ref": "#/components/schemas/Leaving"
+                    "$ref": "#/components/schemas/Retiring"
                   },
                   {
                     "type": "null"
@@ -63635,6 +64339,60 @@
         "summary": "Roll Table",
         "tags": [
           "responses"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/remembrances": {
+      "put": {
+        "description": "Switch Remembrances on or off. Off, none can be opened or written and nothing\nof them shows, but those published stay on the characters and the Who's Who.",
+        "operationId": "set_remembrances_api_troupes__troupe_id__remembrances_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemembrancesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemembrancesSettingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Remembrances",
+        "tags": [
+          "remembrances"
         ]
       }
     },

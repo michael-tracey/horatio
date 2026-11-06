@@ -60,8 +60,8 @@ export function CyclePage() {
           ...(c.feeding ? [{ to: `${base}/feeding`, label: "Feeding" }] : []),
           { to: `${base}/responses`, label: "Responses" },
           { to: `${base}/delivery`, label: "Delivery" },
-          // A troupe that uses Player Nominations reviews and publishes them here.
-          ...(c.player_nominations ? [{ to: `${base}/nominations`, label: "Nominations" }] : []),
+          // A troupe that uses Player Nominations or Remembrances reviews and publishes them here.
+          ...(c.player_nominations || c.remembrances ? [{ to: `${base}/nominations`, label: c.player_nominations ? "Nominations" : "Remembrances" }] : []),
         ]}
       />
       <Routes>
@@ -71,7 +71,7 @@ export function CyclePage() {
         <Route path="feeding" element={<FeedingTab cycle={c} />} />
         <Route path="responses" element={<ResponsesTab cycle={c} />} />
         <Route path="delivery" element={<DeliveryTab cycle={c} />} />
-        {c.player_nominations && <Route path="nominations" element={<NominationsReview cycle={c} />} />}
+        {(c.player_nominations || c.remembrances) && <Route path="nominations" element={<NominationsReview cycle={c} />} />}
       </Routes>
     </ClanNames>
   );

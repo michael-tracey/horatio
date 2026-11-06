@@ -46,6 +46,7 @@ from horatio.models import (
     PlayGame,
     PoolModifier,
     ReconciliationItem,
+    Remembrance,
     Response,
     Retainer,
     SheetVersion,
@@ -103,7 +104,11 @@ def delete_character(db: Session, player: User, character: Character) -> None:
         .where(FeedingCard.taken_by.in_(participants))
         .values(taken_by=None, taken_at=None)
     )
-    # Its Player Nominations go with it; those about it keep their words, unlinked.
+    # Its remembrances go, with the memories of it; and its Player Nominations and
+    # memories of others; those about it keep their words, unlinked.
+    remembered = select(Remembrance.id).where(Remembrance.character_id == cid)
+    db.execute(delete(Nomination).where(Nomination.remembrance_id.in_(remembered)))
+    db.execute(delete(Remembrance).where(Remembrance.character_id == cid))
     db.execute(delete(Nomination).where(Nomination.participant_id.in_(participants)))
     db.execute(
         update(Nomination)

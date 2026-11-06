@@ -388,6 +388,10 @@ def open_cycle(db: Session, staff: User, cycle: DowntimeCycle, troupe: Troupe) -
     cycle.status = "open"
     cycle.opened_at = now()
     db.flush()
+    # It asks for the remembrances waiting for the next cycle (horatio.remembrances).
+    from horatio import remembrances
+
+    remembrances.asked_in(db, cycle, troupe)
     # Characters whose home troupe this is: it accepted them when it became their home.
     characters = db.scalars(
         select(Character).where(

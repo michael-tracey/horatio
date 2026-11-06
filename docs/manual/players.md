@@ -309,6 +309,12 @@ Write a line or two praising someone's roleplaying in **New nomination**, choose
 
 The storytellers read them once you submit your downtime, and may take out any that aren't kind or lightly edit one. Once the cycle is past Due, they publish them to the troupe's players without your name.
 
+### Remembrances
+
+> **If your troupe uses this:** when a character has left play, the downtime after may have a **Remembrances** section.
+
+It lists each character the troupe is remembering, with their portrait and why they left. Write a memory of them in **Your memory of** their name and choose **Save memory**; one each, which you can change or **Take out** until it's published. They don't use actions, and the storytellers read them first. Published, they appear without your name on the troupe's month page, on the character's own page for its player, and from its entry under "No longer with us" on the Who's Who.
+
 ### Saving and submitting
 
 The form saves itself a couple of seconds after you stop typing, and when you switch away; the line by the buttons says **Saving…**, **Saved** or **Not saved yet**. **Save draft** saves at once. **Submit downtime** saves and submits. You can keep editing after submitting: the button becomes **Save and resubmit**.
@@ -331,7 +337,7 @@ When the storytellers deliver the cycle's results, the **Results** tab shows how
 
 > **If your troupe uses this:** a troupe with Player Nominations has a **Nominations** tab, for its players and staff.
 
-The troupe's **Nominations** tab lists each month's published nominations, newest month first. Each month's are in an order shuffled once when they were published, without names; one linked to someone says **About** them, and a ★ marks those the storytellers starred. Starred ones also rotate in a quiet line at the foot of the troupe's pages: **Pause** stops it, **Next** moves on, and it never moves by itself if your device asks for less motion.
+The troupe's **Nominations** tab lists each month's published nominations, newest month first, with any [remembrances](#remembrances) above them. Each month's are in an order shuffled once when they were published, without names; one linked to someone says **About** them, and a ★ marks those the storytellers starred. Starred ones also rotate in a quiet line at the foot of the troupe's pages: **Pause** stops it, **Next** moves on, and it never moves by itself if your device asks for less motion.
 
 On your character's page, **Nominations about** your character gathers those linked to it, newest first. A player whose character only visits the troupe can write nominations there but doesn't read its Nominations tab.
 
@@ -440,6 +446,8 @@ When you stop playing a character, retire it: open **⋯** beside its name and c
 - **Inactive**: you stopped playing it. It says nothing in game.
 
 Add a **Note** for the character's log if you like, and choose whether to list it under **No longer with us** on the Who's Who of its troupes, where their players and staff see its name, clan, social age, player and why it left. It's listed by default, except when Inactive. Then press **Retire** and the character's name.
+
+> **If your troupe uses this:** with Remembrances, tick **Ask the storytellers to open remembrances in the next downtime**, and the troupe is asked for memories of the character once they confirm. The retired character's page keeps a **Remembrances** card with what the troupe wrote, newest month first, without names.
 
 A retired character is hidden from everyday lists and out of all downtimes, and its sheet can no longer change, but it's kept with its full history, and stays on your Characters page marked **Retired**. Its page shows why it left; you, or its home troupe's storytellers, can **Change…** that, or whether it's listed, later. There's no way to bring a retired character back into play from the app.
 

@@ -158,6 +158,10 @@ How many dots a character has in a [trait](#trait).
 
 Settling, one by one, the differences between a character's sheet and the rules of a troupe it's joining, such as a trait that costs more there. A character isn't let in until every difference is settled.
 
+## Remembrances
+
+Memories of a character who has left play, asked of the whole troupe in the next downtime once its storytellers open them. They're published without names, with the month's [Player Nominations](#player-nominations), and kept with the character. A troupe chooses whether to use them.
+
 ## Retired character
 
 A character its player has stopped playing: Final Death, Off-field or Inactive. It's hidden from everyday lists and out of downtimes, but kept with its full history.

@@ -37,3 +37,15 @@ export function excerpt(text: string, most = 40): string {
   const line = text.split(/\s+/).join(" ").trim();
   return line.length <= most ? line : `${line.slice(0, most - 1).trimEnd()}…`;
 }
+
+/**
+ * What a cycle's one Publish publishes, by the troupe's settings (#471): its Player
+ * Nominations, its Remembrances, or both, for the tab's title, the button and the
+ * count.
+ */
+export function publishedWhat(nominations: boolean, remembrances: boolean) {
+  if (nominations && remembrances)
+    return { title: "Nominations and remembrances", button: "Publish nominations and remembrances", one: "entry", many: "entries" };
+  if (remembrances) return { title: "Remembrances", button: "Publish remembrances", one: "memory", many: "memories" };
+  return { title: "Player Nominations", button: "Publish nominations", one: "nomination", many: "nominations" };
+}
