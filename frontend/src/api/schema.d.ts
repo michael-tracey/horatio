@@ -1385,6 +1385,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/give-to-player": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview Give
+         * @description What giving the NPC to whoever has `handle` would do, for staff to confirm;
+         *     without a handle, what giving it to anyone would.
+         */
+        get: operations["preview_give_api_characters__character_id__give_to_player_get"];
+        put?: never;
+        /**
+         * Give Npc
+         * @description Give the sheeted NPC to whoever has the handle: it becomes their character, at
+         *     home and accepted in the troupe, its XP balanced, plus any carried over.
+         */
+        post: operations["give_npc_api_characters__character_id__give_to_player_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/held-locations": {
         parameters: {
             query?: never;
@@ -13535,37 +13561,6 @@ export interface components {
             /** Template */
             template?: string | null;
         };
-        /** GiveIn */
-        GiveIn: {
-            /** Category */
-            category: string;
-            /**
-             * Despite
-             * @default false
-             */
-            despite: boolean;
-            /**
-             * Detail
-             * @default
-             */
-            detail: string;
-            /**
-             * Free
-             * @default false
-             */
-            free: boolean;
-            /** Name */
-            name: string;
-            /** Rating */
-            rating: number;
-            /** Reason */
-            reason: string;
-            /**
-             * Trial
-             * @default false
-             */
-            trial: boolean;
-        };
         /** GiveOut */
         GiveOut: {
             /** Breaks */
@@ -13577,6 +13572,27 @@ export interface components {
             /** Refused */
             refused: string | null;
             sheet: components["schemas"]["SheetOut"];
+        };
+        /** GivePreview */
+        GivePreview: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Free */
+            free: string[];
+            /** Refusal */
+            refusal: string | null;
+            /** Retainers */
+            retainers: components["schemas"]["LinkedRetainer"][];
+            to_player: components["schemas"]["Someone"] | null;
+            /** Troupe Name */
+            troupe_name: string;
+            /** Xp */
+            xp: number;
         };
         /** GiveToIn */
         GiveToIn: {
@@ -14847,6 +14863,13 @@ export interface components {
             label: string;
             /** Url */
             url: string;
+        };
+        /** LinkedRetainer */
+        LinkedRetainer: {
+            /** Character Name */
+            character_name: string;
+            /** Name */
+            name: string;
         };
         /** Listed */
         Listed: {
@@ -23105,6 +23128,21 @@ export interface components {
              */
             entry_id: string;
         };
+        /** GiveIn */
+        horatio__api__npc_gifts__GiveIn: {
+            /**
+             * Carried Reason
+             * @default
+             */
+            carried_reason: string;
+            /**
+             * Carried Xp
+             * @default 0
+             */
+            carried_xp: number;
+            /** Handle */
+            handle: string;
+        };
         /** ResetIn */
         horatio__api__play__ResetIn: {
             /** Game Id */
@@ -23124,6 +23162,37 @@ export interface components {
             asked: components["schemas"]["TeachingAskOut"][];
             /** Lent */
             lent: string | null;
+        };
+        /** GiveIn */
+        horatio__api__trait_exceptions__GiveIn: {
+            /** Category */
+            category: string;
+            /**
+             * Despite
+             * @default false
+             */
+            despite: boolean;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /**
+             * Free
+             * @default false
+             */
+            free: boolean;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
+            /** Reason */
+            reason: string;
+            /**
+             * Trial
+             * @default false
+             */
+            trial: boolean;
         };
     };
     responses: never;
@@ -25689,7 +25758,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GiveIn"];
+                "application/json": components["schemas"]["horatio__api__trait_exceptions__GiveIn"];
             };
         };
         responses: {
@@ -25701,6 +25770,72 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["GiveOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_give_api_characters__character_id__give_to_player_get: {
+        parameters: {
+            query?: {
+                handle?: string | null;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GivePreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    give_npc_api_characters__character_id__give_to_player_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["horatio__api__npc_gifts__GiveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

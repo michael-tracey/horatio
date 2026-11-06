@@ -155,7 +155,7 @@ export function TroupePage() {
         {can.running && <Route path="play" element={<PlayTab troupeId={t.id} />} />}
         {can.running && <Route path="xp" element={<XpAwardsTab troupeId={t.id} />} />}
         {can.running && <Route path="games/:gameId" element={<GameNightPage troupeId={t.id} />} />}
-        {can.running && <Route path="npcs" element={<NpcsTab troupeId={t.id} />} />}
+        {can.running && <Route path="npcs" element={<NpcsTab troupeId={t.id} canGive={can.storyteller && !t.archived} />} />}
         {can.running && <Route path="npcs/:characterId" element={<StockNpcBuilder troupeId={t.id} />} />}
         {can.running && <Route path="titles" element={<TitlesTab troupeId={t.id} />} />}
         {can.running && <Route path="shared/*" element={<SharedBackgroundsTab troupeId={t.id} />} />}

@@ -56,11 +56,11 @@ The troupe's one owner: a storyteller who can also rename the troupe, edit its d
 _Avoid_: Head ST, LST (in names), co-lead
 
 **Storyteller**:
-A staff member who runs a troupe; storytellers and the lead storyteller are the only roles that manage the troupe's staff and house rules, and edit its profile.
+A staff member who runs a troupe; storytellers and the lead storyteller are the only roles that manage the troupe's staff and house rules, edit its profile, and give its NPCs to players.
 _Avoid_: ST (in names), GM, admin
 
 **Assistant Storyteller**:
-A staff member who can do everything a storyteller can except manage staff, house rules and connectors, and edit the troupe's profile.
+A staff member who can do everything a storyteller can except manage staff, house rules and connectors, edit the troupe's profile, and give NPCs to players.
 _Avoid_: AST (in names), sub-ST
 
 **Narrator**:
@@ -78,7 +78,7 @@ A player character: built by its player through character creation, and accepted
 _Avoid_: Primary, player character (in names)
 
 **NPC**:
-A character a troupe's storytellers or assistant storytellers make and keep for that troupe. It belongs to the troupe, needs no approval, takes no part in downtimes, and can be built quickly by setting ratings directly.
+A character a troupe's storytellers or assistant storytellers make and keep for that troupe. It belongs to the troupe, needs no approval, takes no part in downtimes, and can be built quickly by setting ratings directly. Its storytellers can give a sheeted vampire or ghoul NPC to a player, and it becomes that player's PC, at home in the troupe and accepted.
 _Avoid_: Secondary, antecedence
 
 **Scene**:

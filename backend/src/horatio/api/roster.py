@@ -406,6 +406,8 @@ MESSAGES: dict[str, str] = {
     " Its notes: {notes}",
     "npc.deleted": "{actor} deleted the NPC {character}.",
     "npc.stock_changed": "{actor} changed the Stock NPC {character}.",
+    "npc.given": "{actor} gave the NPC {character} to @{to_handle}, at home here and accepted,"
+    " with {xp} XP for its sheet{carried}.",
     "title.given": "{actor} gave {character} the title {title}.",
     "title.taken": "{actor} took the title {title} from {character}.",
     "title.chosen": "{actor} chose the title {title} for {character} ({what}).",
@@ -597,6 +599,8 @@ MESSAGES: dict[str, str] = {
     "retainer.restored": "{actor} marked {name}, one of {character}'s Retainers, as serving again.",
     "retainer.linked": "{actor} linked {name}, one of {character}'s Retainers, to an NPC.",
     "retainer.unlinked": "{actor} unlinked {name}, one of {character}'s Retainers, from its NPC.",
+    "retainer.npc_given": "{name}, one of {character}'s Retainers, is no longer linked to the"
+    " NPC {npc}: {actor} gave it to @{to_handle}.",
     "retainer.neglected": "{name}, one of {character}'s Retainers, is neglected: its {cost}"
     " upkeep wasn't paid.",
     "retainer.neglect_cleared": "{actor} cleared the neglect of {name}, one of {character}'s"

@@ -13890,58 +13890,6 @@
         "title": "GiveEquipmentIn",
         "type": "object"
       },
-      "GiveIn": {
-        "properties": {
-          "category": {
-            "title": "Category",
-            "type": "string"
-          },
-          "despite": {
-            "default": false,
-            "title": "Despite",
-            "type": "boolean"
-          },
-          "detail": {
-            "default": "",
-            "maxLength": 200,
-            "title": "Detail",
-            "type": "string"
-          },
-          "free": {
-            "default": false,
-            "title": "Free",
-            "type": "boolean"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "rating": {
-            "minimum": 1.0,
-            "title": "Rating",
-            "type": "integer"
-          },
-          "reason": {
-            "maxLength": 500,
-            "minLength": 1,
-            "title": "Reason",
-            "type": "string"
-          },
-          "trial": {
-            "default": false,
-            "title": "Trial",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "category",
-          "name",
-          "rating",
-          "reason"
-        ],
-        "title": "GiveIn",
-        "type": "object"
-      },
       "GiveOut": {
         "properties": {
           "breaks": {
@@ -13982,6 +13930,74 @@
           "sheet"
         ],
         "title": "GiveOut",
+        "type": "object"
+      },
+      "GivePreview": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "free": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Free",
+            "type": "array"
+          },
+          "refusal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refusal"
+          },
+          "retainers": {
+            "items": {
+              "$ref": "#/components/schemas/LinkedRetainer"
+            },
+            "title": "Retainers",
+            "type": "array"
+          },
+          "to_player": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Someone"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          },
+          "xp": {
+            "title": "Xp",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "troupe_name",
+          "to_player",
+          "xp",
+          "free",
+          "retainers",
+          "refusal"
+        ],
+        "title": "GivePreview",
         "type": "object"
       },
       "GiveToIn": {
@@ -17186,6 +17202,24 @@
           "url"
         ],
         "title": "Link",
+        "type": "object"
+      },
+      "LinkedRetainer": {
+        "properties": {
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_name",
+          "name"
+        ],
+        "title": "LinkedRetainer",
         "type": "object"
       },
       "Listed": {
@@ -38677,6 +38711,32 @@
         "title": "BlockIn",
         "type": "object"
       },
+      "horatio__api__npc_gifts__GiveIn": {
+        "properties": {
+          "carried_reason": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Carried Reason",
+            "type": "string"
+          },
+          "carried_xp": {
+            "default": 0,
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Carried Xp",
+            "type": "integer"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          }
+        },
+        "required": [
+          "handle"
+        ],
+        "title": "GiveIn",
+        "type": "object"
+      },
       "horatio__api__play__ResetIn": {
         "properties": {
           "game_id": {
@@ -38732,6 +38792,58 @@
           "lent"
         ],
         "title": "TeachingOut",
+        "type": "object"
+      },
+      "horatio__api__trait_exceptions__GiveIn": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "despite": {
+            "default": false,
+            "title": "Despite",
+            "type": "boolean"
+          },
+          "detail": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "free": {
+            "default": false,
+            "title": "Free",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "trial": {
+            "default": false,
+            "title": "Trial",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "rating",
+          "reason"
+        ],
+        "title": "GiveIn",
         "type": "object"
       }
     }
@@ -42718,7 +42830,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GiveIn"
+                "$ref": "#/components/schemas/horatio__api__trait_exceptions__GiveIn"
               }
             }
           },
@@ -42749,6 +42861,111 @@
         "summary": "Give",
         "tags": [
           "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/give-to-player": {
+      "get": {
+        "description": "What giving the NPC to whoever has `handle` would do, for staff to confirm;\nwithout a handle, what giving it to anyone would.",
+        "operationId": "preview_give_api_characters__character_id__give_to_player_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "handle",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Handle"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GivePreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Give",
+        "tags": [
+          "npcs"
+        ]
+      },
+      "post": {
+        "description": "Give the sheeted NPC to whoever has the handle: it becomes their character, at\nhome and accepted in the troupe, its XP balanced, plus any carried over.",
+        "operationId": "give_npc_api_characters__character_id__give_to_player_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/horatio__api__npc_gifts__GiveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Give Npc",
+        "tags": [
+          "npcs"
         ]
       }
     },
