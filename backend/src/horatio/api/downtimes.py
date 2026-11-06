@@ -17,6 +17,7 @@ from horatio import (
     quest_actions,
     quests,
     rack,
+    remembrances,
     resonance,
     social_age,
     territories,
@@ -102,6 +103,11 @@ class CycleOut(BaseModel):
     quests_enabled: bool = False
     # The troupe tracks feeding (horatio.feeding), so the cycle has its Feeding tab.
     feeding: bool = True
+    # The troupe uses Player Nominations (horatio.nominations), so the cycle has its
+    # Nominations tab.
+    player_nominations: bool = False
+    # The troupe uses Remembrances (horatio.remembrances), reviewed on the same tab.
+    remembrances: bool = False
 
 
 class CycleSummaryOut(BaseModel):
@@ -402,6 +408,12 @@ class MyDowntime(BaseModel):
     # Why the downtime is closed to this character though the cycle is open: the
     # troupe's absentee downtimes ask for a game attended lately (horatio.game_xp).
     closed: str | None = None
+    # The troupe uses Player Nominations, so the form has its section
+    # (horatio.api.nominations).
+    player_nominations: bool = False
+    # The troupe uses Remembrances and this cycle asks for some, so the form has its
+    # Remembrances section (horatio.api.remembrances).
+    remembrances: bool = False
 
 
 # --- helpers ----------------------------------------------------------------------------
@@ -438,6 +450,8 @@ def cycle_out(db: DbSession, cycle: DowntimeCycle) -> CycleOut:
         action_kinds=downtimes.troupe_action_kinds(db, troupe),
         quests_enabled=troupe.quests_enabled,
         feeding=feeding.tracked(troupe),
+        player_nominations=troupe.player_nominations,
+        remembrances=troupe.remembrances,
     )
 
 
@@ -960,6 +974,9 @@ def my_downtime_out(
         if any(q.kind == "quest" for q in questions)
         else [],
         closed=downtimes.closed_to(db, cycle, participant),
+        player_nominations=db.get_one(Troupe, cycle.troupe_id).player_nominations,
+        remembrances=remembrances.on(db.get_one(Troupe, cycle.troupe_id))
+        and bool(remembrances.in_cycle(db, cycle)),
     )
 
 

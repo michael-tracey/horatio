@@ -29,11 +29,30 @@ export function HelpPage() {
   return <div className="help-page">{!found ? <NoSuchPage name={page} /> : page === CONTENTS ? <Contents page={found} /> : <Topic page={found} />}</div>;
 }
 
-/** Scroll to the heading the address names, on opening the page and whenever the `#` changes. */
+/** Scroll to the heading the address names, on opening the page and whenever the `#` changes.
+ * Pictures above it load after it and push it down, so for a few seconds each picture
+ * that loads scrolls back to it, unless the reader has scrolled themselves. */
 function useScrollToAnchor(page: string, anchor: string | null) {
   useEffect(() => {
-    if (anchor) document.getElementById(anchor)?.scrollIntoView();
-    else window.scrollTo(0, 0);
+    if (!anchor) {
+      window.scrollTo(0, 0);
+      return;
+    }
+    const scroll = () => document.getElementById(anchor)?.scrollIntoView();
+    scroll();
+    const loaded = (e: Event) => {
+      if (e.target instanceof HTMLImageElement) scroll();
+    };
+    const byReader = ["wheel", "touchmove", "keydown", "mousedown"] as const;
+    const stop = () => {
+      clearTimeout(timer);
+      document.removeEventListener("load", loaded, true);
+      for (const type of byReader) window.removeEventListener(type, stop);
+    };
+    const timer = setTimeout(stop, 3000);
+    document.addEventListener("load", loaded, true);
+    for (const type of byReader) window.addEventListener(type, stop, { passive: true });
+    return stop;
   }, [page, anchor]);
 }
 

@@ -13,6 +13,8 @@ import { BlockTarget } from "./BlockTarget";
 import { useLeaveWarning } from "./CartPanel";
 import { type Answers, EMPTY_FORM, type Form, formReducer, toAnswers, unsaved } from "./downtimeForm";
 import { FeedingCard } from "./FeedingCard";
+import { NominationsForm } from "../nominations/NominationsForm";
+import { RemembrancesForm } from "../nominations/RemembrancesForm";
 
 /** Action questions and the Quest action each spend an action of their kind. */
 const spends = (q: QuestionOut) => q.kind === "action" || q.kind === "quest";
@@ -143,7 +145,7 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
   ) : dirty ? (
     "Not saved yet"
   ) : submit.isSuccess ? (
-    "Submitted. You can keep editing until the grace period ends."
+    `Submitted. You can keep editing until ${dates.deadline(d.grace_ends_at)}.`
   ) : (
     savedAt && `Saved ${dates.time(savedAt)}`
   );
@@ -189,6 +191,9 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
             />
           );
         })}
+        {/* Apart from the answers: they save as they are added, and spend no actions (#470, #471). */}
+        {d.remembrances && <RemembrancesForm characterId={characterId} />}
+        {d.player_nominations && <NominationsForm characterId={characterId} />}
         <ErrorText error={save.error ?? submit.error} />
         {/* On a phone, the buttons and what became of them stay at the foot of the screen. */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:-mx-4 max-lg:border-t max-lg:border-ash max-lg:bg-night/95 max-lg:px-4 max-lg:py-3 max-lg:backdrop-blur">

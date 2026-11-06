@@ -84,8 +84,7 @@ function Waiting({ request: r }: { request: TroupeRequestOut }) {
           <Link to={`/players/${r.requester_id}`} className="text-gold hover:underline">
             {r.requester_name}
           </Link>{" "}
-          (@{r.requester_handle})
-          , {dates.date(r.created_at)}
+          (@{r.requester_handle}), {dates.date(r.created_at)}
         </span>
       </div>
       {r.description && <p className="text-sm whitespace-pre-line">{r.description}</p>}

@@ -689,6 +689,11 @@ def test_territories_with_book_feeding_poaching_and_patrols(troupe: Troupe) -> N
     assert troupe.narrator.client.post(url, json=body).status_code == 403
     assert troupe.player.client.post(url, json=body).status_code == 403
     docks = territory(troupe, "Docks", "small", agnes, held_by="Clan Toreador")
+    # Who holds what changes in play, so assistant storytellers keep the list too, as
+    # they keep locations; the feeding rules above are storytellers' alone.
+    same = {"name": "Docks", "size": "small", "holder_ids": [agnes], "held_by": "Clan Toreador"}
+    assert troupe.narrator.client.put(f"{url}/{docks}", json=same).status_code == 403
+    assert troupe.assistant.client.put(f"{url}/{docks}", json=same).status_code == 200
     territory(troupe, "Gold Coast", "notable", area="Lakeside mansions")
     assert troupe.storyteller.client.post(url, json=body).status_code == 409  # same name
     listed = troupe.player.client.get(url).json()
