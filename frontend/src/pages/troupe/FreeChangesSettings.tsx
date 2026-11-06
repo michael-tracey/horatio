@@ -150,7 +150,7 @@ function FreeChangesForm({
         </Field>
       )}
       {draft.kind === "games" && (
-        <Field label="Games attended" hint="AIT uses 3.">
+        <Field label="Games attended">
           <Input type="number" min={1} max={50} required value={draft.games} onChange={(e) => onChange({ ...draft, games: Number(e.target.value) })} className="w-24" />
         </Field>
       )}

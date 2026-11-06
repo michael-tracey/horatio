@@ -20,6 +20,7 @@ test("a troupe's own merits: staff only, or taken when building for it, and mark
   // The lead makes two on the Rules tab: one only staff give, one players can take when building.
   const l = lead.page;
   await l.goto(`/troupes/${troupeId}/rules/house-traits`);
+  const row = (name: string) => l.getByRole("table", { name: "House merits and flaws" }).getByRole("row").filter({ hasText: name });
   const addOne = async (name: string, points: string, availability: string, description: string) => {
     await l.getByRole("button", { name: "Add a merit or flaw" }).click();
     await l.getByLabel("Name").fill(name);
@@ -27,11 +28,13 @@ test("a troupe's own merits: staff only, or taken when building for it, and mark
     await l.getByLabel(availability).check();
     await l.getByLabel("Description").fill(description);
     await l.getByRole("button", { name: "Add the merit" }).click();
-    await expect(l.getByRole("listitem").filter({ hasText: name })).toBeVisible();
+    await expect(l.getByRole("dialog")).toBeHidden();
+    await expect(row(name)).toBeVisible();
   };
   await addOne("Favour of the Crossroads", "2", "Given by staff only", "The Prince owes you one.");
   await addOne("Child of the Stars", "1", "Available when building for the troupe", "Born under a lucky sign.");
-  await expect(l.getByRole("listitem").filter({ hasText: "Favour of the Crossroads" })).toContainText(mark);
+  await expect(row("Favour of the Crossroads")).toContainText(mark);
+  await expect(row("Favour of the Crossroads")).toContainText("Staff only");
   await l.screenshot(shots("house-traits"));
 
   // Lune is built for the troupe through the API, and visits it so its staff see her.
@@ -99,6 +102,40 @@ test("a troupe's own merits: staff only, or taken when building for it, and mark
   await l.goto(`/characters/${visitor}`);
   await expect(l.getByRole("heading", { name: "Attributes", exact: true })).toBeVisible();
   await expect(l.getByRole("heading", { name: "House merits and flaws", exact: true })).toHaveCount(0);
+
+  // Back on the list, each one's ⋯: one Lune holds can't be deleted, only archived and brought back.
+  await l.goto(`/troupes/${troupeId}/rules/house-traits`);
+  const actions = (name: string) => row(name).getByRole("button", { name: `Actions for ${name}` });
+  await actions("Favour of the Crossroads").click();
+  await expect(l.getByRole("menuitem", { name: /^Delete…/ })).toBeDisabled();
+  await expect(l.getByRole("menuitem", { name: /^Delete…/ })).toContainText("A character holds it: archive it instead.");
+  await l.getByRole("menuitem", { name: "Archive", exact: true }).click();
+  await expect(row("Favour of the Crossroads").getByText("Archived", { exact: true }).filter({ visible: true })).toBeVisible();
+  await actions("Favour of the Crossroads").click();
+  await l.getByRole("menuitem", { name: "Bring back" }).click();
+  await expect(row("Favour of the Crossroads").getByText("Archived", { exact: true })).toHaveCount(0);
+
+  // Changing one Lune holds asks first, in a dialog over the editor's.
+  await actions("Favour of the Crossroads").click();
+  await l.getByRole("menuitem", { name: "Change…" }).click();
+  const editor = l.getByRole("dialog", { name: "Change Favour of the Crossroads", exact: true });
+  await editor.getByLabel("Description").fill("The Prince owes you two.");
+  await editor.getByRole("button", { name: "Save", exact: true }).click();
+  const asked = l.getByRole("dialog", { name: "Change Favour of the Crossroads for everyone?" });
+  await expect(asked).toContainText("Lune");
+  await asked.getByRole("button", { name: "Change it for them" }).click();
+  await expect(editor).toBeHidden();
+  await expect(row("Favour of the Crossroads")).toContainText("The Prince owes you two.");
+
+  // One no one holds is deleted from its ⋯, after a word.
+  await addOne("Debt of the Owl", "1", "Given by staff only", "Owed by the Nosferatu.");
+  await actions("Debt of the Owl").click();
+  await l.getByRole("menuitem", { name: "Delete…" }).click();
+  await l.getByRole("dialog", { name: "Delete Debt of the Owl" }).getByRole("button", { name: "Delete Debt of the Owl" }).click();
+  await expect(l.getByText("Debt of the Owl deleted.")).toBeVisible();
+  await expect(row("Debt of the Owl")).toHaveCount(0);
+  const wide = await l.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(wide).toBeLessThanOrEqual(0);
 });
 
 test("a house merit's effects: the ST builds Old Money from blocks, previews it, and a player taking it gets Resources 2 free", async ({ browser }) => {
@@ -140,7 +177,7 @@ test("a house merit's effects: the ST builds Old Money from blocks, previews it,
   await expect(preview).toContainText("Met: Old Money: needs Resources 1 or more.");
   await l.screenshot(shots("house-effects-preview"));
   await l.getByRole("button", { name: "Add the merit" }).click();
-  await expect(l.getByRole("listitem").filter({ hasText: "Old Money" })).toContainText(`What it does: ${summary}`);
+  await expect(l.getByRole("table", { name: "House merits and flaws" }).getByRole("row").filter({ hasText: "Old Money" })).toContainText(`What it does: ${summary}`);
 
   // Philippa is built for the troupe, and takes it from the sheet's list.
   const p = player.page;
@@ -220,7 +257,7 @@ test("a house merit in play: the ST makes Battle Trance, a switch and a use a ga
   await expect(preview).toContainText("1 use a game, under Uses this game on the Play View.");
   await l.screenshot(shots("house-play-preview"));
   await l.getByRole("button", { name: "Add the merit" }).click();
-  await expect(l.getByRole("listitem").filter({ hasText: "Battle Trance" })).toContainText(`What it does: ${summary}`);
+  await expect(l.getByRole("table", { name: "House merits and flaws" }).getByRole("row").filter({ hasText: "Battle Trance" })).toContainText(`What it does: ${summary}`);
 
   // Sigrun is built for the troupe and visits it; the lead gives her Battle Trance.
   const p = player.page;

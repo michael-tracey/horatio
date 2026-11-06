@@ -2,10 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { HolderOut, HouseTraitIn, HouseTraitOut } from "../../api/types";
+import { ActionMenu, MenuItem } from "../../components/ActionMenu";
 import { Dialog } from "../../components/Dialog";
 import { EmptyState } from "../../components/EmptyState";
 import { Explainer } from "../../components/Explainer";
-import { HouseMark } from "../../components/HouseMark";
+import { HouseMark, HouseSummary } from "../../components/HouseMark";
+import { useToast } from "../../components/Toast";
 import { useClanName } from "../../components/ClanNames";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
@@ -54,24 +56,12 @@ const draftOf = (h: HouseTraitOut): Draft => ({
  */
 export function HouseTraitsSection({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
   const [editing, setEditing] = useState<HouseTraitOut | "new" | null>(null);
-  const named = useClanName();
   const path = { params: { path: { troupe_id: troupeId } } };
   const list = useQuery({
     queryKey: ["house-traits", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/house-traits", path)),
   });
   const troupe = useQuery({ queryKey: ["troupe", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", path)) });
-  const archive = useAction((body: { id: string; archived: boolean }) =>
-    unwrap(
-      api.PUT("/api/troupes/{troupe_id}/house-traits/{house_trait_id}/archived", {
-        params: { path: { troupe_id: troupeId, house_trait_id: body.id } },
-        body: { archived: body.archived },
-      }),
-    ),
-  );
-  const remove = useAction((id: string) =>
-    unwrap(api.DELETE("/api/troupes/{troupe_id}/house-traits/{house_trait_id}", { params: { path: { troupe_id: troupeId, house_trait_id: id } } })),
-  );
   if (list.isPending) return <Loading />;
   if (list.error) return <ErrorText error={list.error} />;
   const splats = troupe.data?.allowed_splats ?? ["vampire"];
@@ -97,80 +87,150 @@ export function HouseTraitsSection({ troupeId, canEdit }: { troupeId: string; ca
         </p>
       </Explainer>
 
-      {editing && (
-        <HouseTraitEditor
-          key={editing === "new" ? "new" : editing.id}
-          troupeId={troupeId}
-          editing={editing}
-          splats={splats}
-          onClose={() => setEditing(null)}
-        />
-      )}
+      <Dialog
+        title={editing === "new" ? "A new house merit or flaw" : editing ? `Change ${editing.name}` : ""}
+        open={editing !== null}
+        onClose={() => setEditing(null)}
+        wide
+        phoneFull
+      >
+        {editing && <HouseTraitEditor troupeId={troupeId} editing={editing} splats={splats} onClose={() => setEditing(null)} />}
+      </Dialog>
 
       <Card
         title="House merits and flaws"
         actions={
-          canEdit &&
-          !editing && (
+          canEdit && (
             <Button variant="secondary" onClick={() => setEditing("new")}>
               Add a merit or flaw
             </Button>
           )
         }
       >
-        {list.data.length === 0 && (
+        {list.data.length === 0 ? (
           <EmptyState title="The troupe has no merits or flaws of its own yet.">
             {canEdit ? "Make one with Add a merit or flaw, above. It shows on sheets with a ★." : "Its storytellers make them; each shows on sheets with a ★."}
           </EmptyState>
+        ) : (
+          <table aria-label="House merits and flaws" className="w-full text-sm">
+            {/* On a phone or a narrow window each row folds into a card, under the one heading. */}
+            <thead className="max-lg:sr-only">
+              <tr className="border-b border-ash text-left text-xs text-mist">
+                <th className="py-2 pr-3 font-normal">Name</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Merit or flaw</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Points</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Availability</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Creation only</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Status</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Held by</th>
+                {canEdit && (
+                  <th className="py-2 font-normal">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                )}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-ash">
+              {list.data.map((h) => (
+                <HouseTraitRow key={h.id} trait={h} troupeId={troupeId} canEdit={canEdit} onChange={() => setEditing(h)} />
+              ))}
+            </tbody>
+          </table>
         )}
-        <ul className="divide-y divide-ash">
-          {list.data.map((h) => (
-            <li key={h.id} className="flex flex-col gap-1 py-2.5">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className={`min-w-48 flex-1 text-sm ${h.archived ? "text-mist" : "text-parchment"}`}>
-                  {h.name} ({h.points} {h.points === 1 ? "point" : "points"}, {h.kind})
-                  <HouseMark label={h.label} />
-                </span>
-                <span className="flex shrink-0 flex-wrap items-center gap-2">
-                  <Badge tone={h.availability === "staff" ? "gold" : "mist"}>{AVAILABILITY[h.availability as Draft["availability"]]}</Badge>
-                  {h.creation_only && <Badge>Creation only</Badge>}
-                  {h.archived && <Badge>Archived</Badge>}
-                  <span className="text-xs text-mist">{h.holders === 1 ? "1 holds it" : `${h.holders} hold it`}</span>
-                  {canEdit && (
-                    <>
-                      <Button variant="secondary" className="min-h-8 px-3" aria-label={`Change ${h.name}`} onClick={() => setEditing(h)}>
-                        Change
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="min-h-8 px-2"
-                        aria-label={`${h.archived ? "Bring back" : "Archive"} ${h.name}`}
-                        onClick={() => archive.mutate({ id: h.id, archived: !h.archived })}
-                      >
-                        {h.archived ? "Bring back" : "Archive"}
-                      </Button>
-                      {h.holders === 0 && (
-                        <Button variant="ghost" className="min-h-8 px-2" aria-label={`Delete ${h.name}`} onClick={() => remove.mutate(h.id)}>
-                          Delete
-                        </Button>
-                      )}
-                    </>
-                  )}
-                </span>
-              </div>
-              {(h.description || h.requirement) && (
-                <p className="text-xs text-mist">
-                  {h.requirement && <span>Requires {named(h.requirement)}. </span>}
-                  {named(h.description)}
-                </p>
-              )}
-              {h.summary && <p className="text-xs text-gold">What it does: {h.summary}</p>}
-            </li>
-          ))}
-        </ul>
-        <ErrorText error={archive.error ?? remove.error} />
       </Card>
     </div>
+  );
+}
+
+/** A column shown only on a wide screen; on a narrow one it folds in under the name. */
+const WIDE = "hidden lg:table-cell";
+
+/** "General merit", "Clan flaw". */
+const kindText = (h: HouseTraitOut) => `${h.kind} ${h.category === "flaws" ? "flaw" : "merit"}`;
+
+/** One house merit or flaw: what it is, what it says and does, and what staff can do with it behind ⋯. */
+function HouseTraitRow({ trait: h, troupeId, canEdit, onChange }: { trait: HouseTraitOut; troupeId: string; canEdit: boolean; onChange: () => void }) {
+  const named = useClanName();
+  const [deleting, setDeleting] = useState(false);
+  const toast = useToast();
+  const path = { params: { path: { troupe_id: troupeId, house_trait_id: h.id } } };
+  const archive = useAction(() => unwrap(api.PUT("/api/troupes/{troupe_id}/house-traits/{house_trait_id}/archived", { ...path, body: { archived: !h.archived } })));
+  // Said and closed before the list is asked again, which takes the row away.
+  const remove = useAction(async () => {
+    await unwrap(api.DELETE("/api/troupes/{troupe_id}/house-traits/{house_trait_id}", path));
+    toast({ message: `${h.name} deleted.` });
+    setDeleting(false);
+  });
+  const staffOnly = h.availability === "staff";
+  const held = h.holders === 1 ? "held by 1" : `held by ${h.holders}`;
+  return (
+    <tr>
+      <td className="py-2.5 pr-3 align-top">
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className={h.archived ? "text-mist" : "text-parchment"}>
+            {h.name}
+            <HouseMark label={h.label} short summary={h.summary} />
+          </span>
+          {h.archived && (
+            <Badge className="lg:hidden">Archived</Badge>
+          )}
+        </span>
+        <span className="mt-0.5 block text-xs text-mist lg:hidden">
+          {[kindText(h), h.points === 1 ? "1 point" : `${h.points} points`, staffOnly ? "staff only" : "players", h.creation_only && "creation only", held]
+            .filter(Boolean)
+            .join(" · ")}
+        </span>
+        {(h.description || h.requirement) && (
+          <span className="mt-0.5 block text-xs text-mist">
+            {h.requirement && <span>Requires {named(h.requirement)}. </span>}
+            {named(h.description)}
+          </span>
+        )}
+        <HouseSummary summary={h.summary} />
+      </td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top whitespace-nowrap text-mist`}>{kindText(h)}</td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top text-mist`}>{h.points}</td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top`}>
+        <Badge tone={staffOnly ? "gold" : "mist"}>{staffOnly ? "Staff only" : "Players"}</Badge>
+      </td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top text-mist`}>{h.creation_only ? "Yes" : ""}</td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top`}>{h.archived ? <Badge>Archived</Badge> : <span className="text-mist">Active</span>}</td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top text-mist`}>{h.holders}</td>
+      {canEdit && (
+        <td className="w-px py-1 text-right align-top">
+          <ActionMenu label={`Actions for ${h.name}`} variant="ghost">
+            <MenuItem onSelect={onChange}>Change…</MenuItem>
+            <MenuItem onSelect={() => archive.mutate(undefined)}>{h.archived ? "Bring back" : "Archive"}</MenuItem>
+            {h.holders === 0 ? (
+              <MenuItem danger onSelect={() => setDeleting(true)}>
+                Delete…
+              </MenuItem>
+            ) : (
+              <MenuItem disabled>
+                Delete…
+                <span className="block text-xs">
+                  {h.holders === 1 ? "A character holds it" : `${h.holders} characters hold it`}: archive it instead.
+                </span>
+              </MenuItem>
+            )}
+          </ActionMenu>
+          <ErrorText error={archive.error} />
+          {/* The dialog sits here, as nothing but cells may sit in a row (Dialog sets its own text-left). */}
+          <Dialog title={`Delete ${h.name}`} open={deleting} onClose={() => setDeleting(false)}>
+            <p className="text-sm">No one holds it, so it goes for good.</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button variant="danger" disabled={remove.isPending} onClick={() => remove.mutate(undefined)}>
+                Delete {h.name}
+              </Button>
+              <Button variant="ghost" onClick={() => setDeleting(false)}>
+                Cancel
+              </Button>
+            </div>
+            <ErrorText error={remove.error} />
+          </Dialog>
+        </td>
+      )}
+    </tr>
   );
 }
 
@@ -229,7 +289,7 @@ function HouseTraitEditor({
   const noun = draft.category === "flaws" ? "flaw" : "merit";
 
   return (
-    <Card title={editing === "new" ? "A new house merit or flaw" : `Change ${editing.name}`}>
+    <>
       <form
         className="flex flex-col gap-4"
         onSubmit={(e) => {
@@ -345,6 +405,6 @@ function HouseTraitEditor({
           </Button>
         </div>
       </Dialog>
-    </Card>
+    </>
   );
 }

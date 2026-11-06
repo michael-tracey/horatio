@@ -50,7 +50,9 @@ from horatio.api import (
     location_quests,
     locations,
     membership,
+    nominations,
     notifications,
+    npc_gifts,
     npcs,
     pictures,
     play,
@@ -60,6 +62,7 @@ from horatio.api import (
     preferences,
     printing,
     quests,
+    remembrances,
     responses,
     retainer_rules,
     retainers,
@@ -196,6 +199,7 @@ for module in (
     play,
     play_others,
     character_moves,
+    npc_gifts,
     account_merges,
     scenes,
     waiting,
@@ -205,6 +209,8 @@ for module in (
     quests,
     backstories,
     written_rules,
+    nominations,
+    remembrances,
 ):
     api.include_router(module.router)
 

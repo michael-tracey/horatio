@@ -17,6 +17,7 @@ import { CharacterLogTab } from "./LogTab";
 import { NpcBuilder } from "./NpcBuilder";
 import { KindBadge } from "./NpcKindBadge";
 import { CharacterMenu } from "./Actions";
+import { givable } from "../troupe/GiveNpc";
 import { LeavingCard } from "./Leaving";
 import { RenameCharacter } from "./Rename";
 import { CharacterPronouns } from "./Pronouns";
@@ -30,6 +31,8 @@ import { CharacterShared } from "../troupe/SharedBackground";
 import { ChoiceInfo } from "./Info";
 import { useClanName } from "../../components/ClanNames";
 import { SheetTab, useCatalogue } from "./SheetTab";
+import { NominationsAbout } from "../nominations/NominationsAbout";
+import { RemembrancesCard } from "../nominations/Remembrances";
 import { StatusTitlesTab } from "./StatusTitlesTab";
 import { TroupesTab } from "./TroupesTab";
 import { XpTab } from "./XpTab";
@@ -63,6 +66,14 @@ export function CharacterPage() {
     queryKey: ["troupe", homeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: homeId! } } })),
     enabled: !!homeId,
+  });
+
+  // An NPC's storytellers can give it to a player (#481).
+  const npcTroupeId = character.data?.kind === "npc" ? character.data.home_troupe_id : null;
+  const npcTroupe = useQuery({
+    queryKey: ["troupe", npcTroupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: npcTroupeId! } } })),
+    enabled: !!npcTroupeId,
   });
 
   // The Backstory tab shows to its player and the storytellers deciding on or keeping it.
@@ -119,6 +130,7 @@ export function CharacterPage() {
                   canRetire={c.status === "active"}
                   onPronouns={saying ? undefined : () => setSaying(true)}
                   canDelete
+                  canGive={!!npcTroupe.data && abilities(npcTroupe.data.my_role, custodian).storyteller && !npcTroupe.data.archived && givable(c)}
                 />
               </div>
             }
@@ -193,6 +205,7 @@ export function CharacterPage() {
       </Header>
       {rename}
       {c.status === "retired" && <LeavingCard character={c} canChange={mine || custodian || (!!home.data && abilities(home.data.my_role, custodian).running)} />}
+      {c.status === "retired" && c.kind === "pc" && <RemembrancesCard character={c} />}
       {pronouns}
       <CharacterTabs
         groups={[
@@ -235,12 +248,16 @@ export function CharacterPage() {
         <Route
           index
           element={
-            <SheetTab
-              character={c}
-              mine={mine}
-              badge={!mine || custodian}
-              give={!mine && (custodian || (!!home.data && abilities(home.data.my_role, custodian).running))}
-            />
+            <>
+              {/* For its player, the Player Nominations about it (#470): nothing while there are none. */}
+              {mine && c.kind === "pc" && <NominationsAbout character={c} />}
+              <SheetTab
+                character={c}
+                mine={mine}
+                badge={!mine || custodian}
+                give={!mine && (custodian || (!!home.data && abilities(home.data.my_role, custodian).running))}
+              />
+            </>
           }
         />
         <Route path="status" element={<StatusTitlesTab character={c} />} />

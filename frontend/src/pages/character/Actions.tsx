@@ -10,12 +10,14 @@ import { Button, ErrorText } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { MoveCharacter } from "../custodian/MoveCharacter";
+import { ClaimLink, GiveToPlayer } from "../troupe/GiveNpc";
 import { DiablerieForm, diablerieAction, useDiablerie } from "./Diablerie";
 import { RetireCharacter } from "./Leaving";
 
 /**
  * The character's less-used actions, behind a ⋯ button beside Play, in groups:
- * Rename, Pronouns and Move to another player (the custodian's, for a PC); diablerie
+ * Rename, Pronouns and Move to another player (the custodian's, for a PC); Give to a
+ * player and Claim link (an NPC's storytellers', for one they can give); diablerie
  * (staff record it, the player asks them to); Retire and Delete. `renameOn` is the
  * first day a player who renamed lately can again; the item says so instead of
  * renaming. `canDelete` is for those who may delete it at all: a PC's player, an
@@ -30,6 +32,7 @@ export function CharacterMenu({
   canRetire = false,
   canDelete,
   canMove = false,
+  canGive = false,
 }: {
   character: CharacterOut;
   canRename: boolean;
@@ -40,15 +43,18 @@ export function CharacterMenu({
   canRetire?: boolean;
   canDelete: boolean;
   canMove?: boolean;
+  /** Give the NPC to a player, or make a claim link for it. */
+  canGive?: boolean;
 }) {
   const [retiring, setRetiring] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [moving, setMoving] = useState(false);
+  const [giving, setGiving] = useState<"give" | "claim" | null>(null);
   const [diablerie, setDiablerie] = useState(false);
   const dates = useDates();
   const diablerieList = useDiablerie(character);
   const diablerieItem = diablerieAction(diablerieList.data);
-  if (!canRename && !renameOn && !onPronouns && !canRetire && !canDelete && !canMove && !diablerieItem) return null;
+  if (!canRename && !renameOn && !onPronouns && !canRetire && !canDelete && !canMove && !canGive && !diablerieItem) return null;
 
   return (
     <div>
@@ -64,6 +70,10 @@ export function CharacterMenu({
           )}
           {onPronouns && <MenuItem onSelect={onPronouns}>Pronouns…</MenuItem>}
           {canMove && <MenuItem onSelect={() => setMoving(true)}>Move to another player…</MenuItem>}
+        </MenuGroup>
+        <MenuGroup label="Give to a player">
+          {canGive && <MenuItem onSelect={() => setGiving("give")}>Give to a player…</MenuItem>}
+          {canGive && <MenuItem onSelect={() => setGiving("claim")}>Claim link…</MenuItem>}
         </MenuGroup>
         <MenuGroup label="Diablerie">{diablerieItem && <MenuItem onSelect={() => setDiablerie(true)}>{diablerieItem}</MenuItem>}</MenuGroup>
         <MenuGroup label="Leaving">
@@ -82,6 +92,16 @@ export function CharacterMenu({
       >
         {diablerieList.data && <DiablerieForm character={character} list={diablerieList.data} onClose={() => setDiablerie(false)} />}
       </Dialog>
+      {canGive && (
+        <>
+          <Dialog title={`Give ${character.name} to a player`} open={giving === "give"} onClose={() => setGiving(null)}>
+            {giving === "give" && <GiveToPlayer npcId={character.id} npcName={character.name} troupeId={character.home_troupe_id ?? ""} onDone={() => setGiving(null)} />}
+          </Dialog>
+          <Dialog title={`Claim link for ${character.name}`} open={giving === "claim"} onClose={() => setGiving(null)}>
+            {giving === "claim" && <ClaimLink npcId={character.id} />}
+          </Dialog>
+        </>
+      )}
       <Dialog title={`Retire ${character.name}`} open={retiring} onClose={() => setRetiring(false)}>
         <RetireCharacter character={character} onDone={() => setRetiring(false)} />
       </Dialog>

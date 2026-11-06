@@ -9,7 +9,9 @@ never goes above Elder or below Neonate.
 
 A splat without Generation (horatio.rules.splats) has no social age: a ghoul is
 no Neonate. Its splat's name stands in its place, "Ghoul", so the roster and
-badges say what it is beside its domitor's clan.
+badges say what it is beside its domitor's clan. So with an NPC of a kind that is
+not a vampire (horatio.rules.npc_kinds): a mortal or a werewolf is no Neonate
+either, and its kind's name, "Mortal", stands in its place.
 """
 
 import uuid
@@ -21,6 +23,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from horatio.models import Character, CharacterTrait, TraitCategory, TraitDefinition
+from horatio.rules.npc_kinds import npc_kinds
 from horatio.rules.splats import SPLATS
 
 AGES = ("Neonate", "Ancilla", "Elder")
@@ -63,14 +66,22 @@ def standings(db: Session, character_ids: Sequence[uuid.UUID]) -> dict[uuid.UUID
                 generation[who] = trait.rating or 0
         else:
             shift[who] += int(definition.properties.get("social_class", 0))
-    splats = {
-        who: splat
-        for who, splat in db.execute(
-            select(Character.id, Character.splat).where(Character.id.in_(character_ids))
+    splats: dict[uuid.UUID, str] = {}
+    # What an NPC that is not a vampire is, in place of a social age.
+    kinds: dict[uuid.UUID, str] = {}
+    for who, splat, kind_key, custom in db.execute(
+        select(Character.id, Character.splat, Character.npc_kind, Character.npc_custom_kind).where(
+            Character.id.in_(character_ids)
         )
-    }
+    ):
+        splats[who] = splat
+        kind = npc_kinds().get(kind_key) if kind_key else None
+        if kind is not None and not kind.vampiric:
+            kinds[who] = (custom or {}).get("name") or kind.name
 
     def age(who: uuid.UUID) -> str:
+        if who in kinds:
+            return kinds[who]
         splat = SPLATS.get(splats.get(who, "vampire"))
         if splat is not None and not splat.panels.generation:
             return splat.label

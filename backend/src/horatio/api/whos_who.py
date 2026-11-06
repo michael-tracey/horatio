@@ -9,12 +9,13 @@ import uuid
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
-from horatio import audit, feeding, pictures, titles, whos_who
+from horatio import audit, feeding, pictures, remembrances, titles, whos_who
 from horatio.api.downtimes import staff_troupe
 from horatio.api.lines_veils import LinesVeils, lines_veils_of
 from horatio.api.titles import TitlesOut, titles_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, Troupe, User
+from horatio.nominations import is_reader
 from horatio.permissions import (
     TroupeAction,
     allows,
@@ -64,6 +65,10 @@ class WhosWhoEntry(BaseModel):
     # (#268): None until those are kept.
     represented_by: str | None
     left_reason: str | None
+    # Remembrances (horatio.remembrances), for one no longer with us: memories of it
+    # are published for the caller to read; and the caller may open them here.
+    remembered: bool = False
+    remembrances_openable: bool = False
     # The player's lines and veils: for staff, and for other players only if the
     # player shares them. Never printed. None for an NPC, or when not shown.
     lines_veils: LinesVeils | None
@@ -179,6 +184,21 @@ def read_whos_who(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Who
             entries.append(entry_out(e, lines_veils_of(player)))
         else:
             entries.append(entry_out(e))
+    # Those no longer with us: whose memories the caller reads, and may open.
+    remembered = remembrances.remembered(db, troupe) if is_reader(db, user, troupe) else set()
+    openable: set[uuid.UUID] = set()
+    if remembrances.on(troupe) and remembrances.can_open(db, user, troupe):
+        opened = remembrances.opened_in(db, troupe)
+        openable = {
+            i
+            for i in found.departed
+            if characters[i].kind == "pc"
+            and characters[i].home_troupe_id == troupe.id
+            and i not in opened
+        }
+    for entry in entries:
+        entry.remembered = entry.character_id in remembered
+        entry.remembrances_openable = entry.character_id in openable
     return WhosWhoOut(
         troupe_id=troupe.id,
         troupe_name=troupe.name,

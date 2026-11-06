@@ -33,6 +33,74 @@
         "title": "AbidingSourceOut",
         "type": "object"
       },
+      "AboutOut": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          }
+        },
+        "required": [
+          "character_id",
+          "user_id",
+          "name"
+        ],
+        "title": "AboutOut",
+        "type": "object"
+      },
+      "AboutYouOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "month",
+          "troupe_name"
+        ],
+        "title": "AboutYouOut",
+        "type": "object"
+      },
       "AbsenteeMarked": {
         "properties": {
           "absentee": {
@@ -3904,6 +3972,25 @@
         "title": "CarriedOut",
         "type": "object"
       },
+      "CarriedXp": {
+        "properties": {
+          "carried_reason": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Carried Reason",
+            "type": "string"
+          },
+          "carried_xp": {
+            "default": 0,
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Carried Xp",
+            "type": "integer"
+          }
+        },
+        "title": "CarriedXp",
+        "type": "object"
+      },
       "CartIn": {
         "properties": {
           "changes": {
@@ -5397,6 +5484,54 @@
         "title": "CharacterRef",
         "type": "object"
       },
+      "CharacterRemembrancesOut": {
+        "properties": {
+          "can_open": {
+            "title": "Can Open",
+            "type": "boolean"
+          },
+          "cycle_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Name"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/RememberedMonthOut"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "state": {
+            "enum": [
+              "none",
+              "asked",
+              "open"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "on",
+          "state",
+          "cycle_name",
+          "can_open",
+          "months"
+        ],
+        "title": "CharacterRemembrancesOut",
+        "type": "object"
+      },
       "CharacterTitlesOut": {
         "properties": {
           "acting": {
@@ -5928,6 +6063,93 @@
           "name"
         ],
         "title": "ChooseIn",
+        "type": "object"
+      },
+      "ClaimLinkOut": {
+        "properties": {
+          "carried_reason": {
+            "title": "Carried Reason",
+            "type": "string"
+          },
+          "carried_xp": {
+            "title": "Carried Xp",
+            "type": "integer"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "made_by": {
+            "$ref": "#/components/schemas/Someone"
+          }
+        },
+        "required": [
+          "expires_at",
+          "made_by",
+          "carried_xp",
+          "carried_reason"
+        ],
+        "title": "ClaimLinkOut",
+        "type": "object"
+      },
+      "ClaimOut": {
+        "description": "What a claim link is for, for whoever opens it, signed in or not.",
+        "properties": {
+          "carried_xp": {
+            "title": "Carried Xp",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "signed_in": {
+            "title": "Signed In",
+            "type": "boolean"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_name",
+          "troupe_name",
+          "clan",
+          "picture",
+          "expires_at",
+          "carried_xp",
+          "signed_in"
+        ],
+        "title": "ClaimOut",
         "type": "object"
       },
       "ClanChoiceOut": {
@@ -7268,6 +7490,78 @@
         "title": "CycleFeedingOut",
         "type": "object"
       },
+      "CycleNominationsOut": {
+        "properties": {
+          "nominations": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewedOut"
+            },
+            "title": "Nominations",
+            "type": "array"
+          },
+          "past_due": {
+            "title": "Past Due",
+            "type": "boolean"
+          },
+          "player_nominations": {
+            "title": "Player Nominations",
+            "type": "boolean"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "remembrances": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RememberedReviewOut"
+            },
+            "title": "Remembrances",
+            "type": "array"
+          },
+          "remembrances_on": {
+            "title": "Remembrances On",
+            "type": "boolean"
+          },
+          "removed": {
+            "title": "Removed",
+            "type": "integer"
+          },
+          "starred": {
+            "title": "Starred",
+            "type": "integer"
+          },
+          "waiting": {
+            "title": "Waiting",
+            "type": "integer"
+          },
+          "written": {
+            "title": "Written",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "player_nominations",
+          "remembrances_on",
+          "nominations",
+          "written",
+          "removed",
+          "starred",
+          "published_at",
+          "waiting",
+          "past_due"
+        ],
+        "title": "CycleNominationsOut",
+        "type": "object"
+      },
       "CycleOut": {
         "properties": {
           "action_kinds": {
@@ -7330,6 +7624,11 @@
             ],
             "title": "Opened At"
           },
+          "player_nominations": {
+            "default": false,
+            "title": "Player Nominations",
+            "type": "boolean"
+          },
           "questions": {
             "items": {
               "$ref": "#/components/schemas/QuestionOut"
@@ -7340,6 +7639,11 @@
           "quests_enabled": {
             "default": false,
             "title": "Quests Enabled",
+            "type": "boolean"
+          },
+          "remembrances": {
+            "default": false,
+            "title": "Remembrances",
             "type": "boolean"
           },
           "status": {
@@ -9185,6 +9489,20 @@
         "title": "DyscrasiaOut",
         "type": "object"
       },
+      "EditIn": {
+        "properties": {
+          "text": {
+            "maxLength": 1000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "EditIn",
+        "type": "object"
+      },
       "EffectBlock": {
         "description": "One thing a house merit or flaw does on the sheet, at a game or between games\n(horatio.rules.house_effects). Each kind reads only its own fields.",
         "properties": {
@@ -10303,6 +10621,52 @@
           "this_game"
         ],
         "title": "EndingOut",
+        "type": "object"
+      },
+      "EntryOut": {
+        "properties": {
+          "about": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "About"
+          },
+          "edited": {
+            "title": "Edited",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "order": {
+            "title": "Order",
+            "type": "number"
+          },
+          "starred": {
+            "title": "Starred",
+            "type": "boolean"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "about",
+          "starred",
+          "edited",
+          "order"
+        ],
+        "title": "EntryOut",
         "type": "object"
       },
       "EquipmentCheckIn": {
@@ -13890,58 +14254,6 @@
         "title": "GiveEquipmentIn",
         "type": "object"
       },
-      "GiveIn": {
-        "properties": {
-          "category": {
-            "title": "Category",
-            "type": "string"
-          },
-          "despite": {
-            "default": false,
-            "title": "Despite",
-            "type": "boolean"
-          },
-          "detail": {
-            "default": "",
-            "maxLength": 200,
-            "title": "Detail",
-            "type": "string"
-          },
-          "free": {
-            "default": false,
-            "title": "Free",
-            "type": "boolean"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "rating": {
-            "minimum": 1.0,
-            "title": "Rating",
-            "type": "integer"
-          },
-          "reason": {
-            "maxLength": 500,
-            "minLength": 1,
-            "title": "Reason",
-            "type": "string"
-          },
-          "trial": {
-            "default": false,
-            "title": "Trial",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "category",
-          "name",
-          "rating",
-          "reason"
-        ],
-        "title": "GiveIn",
-        "type": "object"
-      },
       "GiveOut": {
         "properties": {
           "breaks": {
@@ -13982,6 +14294,74 @@
           "sheet"
         ],
         "title": "GiveOut",
+        "type": "object"
+      },
+      "GivePreview": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "free": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Free",
+            "type": "array"
+          },
+          "refusal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refusal"
+          },
+          "retainers": {
+            "items": {
+              "$ref": "#/components/schemas/LinkedRetainer"
+            },
+            "title": "Retainers",
+            "type": "array"
+          },
+          "to_player": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Someone"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          },
+          "xp": {
+            "title": "Xp",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "troupe_name",
+          "to_player",
+          "xp",
+          "free",
+          "retainers",
+          "refusal"
+        ],
+        "title": "GivePreview",
         "type": "object"
       },
       "GiveToIn": {
@@ -17188,6 +17568,24 @@
         "title": "Link",
         "type": "object"
       },
+      "LinkedRetainer": {
+        "properties": {
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_name",
+          "name"
+        ],
+        "title": "LinkedRetainer",
+        "type": "object"
+      },
       "Listed": {
         "properties": {
           "listed": {
@@ -19520,6 +19918,25 @@
         "title": "LossOut",
         "type": "object"
       },
+      "MadeClaimLink": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expires_at"
+        ],
+        "title": "MadeClaimLink",
+        "type": "object"
+      },
       "MatchIn": {
         "properties": {
           "location_id": {
@@ -19674,6 +20091,44 @@
           "home"
         ],
         "title": "MembershipOut",
+        "type": "object"
+      },
+      "MemoryIn": {
+        "properties": {
+          "text": {
+            "maxLength": 1000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "MemoryIn",
+        "type": "object"
+      },
+      "MemoryOut": {
+        "properties": {
+          "edited": {
+            "title": "Edited",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "edited"
+        ],
+        "title": "MemoryOut",
         "type": "object"
       },
       "MergeCharacter": {
@@ -20034,6 +20489,47 @@
         "title": "ModifierOut",
         "type": "object"
       },
+      "MonthOut": {
+        "properties": {
+          "cycle_id": {
+            "format": "uuid",
+            "title": "Cycle Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "nominations": {
+            "items": {
+              "$ref": "#/components/schemas/EntryOut"
+            },
+            "title": "Nominations",
+            "type": "array"
+          },
+          "published_at": {
+            "format": "date-time",
+            "title": "Published At",
+            "type": "string"
+          },
+          "remembrances": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RememberedOut"
+            },
+            "title": "Remembrances",
+            "type": "array"
+          }
+        },
+        "required": [
+          "cycle_id",
+          "name",
+          "published_at",
+          "nominations"
+        ],
+        "title": "MonthOut",
+        "type": "object"
+      },
       "Morality": {
         "properties": {
           "name": {
@@ -20270,6 +20766,11 @@
             "title": "Late",
             "type": "boolean"
           },
+          "player_nominations": {
+            "default": false,
+            "title": "Player Nominations",
+            "type": "boolean"
+          },
           "questions": {
             "items": {
               "$ref": "#/components/schemas/QuestionOut"
@@ -20284,6 +20785,11 @@
             },
             "title": "Quests",
             "type": "array"
+          },
+          "remembrances": {
+            "default": false,
+            "title": "Remembrances",
+            "type": "boolean"
           },
           "short": {
             "additionalProperties": {
@@ -20395,6 +20901,180 @@
           "locked"
         ],
         "title": "MyFeedingOut",
+        "type": "object"
+      },
+      "MyMemoryOut": {
+        "description": "A character the downtime asks a memory of, and the writer's memory, if any.",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "published": {
+            "title": "Published",
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "remembrance_id": {
+            "format": "uuid",
+            "title": "Remembrance Id",
+            "type": "string"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "required": [
+          "remembrance_id",
+          "character_id",
+          "name",
+          "picture",
+          "clan",
+          "reason",
+          "text",
+          "published"
+        ],
+        "title": "MyMemoryOut",
+        "type": "object"
+      },
+      "MyNominationOut": {
+        "properties": {
+          "about": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AboutOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "published": {
+            "title": "Published",
+            "type": "boolean"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "about",
+          "published"
+        ],
+        "title": "MyNominationOut",
+        "type": "object"
+      },
+      "MyNominationsOut": {
+        "properties": {
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/AboutOut"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "most": {
+            "title": "Most",
+            "type": "integer"
+          },
+          "nominations": {
+            "items": {
+              "$ref": "#/components/schemas/MyNominationOut"
+            },
+            "title": "Nominations",
+            "type": "array"
+          },
+          "submitted": {
+            "title": "Submitted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "nominations",
+          "choices",
+          "submitted",
+          "most"
+        ],
+        "title": "MyNominationsOut",
+        "type": "object"
+      },
+      "MyRemembrancesOut": {
+        "properties": {
+          "most": {
+            "title": "Most",
+            "type": "integer"
+          },
+          "remembered": {
+            "items": {
+              "$ref": "#/components/schemas/MyMemoryOut"
+            },
+            "title": "Remembered",
+            "type": "array"
+          },
+          "submitted": {
+            "title": "Submitted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "remembered",
+          "submitted",
+          "most"
+        ],
+        "title": "MyRemembrancesOut",
         "type": "object"
       },
       "NeedLineOut": {
@@ -20804,6 +21484,44 @@
         "title": "NewTroupeRequest",
         "type": "object"
       },
+      "NominationIn": {
+        "properties": {
+          "about_character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "About Character Id"
+          },
+          "about_user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "About User Id"
+          },
+          "text": {
+            "maxLength": 1000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "NominationIn",
+        "type": "object"
+      },
       "NotAllowedOut": {
         "description": "A trait the troupe does not let anyone buy: a house price of \"cannot be bought\"\nfor it, or for its whole category, that nothing more particular overrides.",
         "properties": {
@@ -21130,6 +21848,18 @@
               }
             ],
             "title": "Building Troupe Id"
+          },
+          "claim_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claim Expires At"
           },
           "clan": {
             "anyOf": [
@@ -23942,6 +24672,32 @@
         "title": "PlayerCharacter",
         "type": "object"
       },
+      "PlayerNominationsIn": {
+        "properties": {
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "title": "PlayerNominationsIn",
+        "type": "object"
+      },
+      "PlayerNominationsOut": {
+        "properties": {
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "title": "PlayerNominationsOut",
+        "type": "object"
+      },
       "PlayerOut": {
         "properties": {
           "bio": {
@@ -25912,6 +26668,19 @@
           "public"
         ],
         "title": "PublicIn",
+        "type": "object"
+      },
+      "PublishedOut": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "title": "PublishedOut",
         "type": "object"
       },
       "QuestActionOut": {
@@ -27942,6 +28711,187 @@
         "title": "RefusalOut",
         "type": "object"
       },
+      "RememberedMonthOut": {
+        "properties": {
+          "cycle_id": {
+            "format": "uuid",
+            "title": "Cycle Id",
+            "type": "string"
+          },
+          "memories": {
+            "items": {
+              "$ref": "#/components/schemas/MemoryOut"
+            },
+            "title": "Memories",
+            "type": "array"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "published_at": {
+            "format": "date-time",
+            "title": "Published At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cycle_id",
+          "month",
+          "published_at",
+          "memories"
+        ],
+        "title": "RememberedMonthOut",
+        "type": "object"
+      },
+      "RememberedOut": {
+        "description": "A character remembered in a month, with the memories of them.",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "memories": {
+            "items": {
+              "$ref": "#/components/schemas/EntryOut"
+            },
+            "title": "Memories",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "picture",
+          "clan",
+          "reason",
+          "memories"
+        ],
+        "title": "RememberedOut",
+        "type": "object"
+      },
+      "RememberedReviewOut": {
+        "description": "A character the cycle asks memories of, with those written so far.",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "memories": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewedOut"
+            },
+            "title": "Memories",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "remembrance_id": {
+            "format": "uuid",
+            "title": "Remembrance Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "remembrance_id",
+          "character_id",
+          "name",
+          "picture",
+          "reason",
+          "memories"
+        ],
+        "title": "RememberedReviewOut",
+        "type": "object"
+      },
+      "RemembrancesIn": {
+        "properties": {
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "title": "RemembrancesIn",
+        "type": "object"
+      },
+      "RemembrancesSettingOut": {
+        "properties": {
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "title": "RemembrancesSettingOut",
+        "type": "object"
+      },
       "RemindedOut": {
         "properties": {
           "characters": {
@@ -27982,21 +28932,6 @@
           "players"
         ],
         "title": "ReminderOut",
-        "type": "object"
-      },
-      "RemoveIn": {
-        "properties": {
-          "reason": {
-            "maxLength": 500,
-            "minLength": 1,
-            "title": "Reason",
-            "type": "string"
-          }
-        },
-        "required": [
-          "reason"
-        ],
-        "title": "RemoveIn",
         "type": "object"
       },
       "RemoveNegativeIn": {
@@ -29259,6 +30194,122 @@
           "can_link"
         ],
         "title": "RetainersOut",
+        "type": "object"
+      },
+      "Retiring": {
+        "properties": {
+          "listed": {
+            "title": "Listed",
+            "type": "boolean"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "final_death",
+              "off_field",
+              "inactive"
+            ],
+            "title": "Reason",
+            "type": "string"
+          },
+          "remembrances": {
+            "default": false,
+            "title": "Remembrances",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "reason",
+          "listed"
+        ],
+        "title": "Retiring",
+        "type": "object"
+      },
+      "ReviewedOut": {
+        "properties": {
+          "about": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AboutOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "edited": {
+            "title": "Edited",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "player_handle": {
+            "title": "Player Handle",
+            "type": "string"
+          },
+          "player_name": {
+            "title": "Player Name",
+            "type": "string"
+          },
+          "published": {
+            "title": "Published",
+            "type": "boolean"
+          },
+          "removed": {
+            "title": "Removed",
+            "type": "boolean"
+          },
+          "removed_reason": {
+            "title": "Removed Reason",
+            "type": "string"
+          },
+          "starred": {
+            "title": "Starred",
+            "type": "boolean"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "written_at": {
+            "format": "date-time",
+            "title": "Written At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "about",
+          "character_id",
+          "character_name",
+          "player_name",
+          "player_handle",
+          "written_at",
+          "removed",
+          "removed_reason",
+          "starred",
+          "edited",
+          "published"
+        ],
+        "title": "ReviewedOut",
         "type": "object"
       },
       "Role": {
@@ -31949,6 +33000,43 @@
           "role"
         ],
         "title": "StaffRole",
+        "type": "object"
+      },
+      "StarIn": {
+        "properties": {
+          "starred": {
+            "title": "Starred",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "starred"
+        ],
+        "title": "StarIn",
+        "type": "object"
+      },
+      "StarredOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "month"
+        ],
+        "title": "StarredOut",
         "type": "object"
       },
       "StartingBlood": {
@@ -36024,9 +37112,19 @@
             ],
             "title": "New Players"
           },
+          "nominations": {
+            "default": false,
+            "title": "Nominations",
+            "type": "boolean"
+          },
           "place": {
             "title": "Place",
             "type": "string"
+          },
+          "player_nominations": {
+            "default": false,
+            "title": "Player Nominations",
+            "type": "boolean"
           },
           "portrait": {
             "anyOf": [
@@ -36049,6 +37147,11 @@
           },
           "quests_enabled": {
             "title": "Quests Enabled",
+            "type": "boolean"
+          },
+          "remembrances": {
+            "default": false,
+            "title": "Remembrances",
             "type": "boolean"
           },
           "session_xp": {
@@ -37311,6 +38414,16 @@
               }
             ],
             "title": "Pronouns"
+          },
+          "remembered": {
+            "default": false,
+            "title": "Remembered",
+            "type": "boolean"
+          },
+          "remembrances_openable": {
+            "default": false,
+            "title": "Remembrances Openable",
+            "type": "boolean"
           },
           "represented_by": {
             "anyOf": [
@@ -38595,6 +39708,21 @@
         "title": "TeachingOut",
         "type": "object"
       },
+      "horatio__api__house_traits__RemoveIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "RemoveIn",
+        "type": "object"
+      },
       "horatio__api__influence_effects__BlockIn": {
         "properties": {
           "activity": {
@@ -38677,6 +39805,43 @@
         "title": "BlockIn",
         "type": "object"
       },
+      "horatio__api__nominations__RemoveIn": {
+        "properties": {
+          "reason": {
+            "default": "",
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "title": "RemoveIn",
+        "type": "object"
+      },
+      "horatio__api__npc_gifts__GiveIn": {
+        "properties": {
+          "carried_reason": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Carried Reason",
+            "type": "string"
+          },
+          "carried_xp": {
+            "default": 0,
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Carried Xp",
+            "type": "integer"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          }
+        },
+        "required": [
+          "handle"
+        ],
+        "title": "GiveIn",
+        "type": "object"
+      },
       "horatio__api__play__ResetIn": {
         "properties": {
           "game_id": {
@@ -38732,6 +39897,58 @@
           "lent"
         ],
         "title": "TeachingOut",
+        "type": "object"
+      },
+      "horatio__api__trait_exceptions__GiveIn": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "despite": {
+            "default": false,
+            "title": "Despite",
+            "type": "boolean"
+          },
+          "detail": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "free": {
+            "default": false,
+            "title": "Free",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "trial": {
+            "default": false,
+            "title": "Trial",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "rating",
+          "reason"
+        ],
+        "title": "GiveIn",
         "type": "object"
       }
     }
@@ -41092,6 +42309,144 @@
         ]
       }
     },
+    "/api/characters/{character_id}/claim-link": {
+      "delete": {
+        "operationId": "cancel_claim_link_api_characters__character_id__claim_link_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Claim Link",
+        "tags": [
+          "npcs"
+        ]
+      },
+      "get": {
+        "description": "The NPC's open claim link, if it has one: when it expires, and who made it.",
+        "operationId": "read_claim_link_api_characters__character_id__claim_link_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ClaimLinkOut"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Read Claim Link Api Characters  Character Id  Claim Link Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Claim Link",
+        "tags": [
+          "npcs"
+        ]
+      },
+      "post": {
+        "description": "A new claim link for the NPC, for 30 days, replacing any it had. The link is\nshown only now.",
+        "operationId": "make_claim_link_api_characters__character_id__claim_link_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarriedXp"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MadeClaimLink"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Make Claim Link",
+        "tags": [
+          "npcs"
+        ]
+      }
+    },
     "/api/characters/{character_id}/creation": {
       "get": {
         "operationId": "read_creation_api_characters__character_id__creation_get",
@@ -42009,6 +43364,374 @@
         ]
       }
     },
+    "/api/characters/{character_id}/downtime/nominations": {
+      "get": {
+        "description": "The nominations the character has written in its open downtime, and who they\ncan be about.",
+        "operationId": "my_nominations_api_characters__character_id__downtime_nominations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyNominationsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "My Nominations",
+        "tags": [
+          "nominations"
+        ]
+      },
+      "post": {
+        "operationId": "write_nomination_api_characters__character_id__downtime_nominations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NominationIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyNominationsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Write Nomination",
+        "tags": [
+          "nominations"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/downtime/nominations/{nomination_id}": {
+      "delete": {
+        "operationId": "delete_nomination_api_characters__character_id__downtime_nominations__nomination_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "nomination_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Nomination Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyNominationsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Nomination",
+        "tags": [
+          "nominations"
+        ]
+      },
+      "put": {
+        "operationId": "change_nomination_api_characters__character_id__downtime_nominations__nomination_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "nomination_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Nomination Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NominationIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyNominationsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Nomination",
+        "tags": [
+          "nominations"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/downtime/remembrances": {
+      "get": {
+        "description": "Those the character's open downtime asks memories of, and its own.",
+        "operationId": "my_remembrances_api_characters__character_id__downtime_remembrances_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyRemembrancesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "My Remembrances",
+        "tags": [
+          "remembrances"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/downtime/remembrances/{remembrance_id}": {
+      "delete": {
+        "operationId": "delete_memory_api_characters__character_id__downtime_remembrances__remembrance_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "remembrance_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Remembrance Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyRemembrancesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Memory",
+        "tags": [
+          "remembrances"
+        ]
+      },
+      "put": {
+        "description": "Write the character's memory of someone remembered, or change it.",
+        "operationId": "write_memory_api_characters__character_id__downtime_remembrances__remembrance_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "remembrance_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Remembrance Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemoryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyRemembrancesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Write Memory",
+        "tags": [
+          "remembrances"
+        ]
+      }
+    },
     "/api/characters/{character_id}/downtime/results": {
       "get": {
         "description": "Delivered downtime results for the player's character, newest first: for\neach cycle, the latest delivery, which has every response as it was then.",
@@ -42718,7 +44441,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GiveIn"
+                "$ref": "#/components/schemas/horatio__api__trait_exceptions__GiveIn"
               }
             }
           },
@@ -42749,6 +44472,111 @@
         "summary": "Give",
         "tags": [
           "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/give-to-player": {
+      "get": {
+        "description": "What giving the NPC to whoever has `handle` would do, for staff to confirm;\nwithout a handle, what giving it to anyone would (for a claim link).",
+        "operationId": "preview_give_api_characters__character_id__give_to_player_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "handle",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Handle"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GivePreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Give",
+        "tags": [
+          "npcs"
+        ]
+      },
+      "post": {
+        "description": "Give the sheeted NPC to whoever has the handle: it becomes their character, at\nhome and accepted in the troupe, its XP balanced, plus any carried over.",
+        "operationId": "give_npc_api_characters__character_id__give_to_player_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/horatio__api__npc_gifts__GiveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Give Npc",
+        "tags": [
+          "npcs"
         ]
       }
     },
@@ -43125,7 +44953,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RemoveIn"
+                "$ref": "#/components/schemas/horatio__api__house_traits__RemoveIn"
               }
             }
           },
@@ -43798,6 +45626,54 @@
         "summary": "Move Character",
         "tags": [
           "custodian"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/nominations": {
+      "get": {
+        "description": "The published nominations about the character, newest month first, without\nnames: for its player.",
+        "operationId": "nominations_about_api_characters__character_id__nominations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AboutYouOut"
+                  },
+                  "title": "Response Nominations About Api Characters  Character Id  Nominations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Nominations About",
+        "tags": [
+          "nominations"
         ]
       }
     },
@@ -46200,6 +48076,94 @@
         ]
       }
     },
+    "/api/characters/{character_id}/remembrances": {
+      "get": {
+        "description": "The character's remembrances: whether they are open, and in which cycle, and\nthe memories published, without names. For its player, and its home troupe's\nstaff and players.",
+        "operationId": "character_remembrances_api_characters__character_id__remembrances_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterRemembrancesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Remembrances",
+        "tags": [
+          "remembrances"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/remembrances/open": {
+      "post": {
+        "description": "Open remembrances for a retired character: its home troupe's running staff.",
+        "operationId": "open_remembrances_api_characters__character_id__remembrances_open_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterRemembrancesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Open Remembrances",
+        "tags": [
+          "remembrances"
+        ]
+      }
+    },
     "/api/characters/{character_id}/retainers": {
       "get": {
         "operationId": "read_retainers_api_characters__character_id__retainers_get",
@@ -46351,7 +48315,7 @@
     },
     "/api/characters/{character_id}/retire": {
       "post": {
-        "description": "Characters are never deleted, only retired: for a reason, which goes in the log\nwith the note, and listed on its troupes' Who's Who if the player chooses. With\nno reason it is not listed.",
+        "description": "Characters are never deleted, only retired: for a reason, which goes in the log\nwith the note, and listed on its troupes' Who's Who if the player chooses. With\nno reason it is not listed. While its home troupe uses Remembrances, its player\ncan ask for them, and running staff open them.",
         "operationId": "retire_character_api_characters__character_id__retire_post",
         "parameters": [
           {
@@ -46371,7 +48335,7 @@
               "schema": {
                 "anyOf": [
                   {
-                    "$ref": "#/components/schemas/Leaving"
+                    "$ref": "#/components/schemas/Retiring"
                   },
                   {
                     "type": "null"
@@ -48392,6 +50356,145 @@
         ]
       }
     },
+    "/api/claims/{token}": {
+      "get": {
+        "description": "The character a claim link is for: its name, troupe and portrait. Anyone with\nthe link may see them, so they can sign up to claim it.",
+        "operationId": "read_claim_api_claims__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Claim",
+        "tags": [
+          "npcs"
+        ]
+      },
+      "post": {
+        "description": "Claim the character: it becomes yours, at home and accepted in its troupe.",
+        "operationId": "claim_api_claims__token__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Claim",
+        "tags": [
+          "npcs"
+        ]
+      }
+    },
+    "/api/claims/{token}/pictures/{picture_id}/{name}": {
+      "get": {
+        "description": "One of the portrait's files, through the claim link.",
+        "operationId": "claim_picture_api_claims__token__pictures__picture_id___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "picture_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Picture Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Claim Picture",
+        "tags": [
+          "npcs"
+        ]
+      }
+    },
     "/api/clan-logos": {
       "get": {
         "operationId": "list_logos_api_clan_logos_get",
@@ -48940,6 +51043,94 @@
         "summary": "Set Clan Feeding",
         "tags": [
           "feeding"
+        ]
+      }
+    },
+    "/api/cycles/{cycle_id}/nominations": {
+      "get": {
+        "description": "Every nomination in the cycle's submitted downtimes, with who wrote it, for\nrunning staff to review.",
+        "operationId": "cycle_nominations_api_cycles__cycle_id__nominations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CycleNominationsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cycle Nominations",
+        "tags": [
+          "nominations"
+        ]
+      }
+    },
+    "/api/cycles/{cycle_id}/nominations/publish": {
+      "post": {
+        "description": "Publish the cycle's nominations, or those written since they were, once it is\npast Due.",
+        "operationId": "publish_nominations_api_cycles__cycle_id__nominations_publish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Publish Nominations",
+        "tags": [
+          "nominations"
         ]
       }
     },
@@ -51082,6 +53273,210 @@
         "summary": "Plan Quest",
         "tags": [
           "locations"
+        ]
+      }
+    },
+    "/api/nominations/{nomination_id}/remove": {
+      "post": {
+        "operationId": "remove_nomination_api_nominations__nomination_id__remove_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "nomination_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Nomination Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/horatio__api__nominations__RemoveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CycleNominationsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Nomination",
+        "tags": [
+          "nominations"
+        ]
+      }
+    },
+    "/api/nominations/{nomination_id}/restore": {
+      "post": {
+        "operationId": "restore_nomination_api_nominations__nomination_id__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "nomination_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Nomination Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CycleNominationsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Restore Nomination",
+        "tags": [
+          "nominations"
+        ]
+      }
+    },
+    "/api/nominations/{nomination_id}/star": {
+      "put": {
+        "description": "Star it for the footer of the troupe's pages, or unstar it.",
+        "operationId": "star_nomination_api_nominations__nomination_id__star_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "nomination_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Nomination Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StarIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CycleNominationsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Star Nomination",
+        "tags": [
+          "nominations"
+        ]
+      }
+    },
+    "/api/nominations/{nomination_id}/text": {
+      "put": {
+        "description": "A light edit by staff, marked as theirs.",
+        "operationId": "edit_nomination_api_nominations__nomination_id__text_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "nomination_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Nomination Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CycleNominationsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Edit Nomination",
+        "tags": [
+          "nominations"
         ]
       }
     },
@@ -60655,7 +63050,7 @@
     },
     "/api/troupes/{troupe_id}/lead": {
       "put": {
-        "description": "The custodian appoints a troupe's lead storyteller.",
+        "description": "The custodian appoints a troupe's lead storyteller. The one they replace leaves\nthe staff: a lead who is suspended or stepping down shouldn't keep a role without\nanyone choosing it, and the Staff tab can add them back.",
         "operationId": "appoint_lead_api_troupes__troupe_id__lead_put",
         "parameters": [
           {
@@ -61322,6 +63717,102 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/nominations": {
+      "get": {
+        "description": "Each month's published nominations, newest month first, shuffled and without\nnames: for the troupe's players and staff.",
+        "operationId": "published_nominations_api_troupes__troupe_id__nominations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MonthOut"
+                  },
+                  "title": "Response Published Nominations Api Troupes  Troupe Id  Nominations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Published Nominations",
+        "tags": [
+          "nominations"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/nominations/starred": {
+      "get": {
+        "description": "Every starred nomination of the troupe's, from every month: what its footer\nrotates through. Empty for anyone who doesn't read them.",
+        "operationId": "starred_nominations_api_troupes__troupe_id__nominations_starred_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StarredOut"
+                  },
+                  "title": "Response Starred Nominations Api Troupes  Troupe Id  Nominations Starred Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Starred Nominations",
+        "tags": [
+          "nominations"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/npcs": {
       "get": {
         "operationId": "list_npcs_api_troupes__troupe_id__npcs_get",
@@ -61573,6 +64064,60 @@
         "summary": "Reset Troupe",
         "tags": [
           "play"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/player-nominations": {
+      "put": {
+        "description": "Switch Player Nominations on or off. Off, nothing of them shows anywhere; what\nwas written and published is kept for when it is on again.",
+        "operationId": "set_player_nominations_api_troupes__troupe_id__player_nominations_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlayerNominationsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerNominationsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Player Nominations",
+        "tags": [
+          "nominations"
         ]
       }
     },
@@ -62425,6 +64970,60 @@
         "summary": "Roll Table",
         "tags": [
           "responses"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/remembrances": {
+      "put": {
+        "description": "Switch Remembrances on or off. Off, none can be opened or written and nothing\nof them shows, but those published stay on the characters and the Who's Who.",
+        "operationId": "set_remembrances_api_troupes__troupe_id__remembrances_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemembrancesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemembrancesSettingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Remembrances",
+        "tags": [
+          "remembrances"
         ]
       }
     },

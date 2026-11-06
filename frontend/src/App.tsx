@@ -6,6 +6,7 @@ import { Loading } from "./components/ui";
 import { AboutPage } from "./pages/AboutPage";
 import { useMe } from "./hooks";
 import { CharactersPage } from "./pages/CharactersPage";
+import { ClaimPage } from "./pages/ClaimPage";
 import { ConfirmEmailPage } from "./pages/ConfirmEmailPage";
 import { ForgotPasswordPage, ResetPasswordPage, SignInPage, SignUpPage } from "./pages/SignIn";
 import { TroupesPage } from "./pages/TroupesPage";
@@ -86,6 +87,8 @@ export function App() {
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         <Route path="/unsubscribe/:token" element={<UnsubscribePage />} />
         <Route path="/confirm-email/:token" element={<ConfirmEmailPage />} />
+        {/* A claim link for a character a troupe is giving its player (#481): signed in or not. */}
+        <Route path="/claim/:token" element={<ClaimPage />} />
         {/* A troupe's profile, for anyone if the troupe has made it public. */}
         <Route
           path="/t/:troupeId"

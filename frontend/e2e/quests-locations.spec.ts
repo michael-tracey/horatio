@@ -490,11 +490,29 @@ test("the troupe's locations: a storyteller adds the Grove Arcade, is refused an
   await l.getByRole("link", { name: "← All locations" }).click();
   await expect(l.getByLabel("Search locations")).toBeVisible();
   await l.getByLabel("Quality").selectOption("Haunt");
-  await expect(l.getByRole("list", { name: "Locations" }).getByRole("link", { name: "Grove Arcade" })).toBeVisible();
-  await l.getByLabel("Quality").selectOption("Workshop");
-  await expect(l.getByText("No locations match.")).toBeVisible();
+  const row = l.getByRole("table", { name: "Locations" }).getByRole("row").filter({ has: l.getByRole("link", { name: "Grove Arcade" }) });
+  await expect(row).toContainText("Prestige 5");
+  await expect(row).toContainText("Compromised ×1 (secret)");
+
+  // Its ⋯ changes it in a dialog, without leaving the list: the lead locks it.
+  const actions = row.getByRole("button", { name: "Actions for Grove Arcade" });
+  await actions.click();
+  await l.getByRole("menuitem", { name: "Edit…" }).click();
+  const dialog = l.getByRole("dialog", { name: "Change Grove Arcade" });
+  await dialog.getByLabel("Locked").check();
+  await dialog.getByRole("button", { name: "Save changes" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(l.getByText("Grove Arcade saved.")).toBeVisible();
+  await expect(actions).toBeFocused();
+  await expect(row.getByText("Locked", { exact: true }).filter({ visible: true })).toBeVisible();
+  await l.getByLabel("Locked", { exact: true }).selectOption("locked");
+  await expect(row).toBeVisible();
   const wide = await l.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(wide).toBeLessThanOrEqual(0);
+  await expect(l.getByText("Grove Arcade saved.")).toBeHidden();
+  await l.screenshot(shots("locations"));
+  await l.getByLabel("Quality").selectOption("Workshop");
+  await expect(l.getByText("No locations match.")).toBeVisible();
 
   // The sheet shows staff how many Agnes controls, of how many she may.
   await l.goto(`/characters/${agnes}`);

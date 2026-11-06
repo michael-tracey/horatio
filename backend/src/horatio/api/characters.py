@@ -17,6 +17,7 @@ from horatio import (
     leaving,
     pictures,
     pronouns,
+    remembrances,
     renames,
     social_age,
 )
@@ -163,6 +164,12 @@ class Leaving(BaseModel):
     # For its log.
     note: str = Field(default="", max_length=2000)
     listed: bool
+
+
+class Retiring(Leaving):
+    # Open remembrances in the home troupe's next downtime (horatio.remembrances): its
+    # running staff open them; its player asks them to.
+    remembrances: bool = False
 
 
 class PronounsIn(BaseModel):
@@ -453,16 +460,23 @@ def delete_character(character_id: uuid.UUID, db: DbSession, user: CurrentUser) 
 
 @router.post("/{character_id}/retire")
 def retire_character(
-    character_id: uuid.UUID, db: DbSession, user: CurrentUser, body: Leaving | None = None
+    character_id: uuid.UUID, db: DbSession, user: CurrentUser, body: Retiring | None = None
 ) -> CharacterOut:
     """Characters are never deleted, only retired: for a reason, which goes in the log
     with the note, and listed on its troupes' Who's Who if the player chooses. With
-    no reason it is not listed."""
+    no reason it is not listed. While its home troupe uses Remembrances, its player
+    can ask for them, and running staff open them."""
     character = editable_character(db, user, character_id)
     if body is None:
         leaving.retire(db, user, character, None, "", listed=False)
     else:
         leaving.retire(db, user, character, body.reason, body.note, body.listed)
+        home = db.get(Troupe, character.home_troupe_id) if character.home_troupe_id else None
+        if body.remembrances and home is not None and remembrances.on(home):
+            if remembrances.can_open(db, user, home):
+                remembrances.open_for(db, user, character)
+            else:
+                remembrances.ask_for(db, user, character)
     db.commit()
     return character_out(db, character)
 

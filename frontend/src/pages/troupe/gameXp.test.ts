@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import type { GameXpSettings } from "../../api/types";
 import { addBand, adjustmentText, bandLabel, capText, DEFAULTS, figureFor, fromRows, isBookWay, NO_CHOICE, PRESETS, removeBand, signed, toRows, usesLeft } from "./gameXp";
 
-const ait = PRESETS.find((p) => p.name === "AIT taper")!.bands;
+const tapering = PRESETS.find((p) => p.name === "Tapering")!.bands;
 const helped = { key: "h", name: "Helped", amount: 1, per_month: 1 };
 const unfindable = { key: "n", name: "Not findable", amount: -1, per_month: null };
-const chart: GameXpSettings = { ...DEFAULTS, bands: ait, adjustments: [helped, unfindable] };
+const chart: GameXpSettings = { ...DEFAULTS, bands: tapering, adjustments: [helped, unfindable] };
 
 describe("the chart's words", () => {
   it("labels each band from the one before, the last with no top", () => {
-    expect(ait.map((_, i) => bandLabel(ait, i))).toEqual(["0–200", "201–300", "301–400", "401–500", "501+"]);
+    expect(tapering.map((_, i) => bandLabel(tapering, i))).toEqual(["0–200", "201–300", "301–400", "401–500", "501+"]);
   });
 
   it("names adjustments and the cap as players read them", () => {
@@ -33,12 +33,12 @@ describe("the chart's words", () => {
 
 describe("the chart editor", () => {
   it("round-trips a preset through its rows", () => {
-    expect(fromRows(toRows(ait))).toEqual({ bands: ait, error: null });
+    expect(fromRows(toRows(tapering))).toEqual({ bands: tapering, error: null });
     expect(fromRows([])).toEqual({ bands: [], error: null });
   });
 
   it("refuses bands that don't rise, or figures that aren't whole numbers", () => {
-    const rows = toRows(ait);
+    const rows = toRows(tapering);
     expect(fromRows(rows.map((r, i) => (i === 1 ? { ...r, upTo: "150" } : r))).error).toBe("Band 2 must go higher than the one before.");
     expect(fromRows(rows.map((r, i) => (i === 0 ? { ...r, upTo: "" } : r))).error).toBe("Give band 1 the earned XP it goes up to.");
     expect(fromRows(rows.map((r, i) => (i === 2 ? { ...r, attended: "2.5" } : r))).error).toBe("Give band 3 its XP as whole numbers.");
@@ -51,11 +51,11 @@ describe("the chart editor", () => {
     expect(first).toEqual([{ upTo: "", attended: "5", absentee: "4" }]);
     const two = addBand(first);
     expect(two.map((r) => r.upTo)).toEqual(["100", ""]);
-    expect(addBand(toRows(ait)).map((r) => r.upTo)).toEqual(["200", "300", "400", "500", "600", ""]);
-    const trimmed = removeBand(toRows(ait), 4);
+    expect(addBand(toRows(tapering)).map((r) => r.upTo)).toEqual(["200", "300", "400", "500", "600", ""]);
+    const trimmed = removeBand(toRows(tapering), 4);
     expect(trimmed.map((r) => r.upTo)).toEqual(["200", "300", "400", ""]);
     expect(fromRows(trimmed).bands?.at(-1)).toEqual({ up_to: null, attended: 2, absentee: 1 });
-    expect(removeBand(toRows(ait), 1).map((r) => r.upTo)).toEqual(["200", "400", "500", ""]);
+    expect(removeBand(toRows(tapering), 1).map((r) => r.upTo)).toEqual(["200", "400", "500", ""]);
   });
 });
 
