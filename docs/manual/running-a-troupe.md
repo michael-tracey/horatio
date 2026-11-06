@@ -126,13 +126,18 @@ Narrators see the player's answer and the question, never the character's sheet.
 
 ![The Characters list with two characters ticked and the Print choices open.](images/running-a-troupe/characters.png)
 
-**Characters › Characters** lists every character in the troupe, those whose home it is first, for storytellers and assistant storytellers. Each line shows the character, its player, its clan and social age, and whether it is **Home**, **Visiting** or an **NPC**. Red badges show what needs you: **Asking to make this home**, **Backstory to read**, disciplines to approve, or **Player suspended**. Each player's lines and veils show under their character.
+**Characters › Characters** lists every character in the troupe, those whose home it is first, for storytellers and assistant storytellers. It's a table: the character (with the titles it holds here), its player, its clan, its social age, whether it is **Home**, **Visiting** or an **NPC**, and its flags. Red flags show what needs you: **Asking to make this home**, **Backstory to read**, disciplines to approve, or **Player suspended**. Each player's lines and veils show under their character. On a phone, each character folds into a card, with the same details under its name.
+
+- A clan without a seat at court shows who represents it, under the clan.
+- An NPC that isn't a vampire, such as a mortal or a werewolf, shows its kind where a social age would be, and no clan. A ghoul shows its domitor's clan and **Ghoul**.
+- Choose a heading (Character, Player, Clan or Age) to sort by it; choose it again to reverse the order, and a third time to go back to home characters first.
 
 ### Searching and filtering
 
 - Type a character's or player's name in the search box.
-- The list opens on active characters only (the **Is active** chip). Remove it to see retired characters too.
+- The list opens on active characters only: the button reads **Filter: active**, and the **Is active** chip shows. Remove the chip to see retired characters too. With more conditions, the button counts them all, such as **Filter (2)**.
 - Choose **Filter** to narrow the list by what the sheets hold. Each condition is one of: status (such as home here, visiting, still in creation, or has approvals waiting), a trait and its rating, a clan, sect or other choice, a title, a player, experience, how many of something, a character, or equipment. Choose whether characters must match all of them or any.
+- A condition that compares a number, such as a trait's rating or XP, adds a column with each character's number, so you can compare them; its heading sorts by it too.
 - Each condition shows as a chip you can remove with ×; **Show everyone** clears them. The filter is kept in the page's address, so you can bookmark or share it with other staff.
 - **Show their equipment** opens the Equipment tab on the items the characters shown hold.
 
@@ -147,8 +152,10 @@ Printing opens in a new tab, so what you ticked stays.
 
 ### Giving XP and titles from the list
 
-- **+ XP** beside a home character gives it XP, with a reason, in one go. To give a whole game's XP, use [Award XP](#awarding-a-games-xp) instead.
-- **+ Title** gives the character a title from the troupe's titles, or a new one you type. A title it holds shows beside it; × takes it away.
+Each character's **⋯**, at the end of its row, holds:
+
+- **Titles…**: the titles it holds here, each with × to take it away, and the troupe's titles to give it another, or a new one you type.
+- **Award XP…** (home player characters only): gives it XP, with a reason, in one go. To give a whole game's XP, use [Award XP](#awarding-a-games-xp) instead.
 
 ## Players and their lines and veils
 
@@ -185,7 +192,7 @@ A Stock NPC's page shows its **Stat block** worked out from its kind and rating,
 - **Court order of our titles** sets where the troupe's own titles come in the Who's Who's court, after the rule set's.
 - **Seats at court** chooses which clans have a seat. Until you choose, the clans whose Primogen is held here have one. Characters of other clans are listed under Other on the Who's Who, each with who represents them.
 
-Give a title from the [Characters list](#giving-xp-and-titles-from-the-list) or the character's Status & Titles tab. Whether players choose their own titles, and keep their own status, is set under [Troupe settings](#customise-troupe-settings).
+Give a title from **Titles…** on a character's ⋯ on the [Characters list](#giving-xp-and-titles-from-the-list), or from the character's Status & Titles tab. Whether players choose their own titles, and keep their own status, is set under [Troupe settings](#customise-troupe-settings).
 
 The **Status** tab in the Troupe group is a reference for everyone in the troupe: every status of the sects the troupe takes, what it does and where it comes from. There is nothing to set there.
 
@@ -684,7 +691,7 @@ There are three ways:
 
 - **A game's XP**, from its night after check-in (see [Awarding a game's XP](#awarding-a-games-xp)).
 - **Characters › Award XP**, for the whole troupe at once without check-in: set what **Everyone gets**, raise or lower it per character with the arrows (0 for someone who missed it), write the **Note everyone gets**, and choose **Award…**. Tick **Also add to floor and ceiling** to raise them by the amount everyone gets.
-- **+ XP** beside one character on the [Characters list](#giving-xp-and-titles-from-the-list).
+- **Award XP…** on one character's ⋯ on the [Characters list](#giving-xp-and-titles-from-the-list).
 
 Completing a downtime gives the cycle's completion XP by itself, as the character submits.
 
