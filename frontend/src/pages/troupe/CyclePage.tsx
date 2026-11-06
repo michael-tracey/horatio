@@ -7,10 +7,11 @@ import type { CycleOut, QuestionIn } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Notice, PageTitle, Select, Tabs, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { cycleStatus, timeLeft } from "./cycles";
+import { cycleStatus, kindLabels, pastDue, timeLeft } from "./cycles";
 import { closeFacts, completeFacts } from "./delivery";
 import { DeliveryTab } from "./DeliveryTab";
 import { FeedingTab } from "./FeedingTab";
+import { NominationsReview } from "../nominations/NominationsReview";
 import { ParticipantsTab } from "./ParticipantsTab";
 import { ResponsesTab } from "./ResponsesTab";
 
@@ -59,6 +60,8 @@ export function CyclePage() {
           ...(c.feeding ? [{ to: `${base}/feeding`, label: "Feeding" }] : []),
           { to: `${base}/responses`, label: "Responses" },
           { to: `${base}/delivery`, label: "Delivery" },
+          // A troupe that uses Player Nominations or Remembrances reviews and publishes them here.
+          ...(c.player_nominations || c.remembrances ? [{ to: `${base}/nominations`, label: c.player_nominations ? "Nominations" : "Remembrances" }] : []),
         ]}
       />
       <Routes>
@@ -68,6 +71,7 @@ export function CyclePage() {
         <Route path="feeding" element={<FeedingTab cycle={c} />} />
         <Route path="responses" element={<ResponsesTab cycle={c} />} />
         <Route path="delivery" element={<DeliveryTab cycle={c} />} />
+        {(c.player_nominations || c.remembrances) && <Route path="nominations" element={<NominationsReview cycle={c} />} />}
       </Routes>
     </ClanNames>
   );
@@ -101,7 +105,7 @@ function Overview({ cycle }: { cycle: CycleOut }) {
           submitted: p.submitted,
           due: dates.deadline(cycle.closes_at),
           lateUntil: new Date(cycle.grace_ends_at) > now ? dates.deadline(cycle.grace_ends_at) : null,
-          isPast: new Date(cycle.closes_at) <= now,
+          isPast: pastDue(cycle, now),
         })
       : confirming === "complete" && p && deliveries.data
         ? completeFacts({
@@ -188,7 +192,7 @@ function Overview({ cycle }: { cycle: CycleOut }) {
                 {p.submitted} of {p.participants} submitted
               </p>
               <Bar label="Submitted" done={p.submitted} total={p.participants} />
-              <p className="mt-2 text-sm text-mist">{timeLeft(cycle.closes_at, cycle.grace_ends_at, (at) => dates.dueDay(at))}</p>
+              <p className="mt-2 text-sm text-mist">{timeLeft(cycle.closes_at, cycle.grace_ends_at, (at) => dates.due(at))}</p>
               {p.submitted < p.participants && (
                 <Link to="participants?show=not-submitted" className="mt-2 inline-block text-sm text-gold hover:underline">
                   See who hasn't submitted
@@ -212,7 +216,7 @@ function Overview({ cycle }: { cycle: CycleOut }) {
           {Object.keys(p.by_action_kind).length > 0 && (
             <>
               <h3 className="mt-4 mb-1 font-sans text-xs text-mist uppercase">By kind</h3>
-              <ProgressRows rows={p.by_action_kind} />
+              <ProgressRows rows={p.by_action_kind} labels={kindLabels(Object.keys(p.by_action_kind), cycle.action_kinds ?? {})} />
             </>
           )}
         </Card>
@@ -278,12 +282,14 @@ function Bar({ label, done, total }: { label: string; done: number; total: numbe
   );
 }
 
-function ProgressRows({ rows }: { rows: Record<string, { written?: number; total?: number }> }) {
+/** Written of total, by who or by kind. A row is named as `labels` names its key, or
+ * else as the key reads: a staff member's name as they wrote it, not capitalised. */
+function ProgressRows({ rows, labels = {} }: { rows: Record<string, { written?: number; total?: number }>; labels?: Record<string, string> }) {
   return (
     <ul className="text-sm">
       {Object.entries(rows).map(([name, r]) => (
         <li key={name} className="flex justify-between">
-          <span className="capitalize">{name.replace(/_/g, " ")}</span>
+          <span>{labels[name] ?? name}</span>
           <span>
             {r.written ?? 0} / {r.total ?? 0}
           </span>

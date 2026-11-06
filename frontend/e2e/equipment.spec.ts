@@ -702,9 +702,11 @@ test("staff find who holds what in the Characters filter, and items on the Equip
   await staking.getByLabel("Quality").selectOption("Staking");
   await expect(l.getByText("1 of 4 characters")).toBeVisible();
   await expect(l.getByText("Has a melee weapon with Staking")).toBeVisible();
-  const rows = l.locator("main ul.divide-y > li");
+  const rows = l.getByRole("table", { name: "Characters" }).locator("tbody tr");
   await expect(rows).toHaveCount(1);
-  await expect(rows.filter({ hasText: "Ilse" }).getByText("Wooden Stake", { exact: true })).toBeVisible();
+  // What it holds that the filter asks about: in its own column on a wide screen, under the name on a phone.
+  const holds = (name: string, item: string) => rows.filter({ hasText: name }).getByText(item, { exact: true }).filter({ visible: true });
+  await expect(holds("Ilse", "Wooden Stake")).toBeVisible();
   await l.screenshot(shots("filter-equipment"));
 
   // Show their equipment opens the Equipment tab on Ilse's items.
@@ -724,8 +726,8 @@ test("staff find who holds what in the Characters filter, and items on the Equip
   await armour.getByLabel("How").selectOption({ label: "does not hold" });
   await armour.getByLabel("Kind of item").selectOption({ label: "protective gear" });
   await expect(l.getByText("2 of 4 characters")).toBeVisible();
-  await expect(rows.filter({ hasText: "Pell" }).getByText("Wooden Stake", { exact: true })).toBeVisible();
-  await expect(rows.filter({ hasText: "Rhea" }).getByText("Lantern of Ashes", { exact: true })).toBeVisible();
+  await expect(holds("Pell", "Wooden Stake")).toBeVisible();
+  await expect(holds("Rhea", "Lantern of Ashes")).toBeVisible();
 
   // On the Equipment tab, a word in a special effect finds the lantern.
   await l.goto(`/troupes/${troupe.id}/equipment`);

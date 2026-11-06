@@ -84,3 +84,28 @@ def test_the_roster_shows_clan_and_social_age(troupe: Troupe) -> None:
         "Mara": ("Tremere", "Elder"),
         "Nell": ("Giovanni", "Neonate"),
     }
+
+
+def test_an_npc_that_is_no_vampire_shows_its_kind_and_no_social_age(troupe: Troupe) -> None:
+    """A mortal is no Neonate: its kind stands in the place of a social age, as a ghoul's
+    splat does, and a vampire NPC keeps its age."""
+    st = troupe.storyteller.client
+    for name, kind, form in (
+        ("Joseph Timmeson", "mortal", "stock"),
+        ("Grey Fang", "werewolf", "sheeted"),
+        ("Lucien", "vampire", "stock"),
+    ):
+        made = st.post(
+            f"/troupes/{troupe.id}/npcs", json={"name": name, "npc_kind": kind, "npc_form": form}
+        )
+        assert made.status_code == 201, made.text
+
+    roster = troupe.lead.client.get(f"/troupes/{troupe.id}/characters")
+
+    assert roster.status_code == 200, roster.text
+    shown = {e["character_name"]: (e["clan"], e["social_age"]) for e in roster.json()}
+    assert shown == {
+        "Joseph Timmeson": (None, "Mortal"),
+        "Grey Fang": (None, "Werewolf"),
+        "Lucien": (None, "Neonate"),
+    }
