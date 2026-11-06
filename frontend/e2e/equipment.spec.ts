@@ -5,6 +5,15 @@ import { closeContextsAfterEach, run, shots, person, makeCustodian, ATTRIBUTES_A
 
 closeContextsAfterEach();
 
+/** Opens the ⋯ on an item's row of the troupe's Equipment tab (`row` is "Silver Dagger, held by Agnes"),
+ * and chooses `item` from it if given; returns the menu. */
+async function itemAction(page: Page, row: string, item?: string) {
+  await page.getByRole("table", { name: "Equipment", exact: true }).getByRole("row", { name: row }).getByRole("button", { name: `Actions for ${row}` }).click();
+  const menu = page.getByRole("menu", { name: `Actions for ${row}` });
+  if (item) await menu.getByRole("menuitem", { name: item }).click();
+  return menu;
+}
+
 test("a troupe gives equipment: a dagger from a template, a rifle by hand, refused when it breaks the rules, and a special blade from the character's page", async ({ browser }) => {
   const custodian = await person(browser, "equip-custodian");
   makeCustodian(custodian.email);
@@ -124,39 +133,50 @@ test("a troupe gives equipment: a dagger from a template, a rifle by hand, refus
 
   // The troupe's tab lists them all; filtering by holder and kind finds the dagger.
   await l.reload();
-  const held = l.getByRole("list", { name: "Equipment", exact: true });
-  for (const name of ["Silver Dagger", "Hunting rifle", "Blade of Saulot"]) await expect(held.getByRole("listitem", { name: `${name}, held by Agnes` })).toBeVisible();
-  await expect(held.getByRole("listitem", { name: "Wooden Stake, held by Bram" })).toBeVisible();
-  // Each opens with what it does, and staff's changes.
-  const special = held.getByRole("listitem", { name: "Blade of Saulot, held by Agnes" });
-  await special.getByRole("button", { name: "Blade of Saulot, held by Agnes" }).click();
+  const held = l.getByRole("table", { name: "Equipment", exact: true });
+  for (const name of ["Silver Dagger", "Hunting rifle", "Blade of Saulot"]) await expect(held.getByRole("row", { name: `${name}, held by Agnes` })).toBeVisible();
+  await expect(held.getByRole("row", { name: "Wooden Stake, held by Bram" })).toBeVisible();
+  // A special item says so on its row; its name opens what it does.
+  const special = held.getByRole("row", { name: "Blade of Saulot, held by Agnes" });
   await expect(special.getByText("Special, by Armoury")).toBeVisible();
-  await expect(special.getByRole("list", { name: "Blade of Saulot's special effects" })).toContainText("Drinks the Blood: Once a game");
+  await special.getByRole("button", { name: "Blade of Saulot", exact: true }).click();
+  const details = l.getByRole("dialog", { name: "Blade of Saulot" });
+  await expect(details.getByRole("list", { name: "Blade of Saulot's special effects" })).toContainText("Drinks the Blood: Once a game");
+  await details.getByRole("button", { name: "Close" }).click();
   await l.getByLabel("Held by", { exact: true }).selectOption({ label: "Agnes" });
   await l.getByLabel("Kind", { exact: true }).selectOption({ label: "Melee weapons" });
-  await expect(held.getByRole("listitem", { name: /, held by / })).toHaveCount(2);
-  await expect(held.getByRole("listitem", { name: "Silver Dagger, held by Agnes" })).toBeVisible();
-  await expect(held.getByRole("listitem", { name: "Wooden Stake, held by Bram" })).toHaveCount(0);
+  await expect(held.getByRole("row", { name: /, held by / })).toHaveCount(2);
+  await expect(held.getByRole("row", { name: "Silver Dagger, held by Agnes" })).toBeVisible();
+  await expect(held.getByRole("row", { name: "Wooden Stake, held by Bram" })).toHaveCount(0);
   await l.screenshot(shots("troupe-equipment"));
 
-  // The lead changes the dagger with a reason, and takes the rifle back.
-  const dagger = held.getByRole("listitem", { name: "Silver Dagger, held by Agnes" });
-  await dagger.getByRole("button", { name: "Silver Dagger, held by Agnes" }).click();
-  await dagger.getByRole("button", { name: "Change" }).click();
-  const change = dagger.getByRole("form", { name: "Change Silver Dagger" });
+  // The lead changes the dagger with a reason, and takes the rifle back, each from the ⋯ on its row.
+  await itemAction(l, "Silver Dagger, held by Agnes", "Change…");
+  await l.screenshot(shots("troupe-equipment-change"));
+  const change = l.getByRole("dialog", { name: "Change Silver Dagger" }).getByRole("form", { name: "Change Silver Dagger" });
   await change.getByLabel("Name", { exact: true }).fill("Grandmother's dagger");
   await change.getByLabel("Why it changes").fill("An heirloom");
   await change.getByRole("button", { name: "Save changes" }).click();
-  const heirloom = held.getByRole("listitem", { name: "Grandmother's dagger, held by Agnes" });
-  await heirloom.getByRole("button", { name: "History" }).click();
-  await expect(heirloom.getByRole("list", { name: "Grandmother's dagger's history" })).toContainText("Changed: renamed from Silver Dagger (An heirloom)");
+  await expect(l.getByRole("dialog")).toHaveCount(0);
+  await itemAction(l, "Grandmother's dagger, held by Agnes", "History");
+  await expect(l.getByRole("dialog", { name: "History of Grandmother's dagger" }).getByRole("list", { name: "Grandmother's dagger's history" })).toContainText(
+    "Changed: renamed from Silver Dagger (An heirloom)",
+  );
+  await l.getByRole("dialog").getByRole("button", { name: "Close" }).click();
   await l.getByLabel("Kind", { exact: true }).selectOption({ label: "Every kind" });
-  const rifle = held.getByRole("listitem", { name: "Hunting rifle, held by Agnes" });
-  await rifle.getByRole("button", { name: "Hunting rifle, held by Agnes" }).click();
-  await rifle.getByRole("button", { name: "Take back" }).click();
-  await rifle.getByLabel("Why it is taken back").fill("Lost in the river");
-  await rifle.getByRole("button", { name: "Take back Hunting rifle" }).click();
-  await expect(held.getByRole("listitem", { name: "Hunting rifle, held by Agnes" })).toHaveCount(0);
+  await itemAction(l, "Hunting rifle, held by Agnes", "Take back…");
+  const takeBack = l.getByRole("dialog", { name: "Take back Hunting rifle" });
+  await takeBack.getByLabel("Why it is taken back").fill("Lost in the river");
+  await takeBack.getByRole("button", { name: "Take back Hunting rifle" }).click();
+  await expect(held.getByRole("row", { name: "Hunting rifle, held by Agnes" })).toHaveCount(0);
+  // And moves the heirloom to Bram.
+  await itemAction(l, "Grandmother's dagger, held by Agnes", "Move…");
+  const move = l.getByRole("dialog", { name: "Move Grandmother's dagger" });
+  await move.getByRole("combobox", { name: "Give it to" }).click();
+  await l.getByRole("listbox", { name: "Characters" }).getByRole("option", { name: /Bram/ }).click();
+  await move.getByRole("button", { name: "Give to Bram" }).click();
+  await l.getByRole("button", { name: "Remove Agnes" }).click();
+  await expect(held.getByRole("row", { name: "Grandmother's dagger, held by Bram" })).toBeVisible();
 
   await p.goto(`/characters/${agnes}/log`);
   await expect(p.getByText("equip-lead took Hunting rifle back from Agnes (equip-player): Lost in the river")).toBeVisible();
@@ -505,22 +525,30 @@ test("players give equipment to each other in their home troupe and discard it, 
   await l.goto(`/troupes/${troupe.id}`);
   await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "World", exact: true }).click();
   await l.getByRole("link", { name: "Equipment", exact: true }).click();
-  const found = l.getByRole("list", { name: "Equipment", exact: true });
-  await expect(found.getByRole("listitem", { name: "Silver Dagger, held by Corwin" })).toHaveCount(0);
+  const found = l.getByRole("table", { name: "Equipment", exact: true });
+  await expect(found.getByRole("row", { name: "Silver Dagger, held by Corwin" })).toHaveCount(0);
   await l.getByRole("button", { name: "Show it" }).click();
-  const kept = found.getByRole("listitem", { name: "Silver Dagger, held by Corwin" });
+  const kept = found.getByRole("row", { name: "Silver Dagger, held by Corwin" });
   await expect(kept.getByText("Discarded", { exact: true })).toBeVisible();
-  await kept.getByRole("button", { name: "Silver Dagger, held by Corwin" }).click();
-  await expect(kept.getByText(/^Discarded by swap-second, .*: Lost in the river$/)).toBeVisible();
-  await kept.getByRole("button", { name: "History" }).click();
-  const history = kept.getByRole("list", { name: "Silver Dagger's history" });
+  await kept.getByRole("button", { name: "Silver Dagger", exact: true }).click();
+  await expect(l.getByRole("dialog", { name: "Silver Dagger" }).getByText(/^Discarded by swap-second, .*: Lost in the river$/)).toBeVisible();
+  await l.getByRole("dialog").getByRole("button", { name: "Close" }).click();
+  // A discarded item can only be looked back on, or restored.
+  const menu = await itemAction(l, "Silver Dagger, held by Corwin");
+  await expect(menu.getByRole("menuitem")).toHaveText(["History", "Restore to Corwin"]);
+  await menu.getByRole("menuitem", { name: "History" }).click();
+  const history = l.getByRole("dialog", { name: "History of Silver Dagger" }).getByRole("list", { name: "Silver Dagger's history" });
   await expect(history).toContainText("Given by Isaura to Corwin");
   await expect(history).toContainText("Back from Isaura to Corwin (undone in the Play View)");
   await expect(history).toContainText("Discarded by Corwin (Lost in the river)");
   await l.screenshot(shots("troupe-equipment-discarded"));
-  await kept.getByRole("button", { name: "Restore to Corwin" }).click();
+  await l.getByRole("dialog").getByRole("button", { name: "Close" }).click();
+  await itemAction(l, "Silver Dagger, held by Corwin", "Restore to Corwin");
   await expect(kept.getByText("Discarded", { exact: true })).toHaveCount(0);
-  await expect(kept.getByRole("button", { name: "Change" })).toBeVisible();
+  // Held again, it can be changed, moved, discarded or taken back.
+  const restored = await itemAction(l, "Silver Dagger, held by Corwin");
+  await expect(restored.getByRole("menuitem")).toHaveText(["History", "Change…", "Move…", "Discard…", "Take back…"]);
+  await l.keyboard.press("Escape");
   expect(await holds(s, corwin)).toEqual(["Silver Dagger"]);
 });
 
@@ -599,11 +627,8 @@ test("a storyteller gives the Book of Nod from a character's page, its player pa
   await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "World", exact: true }).click();
   await l.getByRole("link", { name: "Equipment", exact: true }).click();
   await l.getByLabel("Kind", { exact: true }).selectOption({ label: "Vampiric texts" });
-  const held = l.getByRole("list", { name: "Equipment", exact: true });
-  const nod = held.getByRole("listitem", { name: "The Book of Nod, held by Lucan" });
-  await nod.getByRole("button", { name: "The Book of Nod, held by Lucan" }).click();
-  await nod.getByRole("button", { name: "History" }).click();
-  const history = nod.getByRole("list", { name: "The Book of Nod's history" });
+  await itemAction(l, "The Book of Nod, held by Lucan", "History");
+  const history = l.getByRole("dialog", { name: "History of The Book of Nod" }).getByRole("list", { name: "The Book of Nod's history" });
   await expect(history).toContainText(`Given to Theodora by Scriptorium ${run}, from the template The Book of Nod`);
   await expect(history).toContainText("Given by Theodora to Lucan");
 });
@@ -688,9 +713,9 @@ test("staff find who holds what in the Characters filter, and items on the Equip
   await l.getByRole("link", { name: "Show their equipment" }).click();
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupe.id}/equipment\\?holders=${ilse}$`));
   await expect(l.getByRole("list", { name: "Holders searched" })).toHaveText(/Ilse/);
-  const found = l.getByRole("list", { name: "Equipment", exact: true });
-  await expect(found.getByRole("listitem", { name: /, held by / })).toHaveCount(2);
-  await expect(found.getByRole("listitem", { name: "Flak Vest, held by Ilse" })).toBeVisible();
+  const found = l.getByRole("table", { name: "Equipment", exact: true });
+  await expect(found.getByRole("row", { name: /, held by / })).toHaveCount(2);
+  await expect(found.getByRole("row", { name: "Flak Vest, held by Ilse" })).toBeVisible();
 
   // Those with no protective gear: Pell and Rhea, with what they do hold.
   await l.goto(`/troupes/${troupe.id}/characters`);
@@ -706,12 +731,15 @@ test("staff find who holds what in the Characters filter, and items on the Equip
 
   // On the Equipment tab, a word in a special effect finds the lantern.
   await l.goto(`/troupes/${troupe.id}/equipment`);
-  await expect(found.getByRole("listitem", { name: /, held by / })).toHaveCount(6);
+  await expect(found.getByRole("row", { name: /, held by / })).toHaveCount(6);
   await l.getByLabel("Search equipment").fill("obfuscate");
   await expect(l.getByText("1 item", { exact: true })).toBeVisible();
-  const lantern = found.getByRole("listitem", { name: "Lantern of Ashes, held by Rhea" });
-  await lantern.getByRole("button", { name: "Lantern of Ashes, held by Rhea" }).click();
-  await expect(lantern.getByRole("list", { name: "Lantern of Ashes's special effects" })).toContainText("Unveiling: Its light shows anyone hidden by Obfuscate.");
+  const lantern = found.getByRole("row", { name: "Lantern of Ashes, held by Rhea" });
+  await lantern.getByRole("button", { name: "Lantern of Ashes", exact: true }).click();
+  await expect(l.getByRole("dialog", { name: "Lantern of Ashes" }).getByRole("list", { name: "Lantern of Ashes's special effects" })).toContainText(
+    "Unveiling: Its light shows anyone hidden by Obfuscate.",
+  );
+  await l.getByRole("dialog").getByRole("button", { name: "Close" }).click();
 
   // The discarded revolver shows with Discarded ticked, and its history says where it went.
   await l.getByLabel("Search equipment").fill("revolver");
@@ -719,19 +747,19 @@ test("staff find who holds what in the Characters filter, and items on the Equip
   await expect(l.getByText("1 discarded not shown")).toBeVisible();
   await l.getByLabel("Discarded", { exact: true }).click();
   await expect(l.getByLabel("Discarded", { exact: true })).toBeChecked();
-  const gone = found.getByRole("listitem", { name: "Old revolver, held by Pell" });
+  const gone = found.getByRole("row", { name: "Old revolver, held by Pell" });
   await expect(gone.getByText("Discarded", { exact: true })).toBeVisible();
-  await gone.getByRole("button", { name: "Old revolver, held by Pell" }).click();
-  await gone.getByRole("button", { name: "History" }).click();
-  const history = gone.getByRole("list", { name: "Old revolver's history" });
+  await itemAction(l, "Old revolver, held by Pell", "History");
+  const history = l.getByRole("dialog", { name: "History of Old revolver" }).getByRole("list", { name: "Old revolver's history" });
   await expect(history).toContainText(`Given to Pell by ${troupeName}`);
   await expect(history).toContainText("Discarded by Pell (Thrown in the canal)");
   await l.screenshot(shots("troupe-equipment-search"));
+  await l.getByRole("dialog").getByRole("button", { name: "Close" }).click();
 
   // Melee weapons, held or discarded, export as a CSV.
   await l.getByLabel("Search equipment").fill("");
   await l.getByLabel("Kind", { exact: true }).selectOption({ label: "Melee weapons" });
-  await expect(found.getByRole("listitem", { name: /, held by / })).toHaveCount(3);
+  await expect(found.getByRole("row", { name: /, held by / })).toHaveCount(3);
   const downloading = l.waitForEvent("download");
   await l.getByRole("button", { name: "Export CSV" }).click();
   const download = await downloading;
