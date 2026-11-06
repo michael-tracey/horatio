@@ -61,7 +61,7 @@ export function CyclesTab({ troupeId }: { troupeId: string }) {
                 <Link to={`/cycles/${c.id}`} className="group flex items-center justify-between gap-2 py-3">
                   <span className="min-w-0">
                     <span className="block group-hover:text-gold">{c.name}</span>
-                    <span className="block text-xs text-mist">{cycleLine(c, (at) => dates.dueDay(at))}</span>
+                    <span className="block text-xs text-mist">{cycleLine(c, (at) => dates.due(at))}</span>
                   </span>
                   <Badge tone={c.status === "open" ? "gold" : "mist"}>{cycleStatus(c.status)}</Badge>
                 </Link>

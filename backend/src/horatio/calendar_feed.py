@@ -182,7 +182,7 @@ def troupe_events(db: Session, troupes: Sequence[Troupe], now: datetime) -> list
             events.append(
                 Event(
                     uid=f"downtimes-grace-{cycle.id}@horatio",
-                    summary=f"Late downtimes close: {cycle.name} ({troupe.name})",
+                    summary=f"Downtimes accepted until: {cycle.name} ({troupe.name})",
                     starts_at=cycle.grace_ends_at,
                     ends_at=None,
                     description="The grace period ends: late downtimes are not taken after this.",

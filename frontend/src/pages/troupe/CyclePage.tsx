@@ -7,7 +7,7 @@ import type { CycleOut, QuestionIn } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Notice, PageTitle, Select, Tabs, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { cycleStatus, timeLeft } from "./cycles";
+import { cycleStatus, pastDue, timeLeft } from "./cycles";
 import { closeFacts, completeFacts } from "./delivery";
 import { DeliveryTab } from "./DeliveryTab";
 import { FeedingTab } from "./FeedingTab";
@@ -101,7 +101,7 @@ function Overview({ cycle }: { cycle: CycleOut }) {
           submitted: p.submitted,
           due: dates.deadline(cycle.closes_at),
           lateUntil: new Date(cycle.grace_ends_at) > now ? dates.deadline(cycle.grace_ends_at) : null,
-          isPast: new Date(cycle.closes_at) <= now,
+          isPast: pastDue(cycle, now),
         })
       : confirming === "complete" && p && deliveries.data
         ? completeFacts({
@@ -188,7 +188,7 @@ function Overview({ cycle }: { cycle: CycleOut }) {
                 {p.submitted} of {p.participants} submitted
               </p>
               <Bar label="Submitted" done={p.submitted} total={p.participants} />
-              <p className="mt-2 text-sm text-mist">{timeLeft(cycle.closes_at, cycle.grace_ends_at, (at) => dates.dueDay(at))}</p>
+              <p className="mt-2 text-sm text-mist">{timeLeft(cycle.closes_at, cycle.grace_ends_at, (at) => dates.due(at))}</p>
               {p.submitted < p.participants && (
                 <Link to="participants?show=not-submitted" className="mt-2 inline-block text-sm text-gold hover:underline">
                   See who hasn't submitted

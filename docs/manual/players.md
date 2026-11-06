@@ -14,7 +14,7 @@ For signing up, your account, your settings and notifications, see [Getting star
 - **No home troupe yet**: it's finished, but no troupe has accepted it.
 - **Waiting for** a troupe: you've asked that troupe to be its home, and its storytellers haven't decided.
 - **Home:** a troupe: it plays there.
-- **Downtime due** (or **Downtime overdue**): a downtime is waiting for you to submit.
+- **Downtime due**, with its day and time (or **Downtime overdue**): a downtime is waiting for you to submit.
 - **New results**: downtime results have arrived that you haven't opened on this device.
 - **Retired**: see [Retiring a character](#retiring-a-character).
 
@@ -309,7 +309,7 @@ If the cycle gives XP for completing it, the card says **Submitting it earns** s
 
 ### The due date and the grace period
 
-The card says when the downtime is **Due**, and **Accepted until** the end of the grace period. A downtime submitted after the due date is accepted, but marked late (**Submitted (late)**). After the grace period ends, only a storyteller can let one in. You can edit a submitted downtime until the grace period ends.
+The card says when the downtime is **Due** and when it is **Accepted until** (the end of the grace period), each with its day and time in your time zone, such as "Due Sat 14 Nov, 6:00 pm EST". Set your time zone in [Settings](getting-started.md#settings) if it isn't your device's. A downtime submitted after the due date is accepted, but marked late (**Submitted (late)**). After the grace period ends, only a storyteller can let one in. You can edit a submitted downtime until the grace period ends.
 
 *If your troupe uses this:* with absentee downtimes, only a character that came to a game recently can submit; the form says so.
 

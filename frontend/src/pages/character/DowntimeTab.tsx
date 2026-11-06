@@ -143,7 +143,7 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
   ) : dirty ? (
     "Not saved yet"
   ) : submit.isSuccess ? (
-    "Submitted. You can keep editing until the grace period ends."
+    `Submitted. You can keep editing until ${dates.deadline(d.grace_ends_at)}.`
   ) : (
     savedAt && `Saved ${dates.time(savedAt)}`
   );
