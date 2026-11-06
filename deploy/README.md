@@ -23,7 +23,7 @@ host nginx :443 ── Let's Encrypt certificate, renewed by certbot's timer
 | `deploy.sh` | Builds, then runs `playbook.yml` against the host |
 | `playbook.yml` | Postgres, migrations, the app, nginx and TLS, nightly backups |
 | `production.env.example` | The settings to copy to `production.env` (gitignored) |
-| `custodian.sh` | Makes an account the custodian |
+| `custodian.sh` | Makes an account the custodian, or with `--remove` stops it being one |
 | `import-influence-log.sh` | Imports a troupe's influence log from the old spreadsheet |
 | `import-yorick-print.sh` | Imports a troupe's characters from Yorick's Print Characters page |
 

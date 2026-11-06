@@ -1,7 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
@@ -99,6 +99,13 @@ class TroupeOut(BaseModel):
     quest_requests_per_cycle: int
     # Its staff can give items that expire (horatio.item_expiry).
     items_expire: bool = False
+    # Player Nominations (horatio.nominations): whether the troupe uses them, and
+    # whether the caller reads its published ones (its staff and its players).
+    player_nominations: bool = False
+    nominations: bool = False
+    # Remembrances (horatio.remembrances): whether the troupe uses them. The caller
+    # reads its published months (above) while it uses either.
+    remembrances: bool = False
     # The caller may see its Who's Who: its staff, and the players of its characters.
     whos_who: bool
     # Its portrait (add "/48.webp", "/128.webp" or "/512.webp"), or None.
@@ -252,7 +259,18 @@ def troupes_out(db: DbSession, user: User, troupes: Sequence[Troupe]) -> list[Tr
     whos_who = whos_who_troupes(db, user, troupes, roles)
     mine = home_characters(db, user, troupes)
     return [
-        one_out(t, figures[t.id], roles[t.id], t.id in whos_who, mine.get(t.id, []))
+        one_out(
+            t,
+            figures[t.id],
+            roles[t.id],
+            t.id in whos_who,
+            mine.get(t.id, []),
+            reads_nominations=(t.player_nominations or t.remembrances)
+            and (
+                user.is_custodian
+                or (t.archived_at is None and (roles[t.id] is not None or bool(mine.get(t.id))))
+            ),
+        )
         for t in troupes
     ]
 
@@ -284,6 +302,8 @@ def one_out(
     role: Role | None,
     whos_who: bool,
     my_characters: list[str],
+    *,
+    reads_nominations: bool = False,
 ) -> TroupeOut:
     profile = Profile.model_validate(troupe.profile)
     return TroupeOut(
@@ -318,6 +338,9 @@ def one_out(
         quests_enabled=troupe.quests_enabled,
         quest_requests_per_cycle=troupe.quest_requests_per_cycle,
         items_expire=troupe.items_expire,
+        player_nominations=troupe.player_nominations,
+        nominations=reads_nominations,
+        remembrances=troupe.remembrances,
         whos_who=whos_who,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
         banner=pictures.banner_url(troupe.id, troupe.banner_id),
@@ -624,10 +647,13 @@ def reopen_troupe(
 def appoint_lead(
     troupe_id: uuid.UUID, body: NewLead, db: DbSession, user: CurrentUser
 ) -> TroupeOut:
-    """The custodian appoints a troupe's lead storyteller."""
+    """The custodian appoints a troupe's lead storyteller. The one they replace leaves
+    the staff: a lead who is suspended or stepping down shouldn't keep a role without
+    anyone choosing it, and the Staff tab can add them back."""
     require_custodian(user)
     troupe = get_troupe(db, troupe_id)
     lead = existing_user(db, body.handle)
+    former = db.get_one(User, troupe.lead_user_id)
     # The lead is never also listed as ordinary staff.
     staff_row = db.scalar(
         select(TroupeStaff).where(
@@ -637,7 +663,17 @@ def appoint_lead(
     if staff_row is not None:
         db.delete(staff_row)
     troupe.lead_user_id = lead.id
-    audit.record(db, user, "troupe.lead_appointed", troupe_id=troupe.id, member=lead.display_name)
+    replacing: dict[str, Any] = (
+        {"kind": "replacing", "former": former.display_name} if former.id != lead.id else {}
+    )
+    audit.record(
+        db,
+        user,
+        "troupe.lead_appointed",
+        troupe_id=troupe.id,
+        member=lead.display_name,
+        **replacing,
+    )
     db.commit()
     return troupe_out(db, user, troupe)
 

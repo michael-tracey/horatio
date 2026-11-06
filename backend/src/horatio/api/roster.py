@@ -298,7 +298,8 @@ MESSAGES: dict[str, str] = {
     " held refunded.",
     "approval.quest.merit_flaw": "{actor} answered the request to {change} for {character}"
     " with the quest {quest}.",
-    "approval.request.home_troupe_change": "{actor} asked to make this {character}'s home.",
+    "approval.request.home_troupe_change": "{actor} asked for {troupe} to be {character}'s home"
+    " troupe{and_visiting}.",
     "approval.approved.home_troupe_change": "{actor} accepted {character}; this is its home.",
     "approval.approved": "{actor} approved {character}.",
     "approval.declined": "{actor} declined {character}'s request.",
@@ -327,6 +328,8 @@ MESSAGES: dict[str, str] = {
     "staff.assigned": "{actor} made {member} {role}.",
     "staff.removed": "{actor} removed {member} from the staff.",
     "troupe.lead_appointed": "{actor} appointed {member} lead storyteller.",
+    "troupe.lead_appointed.replacing": "{actor} appointed {member} lead storyteller in place of"
+    " {former}, who has left the staff.",
     "troupe.renamed": "{actor} renamed the troupe to {name}.",
     "troupe.archived": "{actor} archived the troupe{because}.",
     "troupe.settled.home": "{character} left {troupe} as it was archived, and has no home troupe"
@@ -410,6 +413,14 @@ MESSAGES: dict[str, str] = {
     "npc.reimported": "{actor} imported the NPC {character} from Yorick again (its id there:"
     " {legacy_id}; label: {label}; printed lines left to staff: {unmatched}).",
     "npc.stock_changed": "{actor} changed the Stock NPC {character}.",
+    "npc.given": "{actor} gave the NPC {character} to @{to_handle}, at home here and accepted,"
+    " with {xp} XP for its sheet{carried}.",
+    "npc.claimed": "{actor} claimed the NPC {character} with a claim link, at home here and"
+    " accepted, with {xp} XP for its sheet{carried}.",
+    "npc.claim_link_made": "{actor} made a claim link for the NPC {character}.",
+    "npc.claim_link_remade": "{actor} made a new claim link for the NPC {character}, replacing"
+    " the old one.",
+    "npc.claim_link_cancelled": "{actor} cancelled the claim link for the NPC {character}.",
     "title.given": "{actor} gave {character} the title {title}.",
     "title.taken": "{actor} took the title {title} from {character}.",
     "title.chosen": "{actor} chose the title {title} for {character} ({what}).",
@@ -601,6 +612,8 @@ MESSAGES: dict[str, str] = {
     "retainer.restored": "{actor} marked {name}, one of {character}'s Retainers, as serving again.",
     "retainer.linked": "{actor} linked {name}, one of {character}'s Retainers, to an NPC.",
     "retainer.unlinked": "{actor} unlinked {name}, one of {character}'s Retainers, from its NPC.",
+    "retainer.npc_given": "{name}, one of {character}'s Retainers, is no longer linked to the"
+    " NPC {npc}: {actor} gave it to @{to_handle}.",
     "retainer.neglected": "{name}, one of {character}'s Retainers, is neglected: its {cost}"
     " upkeep wasn't paid.",
     "retainer.neglect_cleared": "{actor} cleared the neglect of {name}, one of {character}'s"
@@ -680,6 +693,21 @@ MESSAGES: dict[str, str] = {
     "location.out_of_code": "{said}",
     "house.location_option": "{actor} switched the location house option {option} {setting}.",
     "house.items_expire": "{actor} switched Items can expire {setting}.",
+    "house.player_nominations": "{actor} switched Player Nominations {setting}.",
+    "nomination.removed": '{actor} removed a Player Nomination from {cycle}{because}: "{text}"',
+    "nomination.restored": '{actor} put back a Player Nomination in {cycle}: "{text}"',
+    "nomination.starred": '{actor} starred a Player Nomination from {cycle}: "{text}"',
+    "nomination.unstarred": '{actor} unstarred a Player Nomination from {cycle}: "{text}"',
+    "nomination.edited": '{actor} edited a Player Nomination in {cycle}: "{text}"',
+    "nomination.published": "{actor} published {cycle}'s Player Nominations ({count}).",
+    "nomination.published_more": "{actor} published {count} more of {cycle}'s Player Nominations.",
+    "house.remembrances": "{actor} switched Remembrances {setting}.",
+    "remembrance.opened": "{actor} opened remembrances for {character}, asked in {cycle}.",
+    "remembrance.asked": "{actor} asked for remembrances of {character}.",
+    "remembrance.removed": "{actor} removed a memory of {remembered} from {cycle}{because}:"
+    ' "{text}"',
+    "remembrance.restored": '{actor} put back a memory of {remembered} in {cycle}: "{text}"',
+    "remembrance.edited": '{actor} edited a memory of {remembered} in {cycle}: "{text}"',
     "house.location_limit": "{actor} set going over a character's control limit to {setting}.",
     "house.location_quality_added": "{actor} added the location quality {name} ({kind}).",
     "house.location_quality_changed": "{actor} changed the location quality {name}.",
@@ -726,6 +754,10 @@ def message(
         values["category"] = named.lower() if named else category.replace("_", " ")
     # A reason given, as the end of a sentence: " (the Prince's order)".
     values["because"] = f" ({data['reason']})" if data.get("reason") else ""
+    # A request for a new home troupe that started the character visiting it.
+    values["and_visiting"] = ", and it started visiting" if data.get("joined") else ""
+    # Entries from before the troupe's name was kept with them.
+    values.setdefault("troupe", "this troupe")
     # Given at a Play View game: " at game 3".
     values["at_game"] = f" at game {data['game']}" if data.get("game") else ""
     if isinstance(values.get("picks"), dict):

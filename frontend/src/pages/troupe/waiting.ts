@@ -43,15 +43,14 @@ export function waitingTotal(lines: WaitingLine[] | undefined): number {
 }
 
 /**
- * When something is due, from the calendar days between today and its day in the
- * viewer's zone, each as "2026-11-07": "due in 7 days", "due tomorrow", "due today",
- * "due yesterday" or "due 3 days ago".
+ * When something is due: its moment, written with its time (Dates.due), then the
+ * calendar days between today and its day in the viewer's zone, each as
+ * "2026-11-07": "Due Sat 7 Nov, 6:00 pm (in 7 days)", "(tomorrow)", "(today)",
+ * "(yesterday)" or "(3 days ago)".
  */
-export function dueText(today: string, due: string): string {
+export function dueText(today: string, due: string, when: string): string {
   const days = Math.round((Date.parse(due) - Date.parse(today)) / 86_400_000);
-  if (days > 1) return `due in ${days} days`;
-  if (days === 1) return "due tomorrow";
-  if (days === 0) return "due today";
-  if (days === -1) return "due yesterday";
-  return `due ${-days} days ago`;
+  const away =
+    days > 1 ? `in ${days} days` : days === 1 ? "tomorrow" : days === 0 ? "today" : days === -1 ? "yesterday" : `${-days} days ago`;
+  return `Due ${when} (${away})`;
 }

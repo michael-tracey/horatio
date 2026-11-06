@@ -23,7 +23,7 @@ What the custodian isn't:
 
 - **Not a player's stand-in.** Like staff, the custodian can read any character's sheet, but only a character's player edits it. To see exactly what a player sees, use [View as](#viewing-as-someone).
 - **Not one of every troupe's staff.** The custodian isn't listed on a troupe's Staff tab, and isn't sent each troupe's approvals and downtimes. Their bell has only the custodian's own work, such as new troupe requests.
-- **Not a role you give in the app.** There's no button to make someone the custodian, or to stop being one. See [Becoming the custodian](#becoming-the-custodian).
+- **Not a role you give in the app.** There's no button to make someone the custodian, or to stop being one. See [Becoming the custodian](#becoming-the-custodian) and [Removing a custodian](#removing-a-custodian).
 
 ## Becoming the custodian
 
@@ -43,7 +43,15 @@ Run the same command inside the running app, for example in its container: `dock
 
 The repository's own deployment has a script for this, `deploy/custodian.sh you@example.com`, which needs the server's SSH key. See [deploy/README.md](https://github.com/michael-tracey/horatio/blob/main/deploy/README.md) for the full steps.
 
-Taking the role away again means changing the account in the database by hand: there's no command for it.
+### Removing a custodian
+
+The same command takes the role away again, with `--remove` before the email:
+
+- on your own computer, from the `backend` folder: `uv run python -m horatio.custodian --remove someone@example.com`;
+- on a server: `docker exec horatio-api python -m horatio.custodian --remove someone@example.com`;
+- on the repository's own deployment: `deploy/custodian.sh --remove someone@example.com`.
+
+The account stays as it is, with its characters and any staff roles; only the custodian's powers go, at once. **Custodian** leaves their top menu when they next reload the page. The last custodian can't be removed: make someone else the custodian first.
 
 ## Troupe requests
 
@@ -71,7 +79,7 @@ Each troupe has one lead storyteller. Only you can change who it is, for example
 2. Under **Lead storyteller**, in **Appoint a new lead**, pick the person, or type a name or handle to find them.
 3. Choose **Appoint**.
 
-The new lead takes over at once. If they were already on the troupe's staff, their old role gives way to lead. The previous lead keeps no role in the troupe: a storyteller can add them back on the Staff tab if they're staying on. What each role can do is in [Running a troupe](running-a-troupe.md#staff-roles).
+The new lead takes over at once. If they were already on the troupe's staff, their old role gives way to lead. The previous lead leaves the staff, with no role in the troupe, as the card says before you confirm; the troupe's log records who they were. If they're staying on, add them back under **Add staff** with a role. What each role can do is in [Running a troupe](running-a-troupe.md#staff-roles).
 
 ## Archived troupes
 
@@ -156,6 +164,8 @@ Sometimes a character belongs with a different player: it was built on the wrong
 
 The old player can no longer open the character; the new one can at once. A character in a game on the Play View can't be moved until the game ends with **Reset for next game**, and an NPC can't be moved at all: it belongs to its troupe. To undo a move, move it back.
 
+To hand an NPC to a player, give it instead: from the troupe's **Characters › NPCs**, or the NPC's own page, choose **⋯ › Give to a player…** or **⋯ › Claim link…**. You can do this in any troupe, as its storytellers can (see [Giving an NPC to a player](running-a-troupe.md#giving-an-npc-to-a-player)). It becomes the player's character, at home and accepted in its troupe. If it went to the wrong person, move it to the right one as above. It can't be turned back into an NPC.
+
 ### Changing someone's email
 
 For a player who has lost their old address:
@@ -231,10 +241,10 @@ Under the table, three cards show what's going on with accounts:
 
 ![The Backups tab, with nightly backups and one made here](images/custodian/backups.png)
 
-- A backup is the whole database: every account, character and troupe.
-- One is made every night and copied to cloud storage for 30 days. The server keeps a week of backups, nightly or made here.
+- A backup is the whole database: every account, character and troupe. Uploaded pictures, such as portraits and clan logos, aren't in it.
+- Where the server runs a nightly backup, those are listed too. How long backups are kept, and whether they're copied anywhere else, depends on how the server is set up, so the tab doesn't promise either. On the repository's own deployment, the nightly job keeps a week of backups, nightly or made here, and copies each nightly one to cloud storage for 30 days.
 - Choose **Back up now** to make one, before a big change for example.
-- Choose **Download** beside a backup to keep a copy longer than a week. A backup holds everything, including password hashes, so keep downloads somewhere safe.
+- Choose **Download** beside a backup to keep a copy of your own. A backup holds everything, including password hashes, so keep downloads somewhere safe.
 
 Making or downloading a backup goes in the audit log.
 

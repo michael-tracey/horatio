@@ -2,17 +2,22 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { api, unwrap } from "../../api/client";
+import { ActionMenu, MenuGroup, MenuItem, MenuLink } from "../../components/ActionMenu";
 import { Avatar } from "../../components/Avatar";
+import { Dialog } from "../../components/Dialog";
+import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
-import { FORM_NAMES, type NpcFilter, type NpcForm, type NpcKind, filterNpcs, groupedKinds, kindPages, kindsIn, resourceText } from "./npcKinds";
+import { BadgeNote } from "../character/Badge";
+import { ClaimLink, GiveToPlayer, givable } from "./GiveNpc";
+import { FORM_NAMES, type Npc, type NpcFilter, type NpcForm, type NpcKind, filterNpcs, groupedKinds, kindPages, kindsIn, resourceText } from "./npcKinds";
 
 type Custom = { name: string; nature: "mortal" | "supernatural"; resource: { name: string; size: number; per_turn: number; regains: string } };
 const NEW_CUSTOM: Custom = { name: "", nature: "supernatural", resource: { name: "Blood", size: 10, per_turn: 1, regains: "" } };
 
 /** The troupe's NPCs, with their kind and form, each sheeted one with a way into
  * its Play View, badges to print for them, and the fast way to make another. */
-export function NpcsTab({ troupeId }: { troupeId: string }) {
+export function NpcsTab({ troupeId, canGive = false }: { troupeId: string; canGive?: boolean }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const path = { params: { path: { troupe_id: troupeId } } };
@@ -45,9 +50,6 @@ export function NpcsTab({ troupeId }: { troupeId: string }) {
     setName("");
     await queryClient.invalidateQueries({ queryKey: ["npcs", troupeId] });
   });
-  const listOnWhosWho = useAction(({ id, listed }: { id: string; listed: boolean }) =>
-    unwrap(api.PUT("/api/troupes/{troupe_id}/npcs/{character_id}/whos-who", { params: { path: { troupe_id: troupeId, character_id: id } }, body: { listed } })),
-  );
   const ready = !!name && !(kind?.custom && !custom.name) && !create.isPending;
   const all = npcs.data ?? [];
   const shown = filterNpcs(all, filter);
@@ -94,53 +96,34 @@ export function NpcsTab({ troupeId }: { troupeId: string }) {
         {npcs.isPending ? (
           <Loading />
         ) : shown.length ? (
-          <ul className="divide-y divide-ash">
-            {shown.map((n) => (
-              <li key={n.id} aria-label={n.name} className="flex flex-wrap items-center gap-3 py-2">
-                <input type="checkbox" aria-label={`Select ${n.name}`} checked={selected.has(n.id)} onChange={() => toggle(n.id)} />
-                {n.npc_form === "stock" ? (
-                  // Its builder, in place of a sheet (issue #215).
-                  <Link to={`/troupes/${troupeId}/npcs/${n.id}`} className="flex min-w-0 flex-1 items-center gap-3 hover:text-gold">
-                    <Avatar name={n.name} picture={n.picture} clan={n.clan} />
-                    <span className="truncate">{n.name}</span>
-                  </Link>
-                ) : (
-                  <Link to={`/characters/${n.id}`} className="flex min-w-0 flex-1 items-center gap-3 hover:text-gold">
-                    <Avatar name={n.name} picture={n.picture} clan={n.clan} />
-                    <span className="truncate">{n.name}</span>
-                  </Link>
-                )}
-                <span className="flex items-center gap-1">
-                  <Badge tone="gold">{n.npc_kind_name ?? n.splat}</Badge>
-                  <Badge>{FORM_NAMES[(n.npc_form ?? "sheeted") as NpcForm]}</Badge>
-                  {n.stock_rating != null && <Badge>Rating {n.stock_rating}</Badge>}
-                </span>
-                <label className="flex items-center gap-1.5 text-xs text-mist" title="Titled NPCs are on the Who's Who anyway.">
-                  <input
-                    type="checkbox"
-                    aria-label={`List ${n.name} on the Who's Who`}
-                    checked={n.on_whos_who}
-                    disabled={listOnWhosWho.isPending}
-                    onChange={(e) => listOnWhosWho.mutate({ id: n.id, listed: e.target.checked })}
-                  />
-                  Who’s Who
-                </label>
-                <Link
-                  to={`/play/characters/${n.id}`}
-                  aria-label={`Play ${n.name}`}
-                  className="inline-flex min-h-9 items-center rounded-md bg-blood px-3 text-sm font-medium text-parchment hover:bg-blood-bright"
-                >
-                  Play
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <table aria-label="NPCs" className="w-full text-sm">
+            {/* On a phone or a narrow window each row folds into a card, under the name. */}
+            <thead className="max-lg:sr-only">
+              <tr className="border-b border-ash text-left text-xs text-mist">
+                <th className="w-px py-2 pr-3 font-normal">
+                  <span className="sr-only">Select</span>
+                </th>
+                <th className="py-2 pr-3 font-normal">Name</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Kind</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Form</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Rating</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>On the Who’s Who</th>
+                <th className="py-2 font-normal">
+                  <span className="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-ash">
+              {shown.map((n) => (
+                <NpcRow key={n.id} npc={n} troupeId={troupeId} canGive={canGive} selected={selected.has(n.id)} onToggle={() => toggle(n.id)} />
+              ))}
+            </tbody>
+          </table>
         ) : (
           <Empty>{all.length ? "No NPCs of that kind." : "No NPCs yet."}</Empty>
         )}
         <ErrorText error={npcs.error} />
-        <ErrorText error={listOnWhosWho.error} />
-        {all.length > 0 && <p className="mt-3 text-xs text-mist">NPCs with a title here are on the Who’s Who. Tick Who’s Who to list one without.</p>}
+        {all.length > 0 && <p className="mt-3 text-xs text-mist">NPCs with a title here are on the Who’s Who. List one without from its ⋯.</p>}
       </Card>
       <Card title="New NPC">
         <form
@@ -211,6 +194,91 @@ export function NpcsTab({ troupeId }: { troupeId: string }) {
         </form>
       </Card>
     </div>
+  );
+}
+
+/** A column shown only on a wide screen; on a narrow one it folds in under the name. */
+const WIDE = "hidden lg:table-cell";
+
+/** One NPC: what it is, and what staff can do with it behind ⋯. */
+function NpcRow({ npc, troupeId, canGive, selected, onToggle }: { npc: Npc; troupeId: string; canGive: boolean; selected: boolean; onToggle: () => void }) {
+  const [open, setOpen] = useState<"badge" | "give" | "claim" | null>(null);
+  const close = () => setOpen(null);
+  const giving = canGive && givable(npc);
+  const toast = useToast();
+  const listed = npc.on_whos_who;
+  const list = useAction(async () => {
+    await unwrap(
+      api.PUT("/api/troupes/{troupe_id}/npcs/{character_id}/whos-who", {
+        params: { path: { troupe_id: troupeId, character_id: npc.id } },
+        body: { listed: !listed },
+      }),
+    );
+    toast({
+      message: listed ? `${npc.name} is off the Who’s Who.` : `${npc.name} is on the Who’s Who.`,
+    });
+  });
+  const form = FORM_NAMES[(npc.npc_form ?? "sheeted") as NpcForm];
+  const kind = npc.npc_kind_name ?? npc.splat;
+  // A Stock NPC's builder stands in for a sheet (issue #215).
+  const to = npc.npc_form === "stock" ? `/troupes/${troupeId}/npcs/${npc.id}` : `/characters/${npc.id}`;
+  return (
+    <tr>
+      <td className="w-px py-2.5 pr-3 align-top">
+        <input type="checkbox" className="mt-2.5" aria-label={`Select ${npc.name}`} checked={selected} onChange={onToggle} />
+      </td>
+      <td className="py-2.5 pr-3 align-top">
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <Link to={to} className="flex min-w-0 items-center gap-3 text-parchment hover:text-gold">
+            <Avatar name={npc.name} picture={npc.picture} clan={npc.clan} />
+            <span className="wrap-anywhere">{npc.name}</span>
+          </Link>
+          {npc.claim_expires_at && <Badge>Claim link out</Badge>}
+        </span>
+        <span className="mt-1 flex flex-wrap items-center gap-1 text-xs text-mist lg:hidden">
+          <Badge tone="gold">{kind}</Badge>
+          <Badge>{form}</Badge>
+          {npc.stock_rating != null && <Badge>Rating {npc.stock_rating}</Badge>}
+          {listed && <span>On the Who’s Who</span>}
+        </span>
+      </td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top`}>
+        <Badge tone="gold">{kind}</Badge>
+      </td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top text-mist`}>{form}</td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top text-mist`}>{npc.stock_rating ?? <span aria-label="None">–</span>}</td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top text-mist`}>{listed ? "Yes" : "No"}</td>
+      <td className="w-px py-1 text-right align-top">
+        <ActionMenu label={`Actions for ${npc.name}`} variant="ghost">
+          <MenuLink to={`/play/characters/${npc.id}`}>Play</MenuLink>
+          <MenuItem disabled={list.isPending} onSelect={() => list.mutate(undefined)}>
+            {listed ? "Take off the Who’s Who" : "List on the Who’s Who"}
+          </MenuItem>
+          <MenuItem onSelect={() => setOpen("badge")}>Badge…</MenuItem>
+          {giving && (
+            <MenuGroup label="Give to a player">
+              <MenuItem onSelect={() => setOpen("give")}>Give to a player…</MenuItem>
+              <MenuItem onSelect={() => setOpen("claim")}>Claim link…</MenuItem>
+            </MenuGroup>
+          )}
+        </ActionMenu>
+        <ErrorText error={list.error} />
+        {/* The dialog sits here, as nothing but cells may sit in a row (Dialog sets its own text-left). */}
+        <Dialog title={`${npc.name}'s badge`} open={open === "badge"} onClose={close}>
+          <BadgeNote character={npc} onDone={close} />
+        </Dialog>
+        {giving && (
+          <>
+            <Dialog title={`Give ${npc.name} to a player`} open={open === "give"} onClose={close}>
+              {open === "give" && <GiveToPlayer npcId={npc.id} npcName={npc.name} troupeId={troupeId} onDone={close} />}
+            </Dialog>
+            <Dialog title={`Claim link for ${npc.name}`} open={open === "claim"} onClose={close}>
+              {open === "claim" && <ClaimLink npcId={npc.id} />}
+            </Dialog>
+          </>
+        )}
+      </td>
+    </tr>
   );
 }
 

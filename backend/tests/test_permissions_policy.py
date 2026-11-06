@@ -16,6 +16,8 @@ STORYTELLERS_ONLY = {
     TroupeAction.MANAGE_HOUSE_RULES,
     TroupeAction.MANAGE_CONNECTORS,
     TroupeAction.EDIT_PROFILE,
+    # Giving an NPC to a player, which makes it theirs (issue #481).
+    TroupeAction.GIVE_NPCS,
 }
 NARRATOR_CAN = {
     TroupeAction.VIEW_STAFF,

@@ -4,9 +4,11 @@ import { Link, useLocation } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { WhosWhoEntry } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
+import { Dialog } from "../../components/Dialog";
 import { useClanName } from "../../components/ClanNames";
 import { LinesVeilsNote } from "../../components/LinesVeils";
 import { Badge, Empty, ErrorText, Input, Loading, Select } from "../../components/ui";
+import { RemembrancesPanel } from "../nominations/Remembrances";
 import { RepresentedBy } from "./RepresentedBy";
 import { NO_FILTER, clanText, filterChoices, sections, type Section, type WhosWhoFilter } from "./whosWho";
 
@@ -122,6 +124,21 @@ function WhosWhoSection({ section, seated, represent }: { section: Section; seat
   );
 }
 
+/** For one no longer with us: its remembrances (#471), to read, or for running staff to open. */
+function RememberedLink({ entry: e }: { entry: WhosWhoEntry }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span>
+      <button type="button" className="text-gold underline hover:text-parchment" onClick={() => setOpen(true)}>
+        {e.remembered ? "Remembrances" : "Open remembrances…"}
+      </button>
+      <Dialog title={`Remembrances of ${e.name}`} open={open} onClose={() => setOpen(false)}>
+        <RemembrancesPanel characterId={e.character_id} name={e.name} />
+      </Dialog>
+    </span>
+  );
+}
+
 /** "Brujah, Toreador and Ventrue". */
 function andList(items: string[]): string {
   return items.length > 1 ? `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}` : (items[0] ?? "");
@@ -171,6 +188,7 @@ function EntryCard({ entry: e, kind, seated, represent }: { entry: WhosWhoEntry;
           <RepresentedBy troupeId={represent.troupeId} entry={e} seated={seated} canSet={represent.canSet.includes(e.character_id)} />
         )}
         {kind === "departed" && e.left_reason && <span className="text-mist">{e.left_reason}</span>}
+        {kind === "departed" && (e.remembered || e.remembrances_openable) && <RememberedLink entry={e} />}
         {(e.visible.length > 0 || e.bans.length > 0 || e.negative.length > 0) && (
           <ul aria-label={`What others see of ${e.name}`} className="mt-1 flex flex-col gap-0.5 border-t border-ash pt-1 text-xs">
             {e.visible.map((v) => (
