@@ -200,8 +200,9 @@ What it shows of sect status is set under [Troupe settings](#customise-troupe-se
 **World › Equipment** lists every item the troupe's home characters hold, PCs and NPCs, for storytellers and assistant storytellers. Only a character's home troupe gives it equipment, and an item goes with its character if it moves to another home troupe.
 
 - **Give equipment** gives an item: weapons, protective gear and other gear with the book's qualities, or a Vampiric Text. Start from the book's items or the troupe's own templates; **Save as a template** keeps one for next time.
-- An item can be made special, with any number of qualities and effects of the troupe's own.
-- Open an item to change it, move it to another home character, or take it back with a reason (its player is told).
+- An item can be made special, with any number of qualities and effects of the troupe's own. A special item shows **Special, by** its troupe on its row.
+- The list is a table: each item, who holds it, its kind, qualities and grade, and when and by whom it was given. On a phone, each item folds into a card. Choose an item's name to read what it does.
+- Each item's **⋯**, at the end of its row, holds **History**, and, while it's held, **Change…**, **Move…** (to another home character), **Discard…** and **Take back…** (with a reason; its player is told). A discarded item's **⋯** offers **Restore to** its last holder instead.
 - **Find items** searches by words, holder, kind, quality, grade, who gave it and when, held or discarded.
 - **Export CSV** downloads the list; **Find these characters** opens the Characters list on the holders.
 
