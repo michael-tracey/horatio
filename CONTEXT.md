@@ -403,6 +403,10 @@ _Avoid_: Integration, plugin, webhook
 The route one delivery took: `horatio` (in-app), `discord` or `email`. A troupe's connectors decide which channels a delivery goes out on.
 _Avoid_: Medium, transport
 
+**Player Nomination**:
+A short note a player writes in a downtime praising someone's roleplaying, optionally linked to a character in the troupe or one of its staff. The troupe's storytellers and assistant storytellers read it with its writer, may remove, star or lightly edit it, and publish the cycle's once it is past Due, to the troupe's players, shuffled and without names. Starred ones rotate at the foot of the troupe's pages. A troupe uses them only if it switches them on.
+_Avoid_: Shout-out, kudos, props
+
 ### Locations
 
 **Location**:

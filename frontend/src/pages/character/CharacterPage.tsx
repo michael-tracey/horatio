@@ -30,6 +30,7 @@ import { CharacterShared } from "../troupe/SharedBackground";
 import { ChoiceInfo } from "./Info";
 import { useClanName } from "../../components/ClanNames";
 import { SheetTab, useCatalogue } from "./SheetTab";
+import { NominationsAbout } from "../nominations/NominationsAbout";
 import { StatusTitlesTab } from "./StatusTitlesTab";
 import { TroupesTab } from "./TroupesTab";
 import { XpTab } from "./XpTab";
@@ -235,12 +236,16 @@ export function CharacterPage() {
         <Route
           index
           element={
-            <SheetTab
-              character={c}
-              mine={mine}
-              badge={!mine || custodian}
-              give={!mine && (custodian || (!!home.data && abilities(home.data.my_role, custodian).running))}
-            />
+            <>
+              {/* For its player, the Player Nominations about it (#470): nothing while there are none. */}
+              {mine && c.kind === "pc" && <NominationsAbout character={c} />}
+              <SheetTab
+                character={c}
+                mine={mine}
+                badge={!mine || custodian}
+                give={!mine && (custodian || (!!home.data && abilities(home.data.my_role, custodian).running))}
+              />
+            </>
           }
         />
         <Route path="status" element={<StatusTitlesTab character={c} />} />

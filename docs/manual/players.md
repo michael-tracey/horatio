@@ -301,6 +301,14 @@ Each action question has **Add an action** with how many are left of that kind, 
 - **Influence.** An action of an influence kind also asks for the **Specialisation** and the **Action**, offering the actions the character can reach with its influence.
 - **Quests.** *If your troupe runs quests:* the **Quest action** asks **Which quest** it's for: one the character is in or leads, or one shared with it or posted to the troupe, which it joins by choosing it.
 
+### Player Nominations
+
+> **If your troupe uses this:** the form has a **Player Nominations** section.
+
+Write a line or two praising someone's roleplaying in **New nomination**, choose who it's **About** if you like (a character in the troupe, a storyteller, or no one in particular), and choose **Add nomination**. Add as many as you like; they don't use any actions. Each saves as you add it. Until it's published, **Change** edits it and **Take out** removes it.
+
+The storytellers read them once you submit your downtime, and may take out any that aren't kind or lightly edit one. Once the cycle is past Due, they publish them to the troupe's players without your name.
+
 ### Saving and submitting
 
 The form saves itself a couple of seconds after you stop typing, and when you switch away; the line by the buttons says **Saving…**, **Saved** or **Not saved yet**. **Save draft** saves at once. **Submit downtime** saves and submits. You can keep editing after submitting: the button becomes **Save and resubmit**.
@@ -318,6 +326,14 @@ The card says when the downtime is **Due** and when it is **Accepted until** (th
 When the storytellers deliver the cycle's results, the **Results** tab shows how many are new, and the Characters page says **New results**. Each cycle's results are under its name and date, newest first and open: each answer sits under the action it answers. Older cycles fold away. A cycle re-delivered after a change says **Updated**. Your troupe may also send results by email or Discord.
 
 ![The Results tab: a cycle's results, with the storytellers' answer under the action](images/players/results.png)
+
+### Reading the nominations
+
+> **If your troupe uses this:** a troupe with Player Nominations has a **Nominations** tab, for its players and staff.
+
+The troupe's **Nominations** tab lists each month's published nominations, newest month first. Each month's are in an order shuffled once when they were published, without names; one linked to someone says **About** them, and a ★ marks those the storytellers starred. Starred ones also rotate in a quiet line at the foot of the troupe's pages: **Pause** stops it, **Next** moves on, and it never moves by itself if your device asks for less motion.
+
+On your character's page, **Nominations about** your character gathers those linked to it, newest first. A player whose character only visits the troupe can write nominations there but doesn't read its Nominations tab.
 
 ## At game
 

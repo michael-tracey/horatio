@@ -87,7 +87,7 @@ A troupe's page has its tabs in groups. Which ones you see depends on your role.
 
 | Group | Tabs |
 | --- | --- |
-| Troupe | About, Profile, Who's Who, House rules, Status, Staff, Log |
+| Troupe | About, Profile, Who's Who, Nominations, House rules, Status, Staff, Log |
 | Characters | Approvals, Characters, NPCs, At game, Award XP, Titles |
 | World | Locations, Equipment, Shared backgrounds |
 | Players | Players, Lines and veils |
@@ -303,6 +303,10 @@ NPCs are never limited by either.
 - **Blood at the start of a game**: what resetting a character's Play View puts their Blood back to: full, or a number you choose.
 - **Diablerie and Lesser Generation**: what recording a diablerie does to a Lesser Generation or Thin Blooded flaw: leave it, remove it and the XP it gave, or remove it and keep the XP.
 - **Items that expire**: let staff give items with an expiry (see [Equipment](#equipment)).
+
+### Downtimes
+
+- **Player Nominations**: let players praise each other's roleplaying in their downtimes, for you to review and publish each month (see [Player Nominations](#player-nominations)). Off by default. Switched off, none of it shows anywhere; what was written and published is kept for when it's on again.
 
 ### Feeding
 
@@ -609,6 +613,20 @@ Results always appear in Horatio, and on each connector the troupe has on. A res
 ### Marking a cycle complete
 
 Once results are out, choose **Mark complete** on the Overview. Horatio says first what is unwritten or undelivered. You can still deliver from a complete cycle; those are the last results.
+
+### Player Nominations
+
+> **If your troupe uses this:** switch on **Player Nominations** under [Customise › Troupe settings](#downtimes).
+
+Each downtime form gets a **Player Nominations** section, where players write short notes praising someone's roleplaying, each optionally linked to a character in the troupe or one of its staff. They don't use actions. You read them on the cycle's **Nominations** tab, open to storytellers and assistant storytellers, once a player submits their downtime.
+
+- Each row shows the nomination, who it's about, and who wrote it (character and player). Players never see who wrote one.
+- The ⋯ on a row holds **Star** (or **Unstar**), **Edit…** and **Remove…** (or **Put back**). An edit is for small things, such as a typo or a real name the player asked to keep private, and is marked **Edited by staff**. Removing one keeps it on the tab, with an optional reason only staff see.
+- The counts at the top say how many are written, removed and starred.
+
+**Publish nominations** works once the cycle is past **Due**, and once only. It publishes the cycle's nominations to the troupe's players, shuffled once and without names, on the troupe's **Nominations** tab, and tells them in the bell. The player of each character named in one, and each member of staff named, gets a line saying so. Nominations written afterwards, during the grace period, wait on the tab for **Publish … more**. You can still remove a published nomination: it disappears for players at once.
+
+Every starred nomination, from every month, rotates in a quiet line at the foot of the troupe's pages for its players and staff, until someone unstars it, here or from the **Nominations** tab. Removing, putting back, starring, editing and publishing go in the troupe's log.
 
 ## Game nights
 

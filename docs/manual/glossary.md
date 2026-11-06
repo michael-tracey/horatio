@@ -138,6 +138,10 @@ The character's page for use at a game, made for a phone: trackers for Blood, Wi
 
 A person who plays one or more characters. A player sees only their own characters' sheets, never other players'.
 
+## Player Nominations
+
+Short notes players write in their downtimes praising someone's roleplaying. The troupe's storytellers read them, with their writers' names, then publish them each month to the troupe's players, shuffled and without names. A troupe chooses whether to use them.
+
 ## Profile
 
 What anyone signed in can see about a person: their display name, handle, pronouns, when they joined, their bio, social media links and Discord username. Never their email.

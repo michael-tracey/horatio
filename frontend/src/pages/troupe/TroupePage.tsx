@@ -17,6 +17,8 @@ import { LogTab } from "./LogTab";
 import { StockNpcBuilder } from "./StockNpcBuilder";
 import { NpcsTab } from "./NpcsTab";
 import { MyWork, WorkTab } from "./WorkTab";
+import { NominationsFooter } from "../nominations/NominationsFooter";
+import { NominationsTab } from "../nominations/NominationsTab";
 import { OverviewTab } from "./OverviewTab";
 import { PlayersTab } from "./PlayersTab";
 import { QuestsTab } from "./QuestsTab";
@@ -84,6 +86,7 @@ export function TroupePage() {
               { to: base, label: "About", end: true },
               { to: `${base}/profile`, label: "Profile" },
               ...(t.whos_who ? [{ to: `${base}/whos-who`, label: "Who's Who" }] : []),
+              ...(t.nominations ? [{ to: `${base}/nominations`, label: "Nominations" }] : []),
               { to: `${base}/house-rules`, label: "House rules" },
               { to: `${base}/status`, label: "Status" },
               ...(can.staff ? [{ to: `${base}/staff`, label: "Staff" }] : []),
@@ -149,6 +152,7 @@ export function TroupePage() {
         <Route path="status" element={<StatusRulesTab troupe={t} />} />
         {can.staff && <Route path="staff" element={<StaffTab troupe={t} canManage={can.storyteller} />} />}
         {t.whos_who && <Route path="whos-who" element={<WhosWhoTab troupeId={t.id} />} />}
+        {t.nominations && <Route path="nominations" element={<NominationsTab troupeId={t.id} canStar={can.running} />} />}
         {can.running && <Route path="characters" element={<RosterTab troupeId={t.id} />} />}
         {can.running && <Route path="players" element={<PlayersTab troupeId={t.id} />} />}
         {can.staff && <Route path="lines-veils" element={<LinesVeilsTab troupeId={t.id} />} />}
@@ -177,6 +181,8 @@ export function TroupePage() {
         {can.staff && <Route path="tables" element={<TablesTab troupeId={t.id} canEdit={can.running} />} />}
         {can.staff && t.quests_enabled && <Route path="quests/*" element={<QuestsTab troupeId={t.id} running={can.running} />} />}
       </Routes>
+      {/* Every starred nomination, for the troupe's players and staff (#470). */}
+      {t.nominations && <NominationsFooter troupeId={t.id} />}
     </>
   );
 }
