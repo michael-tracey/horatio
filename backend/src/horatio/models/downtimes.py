@@ -41,6 +41,9 @@ class DowntimeCycle(Record):
     feeding_difficulty: Mapped[dict[str, dict[str, Any]]] = mapped_column(
         JSONB, default=dict, server_default="{}"
     )
+    # When its Player Nominations were first published (horatio.nominations): once
+    # only, with any late ones added after.
+    nominations_published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Question(Record):

@@ -50,6 +50,7 @@ from horatio.api import (
     location_quests,
     locations,
     membership,
+    nominations,
     notifications,
     npcs,
     pictures,
@@ -205,6 +206,7 @@ for module in (
     quests,
     backstories,
     written_rules,
+    nominations,
 ):
     api.include_router(module.router)
 

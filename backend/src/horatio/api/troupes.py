@@ -99,6 +99,10 @@ class TroupeOut(BaseModel):
     quest_requests_per_cycle: int
     # Its staff can give items that expire (horatio.item_expiry).
     items_expire: bool = False
+    # Player Nominations (horatio.nominations): whether the troupe uses them, and
+    # whether the caller reads its published ones (its staff and its players).
+    player_nominations: bool = False
+    nominations: bool = False
     # The caller may see its Who's Who: its staff, and the players of its characters.
     whos_who: bool
     # Its portrait (add "/48.webp", "/128.webp" or "/512.webp"), or None.
@@ -252,7 +256,18 @@ def troupes_out(db: DbSession, user: User, troupes: Sequence[Troupe]) -> list[Tr
     whos_who = whos_who_troupes(db, user, troupes, roles)
     mine = home_characters(db, user, troupes)
     return [
-        one_out(t, figures[t.id], roles[t.id], t.id in whos_who, mine.get(t.id, []))
+        one_out(
+            t,
+            figures[t.id],
+            roles[t.id],
+            t.id in whos_who,
+            mine.get(t.id, []),
+            reads_nominations=t.player_nominations
+            and (
+                user.is_custodian
+                or (t.archived_at is None and (roles[t.id] is not None or bool(mine.get(t.id))))
+            ),
+        )
         for t in troupes
     ]
 
@@ -284,6 +299,8 @@ def one_out(
     role: Role | None,
     whos_who: bool,
     my_characters: list[str],
+    *,
+    reads_nominations: bool = False,
 ) -> TroupeOut:
     profile = Profile.model_validate(troupe.profile)
     return TroupeOut(
@@ -318,6 +335,8 @@ def one_out(
         quests_enabled=troupe.quests_enabled,
         quest_requests_per_cycle=troupe.quest_requests_per_cycle,
         items_expire=troupe.items_expire,
+        player_nominations=troupe.player_nominations,
+        nominations=reads_nominations,
         whos_who=whos_who,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
         banner=pictures.banner_url(troupe.id, troupe.banner_id),
