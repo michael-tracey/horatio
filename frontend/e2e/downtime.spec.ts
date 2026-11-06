@@ -362,7 +362,9 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("link", { name: "Troupe", exact: true }).click();
   await lead.page.getByRole("link", { name: "Log", exact: true }).click();
   await expect(lead.page.getByText("lead accepted Agnes (player); this is its home.")).toBeVisible();
-  await expect(lead.page.getByText("Agnes (player) started visiting the troupe.")).toBeVisible();
+  // Asking to make the troupe home is one entry, though it started Agnes visiting too.
+  await expect(lead.page.getByText(`player asked for ${troupeName} to be Agnes's home troupe, and it started visiting.`)).toBeVisible();
+  await expect(lead.page.getByText("Agnes (player) started visiting the troupe.")).toBeHidden();
   await expect(lead.page.getByText(/lead approved Agnes \(player\)'s Celerity/)).toBeVisible();
   await lead.page.screenshot(shots("log"));
   // The troupe's rules: the lead can play a check differently.

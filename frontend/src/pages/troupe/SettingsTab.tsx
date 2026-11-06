@@ -70,6 +70,8 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
       </Group>
       <Group title="Feeding">
         <FeedingSetting troupeId={troupe.id} canEdit={canEdit} />
+        {/* Unlike the settings around it, assistant storytellers keep the territories too, as the
+            API lets them: who holds which changes in play, as the Authority proclaims it. */}
         {troupe.feeding !== "off" && troupe.feeding_territories && (
           <FeedingTerritories troupeId={troupe.id} canManage={!troupe.archived && (canEdit || troupe.my_role === "assistant_storyteller")} />
         )}
