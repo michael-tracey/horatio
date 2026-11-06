@@ -841,6 +841,7 @@ test("someone asks for a troupe of their own, and the custodian approves it", as
   await c.getByRole("link", { name: /Troupe requests/ }).click();
   const request = c.getByRole("listitem").filter({ hasText: troupeName });
   await expect(request.getByText("Eight players ready.")).toBeVisible();
+  await expect(request.getByText(`(@${asker.handle}), `)).toBeVisible();
   await c.screenshot(shots("troupe-request"));
   await request.getByRole("button", { name: "Approve and make the troupe" }).click();
   await expect(c.getByRole("link", { name: troupeName })).toBeVisible();
@@ -855,6 +856,11 @@ test("someone asks for a troupe of their own, and the custodian approves it", as
   await expect(mine.getByText("Approved", { exact: true })).toBeVisible();
   await a.locator("main").getByRole("link", { name: troupeName }).first().click();
   await expect(a.getByText("Lead storyteller").first()).toBeVisible();
+
+  // Appointing a new lead says, before it is done, that the asker would leave the staff.
+  await c.goto(a.url());
+  await c.getByRole("link", { name: "Staff", exact: true }).click();
+  await expect(c.getByText("requests-asker will leave the staff, with no role in the troupe.", { exact: false })).toBeVisible();
 });
 
 test("archiving a troupe lets its characters go and ends its cycle, and the custodian reopens it", async ({ browser }) => {
@@ -1682,13 +1688,13 @@ test("staff set a tapering game XP chart and award a game by it, with an absente
   await homed("Ulric");
   await send(lead.page, "POST", `/api/characters/${tamsin}/xp`, { amount: 250, reason: "Games before Horatio" });
 
-  // The lead starts from AIT's taper, records absentee games, adds an adjustment, and switches the monthly cap off.
+  // The lead starts from the Tapering chart, records absentee games, adds an adjustment, and switches the monthly cap off.
   const l = lead.page;
   await l.goto(`/troupes/${troupeId}/settings`);
   const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Game XP chart", exact: true }) });
   await expect(card.getByText(/^Flat: everyone there gets the same XP/)).toBeVisible();
   await card.getByRole("button", { name: "Change the game XP chart" }).click();
-  await card.getByRole("button", { name: "AIT taper" }).click();
+  await card.getByRole("button", { name: "Tapering" }).click();
   await expect(card.getByLabel("Band 2: earned XP up to")).toHaveValue("300");
   await card.getByLabel("Record absentee games").check();
   await card.getByRole("button", { name: "Add an adjustment" }).click();
