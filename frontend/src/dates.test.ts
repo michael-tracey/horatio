@@ -70,6 +70,21 @@ describe("dates", () => {
     expect(datesFor(newYork).dueDay("2027-01-09T04:59:00Z", now)).toBe("Fri 8 Jan 2027");
   });
 
+  it("writes a cycle's Due with its time, in the reader's zone (#469)", () => {
+    const now = new Date("2026-10-20T12:00:00Z");
+    // 6 pm in New York on Saturday 14 November.
+    const due = "2026-11-14T23:00:00Z";
+    expect(datesFor(newYork).due(due, now)).toBe("Sat 14 Nov, 6:00 pm");
+    expect(datesFor({ ...newYork, clock: "24" }).due(due, now)).toBe("Sat 14 Nov, 18:00");
+    expect(datesFor({ ...newYork, date_format: "month_day" }).due(due, now)).toBe("Sat 11/14, 6:00 pm");
+    expect(datesFor({ ...newYork, date_format: "iso", clock: "24" }).due(due, now)).toBe("Sat 2026-11-14, 18:00");
+    // Each reader sees it on their own clock: in Tokyo it is already Sunday.
+    expect(datesFor({ ...newYork, time_zone: "Europe/London", clock: "24" }).due(due, now)).toBe("Sat 14 Nov, 23:00");
+    expect(datesFor({ ...newYork, time_zone: "Asia/Tokyo", clock: "24" }).due(due, now)).toBe("Sun 15 Nov, 08:00");
+    // Next year's shows its year.
+    expect(datesFor(newYork).due("2027-01-09T04:59:00Z", now)).toBe("Fri 8 Jan 2027, 11:59 pm");
+  });
+
   it("writes a deadline with its weekday and zone", () => {
     const now = new Date("2026-10-20T12:00:00Z");
     const due = "2026-10-24T03:59:00Z";

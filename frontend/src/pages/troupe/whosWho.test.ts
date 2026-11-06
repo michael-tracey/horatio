@@ -23,6 +23,8 @@ function entry(id: string, name: string, clan: string | null, more: Partial<Whos
     player_pronouns: null,
     represented_by: null,
     left_reason: null,
+    remembered: false,
+    remembrances_openable: false,
     lines_veils: null,
     ...more,
   };

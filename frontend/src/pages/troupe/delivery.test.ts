@@ -50,7 +50,7 @@ describe("closing submissions", () => {
     expect(closeFacts({ participants: 1, submitted: 0, due: "Sat 7 Nov", lateUntil: "Mon 9 Nov", isPast: false })).toEqual([
       "It isn't due until Sat 7 Nov.",
       "1 of 1 participant hasn't submitted.",
-      "Late downtimes are taken until Mon 9 Nov.",
+      "Late downtimes are accepted until Mon 9 Nov.",
       "Once closed, nobody can submit, and the cycle can't be opened again.",
     ]);
   });

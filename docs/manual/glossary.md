@@ -138,6 +138,10 @@ The character's page for use at a game, made for a phone: trackers for Blood, Wi
 
 A person who plays one or more characters. A player sees only their own characters' sheets, never other players'.
 
+## Player Nominations
+
+Short notes players write in their downtimes praising someone's roleplaying. The troupe's storytellers read them, with their writers' names, then publish them each month to the troupe's players, shuffled and without names. A troupe chooses whether to use them.
+
 ## Profile
 
 What anyone signed in can see about a person: their display name, handle, pronouns, when they joined, their bio, social media links and Discord username. Never their email.
@@ -153,6 +157,10 @@ How many dots a character has in a [trait](#trait).
 ## Reconciliation
 
 Settling, one by one, the differences between a character's sheet and the rules of a troupe it's joining, such as a trait that costs more there. A character isn't let in until every difference is settled.
+
+## Remembrances
+
+Memories of a character who has left play, asked of the whole troupe in the next downtime once its storytellers open them. They're published without names, with the month's [Player Nominations](#player-nominations), and kept with the character. A troupe chooses whether to use them.
 
 ## Retired character
 

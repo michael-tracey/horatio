@@ -54,6 +54,7 @@ class TroupeAction(StrEnum):
     MANAGE_RANDOM_TABLES = "manage_random_tables"
     VIEW_LOG = "view_log"
     MANAGE_NPCS = "manage_npcs"
+    GIVE_NPCS = "give_npcs"
     MANAGE_TITLES = "manage_titles"
     CHANGE_STATUS = "change_status"
     RESET_GAMES = "reset_games"
@@ -95,6 +96,8 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     TroupeAction.MANAGE_RANDOM_TABLES: frozenset(_RUNNING),
     TroupeAction.VIEW_LOG: frozenset(_RUNNING),
     TroupeAction.MANAGE_NPCS: frozenset(_RUNNING),
+    # Giving a sheeted NPC to a player, directly or by a claim link (horatio.npc_gifts).
+    TroupeAction.GIVE_NPCS: frozenset(_STORYTELLERS),
     TroupeAction.MANAGE_TITLES: frozenset(_RUNNING),
     # Adding and removing a character's fleeting and negative status, and marking
     # its status bans, whatever the troupe's Status on sheets setting says
@@ -120,7 +123,9 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     # and taking it back, and keeping the troupe's own templates (horatio.equipment).
     TroupeAction.MANAGE_EQUIPMENT: frozenset(_RUNNING),
     # Seeing and keeping the troupe's locations, and their log. Narrators and players
-    # never see the record (horatio.locations).
+    # never see the record (horatio.locations). Also keeping the feeding territories
+    # (horatio.territories): who holds which changes in play, as the Authority
+    # proclaims it, so it isn't one of the storytellers' settings.
     TroupeAction.MANAGE_LOCATIONS: frozenset(_RUNNING),
     # The troupe's quest requests and quests: building, checking and sending them
     # (horatio.quests). Narrators work on those assigned to them, as for downtimes.

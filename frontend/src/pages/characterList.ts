@@ -32,7 +32,7 @@ export function waiting(c: CharacterListOut, seen: string | null, dates: Dates, 
   const notes: Note[] = [];
   if (c.downtime_due)
     notes.push({
-      label: new Date(c.downtime_due) <= now ? "Downtime overdue" : `Downtime due ${dates.dueDay(c.downtime_due, now)}`,
+      label: new Date(c.downtime_due) <= now ? "Downtime overdue" : `Downtime due ${dates.due(c.downtime_due, now)}`,
       tone: "blood",
     });
   if (newResults(c.delivered, seen, now.getTime()) > 0) notes.push({ label: "New results", tone: "gold" });

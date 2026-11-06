@@ -21,6 +21,7 @@ Every troupe has exactly one **lead storyteller**, and as many **storytellers**,
 | Award XP, correct it, run check-in at a game | Yes | Yes | Yes | No |
 | Run downtime cycles: open, assign, deliver, close | Yes | Yes | Yes | No |
 | Make and play NPCs, run scenes, reset the Play Views | Yes | Yes | Yes | No |
+| Give an NPC to a player, or make a claim link for it | Yes | Yes | No | No |
 | Give titles, status and equipment; keep locations, quests, shared backgrounds and the influence log | Yes | Yes | Yes | No |
 | Read the troupe log | Yes | Yes | Yes | No |
 | Answer downtime actions assigned to them, or to any narrator | Yes | Yes | Yes | Yes |
@@ -87,7 +88,7 @@ A troupe's page has its tabs in groups. Which ones you see depends on your role.
 
 | Group | Tabs |
 | --- | --- |
-| Troupe | About, Profile, Who's Who, House rules, Status, Staff, Log |
+| Troupe | About, Profile, Who's Who, Nominations, House rules, Status, Staff, Log |
 | Characters | Approvals, Characters, NPCs, At game, Award XP, Titles |
 | World | Locations, Equipment, Shared backgrounds |
 | Players | Players, Lines and veils |
@@ -103,7 +104,7 @@ A number on a tab is how much waits on you there, such as approvals to decide.
 The **About** tab is the troupe at a glance. For staff it starts with **Waiting on you**: one line for each kind of work, each a link straight to it. The lines you may see are:
 
 - **Approvals waiting** and **Backstories to read**;
-- the open cycle, with how many have submitted and when it is due;
+- the open cycle, with how many have submitted and when it is **Due**, its day and time, such as "Due Sat 14 Nov, 6:00 pm (in 7 days)";
 - late downtimes to accept, responses to assign, responses not yet written, responses for you to write, and results ready to deliver;
 - allowance shortfalls in a cycle;
 - **Quest requests to answer**;
@@ -165,7 +166,16 @@ Each character's **⋯**, at the end of its row, holds:
 
 ## NPCs
 
-**Characters › NPCs** lists the troupe's NPCs, for storytellers and assistant storytellers. NPCs belong to the troupe, need no approval and take no part in downtimes. Filter the list by kind and by form, open one, or choose **Play** to open its Play View at a game. Tick **Who's Who** to list an NPC without a title on the Who's Who (one with a title is listed anyway). **Game badges** prints badges for the NPCs ticked, or all of them.
+**Characters › NPCs** lists the troupe's NPCs, for storytellers and assistant storytellers. NPCs belong to the troupe, need no approval and take no part in downtimes. Each row shows the NPC's kind, its form (sheeted or stock), a Stock NPC's rating, and whether it is listed on the Who's Who. On a phone these fold in under the name. Filter the list by kind and by form, or open an NPC by its name.
+
+The **⋯** at the end of each row holds:
+
+- **Play**, which opens its Play View at a game;
+- **List on the Who's Who** or **Take off the Who's Who**, for an NPC without a title (one with a title is listed anyway);
+- **Badge…**, which shows what others can see of it, takes a note for its badge, and prints it;
+- **Give to a player…** and **Claim link…**, for storytellers, on a finished sheeted vampire or ghoul (see [Giving an NPC to a player](#giving-an-npc-to-a-player)).
+
+**Game badges** prints badges for the NPCs ticked, or all of them.
 
 ![The NPCs tab with the New NPC form.](images/running-a-troupe/npcs.png)
 
@@ -182,6 +192,34 @@ Under **New NPC**:
 ### Stock NPCs
 
 A Stock NPC's page shows its **Stat block** worked out from its kind and rating, and a rules card for its kind. Change its name, kind or rating, add up to as many **Specialisations** as its rating, and keep **Notes**; each change saves as you make it. **Make this a full sheet…** turns it into a sheeted NPC. That cannot be undone.
+
+### Giving an NPC to a player
+
+A troupe moving to Horatio can load its existing characters as NPCs, then give each one to its player as that person signs up. The lead storyteller and storytellers can give an NPC (the custodian can too); assistant storytellers can't. Only a finished, sheeted vampire or ghoul can be given: a Stock NPC has no sheet to play, so make it a full sheet first.
+
+Giving it makes it the player's character, at home in your troupe and already accepted:
+
+- its sheet as it stands becomes its accepted sheet, so later changes go through your approvals and [free changes](#free-changes) as any new character's do;
+- its XP balances: each trait's dots are bought at your troupe's prices, and an **Imported** award gives that much, so nothing is left unspent. A trait your costs don't price is kept as free dots;
+- XP the player had banked elsewhere goes in **Unspent XP to carry over**, as its own entry with your reason. Neither is checked against your [XP floor and ceiling](#xp-settings);
+- it leaves the NPCs list and shows on the Who's Who as a player's character. A Retainer linked to it is unlinked, with a line in its owner's log;
+- the player is told *"name is yours now"*, and it's in the troupe log.
+
+To give it to someone who has signed up:
+
+1. Choose **⋯ › Give to a player…** on its row of the NPCs list, or **⋯ › Give to a player…** on its own page.
+2. Pick the **Player**, and fill in any **Unspent XP to carry over** and **Why**.
+3. Choose **Continue** to see what will happen, then **Give *name* to @handle**.
+
+For someone who hasn't signed up yet, send a **claim link** instead:
+
+1. Choose **⋯ › Claim link…**, fill in any XP to carry over, and choose **Make a claim link**.
+2. Copy the link and send it to them. It shows only now, works once, and lasts 30 days.
+3. Whoever opens it sees the character's name and portrait, signs up or signs in, and chooses **Claim *name***. The character is given to them as above, and whoever made the link is told.
+
+While a link is out, the NPC's row says **Claim link out**. **Claim link…** shows when it expires and who made it; **Cancel the link** stops it working, and **Make a new link** replaces it. Giving the NPC directly also ends its link.
+
+A character given to the wrong person is put right by the custodian [moving it to the right player](custodian.md#moving-a-character-to-another-player). It can't be turned back into an NPC.
 
 ## Titles and status
 
@@ -310,6 +348,11 @@ NPCs are never limited by either.
 - **Blood at the start of a game**: what resetting a character's Play View puts their Blood back to: full, or a number you choose.
 - **Diablerie and Lesser Generation**: what recording a diablerie does to a Lesser Generation or Thin Blooded flaw: leave it, remove it and the XP it gave, or remove it and keep the XP.
 - **Items that expire**: let staff give items with an expiry (see [Equipment](#equipment)).
+
+### Downtimes
+
+- **Player Nominations**: let players praise each other's roleplaying in their downtimes, for you to review and publish each month (see [Player Nominations](#player-nominations)). Off by default. Switched off, none of it shows anywhere; what was written and published is kept for when it's on again.
+- **Remembrances**: ask the troupe for memories of a character who leaves play (see [Remembrances](#remembrances)). Off by default, and independent of Player Nominations. Switched off, none can be opened or written and nothing of them shows, except those already published: they stay on the characters' pages and the Who's Who, because they belong to the people remembered.
 
 ### Feeding
 
@@ -544,7 +587,7 @@ Narrators and visiting troupes' staff never read backstories. The player's side 
 
 ### Characters leaving or retiring
 
-A player can leave the home troupe for none, from the character's Home troupe card; its titles there end and its requests waiting there are withdrawn. A player can also retire a character, with a reason: **Final Death**, **Off-field** or **Inactive**. Storytellers and assistant storytellers of its home troupe can change why a retired character left, and whether the Who's Who lists it under "No longer with us", from the **Retired** card on its page.
+A player can leave the home troupe for none, from the character's Home troupe card; its titles there end and its requests waiting there are withdrawn. A player can also retire a character, with a reason: **Final Death**, **Off-field** or **Inactive**. Storytellers and assistant storytellers of its home troupe can change why a retired character left, and whether the Who's Who lists it under "No longer with us", from the **Retired** card on its page. *If your troupe uses this:* they can also open [Remembrances](#remembrances) for it there.
 
 ## Downtime cycles
 
@@ -556,8 +599,8 @@ A downtime cycle is one round of downtimes. Storytellers and assistant storytell
 
 1. Choose **New cycle**.
 2. Give it a **Name**, such as the month.
-3. Set **Due**, in your time zone; players see it in theirs.
-4. Set **Accepted until**: the grace period, while late downtimes are still taken.
+3. Set **Due**, a day and a time, in your time zone; everyone sees it in theirs. Wherever the cycle shows, its Due shows with its time, such as "Due Sat 14 Nov, 6:00 pm".
+4. Set **Accepted until**: the end of the grace period, while late downtimes are still taken.
 5. Set **XP for completing**: what each character gets when it submits its downtime. It starts at the troupe's usual amount.
 
 The new cycle starts as a draft, with a copy of the last cycle's form.
@@ -574,7 +617,7 @@ On the cycle's **Overview**, choose **Open for submissions**. Opening fixes who 
 
 The **Participants** tab shows each character, its player, where its downtime stands (**Not started**, **Started**, **Submitted** or **Removed**) and when it was last saved.
 
-- **Remind those not submitted** sends each player a notification, and an email if they've chosen to.
+- **Remind those not submitted** sends each player a notification, and an email if they've chosen to. It names the cycle's **Due**, or once that has passed, its **Accepted until**, in the player's own time zone.
 - **Add a character** adds one whose home is this troupe that joined after the cycle opened.
 - A character's ⋯ shows its actions, and lets you **Adjust** its allowance for this cycle with a reason, **Log influence**, **Accept late** (after the grace period, or when the troupe's absentee downtimes would shut it out), or **Remove from cycle**.
 
@@ -616,6 +659,34 @@ Results always appear in Horatio, and on each connector the troupe has on. A res
 ### Marking a cycle complete
 
 Once results are out, choose **Mark complete** on the Overview. Horatio says first what is unwritten or undelivered. You can still deliver from a complete cycle; those are the last results.
+
+### Player Nominations
+
+> **If your troupe uses this:** switch on **Player Nominations** under [Customise › Troupe settings](#downtimes).
+
+Each downtime form gets a **Player Nominations** section, where players write short notes praising someone's roleplaying, each optionally linked to a character in the troupe or one of its staff. They don't use actions. You read them on the cycle's **Nominations** tab, open to storytellers and assistant storytellers, once a player submits their downtime.
+
+- Each row shows the nomination, who it's about, and who wrote it (character and player). Players never see who wrote one.
+- The ⋯ on a row holds **Star** (or **Unstar**), **Edit…** and **Remove…** (or **Put back**). An edit is for small things, such as a typo or a real name the player asked to keep private, and is marked **Edited by staff**. Removing one keeps it on the tab, with an optional reason only staff see.
+- The counts at the top say how many are written, removed and starred.
+
+**Publish nominations** works once the cycle is past **Due**, and once only. It publishes the cycle's nominations to the troupe's players, shuffled once and without names, on the troupe's **Nominations** tab, and tells them in the bell. The player of each character named in one, and each member of staff named, gets a line saying so. Nominations written afterwards, during the grace period, wait on the tab for **Publish … more**. You can still remove a published nomination: it disappears for players at once.
+
+Every starred nomination, from every month, rotates in a quiet line at the foot of the troupe's pages for its players and staff, until someone unstars it, here or from the **Nominations** tab. Removing, putting back, starring, editing and publishing go in the troupe's log.
+
+### Remembrances
+
+> **If your troupe uses this:** switch on **Remembrances** under [Customise › Troupe settings](#downtimes).
+
+When a character leaves play, the troupe can ask everyone in the next downtime for a memory of them.
+
+- **Opening them.** Storytellers and assistant storytellers open them for a retired character with **Open remembrances**: from the **Remembrances** card on its page, or from its entry under "No longer with us" on the Who's Who. A player retiring their own character can tick **Ask the storytellers to open remembrances in the next downtime**; you're told in the bell, and confirm by opening them. Staff retiring a character tick **Open remembrances in the next downtime** to open them at once.
+- **Which cycle asks.** The cycle that's open now, if it isn't yet past Due; otherwise the next cycle that opens. The card says which before and after you open them.
+- **Writing.** That cycle's downtime form has a **Remembrances** section with each character remembered: their portrait, why they left, and a box for a memory. Everyone submitting a downtime in the troupe can write one memory of each, the remembered character's own player included.
+- **Reviewing.** The cycle's **Nominations** tab (**Remembrances**, if the troupe doesn't use Player Nominations) has a card for each character remembered, with each memory and who wrote it. Remove, put back and edit them as nominations; they're never starred.
+- **Publishing.** The same **Publish** publishes the cycle's nominations and memories together, once it's past Due. Memories are shuffled within each character. The troupe's players are told that remembrances for the character are up, and the character's own player gets a notification of their own.
+
+Published memories show without names on the month's page, above its nominations, on the retired character's **Remembrances** card, and from its entry on the Who's Who. Its player, the troupe's players and its staff read them. Removing one after publishing takes it away everywhere. Opening, removing, putting back, editing and publishing go in the troupe's log.
 
 ## Game nights
 
@@ -720,7 +791,7 @@ A character's **XP debt** card, on its Experience tab, shows what it owes, from 
 
 With nothing set, a game gives everyone there the same XP, and staff are warned past 10 a month, as the book has it. Storytellers can change that under **Customise › Troupe settings › Game XP chart**:
 
-- **By earned XP**: bands of earned XP, each with XP for a game attended (and an absentee game). **Start from** *Flat* or a ready-made taper, **Add a band**, or remove one. Earned XP doesn't count starting XP or what joining gave.
+- **By earned XP**: bands of earned XP, each with XP for a game attended (and an absentee game). **Start from** *Flat* or *Tapering* (less XP a game as earned XP grows), **Add a band**, or remove one. Earned XP doesn't count starting XP or what joining gave.
 - **Adjustments**: extras staff tick for a character when awarding, such as "Helped +1, once a month", each with an optional limit a month.
 - **Monthly XP**: **Warn** (the default), **Cap** or **Off**, at the book's 10 a month or your own figure.
 - **Absentee games**: **Record absentee games**, whether players can mark their own characters absentee, and **Absentee downtimes**: a character can submit a cycle's downtime only if it attended a game in the last so many days before the cycle closes.
