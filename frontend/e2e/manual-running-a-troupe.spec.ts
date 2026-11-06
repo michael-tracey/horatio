@@ -208,7 +208,7 @@ test("screenshots for Running a troupe", async ({ browser }) => {
 
   // NPCs, with the New NPC form.
   await l.goto(`${base}/npcs`);
-  await expect(l.getByRole("listitem", { name: "Aurelia Vance" })).toBeVisible();
+  await expect(l.getByRole("row", { name: "Aurelia Vance" })).toBeVisible();
   await shot(l, "npcs", undefined, 900);
 
   // Rules › Checks, on the troupe's house rules.
@@ -256,7 +256,7 @@ test("screenshots for Running a troupe", async ({ browser }) => {
   await send(l, "PUT", `/api${base}/games/${gameId}/checkin`);
   for (const id of [celestine, ezra]) await send(l, "POST", `/api${base}/games/${gameId}/attendance`, { character_id: id });
   await l.goto(`${base}/games/${gameId}`);
-  await expect(l.getByRole("list", { name: "Checked in" })).toBeVisible();
+  await expect(l.getByRole("table", { name: "Checked in" })).toBeVisible();
   await plainHost(l);
   await shot(l, "game-night", undefined, 1000);
 

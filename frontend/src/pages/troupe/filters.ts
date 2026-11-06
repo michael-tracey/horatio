@@ -80,6 +80,14 @@ export function blank(what: What): Condition {
 /** Shown until someone changes it: retired characters stay in their troupes, but out of sight. */
 export const DEFAULT_FILTER: Group = { match: "all", items: [{ what: "status", op: "is", value: "active" }] };
 
+/** The Filter button's label for the filter sent: "Filter: active" while it is only
+ * the one the list opens with, so it doesn't look as if someone had filtered it;
+ * otherwise how many conditions it has. */
+export function filterLabel(sent: Group): string {
+  if (sent.items.length === 1 && JSON.stringify(sent.items[0]) === JSON.stringify(DEFAULT_FILTER.items[0])) return "Filter: active";
+  return sent.items.length ? `Filter (${sent.items.length})` : "Filter";
+}
+
 /** Whether a condition says enough to send; half-built ones wait. */
 export function complete(c: Condition): boolean {
   switch (c.what) {

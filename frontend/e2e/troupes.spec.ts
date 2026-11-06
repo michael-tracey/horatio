@@ -727,7 +727,9 @@ test("storytellers filter the troupe's characters and print what they find", asy
 
   await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
   await expect(p.getByText("3 of 3 characters")).toBeVisible();
-  await expect(p.getByRole("button", { name: "Remove “Is active”" })).toBeVisible(); // retired characters are hidden by default
+  // Retired characters are hidden by default, and the Filter button says so rather than counting it.
+  await expect(p.getByRole("button", { name: "Remove “Is active”" })).toBeVisible();
+  await expect(p.getByRole("button", { name: "Filter: active" })).toBeVisible();
 
   // Occult below 3, and (Tremere, or the Giovanni family).
   await p.getByRole("button", { name: "Filter" }).click();
@@ -749,10 +751,13 @@ test("storytellers filter the troupe's characters and print what they find", asy
   await giovanni.getByLabel("Value").selectOption("Giovanni");
   await expect(p.getByText("2 of 3 characters")).toBeVisible();
   await expect(p.getByText("(Clan is Tremere, or Clan is in the Giovanni family)")).toBeVisible();
-  const list = p.locator("main ul.divide-y");
+  await expect(p.getByRole("button", { name: "Filter (3)" })).toBeVisible();
+  const list = p.getByRole("table", { name: "Characters" });
   await expect(list.getByRole("link", { name: "Prince" })).toHaveCount(0);
-  await expect(list.getByText("Occult 1")).toBeVisible(); // the number the filter compares
-  await expect(list.getByText("Occult 0")).toBeVisible();
+  // The number the filter compares: in an Occult column on a wide screen, under the name on a phone.
+  const occultOf = (name: string) => list.locator("tbody tr").filter({ hasText: name }).getByText(/^(Occult )?\d$/).filter({ visible: true });
+  await expect(occultOf("Mara")).toHaveText(/1$/);
+  await expect(occultOf("Nell")).toHaveText(/0$/);
   await p.screenshot(shots("filter"));
 
   // The filter is in the URL, so it survives a reload.
@@ -841,6 +846,7 @@ test("someone asks for a troupe of their own, and the custodian approves it", as
   await c.getByRole("link", { name: /Troupe requests/ }).click();
   const request = c.getByRole("listitem").filter({ hasText: troupeName });
   await expect(request.getByText("Eight players ready.")).toBeVisible();
+  await expect(request.getByText(`(@${asker.handle}), `)).toBeVisible();
   await c.screenshot(shots("troupe-request"));
   await request.getByRole("button", { name: "Approve and make the troupe" }).click();
   await expect(c.getByRole("link", { name: troupeName })).toBeVisible();
@@ -855,6 +861,11 @@ test("someone asks for a troupe of their own, and the custodian approves it", as
   await expect(mine.getByText("Approved", { exact: true })).toBeVisible();
   await a.locator("main").getByRole("link", { name: troupeName }).first().click();
   await expect(a.getByText("Lead storyteller").first()).toBeVisible();
+
+  // Appointing a new lead says, before it is done, that the asker would leave the staff.
+  await c.goto(a.url());
+  await c.getByRole("link", { name: "Staff", exact: true }).click();
+  await expect(c.getByText("requests-asker will leave the staff, with no role in the troupe.", { exact: false })).toBeVisible();
 });
 
 test("archiving a troupe lets its characters go and ends its cycle, and the custodian reopens it", async ({ browser }) => {
@@ -1161,7 +1172,7 @@ test("the characters list and each Troupes tab say where a character stands: in 
   await expect(row("Halfway Hester")).toContainText("In creation");
   await expect(row("Asking Aldous")).toContainText(`Waiting for ${farShores}`);
   await expect(row("Settled Seraphine")).toContainText(`Home: ${hearths}`);
-  await expect(row("Settled Seraphine").getByText(/^Downtime due \w{3} /)).toBeVisible();
+  await expect(row("Settled Seraphine").getByText(/^Downtime due \w{3} .+, \d{1,2}:\d{2} [ap]m$/)).toBeVisible();
   await expect(row("Lone Lucan")).toContainText("No home troupe yet");
   await expect(p.getByText("Active", { exact: true })).toHaveCount(0);
   await p.screenshot(shots("characters-standing"));
@@ -1555,18 +1566,21 @@ test("players check in at the door and land in their Play View, and staff award 
 
   // The lead sees who came, checks Wilf out and back in by hand.
   await l.reload();
-  const came = l.getByRole("list", { name: "Checked in" });
+  const came = l.getByRole("table", { name: "Checked in" });
   await expect(l.getByRole("heading", { name: "Who came (2)" })).toBeVisible();
-  const wilfRow = came.getByRole("listitem").filter({ hasText: "Wilf" });
-  await expect(wilfRow.getByText("Visiting")).toBeVisible();
-  await expect(wilfRow.getByText("No day's rest")).toBeVisible();
-  await wilfRow.getByRole("button", { name: "Check out Wilf" }).click();
+  const wilfRow = came.locator("tbody tr").filter({ hasText: "Wilf" });
+  // In their columns on a wide screen, under the name on a phone.
+  await expect(wilfRow.getByText("Visiting").filter({ visible: true })).toBeVisible();
+  await expect(wilfRow.getByText("No day's rest").filter({ visible: true })).toBeVisible();
+  await wilfRow.getByRole("button", { name: "Actions for Wilf" }).click();
+  await l.screenshot(shots("game-night-menu"));
+  await l.getByRole("menu", { name: "Actions for Wilf" }).getByRole("menuitem", { name: "Check out" }).click();
   await expect(l.getByText("Checked out: Wilf")).toBeVisible();
-  await expect(came.getByRole("listitem")).toHaveCount(1);
+  await expect(came.locator("tbody tr")).toHaveCount(1);
   await l.getByLabel("Check someone in by hand").selectOption({ label: "Wilf (door-player)" });
   await l.getByRole("button", { name: "Check in", exact: true }).click();
   await expect(l.getByText("Checked in: Wilf")).toBeVisible();
-  await expect(came.getByRole("listitem").filter({ hasText: "Wilf" }).getByText("By hand")).toBeVisible();
+  await expect(came.locator("tbody tr").filter({ hasText: "Wilf" }).getByText("By hand").filter({ visible: true })).toBeVisible();
 
   // The game's XP to those who came: the book's guidance, and a warning, not a refusal, past 10 in the month.
   await expect(l.getByText("The book suggests 3 to 5 XP a game, and no more than 8 to 10 a month (MET: VtM core, p. 108).")).toBeVisible();
@@ -1682,13 +1696,13 @@ test("staff set a tapering game XP chart and award a game by it, with an absente
   await homed("Ulric");
   await send(lead.page, "POST", `/api/characters/${tamsin}/xp`, { amount: 250, reason: "Games before Horatio" });
 
-  // The lead starts from AIT's taper, records absentee games, adds an adjustment, and switches the monthly cap off.
+  // The lead starts from the Tapering chart, records absentee games, adds an adjustment, and switches the monthly cap off.
   const l = lead.page;
   await l.goto(`/troupes/${troupeId}/settings`);
   const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Game XP chart", exact: true }) });
   await expect(card.getByText(/^Flat: everyone there gets the same XP/)).toBeVisible();
   await card.getByRole("button", { name: "Change the game XP chart" }).click();
-  await card.getByRole("button", { name: "AIT taper" }).click();
+  await card.getByRole("button", { name: "Tapering" }).click();
   await expect(card.getByLabel("Band 2: earned XP up to")).toHaveValue("300");
   await card.getByLabel("Record absentee games").check();
   await card.getByRole("button", { name: "Add an adjustment" }).click();
@@ -1720,7 +1734,12 @@ test("staff set a tapering game XP chart and award a game by it, with an absente
   await l.getByRole("button", { name: "Mark absentee" }).click();
   await expect(l.getByText("Marked absentee: Ulric")).toBeVisible();
   await expect(l.getByRole("heading", { name: "Who came (1)" })).toBeVisible();
-  await expect(l.getByRole("list", { name: "Absentee" })).toContainText("Ulric");
+  const absentees = l.getByRole("table", { name: "Absentee" });
+  await expect(absentees).toContainText("Ulric");
+  // Taking the absentee game back waits behind the ⋯ on his row.
+  await absentees.getByRole("button", { name: "Actions for Ulric" }).click();
+  await expect(l.getByRole("menu", { name: "Actions for Ulric" }).getByRole("menuitem")).toHaveText(["Take back the absentee game"]);
+  await l.keyboard.press("Escape");
 
   // Each character's XP comes from the chart: Tamsin is in the 201–300 band, and helped; Ulric gets the absentee figure.
   const each = l.getByRole("list", { name: "Each character's XP" });
@@ -1966,7 +1985,7 @@ test("Waiting on you shows the open cycle, a quest request and a backstory waiti
   await l.goto("/");
   await expect(l.getByRole("heading", { name: "Your troupes" })).toBeVisible();
   const home = l.getByRole("list", { name: `Waiting on you in ${troupeName}` });
-  await expect(home.getByRole("link", { name: /^November downtime: 0 of 1 submitted · due in \d+ days$/ })).toBeVisible();
+  await expect(home.getByRole("link", { name: /^November downtime: 0 of 1 submitted · Due [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}( \d{4})?, \d{1,2}:\d{2} [ap]m \(in \d+ days\)$/ })).toBeVisible();
   await expect(l.getByRole("link", { name: troupeName }).getByLabel("2 waiting")).toBeVisible();
   await expect(l.getByText("No characters of your own yet.", { exact: false })).toBeVisible();
   await l.screenshot(shots("characters-home-staff"));
@@ -1974,7 +1993,7 @@ test("Waiting on you shows the open cycle, a quest request and a backstory waiti
   // About's Waiting on you: the open cycle first, then the backstory and the quest request.
   await l.getByRole("link", { name: troupeName }).click();
   const waiting = l.getByRole("list", { name: "Waiting on you" });
-  await expect(waiting.getByRole("link")).toHaveText([/^November downtime: 0 of 1 submitted · due in \d+ days$/, /^Backstories to read\s*1$/, /^Quest requests to answer\s*1$/]);
+  await expect(waiting.getByRole("link")).toHaveText([/^November downtime: 0 of 1 submitted · Due [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}( \d{4})?, \d{1,2}:\d{2} [ap]m \(in \d+ days\)$/, /^Backstories to read\s*1$/, /^Quest requests to answer\s*1$/]);
   await l.screenshot(shots("troupe-about-waiting"));
   // The tabs count the same: the backstory on the roster, the request on Quests.
   const sections = l.getByRole("navigation", { name: "Troupe sections" });
@@ -1984,7 +2003,7 @@ test("Waiting on you shows the open cycle, a quest request and a backstory waiti
   const characterTabs = l.getByRole("navigation", { name: "Characters", exact: true });
   await expect(characterTabs.getByRole("link", { name: /^Characters/ }).getByLabel("1 waiting")).toBeVisible();
   // The roster marks the backstory, and the mark opens it.
-  await l.getByRole("link", { name: "Backstory to read" }).click();
+  await l.getByRole("link", { name: "Backstory to read" }).filter({ visible: true }).click();
   await expect(l).toHaveURL(new RegExp(`/characters/${id}/backstory`));
   await expect(l.getByText("Embraced in a Budapest opera house, 1911.")).toBeVisible();
   // The line itself goes straight to the backstory too, and the quest request's to Quests.

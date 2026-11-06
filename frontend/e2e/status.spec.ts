@@ -701,8 +701,11 @@ test("where the troupe chooses the night's status at check-in, an elder Senescha
 
   // Staff see it on Game night, and change it on the Play View with a reason for the game's log.
   await l.goto(`/troupes/${troupeId}/games/${game.id}`);
-  await expect(l.getByRole("list", { name: "Checked in" }).getByRole("listitem").filter({ hasText: "Wenna" }).getByText("Status from Elder")).toBeVisible();
-  await l.goto(`/play/characters/${id}?tab=status`);
+  const wenna = l.getByRole("table", { name: "Checked in" }).locator("tbody tr").filter({ hasText: "Wenna" });
+  await expect(wenna.getByText("Status from Elder").filter({ visible: true })).toBeVisible();
+  await wenna.getByRole("button", { name: "Actions for Wenna" }).click();
+  await l.getByRole("menuitem", { name: "Change status" }).click();
+  await expect(l).toHaveURL(new RegExp(`/play/characters/${id}\\?tab=status$`));
   await l.getByRole("button", { name: "Change" }).click();
   await expect(l.getByRole("button", { name: "Choose Seneschal" })).toBeDisabled();
   await l.getByLabel("Why change it? (for the game's log)").fill("She named the wrong one at the door");
@@ -873,14 +876,19 @@ test("titles by sect: a Camarilla troupe gives Camarilla titles only to its own,
 
   // The picker offers each character the titles of its sect and of any sect.
   await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
-  await p.getByRole("button", { name: "Give Elena Varga a title" }).click();
+  const titlesFor = async (name: string) => {
+    await p.getByRole("button", { name: `Actions for ${name}` }).click();
+    await p.getByRole("menuitem", { name: "Titles…" }).click();
+  };
+  await titlesFor("Elena Varga");
   const dialog = p.getByRole("dialog");
   await expect(dialog.getByText("Elena Varga is Camarilla: Camarilla titles and those of any sect.")).toBeVisible();
   await expect(dialog.getByRole("button", { name: "Prince", exact: true })).toBeVisible();
   await p.screenshot(shots("give-title-by-sect"));
   await dialog.getByRole("button", { name: "Master of Elysium", exact: true }).click();
-  await expect(p.getByRole("button", { name: "Take the title Master of Elysium from Elena Varga" })).toBeVisible();
-  await p.getByRole("button", { name: "Give Tomas Reyes a title" }).click();
+  await expect(dialog.getByRole("button", { name: "Take the title Master of Elysium from Elena Varga" })).toBeVisible();
+  await dialog.getByRole("button", { name: "Close" }).click();
+  await titlesFor("Tomas Reyes");
   await expect(dialog.getByText("Tomas Reyes is Anarch: Anarch titles and those of any sect.")).toBeVisible();
   await expect(dialog.getByRole("button", { name: "Prince", exact: true })).toHaveCount(0);
   await dialog.getByRole("button", { name: "Close" }).click();

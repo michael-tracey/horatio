@@ -39,12 +39,14 @@ from horatio.models import (
     GameXpAward,
     HomeTroupeChange,
     Location,
+    Nomination,
     PlayCounter,
     PlayDerangement,
     PlayEvent,
     PlayGame,
     PoolModifier,
     ReconciliationItem,
+    Remembrance,
     Response,
     Retainer,
     SheetVersion,
@@ -101,6 +103,17 @@ def delete_character(db: Session, player: User, character: Character) -> None:
         update(FeedingCard)
         .where(FeedingCard.taken_by.in_(participants))
         .values(taken_by=None, taken_at=None)
+    )
+    # Its remembrances go, with the memories of it; and its Player Nominations and
+    # memories of others; those about it keep their words, unlinked.
+    remembered = select(Remembrance.id).where(Remembrance.character_id == cid)
+    db.execute(delete(Nomination).where(Nomination.remembrance_id.in_(remembered)))
+    db.execute(delete(Remembrance).where(Remembrance.character_id == cid))
+    db.execute(delete(Nomination).where(Nomination.participant_id.in_(participants)))
+    db.execute(
+        update(Nomination)
+        .where(Nomination.about_character_id == cid)
+        .values(about_character_id=None)
     )
     db.execute(delete(CycleParticipant).where(CycleParticipant.character_id == cid))
     # Its game XP awards, which point at its XP entries.

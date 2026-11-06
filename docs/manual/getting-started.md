@@ -127,7 +127,7 @@ You can put a troupe's games and downtime dates in your own calendar app, and it
 3. Choose **Get the link**, either for that troupe only or for **All your troupes**.
 4. Choose **Copy the link** and paste it into your calendar app, or choose **Open in your calendar app**. The dialog says how for Google Calendar, Apple Calendar and Outlook.
 
-The calendar has each game, the date downtimes are due, and when late downtimes close. Calendar apps look for changes every few hours, so a new game can take a while to show.
+The calendar has each game, when downtimes are **Due**, and until when late ones are accepted, each at its time. Calendar apps look for changes every few hours, so a new game can take a while to show.
 
 Keep the link to yourself: anyone with it can see those dates. If it gets out, choose **Reset the link…** and then **Reset the link**: the old one stops working, and you subscribe again with the new one. A link stops working by itself if you leave the troupe.
 

@@ -13,6 +13,8 @@ import { FeedingTerritories } from "./FeedingTerritories";
 import { GameXpCard } from "./GameXpSettings";
 import { GolcondaSetting } from "./GolcondaSetting";
 import { ItemExpirySetting } from "./ItemExpirySetting";
+import { NominationsSetting } from "../nominations/NominationsSetting";
+import { RemembrancesSetting } from "../nominations/RemembrancesSetting";
 import { ExperienceDefaults, StartingBlood } from "./StartingSection";
 import { StatusAtCheckinSetting, StatusSetting, TitlesSetting } from "./StatusSetting";
 import { WhosWhoSetting } from "./WhosWhoSetting";
@@ -20,8 +22,8 @@ import { XpRangeCard } from "./XpRange";
 
 /**
  * The settings for the whole troupe, set once a season or so, by what they are
- * for: who may join, XP, status and titles, what happens at game, feeding, and
- * what a clan is called. Its storytellers change them; the troupe's other running
+ * for: who may join, XP, status and titles, what happens at game, downtimes,
+ * feeding, and what a clan is called. Its storytellers change them; the troupe's other running
  * staff read them. The troupe's rules for traits are on the Rules tab beside it.
  */
 export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
@@ -62,8 +64,14 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
         <DiablerieFlaws troupeId={troupe.id} canEdit={canEdit} />
         <ItemExpirySetting troupe={troupe} canEdit={canEdit} />
       </Group>
+      <Group title="Downtimes">
+        <NominationsSetting troupe={troupe} canEdit={canEdit} />
+        <RemembrancesSetting troupe={troupe} canEdit={canEdit} />
+      </Group>
       <Group title="Feeding">
         <FeedingSetting troupeId={troupe.id} canEdit={canEdit} />
+        {/* Unlike the settings around it, assistant storytellers keep the territories too, as the
+            API lets them: who holds which changes in play, as the Authority proclaims it. */}
         {troupe.feeding !== "off" && troupe.feeding_territories && (
           <FeedingTerritories troupeId={troupe.id} canManage={!troupe.archived && (canEdit || troupe.my_role === "assistant_storyteller")} />
         )}

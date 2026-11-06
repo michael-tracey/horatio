@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { GameNight, XpLine } from "../../api/types";
+import type { Attendee, GameNight, XpLine } from "../../api/types";
+import { ActionMenu, MenuItem, MenuLink } from "../../components/ActionMenu";
 import { Dialog } from "../../components/Dialog";
 import { EmptyState } from "../../components/EmptyState";
 import { QrCode } from "../../components/QrCode";
@@ -190,72 +191,34 @@ function AttendanceCard({ night }: { night: GameNight }) {
         {night.attendees.length === 0 ? (
           <EmptyState title="Nobody has checked in yet.">Characters show here as their players check in, or as you check them in below.</EmptyState>
         ) : (
-          <ul aria-label="Checked in" className="divide-y divide-ash border-y border-ash">
-            {night.attendees.map((a) => (
-              <li key={a.character_id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2 text-sm">
-                <span className="min-w-0">
-                  <Link to={`/characters/${a.character_id}`} className="text-parchment hover:text-gold">
-                    {a.character_name}
-                  </Link>
-                  <span className="ml-2 text-xs text-mist">{a.player.display_name}</span>
-                  <span className="ml-2 inline-flex flex-wrap gap-1 align-middle">
-                    {!a.home && <Badge>Visiting</Badge>}
-                    {a.by_staff && <Badge>By hand</Badge>}
-                    {a.rested === false && <Badge>No day's rest</Badge>}
-                    {attendeeStatus(a) &&
-                      (a.status_to_choose ? (
-                        <Link to={`/play/characters/${a.character_id}?tab=status`} className="text-xs text-gold underline" aria-label={`Choose ${a.character_name}'s status`}>
-                          {attendeeStatus(a)}
-                        </Link>
-                      ) : (
-                        <Badge tone="gold">{attendeeStatus(a)}</Badge>
-                      ))}
-                  </span>
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="px-2"
-                  disabled={awarded || checkOut.isPending}
-                  aria-label={`Check out ${a.character_name}`}
-                  onClick={() => checkOut.mutate({ id: a.character_id, name: a.character_name })}
-                >
+          <AttendeeTable
+            label="Checked in"
+            people={night.attendees}
+            actions={(a) => (
+              <>
+                <MenuItem disabled={awarded || checkOut.isPending} onSelect={() => checkOut.mutate({ id: a.character_id, name: a.character_name })}>
                   Check out
-                </Button>
-              </li>
-            ))}
-          </ul>
+                </MenuItem>
+                {attendeeStatus(a) && <MenuLink to={statusLink(a)}>{a.status_to_choose ? "Choose status" : "Change status"}</MenuLink>}
+              </>
+            )}
+          />
         )}
         {night.absentees.length > 0 && (
           <section aria-labelledby="absentees" className="flex flex-col gap-1">
             <h3 id="absentees" className="text-sm text-mist">
               Absentee ({night.absentees.length})
             </h3>
-            <ul aria-label="Absentee" className="divide-y divide-ash border-y border-ash">
-              {night.absentees.map((a) => (
-                <li key={a.character_id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2 text-sm">
-                  <span className="min-w-0">
-                    <Link to={`/characters/${a.character_id}`} className="text-parchment hover:text-gold">
-                      {a.character_name}
-                    </Link>
-                    <span className="ml-2 text-xs text-mist">{a.player.display_name}</span>
-                    <span className="ml-2 align-middle">
-                      <Badge>{a.by_staff ? "Absentee, by staff" : "Absentee, by its player"}</Badge>
-                    </span>
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="px-2"
-                    disabled={awarded || markAbsentee.isPending}
-                    aria-label={`Take back ${a.character_name}'s absentee game`}
-                    onClick={() => markAbsentee.mutate({ id: a.character_id, on: false })}
-                  >
-                    Take back
-                  </Button>
-                </li>
-              ))}
-            </ul>
+            <AttendeeTable
+              label="Absentee"
+              people={night.absentees}
+              absentee
+              actions={(a) => (
+                <MenuItem disabled={awarded || markAbsentee.isPending} onSelect={() => markAbsentee.mutate({ id: a.character_id, on: false })}>
+                  Take back the absentee game
+                </MenuItem>
+              )}
+            />
           </section>
         )}
         {awarded ? (
@@ -313,6 +276,81 @@ function AttendanceCard({ night }: { night: GameNight }) {
         <ErrorText error={checkIn.error ?? checkOut.error ?? markAbsentee.error} />
       </div>
     </Card>
+  );
+}
+
+/** Where staff choose or change an attendee's status for the night: its Play View's Status tab. */
+const statusLink = (a: Attendee) => `/play/characters/${a.character_id}?tab=status`;
+
+/** A column shown only on a wide screen; on a narrow one it folds in under the name. */
+const WIDE = "hidden lg:table-cell";
+
+/**
+ * Those checked in, or those marked absentee: a table on a wide screen, a card each on
+ * a phone or a narrow window, with what staff can do behind each one's ⋯. Absentees
+ * have no day's rest or status tonight to show. Status tonight shows where the troupe
+ * fixes the source of abiding status at check-in (issue #441).
+ */
+function AttendeeTable({ label, people, absentee = false, actions }: { label: string; people: Attendee[]; absentee?: boolean; actions: (a: Attendee) => ReactNode }) {
+  const statusColumn = !absentee && people.some((a) => attendeeStatus(a));
+  return (
+    <table aria-label={label} className="w-full border-y border-ash text-sm">
+      <thead className="max-lg:sr-only">
+        <tr className="border-b border-ash text-left text-xs text-mist">
+          <th className="py-2 pr-3 font-normal">Character</th>
+          <th className={`${WIDE} py-2 pr-3 font-normal`}>Home or visiting</th>
+          <th className={`${WIDE} py-2 pr-3 font-normal`}>{absentee ? "Marked by" : "How"}</th>
+          {!absentee && <th className={`${WIDE} py-2 pr-3 font-normal`}>Rested</th>}
+          {statusColumn && <th className={`${WIDE} py-2 pr-3 font-normal`}>Status tonight</th>}
+          <th className="py-2 font-normal">
+            <span className="sr-only">Actions</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-ash">
+        {people.map((a) => {
+          const how = absentee ? (a.by_staff ? "Absentee, by staff" : "Absentee, by its player") : a.by_staff ? "By hand" : "By its player";
+          const status = attendeeStatus(a);
+          const statusText = status && (a.status_to_choose ? (
+            <Link to={statusLink(a)} className="text-xs text-gold underline" aria-label={`Choose ${a.character_name}'s status`}>
+              {status}
+            </Link>
+          ) : (
+            <Badge tone="gold">{status}</Badge>
+          ));
+          return (
+            <tr key={a.character_id}>
+              <td className="py-2 pr-3 align-top">
+                <span className="flex flex-wrap items-baseline gap-x-2">
+                  <Link to={`/characters/${a.character_id}`} className="text-parchment hover:text-gold">
+                    {a.character_name}
+                  </Link>
+                  <span className="text-xs text-mist">{a.player.display_name}</span>
+                </span>
+                {/* What the wide columns show, folded under the name: only what is out of the ordinary. */}
+                <span className="mt-1 flex flex-wrap items-center gap-1 lg:hidden">
+                  {!a.home && <Badge>Visiting</Badge>}
+                  {absentee ? <Badge>{how}</Badge> : a.by_staff && <Badge>By hand</Badge>}
+                  {a.rested === false && <Badge>No day's rest</Badge>}
+                  {statusText}
+                </span>
+              </td>
+              <td className={`${WIDE} py-2 pr-3 align-top`}>{a.home ? "Home" : <Badge>Visiting</Badge>}</td>
+              <td className={`${WIDE} py-2 pr-3 align-top ${a.by_staff ? "" : "text-mist"}`}>{absentee ? (a.by_staff ? "Staff" : "Its player") : how}</td>
+              {!absentee && (
+                <td className={`${WIDE} py-2 pr-3 align-top`}>{a.rested === false ? <Badge>No day's rest</Badge> : a.rested ? <span className="text-mist">Yes</span> : null}</td>
+              )}
+              {statusColumn && <td className={`${WIDE} py-2 pr-3 align-top`}>{statusText}</td>}
+              <td className="w-px py-1 text-right align-top">
+                <ActionMenu label={`Actions for ${a.character_name}`} variant="ghost" menuClassName="w-56">
+                  {actions(a)}
+                </ActionMenu>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }
 

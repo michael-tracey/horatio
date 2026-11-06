@@ -27,6 +27,7 @@ export function PersonPicker({
   value,
   onChange,
   troupeId,
+  staffToo = false,
   id,
   required,
   "aria-describedby": describedBy,
@@ -34,6 +35,8 @@ export function PersonPicker({
   value: string;
   onChange: (handle: string) => void;
   troupeId?: string;
+  /** Let those on the troupe's staff be picked too, rather than greyed out. */
+  staffToo?: boolean;
   id?: string;
   required?: boolean;
   "aria-describedby"?: string;
@@ -59,7 +62,7 @@ export function PersonPicker({
     staleTime: 30_000,
   });
   const people = found.data?.pages.flatMap((page) => page.people) ?? [];
-  const pickable = (p: Someone | undefined) => p !== undefined && !p.staff_role;
+  const pickable = (p: Someone | undefined) => p !== undefined && (staffToo || !p.staff_role);
 
   useEffect(() => {
     if (active >= 0) document.getElementById(`${listId}-${active}`)?.scrollIntoView?.({ block: "nearest" });

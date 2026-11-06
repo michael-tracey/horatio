@@ -56,7 +56,7 @@ export function closeFacts({
         ? "The 1 participant has submitted."
         : `All ${participants} participants have submitted.`
       : `${missing} of ${plural(participants, "participant", "participants")} ${missing === 1 ? "hasn't" : "haven't"} submitted.`,
-    ...(missing > 0 && lateUntil ? [`Late downtimes are taken until ${lateUntil}.`] : []),
+    ...(missing > 0 && lateUntil ? [`Late downtimes are accepted until ${lateUntil}.`] : []),
     "Once closed, nobody can submit, and the cycle can't be opened again.",
   ];
 }
