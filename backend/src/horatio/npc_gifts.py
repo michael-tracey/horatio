@@ -1,6 +1,6 @@
 """Giving a sheeted NPC to a player (issue #481), for a troupe moving its characters
 into Horatio: it loads them as NPCs (the Yorick import), then gives each to its
-player as that person signs up.
+player as that person signs up, directly or through a claim link.
 
 The NPC becomes the player's PC, at home in the same troupe and already accepted:
 its sheet as it stands is frozen as the accepted sheet, so later changes go
@@ -22,18 +22,29 @@ Only sheeted vampires and ghouls can be given: a Stock NPC has no sheet to play,
 and players play vampires and ghouls. Only the custodian and the troupe's lead
 storyteller and storytellers give one.
 
+A claim link is a one-off secret for one NPC, valid for 30 days, which staff send
+to the person; whoever opens it and claims is given the NPC. As with password
+resets and email changes, the link holds a random token and the database only its
+hash. An NPC has at most one link: making another replaces it, and it goes once
+used, cancelled or the NPC is given another way.
+
 Giving cannot be undone by turning the PC back into an NPC. A mistake in who it
 went to is put right by the custodian moving it to the right player
 (horatio.character_moves).
 """
 
+import secrets
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from fastapi import HTTPException, status
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from horatio import audit, play
-from horatio.models import Character, Retainer, Troupe, User, XpEntry
+from horatio.auth.sessions import hash_token
+from horatio.config import get_settings
+from horatio.models import Character, NpcClaim, Retainer, Troupe, User, XpEntry
 from horatio.notifications import notify
 from horatio.rules.pricing import PricingError, Quote, trait_cost
 from horatio.sheets import (
@@ -48,6 +59,7 @@ from horatio.sheets import (
 
 # The kinds of NPC a player can be given: those the rule sets players build in.
 PLAYABLE_KINDS = ("vampire", "ghoul")
+CLAIM_DAYS = 30
 CARRIED_MAX = 10000
 
 
@@ -161,9 +173,11 @@ def give(
     to_player: User,
     carried_xp: int = 0,
     carried_reason: str = "",
+    *,
+    claimed: bool = False,
 ) -> None:
     """Make the NPC `to_player`'s PC, at home and accepted in its troupe, as `actor`
-    with any XP carried over. Callers check
+    (staff, or the claimer if `claimed`), with any XP carried over. Callers check
     that `actor` may."""
     carried_xp, carried_reason = checked_carry(carried_xp, carried_reason)
     npc = lock_character(db, npc.id)
@@ -230,6 +244,7 @@ def give(
     npc.on_whos_who = False
     npc.home_troupe_id = troupe.id
     npc.building_troupe_id = None
+    db.execute(delete(NpcClaim).where(NpcClaim.character_id == npc.id))
     db.flush()
     # The sheet as its home troupe accepts it: the floor for lowering ratings, and
     # the start of its free changes, if the troupe gives them.
@@ -258,7 +273,7 @@ def give(
     audit.record(
         db,
         actor,
-        "npc.given",
+        "npc.claimed" if claimed else "npc.given",
         troupe_id=troupe.id,
         character_id=npc.id,
         to_player_id=to_player.id,
@@ -267,12 +282,113 @@ def give(
         carried_xp=carried_xp,
         carried=carried,
     )
-    notify(
+    if not claimed:
+        notify(
+            db,
+            [to_player.id],
+            "npc.given",
+            f"{name} is yours now: {troupe.name} gave it to you, at home there and accepted",
+            f"/characters/{npc.id}",
+            troupe_id=troupe.id,
+            character_id=npc.id,
+        )
+
+
+# --- claim links -------------------------------------------------------------------
+
+
+def claim_url(token: str) -> str:
+    return f"{get_settings().public_url.rstrip('/')}/claim/{token}"
+
+
+def live_claim(db: Session, npc: Character) -> NpcClaim | None:
+    """The NPC's unused, unexpired claim link, if it has one."""
+    return db.scalar(
+        select(NpcClaim).where(
+            NpcClaim.character_id == npc.id, NpcClaim.expires_at > datetime.now(UTC)
+        )
+    )
+
+
+def make_claim(
+    db: Session, staff: User, npc: Character, carried_xp: int = 0, carried_reason: str = ""
+) -> tuple[str, datetime]:
+    """A new claim link for the NPC, replacing any it had: its token and when it
+    expires."""
+    carried_xp, carried_reason = checked_carry(carried_xp, carried_reason)
+    why = npc_refusal(npc)
+    if why is not None:
+        raise conflict(why)
+    replaced = db.scalar(select(NpcClaim.id).where(NpcClaim.character_id == npc.id)) is not None
+    db.execute(delete(NpcClaim).where(NpcClaim.character_id == npc.id))
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(UTC) + timedelta(days=CLAIM_DAYS)
+    db.add(
+        NpcClaim(
+            character_id=npc.id,
+            token_hash=hash_token(token),
+            expires_at=expires_at,
+            created_by_id=staff.id,
+            carried_xp=carried_xp,
+            carried_reason=carried_reason,
+        )
+    )
+    db.flush()
+    audit.record(
         db,
-        [to_player.id],
-        "npc.given",
-        f"{name} is yours now: {troupe.name} gave it to you, at home there and accepted",
-        f"/characters/{npc.id}",
-        troupe_id=troupe.id,
+        staff,
+        "npc.claim_link_remade" if replaced else "npc.claim_link_made",
+        troupe_id=npc.owner_troupe_id,
         character_id=npc.id,
     )
+    return token, expires_at
+
+
+def cancel_claim(db: Session, staff: User, npc: Character) -> bool:
+    """Cancel the NPC's claim link. Whether there was a live one to cancel."""
+    live = live_claim(db, npc) is not None
+    db.execute(delete(NpcClaim).where(NpcClaim.character_id == npc.id))
+    db.flush()
+    if live:
+        audit.record(
+            db,
+            staff,
+            "npc.claim_link_cancelled",
+            troupe_id=npc.owner_troupe_id,
+            character_id=npc.id,
+        )
+    return live
+
+
+def claim_for(db: Session, token: str) -> NpcClaim | None:
+    """The live claim link with this token, or None."""
+    return db.scalar(
+        select(NpcClaim).where(
+            NpcClaim.token_hash == hash_token(token), NpcClaim.expires_at > datetime.now(UTC)
+        )
+    )
+
+
+def claim(db: Session, user: User, token: str) -> Character:
+    """`user` claims the NPC the link is for: it is given to them, as staff giving it
+    would, and whoever made the link is told."""
+    found = claim_for(db, token)
+    if found is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            "This claim link has expired or been used. Ask the troupe for a new one.",
+        )
+    npc = db.get_one(Character, found.character_id)
+    made_by, troupe_id = found.created_by_id, npc.owner_troupe_id
+    give(db, user, npc, user, found.carried_xp, found.carried_reason, claimed=True)
+    if made_by != user.id:
+        notify(
+            db,
+            [made_by],
+            "npc.claimed",
+            f"@{user.handle} claimed {npc.name} with your claim link",
+            f"/characters/{npc.id}",
+            troupe_id=troupe_id,
+            character_id=npc.id,
+        )
+    return npc

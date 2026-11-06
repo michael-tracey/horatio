@@ -78,7 +78,7 @@ A player character: built by its player through character creation, and accepted
 _Avoid_: Primary, player character (in names)
 
 **NPC**:
-A character a troupe's storytellers or assistant storytellers make and keep for that troupe. It belongs to the troupe, needs no approval, takes no part in downtimes, and can be built quickly by setting ratings directly. Its storytellers can give a sheeted vampire or ghoul NPC to a player, and it becomes that player's PC, at home in the troupe and accepted.
+A character a troupe's storytellers or assistant storytellers make and keep for that troupe. It belongs to the troupe, needs no approval, takes no part in downtimes, and can be built quickly by setting ratings directly. Its storytellers can give a sheeted vampire or ghoul NPC to a player, directly or by a **claim link**, and it becomes that player's PC, at home in the troupe and accepted.
 _Avoid_: Secondary, antecedence
 
 **Scene**:

@@ -48,7 +48,7 @@ from horatio.models.influence_blocks import InfluenceBlock
 from horatio.models.influence_effects import InfluenceEffect
 from horatio.models.locations import Location, TroupeLocationQuality
 from horatio.models.notifications import EmailNotice, Notification
-from horatio.models.npcs import StockNpc
+from horatio.models.npcs import NpcClaim, StockNpc
 from horatio.models.people import (
     AuthIdentity,
     FormerHandle,
@@ -201,6 +201,7 @@ __all__ = [
     "SharedBackgroundEntry",
     "SheetVersion",
     "StartingTrait",
+    "NpcClaim",
     "StockNpc",
     "TraitCategory",
     "TraitDefinition",

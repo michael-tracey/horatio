@@ -408,6 +408,12 @@ MESSAGES: dict[str, str] = {
     "npc.stock_changed": "{actor} changed the Stock NPC {character}.",
     "npc.given": "{actor} gave the NPC {character} to @{to_handle}, at home here and accepted,"
     " with {xp} XP for its sheet{carried}.",
+    "npc.claimed": "{actor} claimed the NPC {character} with a claim link, at home here and"
+    " accepted, with {xp} XP for its sheet{carried}.",
+    "npc.claim_link_made": "{actor} made a claim link for the NPC {character}.",
+    "npc.claim_link_remade": "{actor} made a new claim link for the NPC {character}, replacing"
+    " the old one.",
+    "npc.claim_link_cancelled": "{actor} cancelled the claim link for the NPC {character}.",
     "title.given": "{actor} gave {character} the title {title}.",
     "title.taken": "{actor} took the title {title} from {character}.",
     "title.chosen": "{actor} chose the title {title} for {character} ({what}).",

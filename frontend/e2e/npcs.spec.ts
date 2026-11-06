@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, PASSWORD } from "./support";
 
 /** Storytellers building NPCs, of every kind and form. */
 
@@ -177,6 +177,45 @@ test("a storyteller gives an NPC to a player, who finds it among their character
   expect([character.kind, character.home_troupe_id]).toEqual(["pc", troupeId]);
   const notes = await (await h.request.get("/api/notifications")).json();
   expect(notes.items.map((n: { summary: string }) => n.summary)).toContain(`Odette Lamarr is yours now: Court of Gifts ${run} gave it to you, at home there and accepted`);
+});
+
+test("a storyteller sends a claim link, and a newcomer signs up through it and claims the NPC", async ({ browser }) => {
+  const custodian = await person(browser, "claim-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "claim-lead");
+  const { troupeId, npcId } = await troupeWithNpc(custodian.page, lead.handle, "Court of Claims", "Bastien Roux");
+
+  // From the NPC's own page this time.
+  const p = lead.page;
+  await p.goto(`/characters/${npcId}`);
+  await p.getByRole("button", { name: "More for Bastien Roux" }).click();
+  await p.getByRole("menuitem", { name: "Claim link…" }).click();
+  const dialog = p.getByRole("dialog", { name: "Claim link for Bastien Roux" });
+  await dialog.getByRole("button", { name: "Make a claim link" }).click();
+  const url = await dialog.getByLabel("Claim link").inputValue();
+  await p.screenshot(shots("claim-link"));
+  await dialog.getByRole("button", { name: "Close" }).click();
+  await p.goto(`/troupes/${troupeId}/npcs`);
+  await expect(p.getByRole("row", { name: /Bastien Roux/ }).getByText("Claim link out")).toBeVisible();
+
+  // Someone with no account opens it, sees whose it is, and signs up to claim it.
+  const n = await (await browser.newContext()).newPage();
+  await n.goto(new URL(url).pathname);
+  await expect(n.getByText("Bastien Roux", { exact: true })).toBeVisible();
+  await n.getByRole("link", { name: "Sign up to claim it" }).click();
+  await n.getByLabel("Your name").fill("claim-newcomer");
+  await n.getByLabel("Handle").fill(`claim-newcomer_${run.slice(-10)}`);
+  await n.getByLabel("Email").fill(`claim-newcomer-${run}@example.com`);
+  await n.getByLabel("Password").fill(PASSWORD);
+  await n.getByRole("button", { name: "Create account" }).click();
+  await n.screenshot(shots("claim"));
+  await n.getByRole("button", { name: "Claim Bastien Roux" }).click();
+  await expect(n.getByRole("heading", { name: "Bastien Roux", level: 1 })).toBeVisible();
+  await expect(n).toHaveURL(new RegExp(`/characters/${npcId}`));
+
+  // Used, the link stops working.
+  await n.goto(new URL(url).pathname);
+  await expect(n.getByText("This claim link has expired or been used. Ask the troupe for a new one.")).toBeVisible();
 });
 
 test("storytellers make NPCs of other kinds, sheeted or Stock, and filter the list by kind and form", async ({ browser }) => {

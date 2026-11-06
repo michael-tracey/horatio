@@ -9,7 +9,7 @@ import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { BadgeNote } from "../character/Badge";
-import { GiveToPlayer, givable } from "./GiveNpc";
+import { ClaimLink, GiveToPlayer, givable } from "./GiveNpc";
 import { FORM_NAMES, type Npc, type NpcFilter, type NpcForm, type NpcKind, filterNpcs, groupedKinds, kindPages, kindsIn, resourceText } from "./npcKinds";
 
 type Custom = { name: string; nature: "mortal" | "supernatural"; resource: { name: string; size: number; per_turn: number; regains: string } };
@@ -202,7 +202,7 @@ const WIDE = "hidden lg:table-cell";
 
 /** One NPC: what it is, and what staff can do with it behind ⋯. */
 function NpcRow({ npc, troupeId, canGive, selected, onToggle }: { npc: Npc; troupeId: string; canGive: boolean; selected: boolean; onToggle: () => void }) {
-  const [open, setOpen] = useState<"badge" | "give" | null>(null);
+  const [open, setOpen] = useState<"badge" | "give" | "claim" | null>(null);
   const close = () => setOpen(null);
   const giving = canGive && givable(npc);
   const toast = useToast();
@@ -233,6 +233,7 @@ function NpcRow({ npc, troupeId, canGive, selected, onToggle }: { npc: Npc; trou
             <Avatar name={npc.name} picture={npc.picture} clan={npc.clan} />
             <span className="wrap-anywhere">{npc.name}</span>
           </Link>
+          {npc.claim_expires_at && <Badge>Claim link out</Badge>}
         </span>
         <span className="mt-1 flex flex-wrap items-center gap-1 text-xs text-mist lg:hidden">
           <Badge tone="gold">{kind}</Badge>
@@ -257,6 +258,7 @@ function NpcRow({ npc, troupeId, canGive, selected, onToggle }: { npc: Npc; trou
           {giving && (
             <MenuGroup label="Give to a player">
               <MenuItem onSelect={() => setOpen("give")}>Give to a player…</MenuItem>
+              <MenuItem onSelect={() => setOpen("claim")}>Claim link…</MenuItem>
             </MenuGroup>
           )}
         </ActionMenu>
@@ -269,6 +271,9 @@ function NpcRow({ npc, troupeId, canGive, selected, onToggle }: { npc: Npc; trou
           <>
             <Dialog title={`Give ${npc.name} to a player`} open={open === "give"} onClose={close}>
               {open === "give" && <GiveToPlayer npcId={npc.id} npcName={npc.name} troupeId={troupeId} onDone={close} />}
+            </Dialog>
+            <Dialog title={`Claim link for ${npc.name}`} open={open === "claim"} onClose={close}>
+              {open === "claim" && <ClaimLink npcId={npc.id} />}
             </Dialog>
           </>
         )}

@@ -21,7 +21,7 @@ Every troupe has exactly one **lead storyteller**, and as many **storytellers**,
 | Award XP, correct it, run check-in at a game | Yes | Yes | Yes | No |
 | Run downtime cycles: open, assign, deliver, close | Yes | Yes | Yes | No |
 | Make and play NPCs, run scenes, reset the Play Views | Yes | Yes | Yes | No |
-| Give an NPC to a player | Yes | Yes | No | No |
+| Give an NPC to a player, or make a claim link for it | Yes | Yes | No | No |
 | Give titles, status and equipment; keep locations, quests, shared backgrounds and the influence log | Yes | Yes | Yes | No |
 | Read the troupe log | Yes | Yes | Yes | No |
 | Answer downtime actions assigned to them, or to any narrator | Yes | Yes | Yes | Yes |
@@ -166,7 +166,7 @@ The **⋯** at the end of each row holds:
 - **Play**, which opens its Play View at a game;
 - **List on the Who's Who** or **Take off the Who's Who**, for an NPC without a title (one with a title is listed anyway);
 - **Badge…**, which shows what others can see of it, takes a note for its badge, and prints it;
-- **Give to a player…**, for storytellers, on a finished sheeted vampire or ghoul (see [Giving an NPC to a player](#giving-an-npc-to-a-player)).
+- **Give to a player…** and **Claim link…**, for storytellers, on a finished sheeted vampire or ghoul (see [Giving an NPC to a player](#giving-an-npc-to-a-player)).
 
 **Game badges** prints badges for the NPCs ticked, or all of them.
 
@@ -203,6 +203,14 @@ To give it to someone who has signed up:
 1. Choose **⋯ › Give to a player…** on its row of the NPCs list, or **⋯ › Give to a player…** on its own page.
 2. Pick the **Player**, and fill in any **Unspent XP to carry over** and **Why**.
 3. Choose **Continue** to see what will happen, then **Give *name* to @handle**.
+
+For someone who hasn't signed up yet, send a **claim link** instead:
+
+1. Choose **⋯ › Claim link…**, fill in any XP to carry over, and choose **Make a claim link**.
+2. Copy the link and send it to them. It shows only now, works once, and lasts 30 days.
+3. Whoever opens it sees the character's name and portrait, signs up or signs in, and chooses **Claim *name***. The character is given to them as above, and whoever made the link is told.
+
+While a link is out, the NPC's row says **Claim link out**. **Claim link…** shows when it expires and who made it; **Cancel the link** stops it working, and **Make a new link** replaces it. Giving the NPC directly also ends its link.
 
 A character given to the wrong person is put right by the custodian [moving it to the right player](custodian.md#moving-a-character-to-another-player). It can't be turned back into an NPC.
 

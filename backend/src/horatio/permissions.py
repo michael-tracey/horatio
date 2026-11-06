@@ -96,7 +96,7 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     TroupeAction.MANAGE_RANDOM_TABLES: frozenset(_RUNNING),
     TroupeAction.VIEW_LOG: frozenset(_RUNNING),
     TroupeAction.MANAGE_NPCS: frozenset(_RUNNING),
-    # Giving a sheeted NPC to a player (horatio.npc_gifts).
+    # Giving a sheeted NPC to a player, directly or by a claim link (horatio.npc_gifts).
     TroupeAction.GIVE_NPCS: frozenset(_STORYTELLERS),
     TroupeAction.MANAGE_TITLES: frozenset(_RUNNING),
     # Adding and removing a character's fleeting and negative status, and marking

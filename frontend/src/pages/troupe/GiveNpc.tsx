@@ -1,10 +1,11 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { components } from "../../api/schema";
 import { AtHandle, PersonPicker } from "../../components/PersonPicker";
 import { useToast } from "../../components/Toast";
-import { Button, ErrorText, Field, Input } from "../../components/ui";
+import { Button, ErrorText, Field, Input, Loading, Notice } from "../../components/ui";
+import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 
 type GivePreview = components["schemas"]["GivePreview"];
@@ -17,7 +18,7 @@ export function givable(npc: { kind: string; npc_kind?: string | null; npc_form?
   return npc.kind === "npc" && npc.npc_form === "sheeted" && GIVABLE_KINDS.includes(npc.npc_kind ?? "") && npc.creation_complete && npc.status === "active";
 }
 
-/** "Unspent XP to carry over" and its reason. */
+/** "Unspent XP to carry over" and its reason, for a gift or a claim link. */
 function CarriedFields({ xp, reason, onXp, onReason }: { xp: number; reason: string; onXp: (n: number) => void; onReason: (s: string) => void }) {
   return (
     <>
@@ -106,7 +107,7 @@ export function GiveToPlayer({ npcId, npcName, troupeId, onDone }: { npcId: stri
         review.mutate();
       }}
     >
-      <p className="text-sm">It becomes their character, at home here and accepted. They must have signed up.</p>
+      <p className="text-sm">It becomes their character, at home here and accepted. They must have signed up; if they haven't yet, make a claim link instead.</p>
       <Field label="Player">
         <PersonPicker required value={handle} onChange={setHandle} troupeId={troupeId} staffToo />
       </Field>
@@ -121,5 +122,83 @@ export function GiveToPlayer({ npcId, npcName, troupeId, onDone }: { npcId: stri
         </Button>
       </div>
     </form>
+  );
+}
+
+/**
+ * The NPC's claim link (#481): a one-off secret link, for 30 days, for whoever
+ * opens it to claim the NPC as their own, signing up first if they need to. The
+ * link shows only when made; staff see when the open one expires, cancel it, or
+ * make a new one in its place.
+ */
+export function ClaimLink({ npcId }: { npcId: string }) {
+  const path = { params: { path: { character_id: npcId } } };
+  const dates = useDates();
+  const [xp, setXp] = useState(0);
+  const [reason, setReason] = useState("");
+  const [copied, setCopied] = useState(false);
+  const preview = useQuery({
+    queryKey: ["give-preview", npcId],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/give-to-player", path)),
+  });
+  const link = useQuery({
+    queryKey: ["claim-link", npcId],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/claim-link", path)),
+  });
+  const make = useAction(() => unwrap(api.POST("/api/characters/{character_id}/claim-link", { ...path, body: { carried_xp: xp, carried_reason: reason } })));
+  const cancel = useAction(async () => {
+    await unwrap(api.DELETE("/api/characters/{character_id}/claim-link", path));
+    make.reset();
+  });
+
+  if (preview.isPending || link.isPending) return <Loading />;
+  if (preview.error || link.error) return <ErrorText error={preview.error ?? link.error} />;
+  const open = link.data;
+  return (
+    <div className="flex flex-col gap-3 text-sm">
+      {make.data ? (
+        <Notice>
+          <span className="block">Send this link to the player. It works once, until {dates.dateTime(make.data.expires_at)}, and shows only now.</span>
+          <span className="mt-2 flex flex-wrap items-center gap-2">
+            <Input readOnly aria-label="Claim link" value={make.data.url} onFocus={(e) => e.target.select()} className="min-w-0 flex-1" />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                void navigator.clipboard?.writeText(make.data.url);
+                setCopied(true);
+              }}
+            >
+              {copied ? "Copied" : "Copy"}
+            </Button>
+          </span>
+        </Notice>
+      ) : open ? (
+        <p>
+          A claim link is out, made by {open.made_by.display_name}, until {dates.dateTime(open.expires_at)}
+          {open.carried_xp > 0 && <>, carrying over {open.carried_xp} XP</>}. Making a new one stops it working.
+        </p>
+      ) : (
+        <p>Whoever opens the link is shown {preview.data.character_name} and asked to claim it, signing up first if they need to.</p>
+      )}
+      {!preview.data.refusal && <WhatHappens preview={preview.data} carried={xp} />}
+      <ErrorText error={preview.data.refusal} />
+      {!preview.data.refusal && !make.data && <CarriedFields xp={xp} reason={reason} onXp={setXp} onReason={setReason} />}
+      <ErrorText error={make.error ?? cancel.error} />
+      {!preview.data.refusal && (
+        <div className="flex flex-wrap justify-end gap-2">
+          {(open || make.data) && (
+            <Button type="button" variant="ghost" disabled={cancel.isPending} onClick={() => cancel.mutate(undefined)}>
+              Cancel the link
+            </Button>
+          )}
+          {!make.data && (
+            <Button type="button" disabled={make.isPending} onClick={() => make.mutate(undefined)}>
+              {open ? "Make a new link" : "Make a claim link"}
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

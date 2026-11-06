@@ -78,6 +78,12 @@ Only unspent creation XP up to 5 carries over when a character's first home trou
 
 You can delete a character only once it has left every troupe. Otherwise retire it.
 
+### Claiming a character from your troupe
+
+A troupe moving to Horatio may already have your character, as one of its NPCs. Its storytellers either give it to you once you've signed up, and you're told *"name is yours now"*, or send you a **claim link**.
+
+Open the link to see the character's name and portrait. If you have no account yet, choose **Sign up to claim it**; after signing up you come back to the same page. Then choose **Claim *name***. The character is yours at once, at home in the troupe and already accepted, with its XP history showing what its sheet cost and any unspent XP carried over. A link works once, for 30 days; if yours has run out, ask the troupe for a new one.
+
 ## Reading your sheet
 
 The **Sheet** tab is the character's record, laid out in the rule set's parts: Attributes, Skills, Backgrounds, Disciplines, Merits and Flaws, Morality, Health Levels and so on. Each part lists what the character holds, with its rating as dots or numbers (choose which in your settings). The character's clan, sect and archetype sit beside its name at the top of the page.

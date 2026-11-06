@@ -1,7 +1,8 @@
-"""Giving a sheeted NPC to a player (issue #481)."""
+"""Giving a sheeted NPC to a player, directly or by a claim link (issue #481)."""
 
 import uuid
 from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pytest
@@ -9,7 +10,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio.models import TroupeMembership
+from horatio.models import NpcClaim, TroupeMembership, XpEntry
 from tests.api_helpers import Person, Troupe, sign_up
 from tests.test_api_npc_kinds import made
 from tests.test_api_renames import character_log, summaries, troupe_log
@@ -227,3 +228,120 @@ def test_carried_xp_must_be_sensible(troupe: Troupe, heir: Person) -> None:
 
     assert give(troupe.lead, npc, heir.handle, -1).status_code == 422
     assert give(troupe.lead, npc, heir.handle, 10001).status_code == 422
+
+
+# --- claim links -------------------------------------------------------------------
+
+
+def make_link(person: Person, npc_id: str, carried: int = 0, reason: str = "") -> str:
+    response = person.client.post(
+        f"/characters/{npc_id}/claim-link", json={"carried_xp": carried, "carried_reason": reason}
+    )
+    assert response.status_code == 201, response.text
+    url: str = response.json()["url"]
+    assert "/claim/" in url
+    return url.rsplit("/", 1)[1]
+
+
+def test_a_claim_link_gives_the_npc_to_whoever_claims_it(
+    troupe: Troupe, client_for: Callable[[], TestClient]
+) -> None:
+    npc = built(troupe)
+    token = make_link(troupe.lead, npc, 7, "Banked in Yorick")
+    listed = troupe.lead.client.get(f"/troupes/{troupe.id}/npcs").json()
+    assert listed[0]["claim_expires_at"] is not None
+    link = troupe.lead.client.get(f"/characters/{npc}/claim-link").json()
+    assert (link["made_by"]["handle"], link["carried_xp"]) == ("lead", 7)
+
+    # Anyone with the link sees whose it is before signing up.
+    anyone = client_for()
+    seen = anyone.get(f"/claims/{token}")
+    assert seen.status_code == 200, seen.text
+    assert seen.json()["character_name"] == "Lucien"
+    assert seen.json()["troupe_name"] == "Lords of the Night"
+    assert seen.json()["signed_in"] is False
+    assert anyone.post(f"/claims/{token}").status_code == 401
+
+    claimer = sign_up(client_for, "claimer")
+    claimed = claimer.client.post(f"/claims/{token}")
+
+    assert claimed.status_code == 200, claimed.text
+    assert claimed.json()["player_id"] == claimer.id
+    assert claimed.json()["home_troupe_id"] == troupe.id
+    assert sum(e["amount"] for e in xp(claimer, npc)) == 7
+    assert summaries(troupe.lead) == [f"@{claimer.handle} claimed Lucien with your claim link"]
+    assert (
+        "claimer claimed the NPC Lucien with a claim link, at home here and accepted,"
+        f" with {tally_after(troupe, claimer, npc)} XP for its sheet and 7 XP carried over"
+        " (Banked in Yorick)."
+    ) in troupe_log(troupe.lead, troupe.id)
+
+
+def test_a_claim_link_works_once(troupe: Troupe, heir: Person, client_for: Any) -> None:
+    npc = built(troupe)
+    token = make_link(troupe.lead, npc)
+    assert heir.client.post(f"/claims/{token}").status_code == 200
+
+    other = sign_up(client_for, "latecomer")
+    assert other.client.get(f"/claims/{token}").status_code == 404
+    assert other.client.post(f"/claims/{token}").status_code == 404
+    assert troupe.session.scalars(select(NpcClaim)).all() == []
+
+
+def test_an_expired_claim_link_does_nothing(troupe: Troupe, heir: Person) -> None:
+    npc = built(troupe)
+    token = make_link(troupe.lead, npc)
+    row = troupe.session.scalars(select(NpcClaim)).one()
+    row.expires_at = datetime.now(UTC) - timedelta(minutes=1)
+    troupe.session.flush()
+
+    assert heir.client.get(f"/claims/{token}").status_code == 404
+    assert heir.client.post(f"/claims/{token}").status_code == 404
+    assert troupe.lead.client.get(f"/characters/{npc}/claim-link").json() is None
+    assert (
+        troupe.lead.client.get(f"/troupes/{troupe.id}/npcs").json()[0]["claim_expires_at"] is None
+    )
+
+
+def test_a_link_lasts_thirty_days(troupe: Troupe) -> None:
+    npc = built(troupe)
+    response = troupe.lead.client.post(f"/characters/{npc}/claim-link", json={})
+    expires = datetime.fromisoformat(response.json()["expires_at"])
+    assert timedelta(days=29, hours=23) < expires - datetime.now(UTC) <= timedelta(days=30)
+
+
+def test_cancelling_or_remaking_a_link_stops_the_old_one(troupe: Troupe, heir: Person) -> None:
+    npc = built(troupe)
+    first = make_link(troupe.lead, npc)
+    second = make_link(troupe.storyteller, npc)
+    assert heir.client.get(f"/claims/{first}").status_code == 404
+    assert heir.client.get(f"/claims/{second}").status_code == 200
+
+    cancelled = troupe.lead.client.delete(f"/characters/{npc}/claim-link")
+    assert cancelled.status_code == 204
+    assert heir.client.post(f"/claims/{second}").status_code == 404
+    log = troupe_log(troupe.lead, troupe.id)
+    assert "lead made a claim link for the NPC Lucien." in log
+    assert "storyteller made a new claim link for the NPC Lucien, replacing the old one." in log
+    assert "lead cancelled the claim link for the NPC Lucien." in log
+
+
+def test_giving_directly_ends_an_open_link(troupe: Troupe, heir: Person) -> None:
+    npc = built(troupe)
+    token = make_link(troupe.lead, npc)
+
+    given(troupe.lead, npc, heir)
+
+    assert troupe.player.client.post(f"/claims/{token}").status_code == 404
+
+
+def test_only_storytellers_make_links_and_only_for_npcs_that_can_be_given(
+    troupe: Troupe,
+) -> None:
+    npc = built(troupe)
+    for person in (troupe.assistant, troupe.narrator, troupe.player):
+        response = person.client.post(f"/characters/{npc}/claim-link", json={})
+        assert response.status_code in (403, 404), person.handle
+    stock = made(troupe, name="Bites", npc_kind="werewolf", npc_form="stock")["id"]
+    assert troupe.lead.client.post(f"/characters/{stock}/claim-link", json={}).status_code == 409
+    assert troupe.session.scalars(select(XpEntry)).all() == []
