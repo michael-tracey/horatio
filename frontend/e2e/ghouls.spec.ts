@@ -278,7 +278,10 @@ test("a ghoul at a game spends vitae but never its human Blood, drinks vitae, an
   const l = lead.page;
   await l.goto(`/troupes/${troupeId}/characters`);
   await expect(l.getByRole("link", { name: "Mina Harker" })).toBeVisible();
-  await expect(l.getByText("Nosferatu · Ghoul")).toBeVisible();
+  // Its domitor's clan, and "Ghoul" where a vampire's social age would be.
+  const mina = l.getByRole("row").filter({ has: l.getByRole("link", { name: "Mina Harker" }) });
+  await expect(mina.getByText("Nosferatu", { exact: true }).filter({ visible: true })).toBeVisible();
+  await expect(mina.getByText("Ghoul", { exact: true }).filter({ visible: true })).toBeVisible();
 });
 
 test("staff Embrace a ghoul: it becomes a vampire in XP debt, the cart waits, and an award pays the debt", async ({ browser }) => {

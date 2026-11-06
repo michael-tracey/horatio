@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asksEquipment, charactersFilter, columns, complete, decode, DEFAULT_FILTER, encode, ready, sentence, type Group } from "./filters";
+import { asksEquipment, charactersFilter, columns, complete, decode, DEFAULT_FILTER, encode, filterLabel, ready, sentence, type Group } from "./filters";
 
 const names = {
   category: (key: string) => ({ clan: "Clan", merits: "Merits" })[key] ?? key,
@@ -15,6 +15,19 @@ const CLANS: Group = {
     { what: "choice", which: "clan", op: "family", value: ["Giovanni"] },
   ],
 };
+
+describe("filterLabel", () => {
+  it("says the list opens on active characters, rather than counting it as a filter", () => {
+    expect(filterLabel(ready(decode(null)))).toBe("Filter: active");
+  });
+
+  it("counts the conditions of any other filter", () => {
+    expect(filterLabel({ match: "all", items: [] })).toBe("Filter");
+    expect(filterLabel({ match: "all", items: [OCCULT] })).toBe("Filter (1)");
+    expect(filterLabel({ match: "all", items: [...DEFAULT_FILTER.items, OCCULT] })).toBe("Filter (2)");
+    expect(filterLabel({ match: "all", items: [{ what: "status", op: "is", value: "retired" }] })).toBe("Filter (1)");
+  });
+});
 
 describe("sentence", () => {
   it("reads a compound filter, with sub-groups in brackets", () => {

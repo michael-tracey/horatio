@@ -148,7 +148,7 @@ test("represented by: a Ravnos's player says the Brujah speak for them at court,
   // Staff see it on the Characters tab.
   const l = lead.page;
   await l.goto(`/troupes/${troupeId}/characters`);
-  await expect(l.getByRole("listitem").filter({ hasText: "Ravindra" }).getByText("Represented by: Brujah")).toBeVisible();
+  await expect(l.getByRole("row").filter({ hasText: "Ravindra" }).getByText("Represented by: Brujah").filter({ visible: true })).toBeVisible();
 
   // Seating the Ravnos moves Ravindra into their own section.
   await l.goto(`/troupes/${troupeId}/titles`);

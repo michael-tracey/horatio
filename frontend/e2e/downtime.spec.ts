@@ -210,11 +210,15 @@ test("a troupe's month, from new character to downtime results", async ({ browse
 
   // Accepted, Agnes keeps only 5 of her unspent creation XP. Her storytellers award her some.
   await lead.page.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
-  const agnesRow = lead.page.getByRole("listitem").filter({ has: lead.page.getByRole("link", { name: "Agnes", exact: true }) });
-  await expect(agnesRow.getByText(/ · (Neonate|Ancilla|Elder)$/)).toBeVisible();
+  const agnesRow = lead.page.getByRole("row").filter({ has: lead.page.getByRole("link", { name: "Agnes", exact: true }) });
+  // Her social age: in its column on a wide screen, under her name on a phone.
+  await expect(agnesRow.getByText(/^(Neonate|Ancilla|Elder)$/).filter({ visible: true })).toBeVisible();
   await expect(agnesRow.locator('img[src*="/pictures/"]')).toBeVisible();
   await lead.page.screenshot(shots("roster"));
-  await lead.page.getByRole("button", { name: "Award XP to Agnes" }).click();
+  // Award XP waits behind the ⋯ on her row, and opens in a dialog.
+  await agnesRow.getByRole("button", { name: "Actions for Agnes" }).click();
+  await lead.page.screenshot(shots("roster-menu"));
+  await lead.page.getByRole("menu", { name: "Actions for Agnes" }).getByRole("menuitem", { name: "Award XP…" }).click();
   await lead.page.getByLabel("XP for Agnes").fill("10");
   await lead.page.getByLabel("Reason for Agnes's XP").fill("First game");
   await lead.page.getByRole("button", { name: "Award", exact: true }).click();
@@ -249,7 +253,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
 
   // The troupe's characters and log show what happened.
   await lead.page.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
-  await expect(lead.page.getByText("Home", { exact: true })).toBeVisible();
+  await expect(lead.page.getByText("Home", { exact: true }).filter({ visible: true })).toBeVisible();
   // Ticked characters print together, in a new tab, from the Print… menu.
   await lead.page.getByRole("button", { name: "Print…" }).click();
   await expect(lead.page.getByRole("button", { name: "Print selected (0)" })).toBeDisabled();

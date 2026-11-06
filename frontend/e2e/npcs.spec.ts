@@ -71,11 +71,16 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await p.getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
-  await p.getByRole("button", { name: "Give Prince Vasquez a title" }).click();
-  await p.getByRole("dialog").getByLabel("Title").fill("Prince");
+  await p.getByRole("button", { name: "Actions for Prince Vasquez" }).click();
+  await p.getByRole("menuitem", { name: "Titles…" }).click();
+  const titles = p.getByRole("dialog", { name: "Prince Vasquez's titles" });
+  await titles.getByLabel("Title").fill("Prince");
   await p.screenshot(shots("give-title"));
-  await p.getByRole("dialog").getByLabel("Title").press("Enter");
-  await expect(p.getByRole("button", { name: "Take the title Prince from Prince Vasquez" })).toBeVisible();
+  await titles.getByLabel("Title").press("Enter");
+  await expect(titles.getByRole("button", { name: "Take the title Prince from Prince Vasquez" })).toBeVisible();
+  await titles.getByRole("button", { name: "Close" }).click();
+  // The title shows on the row, to read.
+  await expect(p.getByRole("list", { name: "Prince Vasquez's titles" }).getByText("Prince")).toBeVisible();
   await p.screenshot(shots("roster-titles"));
   await p.getByRole("link", { name: "Troupe", exact: true }).click();
   await p.locator("main").getByRole("link", { name: "Log", exact: true }).click();

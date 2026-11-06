@@ -727,7 +727,9 @@ test("storytellers filter the troupe's characters and print what they find", asy
 
   await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
   await expect(p.getByText("3 of 3 characters")).toBeVisible();
-  await expect(p.getByRole("button", { name: "Remove “Is active”" })).toBeVisible(); // retired characters are hidden by default
+  // Retired characters are hidden by default, and the Filter button says so rather than counting it.
+  await expect(p.getByRole("button", { name: "Remove “Is active”" })).toBeVisible();
+  await expect(p.getByRole("button", { name: "Filter: active" })).toBeVisible();
 
   // Occult below 3, and (Tremere, or the Giovanni family).
   await p.getByRole("button", { name: "Filter" }).click();
@@ -749,10 +751,13 @@ test("storytellers filter the troupe's characters and print what they find", asy
   await giovanni.getByLabel("Value").selectOption("Giovanni");
   await expect(p.getByText("2 of 3 characters")).toBeVisible();
   await expect(p.getByText("(Clan is Tremere, or Clan is in the Giovanni family)")).toBeVisible();
-  const list = p.locator("main ul.divide-y");
+  await expect(p.getByRole("button", { name: "Filter (3)" })).toBeVisible();
+  const list = p.getByRole("table", { name: "Characters" });
   await expect(list.getByRole("link", { name: "Prince" })).toHaveCount(0);
-  await expect(list.getByText("Occult 1")).toBeVisible(); // the number the filter compares
-  await expect(list.getByText("Occult 0")).toBeVisible();
+  // The number the filter compares: in an Occult column on a wide screen, under the name on a phone.
+  const occultOf = (name: string) => list.locator("tbody tr").filter({ hasText: name }).getByText(/^(Occult )?\d$/).filter({ visible: true });
+  await expect(occultOf("Mara")).toHaveText(/1$/);
+  await expect(occultOf("Nell")).toHaveText(/0$/);
   await p.screenshot(shots("filter"));
 
   // The filter is in the URL, so it survives a reload.
@@ -1990,7 +1995,7 @@ test("Waiting on you shows the open cycle, a quest request and a backstory waiti
   const characterTabs = l.getByRole("navigation", { name: "Characters", exact: true });
   await expect(characterTabs.getByRole("link", { name: /^Characters/ }).getByLabel("1 waiting")).toBeVisible();
   // The roster marks the backstory, and the mark opens it.
-  await l.getByRole("link", { name: "Backstory to read" }).click();
+  await l.getByRole("link", { name: "Backstory to read" }).filter({ visible: true }).click();
   await expect(l).toHaveURL(new RegExp(`/characters/${id}/backstory`));
   await expect(l.getByText("Embraced in a Budapest opera house, 1911.")).toBeVisible();
   // The line itself goes straight to the backstory too, and the quest request's to Quests.
