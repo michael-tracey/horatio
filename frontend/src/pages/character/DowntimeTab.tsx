@@ -14,6 +14,7 @@ import { useLeaveWarning } from "./CartPanel";
 import { type Answers, EMPTY_FORM, type Form, formReducer, toAnswers, unsaved } from "./downtimeForm";
 import { FeedingCard } from "./FeedingCard";
 import { NominationsForm } from "../nominations/NominationsForm";
+import { RemembrancesForm } from "../nominations/RemembrancesForm";
 
 /** Action questions and the Quest action each spend an action of their kind. */
 const spends = (q: QuestionOut) => q.kind === "action" || q.kind === "quest";
@@ -190,7 +191,8 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
             />
           );
         })}
-        {/* Apart from the answers: they save as they are added, and spend no actions (#470). */}
+        {/* Apart from the answers: they save as they are added, and spend no actions (#470, #471). */}
+        {d.remembrances && <RemembrancesForm characterId={characterId} />}
         {d.player_nominations && <NominationsForm characterId={characterId} />}
         <ErrorText error={save.error ?? submit.error} />
         {/* On a phone, the buttons and what became of them stay at the foot of the screen. */}

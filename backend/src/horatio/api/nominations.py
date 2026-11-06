@@ -8,7 +8,7 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
-from horatio import audit, downtimes, nominations
+from horatio import audit, downtimes, leaving, nominations, pictures, remembrances, social_age
 from horatio.api.downtimes import my_participation, staff_cycle, staff_troupe
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, CycleParticipant, DowntimeCycle, Nomination, Troupe
@@ -73,11 +73,29 @@ class ReviewedOut(BaseModel):
     published: bool
 
 
+class RememberedReviewOut(BaseModel):
+    """A character the cycle asks memories of, with those written so far."""
+
+    remembrance_id: uuid.UUID
+    character_id: uuid.UUID
+    name: str
+    picture: str | None
+    # Why it left: Final Death, Off-field or Inactive.
+    reason: str | None
+    memories: list[ReviewedOut]
+
+
 class CycleNominationsOut(BaseModel):
+    # The troupe's settings: which of the two this tab reviews.
+    player_nominations: bool
+    remembrances_on: bool
+    # The cycle's Player Nominations, and their counts.
     nominations: list[ReviewedOut]
     written: int
     removed: int
     starred: int
+    # The characters the cycle asks memories of (horatio.remembrances).
+    remembrances: list[RememberedReviewOut] = []
     # When they were first published, if they have been.
     published_at: datetime | None
     # Those not yet published, nor removed: what Publish (or Publish more) would add.
@@ -113,11 +131,25 @@ class EntryOut(BaseModel):
     order: float
 
 
+class RememberedOut(BaseModel):
+    """A character remembered in a month, with the memories of them."""
+
+    character_id: uuid.UUID
+    name: str
+    picture: str | None
+    clan: str | None
+    # Why it left: Final Death, Off-field or Inactive.
+    reason: str | None
+    memories: list[EntryOut]
+
+
 class MonthOut(BaseModel):
     cycle_id: uuid.UUID
     name: str
     published_at: datetime
     nominations: list[EntryOut]
+    # Those remembered this month (horatio.remembrances), by name.
+    remembrances: list[RememberedOut] = []
 
 
 class StarredOut(BaseModel):
@@ -167,33 +199,54 @@ def my_nominations_out(
     )
 
 
+def reviewed_out(db: DbSession, w: nominations.Written) -> ReviewedOut:
+    return ReviewedOut(
+        id=w.nomination.id,
+        text=w.nomination.text,
+        about=about_out(db, w.nomination),
+        character_id=w.character.id,
+        character_name=w.character.name,
+        player_name=w.player.display_name,
+        player_handle=w.player.handle,
+        written_at=w.nomination.created_at,
+        removed=w.nomination.removed_at is not None,
+        removed_reason=w.nomination.removed_reason,
+        starred=w.nomination.starred_at is not None,
+        edited=w.nomination.edited_at is not None,
+        published=w.nomination.published_at is not None,
+    )
+
+
 def cycle_nominations_out(db: DbSession, cycle: DowntimeCycle) -> CycleNominationsOut:
-    found = nominations.review(db, cycle)
+    troupe = db.get_one(Troupe, cycle.troupe_id)
+    every = nominations.review(db, cycle)
+    found = [w for w in every if w.nomination.remembrance_id is None]
+    memories: dict[uuid.UUID, list[ReviewedOut]] = {}
+    for w in every:
+        if w.nomination.remembrance_id is not None:
+            memories.setdefault(w.nomination.remembrance_id, []).append(reviewed_out(db, w))
+    asked = remembrances.in_cycle(db, cycle) if remembrances.on(troupe) else []
     return CycleNominationsOut(
-        nominations=[
-            ReviewedOut(
-                id=w.nomination.id,
-                text=w.nomination.text,
-                about=about_out(db, w.nomination),
-                character_id=w.character.id,
-                character_name=w.character.name,
-                player_name=w.player.display_name,
-                player_handle=w.player.handle,
-                written_at=w.nomination.created_at,
-                removed=w.nomination.removed_at is not None,
-                removed_reason=w.nomination.removed_reason,
-                starred=w.nomination.starred_at is not None,
-                edited=w.nomination.edited_at is not None,
-                published=w.nomination.published_at is not None,
-            )
-            for w in found
-        ],
+        player_nominations=troupe.player_nominations,
+        remembrances_on=troupe.remembrances,
+        nominations=[reviewed_out(db, w) for w in found],
         written=len(found),
         removed=sum(w.nomination.removed_at is not None for w in found),
         starred=sum(w.nomination.starred_at is not None for w in found),
+        remembrances=[
+            RememberedReviewOut(
+                remembrance_id=r.remembrance.id,
+                character_id=r.character.id,
+                name=r.character.name,
+                picture=pictures.picture_url(r.character.id, r.character.picture_id),
+                reason=r.reason,
+                memories=memories.get(r.remembrance.id, []),
+            )
+            for r in asked
+        ],
         published_at=cycle.nominations_published_at,
         waiting=sum(
-            w.nomination.published_at is None and w.nomination.removed_at is None for w in found
+            w.nomination.published_at is None and w.nomination.removed_at is None for w in every
         ),
         past_due=downtimes.past_due(cycle),
     )
@@ -203,7 +256,7 @@ def review_cycle(db: DbSession, user: CurrentUser, cycle_id: uuid.UUID) -> Downt
     """A cycle whose nominations the user reviews: running staff, while the troupe
     uses them."""
     cycle, troupe = staff_cycle(db, user, cycle_id)
-    nominations.require_on(troupe)
+    nominations.require_reviewed(troupe)
     return cycle
 
 
@@ -390,14 +443,27 @@ def published_nominations(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser
     """Each month's published nominations, newest month first, shuffled and without
     names: for the troupe's players and staff."""
     troupe = reading_troupe(db, user, troupe_id)
+    months = nominations.published(db, troupe)
+    clans = social_age.standings(db, [c.id for m in months for c, _ in m.remembered])
     return [
         MonthOut(
-            cycle_id=cycle.id,
-            name=cycle.name,
-            published_at=cycle.nominations_published_at,  # type: ignore[arg-type]  # published
-            nominations=[entry_out(db, n) for n in found],
+            cycle_id=m.cycle.id,
+            name=m.cycle.name,
+            published_at=m.cycle.nominations_published_at,  # type: ignore[arg-type]  # published
+            nominations=[entry_out(db, n) for n in m.nominations],
+            remembrances=[
+                RememberedOut(
+                    character_id=c.id,
+                    name=c.name,
+                    picture=pictures.picture_url(c.id, c.picture_id),
+                    clan=clans[c.id].clan,
+                    reason=leaving.reason_name(c.left_reason),
+                    memories=[entry_out(db, n) for n in memories],
+                )
+                for c, memories in m.remembered
+            ],
         )
-        for cycle, found in nominations.published(db, troupe)
+        for m in months
     ]
 
 
@@ -406,7 +472,7 @@ def starred_nominations(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) 
     """Every starred nomination of the troupe's, from every month: what its footer
     rotates through. Empty for anyone who doesn't read them."""
     troupe = db.get(Troupe, troupe_id)
-    if troupe is None or not nominations.can_read(db, user, troupe):
+    if troupe is None or not nominations.on(troupe) or not nominations.can_read(db, user, troupe):
         return []
     return [
         StarredOut(id=n.id, text=n.text, month=cycle.name)

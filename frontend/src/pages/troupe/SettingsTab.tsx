@@ -14,6 +14,7 @@ import { GameXpCard } from "./GameXpSettings";
 import { GolcondaSetting } from "./GolcondaSetting";
 import { ItemExpirySetting } from "./ItemExpirySetting";
 import { NominationsSetting } from "../nominations/NominationsSetting";
+import { RemembrancesSetting } from "../nominations/RemembrancesSetting";
 import { ExperienceDefaults, StartingBlood } from "./StartingSection";
 import { StatusAtCheckinSetting, StatusSetting, TitlesSetting } from "./StatusSetting";
 import { WhosWhoSetting } from "./WhosWhoSetting";
@@ -65,6 +66,7 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
       </Group>
       <Group title="Downtimes">
         <NominationsSetting troupe={troupe} canEdit={canEdit} />
+        <RemembrancesSetting troupe={troupe} canEdit={canEdit} />
       </Group>
       <Group title="Feeding">
         <FeedingSetting troupeId={troupe.id} canEdit={canEdit} />

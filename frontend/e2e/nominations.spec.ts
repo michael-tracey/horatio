@@ -121,3 +121,85 @@ test("players write Player Nominations in their downtime, staff review, star and
   await expect(about.getByText(`${troupeName}, Salon month`)).toBeVisible();
   await expect(about).not.toContainText("gentle, generous");
 });
+
+test("a character retires with remembrances, the next downtime asks for a memory, staff publish it, and its player reads it on its page", async ({ browser }) => {
+  const custodian = await person(browser, "rememb-custod");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "rememb-lead");
+  const gone = await person(browser, "rememb-gone");
+  const friend = await person(browser, "rememb-friend");
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Lantern Court ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  const vera = await member(gone.page, lead.page, troupe.id, "Vera Lune");
+  const otto = await member(friend.page, lead.page, troupe.id, "Otto Reyes");
+
+  // The lead switches Remembrances on; Player Nominations stay off.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}/settings`);
+  await l.getByRole("checkbox", { name: /^Remembrances/ }).click();
+  await expect(l.getByRole("checkbox", { name: /^Remembrances/ })).toBeChecked();
+  await expect(l.getByRole("checkbox", { name: /^Player Nominations/ })).not.toBeChecked();
+
+  // Vera's player retires her, Final Death, and asks for remembrances.
+  const g = gone.page;
+  await g.goto(`/characters/${vera}`);
+  await g.getByRole("button", { name: "More for Vera Lune" }).click();
+  await g.getByRole("menuitem", { name: "Retire…" }).click();
+  const dialog = g.getByRole("dialog", { name: "Retire Vera Lune" });
+  await dialog.getByRole("radio", { name: /^Final Death/ }).check();
+  await dialog.getByRole("checkbox", { name: /^Ask the storytellers to open remembrances in the next downtime/ }).check();
+  await g.screenshot(shots("remembrances-retire"));
+  await dialog.getByRole("button", { name: "Retire Vera Lune" }).click();
+  await expect(g.getByText("Why Vera Lune left: Final Death.")).toBeVisible();
+  const card = (p: Page) => p.locator("section").filter({ has: p.getByRole("heading", { name: "Remembrances", exact: true }) });
+  await expect(card(g).getByText("Vera Lune’s player asked for remembrances.")).toBeVisible();
+
+  // The lead opens them from her page: no cycle is open, so the next one asks.
+  await l.goto(`/characters/${vera}`);
+  await expect(card(l).getByText(/Opened now, they’re asked for in the next downtime cycle that opens\./)).toBeVisible();
+  await card(l).getByRole("button", { name: "Open remembrances" }).click();
+  await expect(card(l).getByText("The troupe is asked for memories of Vera Lune in the next downtime cycle that opens.")).toBeVisible();
+  // A cycle already past Due, still taking downtimes in its grace period.
+  const now = Date.now();
+  const cycle = await send(l, "POST", `/api/troupes/${troupe.id}/cycles`, {
+    name: "Lantern month",
+    closes_at: new Date(now - 60e3).toISOString(),
+    grace_ends_at: new Date(now + 2 * 86400e3).toISOString(),
+  });
+  await send(l, "POST", `/api/cycles/${cycle.id}/open`);
+
+  // Otto's player writes a memory of her in the next downtime.
+  const f = friend.page;
+  await f.goto(`/characters/${otto}/downtime`);
+  const memory = f.getByRole("listitem", { name: "A memory of Vera Lune" });
+  await expect(memory.getByText("Final Death")).toBeVisible();
+  await expect(f.getByRole("heading", { name: "Player Nominations" })).toHaveCount(0);
+  await memory.getByLabel("Your memory of Vera Lune").fill("She lit every lantern in the court the night we lost the Prince.");
+  await memory.getByRole("button", { name: "Save memory" }).click();
+  await expect(memory.getByText("Saved", { exact: true })).toBeVisible();
+  await f.screenshot(shots("remembrances-write"));
+  await f.getByRole("button", { name: "Submit downtime" }).click();
+  await expect(f.getByText(/^Submitted\./)).toBeVisible();
+
+  // The lead reviews it, with its writer, and publishes.
+  await l.goto(`/cycles/${cycle.id}/nominations`);
+  const memories = l.getByRole("table", { name: "Memories of Vera Lune" });
+  await expect(memories).toContainText("She lit every lantern");
+  await expect(memories).toContainText("Otto Reyes");
+  await l.getByRole("button", { name: "Publish remembrances" }).click();
+  await expect(l.getByText("Published 1 memory.")).toBeVisible();
+
+  // Vera's player reads it on her page, without who wrote it.
+  await g.goto(`/characters/${vera}`);
+  await expect(card(g).getByRole("region", { name: "Remembrances of Vera Lune, Lantern month" })).toContainText(
+    "She lit every lantern in the court the night we lost the Prince.",
+  );
+  await expect(card(g)).not.toContainText("Otto");
+  await g.screenshot(shots("remembrances-read"));
+
+  // Otto's player finds it from Vera's entry on the Who's Who.
+  await f.goto(`/troupes/${troupe.id}/whos-who`);
+  await f.getByRole("article", { name: "Vera Lune" }).getByRole("button", { name: "Remembrances" }).click();
+  await expect(f.getByRole("dialog", { name: "Remembrances of Vera Lune" })).toContainText("She lit every lantern");
+});

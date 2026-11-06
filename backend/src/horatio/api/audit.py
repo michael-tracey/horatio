@@ -67,7 +67,9 @@ GROUPS: dict[AuditGroup, tuple[str, tuple[str, ...]]] = {
             "delivery.",
             "quest.",
             "nomination.",
+            "remembrance.",
             "house.player_nominations",
+            "house.remembrances",
         ),
     ),
     AuditGroup.INFLUENCE: (

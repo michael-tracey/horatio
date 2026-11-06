@@ -61,6 +61,7 @@ from horatio.api import (
     preferences,
     printing,
     quests,
+    remembrances,
     responses,
     retainer_rules,
     retainers,
@@ -207,6 +208,7 @@ for module in (
     backstories,
     written_rules,
     nominations,
+    remembrances,
 ):
     api.include_router(module.router)
 

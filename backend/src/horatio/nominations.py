@@ -24,7 +24,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy import ColumnElement, exists, select
+from sqlalchemy import ColumnElement, exists, false, or_, select
 from sqlalchemy.orm import Session
 
 from horatio import audit, downtimes, notifications, suspensions
@@ -53,6 +53,27 @@ def on(troupe: Troupe) -> bool:
 def require_on(troupe: Troupe) -> None:
     if not on(troupe):
         raise conflict("This troupe doesn't use Player Nominations.")
+
+
+def reviewed_here(troupe: Troupe) -> bool:
+    """Whether the troupe's cycles have nominations or remembrances (horatio.remembrances)
+    to review and publish: they share the cycle's tab and its Publish."""
+    return troupe.player_nominations or troupe.remembrances
+
+
+def require_reviewed(troupe: Troupe) -> None:
+    if not reviewed_here(troupe):
+        raise conflict("This troupe doesn't use Player Nominations or Remembrances.")
+
+
+def kinds(troupe: Troupe) -> ColumnElement[bool]:
+    """The entries the troupe's settings show: nominations, memories, both or neither."""
+    shown: list[ColumnElement[bool]] = []
+    if troupe.player_nominations:
+        shown.append(Nomination.remembrance_id.is_(None))
+    if troupe.remembrances:
+        shown.append(Nomination.remembrance_id.is_not(None))
+    return or_(*shown) if shown else false()
 
 
 # --- who a nomination is about ------------------------------------------------------------
@@ -129,7 +150,7 @@ def mine(db: Session, participant: CycleParticipant) -> list[Nomination]:
     return list(
         db.scalars(
             select(Nomination)
-            .where(Nomination.participant_id == participant.id)
+            .where(Nomination.participant_id == participant.id, Nomination.remembrance_id.is_(None))
             .order_by(Nomination.created_at, Nomination.id)
         )
     )
@@ -172,7 +193,11 @@ def write(
 
 def own(participant: CycleParticipant, nomination: Nomination | None) -> Nomination:
     """One of the participant's own nominations, not yet published."""
-    if nomination is None or nomination.participant_id != participant.id:
+    if (
+        nomination is None
+        or nomination.participant_id != participant.id
+        or nomination.remembrance_id is not None
+    ):
         raise unprocessable("That isn't one of this character's nominations.")
     if nomination.published_at is not None:
         raise conflict("It's published now: ask a storyteller if it needs changing.")
@@ -242,25 +267,27 @@ def submitted(cycle: DowntimeCycle) -> tuple[ColumnElement[bool], ...]:
 
 
 def review(db: Session, cycle: DowntimeCycle) -> list[Written]:
-    """Every nomination staff can see in the cycle: those in submitted downtimes, in
-    the order they were written."""
+    """Every nomination and memory staff can see in the cycle, as the troupe's settings
+    show them: those in submitted downtimes, in the order they were written."""
+    troupe = db.get_one(Troupe, cycle.troupe_id)
     rows = db.execute(
         select(Nomination, Character, User)
         .join(CycleParticipant, Nomination.participant_id == CycleParticipant.id)
         .join(Character, CycleParticipant.character_id == Character.id)
         .join(User, Character.player_id == User.id)
-        .where(*submitted(cycle))
+        .where(*submitted(cycle), kinds(troupe))
         .order_by(Nomination.created_at, Nomination.id)
     )
     return [Written(n, c, u) for n, c, u in rows]
 
 
 def in_cycle(db: Session, cycle: DowntimeCycle, nomination_id: uuid.UUID) -> Nomination:
-    """One of the nominations staff can see in the cycle."""
+    """One of the nominations or memories staff can see in the cycle."""
+    troupe = db.get_one(Troupe, cycle.troupe_id)
     found = db.scalar(
         select(Nomination)
         .join(CycleParticipant, Nomination.participant_id == CycleParticipant.id)
-        .where(Nomination.id == nomination_id, *submitted(cycle))
+        .where(Nomination.id == nomination_id, *submitted(cycle), kinds(troupe))
     )
     if found is None:
         raise unprocessable("No such nomination in this cycle.")
@@ -276,10 +303,16 @@ def excerpt(text: str, most: int = 80) -> str:
 def logged(
     db: Session, staff: User, action: str, cycle: DowntimeCycle, n: Nomination, **data: Any
 ) -> None:
+    if n.remembrance_id is not None:
+        # A memory, named by whom it remembers.
+        from horatio.models import Remembrance
+
+        remembrance = db.get_one(Remembrance, n.remembrance_id)
+        data["remembered"] = db.get_one(Character, remembrance.character_id).name
     audit.record(
         db,
         staff,
-        f"nomination.{action}",
+        f"{'remembrance' if n.remembrance_id else 'nomination'}.{action}",
         troupe_id=cycle.troupe_id,
         cycle_id=cycle.id,
         cycle=cycle.name,
@@ -309,6 +342,8 @@ def restore(db: Session, staff: User, cycle: DowntimeCycle, n: Nomination) -> No
 
 def star(db: Session, staff: User, cycle: DowntimeCycle, n: Nomination, starred: bool) -> None:
     """Star it, for the footer of the troupe's pages once published, or unstar it."""
+    if n.remembrance_id is not None:
+        raise conflict("Only Player Nominations are starred, not remembrances.")
     if starred == (n.starred_at is not None):
         return
     n.starred_at = downtimes.now() if starred else None
@@ -356,17 +391,29 @@ def home_players(db: Session, troupe: Troupe) -> list[uuid.UUID]:
 
 
 def publish(db: Session, staff: User, cycle: DowntimeCycle) -> int:
-    """Publish the cycle's nominations not yet published, once it is past Due: the
-    first time, telling the troupe's players; after, adding those written since.
-    Each takes its place in its month's shuffled order now, and keeps it. Everyone
-    named in one is told. Returns how many were published."""
+    """Publish the cycle's nominations and memories (horatio.remembrances) not yet
+    published, once it is past Due: the first time, telling the troupe's players;
+    after, adding those written since. Each takes its place in its month's shuffled
+    order now, and keeps it. Everyone named in a nomination is told, and so is each
+    remembered character's player. Returns how many were published."""
+    from horatio import remembrances
+
     troupe = db.get_one(Troupe, cycle.troupe_id)
-    require_on(troupe)
+    require_reviewed(troupe)
     if not downtimes.past_due(cycle):
-        raise conflict("Player Nominations can be published once the cycle is past Due.")
-    found = waiting(db, cycle)
+        raise conflict("They can be published once the cycle is past Due.")
+    seen = review(db, cycle)
+    found = [
+        w.nomination
+        for w in seen
+        if w.nomination.published_at is None and w.nomination.removed_at is None
+    ]
     if not found:
-        raise conflict("There are no nominations waiting to be published.")
+        raise conflict("There is nothing waiting to be published.")
+    # What was published before: so each kind's news goes out once.
+    before = [w.nomination for w in seen if w.nomination.published_at is not None]
+    nominated_before = any(n.remembrance_id is None for n in before)
+    remembered_before = {n.remembrance_id for n in before if n.remembrance_id is not None}
     at = downtimes.now()
     first = cycle.nominations_published_at is None
     if first:
@@ -385,7 +432,8 @@ def publish(db: Session, staff: User, cycle: DowntimeCycle) -> int:
         count=len(found),
     )
     page = f"/troupes/{troupe.id}/nominations"
-    if first:
+    nominated = [n for n in found if n.remembrance_id is None]
+    if nominated and not nominated_before:
         notifications.notify(
             db,
             home_players(db, troupe),
@@ -394,7 +442,8 @@ def publish(db: Session, staff: User, cycle: DowntimeCycle) -> int:
             page,
             troupe_id=troupe.id,
         )
-    tell_those_named(db, troupe, cycle, found, page)
+    tell_those_named(db, troupe, cycle, nominated, page)
+    remembrances.tell(db, troupe, cycle, found, remembered_before)
     return len(found)
 
 
@@ -431,11 +480,9 @@ def tell_those_named(
 # --- reading them -------------------------------------------------------------------------------
 
 
-def can_read(db: Session, user: User, troupe: Troupe) -> bool:
-    """Whether the user reads the troupe's published nominations: its staff and its
-    players, those with an active character at home there. Never while it is off."""
-    if not on(troupe):
-        return False
+def is_reader(db: Session, user: User, troupe: Troupe) -> bool:
+    """One of the troupe's readers: its staff and its players, those with an active
+    character at home there; and the custodian."""
     if user.is_custodian:
         return True
     if troupe.archived_at is not None:
@@ -456,13 +503,32 @@ def can_read(db: Session, user: User, troupe: Troupe) -> bool:
     )
 
 
+def can_read(db: Session, user: User, troupe: Troupe) -> bool:
+    """Whether the user reads the troupe's published months: one of its readers, while
+    it uses Player Nominations or Remembrances. Never while both are off."""
+    return reviewed_here(troupe) and is_reader(db, user, troupe)
+
+
 def shown() -> tuple[ColumnElement[bool], ...]:
     """Published, and not removed since."""
     return (Nomination.published_at.is_not(None), Nomination.removed_at.is_(None))
 
 
-def published(db: Session, troupe: Troupe) -> list[tuple[DowntimeCycle, list[Nomination]]]:
-    """Each month published, newest first, its nominations in their shuffled order."""
+@dataclass(frozen=True)
+class Month:
+    """A month published: its nominations, and the characters remembered in it with
+    their memories, each in their shuffled order."""
+
+    cycle: DowntimeCycle
+    nominations: list[Nomination]
+    remembered: list[tuple[Character, list[Nomination]]]
+
+
+def published(db: Session, troupe: Troupe) -> list[Month]:
+    """Each month published, newest first, with what the troupe's settings show of it:
+    its nominations, and its remembrances by the character's name."""
+    from horatio.models import Remembrance
+
     cycles = list(
         db.scalars(
             select(DowntimeCycle)
@@ -474,13 +540,31 @@ def published(db: Session, troupe: Troupe) -> list[tuple[DowntimeCycle, list[Nom
         )
     )
     by_cycle: dict[uuid.UUID, list[Nomination]] = {c.id: [] for c in cycles}
+    memories: dict[uuid.UUID, dict[uuid.UUID, list[Nomination]]] = {c.id: {} for c in cycles}
     for n in db.scalars(
         select(Nomination)
-        .where(Nomination.cycle_id.in_(by_cycle), *shown())
+        .where(Nomination.cycle_id.in_(by_cycle), kinds(troupe), *shown())
         .order_by(Nomination.shuffle_key, Nomination.id)
     ):
-        by_cycle[n.cycle_id].append(n)
-    return [(c, by_cycle[c.id]) for c in cycles]
+        if n.remembrance_id is None:
+            by_cycle[n.cycle_id].append(n)
+        else:
+            memories[n.cycle_id].setdefault(n.remembrance_id, []).append(n)
+    remembered = {
+        r.id: db.get_one(Character, r.character_id)
+        for r in db.scalars(
+            select(Remembrance).where(Remembrance.id.in_([i for m in memories.values() for i in m]))
+        )
+    }
+    months: list[Month] = []
+    for c in cycles:
+        found = sorted(
+            ((remembered[i], m) for i, m in memories[c.id].items()),
+            key=lambda pair: (pair[0].name, str(pair[0].id)),
+        )
+        if by_cycle[c.id] or found:
+            months.append(Month(c, by_cycle[c.id], found))
+    return months
 
 
 def about_character(db: Session, character: Character) -> list[tuple[DowntimeCycle, Nomination]]:
@@ -490,7 +574,12 @@ def about_character(db: Session, character: Character) -> list[tuple[DowntimeCyc
         select(DowntimeCycle, Nomination)
         .join(Nomination, Nomination.cycle_id == DowntimeCycle.id)
         .join(Troupe, DowntimeCycle.troupe_id == Troupe.id)
-        .where(Nomination.about_character_id == character.id, Troupe.player_nominations, *shown())
+        .where(
+            Nomination.about_character_id == character.id,
+            Nomination.remembrance_id.is_(None),
+            Troupe.player_nominations,
+            *shown(),
+        )
         .order_by(DowntimeCycle.nominations_published_at.desc(), Nomination.shuffle_key)
     )
     return [(c, n) for c, n in rows]
@@ -504,6 +593,7 @@ def starred(db: Session, troupe: Troupe) -> list[tuple[DowntimeCycle, Nomination
         .where(
             DowntimeCycle.troupe_id == troupe.id,
             Nomination.starred_at.is_not(None),
+            Nomination.remembrance_id.is_(None),
             *shown(),
         )
         .order_by(DowntimeCycle.nominations_published_at.desc(), Nomination.shuffle_key)

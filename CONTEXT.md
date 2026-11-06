@@ -407,6 +407,10 @@ _Avoid_: Medium, transport
 A short note a player writes in a downtime praising someone's roleplaying, optionally linked to a character in the troupe or one of its staff. The troupe's storytellers and assistant storytellers read it with its writer, may remove, star or lightly edit it, and publish the cycle's once it is past Due, to the troupe's players, shuffled and without names. Starred ones rotate at the foot of the troupe's pages. A troupe uses them only if it switches them on.
 _Avoid_: Shout-out, kudos, props
 
+**Remembrances**:
+Memories of a retired character, asked of the troupe in one downtime cycle: the open one if it isn't yet past Due, or else the next to open. Its home troupe's storytellers and assistant storytellers open them, as it retires or later; its player can ask for them. Each writer gives one memory, reviewed and published with the cycle's Player Nominations, never starred. Published, they stay with the character and on the Who's Who, even if the troupe stops using them. A troupe uses them only if it switches them on.
+_Avoid_: Eulogies, obituary, memorial
+
 ### Locations
 
 **Location**:

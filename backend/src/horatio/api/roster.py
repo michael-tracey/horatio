@@ -684,6 +684,13 @@ MESSAGES: dict[str, str] = {
     "nomination.edited": '{actor} edited a Player Nomination in {cycle}: "{text}"',
     "nomination.published": "{actor} published {cycle}'s Player Nominations ({count}).",
     "nomination.published_more": "{actor} published {count} more of {cycle}'s Player Nominations.",
+    "house.remembrances": "{actor} switched Remembrances {setting}.",
+    "remembrance.opened": "{actor} opened remembrances for {character}, asked in {cycle}.",
+    "remembrance.asked": "{actor} asked for remembrances of {character}.",
+    "remembrance.removed": "{actor} removed a memory of {remembered} from {cycle}{because}:"
+    ' "{text}"',
+    "remembrance.restored": '{actor} put back a memory of {remembered} in {cycle}: "{text}"',
+    "remembrance.edited": '{actor} edited a memory of {remembered} in {cycle}: "{text}"',
     "house.location_limit": "{actor} set going over a character's control limit to {setting}.",
     "house.location_quality_added": "{actor} added the location quality {name} ({kind}).",
     "house.location_quality_changed": "{actor} changed the location quality {name}.",

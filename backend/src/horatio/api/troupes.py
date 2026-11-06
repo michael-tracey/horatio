@@ -103,6 +103,9 @@ class TroupeOut(BaseModel):
     # whether the caller reads its published ones (its staff and its players).
     player_nominations: bool = False
     nominations: bool = False
+    # Remembrances (horatio.remembrances): whether the troupe uses them. The caller
+    # reads its published months (above) while it uses either.
+    remembrances: bool = False
     # The caller may see its Who's Who: its staff, and the players of its characters.
     whos_who: bool
     # Its portrait (add "/48.webp", "/128.webp" or "/512.webp"), or None.
@@ -262,7 +265,7 @@ def troupes_out(db: DbSession, user: User, troupes: Sequence[Troupe]) -> list[Tr
             roles[t.id],
             t.id in whos_who,
             mine.get(t.id, []),
-            reads_nominations=t.player_nominations
+            reads_nominations=(t.player_nominations or t.remembrances)
             and (
                 user.is_custodian
                 or (t.archived_at is None and (roles[t.id] is not None or bool(mine.get(t.id))))
@@ -337,6 +340,7 @@ def one_out(
         items_expire=troupe.items_expire,
         player_nominations=troupe.player_nominations,
         nominations=reads_nominations,
+        remembrances=troupe.remembrances,
         whos_who=whos_who,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
         banner=pictures.banner_url(troupe.id, troupe.banner_id),
