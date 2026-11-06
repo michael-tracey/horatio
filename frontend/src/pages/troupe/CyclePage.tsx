@@ -7,7 +7,7 @@ import type { CycleOut, QuestionIn } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Notice, PageTitle, Select, Tabs, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { cycleStatus, timeLeft } from "./cycles";
+import { cycleStatus, kindLabels, timeLeft } from "./cycles";
 import { closeFacts, completeFacts } from "./delivery";
 import { DeliveryTab } from "./DeliveryTab";
 import { FeedingTab } from "./FeedingTab";
@@ -212,7 +212,7 @@ function Overview({ cycle }: { cycle: CycleOut }) {
           {Object.keys(p.by_action_kind).length > 0 && (
             <>
               <h3 className="mt-4 mb-1 font-sans text-xs text-mist uppercase">By kind</h3>
-              <ProgressRows rows={p.by_action_kind} />
+              <ProgressRows rows={p.by_action_kind} labels={kindLabels(Object.keys(p.by_action_kind), cycle.action_kinds ?? {})} />
             </>
           )}
         </Card>
@@ -278,12 +278,14 @@ function Bar({ label, done, total }: { label: string; done: number; total: numbe
   );
 }
 
-function ProgressRows({ rows }: { rows: Record<string, { written?: number; total?: number }> }) {
+/** Written of total, by who or by kind. A row is named as `labels` names its key, or
+ * else as the key reads: a staff member's name as they wrote it, not capitalised. */
+function ProgressRows({ rows, labels = {} }: { rows: Record<string, { written?: number; total?: number }>; labels?: Record<string, string> }) {
   return (
     <ul className="text-sm">
       {Object.entries(rows).map(([name, r]) => (
         <li key={name} className="flex justify-between">
-          <span className="capitalize">{name.replace(/_/g, " ")}</span>
+          <span>{labels[name] ?? name}</span>
           <span>
             {r.written ?? 0} / {r.total ?? 0}
           </span>

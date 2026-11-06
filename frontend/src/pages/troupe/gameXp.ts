@@ -25,11 +25,11 @@ export const DEFAULTS: GameXpSettings = {
   absentee_lookback_days: 60,
 };
 
-/** Charts to start from: Flat is the book's way, AIT's taper an example. */
+/** Charts to start from: Flat is the book's way, Tapering an example: less XP a game as earned XP grows. */
 export const PRESETS: { name: string; bands: Band[] }[] = [
   { name: "Flat", bands: [] },
   {
-    name: "AIT taper",
+    name: "Tapering",
     bands: [
       { up_to: 200, attended: 5, absentee: 4 },
       { up_to: 300, attended: 4, absentee: 3 },

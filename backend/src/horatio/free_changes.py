@@ -18,7 +18,7 @@ held for review (declining puts it back and takes the XP back), and a merit or f
 is asked of them (horatio.merit_requests), refunding a merit in full and buying off
 a flaw for what it gave rather than twice that. Every change is still judged by the
 checks, as always: traits chosen only during creation stay as they are, free dots
-stay, and nothing may break a rule. The traits a troupe excludes (AIT's Efficient
+stay, and nothing may break a rule. The traits a troupe excludes (such as Efficient
 Learner and Arcane) are never refunded so; they follow the normal rules.
 
 Only a character's first acceptance opens free changes, and only if its home troupe
