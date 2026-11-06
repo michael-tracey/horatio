@@ -1566,18 +1566,21 @@ test("players check in at the door and land in their Play View, and staff award 
 
   // The lead sees who came, checks Wilf out and back in by hand.
   await l.reload();
-  const came = l.getByRole("list", { name: "Checked in" });
+  const came = l.getByRole("table", { name: "Checked in" });
   await expect(l.getByRole("heading", { name: "Who came (2)" })).toBeVisible();
-  const wilfRow = came.getByRole("listitem").filter({ hasText: "Wilf" });
-  await expect(wilfRow.getByText("Visiting")).toBeVisible();
-  await expect(wilfRow.getByText("No day's rest")).toBeVisible();
-  await wilfRow.getByRole("button", { name: "Check out Wilf" }).click();
+  const wilfRow = came.locator("tbody tr").filter({ hasText: "Wilf" });
+  // In their columns on a wide screen, under the name on a phone.
+  await expect(wilfRow.getByText("Visiting").filter({ visible: true })).toBeVisible();
+  await expect(wilfRow.getByText("No day's rest").filter({ visible: true })).toBeVisible();
+  await wilfRow.getByRole("button", { name: "Actions for Wilf" }).click();
+  await l.screenshot(shots("game-night-menu"));
+  await l.getByRole("menu", { name: "Actions for Wilf" }).getByRole("menuitem", { name: "Check out" }).click();
   await expect(l.getByText("Checked out: Wilf")).toBeVisible();
-  await expect(came.getByRole("listitem")).toHaveCount(1);
+  await expect(came.locator("tbody tr")).toHaveCount(1);
   await l.getByLabel("Check someone in by hand").selectOption({ label: "Wilf (door-player)" });
   await l.getByRole("button", { name: "Check in", exact: true }).click();
   await expect(l.getByText("Checked in: Wilf")).toBeVisible();
-  await expect(came.getByRole("listitem").filter({ hasText: "Wilf" }).getByText("By hand")).toBeVisible();
+  await expect(came.locator("tbody tr").filter({ hasText: "Wilf" }).getByText("By hand").filter({ visible: true })).toBeVisible();
 
   // The game's XP to those who came: the book's guidance, and a warning, not a refusal, past 10 in the month.
   await expect(l.getByText("The book suggests 3 to 5 XP a game, and no more than 8 to 10 a month (MET: VtM core, p. 108).")).toBeVisible();
@@ -1731,7 +1734,12 @@ test("staff set a tapering game XP chart and award a game by it, with an absente
   await l.getByRole("button", { name: "Mark absentee" }).click();
   await expect(l.getByText("Marked absentee: Ulric")).toBeVisible();
   await expect(l.getByRole("heading", { name: "Who came (1)" })).toBeVisible();
-  await expect(l.getByRole("list", { name: "Absentee" })).toContainText("Ulric");
+  const absentees = l.getByRole("table", { name: "Absentee" });
+  await expect(absentees).toContainText("Ulric");
+  // Taking the absentee game back waits behind the ⋯ on his row.
+  await absentees.getByRole("button", { name: "Actions for Ulric" }).click();
+  await expect(l.getByRole("menu", { name: "Actions for Ulric" }).getByRole("menuitem")).toHaveText(["Take back the absentee game"]);
+  await l.keyboard.press("Escape");
 
   // Each character's XP comes from the chart: Tamsin is in the 201–300 band, and helped; Ulric gets the absentee figure.
   const each = l.getByRole("list", { name: "Each character's XP" });
