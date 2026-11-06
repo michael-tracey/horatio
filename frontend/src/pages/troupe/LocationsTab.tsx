@@ -3,9 +3,12 @@ import { useState, type ReactNode } from "react";
 import { Link, Route, Routes, useLocation, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { LocationCatalogueOut, LocationDetailOut, LocationOut } from "../../api/types";
+import { ActionMenu, MenuGroup, MenuItem, MenuLink } from "../../components/ActionMenu";
+import { Dialog } from "../../components/Dialog";
 import { EmptyState, FilterBar } from "../../components/EmptyState";
 import { InfoButton } from "../../components/InfoButton";
 import { LogList } from "../../components/LogList";
+import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, Empty, ErrorText, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { LocationForm, Warnings } from "./LocationForm";
@@ -31,7 +34,7 @@ export function LocationsTab({ troupeId, questsOn = false }: { troupeId: string;
   if (list.error || catalogue.error) return <ErrorText error={list.error ?? catalogue.error} />;
   return (
     <Routes>
-      <Route index element={<List troupeId={troupeId} locations={list.data} catalogue={catalogue.data} />} />
+      <Route index element={<List troupeId={troupeId} locations={list.data} catalogue={catalogue.data} questsOn={questsOn} />} />
       <Route path="new" element={<New troupeId={troupeId} locations={list.data} catalogue={catalogue.data} />} />
       <Route path=":locationId" element={<One troupeId={troupeId} locations={list.data} catalogue={catalogue.data} questsOn={questsOn} />} />
     </Routes>
@@ -40,7 +43,7 @@ export function LocationsTab({ troupeId, questsOn = false }: { troupeId: string;
 
 type Props = { troupeId: string; locations: LocationOut[]; catalogue: LocationCatalogueOut };
 
-function List({ troupeId, locations, catalogue }: Props) {
+function List({ troupeId, locations, catalogue, questsOn }: Props & { questsOn: boolean }) {
   const navigate = useNavigate();
   const [f, setF] = useState<Filters>(NO_FILTERS);
   const set = (change: Partial<Filters>) => setF({ ...f, ...change });
@@ -142,31 +145,141 @@ function List({ troupeId, locations, catalogue }: Props) {
       {locations.length === 0 ? null : shown.length === 0 ? (
         <Empty>No locations match.</Empty>
       ) : (
-        <ul className="flex flex-col gap-2" aria-label="Locations">
-          {shown.map((l) => (
-            <li key={l.id} className="rounded-md border border-ash bg-dusk p-3 text-sm">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <Link to={l.id} className="text-gold hover:text-parchment">
-                  {l.name}
-                </Link>
-                <span className="text-mist">· {typeText(l)}</span>
-                <span className="text-mist">· {controlText(l)}</span>
-                {l.locked && <Badge tone="blood">Locked</Badge>}
-                {l.haven_of && <Badge tone="gold">Haven</Badge>}
-                {l.elysium_since != null && <Badge tone="gold">Elysium</Badge>}
-                {l.negatives.length > 0 && <Badge tone="blood">{l.negatives.map((n) => `${n.name} ×${n.level}`).join(", ")}</Badge>}
-              </div>
-              {l.qualities.length > 0 && <p className="mt-1">{qualitiesText(l.qualities)}</p>}
-              {(l.address || influenceText(l) || l.feeding_block || l.parent) && (
-                <p className="mt-1 text-xs text-mist">
-                  {[l.parent && `Part of ${l.parent.name}`, influenceText(l), l.feeding_block && `Feeding block: ${l.feeding_block}`, l.address].filter(Boolean).join(" · ")}
-                </p>
-              )}
-            </li>
-          ))}
-        </ul>
+        <Card>
+          <table aria-label="Locations" className="w-full text-sm">
+            {/* On a phone or a narrow window each row folds into a card, under the one heading. */}
+            <thead className="max-lg:sr-only">
+              <tr className="border-b border-ash text-left text-xs text-mist">
+                <th className="py-2 pr-3 font-normal">Name</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Type</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Controller</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Qualities</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Influence area</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Locked</th>
+                <th className="py-2 font-normal">
+                  <span className="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-ash">
+              {shown.map((l) => (
+                <Row key={l.id} location={l} troupeId={troupeId} locations={locations} catalogue={catalogue} questsOn={questsOn} />
+              ))}
+            </tbody>
+          </table>
+        </Card>
       )}
     </div>
+  );
+}
+
+/** A column shown only on a wide screen; on a narrow one it folds in under the name. */
+const WIDE = "hidden lg:table-cell";
+
+type Opened = "edit" | "remove";
+
+/** One location on the list: what it is and who controls it, and what staff can do with it behind ⋯. */
+function Row({ location: l, troupeId, locations, catalogue, questsOn }: Props & { location: LocationOut; questsOn: boolean }) {
+  const [open, setOpen] = useState<Opened | null>(null);
+  const close = () => setOpen(null);
+  const toast = useToast();
+  // Said and closed before the list is asked again, which takes the row away.
+  const remove = useAction(async () => {
+    await unwrap(api.DELETE("/api/locations/{location_id}", { params: { path: { location_id: l.id } } }));
+    toast({ message: `${l.name} removed.` });
+    close();
+  });
+  const qualities = qualitiesText(l.qualities);
+  const negatives = l.negatives.length > 0 && (
+    <span className="text-blood-bright">
+      {l.negatives.map((n) => `${n.name} ×${n.level}${n.secret ? " (secret)" : ""}`).join(", ")}
+    </span>
+  );
+  const badges = (
+    <>
+      {l.haven_of && <Badge tone="gold">Haven</Badge>}
+      {l.elysium_since != null && <Badge tone="gold">Elysium</Badge>}
+    </>
+  );
+  const where = [l.parent && `Part of ${l.parent.name}`, l.feeding_block && `Feeding block: ${l.feeding_block}`, l.address].filter(Boolean).join(" · ");
+  return (
+    <tr>
+      <td className="py-2.5 pr-3 align-top">
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <Link to={l.id} className="text-gold hover:text-parchment">
+            {l.name}
+          </Link>
+          {badges}
+          {l.locked && (
+            <Badge tone="blood" className="lg:hidden">
+              Locked
+            </Badge>
+          )}
+        </span>
+        <span className="mt-0.5 block text-xs text-mist wrap-anywhere lg:hidden">
+          {[typeText(l), controlText(l), influenceText(l)].filter(Boolean).join(" · ")}
+        </span>
+        {(qualities || negatives) && (
+          <span className="mt-0.5 block text-xs lg:hidden">
+            {qualities}
+            {qualities && negatives && "; "}
+            {negatives}
+          </span>
+        )}
+        {where && <span className="mt-0.5 block text-xs text-mist wrap-anywhere">{where}</span>}
+      </td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top whitespace-nowrap text-mist`}>{typeText(l)}</td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top`}>{controlText(l)}</td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top text-xs`}>
+        {qualities}
+        {qualities && negatives && <br />}
+        {negatives}
+      </td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top text-mist`}>{influenceText(l)}</td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top`}>{l.locked && <Badge tone="blood">Locked</Badge>}</td>
+      <td className="w-px py-1 text-right align-top">
+        <ActionMenu label={`Actions for ${l.name}`} variant="ghost">
+          <MenuGroup label="The record">
+            <MenuLink to={l.id}>Open</MenuLink>
+            <MenuItem onSelect={() => setOpen("edit")}>Edit…</MenuItem>
+            {questsOn && <MenuLink to={`/troupes/${troupeId}/quests/new?location=${l.id}`}>Build a quest for it</MenuLink>}
+          </MenuGroup>
+          <MenuGroup label="Remove">
+            <MenuItem onSelect={() => setOpen("remove")}>Remove…</MenuItem>
+          </MenuGroup>
+        </ActionMenu>
+        {/* The dialogs sit here, as nothing but cells may sit in a row (Dialog sets its own text-left). */}
+        <Dialog title={`Change ${l.name}`} open={open === "edit"} onClose={close} wide>
+          <LocationForm
+            troupeId={troupeId}
+            catalogue={catalogue}
+            others={locations.filter((o) => o.id !== l.id)}
+            location={l}
+            onSaved={(saved, warnings) => {
+              toast({ message: warnings.length ? `Saved, but: ${warnings.join(" ")}` : `${saved.name} saved.`, duration: warnings.length ? 10_000 : undefined });
+              close();
+            }}
+            onCancel={close}
+          />
+        </Dialog>
+        <Dialog title={`Remove ${l.name}`} open={open === "remove"} onClose={close}>
+          <p className="text-sm">Remove {l.name} from the troupe's locations? Its log stays in the troupe's log.</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button
+              variant="danger"
+              disabled={remove.isPending}
+              onClick={() => remove.mutate(undefined)}
+            >
+              Remove location
+            </Button>
+            <Button variant="ghost" onClick={close}>
+              Cancel
+            </Button>
+          </div>
+          <ErrorText error={remove.error} />
+        </Dialog>
+      </td>
+    </tr>
   );
 }
 

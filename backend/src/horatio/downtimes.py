@@ -22,6 +22,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
@@ -32,6 +33,7 @@ from horatio import (
     influence,
     item_expiry,
     notifications,
+    preferences,
     responses,
     retainer_upkeep,
     suspensions,
@@ -68,6 +70,42 @@ SPENDING = ("action", "quest")
 def now() -> datetime:
     """The current time; tests replace this."""
     return datetime.now(UTC)
+
+
+def past_due(cycle: DowntimeCycle, at: datetime | None = None) -> bool:
+    """Whether the cycle is past Due (#469): its Due time, `closes_at`, has come.
+    Player Nominations and Remembrances are published from then."""
+    return cycle.closes_at <= (at or now())
+
+
+WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
+def due_text(user: User, at: datetime) -> str:
+    """A cycle's Due, or its Accepted until, for a message to `user`: in their time
+    zone, date format and clock, as the app writes a deadline, "Sat 14 Nov, 6:00 pm
+    EST" (#469). The year shows when it isn't this one (always, in ISO)."""
+    prefs = preferences.read(user)
+    zone = ZoneInfo(prefs.time_zone or "UTC")
+    local = at.astimezone(zone)
+    with_year = prefs.date_format == "iso" or local.year != now().astimezone(zone).year
+    if prefs.date_format == "iso":
+        day = f"{local:%Y-%m-%d}"
+    elif prefs.date_format == "month_day":
+        day = f"{local.month}/{local.day}" + (f"/{local.year}" if with_year else "")
+    else:
+        day = f"{local.day} {MONTHS[local.month - 1]}" + (f" {local.year}" if with_year else "")
+    if prefs.clock == "24":
+        clock = f"{local:%H:%M}"
+    else:
+        clock = f"{local.hour % 12 or 12}:{local:%M} {'am' if local.hour < 12 else 'pm'}"
+    name = local.tzname() or ""
+    if name[:1] in "+-":
+        # A zone with no abbreviation, such as Asia/Dubai's "+04", as "GMT+4".
+        hours, minutes = int(name[1:3]), name[3:5]
+        name = f"GMT{name[0]}{hours}" + (f":{minutes}" if minutes and minutes != "00" else "")
+    return f"{WEEKDAYS[local.weekday()]} {day}, {clock} {name}".rstrip()
 
 
 # --- the form ---------------------------------------------------------------------------
@@ -350,6 +388,10 @@ def open_cycle(db: Session, staff: User, cycle: DowntimeCycle, troupe: Troupe) -
     cycle.status = "open"
     cycle.opened_at = now()
     db.flush()
+    # It asks for the remembrances waiting for the next cycle (horatio.remembrances).
+    from horatio import remembrances
+
+    remembrances.asked_in(db, cycle, troupe)
     # Characters whose home troupe this is: it accepted them when it became their home.
     characters = db.scalars(
         select(Character).where(
@@ -511,11 +553,17 @@ def remind(db: Session, staff: User, cycle: DowntimeCycle, troupe: Troupe) -> Re
     if not waiting:
         raise conflict("Every downtime is submitted: there is no one to remind.")
     for character, player in waiting:
+        # Before Due, the Due; after it, until when a late one is accepted.
+        when = (
+            f"Accepted until {due_text(player, cycle.grace_ends_at)}"
+            if past_due(cycle)
+            else f"Due {due_text(player, cycle.closes_at)}"
+        )
         notifications.notify(
             db,
             [player.id],
             "downtime.reminder",
-            f"{character.name}'s downtime for {cycle.name} isn't submitted yet",
+            f"{character.name}'s downtime for {cycle.name} isn't submitted yet. {when}.",
             f"/characters/{character.id}/downtime",
             troupe_id=troupe.id,
             character_id=character.id,

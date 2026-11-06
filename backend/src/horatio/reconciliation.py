@@ -167,7 +167,11 @@ def check_splat(character: Character, troupe: Troupe) -> None:
         raise conflict(f"{troupe.name} does not take {label or character.splat} characters.")
 
 
-def join(db: Session, player: User, character: Character, troupe: Troupe) -> TroupeMembership:
+def join(
+    db: Session, player: User, character: Character, troupe: Troupe, *, log: bool = True
+) -> TroupeMembership:
+    """Start the character visiting the troupe, if it isn't already. `log=False` when
+    the caller's own log entry says so."""
     if character.kind == "npc" and character.owner_troupe_id != troupe.id:
         raise conflict("An NPC belongs to its own troupe and cannot join others.")
     if troupe.archived_at is not None:
@@ -181,7 +185,8 @@ def join(db: Session, player: User, character: Character, troupe: Troupe) -> Tro
         membership = TroupeMembership(troupe_id=troupe.id, character_id=character.id)
         db.add(membership)
         db.flush()
-        audit.record(db, player, "troupe.join", troupe_id=troupe.id, character_id=character.id)
+        if log:
+            audit.record(db, player, "troupe.join", troupe_id=troupe.id, character_id=character.id)
     return membership
 
 
@@ -574,7 +579,10 @@ def request_change(
             "approval. Wait for its decision, or withdraw them, before moving."
         )
     ensure_house_traits_fit(db, character, troupe.id)
-    join(db, player, character, troupe)
+    # A character asking to make a troupe home visits it meanwhile, and stays a visitor
+    # if it is declined. The request's one log entry says so.
+    visiting = current_membership(db, character, troupe) is not None
+    join(db, player, character, troupe, log=False)
 
     differences = find_differences(db, character, troupe)
     check_settlements(differences, settlements, xp_balance(db, character))
@@ -621,6 +629,8 @@ def request_change(
         approval_id=approval.id,
         kind=approval.kind,
         differences=len(differences),
+        troupe=troupe.name,
+        joined=not visiting,
     )
     notifications.approval_waiting(db, approval)
     return approval

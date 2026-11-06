@@ -56,11 +56,11 @@ The troupe's one owner: a storyteller who can also rename the troupe, edit its d
 _Avoid_: Head ST, LST (in names), co-lead
 
 **Storyteller**:
-A staff member who runs a troupe; storytellers and the lead storyteller are the only roles that manage the troupe's staff and house rules, and edit its profile.
+A staff member who runs a troupe; storytellers and the lead storyteller are the only roles that manage the troupe's staff and house rules, edit its profile, and give its NPCs to players.
 _Avoid_: ST (in names), GM, admin
 
 **Assistant Storyteller**:
-A staff member who can do everything a storyteller can except manage staff, house rules and connectors, and edit the troupe's profile.
+A staff member who can do everything a storyteller can except manage staff, house rules and connectors, edit the troupe's profile, and give NPCs to players.
 _Avoid_: AST (in names), sub-ST
 
 **Narrator**:
@@ -78,7 +78,7 @@ A player character: built by its player through character creation, and accepted
 _Avoid_: Primary, player character (in names)
 
 **NPC**:
-A character a troupe's storytellers or assistant storytellers make and keep for that troupe. It belongs to the troupe, needs no approval, takes no part in downtimes, and can be built quickly by setting ratings directly.
+A character a troupe's storytellers or assistant storytellers make and keep for that troupe. It belongs to the troupe, needs no approval, takes no part in downtimes, and can be built quickly by setting ratings directly. Its storytellers can give a sheeted vampire or ghoul NPC to a player, directly or by a **claim link**, and it becomes that player's PC, at home in the troupe and accepted.
 _Avoid_: Secondary, antecedence
 
 **Scene**:
@@ -402,6 +402,14 @@ _Avoid_: Integration, plugin, webhook
 **Channel**:
 The route one delivery took: `horatio` (in-app), `discord` or `email`. A troupe's connectors decide which channels a delivery goes out on.
 _Avoid_: Medium, transport
+
+**Player Nomination**:
+A short note a player writes in a downtime praising someone's roleplaying, optionally linked to a character in the troupe or one of its staff. The troupe's storytellers and assistant storytellers read it with its writer, may remove, star or lightly edit it, and publish the cycle's once it is past Due, to the troupe's players, shuffled and without names. Starred ones rotate at the foot of the troupe's pages. A troupe uses them only if it switches them on.
+_Avoid_: Shout-out, kudos, props
+
+**Remembrances**:
+Memories of a retired character, asked of the troupe in one downtime cycle: the open one if it isn't yet past Due, or else the next to open. Its home troupe's storytellers and assistant storytellers open them, as it retires or later; its player can ask for them. Each writer gives one memory, reviewed and published with the cycle's Player Nominations, never starred. Published, they stay with the character and on the Who's Who, even if the troupe stops using them. A troupe uses them only if it switches them on.
+_Avoid_: Eulogies, obituary, memorial
 
 ### Locations
 

@@ -71,8 +71,37 @@ def test_a_player_named_as_the_actor_is_not_named_twice(troupe: Troupe) -> None:
 
     assert [e["message"] for e in troupe_log(troupe)][:2] == [
         "lead accepted Mr. Carbuncle (player); this is its home.",
-        "player asked to make this Mr. Carbuncle's home.",
+        "player asked for Lords of the Night to be Mr. Carbuncle's home troupe.",
     ]
+
+
+def test_asking_to_make_a_troupe_home_is_one_entry(troupe: Troupe) -> None:
+    """The request starts the character visiting, which its own entry says, rather than
+    a second "started visiting" entry."""
+    character_id = new_character(troupe, troupe.player)
+    request = troupe.player.client.post(
+        f"/characters/{character_id}/home-troupe", json={"troupe_id": troupe.id}
+    )
+    assert request.status_code == 201, request.text
+
+    assert [e["message"] for e in troupe_log(troupe) if "Agnes" in e["message"]] == [
+        "player asked for Lords of the Night to be Agnes's home troupe, and it started visiting."
+    ]
+
+
+def test_an_old_home_request_still_reads(troupe: Troupe, session: Session) -> None:
+    """Entries from before the troupe's name was kept with them name it as this troupe."""
+    character_id = member(troupe)
+    troupe.player.client.post(
+        f"/characters/{character_id}/home-troupe", json={"troupe_id": troupe.id}
+    )
+    event = session.scalars(select(AuditEvent).where(AuditEvent.action == "approval.request")).one()
+    event.data = {k: v for k, v in event.data.items() if k not in ("troupe", "joined")}
+    session.commit()
+
+    assert troupe_log(troupe)[0]["message"] == (
+        "player asked for this troupe to be Mr. Carbuncle's home troupe."
+    )
 
 
 def test_the_log_uses_the_players_name_as_it_is_now(troupe: Troupe) -> None:

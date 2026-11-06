@@ -21,94 +21,117 @@ export function ItemActions({
   discard: (note: string) => Promise<unknown> | void;
 }) {
   const [doing, setDoing] = useState<"" | "give" | "discard">("");
-  const [to, setTo] = useState<EquipmentReceiverOut | null>(null);
-  const [note, setNote] = useState("");
+  const done = () => setDoing("");
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap gap-2">
+        <Button variant="secondary" onClick={() => setDoing(doing === "give" ? "" : "give")}>
+          Give
+        </Button>
+        <Button variant="ghost" onClick={() => setDoing(doing === "discard" ? "" : "discard")}>
+          Discard
+        </Button>
+      </div>
+      {/* Keyed, so each opening starts afresh. */}
+      {doing === "give" && <GiveForm key="give" item={item} receivers={receivers} give={give} onDone={done} />}
+      {doing === "discard" && <DiscardForm key="discard" item={item} discard={discard} onDone={done} />}
+    </div>
+  );
+}
+
+/** Runs an action, keeping whether it is under way and why it failed; `onDone` once it has worked. */
+function useRun(onDone: () => void) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const open = (next: typeof doing) => {
-    setDoing(doing === next ? "" : next);
-    setTo(null);
-    setNote("");
-    setError(null);
-  };
   const run = async (act: () => Promise<unknown> | void) => {
     setBusy(true);
     setError(null);
     try {
       await act();
-      setDoing("");
+      onDone();
     } catch (e) {
       setError(e);
     } finally {
       setBusy(false);
     }
   };
+  return { busy, error, run };
+}
 
+/** Give an item to another character, with an optional note; `onDone` once given, or on Cancel. */
+export function GiveForm({
+  item,
+  receivers,
+  give,
+  onDone,
+}: {
+  item: EquipmentItemOut;
+  receivers: EquipmentReceiverOut[];
+  give: (to: EquipmentReceiverOut, note: string) => Promise<unknown> | void;
+  onDone: () => void;
+}) {
+  const [to, setTo] = useState<EquipmentReceiverOut | null>(null);
+  const [note, setNote] = useState("");
+  const { busy, error, run } = useRun(onDone);
   return (
-    <div className="flex flex-col gap-2">
+    <form
+      aria-label={`Give ${item.name}`}
+      className="flex flex-col gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (to) void run(() => give(to, note));
+      }}
+    >
+      <CharacterPicker
+        label="Give it to"
+        listLabel="Characters"
+        choices={receivers}
+        picked={to?.id ?? null}
+        onPick={setTo}
+        extra={(c) => c.player_name && <span className="shrink-0 text-xs text-mist">{c.player_name}</span>}
+      />
+      <Field label="Note (optional)">
+        <Input value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+      <p className="text-xs text-mist">It goes at once, with its history. {to?.kind === "pc" && to.player_name ? `${to.player_name} is told.` : ""}</p>
+      <ErrorText error={error} />
       <div className="flex flex-wrap gap-2">
-        <Button variant="secondary" onClick={() => open("give")}>
-          Give
+        <Button type="submit" disabled={!to || busy}>
+          {to ? `Give to ${to.name}` : "Give"}
         </Button>
-        <Button variant="ghost" onClick={() => open("discard")}>
-          Discard
+        <Button type="button" variant="ghost" onClick={onDone}>
+          Cancel
         </Button>
       </div>
-      {doing === "give" && (
-        <form
-          aria-label={`Give ${item.name}`}
-          className="flex flex-col gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (to) void run(() => give(to, note));
-          }}
-        >
-          <CharacterPicker
-            label="Give it to"
-            listLabel="Characters"
-            choices={receivers}
-            picked={to?.id ?? null}
-            onPick={setTo}
-            extra={(c) => c.player_name && <span className="shrink-0 text-xs text-mist">{c.player_name}</span>}
-          />
-          <Field label="Note (optional)">
-            <Input value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} />
-          </Field>
-          <p className="text-xs text-mist">It goes at once, with its history. {to?.kind === "pc" && to.player_name ? `${to.player_name} is told.` : ""}</p>
-          <ErrorText error={error} />
-          <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={!to || busy}>
-              {to ? `Give to ${to.name}` : "Give"}
-            </Button>
-            <Button type="button" variant="ghost" onClick={() => open("")}>
-              Cancel
-            </Button>
-          </div>
-        </form>
-      )}
-      {doing === "discard" && (
-        <form
-          aria-label={`Discard ${item.name}`}
-          className="flex flex-col gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void run(() => discard(note));
-          }}
-        >
-          <Field label="Where it went (optional)" hint="Your storytellers keep it, and can give it back if this was a mistake.">
-            <Input value={note} maxLength={300} placeholder="Lost in the river" onChange={(e) => setNote(e.target.value)} />
-          </Field>
-          <ErrorText error={error} />
-          <div className="flex flex-wrap gap-2">
-            <Button type="submit" variant="danger" disabled={busy}>
-              Discard {item.name}
-            </Button>
-            <Button type="button" variant="ghost" onClick={() => open("")}>
-              Cancel
-            </Button>
-          </div>
-        </form>
-      )}
-    </div>
+    </form>
+  );
+}
+
+/** Discard an item, with a note of where it went; `onDone` once discarded, or on Cancel. */
+export function DiscardForm({ item, discard, onDone }: { item: EquipmentItemOut; discard: (note: string) => Promise<unknown> | void; onDone: () => void }) {
+  const [note, setNote] = useState("");
+  const { busy, error, run } = useRun(onDone);
+  return (
+    <form
+      aria-label={`Discard ${item.name}`}
+      className="flex flex-col gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void run(() => discard(note));
+      }}
+    >
+      <Field label="Where it went (optional)" hint="Your storytellers keep it, and can give it back if this was a mistake.">
+        <Input value={note} maxLength={300} placeholder="Lost in the river" onChange={(e) => setNote(e.target.value)} />
+      </Field>
+      <ErrorText error={error} />
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" variant="danger" disabled={busy}>
+          Discard {item.name}
+        </Button>
+        <Button type="button" variant="ghost" onClick={onDone}>
+          Cancel
+        </Button>
+      </div>
+    </form>
   );
 }

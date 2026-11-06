@@ -3,13 +3,15 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { EquipmentItemOut, EquipmentOut, EquipmentHolderOut } from "../../api/types";
+import { ActionMenu, MenuGroup, MenuItem } from "../../components/ActionMenu";
 import { DateInput } from "../../components/DateInput";
+import { Dialog } from "../../components/Dialog";
 import { EmptyState, showFilters } from "../../components/EmptyState";
 import { InfoButton } from "../../components/InfoButton";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { ItemActions } from "../character/ItemActions";
+import { DiscardForm, GiveForm } from "../character/ItemActions";
 import { EquipmentEditor, useEquipmentRules, useTroupeTemplates } from "./EquipmentEditor";
 import { factsText, givenText, kindText, qualityText, type Kind } from "./equipment";
 import { itemsCsv, readSearch, searchQuery, STATUS_NAMES, writeSearch, type ItemSearch, type Sort, type Status } from "./equipmentSearch";
@@ -28,9 +30,6 @@ const GRADES = [
   { key: "special", name: "Special" },
 ];
 const SORT_NAMES: Record<Sort, string> = { holder: "Holder", name: "Name", date: "Date given, newest first" };
-
-// The results' columns, a table from a small tablet up; cards on a phone.
-const COLUMNS = "sm:grid sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.6fr)_4.5rem_minmax(0,1.2fr)] sm:gap-3";
 
 /**
  * Every item the troupe's home characters hold, for its storytellers and
@@ -275,7 +274,7 @@ function SearchForm({
   );
 }
 
-/** What is found: a table from a small tablet up, cards on a phone, each opening with its details and history. */
+/** What is found: a table on a wide screen, cards on a phone or a narrow window. */
 function Results({
   troupeId,
   troupeName,
@@ -333,27 +332,42 @@ function Results({
       {items.length === 0 ? (
         <Empty>{searching ? "No equipment matches." : "No equipment yet."}</Empty>
       ) : (
-        <div className="rounded-md border border-ash bg-dusk">
-          <div aria-hidden="true" className={`hidden border-b border-ash px-3 py-2 text-xs text-mist ${COLUMNS}`}>
-            <span>Item</span>
-            <span>Held by</span>
-            <span>Kind</span>
-            <span>Qualities</span>
-            <span>Grade</span>
-            <span>Given</span>
-          </div>
-          <ul aria-label="Equipment" className="divide-y divide-ash">
-            {items.map((item) => (
-              <ItemRow key={item.id} item={item} rules={rules} troupeId={troupeId} troupeName={troupeName} holders={holders} />
-            ))}
-          </ul>
+        <div className="rounded-md border border-ash bg-dusk px-3">
+          <table aria-label="Equipment" className="w-full text-sm">
+            {/* On a phone or a narrow window each row folds into a card, under the one heading. */}
+            <thead className="max-lg:sr-only">
+              <tr className="border-b border-ash text-left text-xs text-mist">
+                <th className="py-2 pr-3 font-normal">Item</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Held by</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Kind</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Qualities</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Grade</th>
+                <th className={`${WIDE} py-2 pr-3 font-normal`}>Given</th>
+                <th className="py-2 font-normal">
+                  <span className="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-ash">
+              {items.map((item) => (
+                <ItemRow key={item.id} item={item} rules={rules} troupeId={troupeId} troupeName={troupeName} holders={holders} />
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </section>
   );
 }
 
-/** One item: what it is, who holds it and where it came from, opening with what it does, staff's changes and its history. */
+/** A column shown only on a wide screen; on a narrow one it folds in under the item's name. */
+const WIDE = "hidden lg:table-cell";
+
+type Doing = "details" | "history" | "change" | "move" | "discard" | "take";
+
+/** One item: what it is, who holds it and where it came from. Its name opens what it
+ * does; the ⋯ holds its history and what staff can do with it, each in a dialog, as
+ * its status allows. */
 function ItemRow({
   item,
   rules,
@@ -368,58 +382,9 @@ function ItemRow({
   holders: EquipmentHolderOut[];
 }) {
   const dates = useDates();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState<Doing | null>(null);
+  const close = () => setOpen(null);
   const label = `${item.name}, held by ${item.character_name}`;
-  return (
-    <li aria-label={label} className="p-3 text-sm">
-      <div className={`flex flex-col gap-0.5 ${COLUMNS}`}>
-        <span className="flex flex-wrap items-baseline gap-2">
-          <button type="button" aria-expanded={open} aria-label={label} className="text-left font-medium text-gold hover:underline" onClick={() => setOpen(!open)}>
-            {item.name}
-          </button>
-          {item.status !== "held" && <Badge tone="blood">{STATUS_NAMES[item.status]}</Badge>}
-        </span>
-        <span className="min-w-0">
-          <span className="text-mist sm:hidden">{item.status === "held" ? "held by " : "last held by "}</span>
-          <Link to={`/characters/${item.character_id}`} className="hover:text-gold">
-            {item.character_name}
-          </Link>
-          <span className="text-xs text-mist">{item.character_kind === "npc" ? " (NPC)" : item.player_name ? ` (${item.player_name})` : ""}</span>
-        </span>
-        <span>{item.kind_name}</span>
-        <span className={item.qualities.length ? "" : "text-mist"}>{item.qualities.length ? item.qualities.map(qualityText).join(", ") : "No qualities"}</span>
-        <span>
-          {item.grade.charAt(0).toUpperCase() + item.grade.slice(1)}
-          <span className="sm:hidden"> grade</span>
-        </span>
-        <span className="text-xs text-mist">
-          {dates.date(item.given_at)}
-          {item.from_sheet ? ", from the sheet" : `, by ${item.given_by_name ?? "someone"}`}
-          {!item.from_sheet && item.troupe_name !== troupeName && ` of ${item.troupe_name}`}
-        </span>
-      </div>
-      {open && <ItemDetails item={item} rules={rules} troupeId={troupeId} troupeName={troupeName} holders={holders} />}
-    </li>
-  );
-}
-
-/** What an item does, and staff's changes to it. */
-function ItemDetails({
-  item,
-  rules,
-  troupeId,
-  troupeName,
-  holders,
-}: {
-  item: EquipmentItemOut;
-  rules: EquipmentOut | undefined;
-  troupeId: string;
-  troupeName: string;
-  holders: EquipmentHolderOut[];
-}) {
-  const dates = useDates();
-  const [doing, setDoing] = useState<"" | "change" | "take" | "history">("");
-  const facts = factsText(item.facts);
   const path = { character_id: item.character_id, item_id: item.id };
   const give = useAction(({ to, note }: { to: string; note: string }) =>
     unwrap(api.POST("/api/characters/{character_id}/equipment/{item_id}/give", { params: { path }, body: { to_character_id: to, note } })),
@@ -428,18 +393,105 @@ function ItemDetails({
   const restore = useAction(() =>
     unwrap(api.POST("/api/troupes/{troupe_id}/equipment/{item_id}/restore", { params: { path: { troupe_id: troupeId, item_id: item.id } } })),
   );
-  const history = (
-    <Button variant="ghost" aria-expanded={doing === "history"} onClick={() => setDoing(doing === "history" ? "" : "history")}>
-      History
-    </Button>
+  const heldBy = (
+    <>
+      <Link to={`/characters/${item.character_id}`} className="hover:text-gold">
+        {item.character_name}
+      </Link>
+      <span className="text-xs whitespace-nowrap text-mist">{item.character_kind === "npc" ? " (NPC)" : item.player_name ? ` (${item.player_name})` : ""}</span>
+    </>
+  );
+  const grade = item.grade.charAt(0).toUpperCase() + item.grade.slice(1);
+  const qualities = item.qualities.length ? item.qualities.map(qualityText).join(", ") : "No qualities";
+  const given = (
+    <>
+      {dates.date(item.given_at)}
+      {item.from_sheet ? ", from the sheet" : `, by ${item.given_by_name ?? "someone"}`}
+      {!item.from_sheet && item.troupe_name !== troupeName && ` of ${item.troupe_name}`}
+    </>
   );
   return (
-    <div className="mt-2 rounded-md border border-ash/60 bg-night/40 p-3">
-      {item.special && (
-        <p className="mb-1">
-          <Badge tone="gold">Special, by {item.special_troupe_name}</Badge>
-        </p>
-      )}
+    <tr aria-label={label}>
+      <td className="py-2.5 pr-3 align-top">
+        <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <button type="button" aria-haspopup="dialog" className="text-left font-medium text-gold hover:underline" onClick={() => setOpen("details")}>
+            {item.name}
+          </button>
+          {item.status !== "held" && <Badge tone="blood">{STATUS_NAMES[item.status]}</Badge>}
+          {item.special && <Badge tone="gold">Special, by {item.special_troupe_name}</Badge>}
+        </span>
+        {/* What the wide columns show, folded under the name. */}
+        <span className="mt-0.5 block wrap-anywhere lg:hidden">
+          <span className="text-mist">{item.status === "held" ? "held by " : "last held by "}</span>
+          {heldBy}
+        </span>
+        <span className="block text-xs text-mist lg:hidden">
+          {item.kind_name} · {grade} grade · <span className={item.qualities.length ? "text-parchment" : ""}>{qualities}</span>
+        </span>
+        <span className="block text-xs text-mist lg:hidden">Given {given}</span>
+      </td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top`}>{heldBy}</td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top`}>{item.kind_name}</td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top ${item.qualities.length ? "" : "text-mist"}`}>{qualities}</td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top`}>{grade}</td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top text-xs text-mist`}>{given}</td>
+      <td className="w-px py-1.5 text-right align-top">
+        <ActionMenu label={`Actions for ${label}`} variant="ghost" menuClassName="w-56">
+          <MenuGroup label="Look back">
+            <MenuItem onSelect={() => setOpen("history")}>History</MenuItem>
+          </MenuGroup>
+          <MenuGroup label="Change it">
+            {item.can_change && (
+              <>
+                <MenuItem onSelect={() => setOpen("change")}>Change…</MenuItem>
+                <MenuItem onSelect={() => setOpen("move")}>Move…</MenuItem>
+                <MenuItem onSelect={() => setOpen("discard")}>Discard…</MenuItem>
+                <MenuItem onSelect={() => setOpen("take")}>Take back…</MenuItem>
+              </>
+            )}
+            {item.status === "discarded" && (
+              <MenuItem disabled={restore.isPending} onSelect={() => restore.mutate(undefined)}>
+                Restore to {item.character_name}
+              </MenuItem>
+            )}
+          </MenuGroup>
+        </ActionMenu>
+        <ErrorText error={restore.error} />
+        {/* The dialogs sit here, as nothing but cells may sit in a row (Dialog sets its own text-left). */}
+        <Dialog title={item.name} open={open === "details"} onClose={close}>
+          <ItemDetails item={item} rules={rules} />
+        </Dialog>
+        <Dialog title={`History of ${item.name}`} open={open === "history"} onClose={close}>
+          <History troupeId={troupeId} item={item} />
+        </Dialog>
+        <Dialog title={`Change ${item.name}`} open={open === "change"} onClose={close} wide phoneFull>
+          <EquipmentEditor troupeId={troupeId} troupeName={troupeName} holders={holders} item={item} onDone={close} />
+        </Dialog>
+        <Dialog title={`Move ${item.name}`} open={open === "move"} onClose={close}>
+          <GiveForm
+            item={item}
+            receivers={holders.filter((h) => h.id !== item.character_id).map((h) => ({ ...h, title: "" }))}
+            give={(to, note) => give.mutateAsync({ to: to.id, note })}
+            onDone={close}
+          />
+        </Dialog>
+        <Dialog title={`Discard ${item.name}`} open={open === "discard"} onClose={close}>
+          <DiscardForm item={item} discard={(note) => discard.mutateAsync(note)} onDone={close} />
+        </Dialog>
+        <Dialog title={`Take back ${item.name}`} open={open === "take"} onClose={close}>
+          <TakeBack troupeId={troupeId} item={item} onDone={close} />
+        </Dialog>
+      </td>
+    </tr>
+  );
+}
+
+/** What an item does, where it came from, and whether it was discarded: for reading. */
+function ItemDetails({ item, rules }: { item: EquipmentItemOut; rules: EquipmentOut | undefined }) {
+  const dates = useDates();
+  const facts = factsText(item.facts);
+  return (
+    <div className="flex flex-col gap-1 text-sm">
       <p>
         {kindText(rules, item)}
         {item.qualities.length > 0 && `: ${item.qualities.map(qualityText).join(", ")}`}
@@ -447,7 +499,7 @@ function ItemDetails({
       {facts && <p className="text-xs text-mist">{facts}</p>}
       {item.facts.aggravated_against.length > 0 && <p className="text-xs text-mist">Aggravated damage to {item.facts.aggravated_against.join("; ")}.</p>}
       {item.effects.length > 0 && (
-        <ul aria-label={`${item.name}'s special effects`} className="mt-1 flex flex-col gap-0.5">
+        <ul aria-label={`${item.name}'s special effects`} className="flex flex-col gap-0.5">
           {item.effects.map((e) => (
             <li key={e.name}>
               <span className="text-gold" title={`${item.special_troupe_name}'s own`}>
@@ -458,55 +510,17 @@ function ItemDetails({
           ))}
         </ul>
       )}
-      {item.description && <p className="mt-1 whitespace-pre-line">{item.description}</p>}
-      {item.staff_note && <p className="mt-1 whitespace-pre-line text-xs text-mist">Staff note: {item.staff_note}</p>}
-      <p className="mt-1 text-xs text-mist">
+      {item.description && <p className="whitespace-pre-line">{item.description}</p>}
+      {item.staff_note && <p className="whitespace-pre-line text-xs text-mist">Staff note: {item.staff_note}</p>}
+      <p className="text-xs text-mist">
         {givenText(item)}, {dates.date(item.given_at)}
       </p>
       {item.discarded && (
-        <p className="mt-1 text-sm">
+        <p>
           Discarded by {item.discarded.by_name ?? "someone"}, {dates.date(item.discarded.at)}
           {item.discarded.note ? `: ${item.discarded.note}` : "."}
         </p>
       )}
-      {item.status === "discarded" && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          <Button variant="secondary" disabled={restore.isPending} onClick={() => restore.mutate(undefined)}>
-            Restore to {item.character_name}
-          </Button>
-          {history}
-        </div>
-      )}
-      <ErrorText error={restore.error} />
-      {item.can_change && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => setDoing(doing === "change" ? "" : "change")}>
-            Change
-          </Button>
-          <Button variant="secondary" onClick={() => setDoing(doing === "take" ? "" : "take")}>
-            Take back
-          </Button>
-          {history}
-        </div>
-      )}
-      {item.status === "taken_back" && <div className="mt-2">{history}</div>}
-      {item.can_change && (
-        <div className="mt-2">
-          <ItemActions
-            item={item}
-            receivers={holders.filter((h) => h.id !== item.character_id).map((h) => ({ ...h, title: "" }))}
-            give={(to, note) => give.mutateAsync({ to: to.id, note })}
-            discard={(note) => discard.mutateAsync(note)}
-          />
-        </div>
-      )}
-      {doing === "change" && (
-        <div className="mt-3">
-          <EquipmentEditor troupeId={troupeId} troupeName={troupeName} holders={holders} item={item} onDone={() => setDoing("")} />
-        </div>
-      )}
-      {doing === "take" && <TakeBack troupeId={troupeId} item={item} onDone={() => setDoing("")} />}
-      {doing === "history" && <History troupeId={troupeId} item={item} />}
     </div>
   );
 }
@@ -525,7 +539,7 @@ function TakeBack({ troupeId, item, onDone }: { troupeId: string; item: Equipmen
   return (
     <form
       aria-label={`Take back ${item.name}`}
-      className="mt-3 flex flex-col gap-2"
+      className="flex flex-col gap-2"
       onSubmit={(e) => {
         e.preventDefault();
         take.mutate(undefined);
@@ -556,7 +570,7 @@ function History({ troupeId, item }: { troupeId: string; item: EquipmentItemOut 
   if (detail.isPending) return <Loading />;
   if (detail.error) return <ErrorText error={detail.error} />;
   return (
-    <ol aria-label={`${item.name}'s history`} className="mt-3 flex flex-col gap-1 border-l border-ash pl-3 text-xs">
+    <ol aria-label={`${item.name}'s history`} className="flex flex-col gap-1 border-l border-ash pl-3 text-xs">
       {detail.data.history.map((e) => (
         <li key={e.id}>
           <span className="text-mist">
