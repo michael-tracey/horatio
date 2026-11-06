@@ -285,6 +285,44 @@ A clan using its Dark Pack symbol shows it on a light square marked **Dark Pack*
 
 The files must never be committed to the repository. [dark-pack/README.md](https://github.com/michael-tracey/horatio/blob/main/dark-pack/README.md) has the details. Until the logo is imported, the About page reminds you, as the custodian, that the agreement asks for it.
 
+## Importing characters from Yorick
+
+A troupe moving from Yorick can bring its characters with it, as sheeted NPCs of the troupe. Staff then give each one to its player as they sign up. Yorick's printout has no players, XP or history, so none of those come across: a character's XP is set when it's given to its player.
+
+It's a command, run where Horatio runs, not a page in the app. You'll need:
+
+- the troupe's **Print Characters** page from Yorick, saved from the browser as a complete web page: an `.html` file with a `_files` folder beside it, which holds the portraits;
+- the troupe made in Horatio, with its lead storyteller.
+
+The page holds real players' names and emails. Keep it, and the reports the import writes beside it, out of any repository and out of shared folders.
+
+### A dry run first
+
+From the `backend` folder, run:
+
+`uv run python -m horatio.import_yorick_print "Print Troupe Characters.html" --troupe "Troupe name" --dry-run`
+
+A dry run saves nothing. It prints a summary, with every printed line it couldn't match to Horatio's names, and writes a `yorick-import` folder beside the page holding:
+
+- `report.txt`: for each character, what imports cleanly, what it couldn't match, the rule checks its sheet breaks, and what it's worth in XP at the troupe's prices;
+- `characters.json`: each character as read and as matched, to check by hand.
+
+Go through the unmatched list with the troupe's lead storyteller. Where a name should have matched, such as an Influence area written another way, add it to a table of your own in the shape of `backend/src/horatio/yorick_names.toml`, and run the dry run again with `--names your-table.toml`. Repeat until the list is clean, or holds only what staff will fix by hand afterwards. Lines the troupe's own lists don't allow (**Specialisations** in the troupe's settings) show as unmatched too.
+
+### The real run
+
+Run the same command without `--dry-run`. It:
+
+1. makes a backup first, as **Back up now** does ([Backups](#backups)), and stops if it can't. On your own computer, where backups aren't set up, add `--no-backup`;
+2. makes each character a sheeted NPC of the troupe, made by the lead storyteller (or whoever `--as` names, by handle), with its portrait where it has one;
+3. saves them all at once, or none if any one fails.
+
+Rule checks don't stop a character coming in: what its sheet breaks is flagged on it, as on any sheet. Each NPC's log says it was imported, with its Yorick id.
+
+Running it again updates the characters it made before, rather than making them twice. It sets their names and printed traits again, and leaves anything staff added by hand. A character already given to its player is left alone.
+
+On the repository's own server, `deploy/import-yorick-print.sh` does the same from your computer, with the same options, and brings the report back. See [deploy/README.md](https://github.com/michael-tracey/horatio/blob/main/deploy/README.md).
+
 ## The audit log
 
 **Custodian › Audit** is the whole audit log: every change in every troupe, and outside them, newest first. Searching it changes nothing in it.

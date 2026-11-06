@@ -25,6 +25,7 @@ host nginx :443 ── Let's Encrypt certificate, renewed by certbot's timer
 | `production.env.example` | The settings to copy to `production.env` (gitignored) |
 | `custodian.sh` | Makes an account the custodian |
 | `import-influence-log.sh` | Imports a troupe's influence log from the old spreadsheet |
+| `import-yorick-print.sh` | Imports a troupe's characters from Yorick's Print Characters page |
 
 ## Before the first deploy
 
@@ -103,6 +104,23 @@ the troupe, which it keeps as text. Running it again updates the entries it made
 rather than adding them twice, so once the characters are in Horatio, run it again
 to link their entries. Dates are midnight in `--timezone`, `America/New_York` unless
 given.
+
+## Importing characters from Yorick
+
+A troupe's characters come across from Yorick's **Print Characters** page, saved
+from the browser as HTML with its `_files` folder (the portraits). Each becomes a
+sheeted NPC of the troupe; the custodian's part of the manual
+(`docs/manual/custodian.md`, "Importing characters from Yorick") explains the review.
+The page holds players' names and emails, so keep it, and the `yorick-import/` report
+the script brings back beside it, out of git:
+
+```bash
+deploy/import-yorick-print.sh "Print Troupe Characters.html" --troupe "LotsLarp" --dry-run
+deploy/import-yorick-print.sh "Print Troupe Characters.html" --troupe "LotsLarp" --names ours.toml
+```
+
+The real run makes a backup in the server's backup directory first, and stops if it
+can't. Running it again updates the characters it made rather than adding them twice.
 
 ## Dark Pack resources
 

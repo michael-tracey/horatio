@@ -1,0 +1,157 @@
+# Yorick's names for traits, as its Print Characters page prints them, and Horatio's
+# (horatio.yorick_names, issue #482). The import's dry run lists every printed line it
+# could not match; add what it should have been here, and run it again.
+#
+# Names are matched ignoring case, spacing and curly quotes, so only real
+# differences need a line. Horatio's spelling fixes (migrations 0106 and 0122, issue
+# #410) are matched already: "Thaumaturgical Expertise" is Thaumaturgic Expertise,
+# "Potence: Relentess Fury" is Relentless Fury, "Intolerant" is Intolerance.
+#
+# A troupe can keep its own additions in a file of the same shape and pass it with
+# --names; its lines are added to these, and win where both name the same thing.
+
+# Kinds of specialisation that may be free text where the catalogue has no value for
+# it: a Contact's name, a Lore of the troupe's own. The rest (Haven qualities,
+# Influence areas) must match.
+custom_allowed = [
+  "lore_specializations",
+  "linguistics_specializations",
+  "academics_specializations",
+  "drive_specializations",
+  "contacts_specializations",
+  "allies_specializations",
+]
+
+# Kinds where one line can hold several values, between commas: "Custom: French,
+# Korean" is two languages.
+split_on_commas = [
+  "lore_specializations",
+  "linguistics_specializations",
+  "academics_specializations",
+  "drive_specializations",
+  "influence_elite_specializations",
+  "influence_underworld_specializations",
+]
+
+# The printout's headings, and the category each one's lines are in.
+[headings]
+"Backgrounds" = "backgrounds"
+"Haven" = "haven_specializations"
+"Influences: The Elite" = "influence_elite_specializations"
+"Influences: The Underworld" = "influence_underworld_specializations"
+"Contacts" = "contacts_specializations"
+"Allies" = "allies_specializations"
+"Lores" = "lore_specializations"
+"Languages" = "linguistics_specializations"
+"Academics" = "academics_specializations"
+"Drive" = "drive_specializations"
+"Disciplines" = "disciplines"
+"Techniques" = "techniques"
+"Elder Disciplines" = "elder_disciplines"
+"Luminary Disciplines" = "luminary_disciplines"
+"Rituals" = "rituals"
+"Sabbat Rituals" = "sabbat_rituals"
+"Merits" = "merits"
+"Flaws" = "flaws"
+
+# The sheet's top bars, and the category of each.
+[identity]
+"Clan" = "clan"
+"Archetype" = "archetype"
+"Sect" = "sect"
+"Faction" = "faction"
+
+# What the printout has that the import leaves to staff, and why. The report lists
+# each character's.
+[left_out]
+"Title" = "Titles are given in the troupe, on the character's Status & Titles tab."
+"Status" = "Status comes from titles, social age and merits; fleeting status is set on the sheet."
+"Antecedence" = "Every imported character is an NPC; Horatio has no Primary or Secondary."
+
+# Names by category: Yorick's = Horatio's.
+[names.backgrounds]
+"Influences: Elite" = "Influences: The Elite"
+"Influences: Underworld" = "Influences: The Underworld"
+
+[names.merits]
+"Blood of Tzimisce" = "Blood of the Tzimisce"
+
+[names.flaws]
+
+[names.disciplines]
+
+[names.techniques]
+
+[names.elder_disciplines]
+
+[names.luminary_disciplines]
+
+[names.rituals]
+
+[names.paths]
+# The printout gives a Path by its name alone.
+
+# The Thaumaturgy and Necromancy paths. A path is found by the words that name it,
+# so "Path of Conjuring", "The Path of Conjuring" and "Conjuring" all find
+# Thaumaturgy: Path of Conjuring, and "Path of Ash" finds Necromancy: Ash Path. Only
+# other words need a line here.
+[paths]
+"Lure of Flame" = "Thaumaturgy: Lure of Flames"
+"The Lure of Flame" = "Thaumaturgy: Lure of Flames"
+"Weather Control" = "Thaumaturgy: Path of Weather Mastery"
+"Path of Weather Control" = "Thaumaturgy: Path of Weather Mastery"
+"Tech" = "Thaumaturgy: Path of Technomancy"
+"Soul Binding" = "Necromancy: Path of Soul Bonding"
+"Path of Soul Binding" = "Necromancy: Path of Soul Bonding"
+
+# Merits whose detail names a path, besides those whose grants say so (Thaumaturgic
+# Expertise, Necromantic Insight...), with the disciplines it may be a path of.
+[path_details]
+"Thaumaturgic Training" = ["Thaumaturgy"]
+"Necromantic Training" = ["Necromancy"]
+
+# Merits and flaws whose detail is Horatio's detail, besides those the catalogue holds
+# once for each of several (Derangement, Eerie Presence) and those whose grants let
+# the detail choose (Acute Sense, Angelic Visage, Inept). Every other detail is kept
+# as the trait's note.
+[detail_names]
+merits = ["Acute Sense"]
+flaws = []
+
+# The values of specialisations (a Haven's qualities, an Influence's areas, Lores,
+# Languages...): Yorick's = Horatio's. A troupe that keeps a list of a kind
+# (Specialisations on the troupe's settings) takes only what is on it.
+[values.influence_elite_specializations]
+"Art" = "Arts"
+"The Arts" = "Arts"
+"Acadmics" = "Academics"
+"Activist Orgs" = "Activist Organizations"
+"Activist Organisations" = "Activist Organizations"
+"Activest Organizations" = "Activist Organizations"
+"Organized Crime" = "Criminal Organizations"
+"Finanace" = "Finance"
+"Local law-enforcement" = "Law Enforcement"
+"Religious Organizations" = "Religious Groups/Organizations"
+"Religious Groups" = "Religious Groups/Organizations"
+"Religious Groups-Organizations" = "Religious Groups/Organizations"
+"Religious Groups and Organizations" = "Religious Groups/Organizations"
+"Religious Groups,Organizations" = "Religious Groups/Organizations"
+"Religions Groups" = "Religious Groups/Organizations"
+"Science-Medical" = "Science/Medical"
+"Science Medical" = "Science/Medical"
+"Science,Medical" = "Science/Medical"
+"Science & Medical" = "Science/Medical"
+"Science and Medical" = "Science/Medical"
+"Science/Medicail" = "Science/Medical"
+"Criminal Organization" = "Criminal Organizations"
+
+[values.linguistics_specializations]
+"Portuguese" = "Portugese"
+
+[values.lore_specializations]
+
+[values.academics_specializations]
+
+# The Elite's values serve the Underworld too.
+[same_values]
+"influence_elite_specializations" = ["influence_underworld_specializations"]

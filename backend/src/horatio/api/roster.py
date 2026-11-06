@@ -405,6 +405,10 @@ MESSAGES: dict[str, str] = {
     " rated {rating}; specializations: {specializations}; left off the sheet: {left_out})."
     " Its notes: {notes}",
     "npc.deleted": "{actor} deleted the NPC {character}.",
+    "npc.imported": "{actor} imported the NPC {character} from Yorick (its id there: {legacy_id};"
+    " label: {label}; printed lines left to staff: {unmatched}).",
+    "npc.reimported": "{actor} imported the NPC {character} from Yorick again (its id there:"
+    " {legacy_id}; label: {label}; printed lines left to staff: {unmatched}).",
     "npc.stock_changed": "{actor} changed the Stock NPC {character}.",
     "title.given": "{actor} gave {character} the title {title}.",
     "title.taken": "{actor} took the title {title} from {character}.",
