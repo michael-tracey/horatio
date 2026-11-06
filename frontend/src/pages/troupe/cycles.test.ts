@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { datesFor } from "../../dates";
-import { chaseSummary, cycleLine, nameList, notSubmitted, pastDue, playersToRemind, standing, timeLeft, workLine } from "./cycles";
+import { chaseSummary, cycleLine, kindLabels, nameList, notSubmitted, pastDue, playersToRemind, standing, timeLeft, workLine } from "./cycles";
 
 const taking = (character_name: string, player_id: string, submission_status: string | null, removed = false) => ({
   character_name,
@@ -82,5 +82,16 @@ describe("the lines in the lists of cycles", () => {
     expect(workLine({ to_write: 3, open_to_narrators: 2 })).toBe("3 for you to write · 2 open to narrators");
     expect(workLine({ to_write: 0, open_to_narrators: 1 })).toBe("1 open to narrators");
     expect(workLine({})).toBe("Nothing for you to write");
+  });
+});
+
+describe("the progress by kind", () => {
+  it("names each kind as the rules do, and capitalises only what has no name", () => {
+    expect(kindLabels(["general", "quest", "custom", "old_kind"], { general: "Downtime action" })).toEqual({
+      general: "Downtime action",
+      quest: "Quest",
+      custom: "Custom question",
+      old_kind: "Old kind",
+    });
   });
 });

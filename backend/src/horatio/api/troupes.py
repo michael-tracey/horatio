@@ -1,7 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
@@ -643,10 +643,13 @@ def reopen_troupe(
 def appoint_lead(
     troupe_id: uuid.UUID, body: NewLead, db: DbSession, user: CurrentUser
 ) -> TroupeOut:
-    """The custodian appoints a troupe's lead storyteller."""
+    """The custodian appoints a troupe's lead storyteller. The one they replace leaves
+    the staff: a lead who is suspended or stepping down shouldn't keep a role without
+    anyone choosing it, and the Staff tab can add them back."""
     require_custodian(user)
     troupe = get_troupe(db, troupe_id)
     lead = existing_user(db, body.handle)
+    former = db.get_one(User, troupe.lead_user_id)
     # The lead is never also listed as ordinary staff.
     staff_row = db.scalar(
         select(TroupeStaff).where(
@@ -656,7 +659,17 @@ def appoint_lead(
     if staff_row is not None:
         db.delete(staff_row)
     troupe.lead_user_id = lead.id
-    audit.record(db, user, "troupe.lead_appointed", troupe_id=troupe.id, member=lead.display_name)
+    replacing: dict[str, Any] = (
+        {"kind": "replacing", "former": former.display_name} if former.id != lead.id else {}
+    )
+    audit.record(
+        db,
+        user,
+        "troupe.lead_appointed",
+        troupe_id=troupe.id,
+        member=lead.display_name,
+        **replacing,
+    )
     db.commit()
     return troupe_out(db, user, troupe)
 

@@ -393,6 +393,7 @@ def test_the_log_is_for_storytellers_and_assistants(troupe: Troupe) -> None:
 
 def test_the_log_reads_newest_first(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
+    troupe.player.client.post(f"/characters/{character_id}/troupes", json={"troupe_id": troupe.id})
     troupe.player.client.post(
         f"/characters/{character_id}/home-troupe", json={"troupe_id": troupe.id}
     )
@@ -400,7 +401,7 @@ def test_the_log_reads_newest_first(troupe: Troupe) -> None:
     messages = log(troupe.lead, troupe.id)
 
     assert messages[:2] == [
-        "player asked to make this Agnes's home.",
+        "player asked for Lords of the Night to be Agnes's home troupe.",
         "Agnes (player) started visiting the troupe.",
     ]
     # Staff changes from setting the troupe up are there too.

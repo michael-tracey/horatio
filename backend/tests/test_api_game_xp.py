@@ -21,7 +21,7 @@ from tests.test_api_character_search import member
 from tests.test_api_checkin import check_in, game, night, past_game, path
 from tests.test_api_downtimes import member_character, my_downtime, new_cycle, open_cycle
 
-AIT = [
+TAPERING = [
     {"up_to": 200, "attended": 5, "absentee": 4},
     {"up_to": 300, "attended": 4, "absentee": 3},
     {"up_to": 400, "attended": 3, "absentee": 2},
@@ -129,7 +129,7 @@ def test_with_nothing_set_a_game_is_awarded_as_before(troupe: Troupe, session: S
 def test_storytellers_set_the_chart_and_its_checked_and_logged(troupe: Troupe) -> None:
     saved = configure(
         troupe,
-        bands=AIT,
+        bands=TAPERING,
         adjustments=[
             {"name": "Helped", "amount": 1, "per_month": 1},
             {"name": "Not findable", "amount": -1},
@@ -138,7 +138,7 @@ def test_storytellers_set_the_chart_and_its_checked_and_logged(troupe: Troupe) -
         monthly_xp=12,
         absentee=True,
     )
-    assert saved["bands"] == AIT
+    assert saved["bands"] == TAPERING
     assert [(a["name"], a["amount"], a["per_month"]) for a in saved["adjustments"]] == [
         ("Helped", 1, 1),
         ("Not findable", -1, None),
@@ -146,14 +146,14 @@ def test_storytellers_set_the_chart_and_its_checked_and_logged(troupe: Troupe) -
     keys = [a["key"] for a in saved["adjustments"]]
     assert all(keys) and len(set(keys)) == 2
     # Saving again keeps each adjustment's key, so its monthly limit keeps counting.
-    again = configure(troupe, bands=AIT, adjustments=saved["adjustments"])
+    again = configure(troupe, bands=TAPERING, adjustments=saved["adjustments"])
     assert [a["key"] for a in again["adjustments"]] == keys
 
     url = f"/troupes/{troupe.id}/game-xp"
     for bad in (
-        {"bands": [{"up_to": 300, "attended": 5, "absentee": 4}, *AIT[1:]]},
-        {"bands": AIT[:-1]},
-        {"bands": [{"up_to": None, "attended": 5, "absentee": 4}, *AIT]},
+        {"bands": [{"up_to": 300, "attended": 5, "absentee": 4}, *TAPERING[1:]]},
+        {"bands": TAPERING[:-1]},
+        {"bands": [{"up_to": None, "attended": 5, "absentee": 4}, *TAPERING]},
         {"adjustments": [{"name": "Helped", "amount": 1}, {"name": "helped", "amount": 2}]},
         {"adjustments": [{"name": "Nothing", "amount": 0}]},
     ):
@@ -175,7 +175,7 @@ def test_storytellers_set_the_chart_and_its_checked_and_logged(troupe: Troupe) -
 def test_players_see_the_chart_on_the_house_rules_tab(troupe: Troupe) -> None:
     configure(
         troupe,
-        bands=AIT,
+        bands=TAPERING,
         adjustments=[{"name": "Helped", "amount": 1, "per_month": 1}],
         cap="cap",
         absentee=True,
@@ -201,7 +201,7 @@ def test_players_see_the_chart_on_the_house_rules_tab(troupe: Troupe) -> None:
 def test_each_character_gets_its_bands_figure_and_moves_band_mid_month(
     troupe: Troupe, session: Session
 ) -> None:
-    configure(troupe, bands=AIT, cap="off")
+    configure(troupe, bands=TAPERING, cap="off")
     agnes = member_character(troupe, troupe.player, "Agnes")
     beatrix = member_character(troupe, troupe.player, "Beatrix")
     # Agnes has earned 198 XP before this month; Beatrix 450. Starting XP doesn't count.
@@ -233,7 +233,7 @@ def test_each_character_gets_its_bands_figure_and_moves_band_mid_month(
 def test_a_chart_changed_mid_month_applies_from_the_next_game(
     troupe: Troupe, session: Session
 ) -> None:
-    configure(troupe, bands=AIT, cap="off")
+    configure(troupe, bands=TAPERING, cap="off")
     agnes = member_character(troupe, troupe.player, "Agnes")
     first = past_game(troupe, session, days_ago=2)
     check_in(troupe.assistant, troupe, first, agnes)
@@ -252,7 +252,7 @@ def test_a_chart_changed_mid_month_applies_from_the_next_game(
 def test_the_floor_and_ceiling_rise_by_the_figure_for_a_character_at_the_floor(
     troupe: Troupe, session: Session
 ) -> None:
-    configure(troupe, bands=AIT, cap="cap", monthly_xp=8)
+    configure(troupe, bands=TAPERING, cap="cap", monthly_xp=8)
     agnes = member_character(troupe, troupe.player, "Agnes")
     earn(session, agnes, 600, last_month=True)
     troupe_record = record(troupe)
@@ -294,7 +294,7 @@ def test_the_monthly_cap_warns_caps_or_is_off(
     capped: list[str],
     given: int,
 ) -> None:
-    configure(troupe, bands=AIT, cap=cap, monthly_xp=monthly)
+    configure(troupe, bands=TAPERING, cap=cap, monthly_xp=monthly)
     agnes = member_character(troupe, troupe.player, "Agnes")
     earn(session, agnes, 7)
     tonight = game(troupe, timedelta(minutes=-60))
@@ -338,7 +338,7 @@ def test_a_character_at_the_cap_gets_nothing_and_no_entry(troupe: Troupe, sessio
 def test_an_absentee_game_gets_the_absentee_figure_and_never_counts_as_there(
     troupe: Troupe, session: Session
 ) -> None:
-    configure(troupe, bands=AIT, absentee=True)
+    configure(troupe, bands=TAPERING, absentee=True)
     agnes = member_character(troupe, troupe.player, "Agnes")
     beatrix = member_character(troupe, troupe.player, "Beatrix")
     over = past_game(troupe, session)
@@ -505,7 +505,7 @@ def test_adjustments_are_ticked_and_kept_to_their_monthly_limits(
 ) -> None:
     saved = configure(
         troupe,
-        bands=AIT,
+        bands=TAPERING,
         adjustments=[
             {"name": "Helped", "amount": 1, "per_month": 1},
             {"name": "Not findable", "amount": -1},
@@ -551,7 +551,7 @@ def test_adjustments_are_ticked_and_kept_to_their_monthly_limits(
 
 
 def test_staff_set_a_figure_by_hand_with_a_reason(troupe: Troupe, session: Session) -> None:
-    configure(troupe, bands=AIT, cap="cap")
+    configure(troupe, bands=TAPERING, cap="cap")
     agnes = member_character(troupe, troupe.player, "Agnes")
     beatrix = member_character(troupe, troupe.player, "Beatrix")
     earn(session, beatrix, 9)

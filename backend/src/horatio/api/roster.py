@@ -298,7 +298,8 @@ MESSAGES: dict[str, str] = {
     " held refunded.",
     "approval.quest.merit_flaw": "{actor} answered the request to {change} for {character}"
     " with the quest {quest}.",
-    "approval.request.home_troupe_change": "{actor} asked to make this {character}'s home.",
+    "approval.request.home_troupe_change": "{actor} asked for {troupe} to be {character}'s home"
+    " troupe{and_visiting}.",
     "approval.approved.home_troupe_change": "{actor} accepted {character}; this is its home.",
     "approval.approved": "{actor} approved {character}.",
     "approval.declined": "{actor} declined {character}'s request.",
@@ -327,6 +328,8 @@ MESSAGES: dict[str, str] = {
     "staff.assigned": "{actor} made {member} {role}.",
     "staff.removed": "{actor} removed {member} from the staff.",
     "troupe.lead_appointed": "{actor} appointed {member} lead storyteller.",
+    "troupe.lead_appointed.replacing": "{actor} appointed {member} lead storyteller in place of"
+    " {former}, who has left the staff.",
     "troupe.renamed": "{actor} renamed the troupe to {name}.",
     "troupe.archived": "{actor} archived the troupe{because}.",
     "troupe.settled.home": "{character} left {troupe} as it was archived, and has no home troupe"
@@ -730,6 +733,10 @@ def message(
         values["category"] = named.lower() if named else category.replace("_", " ")
     # A reason given, as the end of a sentence: " (the Prince's order)".
     values["because"] = f" ({data['reason']})" if data.get("reason") else ""
+    # A request for a new home troupe that started the character visiting it.
+    values["and_visiting"] = ", and it started visiting" if data.get("joined") else ""
+    # Entries from before the troupe's name was kept with them.
+    values.setdefault("troupe", "this troupe")
     # Given at a Play View game: " at game 3".
     values["at_game"] = f" at game {data['game']}" if data.get("game") else ""
     if isinstance(values.get("picks"), dict):
