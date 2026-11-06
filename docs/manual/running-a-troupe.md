@@ -637,11 +637,11 @@ Check-in closes by itself when the game's XP is awarded.
 
 ### Checking in by hand and absentees
 
-Under **Who came**, each character checked in shows with **Visiting**, **By hand** or **No day's rest** if they apply. Check someone out with the button beside them.
+Under **Who came**, a table shows each character checked in, with its player: whether it's home or **Visiting**, how it checked in (**By hand**, or by its player), whether it had a day's rest, and, if your troupe fixes the source of status at check-in, its **Status tonight**. On a phone, each character folds into a card that shows only what's out of the ordinary. Each character's **⋯**, at the end of its row, holds **Check out**, and **Choose status** (or **Change status**), which opens its Play View on the Status tab.
 
 To check someone in yourself, choose a character under **Check someone in by hand**, untick **Had a full day's rest** if they didn't (their Willpower then starts where the last game left it), and choose **Check in**. A visitor's XP is awarded by its own home troupe.
 
-> **If your troupe uses this:** with **Record absentee games** on in the game XP chart, once the game has started you can **Mark absentee** a home character who missed it. It never counts as attended, and gets the chart's absentee XP. Payments aren't tracked in Horatio: marking a character absentee is the record, paid or not.
+> **If your troupe uses this:** with **Record absentee games** on in the game XP chart, once the game has started you can **Mark absentee** a home character who missed it. It never counts as attended, and gets the chart's absentee XP. Payments aren't tracked in Horatio: marking a character absentee is the record, paid or not. Absentees get a table of their own under **Absentee**; **Take back the absentee game** on a character's **⋯** undoes it. A character who checked in came, so it can't be marked absentee: check it out first.
 
 ### Awarding a game's XP
 

@@ -701,8 +701,11 @@ test("where the troupe chooses the night's status at check-in, an elder Senescha
 
   // Staff see it on Game night, and change it on the Play View with a reason for the game's log.
   await l.goto(`/troupes/${troupeId}/games/${game.id}`);
-  await expect(l.getByRole("list", { name: "Checked in" }).getByRole("listitem").filter({ hasText: "Wenna" }).getByText("Status from Elder")).toBeVisible();
-  await l.goto(`/play/characters/${id}?tab=status`);
+  const wenna = l.getByRole("table", { name: "Checked in" }).locator("tbody tr").filter({ hasText: "Wenna" });
+  await expect(wenna.getByText("Status from Elder").filter({ visible: true })).toBeVisible();
+  await wenna.getByRole("button", { name: "Actions for Wenna" }).click();
+  await l.getByRole("menuitem", { name: "Change status" }).click();
+  await expect(l).toHaveURL(new RegExp(`/play/characters/${id}\\?tab=status$`));
   await l.getByRole("button", { name: "Change" }).click();
   await expect(l.getByRole("button", { name: "Choose Seneschal" })).toBeDisabled();
   await l.getByLabel("Why change it? (for the game's log)").fill("She named the wrong one at the door");
