@@ -307,9 +307,10 @@ def send_due_now() -> int:
     posts scheduled for now (horatio.posts); then the notifications
     people asked for by email (horatio.notification_emails), the suspensions whose
     end date has passed (horatio.suspensions), the free changes by date that have
-    run out (horatio.free_changes), and the items that have expired or are about to
-    (horatio.item_expiry)."""
-    from horatio import free_changes, item_expiry, notification_emails, posts
+    run out (horatio.free_changes), the items that have expired or are about to
+    (horatio.item_expiry), and the Yorick pages kept long enough
+    (horatio.yorick_imports)."""
+    from horatio import free_changes, item_expiry, notification_emails, posts, yorick_imports
     from horatio.db import get_sessionmaker
 
     # Scheduled posts first, so their Discord deliveries go in the same round.
@@ -319,6 +320,7 @@ def send_due_now() -> int:
     suspensions.end_due_now()
     free_changes.close_due_now()
     item_expiry.check_due_now()
+    yorick_imports.expire_due_now()
     return sent
 
 

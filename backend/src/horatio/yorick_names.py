@@ -2,7 +2,8 @@
 Horatio's catalogue (issue #482).
 
 What it knows is kept in one table, `yorick_names.toml` beside this file, for the
-troupe to review and extend; `--names` adds a troupe's own table to it. Besides that
+troupe to review and extend; each troupe's own names (horatio.yorick_imports) are
+added over it. Besides that
 table, Horatio's own spelling fixes stand: the merits, flaws, powers and rituals
 renamed to match the books (migrations 0106 and 0122, issue #410) are matched under
 their old names too.
@@ -91,13 +92,18 @@ def spelling_renames(directory: Path = MIGRATIONS) -> list[tuple[str, str, str]]
 
 
 def read_table(
-    paths: Sequence[Path] = (), *, renames: Iterable[tuple[str, str, str]] = ()
+    paths: Sequence[Path] = (),
+    *,
+    renames: Iterable[tuple[str, str, str]] = (),
+    more: Sequence[Mapping[str, Any]] = (),
 ) -> Table:
-    """The bundled table, then each of `paths` over it, with the spelling renames
-    underneath both."""
+    """The bundled table, then each of `paths` over it, then each of `more` (a table
+    already read, such as a troupe's own), with the spelling renames underneath."""
     raw: dict[str, Any] = {}
     for path in (TABLE, *paths):
         merge(raw, tomllib.loads(path.read_text(encoding="utf-8")))
+    for table in more:
+        merge(raw, table)
     names: dict[str, dict[str, str]] = {}
     for category, old, new in renames:
         names.setdefault(category, {})[plain(old)] = new
@@ -214,6 +220,12 @@ class Unmatched:
     heading: str
     text: str
     reason: str
+    # The line in the table that would match it, where one would: its part ("names",
+    # "values" or "paths"), category, and Yorick's name for it. A heading the table
+    # has no category for has none: staff put that right by hand.
+    table: str = ""
+    category: str = ""
+    key: str = ""
 
     @property
     def source(self) -> str:
@@ -282,7 +294,9 @@ class Mapper:
             name, rating = printed.morality
             found = self.lookup("paths", name)
             if found is None:
-                mapped.unmatched.append(Unmatched("Morality", name, "no such Morality"))
+                mapped.unmatched.append(
+                    Unmatched("Morality", name, "no such Morality", "names", "paths", name)
+                )
             else:
                 mapped.traits.append(
                     Trait("paths", found, rating=rating, source=f"Morality: {name}")
@@ -344,7 +358,9 @@ class Mapper:
                 continue
             found = self.lookup(category, value)
             if found is None:
-                mapped.unmatched.append(Unmatched(key, value, f"no such {key.lower()}"))
+                mapped.unmatched.append(
+                    Unmatched(key, value, f"no such {key.lower()}", "names", category, value)
+                )
             else:
                 mapped.traits.append(Trait(category, found, source=f"{key}: {value}"))
 
@@ -369,7 +385,9 @@ class Mapper:
             for word in words.split():
                 focus = self.lookup(category, word)
                 if focus is None:
-                    mapped.unmatched.append(Unmatched(f"{name} focus", word, "no such focus"))
+                    mapped.unmatched.append(
+                        Unmatched(f"{name} focus", word, "no such focus", "names", category, word)
+                    )
                 else:
                     mapped.traits.append(
                         Trait(
@@ -384,7 +402,9 @@ class Mapper:
     def skill(self, line: Line, mapped: Mapped) -> None:
         found = self.lookup("skills", line.name)
         if found is None:
-            mapped.unmatched.append(Unmatched("Skills", line.text, "no such skill"))
+            mapped.unmatched.append(
+                Unmatched("Skills", line.text, "no such skill", "names", "skills", line.name)
+            )
             return
         detailed = self.is_detailed("skills", found)
         mapped.traits.append(
@@ -429,8 +449,13 @@ class Mapper:
                 if found is not None:
                     detail = ", ".join(d for d in (bracketed[2], detail) if d)
         if found is None:
+            # A discipline's path is named with it ("Thaumaturgy x3: Path of Blod"); else
+            # the name alone is matched, its detail kept.
+            key = f"{name}: {detail}" if category == "disciplines" and detail else name
             mapped.unmatched.append(
-                Unmatched(heading, line.text, f"no such {category_word(category)}")
+                Unmatched(
+                    heading, line.text, f"no such {category_word(category)}", "names", category, key
+                )
             )
             return
         note = ""
@@ -438,7 +463,16 @@ class Mapper:
         if detail and disciplines is not None:
             path = self.path(detail, disciplines)
             if path is None:
-                mapped.unmatched.append(Unmatched(heading, line.text, f"no such path: {detail}"))
+                mapped.unmatched.append(
+                    Unmatched(
+                        heading,
+                        line.text,
+                        f"no such path: {detail}",
+                        "paths",
+                        "disciplines",
+                        detail,
+                    )
+                )
                 return
             detail = path
         elif detail and not self.is_detailed(category, found):
@@ -486,7 +520,9 @@ class Mapper:
                         if category in self.catalogue.lists
                         else f"no such {category_word(category)}"
                     )
-                    mapped.unmatched.append(Unmatched(heading, line.text, f"{reason}: {part}"))
+                    mapped.unmatched.append(
+                        Unmatched(heading, line.text, f"{reason}: {part}", "values", category, part)
+                    )
                     continue
                 found, detail = CUSTOM, part
             mapped.traits.append(Trait(category, found, detail, rating, note, source))

@@ -451,6 +451,9 @@ MESSAGES: dict[str, str] = {
     " label: {label}; printed lines left to staff: {unmatched}).",
     "npc.reimported": "{actor} imported the NPC {character} from Yorick again (its id there:"
     " {legacy_id}; label: {label}; printed lines left to staff: {unmatched}).",
+    "npc.imported_over": "{actor} imported {character} from Yorick over the NPC already under"
+    " its name (its id there: {legacy_id}; label: {label}; printed lines left to staff:"
+    " {unmatched}).",
     "npc.stock_changed": "{actor} changed the Stock NPC {character}.",
     "npc.given": "{actor} gave the NPC {character} to @{to_handle}, at home here and accepted,"
     " with {xp} XP for its sheet{carried}.",
@@ -674,6 +677,22 @@ MESSAGES: dict[str, str] = {
     "clan_logo.uploaded": "{actor} uploaded a logo for {clan}.",
     "clan_logo.removed": "{actor} removed the logo for {clan}.",
     "audit.exported": "{actor} exported {count} events from the audit log.",
+    "yorick_import.uploaded": "{actor} uploaded a Print Characters page from Yorick for import"
+    " ({characters} characters, {portraits} portraits).",
+    "yorick_import.deleted": "{actor} deleted the Yorick page uploaded for import, and its report.",
+    "yorick_import.expired": "The Yorick page or report kept for import was deleted, 30 days on.",
+    "yorick_import.imported": "{actor} imported characters from Yorick: {made} made, {updated}"
+    " updated, {skipped} not imported (backup first: {backup}).",
+    "yorick_import.failed": "{actor}'s import from Yorick saved nothing: a character could not be"
+    " imported.",
+    "yorick_import.downloaded": "{actor} downloaded the Yorick import's {file}.",
+    "yorick_import.staff": "{actor} chose @{handle} to make the NPCs imported from Yorick.",
+    "yorick_import.named": '{actor} matched Yorick\'s "{yorick}" to {horatio} for import.',
+    "yorick_import.unnamed": "{actor} took Yorick's \"{yorick}\" out of the troupe's names for"
+    " import.",
+    "yorick_import.table_added": "{actor} added {count} names for import from Yorick from a table.",
+    "yorick_import.decided": "{actor} chose what to do with {name}, imported from Yorick under a"
+    " name already here: {choice}.",
     "play.reset": "{actor} reset {character} for the next game (game {game} kept).",
     "play.checkin_opened": "{actor} opened check-in for the game on {game}, with a new code.",
     "play.checkin_closed": "{actor} closed check-in for the game on {game}.",

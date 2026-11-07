@@ -9590,6 +9590,275 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/yorick-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Imports
+         * @description The troupes with an import under way: a page or a report kept.
+         */
+        get: operations["list_imports_api_yorick_imports_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/yorick-imports/{troupe_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Import */
+        get: operations["get_import_api_yorick_imports__troupe_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/yorick-imports/{troupe_id}/by-hand": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set By Hand
+         * @description Mark a printed line for staff to put right by hand, or take the mark off.
+         */
+        put: operations["set_by_hand_api_yorick_imports__troupe_id__by_hand_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/yorick-imports/{troupe_id}/characters.json": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Characters */
+        get: operations["download_characters_api_yorick_imports__troupe_id__characters_json_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/yorick-imports/{troupe_id}/decisions/{legacy_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Decide
+         * @description What to do with a printed character whose name a character here has.
+         */
+        put: operations["decide_api_yorick_imports__troupe_id__decisions__legacy_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/yorick-imports/{troupe_id}/dry-run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dry Run */
+        post: operations["dry_run_api_yorick_imports__troupe_id__dry_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/yorick-imports/{troupe_id}/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Import
+         * @description Import the page for real: a backup first, then every character in one go.
+         */
+        post: operations["run_import_api_yorick_imports__troupe_id__import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/yorick-imports/{troupe_id}/names": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Name
+         * @description Give a printed name Horatio's in the troupe's own table, or take it out.
+         */
+        put: operations["set_name_api_yorick_imports__troupe_id__names_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/yorick-imports/{troupe_id}/names/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Table
+         * @description Add a table written for the command line import to the troupe's own.
+         */
+        post: operations["add_table_api_yorick_imports__troupe_id__names_file_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/yorick-imports/{troupe_id}/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Options
+         * @description What a printed line can be given as, for Match to...
+         */
+        get: operations["get_options_api_yorick_imports__troupe_id__options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/yorick-imports/{troupe_id}/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Page
+         * @description Keep the page, replacing any before, and start a dry run of it.
+         */
+        post: operations["upload_page_api_yorick_imports__troupe_id__page_post"];
+        /**
+         * Delete Page
+         * @description Delete the page and its report. The troupe's names and choices stay.
+         */
+        delete: operations["delete_page_api_yorick_imports__troupe_id__page_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/yorick-imports/{troupe_id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Report */
+        get: operations["get_report_api_yorick_imports__troupe_id__report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/yorick-imports/{troupe_id}/report.txt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Report */
+        get: operations["download_report_api_yorick_imports__troupe_id__report_txt_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/yorick-imports/{troupe_id}/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Staff
+         * @description Who the NPCs are made by: the lead or one of the troupe's storytellers.
+         */
+        put: operations["set_staff_api_yorick_imports__troupe_id__staff_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -10995,6 +11264,14 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** Body_add_table_api_yorick_imports__troupe_id__names_file_post */
+        Body_add_table_api_yorick_imports__troupe_id__names_file_post: {
+            /**
+             * File
+             * @description A table in yorick_names.toml's shape.
+             */
+            file: string;
+        };
         /** Body_upload_banner_api_troupes__troupe_id__banner_post */
         Body_upload_banner_api_troupes__troupe_id__banner_post: {
             /**
@@ -11023,6 +11300,14 @@ export interface components {
             /**
              * File
              * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
+             */
+            file: string;
+        };
+        /** Body_upload_page_api_yorick_imports__troupe_id__page_post */
+        Body_upload_page_api_yorick_imports__troupe_id__page_post: {
+            /**
+             * File
+             * @description The page saved from Yorick: a zip of it with its _files folder, or the .html alone.
              */
             file: string;
         };
@@ -11216,6 +11501,13 @@ export interface components {
             characters: number;
             /** Total */
             total: number;
+        };
+        /** ByHandIn */
+        ByHandIn: {
+            /** By Hand */
+            by_hand: boolean;
+            /** Source */
+            source: string;
         };
         /** CalendarLink */
         CalendarLink: {
@@ -12814,6 +13106,25 @@ export interface components {
              */
             settlements: components["schemas"]["SettlementOverride"][];
             xp?: components["schemas"]["XpDecision"] | null;
+        };
+        /** DecisionIn */
+        DecisionIn: {
+            /** Character Id */
+            character_id?: string | null;
+            /** Choice */
+            choice: ("overwrite" | "skip" | "new") | null;
+        };
+        /** DecisionOut */
+        DecisionOut: {
+            /** Character Id */
+            character_id: string | null;
+            /**
+             * Choice
+             * @enum {string}
+             */
+            choice: "overwrite" | "skip" | "new";
+            /** Legacy Id */
+            legacy_id: string;
         };
         /** Decline */
         Decline: {
@@ -15982,6 +16293,32 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** ImportIn */
+        ImportIn: {
+            /**
+             * Without Backup
+             * @default false
+             */
+            without_backup: boolean;
+        };
+        /** ImportSummaryOut */
+        ImportSummaryOut: {
+            /** Page At */
+            page_at: string | null;
+            /** Report At */
+            report_at: string | null;
+            /** Report Kind */
+            report_kind: ("dry_run" | "import") | null;
+            /** Running */
+            running: boolean;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
         /** InfluenceActionOut */
         InfluenceActionOut: {
             /** Conflict */
@@ -16436,6 +16773,23 @@ export interface components {
         ItemsExpireIn: {
             /** On */
             on: boolean;
+        };
+        /** JobOut */
+        JobOut: {
+            /** Done */
+            done: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "dry_run" | "import";
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Total */
+            total: number;
         };
         /**
          * KeptCard
@@ -17711,6 +18065,17 @@ export interface components {
             location_id?: string | null;
             new?: components["schemas"]["NewLocationIn"] | null;
         };
+        /** MatchOut */
+        MatchOut: {
+            /** Character Id */
+            character_id: string;
+            /** Name */
+            name: string;
+            /** Overwritable */
+            overwritable: boolean;
+            /** Whose */
+            whose: string;
+        };
         /** Me */
         Me: {
             /** Display Name */
@@ -18196,6 +18561,34 @@ export interface components {
             remembered: components["schemas"]["MyMemoryOut"][];
             /** Submitted */
             submitted: boolean;
+        };
+        /** NameIn */
+        NameIn: {
+            /** Category */
+            category: string;
+            /** Horatio */
+            horatio: string | null;
+            /**
+             * Part
+             * @enum {string}
+             */
+            part: "names" | "values" | "paths";
+            /** Yorick */
+            yorick: string;
+        };
+        /** NameOut */
+        NameOut: {
+            /** Category */
+            category: string;
+            /** Horatio */
+            horatio: string;
+            /**
+             * Part
+             * @enum {string}
+             */
+            part: "names" | "values" | "paths";
+            /** Yorick */
+            yorick: string;
         };
         /**
          * NeedLineOut
@@ -18901,6 +19294,23 @@ export interface components {
              * Format: uuid
              */
             id: string;
+        };
+        /** PageOut */
+        PageOut: {
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Name */
+            name: string;
+            /**
+             * Uploaded At
+             * Format: date-time
+             */
+            uploaded_at: string;
+            /** Uploaded By */
+            uploaded_by: string | null;
         };
         /**
          * PairOut
@@ -21504,6 +21914,67 @@ export interface components {
             /** Note */
             note: string | null;
         };
+        /** ReportCharacterOut */
+        ReportCharacterOut: {
+            /** Character Id */
+            character_id: string | null;
+            /** Choice */
+            choice: ("overwrite" | "skip" | "new") | null;
+            /** Label */
+            label: string;
+            /** Left Out */
+            left_out: string[];
+            /** Legacy Id */
+            legacy_id: string;
+            /** Matches */
+            matches: components["schemas"]["MatchOut"][];
+            /** Name */
+            name: string;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "made" | "updated" | "overwritten" | "skipped" | "undecided" | "failed";
+            /** Portrait */
+            portrait: string;
+            /** Problems */
+            problems: string[];
+            /** Refused */
+            refused: string[];
+            /** Revalued */
+            revalued: string[];
+            /** Skipped Because */
+            skipped_because: string;
+            /** Split */
+            split: string[];
+            /** Traits */
+            traits: number;
+            /** Unmatched */
+            unmatched: components["schemas"]["UnmatchedOut"][];
+            /** Unpriced */
+            unpriced: string[];
+            /** Xp */
+            xp: number;
+        };
+        /** ReportOut */
+        ReportOut: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Characters */
+            characters: components["schemas"]["ReportCharacterOut"][];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "dry_run" | "import";
+            /** Stale */
+            stale: boolean;
+            /** Summary */
+            summary: string[];
+        };
         /** RepresentedBy */
         RepresentedBy: {
             /** Represented By */
@@ -23169,6 +23640,28 @@ export interface components {
             /** Troupe Name */
             troupe_name: string;
         };
+        /** StaffChoiceOut */
+        StaffChoiceOut: {
+            /** Display Name */
+            display_name: string;
+            /** Handle */
+            handle: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Lead */
+            lead: boolean;
+        };
+        /** StaffIn */
+        StaffIn: {
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
         /** StaffMember */
         StaffMember: {
             /** Display Name */
@@ -23795,6 +24288,11 @@ export interface components {
              * Format: date-time
              */
             started_at: string;
+        };
+        /** TableAddedOut */
+        TableAddedOut: {
+            /** Added */
+            added: number;
         };
         /** TableIn */
         TableIn: {
@@ -25089,6 +25587,23 @@ export interface components {
             /** Changes */
             changes?: (components["schemas"]["SetChangeIn"] | components["schemas"]["SwapChangeIn"] | components["schemas"]["PickChangeIn"] | components["schemas"]["UnpickChangeIn"])[];
         };
+        /** UnmatchedOut */
+        UnmatchedOut: {
+            /** Category */
+            category: string;
+            /** Heading */
+            heading: string;
+            /** Key */
+            key: string;
+            /** Part */
+            part: ("names" | "values" | "paths") | null;
+            /** Reason */
+            reason: string;
+            /** Source */
+            source: string;
+            /** Text */
+            text: string;
+        };
         /** Unpick */
         Unpick: {
             /** Category */
@@ -25877,6 +26392,49 @@ export interface components {
              * @default 0
              */
             unbanked: number;
+        };
+        /** YorickImportOut */
+        YorickImportOut: {
+            /** Backups Available */
+            backups_available: boolean;
+            /** By Hand */
+            by_hand: string[];
+            /** Cannot Import */
+            cannot_import: string | null;
+            /** Decisions */
+            decisions: components["schemas"]["DecisionOut"][];
+            /** Error */
+            error: string | null;
+            job: components["schemas"]["JobOut"] | null;
+            /** Names */
+            names: components["schemas"]["NameOut"][];
+            page: components["schemas"]["PageOut"] | null;
+            /** Report At */
+            report_at: string | null;
+            /** Report Expires At */
+            report_expires_at: string | null;
+            /** Report Kind */
+            report_kind: ("dry_run" | "import") | null;
+            /** Report Stale */
+            report_stale: boolean;
+            /** Staff */
+            staff: components["schemas"]["StaffChoiceOut"][];
+            /**
+             * Staff Id
+             * Format: uuid
+             */
+            staff_id: string;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+            /** Undecided */
+            undecided: number;
+            /** Uploads Available */
+            uploads_available: boolean;
         };
         /** MergeIn */
         horatio__api__account_merges__MergeIn: {
@@ -45385,6 +45943,488 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    list_imports_api_yorick_imports_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportSummaryOut"][];
+                };
+            };
+        };
+    };
+    get_import_api_yorick_imports__troupe_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YorickImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_by_hand_api_yorick_imports__troupe_id__by_hand_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ByHandIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YorickImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_characters_api_yorick_imports__troupe_id__characters_json_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decide_api_yorick_imports__troupe_id__decisions__legacy_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                legacy_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YorickImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dry_run_api_yorick_imports__troupe_id__dry_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YorickImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_import_api_yorick_imports__troupe_id__import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YorickImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_name_api_yorick_imports__troupe_id__names_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NameIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YorickImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_table_api_yorick_imports__troupe_id__names_file_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_add_table_api_yorick_imports__troupe_id__names_file_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TableAddedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_options_api_yorick_imports__troupe_id__options_get: {
+        parameters: {
+            query: {
+                part: "names" | "values" | "paths";
+                category: string;
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_page_api_yorick_imports__troupe_id__page_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_page_api_yorick_imports__troupe_id__page_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YorickImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_page_api_yorick_imports__troupe_id__page_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YorickImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_report_api_yorick_imports__troupe_id__report_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_report_api_yorick_imports__troupe_id__report_txt_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_staff_api_yorick_imports__troupe_id__staff_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YorickImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };

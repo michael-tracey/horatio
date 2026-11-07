@@ -1,7 +1,6 @@
 """Importing a troupe's characters from Yorick's Print Characters page (#482), from a
 made-up page in its format (tests/fixtures/yorick_print.html)."""
 
-import json
 import shutil
 import uuid
 from collections.abc import Callable
@@ -11,13 +10,11 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
-from sqlalchemy import Connection, func, select
 from sqlalchemy.orm import Session
 
-from horatio import backups, import_yorick_print, sheets
-from horatio.config import get_settings
-from horatio.models import AuditEvent, Character, CharacterTrait, User
+from horatio import import_yorick_print
 from horatio.models import Troupe as TroupeRecord
+from horatio.models import User
 from horatio.rules.files import DATA_DIR, load_rule_set
 from horatio.specializations import set_troupe_options
 from horatio.yorick_names import (
@@ -329,232 +326,36 @@ def test_a_troupes_own_table_adds_to_the_names(tmp_path: Path) -> None:
     assert [u.source for u in mapped.unmatched] == ["Backgrounds: Influences x1"]
 
 
-# --- the import -------------------------------------------------------------------------
+def test_an_unmatched_line_says_where_a_name_would_match_it() -> None:
+    unmatched = mapper().character(character("Agnes Wren")).unmatched
+
+    assert [(u.table, u.category, u.key) for u in unmatched] == [
+        ("names", "backgrounds", "Influences"),
+        ("values", "influence_underworld_specializations", "Police"),
+        ("names", "rituals", "Thaumaturgy: Whispers of the Moon"),
+    ]
 
 
-FAKE_PG_DUMP = """#!/bin/sh
-echo "create table t (x int);"
-"""
+def test_a_troupes_own_table_can_come_from_the_database_too() -> None:
+    ours = Mapper(
+        read_table(
+            renames=spelling_renames(),
+            more=[{"values": {"influence_elite_specializations": {"Police": "Law Enforcement"}}}],
+        ),
+        book_catalogue(),
+    )
+
+    mapped = ours.character(character("Agnes Wren"))
+
+    assert "Police x1" not in [u.text for u in mapped.unmatched]
+
+
+# --- the troupe's catalogue -------------------------------------------------------------------
 
 
 @pytest.fixture
 def troupe(client_for: Callable[[], TestClient], session: Session) -> Troupe:
     return Troupe(client_for, session)
-
-
-@pytest.fixture
-def command_session(connection: Connection, monkeypatch: pytest.MonkeyPatch) -> None:
-    """The command's own session, inside the test's transaction."""
-    monkeypatch.setattr(
-        import_yorick_print,
-        "get_sessionmaker",
-        lambda: lambda: Session(bind=connection, join_transaction_mode="create_savepoint"),
-    )
-
-
-@pytest.fixture
-def kept(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Backups made by a stand-in for pg_dump, and pictures, in scratch directories."""
-    directory = tmp_path / "backups"
-    directory.mkdir()
-    fake = tmp_path / "pg_dump"
-    fake.write_text(FAKE_PG_DUMP)
-    fake.chmod(0o755)
-    monkeypatch.setattr(get_settings(), "backup_dir", str(directory))
-    monkeypatch.setattr(get_settings(), "upload_dir", str(tmp_path / "uploads"))
-    monkeypatch.setattr(backups, "PG_DUMP", str(fake))
-    return directory
-
-
-def imported(session: Session) -> dict[str, Character]:
-    found = session.scalars(select(Character).where(Character.legacy_id.is_not(None)))
-    return {c.name: c for c in found}
-
-
-def sheet(session: Session, character: Character) -> dict[tuple[str, str, str], int | None]:
-    return {r.key: r.trait.rating for r in sheets.sheet_rows(session, character)}
-
-
-def run(page: Path, *args: str, out: Path | None = None) -> int:
-    return import_yorick_print.main(
-        [
-            str(page),
-            "--troupe",
-            "Lords of the Night",
-            "--out",
-            str(out or page.parent / "out"),
-            *args,
-        ]
-    )
-
-
-@pytest.mark.usefixtures("command_session")
-def test_a_dry_run_reports_every_character_and_saves_nothing(
-    troupe: Troupe, session: Session, page: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    session.commit()  # the troupe, where the command's session can see it
-
-    assert run(page, "--dry-run") == 0
-
-    out = capsys.readouterr().out
-    assert session.scalar(select(func.count()).select_from(Character)) == 0
-    assert "3 characters read from the page: 3 to be made, 0 to be updated" in out
-    assert "1 import cleanly" in out
-    assert "    Police x1 (no such Influence area: Police)" in out
-    assert "  Title: 1 line. Titles are given in the troupe" in out
-    assert "    Faction: Loyalist: Only a Sabbat character has a Faction." in out
-    assert out.endswith("Dry run: nothing was saved.\n")
-
-    report = (page.parent / "out" / "report.txt").read_text()
-    agnes = report[report.index("== Agnes Wren") : report.index("== Thaddeus Ashby")]
-    assert "Matched nothing:\n  Backgrounds: Influences x1 (no such background)" in agnes
-    assert "Rule checks the sheet breaks:" in agnes
-    assert "XP at the troupe's prices: " in agnes
-    assert "Portrait: to be attached" in agnes
-    assert "Left to staff:\n  Antecedence: Primary\n  Title: Primogen" in agnes
-    thaddeus = report[report.index("== Thaddeus Ashby") :]
-    assert "(Yorick id Th4ddAshby; labelled On Hold)" in thaddeus
-    assert "Held at Horatio's value:\n  Talisman: printed 2, held at 3" in thaddeus
-
-    records = json.loads((page.parent / "out" / "characters.json").read_text())
-    assert [r["printed"]["name"] for r in records] == [
-        "Agnes Wren",
-        "Thaddeus Ashby",
-        "Mystery Woman",
-    ]
-    assert records[0]["xp"] > 0
-
-
-@pytest.mark.usefixtures("command_session")
-def test_the_import_makes_sheeted_npcs_with_their_portraits_after_a_backup(
-    troupe: Troupe,
-    session: Session,
-    page: Path,
-    kept: Path,
-    tmp_path: Path,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    session.commit()
-
-    assert run(page) == 0, capsys.readouterr()
-
-    assert [b.name for b in backups.list_backups(kept)] != []
-    found = imported(session)
-    assert sorted(found) == ["Agnes Wren", "Mystery Woman", "Thaddeus Ashby"]
-    agnes = found["Agnes Wren"]
-    lords = session.get_one(TroupeRecord, uuid.UUID(troupe.id))
-    assert (agnes.kind, agnes.npc_form, agnes.npc_kind) == ("npc", "sheeted", "vampire")
-    assert agnes.owner_troupe_id == lords.id and agnes.player_id == lords.lead_user_id
-    assert agnes.legacy_id == "aGnEsWr3n1"
-    assert (found["Mystery Woman"].legacy_id or "").startswith("print-")
-
-    held = sheet(session, agnes)
-    assert held[("clan", "Tremere", "")] is None
-    assert held[("attributes", "Mental", "")] == 7
-    assert held[("paths", "Humanity", "")] == 4
-    assert held[("disciplines", "Thaumaturgy: Path of Blood", "")] == 3
-    assert held[("merits", "Thaumaturgic Expertise", "Thaumaturgy: Path of Conjuring")] == 1
-    assert held[("focus_mentals", "Intelligence", "")] == held[("focus_mentals", "Wits", "")] == 1
-    # A ritual at its level, a merit at its value here.
-    assert held[("rituals", "Thaumaturgy: Thaumaturgic Metabolism", "")] == 3
-    assert sheet(session, found["Thaddeus Ashby"])[("merits", "Talisman", "")] == 3
-    # Refused on the sheet: a faction is for the Sabbat only.
-    assert ("faction", "Loyalist", "") not in sheet(session, found["Thaddeus Ashby"])
-
-    # Its portrait, as an upload would be kept, and none for one without.
-    assert agnes.picture_id is not None
-    assert any((tmp_path / "uploads").rglob("128.webp"))
-    assert found["Thaddeus Ashby"].picture_id is None
-
-    logged = session.scalars(select(AuditEvent).where(AuditEvent.action == "npc.imported")).all()
-    assert sorted(e.data["legacy_id"] for e in logged) == sorted(
-        c.legacy_id or "" for c in found.values()
-    )
-    assert {e.data["label"] for e in logged} == {"none", "On Hold"}
-    # No XP is written: that waits until the character is given to its player.
-    assert sheets.xp_balance(session, agnes) == 0
-
-
-@pytest.mark.usefixtures("command_session")
-def test_running_it_again_updates_rather_than_duplicating(
-    troupe: Troupe, session: Session, page: Path, kept: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    session.commit()
-    assert run(page) == 0
-    first = imported(session)
-    agnes = first["Agnes Wren"]
-    picture = agnes.picture_id
-    # Staff add a trait by hand, and give one character to its player.
-    resources, _ = sheets.find_definition(session, agnes, "backgrounds", "Resources")
-    session.add(CharacterTrait(character_id=agnes.id, trait_definition_id=resources.id, rating=2))
-    mystery = first["Mystery Woman"]
-    mystery.kind, mystery.owner_troupe_id = "pc", None
-    mystery.npc_kind = mystery.npc_form = None
-    agnes.name = "Agnes"
-    session.commit()
-    capsys.readouterr()
-
-    # Backups are named to the second, and the first run's was made a moment ago.
-    assert run(page, "--no-backup") == 0
-
-    out = capsys.readouterr().out
-    assert "0 made, 2 updated, 1 skipped, 0 failed." in out
-    again = imported(session)
-    assert session.scalar(select(func.count()).select_from(Character)) == 3
-    assert again["Agnes Wren"].id == agnes.id
-    assert again["Agnes Wren"].picture_id == picture
-    assert sheet(session, agnes)[("backgrounds", "Resources", "")] == 2
-    assert session.scalar(select(func.count()).where(AuditEvent.action == "npc.reimported")) == 2
-    report = (page.parent / "out" / "report.txt").read_text()
-    assert "Skipped: it has been given to its player." in report
-
-
-@pytest.mark.usefixtures("command_session", "troupe")
-def test_without_backups_it_imports_only_when_told_to(
-    session: Session, page: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    session.commit()
-
-    assert run(page) == 1
-    assert "Backups are not set up here" in capsys.readouterr().err
-    assert imported(session) == {}
-
-    assert run(page, "--no-backup") == 0
-    assert len(imported(session)) == 3
-
-
-@pytest.mark.usefixtures("command_session")
-def test_the_import_is_made_by_the_staff_member_named(
-    troupe: Troupe, session: Session, page: Path, kept: Path
-) -> None:
-    session.commit()
-
-    assert run(page, "--as", troupe.storyteller.handle) == 0
-
-    storyteller = session.scalars(
-        select(User).where(User.handle == troupe.storyteller.handle)
-    ).one()
-    assert {c.player_id for c in imported(session).values()} == {storyteller.id}
-
-
-@pytest.mark.parametrize(
-    ("args", "message"),
-    [
-        (["--troupe", "Nobody"], "No troupe has the id or name 'Nobody'."),
-        (["--troupe", "Lords of the Night", "--as", "nobody"], "No one has the handle 'nobody'."),
-    ],
-)
-@pytest.mark.usefixtures("command_session", "troupe")
-def test_the_command_says_what_is_wrong(
-    session: Session,
-    page: Path,
-    capsys: pytest.CaptureFixture[str],
-    args: list[str],
-    message: str,
-) -> None:
-    session.commit()
-    assert import_yorick_print.main([str(page), "--dry-run", *args]) != 0
-    assert message in capsys.readouterr().err
 
 
 def test_a_troupes_lists_come_from_its_settings(troupe: Troupe, session: Session) -> None:

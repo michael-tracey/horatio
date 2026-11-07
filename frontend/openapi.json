@@ -3492,6 +3492,21 @@
         "title": "BlockWarningOut",
         "type": "object"
       },
+      "Body_add_table_api_yorick_imports__troupe_id__names_file_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "A table in yorick_names.toml's shape.",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_add_table_api_yorick_imports__troupe_id__names_file_post",
+        "type": "object"
+      },
       "Body_upload_banner_api_troupes__troupe_id__banner_post": {
         "properties": {
           "file": {
@@ -3545,6 +3560,21 @@
           "file"
         ],
         "title": "Body_upload_masthead_api_agencies__agency_id__picture_post",
+        "type": "object"
+      },
+      "Body_upload_page_api_yorick_imports__troupe_id__page_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "The page saved from Yorick: a zip of it with its _files folder, or the .html alone.",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_page_api_yorick_imports__troupe_id__page_post",
         "type": "object"
       },
       "Body_upload_picture_api_characters__character_id__picture_post": {
@@ -4134,6 +4164,24 @@
           "total"
         ],
         "title": "BulkAwarded",
+        "type": "object"
+      },
+      "ByHandIn": {
+        "properties": {
+          "by_hand": {
+            "title": "By Hand",
+            "type": "boolean"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "by_hand"
+        ],
+        "title": "ByHandIn",
         "type": "object"
       },
       "CalendarLink": {
@@ -8443,6 +8491,77 @@
           }
         },
         "title": "Decision",
+        "type": "object"
+      },
+      "DecisionIn": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "choice": {
+            "anyOf": [
+              {
+                "enum": [
+                  "overwrite",
+                  "skip",
+                  "new"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Choice"
+          }
+        },
+        "required": [
+          "choice"
+        ],
+        "title": "DecisionIn",
+        "type": "object"
+      },
+      "DecisionOut": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "choice": {
+            "enum": [
+              "overwrite",
+              "skip",
+              "new"
+            ],
+            "title": "Choice",
+            "type": "string"
+          },
+          "legacy_id": {
+            "title": "Legacy Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "legacy_id",
+          "choice",
+          "character_id"
+        ],
+        "title": "DecisionOut",
         "type": "object"
       },
       "Decline": {
@@ -16606,6 +16725,83 @@
         "title": "IdentityOut",
         "type": "object"
       },
+      "ImportIn": {
+        "properties": {
+          "without_backup": {
+            "default": false,
+            "title": "Without Backup",
+            "type": "boolean"
+          }
+        },
+        "title": "ImportIn",
+        "type": "object"
+      },
+      "ImportSummaryOut": {
+        "properties": {
+          "page_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page At"
+          },
+          "report_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report At"
+          },
+          "report_kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "dry_run",
+                  "import"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report Kind"
+          },
+          "running": {
+            "title": "Running",
+            "type": "boolean"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "page_at",
+          "report_kind",
+          "report_at",
+          "running"
+        ],
+        "title": "ImportSummaryOut",
+        "type": "object"
+      },
       "InfluenceActionOut": {
         "properties": {
           "conflict": {
@@ -17857,6 +18053,39 @@
           "on"
         ],
         "title": "ItemsExpireIn",
+        "type": "object"
+      },
+      "JobOut": {
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "dry_run",
+              "import"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "started_at",
+          "done",
+          "total"
+        ],
+        "title": "JobOut",
         "type": "object"
       },
       "KeptCard": {
@@ -21018,6 +21247,34 @@
         "title": "MatchIn",
         "type": "object"
       },
+      "MatchOut": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "overwritable": {
+            "title": "Overwritable",
+            "type": "boolean"
+          },
+          "whose": {
+            "title": "Whose",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "whose",
+          "overwritable"
+        ],
+        "title": "MatchOut",
+        "type": "object"
+      },
       "Me": {
         "properties": {
           "display_name": {
@@ -22186,6 +22443,79 @@
           "most"
         ],
         "title": "MyRemembrancesOut",
+        "type": "object"
+      },
+      "NameIn": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "horatio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Horatio"
+          },
+          "part": {
+            "enum": [
+              "names",
+              "values",
+              "paths"
+            ],
+            "title": "Part",
+            "type": "string"
+          },
+          "yorick": {
+            "title": "Yorick",
+            "type": "string"
+          }
+        },
+        "required": [
+          "part",
+          "category",
+          "yorick",
+          "horatio"
+        ],
+        "title": "NameIn",
+        "type": "object"
+      },
+      "NameOut": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "horatio": {
+            "title": "Horatio",
+            "type": "string"
+          },
+          "part": {
+            "enum": [
+              "names",
+              "values",
+              "paths"
+            ],
+            "title": "Part",
+            "type": "string"
+          },
+          "yorick": {
+            "title": "Yorick",
+            "type": "string"
+          }
+        },
+        "required": [
+          "part",
+          "category",
+          "yorick",
+          "horatio"
+        ],
+        "title": "NameOut",
         "type": "object"
       },
       "NeedLineOut": {
@@ -24075,6 +24405,43 @@
           "handle"
         ],
         "title": "Owner",
+        "type": "object"
+      },
+      "PageOut": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "uploaded_at": {
+            "format": "date-time",
+            "title": "Uploaded At",
+            "type": "string"
+          },
+          "uploaded_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uploaded By"
+          }
+        },
+        "required": [
+          "name",
+          "uploaded_at",
+          "uploaded_by",
+          "expires_at"
+        ],
+        "title": "PageOut",
         "type": "object"
       },
       "PairOut": {
@@ -30772,6 +31139,199 @@
         "title": "RemovedOut",
         "type": "object"
       },
+      "ReportCharacterOut": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "choice": {
+            "anyOf": [
+              {
+                "enum": [
+                  "overwrite",
+                  "skip",
+                  "new"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Choice"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "left_out": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Left Out",
+            "type": "array"
+          },
+          "legacy_id": {
+            "title": "Legacy Id",
+            "type": "string"
+          },
+          "matches": {
+            "items": {
+              "$ref": "#/components/schemas/MatchOut"
+            },
+            "title": "Matches",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "made",
+              "updated",
+              "overwritten",
+              "skipped",
+              "undecided",
+              "failed"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "portrait": {
+            "title": "Portrait",
+            "type": "string"
+          },
+          "problems": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Problems",
+            "type": "array"
+          },
+          "refused": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Refused",
+            "type": "array"
+          },
+          "revalued": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Revalued",
+            "type": "array"
+          },
+          "skipped_because": {
+            "title": "Skipped Because",
+            "type": "string"
+          },
+          "split": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Split",
+            "type": "array"
+          },
+          "traits": {
+            "title": "Traits",
+            "type": "integer"
+          },
+          "unmatched": {
+            "items": {
+              "$ref": "#/components/schemas/UnmatchedOut"
+            },
+            "title": "Unmatched",
+            "type": "array"
+          },
+          "unpriced": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unpriced",
+            "type": "array"
+          },
+          "xp": {
+            "title": "Xp",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "legacy_id",
+          "name",
+          "label",
+          "outcome",
+          "skipped_because",
+          "character_id",
+          "matches",
+          "choice",
+          "unmatched",
+          "refused",
+          "revalued",
+          "problems",
+          "unpriced",
+          "left_out",
+          "split",
+          "traits",
+          "xp",
+          "portrait"
+        ],
+        "title": "ReportCharacterOut",
+        "type": "object"
+      },
+      "ReportOut": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/ReportCharacterOut"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "dry_run",
+              "import"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "stale": {
+            "title": "Stale",
+            "type": "boolean"
+          },
+          "summary": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Summary",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind",
+          "at",
+          "stale",
+          "summary",
+          "characters"
+        ],
+        "title": "ReportOut",
+        "type": "object"
+      },
       "RepresentedBy": {
         "properties": {
           "represented_by": {
@@ -35136,6 +35696,49 @@
         "title": "StaffBadgesOut",
         "type": "object"
       },
+      "StaffChoiceOut": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "handle": {
+            "title": "Handle",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lead": {
+            "title": "Lead",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "handle",
+          "display_name",
+          "lead"
+        ],
+        "title": "StaffChoiceOut",
+        "type": "object"
+      },
+      "StaffIn": {
+        "properties": {
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id"
+        ],
+        "title": "StaffIn",
+        "type": "object"
+      },
       "StaffMember": {
         "properties": {
           "display_name": {
@@ -36781,6 +37384,19 @@
           "database_version"
         ],
         "title": "SystemOut",
+        "type": "object"
+      },
+      "TableAddedOut": {
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "added"
+        ],
+        "title": "TableAddedOut",
         "type": "object"
       },
       "TableIn": {
@@ -40180,6 +40796,61 @@
         "title": "UnavailableIn",
         "type": "object"
       },
+      "UnmatchedOut": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "heading": {
+            "title": "Heading",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "part": {
+            "anyOf": [
+              {
+                "enum": [
+                  "names",
+                  "values",
+                  "paths"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Part"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "heading",
+          "text",
+          "reason",
+          "source",
+          "part",
+          "category",
+          "key"
+        ],
+        "title": "UnmatchedOut",
+        "type": "object"
+      },
       "Unpick": {
         "properties": {
           "category": {
@@ -42091,6 +42762,171 @@
           "spent"
         ],
         "title": "XpSummary",
+        "type": "object"
+      },
+      "YorickImportOut": {
+        "properties": {
+          "backups_available": {
+            "title": "Backups Available",
+            "type": "boolean"
+          },
+          "by_hand": {
+            "items": {
+              "type": "string"
+            },
+            "title": "By Hand",
+            "type": "array"
+          },
+          "cannot_import": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cannot Import"
+          },
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/DecisionOut"
+            },
+            "title": "Decisions",
+            "type": "array"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "job": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "names": {
+            "items": {
+              "$ref": "#/components/schemas/NameOut"
+            },
+            "title": "Names",
+            "type": "array"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "report_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report At"
+          },
+          "report_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report Expires At"
+          },
+          "report_kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "dry_run",
+                  "import"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report Kind"
+          },
+          "report_stale": {
+            "title": "Report Stale",
+            "type": "boolean"
+          },
+          "staff": {
+            "items": {
+              "$ref": "#/components/schemas/StaffChoiceOut"
+            },
+            "title": "Staff",
+            "type": "array"
+          },
+          "staff_id": {
+            "format": "uuid",
+            "title": "Staff Id",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          },
+          "undecided": {
+            "title": "Undecided",
+            "type": "integer"
+          },
+          "uploads_available": {
+            "title": "Uploads Available",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "uploads_available",
+          "backups_available",
+          "staff",
+          "staff_id",
+          "page",
+          "job",
+          "error",
+          "report_kind",
+          "report_at",
+          "report_stale",
+          "report_expires_at",
+          "undecided",
+          "names",
+          "by_hand",
+          "decisions",
+          "cannot_import"
+        ],
+        "title": "YorickImportOut",
         "type": "object"
       },
       "horatio__api__account_merges__MergeIn": {
@@ -72831,6 +73667,733 @@
         "summary": "Stop Viewing",
         "tags": [
           "viewing"
+        ]
+      }
+    },
+    "/api/yorick-imports": {
+      "get": {
+        "description": "The troupes with an import under way: a page or a report kept.",
+        "operationId": "list_imports_api_yorick_imports_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ImportSummaryOut"
+                  },
+                  "title": "Response List Imports Api Yorick Imports Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Imports",
+        "tags": [
+          "yorick imports"
+        ]
+      }
+    },
+    "/api/yorick-imports/{troupe_id}": {
+      "get": {
+        "operationId": "get_import_api_yorick_imports__troupe_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YorickImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Import",
+        "tags": [
+          "yorick imports"
+        ]
+      }
+    },
+    "/api/yorick-imports/{troupe_id}/by-hand": {
+      "put": {
+        "description": "Mark a printed line for staff to put right by hand, or take the mark off.",
+        "operationId": "set_by_hand_api_yorick_imports__troupe_id__by_hand_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ByHandIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YorickImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set By Hand",
+        "tags": [
+          "yorick imports"
+        ]
+      }
+    },
+    "/api/yorick-imports/{troupe_id}/characters.json": {
+      "get": {
+        "operationId": "download_characters_api_yorick_imports__troupe_id__characters_json_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Characters",
+        "tags": [
+          "yorick imports"
+        ]
+      }
+    },
+    "/api/yorick-imports/{troupe_id}/decisions/{legacy_id}": {
+      "put": {
+        "description": "What to do with a printed character whose name a character here has.",
+        "operationId": "decide_api_yorick_imports__troupe_id__decisions__legacy_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "legacy_id",
+            "required": true,
+            "schema": {
+              "title": "Legacy Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YorickImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide",
+        "tags": [
+          "yorick imports"
+        ]
+      }
+    },
+    "/api/yorick-imports/{troupe_id}/dry-run": {
+      "post": {
+        "operationId": "dry_run_api_yorick_imports__troupe_id__dry_run_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YorickImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Dry Run",
+        "tags": [
+          "yorick imports"
+        ]
+      }
+    },
+    "/api/yorick-imports/{troupe_id}/import": {
+      "post": {
+        "description": "Import the page for real: a backup first, then every character in one go.",
+        "operationId": "run_import_api_yorick_imports__troupe_id__import_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YorickImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run Import",
+        "tags": [
+          "yorick imports"
+        ]
+      }
+    },
+    "/api/yorick-imports/{troupe_id}/names": {
+      "put": {
+        "description": "Give a printed name Horatio's in the troupe's own table, or take it out.",
+        "operationId": "set_name_api_yorick_imports__troupe_id__names_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NameIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YorickImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Name",
+        "tags": [
+          "yorick imports"
+        ]
+      }
+    },
+    "/api/yorick-imports/{troupe_id}/names/file": {
+      "post": {
+        "description": "Add a table written for the command line import to the troupe's own.",
+        "operationId": "add_table_api_yorick_imports__troupe_id__names_file_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_add_table_api_yorick_imports__troupe_id__names_file_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TableAddedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Table",
+        "tags": [
+          "yorick imports"
+        ]
+      }
+    },
+    "/api/yorick-imports/{troupe_id}/options": {
+      "get": {
+        "description": "What a printed line can be given as, for Match to...",
+        "operationId": "get_options_api_yorick_imports__troupe_id__options_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "part",
+            "required": true,
+            "schema": {
+              "enum": [
+                "names",
+                "values",
+                "paths"
+              ],
+              "title": "Part",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": true,
+            "schema": {
+              "title": "Category",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Response Get Options Api Yorick Imports  Troupe Id  Options Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Options",
+        "tags": [
+          "yorick imports"
+        ]
+      }
+    },
+    "/api/yorick-imports/{troupe_id}/page": {
+      "delete": {
+        "description": "Delete the page and its report. The troupe's names and choices stay.",
+        "operationId": "delete_page_api_yorick_imports__troupe_id__page_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YorickImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Page",
+        "tags": [
+          "yorick imports"
+        ]
+      },
+      "post": {
+        "description": "Keep the page, replacing any before, and start a dry run of it.",
+        "operationId": "upload_page_api_yorick_imports__troupe_id__page_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_page_api_yorick_imports__troupe_id__page_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YorickImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Page",
+        "tags": [
+          "yorick imports"
+        ]
+      }
+    },
+    "/api/yorick-imports/{troupe_id}/report": {
+      "get": {
+        "operationId": "get_report_api_yorick_imports__troupe_id__report_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Report",
+        "tags": [
+          "yorick imports"
+        ]
+      }
+    },
+    "/api/yorick-imports/{troupe_id}/report.txt": {
+      "get": {
+        "operationId": "download_report_api_yorick_imports__troupe_id__report_txt_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Report",
+        "tags": [
+          "yorick imports"
+        ]
+      }
+    },
+    "/api/yorick-imports/{troupe_id}/staff": {
+      "put": {
+        "description": "Who the NPCs are made by: the lead or one of the troupe's storytellers.",
+        "operationId": "set_staff_api_yorick_imports__troupe_id__staff_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YorickImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Staff",
+        "tags": [
+          "yorick imports"
         ]
       }
     }

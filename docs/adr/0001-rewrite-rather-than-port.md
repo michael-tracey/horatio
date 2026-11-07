@@ -15,6 +15,8 @@ This is not the database import the decision above ruled out, and it doesn't rev
 - **The troupe reviews the mapping.** Yorick's names are matched to Horatio's through one table, `backend/src/horatio/yorick_names.toml`, with Horatio's spelling fixes (#410). The troupe's lead goes through the dry run's unmatched list and extends the table until it's clean.
 - **It records where each came from.** A character keeps its Yorick id in `legacy_id`, so running the import again updates it rather than making it twice.
 
+Since 2026-11-07 (issue #518) the custodian runs it in the app, under **Custodian › Import from Yorick**, rather than as a command on the server: they upload the page, review the dry run, and import it. The mapping table is the same, with each troupe's own names kept in the database over it. A troupe can come across over months, uploading a newer page as players move; a character already in the troupe under a printed name waits for the custodian to choose whether to overwrite it, skip it, or import it beside it. It is still one troupe's printout at a time, not Yorick's data.
+
 If a troupe can get a database export from Yorick (its Parse/Mongo data), that would carry players' emails and XP history as well. The parser would then read that instead; the mapping table would carry over.
 
 ## Considered Options

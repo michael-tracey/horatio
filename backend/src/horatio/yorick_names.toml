@@ -7,8 +7,9 @@
 # #410) are matched already: "Thaumaturgical Expertise" is Thaumaturgic Expertise,
 # "Potence: Relentess Fury" is Relentless Fury, "Intolerant" is Intolerance.
 #
-# A troupe can keep its own additions in a file of the same shape and pass it with
-# --names; its lines are added to these, and win where both name the same thing.
+# Each troupe's own additions are kept with its import (Custodian › Import from Yorick,
+# horatio.yorick_imports), given there with Match to..., or added from a file of this
+# shape; they are added to these, and win where both name the same thing.
 
 # Kinds of specialisation that may be free text where the catalogue has no value for
 # it: a Contact's name, a Lore of the troupe's own. The rest (Haven qualities,

@@ -117,6 +117,7 @@ from horatio.models.troupes import (
 )
 from horatio.models.viewing import Viewing
 from horatio.models.written_rules import WrittenRule
+from horatio.models.yorick_imports import YorickImport
 
 __all__ = [
     "WrittenRule",
@@ -234,4 +235,5 @@ __all__ = [
     "Viewing",
     "XpEntry",
     "XpRangeEntry",
+    "YorickImport",
 ]
