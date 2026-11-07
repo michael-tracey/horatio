@@ -71,3 +71,8 @@ export function completeFacts({ unwritten, responses, undelivered }: { unwritten
     "Once complete, responses and feeding answers can't be written or changed.",
   ];
 }
+
+/** The projects a cycle's completion starts over, short of their least a month (#507). */
+export function projectFacts(projects: { character_name: string; name: string; starts_over?: boolean }[]): string[] {
+  return projects.filter((p) => p.starts_over).map((p) => `${p.character_name}'s ${p.name} starts over: too few actions on it this cycle.`);
+}

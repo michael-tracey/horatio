@@ -9,7 +9,15 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
-from horatio import downtimes, influence_log, quest_actions, quest_requirements, quests, responses
+from horatio import (
+    downtimes,
+    influence_log,
+    quest_actions,
+    quest_requirements,
+    quests,
+    responses,
+    targets,
+)
 from horatio.api.downtimes import staff_cycle, staff_troupe
 from horatio.api.influence import InfluenceAnswerOut, answer_out
 from horatio.api.influence_effects import BlockWarningOut, block_warnings
@@ -82,6 +90,32 @@ class QuestActionOut(BaseModel):
     not_spent: list[str]
 
 
+class PairOut(BaseModel):
+    """An action a Cancel or Watch is paired with, or one paired with it."""
+
+    response_id: uuid.UUID
+    character_name: str
+    question: str
+    answer: str
+    # cancel | watch, for the Cancel or Watch of the pair.
+    counter: str | None = None
+
+
+class AimOut(BaseModel):
+    """Who an action is aimed at, for storytellers and assistant storytellers only
+    (horatio.targets)."""
+
+    targets: list[str]
+    # cancel | watch
+    counter: str | None
+    # Aimed at someone whose Haven has Location, so it costs two actions...
+    located: bool
+    # ...unless staff say it isn't against them.
+    not_against: bool
+    # A Cancel or Watch: the target's action staff paired it with.
+    paired: PairOut | None
+
+
 class WorkItemOut(BaseModel):
     """What a staff member needs to write a response. No character sheet: narrators
     never see sheets, and this is what narrators are shown."""
@@ -102,6 +136,10 @@ class WorkItemOut(BaseModel):
     influence_blocks: list[BlockWarningOut] = []
     # A Quest action's quest.
     quest: QuestActionOut | None = None
+    # Who it is aimed at, and the Cancels and Watches paired with it: for
+    # storytellers and assistant storytellers, never narrators.
+    aim: AimOut | None = None
+    countered_by: list[PairOut] = []
     status: str
     assigned_to_user_id: uuid.UUID | None
     assigned_to_any_narrator: bool
@@ -249,7 +287,34 @@ def quest_action_out(db: DbSession, item: responses.WorkItem) -> QuestActionOut 
     )
 
 
-def item_out(db: DbSession, item: responses.WorkItem) -> WorkItemOut:
+def pair_out(item: responses.WorkItem) -> PairOut:
+    return PairOut(
+        response_id=item.response.id,
+        character_name=item.character.name,
+        question=item.question.prompt,
+        answer=item.answer.body,
+        counter=targets.counter_of(item.answer.structured),
+    )
+
+
+def aim_out(db: DbSession, item: responses.WorkItem) -> AimOut | None:
+    aimed = targets.aimed_at(item.answer.structured)
+    if not aimed:
+        return None
+    names = targets.names_of(db, [item.answer.structured])
+    paired = targets.paired_item(db, item)
+    return AimOut(
+        targets=[names.get(t, "?") for t in aimed],
+        counter=targets.counter_of(item.answer.structured),
+        located=bool(targets.with_location(db, item.cycle.troupe_id, aimed)),
+        not_against=item.answer.not_against,
+        paired=pair_out(paired) if paired else None,
+    )
+
+
+def item_out(db: DbSession, item: responses.WorkItem, *, running: bool) -> WorkItemOut:
+    """`running`: for a storyteller or assistant storyteller, who sees who an action
+    is aimed at; a narrator never does."""
     # The rules of the troupe running the cycle, where the action was taken.
     rules = read_troupe_rules(db, item.character.splat, item.cycle.troupe_id)
     return WorkItemOut(
@@ -260,11 +325,15 @@ def item_out(db: DbSession, item: responses.WorkItem) -> WorkItemOut:
         question=item.question.prompt,
         action_kind=item.question.action_kind,
         answer=item.answer.body,
-        structured=item.answer.structured,
+        structured=item.answer.structured
+        if running
+        else targets.without_aim(item.answer.structured),
         influence=answer_out(rules, item.question.action_kind, item.answer.structured),
         influence_entry=entry_ref(db, item.response),
         influence_blocks=block_warnings(db, item),
         quest=quest_action_out(db, item),
+        aim=aim_out(db, item) if running else None,
+        countered_by=[pair_out(i) for i in targets.countered_by(db, item)] if running else [],
         status=item.response.status,
         assigned_to_user_id=item.response.assigned_to_user_id,
         assigned_to_any_narrator=item.response.assigned_to_any_narrator,
@@ -315,14 +384,15 @@ def work_cycles(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[
 def all_responses(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[WorkItemOut]:
     """Every response in the cycle, for storytellers and assistant storytellers."""
     cycle, _ = staff_cycle(db, user, cycle_id, TroupeAction.ASSIGN_RESPONSES)
-    return [item_out(db, i) for i in responses.work_items(db, cycle)]
+    return [item_out(db, i, running=True) for i in responses.work_items(db, cycle)]
 
 
 @router.get("/cycles/{cycle_id}/responses/mine")
 def my_responses(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[WorkItemOut]:
     """Responses assigned to me, and for narrators the any-narrator pool."""
-    cycle, _ = staff_cycle(db, user, cycle_id, TroupeAction.ANSWER_ASSIGNED_RESPONSES)
-    return [item_out(db, i) for i in responses.mine(db, user, cycle)]
+    cycle, troupe = staff_cycle(db, user, cycle_id, TroupeAction.ANSWER_ASSIGNED_RESPONSES)
+    running = responses.is_running(db, user, troupe)
+    return [item_out(db, i, running=running) for i in responses.mine(db, user, cycle)]
 
 
 @router.get("/cycles/{cycle_id}/progress")
@@ -391,7 +461,7 @@ def assign(
     require_troupe_action(db, user, troupe, TroupeAction.ASSIGN_RESPONSES)
     responses.assign(db, user, item, troupe, body.user_id, body.any_narrator)
     db.commit()
-    return item_out(db, item)
+    return item_out(db, item, running=responses.is_running(db, user, troupe))
 
 
 @router.put("/cycles/{cycle_id}/responses/assignment")
@@ -415,7 +485,7 @@ def accept(response_id: uuid.UUID, db: DbSession, user: CurrentUser) -> WorkItem
     item, troupe = response_item(db, user, response_id)
     responses.accept(db, user, item, troupe)
     db.commit()
-    return item_out(db, item)
+    return item_out(db, item, running=responses.is_running(db, user, troupe))
 
 
 @router.post("/responses/{response_id}/decline")
@@ -423,7 +493,7 @@ def decline(response_id: uuid.UUID, db: DbSession, user: CurrentUser) -> WorkIte
     item, troupe = response_item(db, user, response_id)
     responses.decline(db, user, item, troupe)
     db.commit()
-    return item_out(db, item)
+    return item_out(db, item, running=responses.is_running(db, user, troupe))
 
 
 @router.get("/responses/{response_id}")
@@ -432,7 +502,7 @@ def read_response(response_id: uuid.UUID, db: DbSession, user: CurrentUser) -> W
     visible = responses.can_write(db, user, item, troupe) or item.response.assigned_to_any_narrator
     if not visible:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such response.")
-    return item_out(db, item)
+    return item_out(db, item, running=responses.is_running(db, user, troupe))
 
 
 @router.put("/responses/{response_id}")
@@ -442,7 +512,7 @@ def write(response_id: uuid.UUID, body: Writing, db: DbSession, user: CurrentUse
         raise HTTPException(status.HTTP_403_FORBIDDEN, "This response is not assigned to you.")
     responses.write(db, user, item, troupe, body.body)
     db.commit()
-    return item_out(db, item)
+    return item_out(db, item, running=responses.is_running(db, user, troupe))
 
 
 @router.post("/responses/{response_id}/quest-result")
@@ -457,7 +527,7 @@ def record_quest_result(
         raise HTTPException(status.HTTP_403_FORBIDDEN, "This response is not assigned to you.")
     quest_actions.record(db, user, item, body.result, body.text, ends=body.ends)
     db.commit()
-    return item_out(db, item)
+    return item_out(db, item, running=responses.is_running(db, user, troupe))
 
 
 # --- fill tables ------------------------------------------------------------------------

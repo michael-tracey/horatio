@@ -361,6 +361,21 @@ MESSAGES: dict[str, str] = {
     "downtime.completion_xp_set": "{actor} set the XP for submitting a downtime to {amount}.",
     "downtime.late_accepted": "{actor} accepted {character}'s late downtime.",
     "downtime.submitted": "{character} submitted a downtime.",
+    "downtime.aimed": "{character}'s action “{question}” is aimed at {targets}{how}.",
+    "downtime.not_against": "{actor} said {character}'s action “{question}” isn't against"
+    " those it's aimed at.",
+    "downtime.against": "{actor} said {character}'s action “{question}” is against those"
+    " it's aimed at.",
+    "downtime.paired": "{actor} paired {character}'s {how} with {target}'s action “{question}”.",
+    "downtime.unpaired": "{actor} took {character}'s {how} off the action it was paired with.",
+    "project.started": "{actor} started the project {name} for {character}.",
+    "project.proposed": "{actor} proposed the project {name} for {character}.",
+    "project.confirmed": "{actor} confirmed {character}'s project {name}.",
+    "project.dropped": "{actor} stopped {character}'s project {name}.",
+    "project.started_over": "{character}'s project {name} started over: too few actions on it"
+    " in {cycle_name}.",
+    "project.finished": "{character} finished the project {name}.",
+    "project.sheet_changed": "{actor} put {character}'s change to {path} on the sheet.",
     "xp.downtime_completed": "{character} earned {amount} XP for submitting a downtime.",
     "response.written": "{actor} wrote a downtime response for {character}.",
     "response.assigned": "{actor} assigned {character}'s downtime response.",

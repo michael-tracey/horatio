@@ -61,6 +61,7 @@ from horatio.api import (
     power_choices,
     preferences,
     printing,
+    projects,
     quests,
     remembrances,
     responses,
@@ -76,6 +77,7 @@ from horatio.api import (
     specializations,
     suspensions,
     system,
+    targets,
     teachers,
     titles,
     trait_exceptions,
@@ -211,6 +213,8 @@ for module in (
     written_rules,
     nominations,
     remembrances,
+    targets,
+    projects,
 ):
     api.include_router(module.router)
 

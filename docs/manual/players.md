@@ -307,6 +307,22 @@ Each action question has **Add an action** with how many are left of that kind, 
 - **Influence.** An action of an influence kind also asks for the **Specialisation** and the **Action**, offering the actions the character can reach with its influence.
 - **Quests.** *If your troupe runs quests:* the **Quest action** asks **Which quest** it's for: one the character is in or leads, or one shared with it or posted to the troupe, which it joins by choosing it.
 
+### Aiming an action at someone
+
+Under an action, **Aimed at…** names a character of the troupe it's aimed at, such as one you're spying on, investigating or working against. Choose more than one if the action names several, and **×** takes one off. It's optional, and the characters aimed at never learn who aimed at them: only the storytellers and assistant storytellers see it.
+
+- **This costs 2 actions.** Some characters are harder to act against: aimed at one of them, the action costs two of your actions, and **Your actions** counts it so. The storytellers can count it as one if it isn't against them, such as a friendly visit.
+- **Cancel or watch.** A character with the Computer skill can cancel or watch one action of another character's each month (MET: VTM p. 93). Aim an action at one character, and choose **Cancel** or **Watch** under **With the Computer skill**. The storytellers decide which of their actions it works on, and whether it works.
+
+### Projects
+
+Some work takes more than one downtime, such as changing your character's Path. The **Projects** card at the foot of the Downtime tab shows each of the character's projects: how many actions it has had of how many it needs, and any rule about a least number each month. It shows even when no downtime is open.
+
+- **Propose a project** to start one: choose its **Kind** (**Path change**, **Research** or **Other**), and give it a name, the **Actions it takes** and, if you like, **At least this many a month**. The storytellers confirm it before actions count toward it. **Withdraw** takes back one they haven't confirmed yet. They can also start one for you.
+- **Spending on it.** Under an action, **Counts toward** names the project it's for. When the storytellers mark the cycle complete, the project goes up by the actions spent on it in your submitted downtime.
+- **Starting over.** A project with a least number a month starts over, back to none, after a cycle with fewer actions on it than that.
+- **A Path change** needs 9 actions with a teacher who follows the new Path, or 18 without, and at least 1 every month, or it starts over (MET: VTM p. 306). When it's finished, the storytellers change your character's Morality to the new Path on the sheet; it goes down by 1 as it does.
+
 ### Player Nominations
 
 > **If your troupe uses this:** the form has a **Player Nominations** section.
