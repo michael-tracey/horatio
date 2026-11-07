@@ -976,6 +976,46 @@ scheme = "fixed"
 amount = -1
 note = "Lost each month to avoiding the Camarilla and proving itself to the Anarchs (p. 487)."
 
+# Computer: one more action between games, spent as any other, or on stopping or
+# watching one action of another character's (p. 93).
+[[allowance_rules]]
+action_kind = "general"
+category = "skills"
+trait = "Computer"
+scheme = "fixed"
+amount = 1
+note = "Spent as any other action, or on stopping or watching one action of another character's (p. 93)."
+
+# Science: one more action for each Science field held, spent only on work in that
+# field (p. 97). A troupe that gives one for the first field, a second at 3 dots and
+# a third at 5 sets detail_ratings = [1, 3, 5] in a house rule.
+[[allowance_rules]]
+action_kind = "general"
+category = "skills"
+trait = "Science"
+scheme = "per_detail"
+amount = 1
+note = "Only for work in its field (p. 97)."
+
+# Soul of the Homunculi: the Homunculus saves its maker two actions a month (p. 207).
+[[allowance_rules]]
+action_kind = "general"
+category = "rituals"
+trait = "Thaumaturgy: Soul of the Homunculi"
+scheme = "fixed"
+amount = 2
+note = "Its Homunculus does the busywork, while it has one (p. 207)."
+
+# Mytherceria 3, Ay Befriend: piskies run one errand between games (p. 141).
+[[allowance_rules]]
+action_kind = "general"
+category = "disciplines"
+trait = "Mytherceria"
+min_rating = 3
+scheme = "fixed"
+amount = 1
+note = "Ay Befriend's piskies: no one can trace or watch this action (p. 141)."
+
 # ---------------------------------------------------------------------------
 # Feeding between games (horatio.feeding). A character spends one downtime
 # action feeding, or comes to the next game at half Blood, rounded up
@@ -1012,6 +1052,15 @@ category = "flaws"
 trait = "Methuselah's Thirst"
 herd_factor = 0
 always_half = true
+
+# Triumphant: one fewer feeding action, to no fewer than 0, and the right to feed in
+# any of the sect's domains (p. 316): it never poaches in a feeding territory.
+[[feeding_modifiers]]
+category = "status_traits"
+trait = "Triumphant"
+amount = -1
+anywhere = true
+page = "316"
 
 # Efficient Digestion: Herd is twice as effective.
 [[feeding_modifiers]]

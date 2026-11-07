@@ -318,6 +318,15 @@
             "title": "Amount",
             "type": "integer"
           },
+          "detail_ratings": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 10,
+            "title": "Detail Ratings",
+            "type": "array"
+          },
           "min_rating": {
             "default": 1,
             "minimum": 1.0,
@@ -328,7 +337,8 @@
             "default": "fixed",
             "enum": [
               "fixed",
-              "per_dot"
+              "per_dot",
+              "per_detail"
             ],
             "title": "Scheme",
             "type": "string"
@@ -361,6 +371,15 @@
             ],
             "title": "Category"
           },
+          "detail_ratings": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 10,
+            "title": "Detail Ratings",
+            "type": "array"
+          },
           "min_rating": {
             "default": 1,
             "minimum": 1.0,
@@ -371,7 +390,8 @@
             "default": "fixed",
             "enum": [
               "fixed",
-              "per_dot"
+              "per_dot",
+              "per_detail"
             ],
             "title": "Scheme",
             "type": "string"
@@ -408,6 +428,11 @@
           "note": {
             "default": "",
             "title": "Note",
+            "type": "string"
+          },
+          "only": {
+            "default": "",
+            "title": "Only",
             "type": "string"
           },
           "source": {
@@ -448,6 +473,14 @@
             ],
             "title": "Category"
           },
+          "detail_ratings": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Detail Ratings",
+            "type": "array"
+          },
           "house": {
             "title": "House",
             "type": "boolean"
@@ -476,7 +509,8 @@
           "scheme": {
             "enum": [
               "fixed",
-              "per_dot"
+              "per_dot",
+              "per_detail"
             ],
             "title": "Scheme",
             "type": "string"
@@ -722,36 +756,23 @@
                 "type": "null"
               }
             ]
+          },
+          "quick_hands": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quick Hands"
           }
         },
         "required": [
           "answers"
         ],
         "title": "AnswersIn",
-        "type": "object"
-      },
-      "AppliedOut": {
-        "description": "How staff applied a house merit or flaw (horatio.house_traits).",
-        "properties": {
-          "counts_toward_limit": {
-            "title": "Counts Toward Limit",
-            "type": "boolean"
-          },
-          "free": {
-            "title": "Free",
-            "type": "boolean"
-          },
-          "reason": {
-            "title": "Reason",
-            "type": "string"
-          }
-        },
-        "required": [
-          "free",
-          "counts_toward_limit",
-          "reason"
-        ],
-        "title": "AppliedOut",
         "type": "object"
       },
       "ApplyIn": {
@@ -1619,6 +1640,80 @@
           "characters"
         ],
         "title": "AwardsOut",
+        "type": "object"
+      },
+      "BackgroundChangeOut": {
+        "properties": {
+          "delta": {
+            "title": "Delta",
+            "type": "integer"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "games_left": {
+            "title": "Games Left",
+            "type": "integer"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "delta",
+          "starts_at",
+          "ends_at",
+          "games_left"
+        ],
+        "title": "BackgroundChangeOut",
+        "type": "object"
+      },
+      "BackgroundNowOut": {
+        "description": "A background raised or lowered for now: \"Resources 3 (+1 this month, Crafts)\".",
+        "properties": {
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/BackgroundChangeOut"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "now": {
+            "title": "Now",
+            "type": "integer"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "trait": {
+            "title": "Trait",
+            "type": "string"
+          }
+        },
+        "required": [
+          "trait",
+          "rating",
+          "now",
+          "changes"
+        ],
+        "title": "BackgroundNowOut",
         "type": "object"
       },
       "BackgroundSpend": {
@@ -4791,6 +4886,11 @@
               }
             ],
             "title": "Poaching"
+          },
+          "quick_hands": {
+            "default": false,
+            "title": "Quick Hands",
+            "type": "boolean"
           },
           "received": {
             "items": {
@@ -9669,6 +9769,39 @@
           "action_kinds"
         ],
         "title": "EffectChoicesOut",
+        "type": "object"
+      },
+      "EffectIn": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "kind": {
+            "enum": [
+              "hungry_dead",
+              "indirect_attack",
+              "crafts",
+              "performance",
+              "overtaxed",
+              "recovery"
+            ],
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "EffectIn",
         "type": "object"
       },
       "EffectRef": {
@@ -15282,7 +15415,7 @@
           "applied": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/AppliedOut"
+                "$ref": "#/components/schemas/horatio__api__sheets__AppliedOut"
               },
               {
                 "type": "null"
@@ -20841,6 +20974,16 @@
             "title": "Quests",
             "type": "array"
           },
+          "quick_hands": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuickHandsOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "remembrances": {
             "default": false,
             "title": "Remembrances",
@@ -24024,6 +24167,14 @@
       "PlayReference": {
         "description": "The Play View's Sheet and Pools tabs: everything there is to look up at a\ngame, which changes only between games, so the page loads it once.",
         "properties": {
+          "backgrounds_changed": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BackgroundNowOut"
+            },
+            "title": "Backgrounds Changed",
+            "type": "array"
+          },
           "blood_per_turn": {
             "title": "Blood Per Turn",
             "type": "integer"
@@ -28380,6 +28531,25 @@
         "title": "QueuedApproval",
         "type": "object"
       },
+      "QuickHandsOut": {
+        "description": "Quick Hands, Quick Work (Vol. II Issue 1, p. 76), for a character with it: two\nmore actions, no feeding, and the next game at half Blood.",
+        "properties": {
+          "can_change": {
+            "title": "Can Change",
+            "type": "boolean"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on",
+          "can_change"
+        ],
+        "title": "QuickHandsOut",
+        "type": "object"
+      },
       "QuoteOut": {
         "properties": {
           "basis": {
@@ -28465,6 +28635,19 @@
           "suggested"
         ],
         "title": "RackOut",
+        "type": "object"
+      },
+      "RareDisciplinesIn": {
+        "properties": {
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "title": "RareDisciplinesIn",
         "type": "object"
       },
       "RarityOut": {
@@ -29619,6 +29802,52 @@
           "successes"
         ],
         "title": "ResourcesOut",
+        "type": "object"
+      },
+      "ResponseEffectsOut": {
+        "properties": {
+          "applied": {
+            "items": {
+              "$ref": "#/components/schemas/horatio__api__downtime_effects__AppliedOut"
+            },
+            "title": "Applied",
+            "type": "array"
+          },
+          "halved": {
+            "title": "Halved",
+            "type": "boolean"
+          },
+          "indirect_cost": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Indirect Cost"
+          },
+          "recovering": {
+            "title": "Recovering",
+            "type": "boolean"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/TargetOut"
+            },
+            "title": "Targets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "applied",
+          "targets",
+          "indirect_cost",
+          "recovering",
+          "halved"
+        ],
+        "title": "ResponseEffectsOut",
         "type": "object"
       },
       "ResultIn": {
@@ -34978,6 +35207,25 @@
         "title": "Taps",
         "type": "object"
       },
+      "TargetOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "TargetOut",
+        "type": "object"
+      },
       "TeacherChoiceOut": {
         "properties": {
           "id": {
@@ -37202,6 +37450,11 @@
           },
           "quests_enabled": {
             "title": "Quests Enabled",
+            "type": "boolean"
+          },
+          "rare_disciplines_two_actions": {
+            "default": false,
+            "title": "Rare Disciplines Two Actions",
             "type": "boolean"
           },
           "remembrances": {
@@ -39763,6 +40016,35 @@
         "title": "TeachingOut",
         "type": "object"
       },
+      "horatio__api__downtime_effects__AppliedOut": {
+        "properties": {
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "character_name",
+          "text"
+        ],
+        "title": "AppliedOut",
+        "type": "object"
+      },
       "horatio__api__house_traits__RemoveIn": {
         "properties": {
           "reason": {
@@ -39924,6 +40206,30 @@
           }
         },
         "title": "ResetIn",
+        "type": "object"
+      },
+      "horatio__api__sheets__AppliedOut": {
+        "description": "How staff applied a house merit or flaw (horatio.house_traits).",
+        "properties": {
+          "counts_toward_limit": {
+            "title": "Counts Toward Limit",
+            "type": "boolean"
+          },
+          "free": {
+            "title": "Free",
+            "type": "boolean"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "free",
+          "counts_toward_limit",
+          "reason"
+        ],
+        "title": "AppliedOut",
         "type": "object"
       },
       "horatio__api__teachers__TeachingOut": {
@@ -41625,6 +41931,54 @@
         "summary": "Attended",
         "tags": [
           "check-in"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/background-changes": {
+      "get": {
+        "description": "The character's backgrounds raised or lowered for now, for its sheet.",
+        "operationId": "read_background_changes_api_characters__character_id__background_changes_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BackgroundNowOut"
+                  },
+                  "title": "Response Read Background Changes Api Characters  Character Id  Background Changes Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Background Changes",
+        "tags": [
+          "downtime effects"
         ]
       }
     },
@@ -55937,6 +56291,154 @@
         ]
       }
     },
+    "/api/responses/{response_id}/effects": {
+      "get": {
+        "description": "What staff have applied from this response, and what they can.",
+        "operationId": "read_effects_api_responses__response_id__effects_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "response_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Response Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseEffectsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Effects",
+        "tags": [
+          "downtime effects"
+        ]
+      },
+      "post": {
+        "operationId": "apply_effect_api_responses__response_id__effects_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "response_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Response Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EffectIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseEffectsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apply Effect",
+        "tags": [
+          "downtime effects"
+        ]
+      }
+    },
+    "/api/responses/{response_id}/effects/{effect_id}": {
+      "delete": {
+        "operationId": "remove_effect_api_responses__response_id__effects__effect_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "response_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Response Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "effect_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Effect Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseEffectsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Effect",
+        "tags": [
+          "downtime effects"
+        ]
+      }
+    },
     "/api/responses/{response_id}/influence-entry": {
       "delete": {
         "description": "Take an answer back off the log.",
@@ -65025,6 +65527,60 @@
         "summary": "Roll Table",
         "tags": [
           "responses"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/rare-disciplines": {
+      "put": {
+        "description": "Switch on or off the optional rule that rare disciplines take two downtime\nactions a dot to learn. Dots learned before keep what they cost.",
+        "operationId": "set_rare_disciplines_api_troupes__troupe_id__rare_disciplines_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RareDisciplinesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Rare Disciplines",
+        "tags": [
+          "house rules"
         ]
       }
     },

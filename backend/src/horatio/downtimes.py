@@ -43,14 +43,18 @@ from horatio.models import (
     Answer,
     AuditEvent,
     Character,
+    CharacterTrait,
     CycleParticipant,
     Delivery,
     DowntimeCycle,
+    HeldStatus,
     OwedAction,
     Question,
     Response,
     RuleSet,
     Submission,
+    TraitCategory,
+    TraitDefinition,
     Troupe,
     User,
     XpEntry,
@@ -351,6 +355,12 @@ def allowance_sheet(db: Session, character: Character) -> list[SheetTrait]:
     return sheet
 
 
+def held_statuses(db: Session, character: Character) -> list[str]:
+    """The fleeting and negative status the character holds, by name: Triumphant
+    changes its feeding (horatio.rules.feeding)."""
+    return list(db.scalars(select(HeldStatus.name).where(HeldStatus.character_id == character.id)))
+
+
 def fill_allowance(
     db: Session, participant: CycleParticipant, character: Character, troupe: Troupe
 ) -> None:
@@ -365,11 +375,12 @@ def fill_allowance(
         if line.action_kind in totals:
             totals[line.action_kind] += line.amount
             found.append(line)
-    participant.feeding = feeding_rules.basis(rules, sheet)
+    participant.feeding = feeding_rules.basis(rules, sheet, held_statuses(db, character))
     participant.allowance = totals
     participant.allowance_breakdown = [
         {"action_kind": line.action_kind, "source": line.source, "amount": line.amount}
         | ({"note": line.note} if line.note else {})
+        | ({"only": line.only} if line.only else {})
         for line in found
     ]
 
@@ -648,25 +659,38 @@ def counts(db: Session, cycle_ids: Sequence[uuid.UUID]) -> dict[uuid.UUID, Count
     return found
 
 
-def owe_actions(db: Session, user: User, character: Character, amount: int, reason: str) -> None:
+def owe_actions(
+    db: Session,
+    user: User,
+    character: Character,
+    amount: int,
+    reason: str,
+    *,
+    source: str | None = None,
+    response_id: uuid.UUID | None = None,
+) -> OwedAction | None:
     """Record downtime actions the character owes its home troupe, and take them
-    from its current cycle if it has not submitted yet."""
+    from its current cycle if it has not submitted yet. `source` and `response_id`
+    say what owes them, where staff applied it from a response
+    (horatio.downtime_effects)."""
     if amount <= 0 or character.home_troupe_id is None or character.kind != "pc":
-        return
-    db.add(
-        OwedAction(
-            character_id=character.id,
-            troupe_id=character.home_troupe_id,
-            action_kind="general",
-            amount=amount,
-            reason=reason,
-            owed_by=user.id,
-        )
+        return None
+    debt = OwedAction(
+        character_id=character.id,
+        troupe_id=character.home_troupe_id,
+        action_kind="general",
+        amount=amount,
+        reason=reason,
+        owed_by=user.id,
+        source=source,
+        response_id=response_id,
     )
+    db.add(debt)
     db.flush()
     current = current_participation(db, character)
     if current is not None:
         settle_owed_actions(db, current[1], current[0])
+    return debt
 
 
 def settle_owed_actions(db: Session, participant: CycleParticipant, cycle: DowntimeCycle) -> None:
@@ -744,9 +768,88 @@ def adjustments(db: Session, participant: CycleParticipant) -> list[AllowanceAdj
     )
 
 
+# --- Quick Hands, Quick Work ------------------------------------------------------------
+# A technique (Vol. II Issue 1, p. 76): used in a downtime, it gives two more actions,
+# but the character cannot feed, use its own Herd or take Herd from others, and starts
+# its next game at half Blood. The player chooses it on the form each cycle, until the
+# downtime is submitted. Giving its Herd to others is still allowed: the technique
+# stops only the character's own use of what restores Blood.
+
+QUICK_HANDS = ("techniques", "Quick Hands, Quick Work")
+QUICK_HANDS_ACTIONS = 2
+QUICK_HANDS_NOTE = (
+    "No feeding this cycle, and the next game starts at half Blood (Vol. II Issue 1, p. 76)."
+)
+
+
+def has_quick_hands(db: Session, character: Character) -> bool:
+    category, name = QUICK_HANDS
+    return (
+        db.scalar(
+            select(CharacterTrait.id)
+            .join(TraitDefinition, CharacterTrait.trait_definition_id == TraitDefinition.id)
+            .join(TraitCategory, TraitDefinition.category_id == TraitCategory.id)
+            .where(
+                CharacterTrait.character_id == character.id,
+                TraitCategory.key == category,
+                TraitDefinition.name == name,
+                or_(CharacterTrait.rating.is_(None), CharacterTrait.rating != 0),
+            )
+            .limit(1)
+        )
+        is not None
+    )
+
+
+def quick_hands_on(db: Session, participant: CycleParticipant) -> bool:
+    return bool(
+        db.scalar(select(Submission.quick_hands).where(Submission.participant_id == participant.id))
+    )
+
+
+def extra_lines(db: Session, participant: CycleParticipant) -> list[dict[str, Any]]:
+    """Breakdown lines the player's choices this cycle add: Quick Hands, Quick Work."""
+    if not quick_hands_on(db, participant):
+        return []
+    return [
+        {
+            "action_kind": "general",
+            "source": QUICK_HANDS[1],
+            "amount": QUICK_HANDS_ACTIONS,
+            "note": QUICK_HANDS_NOTE,
+        }
+    ]
+
+
+def choose_quick_hands(
+    db: Session, character: Character, participant: CycleParticipant, on: bool
+) -> None:
+    """Use the technique this cycle, or not, until the downtime is submitted."""
+    submission = submission_for(db, participant)
+    if (submission.quick_hands if submission else False) == on:
+        return
+    if submission is not None and submission.status == "submitted":
+        raise conflict("Quick Hands, Quick Work can only change before the downtime is submitted.")
+    if on and not has_quick_hands(db, character):
+        raise unprocessable("This character doesn't have Quick Hands, Quick Work.")
+    if submission is None:
+        submission = Submission(participant_id=participant.id)
+        db.add(submission)
+    submission.quick_hands = on
+    db.flush()
+
+
+def breakdown(db: Session, participant: CycleParticipant) -> list[dict[str, Any]]:
+    """Where the allowance came from: the sheet when the cycle opened, and the
+    player's choices this cycle."""
+    return [*participant.allowance_breakdown, *extra_lines(db, participant)]
+
+
 def allowance_totals(db: Session, participant: CycleParticipant) -> dict[str, int]:
     """The allowance with its adjustments, before any is stopped at zero."""
     totals = dict(participant.allowance)
+    for line in extra_lines(db, participant):
+        totals[line["action_kind"]] = totals.get(line["action_kind"], 0) + line["amount"]
     for adjustment in adjustments(db, participant):
         totals[adjustment.action_kind] = totals.get(adjustment.action_kind, 0) + adjustment.delta
     return totals
@@ -768,7 +871,7 @@ def shortfall(
     one): counted from the breakdown, before the allowance stopped at zero.
     `adjusted` is its adjustments, when already loaded."""
     totals: dict[str, int] = {}
-    for line in participant.allowance_breakdown:
+    for line in breakdown(db, participant):
         totals[line["action_kind"]] = totals.get(line["action_kind"], 0) + line["amount"]
     for adjustment in adjustments(db, participant) if adjusted is None else adjusted:
         totals[adjustment.action_kind] = totals.get(adjustment.action_kind, 0) + adjustment.delta
@@ -926,14 +1029,19 @@ def save_answers(
     participant: CycleParticipant,
     specs: Sequence[AnswerSpec],
     feeding_answer: feeding.FeedingAnswer | None = None,
+    quick_hands: bool | None = None,
 ) -> Submission:
     """Replace the character's answers, and its Feeding section when given one.
     Blank answers are dropped, but for a Quest action that names its quest. Feeding
-    actions come out of the general actions."""
+    actions come out of the general actions. `quick_hands` uses Quick Hands, Quick
+    Work this cycle, or not; left out, it stays as it was."""
     from horatio import quest_actions
 
     ensure_can_submit(db, cycle, participant)
     suspensions.refuse_character(db, character)
+    if quick_hands is not None:
+        choose_quick_hands(db, character, participant, quick_hands)
+    using_quick_hands = quick_hands_on(db, participant)
     allowance_now = effective_allowance(db, participant)
     shown = {q.id: q for q in visible_questions(db, cycle, character, allowance_now)}
 
@@ -964,6 +1072,7 @@ def save_answers(
             character,
             feeding.participant_basis(db, participant, character, cycle),
             feeding_answer,
+            quick_hands=using_quick_hands,
         )
     # Feeding actions and patrols come out of the general actions; with the Rack, a
     # vessel stands in for feeding actions.

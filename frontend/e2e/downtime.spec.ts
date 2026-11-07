@@ -1186,6 +1186,107 @@ test("feeding in a downtime: Herd given to another character, both answered, and
   await expect(a.getByText("Half Blood: fed short last downtime")).toHaveCount(0);
 });
 
+test("what the book gives and takes: Science's own action, Quick Hands, Quick Work, and Crafts applied from a response (#506)", async ({ browser }) => {
+  const custodian = await person(browser, "dtquick-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "dtquick-lead");
+  const player = await person(browser, "dtquick-player");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Quick Study ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+
+  // Ottilie, a Toreador with Computer, Science (Chemistry), Resources 3 and Herd 2.
+  const p = player.page;
+  const { id } = await send(p, "POST", "/api/characters", { splat: "vampire", name: "Ottilie" });
+  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Toreador", rating: null });
+  const picks: Record<string, { name: string; rating: number; detail?: string }[]> = {
+    attributes: [{ name: "Physical", rating: 7 }, { name: "Social", rating: 5 }, { name: "Mental", rating: 3 }],
+    focus_physicals: [{ name: "Dexterity", rating: 1 }],
+    focus_mentals: [{ name: "Intelligence", rating: 1 }],
+    focus_socials: [{ name: "Charisma", rating: 1 }],
+    skills: [
+      { name: "Crafts", rating: 4, detail: "Painting" },
+      { name: "Dodge", rating: 3 },
+      { name: "Awareness", rating: 3 },
+      { name: "Empathy", rating: 2 },
+      { name: "Investigation", rating: 2 },
+      { name: "Firearms", rating: 2 },
+      { name: "Computer", rating: 1 },
+      { name: "Science", rating: 1, detail: "Chemistry" },
+      { name: "Medicine", rating: 1 },
+      { name: "Melee", rating: 1 },
+    ],
+    backgrounds: [{ name: "Resources", rating: 3 }, { name: "Herd", rating: 2 }, { name: "Generation", rating: 1 }],
+    disciplines: [{ name: "Auspex", rating: 2 }, { name: "Celerity", rating: 1 }, { name: "Presence", rating: 1 }],
+  };
+  for (const [category, list] of Object.entries(picks)) await send(p, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list });
+  await send(p, "POST", `/api/characters/${id}/creation/complete`);
+  const asked = await send(p, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+  // The lead gives her the technique, as if learned long ago.
+  await send(lead.page, "POST", `/api/characters/${id}/give`, {
+    category: "techniques",
+    name: "Quick Hands, Quick Work",
+    rating: 1,
+    free: true,
+    despite: true,
+    reason: "Learned before the chronicle",
+  });
+  const now = Date.now();
+  const cycle = await send(lead.page, "POST", `/api/troupes/${troupe.id}/cycles`, {
+    name: "Busy month",
+    closes_at: new Date(now + 7 * 86400e3).toISOString(),
+    grace_ends_at: new Date(now + 9 * 86400e3).toISOString(),
+  });
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/open`);
+
+  // Her actions name Computer and her Science, and the Science action says what it's for.
+  await p.goto(`/characters/${id}/downtime`);
+  const actions = p.locator("section").filter({ has: p.getByRole("heading", { name: "Your actions" }) });
+  await expect(actions.getByText("+1 general action from Computer")).toBeVisible();
+  await expect(actions.getByText("+1 general action from Science: Chemistry (Chemistry only)")).toBeVisible();
+  await expect(p.getByText("Of these, 1 Science action (Chemistry only). Staff judge what fits.")).toBeVisible();
+
+  // Quick Hands, Quick Work: two more actions, and the Feeding section closed.
+  const feeding = p.locator("section").filter({ has: p.getByRole("heading", { name: "Feeding" }) });
+  await expect(feeding.getByLabel("Use for my feeding")).toBeVisible();
+  await p.getByRole("checkbox", { name: /Use Quick Hands, Quick Work this cycle/ }).check();
+  await expect(actions.getByText("+2 general actions from Quick Hands, Quick Work")).toBeVisible();
+  await expect(feeding.getByText(/Using Quick Hands, Quick Work, you don't feed this cycle/)).toBeVisible();
+  await expect(feeding.getByLabel("Use for my feeding")).toHaveCount(0);
+  await p.getByRole("button", { name: /^Add an action/ }).first().click();
+  await p.getByRole("textbox", { name: "Downtime action" }).fill("Paint a portrait of the Prince and sell it");
+  await p.getByRole("button", { name: "Submit downtime" }).click();
+  await expect(p.getByText("Submitted", { exact: true })).toBeVisible();
+  await expect(p.getByRole("checkbox", { name: /Use Quick Hands, Quick Work this cycle/ })).toBeDisabled();
+
+  // Staff see the same breakdown, and the technique beside her feeding.
+  const l = lead.page;
+  await l.goto(`/cycles/${cycle.id}/participants`);
+  await l.getByRole("button", { name: "More for Ottilie" }).click();
+  await expect(l.getByRole("list", { name: "Where Ottilie's actions come from" }).getByText("+2 general from Quick Hands, Quick Work")).toBeVisible();
+  await l.goto(`/cycles/${cycle.id}/feeding`);
+  await expect(l.getByText(/Using Quick Hands, Quick Work this cycle: two more actions, no feeding/)).toBeVisible();
+
+  // The lead answers the painting with Crafts: Resources +1 for the month.
+  await l.goto(`/cycles/${cycle.id}/responses`);
+  await l.getByRole("button", { name: "Effects on allowances and backgrounds…" }).click();
+  const effects = l.getByRole("region", { name: "Effects of Ottilie's action" });
+  await effects.getByLabel("Effect").selectOption("crafts");
+  await effects.getByRole("button", { name: "Apply" }).click();
+  await expect(effects.getByRole("button", { name: "Take back Crafts: Resources +1 this month" })).toBeVisible();
+
+  // Her sheet shows it, until the next cycle opens.
+  await p.goto(`/characters/${id}`);
+  await expect(p.getByText("Resources 4 (+1 this month, Crafts)")).toBeVisible();
+});
+
 type Person = Awaited<ReturnType<typeof person>>;
 
 /**

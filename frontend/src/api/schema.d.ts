@@ -557,6 +557,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/background-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Background Changes
+         * @description The character's backgrounds raised or lowered for now, for its sheet.
+         */
+        get: operations["read_background_changes_api_characters__character_id__background_changes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/backstory": {
         parameters: {
             query?: never;
@@ -5290,6 +5310,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/responses/{response_id}/effects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Effects
+         * @description What staff have applied from this response, and what they can.
+         */
+        get: operations["read_effects_api_responses__response_id__effects_get"];
+        put?: never;
+        /** Apply Effect */
+        post: operations["apply_effect_api_responses__response_id__effects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/responses/{response_id}/effects/{effect_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Effect */
+        delete: operations["remove_effect_api_responses__response_id__effects__effect_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/responses/{response_id}/influence-entry": {
         parameters: {
             query?: never;
@@ -7960,6 +8018,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/rare-disciplines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Rare Disciplines
+         * @description Switch on or off the optional rule that rare disciplines take two downtime
+         *     actions a dot to learn. Dots learned before keep what they cost.
+         */
+        put: operations["set_rare_disciplines_api_troupes__troupe_id__rare_disciplines_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/remembrances": {
         parameters: {
             query?: never;
@@ -8845,6 +8924,11 @@ export interface components {
             /** Amount */
             amount: number;
             /**
+             * Detail Ratings
+             * @default []
+             */
+            detail_ratings: number[];
+            /**
              * Min Rating
              * @default 1
              */
@@ -8854,7 +8938,7 @@ export interface components {
              * @default fixed
              * @enum {string}
              */
-            scheme: "fixed" | "per_dot";
+            scheme: "fixed" | "per_dot" | "per_detail";
         };
         /** AllowanceIn */
         AllowanceIn: {
@@ -8865,6 +8949,11 @@ export interface components {
             /** Category */
             category?: string | null;
             /**
+             * Detail Ratings
+             * @default []
+             */
+            detail_ratings: number[];
+            /**
              * Min Rating
              * @default 1
              */
@@ -8874,7 +8963,7 @@ export interface components {
              * @default fixed
              * @enum {string}
              */
-            scheme: "fixed" | "per_dot";
+            scheme: "fixed" | "per_dot" | "per_detail";
             /** Trait */
             trait?: string | null;
         };
@@ -8889,6 +8978,11 @@ export interface components {
              * @default
              */
             note: string;
+            /**
+             * Only
+             * @default
+             */
+            only: string;
             /** Source */
             source: string;
         };
@@ -8902,6 +8996,11 @@ export interface components {
             amount_text: string;
             /** Category */
             category: string | null;
+            /**
+             * Detail Ratings
+             * @default []
+             */
+            detail_ratings: number[];
             /** House */
             house: boolean;
             /** Id */
@@ -8917,7 +9016,7 @@ export interface components {
              * Scheme
              * @enum {string}
              */
-            scheme: "fixed" | "per_dot";
+            scheme: "fixed" | "per_dot" | "per_detail";
             /** Trait */
             trait: string | null;
             /** Who */
@@ -9016,18 +9115,8 @@ export interface components {
             /** Answers */
             answers: components["schemas"]["AnswerIn"][];
             feeding?: components["schemas"]["FeedingIn"] | null;
-        };
-        /**
-         * AppliedOut
-         * @description How staff applied a house merit or flaw (horatio.house_traits).
-         */
-        AppliedOut: {
-            /** Counts Toward Limit */
-            counts_toward_limit: boolean;
-            /** Free */
-            free: boolean;
-            /** Reason */
-            reason: string;
+            /** Quick Hands */
+            quick_hands?: boolean | null;
         };
         /** ApplyIn */
         ApplyIn: {
@@ -9377,6 +9466,36 @@ export interface components {
             characters: components["schemas"]["AwardableCharacter"][];
             /** Session Xp */
             session_xp: number;
+        };
+        /** BackgroundChangeOut */
+        BackgroundChangeOut: {
+            /** Delta */
+            delta: number;
+            /** Ends At */
+            ends_at: string | null;
+            /** Games Left */
+            games_left: number;
+            /** Source */
+            source: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+        };
+        /**
+         * BackgroundNowOut
+         * @description A background raised or lowered for now: "Resources 3 (+1 this month, Crafts)".
+         */
+        BackgroundNowOut: {
+            /** Changes */
+            changes: components["schemas"]["BackgroundChangeOut"][];
+            /** Now */
+            now: number;
+            /** Rating */
+            rating: number;
+            /** Trait */
+            trait: string;
         };
         /** BackgroundSpend */
         BackgroundSpend: {
@@ -10605,6 +10724,11 @@ export interface components {
             patrols: components["schemas"]["PatrolByOut"][];
             /** Poaching */
             poaching?: string | null;
+            /**
+             * Quick Hands
+             * @default false
+             */
+            quick_hands: boolean;
             /** Received */
             received: components["schemas"]["ReceivedOut"][];
             /** Reply */
@@ -12378,6 +12502,16 @@ export interface components {
             action_kinds: components["schemas"]["ActionKindChoiceOut"][];
             /** Pools */
             pools: components["schemas"]["PoolChoiceOut"][];
+        };
+        /** EffectIn */
+        EffectIn: {
+            /** Character Id */
+            character_id?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "hungry_dead" | "indirect_attack" | "crafts" | "performance" | "overtaxed" | "recovery";
         };
         /** EffectRef */
         EffectRef: {
@@ -14547,7 +14681,7 @@ export interface components {
          * @description A troupe's own merit or flaw, marked ★ wherever it shows.
          */
         HouseMarkOut: {
-            applied?: components["schemas"]["AppliedOut"] | null;
+            applied?: components["schemas"]["horatio__api__sheets__AppliedOut"] | null;
             /** Archived */
             archived: boolean;
             /** Availability */
@@ -16755,6 +16889,7 @@ export interface components {
              * @default []
              */
             quests: components["schemas"]["QuestChoiceOut"][];
+            quick_hands?: components["schemas"]["QuickHandsOut"] | null;
             /**
              * Remembrances
              * @default false
@@ -18015,6 +18150,11 @@ export interface components {
          *     game, which changes only between games, so the page loads it once.
          */
         PlayReference: {
+            /**
+             * Backgrounds Changed
+             * @default []
+             */
+            backgrounds_changed: components["schemas"]["BackgroundNowOut"][];
             /** Blood Per Turn */
             blood_per_turn: number;
             /** Disciplines */
@@ -19658,6 +19798,17 @@ export interface components {
             troupe_id: string;
             xp?: components["schemas"]["XpReviewOut"] | null;
         };
+        /**
+         * QuickHandsOut
+         * @description Quick Hands, Quick Work (Vol. II Issue 1, p. 76), for a character with it: two
+         *     more actions, no feeding, and the next game at half Blood.
+         */
+        QuickHandsOut: {
+            /** Can Change */
+            can_change: boolean;
+            /** On */
+            on: boolean;
+        };
         /** QuoteOut */
         QuoteOut: {
             /** Basis */
@@ -19681,6 +19832,11 @@ export interface components {
             players: number;
             /** Suggested */
             suggested: number;
+        };
+        /** RareDisciplinesIn */
+        RareDisciplinesIn: {
+            /** On */
+            on: boolean;
         };
         /**
          * RarityOut
@@ -20123,6 +20279,19 @@ export interface components {
             name: string;
             /** Successes */
             successes: number;
+        };
+        /** ResponseEffectsOut */
+        ResponseEffectsOut: {
+            /** Applied */
+            applied: components["schemas"]["horatio__api__downtime_effects__AppliedOut"][];
+            /** Halved */
+            halved: boolean;
+            /** Indirect Cost */
+            indirect_cost: number | null;
+            /** Recovering */
+            recovering: boolean;
+            /** Targets */
+            targets: components["schemas"]["TargetOut"][];
         };
         /** ResultIn */
         ResultIn: {
@@ -22162,6 +22331,16 @@ export interface components {
             /** Taps */
             taps: components["schemas"]["TapIn"][];
         };
+        /** TargetOut */
+        TargetOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /** TeacherChoiceOut */
         TeacherChoiceOut: {
             /**
@@ -23035,6 +23214,11 @@ export interface components {
             quest_requests_per_cycle: number;
             /** Quests Enabled */
             quests_enabled: boolean;
+            /**
+             * Rare Disciplines Two Actions
+             * @default false
+             */
+            rare_disciplines_two_actions: boolean;
             /**
              * Remembrances
              * @default false
@@ -24019,6 +24203,20 @@ export interface components {
             /** Willpower */
             willpower: number;
         };
+        /** AppliedOut */
+        horatio__api__downtime_effects__AppliedOut: {
+            /** Character Name */
+            character_name: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Text */
+            text: string;
+        };
         /** RemoveIn */
         horatio__api__house_traits__RemoveIn: {
             /** Reason */
@@ -24091,6 +24289,18 @@ export interface components {
              * @default false
              */
             email: boolean;
+        };
+        /**
+         * AppliedOut
+         * @description How staff applied a house merit or flaw (horatio.house_traits).
+         */
+        horatio__api__sheets__AppliedOut: {
+            /** Counts Toward Limit */
+            counts_toward_limit: boolean;
+            /** Free */
+            free: boolean;
+            /** Reason */
+            reason: string;
         };
         /** TeachingOut */
         horatio__api__teachers__TeachingOut: {
@@ -25173,6 +25383,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AttendedGame"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_background_changes_api_characters__character_id__background_changes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackgroundNowOut"][];
                 };
             };
             /** @description Validation Error */
@@ -34402,6 +34643,104 @@ export interface operations {
             };
         };
     };
+    read_effects_api_responses__response_id__effects_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseEffectsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_effect_api_responses__response_id__effects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EffectIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseEffectsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_effect_api_responses__response_id__effects__effect_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+                effect_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseEffectsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     log_answer_api_responses__response_id__influence_entry_post: {
         parameters: {
             query?: never;
@@ -39941,6 +40280,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Roll"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_rare_disciplines_api_troupes__troupe_id__rare_disciplines_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RareDisciplinesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
                 };
             };
             /** @description Validation Error */

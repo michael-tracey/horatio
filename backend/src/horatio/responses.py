@@ -505,8 +505,9 @@ def readiness(db: Session, cycle: DowntimeCycle) -> list[Readiness]:
     found: list[Readiness] = []
     for submission, participant, character in rows:
         total, written = counts.get(submission.id, (0, 0))
-        # Feeding counts only while the troupe tracks it.
-        fed = tracked and submission.feeding_result is not None
+        # Feeding counts only while the troupe tracks it. Quick Hands, Quick Work
+        # answers it: no feeding, half Blood.
+        fed = tracked and (submission.feeding_result is not None or submission.quick_hands)
         feeds = tracked and (
             fed or feeding.participant_basis(db, participant, character, cycle).get("clan")
         )

@@ -434,7 +434,11 @@ Starting XP, the XP floor and ceiling, and blood at the start of a game are unde
 
 ### Downtime actions
 
-**Downtime actions** sets how many actions of each kind characters get each cycle, and which traits add or take away actions (once at any rating, or for each dot, from a rating). A cycle keeps the allowances it was opened with.
+**Downtime actions** sets how many actions of each kind characters get each cycle, and which traits add or take away actions (once at any rating, for each dot, or for each field held, from a rating). A cycle keeps the allowances it was opened with.
+
+The book's own list includes Computer, each Science field, Soul of the Homunculi and Ay Befriend (Mytherceria 3). Choose **Change** on any of them to replace it with the troupe's own. Science counts **For each field held**: to give one for the first field, a second at 3 dots and a third at 5, set **Rating each field needs** to "1, 3, 5". The character's best Science counts.
+
+**Rare disciplines**, on the same page, is an optional rule (MET: VtM core p. 113), off until you switch it on: a dot of a rare discipline learned from a teacher, out of clan, takes two downtime actions instead of one. Every discipline but Animalism, Auspex, Celerity, Dominate, Fortitude, Obfuscate, Potence and Presence is rare.
 
 **Influence lookups**, on the same page, sets how many **Days to look back** Gossip and Insider Trading and Word on the Street look in the influence log, counted from when their cycle closes.
 
@@ -624,13 +628,15 @@ The **Participants** tab shows each character, its player, where its downtime st
 
 - **Remind those not submitted** sends each player a notification, and an email if they've chosen to. It names the cycle's **Due**, or once that has passed, its **Accepted until**, in the player's own time zone.
 - **Add a character** adds one whose home is this troupe that joined after the cycle opened.
-- A character's ⋯ shows its actions, and lets you **Adjust** its allowance for this cycle with a reason, **Log influence**, **Accept late** (after the grace period, or when the troupe's absentee downtimes would shut it out), or **Remove from cycle**.
+- A character's ⋯ shows its actions and where each comes from, as its player sees them, and lets you **Adjust** its allowance for this cycle with a reason, **Log influence**, **Accept late** (after the grace period, or when the troupe's absentee downtimes would shut it out), or **Remove from cycle**.
 
 ### Feeding in a cycle
 
 > **If your troupe uses this:** the Feeding tab shows while the troupe tracks feeding.
 
 The **Feeding** tab starts with **Feeding by clan**: how many feeding actions each clan needs this cycle, which you can change with a reason. The next cycle starts with these numbers. Each character's card shows what it put towards its feeding and Horatio's tally; you answer **Full Blood next game**, **Half Blood next game** or something else, with flavour or a fill table. With the Vol. 2 rules on, it also has the Resonance and Dyscrasia, **The Rack** (lay out cards, then change any), and the cycle's feeding territories and poaching.
+
+A character holding Triumphant needs one feeding action fewer, and never poaches. A character using **Quick Hands, Quick Work** is marked on its card: it doesn't feed, and its results say it starts the next game at half Blood without your answering.
 
 ### Assigning and writing responses
 
@@ -640,6 +646,13 @@ The **Responses** tab holds every response in the cycle, by character. Filter by
 
 - Choose who writes each response: a staff member, or **Any narrator**. Tick several and assign them in one go from the bar at the foot of the screen.
 - Write a response and choose **Save response**. A **Fill table** can roll a random result into it.
+- **Effects on allowances and backgrounds**, for storytellers and assistant storytellers, applies what the action does to downtimes or backgrounds, with **Take back** to undo it:
+  - **Call of the Hungry Dead:** another character loses 1 action the next time it has downtime actions. It doesn't stack.
+  - **Indirect influence attack:** on a general influence action, another character loses 1 action for every 2 levels, or all it has. Use it where you choose the book's mechanical penalty.
+  - **Crafts** or **Performance:** Resources or Fame +1 until the next cycle opens.
+  - **Overtaxed Resources:** Resources −2 for six games or three months, whichever is later; and, from another action, **Recovering from overtaxing** halves the wait.
+
+  Actions lost come off the character's current downtime if it hasn't submitted, or else its next one.
 
 Only storytellers and assistant storytellers assign. Everyone writes what is assigned to them, from here or from [My work](#my-work).
 
