@@ -338,6 +338,20 @@ def roll(
     return PLACEHOLDER.sub(fill, text)
 
 
+def save_table(db: Session, troupe_id: uuid.UUID, name: str, entries: Sequence[str]) -> RandomTable:
+    """Create a fill table, or replace the entries of the troupe's one with this name.
+    Blank entries are dropped."""
+    table = db.scalar(
+        select(RandomTable).where(RandomTable.troupe_id == troupe_id, RandomTable.name == name)
+    )
+    if table is None:
+        table = RandomTable(troupe_id=troupe_id, name=name)
+        db.add(table)
+    table.entries = [e.strip() for e in entries if e.strip()]
+    db.flush()
+    return table
+
+
 def troupe_tables(db: Session, troupe: Troupe) -> dict[str, list[str]]:
     return {
         t.name.lower(): t.entries

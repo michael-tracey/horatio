@@ -16,7 +16,8 @@ from dataclasses import dataclass
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio.models import RuleSet, TraitCategory, TraitDefinition, WrittenRule
+from horatio import audit
+from horatio.models import RuleSet, TraitCategory, TraitDefinition, Troupe, User, WrittenRule
 
 
 @dataclass(frozen=True)
@@ -80,6 +81,55 @@ def last_in(db: Session, troupe_id: uuid.UUID, section: str) -> int:
         )
     )
     return (found or 0) + 1
+
+
+@dataclass(frozen=True)
+class Words:
+    """A written rule as staff write it: trimmed, its trait already found."""
+
+    section: str
+    title: str
+    body: str
+    trait_definition_id: uuid.UUID | None = None
+    page: str | None = None
+
+
+def add(db: Session, user: User, troupe: Troupe, words: Words) -> WrittenRule:
+    """Add a written rule, last in its section."""
+    rule = WrittenRule(
+        troupe_id=troupe.id,
+        section=words.section,
+        title=words.title,
+        body=words.body,
+        position=last_in(db, troupe.id, words.section),
+        trait_definition_id=words.trait_definition_id,
+        page=words.page or None,
+    )
+    db.add(rule)
+    db.flush()
+    audit.record(
+        db,
+        user,
+        "house.written_rule_added",
+        troupe_id=troupe.id,
+        title=rule.title,
+        section=rule.section or "no section",
+    )
+    return rule
+
+
+def change(db: Session, user: User, troupe: Troupe, rule: WrittenRule, words: Words) -> None:
+    """Change a written rule's words, section or links. Moved to another section, it
+    goes last there."""
+    if words.section != rule.section:
+        rule.position = last_in(db, troupe.id, words.section)
+        rule.section = words.section
+    rule.title = words.title
+    rule.body = words.body
+    rule.trait_definition_id = words.trait_definition_id
+    rule.page = words.page or None
+    db.flush()
+    audit.record(db, user, "house.written_rule_changed", troupe_id=troupe.id, title=rule.title)
 
 
 def move(db: Session, rule: WrittenRule, up: bool) -> bool:

@@ -143,6 +143,67 @@
         "title": "ActionKindChoiceOut",
         "type": "object"
       },
+      "ActionKindItem": {
+        "additionalProperties": false,
+        "description": "A kind of downtime action the troupe added itself.",
+        "properties": {
+          "actions": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "maxItems": 100,
+            "title": "Actions",
+            "type": "array"
+          },
+          "fields": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "maxItems": 20,
+            "title": "Fields",
+            "type": "array"
+          },
+          "key": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "splat": {
+            "default": "vampire",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Splat",
+            "type": "string"
+          },
+          "type": {
+            "const": "action_kind",
+            "default": "action_kind",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name"
+        ],
+        "title": "ActionKindItem",
+        "type": "object"
+      },
       "ActionKindOut": {
         "properties": {
           "key": {
@@ -641,6 +702,96 @@
           "action_kind"
         ],
         "title": "AllowanceIn",
+        "type": "object"
+      },
+      "AllowanceItem": {
+        "additionalProperties": false,
+        "description": "The troupe's own rule for how many downtime actions characters get.",
+        "properties": {
+          "action_kind": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Action Kind",
+            "type": "string"
+          },
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "detail_ratings": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 10,
+            "title": "Detail Ratings",
+            "type": "array"
+          },
+          "min_rating": {
+            "default": 1,
+            "minimum": 1.0,
+            "title": "Min Rating",
+            "type": "integer"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          },
+          "scheme": {
+            "default": "fixed",
+            "enum": [
+              "fixed",
+              "per_dot",
+              "per_detail"
+            ],
+            "title": "Scheme",
+            "type": "string"
+          },
+          "splat": {
+            "default": "vampire",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Splat",
+            "type": "string"
+          },
+          "trait": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trait"
+          },
+          "type": {
+            "const": "allowance",
+            "default": "allowance",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action_kind",
+          "amount"
+        ],
+        "title": "AllowanceItem",
         "type": "object"
       },
       "AllowanceLineOut": {
@@ -3788,6 +3939,81 @@
         "title": "BookTraitChange",
         "type": "object"
       },
+      "BookTraitItem": {
+        "additionalProperties": false,
+        "description": "The troupe's changes to one book trait (horatio.book_traits): a ban, its own\nwording, and a merit or flaw's category.",
+        "properties": {
+          "ban_reason": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Ban Reason",
+            "type": "string"
+          },
+          "banned": {
+            "default": false,
+            "title": "Banned",
+            "type": "boolean"
+          },
+          "category": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "splat": {
+            "default": "vampire",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Splat",
+            "type": "string"
+          },
+          "type": {
+            "const": "book_trait",
+            "default": "book_trait",
+            "title": "Type",
+            "type": "string"
+          },
+          "wording": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Wording",
+            "type": "string"
+          },
+          "wording_mode": {
+            "default": "added",
+            "enum": [
+              "added",
+              "replaces"
+            ],
+            "title": "Wording Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "BookTraitItem",
+        "type": "object"
+      },
       "BookTraitOut": {
         "description": "A troupe's change to one book trait.",
         "properties": {
@@ -6399,6 +6625,41 @@
         "title": "CheckInState",
         "type": "object"
       },
+      "CheckItem": {
+        "additionalProperties": false,
+        "description": "How the troupe plays one of the rule set's checks.",
+        "properties": {
+          "check": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Check",
+            "type": "string"
+          },
+          "strength": {
+            "enum": [
+              "refuse",
+              "complete",
+              "review",
+              "note",
+              "off"
+            ],
+            "title": "Strength",
+            "type": "string"
+          },
+          "type": {
+            "const": "check",
+            "default": "check",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "check",
+          "strength"
+        ],
+        "title": "CheckItem",
+        "type": "object"
+      },
       "CheckOut": {
         "properties": {
           "about": {
@@ -7568,6 +7829,113 @@
         "title": "CostIn",
         "type": "object"
       },
+      "CostItem": {
+        "additionalProperties": false,
+        "description": "The troupe's price for a trait or a category, perhaps under a condition.",
+        "properties": {
+          "category": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition"
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate"
+          },
+          "scheme": {
+            "enum": [
+              "per_dot",
+              "progressive",
+              "table",
+              "fixed",
+              "free",
+              "not_allowed"
+            ],
+            "title": "Scheme",
+            "type": "string"
+          },
+          "splat": {
+            "default": "vampire",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Splat",
+            "type": "string"
+          },
+          "table": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Table"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "trait": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trait"
+          },
+          "type": {
+            "const": "cost",
+            "default": "cost",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "scheme"
+        ],
+        "title": "CostItem",
+        "type": "object"
+      },
       "CostOut": {
         "properties": {
           "category": {
@@ -7789,6 +8157,46 @@
           "titles"
         ],
         "title": "CourtOrder",
+        "type": "object"
+      },
+      "CreationItem": {
+        "additionalProperties": false,
+        "description": "What new characters start with in one category: these replace the troupe's.",
+        "properties": {
+          "category": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/StartingRuleItem"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Rules",
+            "type": "array"
+          },
+          "splat": {
+            "default": "vampire",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Splat",
+            "type": "string"
+          },
+          "type": {
+            "const": "creation",
+            "default": "creation",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "rules"
+        ],
+        "title": "CreationItem",
         "type": "object"
       },
       "CreationOut": {
@@ -13642,6 +14050,39 @@
         "title": "FieldOut",
         "type": "object"
       },
+      "FillTableItem": {
+        "additionalProperties": false,
+        "description": "A fill table: its entries, one per line, `[Table]` references kept as written.",
+        "properties": {
+          "entries": {
+            "default": [],
+            "items": {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "title": "Entries",
+            "type": "array"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "fill_table",
+            "default": "fill_table",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "FillTableItem",
+        "type": "object"
+      },
       "FilterCondition": {
         "additionalProperties": false,
         "description": "One condition of a character filter; see horatio.character_filter.",
@@ -16006,6 +16447,118 @@
         "title": "HouseActionOut",
         "type": "object"
       },
+      "HouseCheckItem": {
+        "additionalProperties": false,
+        "description": "A check of the troupe's own (horatio.house_checks).",
+        "properties": {
+          "category": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "condition": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Condition",
+            "type": "object"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "message": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Message",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "requires",
+              "forbids"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "name_prefix": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name Prefix"
+          },
+          "splat": {
+            "default": "vampire",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Splat",
+            "type": "string"
+          },
+          "step": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step"
+          },
+          "strength": {
+            "default": "refuse",
+            "enum": [
+              "refuse",
+              "complete",
+              "review",
+              "note"
+            ],
+            "title": "Strength",
+            "type": "string"
+          },
+          "type": {
+            "const": "house_check",
+            "default": "house_check",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "mode",
+          "condition"
+        ],
+        "title": "HouseCheckItem",
+        "type": "object"
+      },
       "HouseCheckOut": {
         "properties": {
           "house": {
@@ -16515,6 +17068,100 @@
           "availability"
         ],
         "title": "HouseTraitIn",
+        "type": "object"
+      },
+      "HouseTraitItem": {
+        "additionalProperties": false,
+        "description": "A merit or flaw the troupe made itself (horatio.house_traits).",
+        "properties": {
+          "availability": {
+            "enum": [
+              "staff",
+              "building"
+            ],
+            "title": "Availability",
+            "type": "string"
+          },
+          "category": {
+            "enum": [
+              "merits",
+              "flaws"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "creation_only": {
+            "default": false,
+            "title": "Creation Only",
+            "type": "boolean"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Description",
+            "type": "string"
+          },
+          "effects": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "maxItems": 20,
+            "title": "Effects",
+            "type": "array"
+          },
+          "kind": {
+            "default": "General",
+            "enum": [
+              "General",
+              "Clan",
+              "Sabbat"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "points": {
+            "maximum": 7.0,
+            "minimum": 1.0,
+            "title": "Points",
+            "type": "integer"
+          },
+          "requirement": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Requirement",
+            "type": "string"
+          },
+          "splat": {
+            "default": "vampire",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Splat",
+            "type": "string"
+          },
+          "type": {
+            "const": "house_trait",
+            "default": "house_trait",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "points",
+          "availability"
+        ],
+        "title": "HouseTraitItem",
         "type": "object"
       },
       "HouseTraitOut": {
@@ -18108,6 +18755,7 @@
         "title": "JobOut",
         "type": "object"
       },
+      "JsonValue": {},
       "KeptCard": {
         "description": "One character in the troupe's scenes, with what its card shows.",
         "properties": {
@@ -18284,6 +18932,94 @@
           "name"
         ],
         "title": "KeywordIn",
+        "type": "object"
+      },
+      "KeywordItem": {
+        "additionalProperties": false,
+        "description": "One of the troupe's downtime keywords, as it has changed or added it.",
+        "properties": {
+          "action_kinds": {
+            "default": [
+              "general"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Action Kinds",
+            "type": "array"
+          },
+          "computers_only": {
+            "default": false,
+            "title": "Computers Only",
+            "type": "boolean"
+          },
+          "cost": {
+            "default": 1,
+            "maximum": 5.0,
+            "minimum": 0.0,
+            "title": "Cost",
+            "type": "integer"
+          },
+          "explanation": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Explanation",
+            "type": "string"
+          },
+          "fields": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Fields",
+            "type": "array"
+          },
+          "key": {
+            "pattern": "^[a-z_]{1,40}$|^own_[0-9a-f]{8}$",
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "required_for": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Required For",
+            "type": "array"
+          },
+          "science": {
+            "default": false,
+            "title": "Science",
+            "type": "boolean"
+          },
+          "step": {
+            "default": 5,
+            "maximum": 6.0,
+            "minimum": 1.0,
+            "title": "Step",
+            "type": "integer"
+          },
+          "type": {
+            "const": "keyword",
+            "default": "keyword",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name"
+        ],
+        "title": "KeywordItem",
         "type": "object"
       },
       "KeywordOut": {
@@ -23008,6 +23744,41 @@
           "name"
         ],
         "title": "NewTroupeRequest",
+        "type": "object"
+      },
+      "NewsAgencyItem": {
+        "additionalProperties": false,
+        "description": "A news agency: its name, description and colour, never its picture or channel.",
+        "properties": {
+          "colour": {
+            "default": "#8b1e1e",
+            "pattern": "^#[0-9a-f]{6}$",
+            "title": "Colour",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Description",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "news_agency",
+            "default": "news_agency",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "NewsAgencyItem",
         "type": "object"
       },
       "NominationIn": {
@@ -34138,6 +34909,278 @@
         "title": "SectStatusOut",
         "type": "object"
       },
+      "Sections": {
+        "additionalProperties": false,
+        "description": "The settings by section, as Customise groups them. The first seven are the\ngroups of its Troupe settings page.",
+        "properties": {
+          "actions": {
+            "default": [],
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "action_kind": "#/components/schemas/ActionKindItem",
+                  "allowance": "#/components/schemas/AllowanceItem",
+                  "setting": "#/components/schemas/SettingItem"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SettingItem"
+                },
+                {
+                  "$ref": "#/components/schemas/ActionKindItem"
+                },
+                {
+                  "$ref": "#/components/schemas/AllowanceItem"
+                }
+              ]
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "at_game": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SettingItem"
+            },
+            "title": "At Game",
+            "type": "array"
+          },
+          "backstories": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SettingItem"
+            },
+            "title": "Backstories",
+            "type": "array"
+          },
+          "book_traits": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BookTraitItem"
+            },
+            "title": "Book Traits",
+            "type": "array"
+          },
+          "checks": {
+            "default": [],
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "check": "#/components/schemas/CheckItem",
+                  "house_check": "#/components/schemas/HouseCheckItem"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/CheckItem"
+                },
+                {
+                  "$ref": "#/components/schemas/HouseCheckItem"
+                }
+              ]
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "costs": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CostItem"
+            },
+            "title": "Costs",
+            "type": "array"
+          },
+          "downtimes": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SettingItem"
+            },
+            "title": "Downtimes",
+            "type": "array"
+          },
+          "feeding": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SettingItem"
+            },
+            "title": "Feeding",
+            "type": "array"
+          },
+          "fill_tables": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FillTableItem"
+            },
+            "title": "Fill Tables",
+            "type": "array"
+          },
+          "free_changes": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SettingItem"
+            },
+            "title": "Free Changes",
+            "type": "array"
+          },
+          "house_traits": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/HouseTraitItem"
+            },
+            "title": "House Traits",
+            "type": "array"
+          },
+          "keywords": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/KeywordItem"
+            },
+            "title": "Keywords",
+            "type": "array"
+          },
+          "languages": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SettingItem"
+            },
+            "title": "Languages",
+            "type": "array"
+          },
+          "locations": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SettingItem"
+            },
+            "title": "Locations",
+            "type": "array"
+          },
+          "names": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SettingItem"
+            },
+            "title": "Names",
+            "type": "array"
+          },
+          "news_agencies": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/NewsAgencyItem"
+            },
+            "title": "News Agencies",
+            "type": "array"
+          },
+          "quests": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SettingItem"
+            },
+            "title": "Quests",
+            "type": "array"
+          },
+          "retainers": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SettingItem"
+            },
+            "title": "Retainers",
+            "type": "array"
+          },
+          "specialisations": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SpecialisationItem"
+            },
+            "title": "Specialisations",
+            "type": "array"
+          },
+          "starting": {
+            "default": [],
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "creation": "#/components/schemas/CreationItem",
+                  "setting": "#/components/schemas/SettingItem",
+                  "starting_trait": "#/components/schemas/StartingTraitItem"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SettingItem"
+                },
+                {
+                  "$ref": "#/components/schemas/CreationItem"
+                },
+                {
+                  "$ref": "#/components/schemas/StartingTraitItem"
+                }
+              ]
+            },
+            "title": "Starting",
+            "type": "array"
+          },
+          "status_titles": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SettingItem"
+            },
+            "title": "Status Titles",
+            "type": "array"
+          },
+          "teachers": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TeacherRuleItem"
+            },
+            "title": "Teachers",
+            "type": "array"
+          },
+          "who_may_join": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SettingItem"
+            },
+            "title": "Who May Join",
+            "type": "array"
+          },
+          "written_rules": {
+            "default": [],
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "setting": "#/components/schemas/SettingItem",
+                  "written_rule": "#/components/schemas/WrittenRuleItem"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SettingItem"
+                },
+                {
+                  "$ref": "#/components/schemas/WrittenRuleItem"
+                }
+              ]
+            },
+            "title": "Written Rules",
+            "type": "array"
+          },
+          "xp": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SettingItem"
+            },
+            "title": "Xp",
+            "type": "array"
+          }
+        },
+        "title": "Sections",
+        "type": "object"
+      },
       "SeenOut": {
         "description": "One status the other carries into its game. Its details (patron, where, the\nstory) are there only when `known`: a negative status, or a fleeting one the\nviewer has learned about with Leadership.",
         "properties": {
@@ -34383,6 +35426,115 @@
         "title": "Setting",
         "type": "object"
       },
+      "SettingItem": {
+        "additionalProperties": false,
+        "description": "One of the troupe's own settings (a column of `troupes`), by its key.",
+        "properties": {
+          "key": {
+            "maxLength": 60,
+            "title": "Key",
+            "type": "string"
+          },
+          "type": {
+            "const": "setting",
+            "default": "setting",
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "$ref": "#/components/schemas/JsonValue"
+          }
+        },
+        "required": [
+          "key",
+          "value"
+        ],
+        "title": "SettingItem",
+        "type": "object"
+      },
+      "SettingsDocument": {
+        "additionalProperties": false,
+        "description": "A troupe's settings, as Export writes them and Import reads them.",
+        "properties": {
+          "exported_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exported On"
+          },
+          "format": {
+            "const": "horatio-troupe-settings",
+            "default": "horatio-troupe-settings",
+            "title": "Format",
+            "type": "string"
+          },
+          "horatio": {
+            "default": "",
+            "maxLength": 50,
+            "title": "Horatio",
+            "type": "string"
+          },
+          "rule_sets": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "default": {},
+            "maxProperties": 20,
+            "title": "Rule Sets",
+            "type": "object"
+          },
+          "sections": {
+            "$ref": "#/components/schemas/Sections",
+            "default": {
+              "actions": [],
+              "at_game": [],
+              "backstories": [],
+              "book_traits": [],
+              "checks": [],
+              "costs": [],
+              "downtimes": [],
+              "feeding": [],
+              "fill_tables": [],
+              "free_changes": [],
+              "house_traits": [],
+              "keywords": [],
+              "languages": [],
+              "locations": [],
+              "names": [],
+              "news_agencies": [],
+              "quests": [],
+              "retainers": [],
+              "specialisations": [],
+              "starting": [],
+              "status_titles": [],
+              "teachers": [],
+              "who_may_join": [],
+              "written_rules": [],
+              "xp": []
+            }
+          },
+          "troupe": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Troupe",
+            "type": "string"
+          },
+          "version": {
+            "const": 1,
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "title": "SettingsDocument",
+        "type": "object"
+      },
       "SettlementChoice": {
         "properties": {
           "category": {
@@ -34553,6 +35705,181 @@
         "title": "SetupOut",
         "type": "object"
       },
+      "ShareEditableOut": {
+        "properties": {
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "lines": {
+            "title": "Lines",
+            "type": "boolean"
+          },
+          "multiline": {
+            "title": "Multiline",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "field",
+          "label",
+          "multiline",
+          "lines"
+        ],
+        "title": "ShareEditableOut",
+        "type": "object"
+      },
+      "ShareExportOut": {
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/SettingsDocument"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/ShareSectionOut"
+            },
+            "title": "Sections",
+            "type": "array"
+          }
+        },
+        "required": [
+          "document",
+          "sections"
+        ],
+        "title": "ShareExportOut",
+        "type": "object"
+      },
+      "ShareImportIn": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/SettingsDocument"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "from_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Troupe Id"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SharePickIn"
+            },
+            "maxItems": 10000,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "document",
+          "items"
+        ],
+        "title": "ShareImportIn",
+        "type": "object"
+      },
+      "ShareImportOut": {
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "integer"
+          },
+          "changed": {
+            "title": "Changed",
+            "type": "integer"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/ShareImportedSectionOut"
+            },
+            "title": "Sections",
+            "type": "array"
+          }
+        },
+        "required": [
+          "added",
+          "changed",
+          "sections"
+        ],
+        "title": "ShareImportOut",
+        "type": "object"
+      },
+      "ShareImportedSectionOut": {
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "integer"
+          },
+          "changed": {
+            "title": "Changed",
+            "type": "integer"
+          },
+          "key": {
+            "enum": [
+              "who_may_join",
+              "xp",
+              "status_titles",
+              "at_game",
+              "downtimes",
+              "feeding",
+              "names",
+              "checks",
+              "costs",
+              "starting",
+              "actions",
+              "keywords",
+              "languages",
+              "house_traits",
+              "written_rules",
+              "book_traits",
+              "locations",
+              "quests",
+              "retainers",
+              "backstories",
+              "free_changes",
+              "teachers",
+              "specialisations",
+              "fill_tables",
+              "news_agencies"
+            ],
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "added",
+          "changed"
+        ],
+        "title": "ShareImportedSectionOut",
+        "type": "object"
+      },
       "ShareIn": {
         "properties": {
           "character_ids": {
@@ -34570,6 +35897,327 @@
           "character_ids"
         ],
         "title": "ShareIn",
+        "type": "object"
+      },
+      "SharePickIn": {
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "minimum": 0.0,
+            "title": "Index",
+            "type": "integer"
+          },
+          "section": {
+            "enum": [
+              "who_may_join",
+              "xp",
+              "status_titles",
+              "at_game",
+              "downtimes",
+              "feeding",
+              "names",
+              "checks",
+              "costs",
+              "starting",
+              "actions",
+              "keywords",
+              "languages",
+              "house_traits",
+              "written_rules",
+              "book_traits",
+              "locations",
+              "quests",
+              "retainers",
+              "backstories",
+              "free_changes",
+              "teachers",
+              "specialisations",
+              "fill_tables",
+              "news_agencies"
+            ],
+            "title": "Section",
+            "type": "string"
+          }
+        },
+        "required": [
+          "section",
+          "index"
+        ],
+        "title": "SharePickIn",
+        "type": "object"
+      },
+      "ShareReviewIn": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/SettingsDocument"
+          }
+        },
+        "required": [
+          "document"
+        ],
+        "title": "ShareReviewIn",
+        "type": "object"
+      },
+      "ShareReviewItemOut": {
+        "properties": {
+          "after": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before"
+          },
+          "editable": {
+            "items": {
+              "$ref": "#/components/schemas/ShareEditableOut"
+            },
+            "title": "Editable",
+            "type": "array"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "section": {
+            "enum": [
+              "who_may_join",
+              "xp",
+              "status_titles",
+              "at_game",
+              "downtimes",
+              "feeding",
+              "names",
+              "checks",
+              "costs",
+              "starting",
+              "actions",
+              "keywords",
+              "languages",
+              "house_traits",
+              "written_rules",
+              "book_traits",
+              "locations",
+              "quests",
+              "retainers",
+              "backstories",
+              "free_changes",
+              "teachers",
+              "specialisations",
+              "fill_tables",
+              "news_agencies"
+            ],
+            "title": "Section",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "new",
+              "changes",
+              "same",
+              "cannot"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "section",
+          "index",
+          "label",
+          "status",
+          "reason",
+          "before",
+          "after",
+          "editable"
+        ],
+        "title": "ShareReviewItemOut",
+        "type": "object"
+      },
+      "ShareReviewOut": {
+        "properties": {
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/ShareReviewSectionOut"
+            },
+            "title": "Sections",
+            "type": "array"
+          },
+          "troupe": {
+            "title": "Troupe",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "troupe",
+          "sections",
+          "warnings"
+        ],
+        "title": "ShareReviewOut",
+        "type": "object"
+      },
+      "ShareReviewSectionOut": {
+        "properties": {
+          "group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ShareReviewItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "key": {
+            "enum": [
+              "who_may_join",
+              "xp",
+              "status_titles",
+              "at_game",
+              "downtimes",
+              "feeding",
+              "names",
+              "checks",
+              "costs",
+              "starting",
+              "actions",
+              "keywords",
+              "languages",
+              "house_traits",
+              "written_rules",
+              "book_traits",
+              "locations",
+              "quests",
+              "retainers",
+              "backstories",
+              "free_changes",
+              "teachers",
+              "specialisations",
+              "fill_tables",
+              "news_agencies"
+            ],
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "group",
+          "items"
+        ],
+        "title": "ShareReviewSectionOut",
+        "type": "object"
+      },
+      "ShareSectionOut": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          },
+          "key": {
+            "enum": [
+              "who_may_join",
+              "xp",
+              "status_titles",
+              "at_game",
+              "downtimes",
+              "feeding",
+              "names",
+              "checks",
+              "costs",
+              "starting",
+              "actions",
+              "keywords",
+              "languages",
+              "house_traits",
+              "written_rules",
+              "book_traits",
+              "locations",
+              "quests",
+              "retainers",
+              "backstories",
+              "free_changes",
+              "teachers",
+              "specialisations",
+              "fill_tables",
+              "news_agencies"
+            ],
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "group",
+          "count"
+        ],
+        "title": "ShareSectionOut",
         "type": "object"
       },
       "SharedBackgroundChange": {
@@ -35570,6 +37218,36 @@
         "title": "SpecialEffectModel",
         "type": "object"
       },
+      "SpecialisationItem": {
+        "additionalProperties": false,
+        "description": "An option the troupe offers for one kind of specialisation.",
+        "properties": {
+          "category": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "specialisation",
+            "default": "specialisation",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "SpecialisationItem",
+        "type": "object"
+      },
       "Specialization": {
         "properties": {
           "name": {
@@ -36008,6 +37686,120 @@
           }
         },
         "title": "StartingRule",
+        "type": "object"
+      },
+      "StartingRuleItem": {
+        "additionalProperties": false,
+        "properties": {
+          "picks": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picks"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "restriction": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restriction"
+          },
+          "when": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "When"
+          }
+        },
+        "title": "StartingRuleItem",
+        "type": "object"
+      },
+      "StartingTraitItem": {
+        "additionalProperties": false,
+        "description": "A trait the troupe's new characters start with, free.",
+        "properties": {
+          "category": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "splat": {
+            "default": "vampire",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Splat",
+            "type": "string"
+          },
+          "type": {
+            "const": "starting_trait",
+            "default": "starting_trait",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "StartingTraitItem",
         "type": "object"
       },
       "StatBlockOut": {
@@ -38050,6 +39842,119 @@
         "title": "TeacherRuleIn",
         "type": "object"
       },
+      "TeacherRuleItem": {
+        "additionalProperties": false,
+        "description": "A rule that a kind of trait needs a teacher (horatio.teaching).",
+        "properties": {
+          "actions": {
+            "default": 0,
+            "maximum": 5.0,
+            "minimum": 0.0,
+            "title": "Actions",
+            "type": "integer"
+          },
+          "always": {
+            "default": false,
+            "title": "Always",
+            "type": "boolean"
+          },
+          "category": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition"
+          },
+          "games": {
+            "default": 0,
+            "maximum": 12.0,
+            "minimum": 0.0,
+            "title": "Games",
+            "type": "integer"
+          },
+          "holds": {
+            "default": "same",
+            "enum": [
+              "same",
+              "rating"
+            ],
+            "title": "Holds",
+            "type": "string"
+          },
+          "name_prefix": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name Prefix"
+          },
+          "names": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Names",
+            "type": "array"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "maximum": 10.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "splat": {
+            "default": "vampire",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Splat",
+            "type": "string"
+          },
+          "type": {
+            "const": "teacher_rule",
+            "default": "teacher_rule",
+            "title": "Type",
+            "type": "string"
+          },
+          "willpower": {
+            "default": 0,
+            "maximum": 5.0,
+            "minimum": 0.0,
+            "title": "Willpower",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category"
+        ],
+        "title": "TeacherRuleItem",
+        "type": "object"
+      },
       "TeacherRuleOut": {
         "properties": {
           "actions": {
@@ -39243,6 +41148,36 @@
           "name"
         ],
         "title": "TraitLink",
+        "type": "object"
+      },
+      "TraitLinkItem": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "splat": {
+            "default": "vampire",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Splat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "TraitLinkItem",
         "type": "object"
       },
       "TraitNeed": {
@@ -42114,6 +44049,63 @@
           "title"
         ],
         "title": "WrittenRuleIn",
+        "type": "object"
+      },
+      "WrittenRuleItem": {
+        "additionalProperties": false,
+        "description": "A house rule in words alone (horatio.written_rules).",
+        "properties": {
+          "body": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Body",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "section": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Section",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "trait": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TraitLinkItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "const": "written_rule",
+            "default": "written_rule",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "WrittenRuleItem",
         "type": "object"
       },
       "WrittenRuleOut": {
@@ -71858,6 +73850,158 @@
         "summary": "Set Seats",
         "tags": [
           "whos-who"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/settings-share": {
+      "get": {
+        "description": "The troupe's settings that differ from Horatio's default, by section. Its running\nstaff may export them, to a file or to another troupe they run.",
+        "operationId": "export_settings_api_troupes__troupe_id__settings_share_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareExportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Settings",
+        "tags": [
+          "share settings"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/settings-share/apply": {
+      "post": {
+        "description": "Import the ticked items, all or none, merging: what matches is changed, the rest\nadded, and nothing else in the troupe is touched. Copying from another troupe needs\nits importer to run that one too.",
+        "operationId": "apply_settings_api_troupes__troupe_id__settings_share_apply_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShareImportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apply Settings",
+        "tags": [
+          "share settings"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/settings-share/review": {
+      "post": {
+        "description": "Each item of a document against this troupe: new, changing what it has (with\nbefore and after), the same as it has, or not importable here (with why). Nothing\nis saved.",
+        "operationId": "review_settings_api_troupes__troupe_id__settings_share_review_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShareReviewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareReviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Review Settings",
+        "tags": [
+          "share settings"
         ]
       }
     },

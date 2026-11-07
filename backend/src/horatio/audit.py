@@ -1,11 +1,26 @@
 """Writing the audit log."""
 
 import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 
 from sqlalchemy.orm import Session
 
 from horatio.models import AuditEvent, Character, User
+
+QUIET = "horatio.audit_quiet"
+
+
+@contextmanager
+def quiet(db: Session) -> Iterator[None]:
+    """Record nothing in this session while inside: for one change made of many,
+    which records one entry of its own for the whole (horatio.troupe_settings_share)."""
+    db.info[QUIET] = True
+    try:
+        yield
+    finally:
+        db.info.pop(QUIET, None)
 
 
 def record(
@@ -17,6 +32,8 @@ def record(
     character_id: uuid.UUID | None = None,
     **data: Any,
 ) -> None:
+    if db.info.get(QUIET):
+        return
     if character_id is not None and "character_name" not in data:
         # Kept with the event, so the log still reads after a character is deleted.
         character = db.get(Character, character_id)

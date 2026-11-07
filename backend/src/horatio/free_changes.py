@@ -41,6 +41,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
+from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -53,6 +54,7 @@ from horatio.models import (
     Troupe,
     User,
 )
+from horatio.rules.store import read_troupe_rules
 
 Kind = Literal["none", "date", "games"]
 
@@ -237,6 +239,20 @@ def playing_here(db: Session, troupe: Troupe) -> list[Character]:
             )
         )
     )
+
+
+def check_excluded(db: Session, troupe: Troupe, excluding: Sequence[tuple[str, str]]) -> None:
+    """Refuse a trait to leave out of free changes that none of the troupe's splats has."""
+    known = {
+        key
+        for splat in troupe.allowed_splats
+        for key in read_troupe_rules(db, splat, troupe.id).rule_set.traits
+    }
+    for category, name in excluding:
+        if (category, name) not in known:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT, f"There is no trait {name} to exclude."
+            )
 
 
 def change_setting(

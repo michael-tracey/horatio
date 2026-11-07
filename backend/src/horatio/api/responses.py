@@ -879,13 +879,7 @@ def list_tables(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[
 def save_table(troupe_id: uuid.UUID, body: TableIn, db: DbSession, user: CurrentUser) -> TableOut:
     """Create a table, or replace the entries of the one with this name."""
     staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_RANDOM_TABLES)
-    table = db.scalar(
-        select(RandomTable).where(RandomTable.troupe_id == troupe_id, RandomTable.name == body.name)
-    )
-    if table is None:
-        table = RandomTable(troupe_id=troupe_id, name=body.name)
-        db.add(table)
-    table.entries = [e.strip() for e in body.entries if e.strip()]
+    table = responses.save_table(db, troupe_id, body.name, body.entries)
     db.commit()
     return TableOut(id=table.id, name=table.name, entries=table.entries)
 

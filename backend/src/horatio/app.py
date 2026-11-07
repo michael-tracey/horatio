@@ -87,6 +87,7 @@ from horatio.api import (
     troupe_equipment,
     troupe_profiles,
     troupe_requests,
+    troupe_settings_share,
     troupes,
     unsubscribe,
     viewing,
@@ -222,6 +223,7 @@ for module in (
     targets,
     projects,
     keywords,
+    troupe_settings_share,
     yorick_imports,
 ):
     api.include_router(module.router)

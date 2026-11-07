@@ -43,7 +43,9 @@ from horatio.rules.files import (
     check_allowance_rule,
     check_cost_rule,
     check_creation_rules,
+    check_named_actions,
     check_scheme,
+    check_starting_trait,
     feeding_modifier_from_dict,
     feeding_modifier_to_dict,
 )
@@ -386,6 +388,54 @@ def set_house_creation_rules(
     session.flush()
 
 
+def check_house_creation_conditions(
+    rules: list[CreationRuleData], rule_set: RuleSetData, category: str
+) -> None:
+    """A troupe's starting rule can only have the condition of one of the rule set's
+    for the category."""
+    allowed = [dict(r.when) for r in rule_set.creation_rules if r.category == category and r.when]
+    if any(r.when and dict(r.when) not in allowed for r in rules):
+        raise ValueError("A starting rule can only have the condition of one of the rule set's.")
+
+
+@changes_rules
+def set_house_starting_trait(
+    session: Session, troupe_id: uuid.UUID, splat: str, trait: StartingTraitData
+) -> StartingTrait:
+    """Give a troupe's new characters of `splat` a trait free, or change the rating
+    of one it already gives."""
+    rules = read_troupe_rules(session, splat, troupe_id)
+    check_starting_trait(trait, rules.rule_set)
+    rule_set = session.scalars(select(RuleSet).where(RuleSet.splat == splat)).one()
+    definition = session.scalars(
+        select(TraitDefinition)
+        .join(TraitCategory)
+        .where(
+            TraitCategory.rule_set_id == rule_set.id,
+            TraitCategory.key == trait.category,
+            TraitDefinition.name == trait.name,
+            TraitDefinition.troupe_id.is_(None) | (TraitDefinition.troupe_id == troupe_id),
+        )
+        .order_by(TraitDefinition.troupe_id.nulls_first())
+        .limit(1)
+    ).one()
+    row = session.scalar(
+        select(StartingTrait).where(
+            StartingTrait.rule_set_id == rule_set.id,
+            StartingTrait.troupe_id == troupe_id,
+            StartingTrait.trait_definition_id == definition.id,
+        )
+    )
+    if row is None:
+        row = StartingTrait(
+            rule_set_id=rule_set.id, troupe_id=troupe_id, trait_definition_id=definition.id
+        )
+        session.add(row)
+    row.rating = trait.rating
+    session.flush()
+    return row
+
+
 def allowance_row(
     rule_set: RuleSet,
     troupe_id: uuid.UUID | None,
@@ -467,6 +517,7 @@ def change_house_allowance_rule(
     row.amount = rule.amount
     row.min_rating = rule.min_rating
     row.detail_ratings = list(rule.detail_ratings)
+    row.note = rule.note
     session.flush()
 
 
@@ -483,6 +534,7 @@ def remove_house_allowance_rule(session: Session, troupe_id: uuid.UUID, rule_id:
 def add_house_action_kind(
     session: Session, troupe_id: uuid.UUID, splat: str, kind: ActionKindData
 ) -> ActionKind:
+    check_named_actions("action kind", kind)
     rule_set = session.scalars(select(RuleSet).where(RuleSet.splat == splat)).one()
     row = ActionKind(
         rule_set_id=rule_set.id,
@@ -493,6 +545,26 @@ def add_house_action_kind(
         actions=[dict(a) for a in kind.actions],
     )
     session.add(row)
+    session.flush()
+    return row
+
+
+@changes_rules
+def change_house_action_kind(
+    session: Session, troupe_id: uuid.UUID, splat: str, kind: ActionKindData
+) -> ActionKind:
+    """Change the name, fields and named actions of a troupe's own action kind."""
+    check_named_actions("action kind", kind)
+    row = session.scalars(
+        select(ActionKind)
+        .join(RuleSet, ActionKind.rule_set_id == RuleSet.id)
+        .where(
+            RuleSet.splat == splat, ActionKind.troupe_id == troupe_id, ActionKind.key == kind.key
+        )
+    ).one()
+    row.name = kind.name
+    row.fields = [dict(f) for f in kind.fields]
+    row.actions = [dict(a) for a in kind.actions]
     session.flush()
     return row
 

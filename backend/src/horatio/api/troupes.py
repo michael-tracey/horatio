@@ -7,14 +7,21 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import audit, closing, handles, pictures, play_status, sect_status, titles, xp_range
+from horatio import (
+    audit,
+    closing,
+    handles,
+    pictures,
+    play_status,
+    sect_status,
+    titles,
+    troupe_settings,
+    xp_range,
+)
 from horatio.api.troupe_profiles import Profile
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
     Character,
-    RuleSet,
-    TraitCategory,
-    TraitDefinition,
     Troupe,
     TroupeStaff,
     User,
@@ -27,7 +34,6 @@ from horatio.permissions import (
     troupe_roles,
     whos_who_troupes,
 )
-from horatio.rules.splats import SPLATS, splat_order
 
 router = APIRouter(prefix="/troupes", tags=["troupes"])
 
@@ -465,46 +471,10 @@ def change_troupe(
         troupe.description = body.description
     if body.allowed_sects is not None:
         require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
-        known = set(
-            db.scalars(
-                select(TraitDefinition.name)
-                .join(TraitCategory, TraitDefinition.category_id == TraitCategory.id)
-                .where(TraitCategory.key == "sect")
-            )
-        )
-        unknown = sorted(set(body.allowed_sects) - known)
-        if unknown:
-            raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_CONTENT, f"No such sect: {', '.join(unknown)}."
-            )
-        troupe.allowed_sects = sorted(set(body.allowed_sects))
-        audit.record(
-            db,
-            user,
-            "troupe.sects_limited",
-            troupe_id=troupe.id,
-            sects=", ".join(troupe.allowed_sects) or "any",
-        )
+        troupe_settings.set_sects(db, user, troupe, body.allowed_sects)
     if body.allowed_splats is not None:
         require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
-        known = set(db.scalars(select(RuleSet.splat)))
-        unknown = sorted(set(body.allowed_splats) - known)
-        if unknown:
-            raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_CONTENT, f"No such splat: {', '.join(unknown)}."
-            )
-        if not body.allowed_splats:
-            raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_CONTENT, "A troupe takes at least one splat."
-            )
-        troupe.allowed_splats = sorted(set(body.allowed_splats), key=splat_order)
-        audit.record(
-            db,
-            user,
-            "troupe.splats_limited",
-            troupe_id=troupe.id,
-            splats=", ".join(SPLATS[s].label for s in troupe.allowed_splats),
-        )
+        troupe_settings.set_splats(db, user, troupe, body.allowed_splats)
     if body.session_xp is not None or body.downtime_xp is not None:
         require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
         if body.session_xp is not None:

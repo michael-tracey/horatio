@@ -42,6 +42,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
 
+from fastapi import HTTPException, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
@@ -121,6 +122,46 @@ def members(db: Session, troupe: Troupe) -> list[uuid.UUID]:
         )
     )
     return list(dict.fromkeys([troupe.lead_user_id, *staff, *(p for p in players if p)]))
+
+
+# --- agencies -------------------------------------------------------------------------
+
+# An agency's colour, as its masthead takes it.
+COLOUR = r"^#[0-9a-f]{6}$"
+
+
+def keep_agency(
+    db: Session,
+    user: User,
+    troupe: Troupe,
+    agency: NewsAgency | None,
+    name: str,
+    description: str,
+    colour: str,
+) -> NewsAgency:
+    """Make a news agency, or (given one) change its name, description and colour. Its
+    name is its own in the troupe; its channel and picture are set apart."""
+    name = name.strip()
+    clash = db.scalar(
+        select(NewsAgency.id).where(
+            NewsAgency.troupe_id == troupe.id,
+            NewsAgency.name == name,
+            NewsAgency.id != agency.id if agency else NewsAgency.id.is_not(None),
+        )
+    )
+    if clash is not None:
+        raise HTTPException(status.HTTP_409_CONFLICT, f"There is already an agency called {name}.")
+    if agency is None:
+        agency = NewsAgency(troupe_id=troupe.id, name=name)
+        db.add(agency)
+        audit.record(db, user, "agency.created", troupe_id=troupe.id, name=name)
+    else:
+        audit.record(db, user, "agency.changed", troupe_id=troupe.id, name=name, was=agency.name)
+    agency.name = name
+    agency.description = description.strip()
+    agency.colour = colour
+    db.flush()
+    return agency
 
 
 # --- Discord --------------------------------------------------------------------------
