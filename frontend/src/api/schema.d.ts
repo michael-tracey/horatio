@@ -12680,6 +12680,10 @@ export interface components {
         };
         /** CostChange */
         CostChange: {
+            /** Condition */
+            condition?: {
+                [key: string]: unknown;
+            } | null;
             /** Rate */
             rate?: number | null;
             /**
@@ -12759,6 +12763,11 @@ export interface components {
             categories: components["schemas"]["CostCategoryOut"][];
             /** Costs */
             costs: components["schemas"]["CostOut"][];
+            /**
+             * Facts
+             * @default []
+             */
+            facts: string[];
         };
         /** CounterIn */
         CounterIn: {

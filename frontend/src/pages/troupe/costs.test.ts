@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CostOut } from "../../api/types";
-import { overlaps, parseTable, priceAt } from "./costs";
+import { linesOf, overlaps, parseTable, priceAt, sameCondition, toCondition } from "./costs";
 
 const cost = (overrides: Partial<CostOut>): CostOut => ({
   id: null,
@@ -80,5 +80,46 @@ describe("parseTable", () => {
     expect(parseTable("1, 4 6")).toEqual([1, 4, 6]);
     expect(parseTable("1, two")).toBeNull();
     expect(parseTable(" ")).toBeNull();
+  });
+});
+
+describe("conditions", () => {
+  it("turns lines into the condition the server takes", () => {
+    expect(toCondition([])).toEqual({ condition: null });
+    expect(toCondition([{ fact: "generation", test: "eq", value: "2" }])).toEqual({ condition: { generation: 2 } });
+    expect(
+      toCondition([
+        { fact: "generation", test: "gte", value: "2" },
+        { fact: "generation", test: "lte", value: "3" },
+        { fact: "in_clan", test: "eq", value: "false" },
+        { fact: "clan_family", test: "eq", value: "Brujah" },
+      ]),
+    ).toEqual({ condition: { generation: { gte: 2, lte: 3 }, in_clan: false, clan_family: "Brujah" } });
+  });
+
+  it("says what is wrong with lines that cannot be one", () => {
+    expect(toCondition([{ fact: "clan", test: "eq", value: "" }])).toEqual({ problem: "Choose the clan or bloodline." });
+    expect(
+      toCondition([
+        { fact: "generation", test: "lte", value: "2" },
+        { fact: "generation", test: "lte", value: "3" },
+      ]),
+    ).toEqual({ problem: "Generation background is “at most” twice." });
+  });
+
+  it("reads a condition back as lines, where they can say it", () => {
+    expect(linesOf({ generation: { lt: 3 }, in_clan: true })).toEqual([
+      { fact: "generation", test: "lte", value: "2" },
+      { fact: "in_clan", test: "eq", value: "true" },
+    ]);
+    expect(linesOf(null)).toEqual([]);
+    expect(linesOf({ generation: { ne: 2 } })).toBeNull();
+    expect(linesOf({ clan: ["Brujah"] })).toBeNull();
+  });
+
+  it("compares conditions whatever their order", () => {
+    expect(sameCondition({ generation: { lte: 3, gte: 2 }, in_clan: true }, { in_clan: true, generation: { gte: 2, lte: 3 } })).toBe(true);
+    expect(sameCondition({ generation: 1 }, { generation: 2 })).toBe(false);
+    expect(sameCondition(null, {})).toBe(true);
   });
 });

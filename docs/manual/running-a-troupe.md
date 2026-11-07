@@ -505,7 +505,11 @@ The preview says the check **In plain words**, and lists the characters it would
 
 To change a price, choose a category and (optionally) one trait, then **How it's priced**: the same for each dot, rising, one price whatever the rating, a price for each dot in turn, free, or cannot be bought. Add a **Note for players** if you like. The preview shows the price as written beside the price with the change.
 
-A new price applies from a character's next purchase. What it has already bought keeps what it cost.
+A price can be **Only for…** some characters. Choose **Add a condition** and build it from lines: the **Generation background** is, is at most, or is at least a rating; **In-clan** is yes or no; or the **Clan or bloodline**, or the **Clan and its bloodlines**, is one you choose. A price is for characters who meet every line, so two Generation lines make a range. For example, skills rising at 1 XP for Generation background 2 lets Generation ●● characters buy skills at 1×, as the book lets Generation ● do. A price with the same condition as one of the rule set's replaces it; changing such a price keeps that condition.
+
+Two of the troupe's prices can't tie: if a character could meet both conditions and neither price is more specific, Horatio refuses to save the second and names the first. Give one a narrower condition, or change the other.
+
+A new or changed price applies from a character's next purchase. What it has already bought keeps what it cost: nothing is refunded or charged. To put an earlier purchase right, award the difference by hand with **Award XP…** on the character. Before a home troupe accepts a character, changing its Generation reprices its earlier buys at the troupe's prices, conditions included.
 
 ### Starting points
 

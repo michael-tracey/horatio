@@ -9,8 +9,8 @@ import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from ".
 import { useAction } from "../../hooks";
 import { pageText } from "./bookPage";
 import { useHouseSplat } from "./HouseSplat";
-import { flat, overlaps, parseTable, previewRatings, priceAt, SCHEMES } from "./costs";
-import type { Pricing, Scheme } from "./costs";
+import { FACTS, flat, linesOf, newLine, overlaps, parseTable, previewRatings, priceAt, sameCondition, SCHEMES, TESTS, toCondition } from "./costs";
+import type { Fact, Line, Pricing, Scheme } from "./costs";
 
 /** What a price is about, in a few words: "Path of Blood, Assamite clan". */
 function subject(cost: CostOut, category: CostCategoryOut | undefined): string {
@@ -68,6 +68,10 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
           Each price below comes from the rule set, with the book page where it names one trait. When several could
           apply, the most specific wins: a price for one trait beats one for its whole category, and a price with more
           conditions beats one with fewer. A price of this troupe's wins a tie.
+        </p>
+        <p className="mt-2 text-sm text-mist">
+          A troupe price can be only for some characters: by their Generation background, whether the trait is in-clan, or
+          their clan. A price with the same condition as the rule set's replaces it.
         </p>
         <p className="mt-2 text-sm text-mist">
           A troupe price applies to characters whose home troupe this is, or who are being built for it, from their next
@@ -181,13 +185,21 @@ function PriceEditor({ troupeId, splat, data, editing, onClose }: { troupeId: st
   const [rate, setRate] = useState(start?.rate?.toString() ?? "");
   const [table, setTable] = useState(start?.table?.join(", ") ?? "");
   const [text, setText] = useState(editing.kind === "change" ? (editing.cost.text ?? "") : "");
+  // A price replacing the rule set's keeps its condition, as does one the lines cannot say.
+  const replacesBook =
+    editing.kind === "replace" ||
+    (editing.kind === "change" &&
+      data.costs.some((c) => !c.house && c.category === editing.cost.category && c.trait === editing.cost.trait && sameCondition(c.condition, editing.cost.condition)));
+  const startLines = linesOf(start?.condition);
+  const fixedCondition = replacesBook || startLines === null;
+  const [lines, setLines] = useState<Line[]>(startLines ?? []);
   const cat = data.categories.find((c) => c.key === category);
   const catalogue = useQuery({
-    // The rule set's own catalogue, for the book ratings of merits and flaws.
+    // The rule set's own catalogue, for the book ratings of merits and flaws and the clans.
     queryKey: ["catalogue", splat, null],
     queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat }, query: {} } })),
-    enabled: editing.kind === "new",
   });
+  const clans = (catalogue.data?.traits ?? []).filter((t) => t.category === "clan").map((t) => t.name);
   const traits = (catalogue.data?.traits ?? []).filter((t) => t.category === category).map((t) => t.name);
   // A merit or flaw held at one rating, by the book: a fixed price here is its value.
   const bookRating =
@@ -198,32 +210,38 @@ function PriceEditor({ troupeId, splat, data, editing, onClose }: { troupeId: st
     rate: rate.trim() === "" ? null : Number(rate),
     table: scheme === "table" ? parseTable(table) : null,
   };
+  const built = fixedCondition ? { condition: start?.condition ?? null } : toCondition(lines);
+  const condition = "condition" in built ? built.condition : null;
   const body = { scheme, rate: pricing.rate, table: pricing.table, text };
   const save = useAction(async () => {
     if (editing.kind === "change") {
       await unwrap(
         api.PUT("/api/troupes/{troupe_id}/costs/{cost_id}", {
           params: { path: { troupe_id: troupeId, cost_id: editing.cost.id! }, query: { splat } },
-          body,
+          body: fixedCondition ? body : { ...body, condition },
         }),
       );
     } else {
       await unwrap(
         api.POST("/api/troupes/{troupe_id}/costs", {
           params: { path: { troupe_id: troupeId }, query: { splat } },
-          body: { ...body, category, trait: trait || null, condition: start?.condition ?? null },
+          body: { ...body, category, trait: trait || null, condition },
         }),
       );
     }
     onClose();
   });
 
-  const target = { category, trait: trait || null, condition: start?.condition ?? null };
+  const target = { category, trait: trait || null, condition };
   const { replaces, stillApplies } = overlaps(target, data.costs);
   const ratings = flat(pricing) ? [1] : previewRatings(cat?.max_rating ?? null);
   const needsRate = scheme === "per_dot" || scheme === "progressive" || scheme === "fixed";
   const ready =
-    !!category && (!cat?.per_trait || !!trait) && (!needsRate || pricing.rate !== null) && (scheme !== "table" || pricing.table !== null);
+    !!category &&
+    (!cat?.per_trait || !!trait) &&
+    (!needsRate || pricing.rate !== null) &&
+    (scheme !== "table" || pricing.table !== null) &&
+    "condition" in built;
   const unit = cat?.unit ?? "dot";
   const title =
     editing.kind === "new" ? "Add a price" : `Price for ${named(subject(editing.cost, cat))}`;
@@ -285,6 +303,17 @@ function PriceEditor({ troupeId, splat, data, editing, onClose }: { troupeId: st
             </Field>
           )}
         </div>
+        {fixedCondition ? (
+          start?.condition_text && (
+            <p className="text-sm">
+              <span className="text-mist">Only for: </span>
+              {named(start.condition_text)}
+              {replacesBook && <span className="text-mist"> (the rule set's condition, which a price replacing it keeps)</span>}
+            </p>
+          )
+        ) : (
+          <ConditionLines lines={lines} onChange={setLines} facts={data.facts ?? []} clans={clans} problem={"problem" in built ? built.problem : null} />
+        )}
         {bookRating !== null && (
           <p className="text-sm text-mist">
             {trait} is always held at one rating ({bookRating} by the book). A fixed price here is also its value in this troupe: the
@@ -334,6 +363,98 @@ function PriceEditor({ troupeId, splat, data, editing, onClose }: { troupeId: st
         </div>
       </form>
     </Card>
+  );
+}
+
+/**
+ * "Only for…": the lines of a price's condition, each a fact, a test and a value.
+ * With none, the price is for every character.
+ */
+function ConditionLines({
+  lines,
+  onChange,
+  facts,
+  clans,
+  problem,
+}: {
+  lines: Line[];
+  onChange: (lines: Line[]) => void;
+  facts: string[];
+  clans: string[];
+  problem: string | null;
+}) {
+  const named = useClanName();
+  const offered = FACTS.filter((f) => facts.includes(f.value));
+  const families = [...new Set(clans.map((c) => (c.split(":")[0] ?? c).trim()))];
+  const set = (i: number, line: Line) => onChange(lines.map((l, j) => (j === i ? line : l)));
+  const small = "h-8 w-auto py-0 text-sm";
+  if (offered.length === 0) return null;
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="mb-1 text-sm">
+        Only for… <span className="text-mist">{lines.length ? "characters who meet all of these" : "every character, unless you add a condition"}</span>
+      </legend>
+      {lines.map((line, i) => (
+        <div key={i} className="flex flex-wrap items-center gap-2 rounded-md border border-ash/60 px-2 py-1.5">
+          <Select aria-label={`Condition ${i + 1}`} value={line.fact} onChange={(e) => set(i, newLine(e.target.value as Fact))} className={small}>
+            {offered.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+              </option>
+            ))}
+          </Select>
+          {line.fact === "generation" ? (
+            <>
+              <Select aria-label={`Condition ${i + 1}: how`} value={line.test} onChange={(e) => set(i, { ...line, test: e.target.value as Line["test"] })} className={small}>
+                {TESTS.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </Select>
+              <Select aria-label={`Condition ${i + 1}: rating`} value={line.value} onChange={(e) => set(i, { ...line, value: e.target.value })} className={small}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <option key={n} value={String(n)}>
+                    {n}
+                  </option>
+                ))}
+              </Select>
+            </>
+          ) : line.fact === "in_clan" ? (
+            <Select aria-label={`Condition ${i + 1}: in-clan`} value={line.value} onChange={(e) => set(i, { ...line, value: e.target.value })} className={small}>
+              <option value="true">yes</option>
+              <option value="false">no (out-of-clan)</option>
+            </Select>
+          ) : (
+            <>
+              <span className="text-sm text-mist">is</span>
+              <Select aria-label={`Condition ${i + 1}: clan`} value={line.value} onChange={(e) => set(i, { ...line, value: e.target.value })} className={small}>
+                <option value="">Choose…</option>
+                {(line.fact === "clan" ? clans : families).map((name) => (
+                  <option key={name} value={name}>
+                    {named(name)}
+                  </option>
+                ))}
+              </Select>
+            </>
+          )}
+          <button
+            type="button"
+            aria-label={`Remove condition ${i + 1}`}
+            onClick={() => onChange(lines.filter((_, j) => j !== i))}
+            className="ml-auto grid h-8 w-8 place-items-center rounded text-mist hover:bg-ash hover:text-parchment"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+      <div>
+        <Button type="button" variant="secondary" className="min-h-8" onClick={() => onChange([...lines, newLine(offered[0]!.value)])}>
+          Add a condition
+        </Button>
+      </div>
+      {problem && <p className="text-sm text-blood-bright">{problem}</p>}
+    </fieldset>
   );
 }
 
