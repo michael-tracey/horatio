@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
-import { ErrorText } from "../../components/ui";
+import { ErrorText, Loading } from "../../components/ui";
 import { usePreferences } from "../../hooks";
 import { kindPages, resourceText } from "../troupe/npcKinds";
 import { RulesCard, StatBlock } from "../troupe/StockNpcBuilder";
@@ -33,7 +33,7 @@ export function StockPlay({ characterId, play }: { characterId: string; play: Pl
   if (!shown || !stock) {
     return (
       <StockShell back={back} builder={builder} sync={sync} awake={awake}>
-        {view.isPending ? <p className="py-8 text-center text-mist">Loading…</p> : <ErrorText error={view.error} />}
+        {view.isPending ? <Loading /> : <ErrorText error={view.error} />}
       </StockShell>
     );
   }
@@ -87,7 +87,7 @@ function StockShell({ back, builder, name, sync, awake, children }: { back: stri
           )}
           <span className="flex items-center gap-2">
             <AwakeSwitch awake={awake} />
-            <SyncStatus sync={sync} />
+            <SyncStatus sync={sync} asOf />
           </span>
         </div>
       </header>

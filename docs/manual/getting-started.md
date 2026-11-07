@@ -20,7 +20,7 @@ You're signed in straight away, and land on **Characters**. While you have no ch
 
 On the sign-in page, give your **Email or handle** and your **Password**, then choose **Sign in**. If you opened a link to a page in Horatio while signed out, you go on to that page once you're in.
 
-Horatio keeps you signed in on that browser for about a month. To sign out, choose **Sign out** at the right of the menu.
+Horatio keeps you signed in on that browser for about a month. To sign out, choose **Sign out** at the right of the menu. Signing out also clears whatever Horatio kept on that device for you; if taps from the Play View haven't been sent yet, it asks first.
 
 ![The sign-in page](images/getting-started/sign-in.png)
 
@@ -34,7 +34,7 @@ The link works for a limited time. If nothing arrives after a few minutes, check
 
 ## Your account
 
-Choose your name at the right of the menu to open **Your account**. It has three tabs: **Profile**, **Lines and veils** and **Settings**. **See your profile** at the top shows your [profile](glossary.md#profile) the way other people see it.
+Choose your name at the right of the menu to open **Your account**. It has four tabs: **Profile**, **Lines and veils**, **Settings** and **This device**, which keeps your characters on your phone for games with no signal (see [Using Horatio at a game with no signal](players.md#using-horatio-at-a-game-with-no-signal)). **See your profile** at the top shows your [profile](glossary.md#profile) the way other people see it.
 
 ### Your profile
 

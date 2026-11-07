@@ -15,6 +15,8 @@ export type Sync = {
   sending: boolean;
   /** Taps the server refused (not a lost connection), so they were dropped. */
   error: string | null;
+  /** When the Play View shown was last had from the server: what "as of" says offline. */
+  asOf: number | null;
 };
 
 /**
@@ -83,7 +85,10 @@ export function usePlay(characterId: string) {
       // An item given or discarded, or brought back by Undo: the Equipment tabs ask again.
       if (batch.some((t) => t.kind === "undo" || t.tracker.startsWith(ITEM))) void client.invalidateQueries({ queryKey: ["character-equipment"] });
     } catch (e) {
-      if (e instanceof ApiError && e.status < 500 && e.status !== 408 && e.status !== 429) {
+      if (e instanceof ApiError && e.status === 401) {
+        // Signed out (the session ended while offline): the taps wait, and go once signed in again.
+        setFailed(true);
+      } else if (e instanceof ApiError && e.status < 500 && e.status !== 408 && e.status !== 429) {
         // The server will never take these; keeping them would block every later tap.
         setQueue((now) => afterSending(now, batch));
         setError(`Some taps could not be saved: ${e.message}`);
@@ -116,7 +121,7 @@ export function usePlay(characterId: string) {
   );
 
   const shown = useMemo(() => (view.data ? withPending(view.data, queue) : undefined), [view.data, queue]);
-  const sync: Sync = { online, waiting: queue.length, sending, error };
+  const sync: Sync = { online, waiting: queue.length, sending, error, asOf: view.dataUpdatedAt || null };
   return { view, shown, tap, sync, accept };
 }
 

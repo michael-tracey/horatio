@@ -1,4 +1,6 @@
+import { onlineManager } from "@tanstack/react-query";
 import createClient, { type Middleware } from "openapi-fetch";
+import { isNoAnswer, noAnswer, OfflineError } from "../offline/connection";
 import type { paths } from "./schema";
 
 /** Thrown for any non-2xx response, carrying the API's `detail` message. */
@@ -19,8 +21,21 @@ const csrf: Middleware = {
   },
 };
 
+// A request with no answer at all means no connection (offline/connection.ts): it
+// fails saying so, and any answer means the connection is back.
+const connection: Middleware = {
+  onResponse() {
+    if (!onlineManager.isOnline() && navigator.onLine) onlineManager.setOnline(true);
+  },
+  onError({ error }) {
+    if (!isNoAnswer(error)) return;
+    noAnswer();
+    return new OfflineError();
+  },
+};
+
 export const api = createClient<paths>({ credentials: "same-origin" });
-api.use(csrf);
+api.use(csrf, connection);
 
 function detailOf(error: unknown, status: number): string {
   if (error && typeof error === "object" && "detail" in error) {

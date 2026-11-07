@@ -5,7 +5,7 @@ import { api, unwrap } from "../../api/client";
 import type { ExpendableOut, GameOut, InfluenceDetailsIn, InfluenceStandingOut, PlayView } from "../../api/types";
 import { LinesVeilsNote } from "../../components/LinesVeils";
 import { useToast } from "../../components/Toast";
-import { Button, ErrorText, Input, Select } from "../../components/ui";
+import { Button, ErrorText, Input, Loading, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction, usePreferences } from "../../hooks";
 import { offered, reachNote, TYPE_NAMES } from "../../influence";
@@ -123,7 +123,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
   const undo = (entry: ShownEntry) => (entry.influence?.changed_by_staff ? setChecking(entry) : tap({ kind: "undo", undoes: entry.id }));
   const undoButton = <UndoLast last={shown ? latestUndoable(shown.log) : undefined} undo={undo} />;
 
-  if (view.isPending) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}><p className="py-8 text-center text-mist">Loading…</p></PlayShell>;
+  if (view.isPending) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}><Loading /></PlayShell>;
   if (!shown) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}><ErrorText error={view.error} /></PlayShell>;
 
   const record: RecordTap = (change) => {
@@ -305,7 +305,7 @@ function PlayShell({
           <span className="flex min-w-0 flex-wrap items-center justify-end gap-2">
             <AwakeSwitch awake={awake} />
             {undo}
-            <SyncStatus sync={sync} />
+            <SyncStatus sync={sync} asOf />
           </span>
         </div>
         {tabs}
@@ -425,10 +425,12 @@ function TabBar({ tab, onChange, status }: { tab: Tab; onChange: (tab: Tab) => v
   );
 }
 
-export function SyncStatus({ sync }: { sync: Sync }) {
+/** Whether taps are saved, waiting or going; offline, with `asOf`, how old the sheet shown is (#502). */
+export function SyncStatus({ sync, asOf = false }: { sync: Sync; asOf?: boolean }) {
+  const dates = useDates();
   const waiting = sync.waiting === 1 ? "1 tap waiting" : `${sync.waiting} taps waiting`;
   const text = !sync.online ? (sync.waiting ? `Offline · ${waiting}` : "Offline") : sync.waiting ? `Saving · ${waiting}` : "Saved";
-  return (
+  const status = (
     <span role="status" className="flex flex-col items-end gap-1 text-right">
       <span
         className={cx(
@@ -439,6 +441,13 @@ export function SyncStatus({ sync }: { sync: Sync }) {
         {text}
       </span>
       {sync.error && <span className="text-xs text-blood-bright">{sync.error}</span>}
+    </span>
+  );
+  if (!asOf || sync.online || !sync.asOf) return status;
+  return (
+    <span className="flex flex-col items-end gap-0.5 text-right">
+      {status}
+      <span className="text-xs whitespace-nowrap text-mist">Your sheet as of {dates.time(new Date(sync.asOf))}</span>
     </span>
   );
 }

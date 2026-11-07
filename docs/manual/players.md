@@ -366,7 +366,7 @@ The Play View opens, and the night has begun. Check-in also records that the cha
 
 The [Play View](glossary.md#play-view) is the character sheet for a game, laid out for a phone in one hand. Open it with **Play** on the character's page, or by checking in.
 
-Along the top: the way back to the character, **Keep the screen awake**, **Undo** for your last tap, and whether your taps are saved. Every tap is kept on the phone when there's no signal and sent when it comes back.
+Along the top: the way back to the character, **Keep the screen awake**, **Undo** for your last tap, and whether your taps are saved. Every tap is kept on the phone when there's no signal and sent when it comes back; to open the Play View with no signal at all, see [Using Horatio at a game with no signal](#using-horatio-at-a-game-with-no-signal).
 
 The tabs are **Sheet** (to look things up), **Tracker**, **Pools**, **Status** (for a character with sect status) and **Equipment**. On every tab but the Tracker, a strip under the tabs shows Blood, Willpower and health, with **−** to spend. Your settings choose which tab it opens on.
 
@@ -398,6 +398,27 @@ The **Equipment** tab shows what the character carries, weapons first, each with
 ### Others at this game
 
 On the Play View's **Status** tab, **Others at this game** lets you find any of the troupe's characters by name. For one of the character's own sect, it shows the status they carry into the game, and their negative status, which is public. Leadership lets the character learn where a fleeting status came from, one a game for each dot. For a character of another sect, it shows only the name and sect.
+
+### Using Horatio at a game with no signal
+
+Venues are often basements with no signal. Horatio can keep your own characters on your phone so they still work there: open the app, read the sheet, check a power on the Pools tab, and track Blood, Willpower and health. Your taps wait on the phone and are sent, in the order you made them, when the signal comes back.
+
+**Turning it on.** The first time you sign in on a device, Horatio asks once: *Is this your own phone?* Choose **Yes, keep them here** on your own phone, or **No, online only** on a borrowed or shared one. Until you answer, nothing is kept. You can change it at any time in **Your account › This device**, under **Keep my characters on this device**:
+
+- **Off: online only.** Nothing is kept on the device.
+- **On: my characters work offline.** The sheets, Play Views and powers of every character you have in play, in every troupe, are kept on the device and brought up to date whenever there's signal.
+
+The same tab shows what's kept now (the characters, when they were last updated and roughly how much space it takes), with **Update now**, worth pressing before you leave for a game, and **Remove from this device**.
+
+**With no signal.** A line under the menu says you're offline and how old what you're seeing is: *Offline · your characters as of 7:42 pm*. On the Play View, the saved pill says **Offline** with the taps waiting, and *Your sheet as of…* under it. Other screens, such as downtimes, Spend XP, other characters and every staff screen, say they need a connection, with a link back to your character. Nothing but Play View taps waits to be sent: anything else you try offline says **Needs a connection.**
+
+**Signing out** clears everything kept for you on the device, taps not yet sent included. If any are waiting, Horatio asks first. If your session ends while you're offline, your sheet still shows and your taps still wait; they're sent once you sign in again.
+
+**Installing it on your phone.** Horatio works best from your home screen, where it opens like an app. On Android, Chrome offers to install it, or choose **Add to Home screen** from its menu. On an iPhone there's no install prompt: open Horatio in Safari, then choose **Share › Add to Home Screen**.
+
+**iPhone storage.** Safari may clear what a home-screen app has stored if it hasn't been opened for a few weeks. If that happens, the first game after a long gap needs signal once, so open Horatio somewhere with signal before you go.
+
+When a new version of Horatio is ready, a small **Update ready · Reload** shows at the foot of the screen. It never reloads by itself, so press **Reload** when you're between taps.
 
 ## Status and titles
 

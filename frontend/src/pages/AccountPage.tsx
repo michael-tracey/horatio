@@ -1,21 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, Route, Routes } from "react-router";
+import { Link, Route, Routes, useMatch } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { PlayerOut, ProfileLink } from "../api/types";
 import { PronounsInput } from "../components/PronounsInput";
 import { useToast } from "../components/Toast";
 import { Button, Card, ErrorText, Field, Input, Loading, PageTitle, Tabs, Textarea } from "../components/ui";
 import { useAction, useLeaveWarning, useMe } from "../hooks";
+import { DevicePanel } from "../offline/DevicePanel";
 import { LinesVeilsForm } from "./LinesVeilsForm";
 import { HandleCard } from "./settings/HandleCard";
 import { SettingsPage } from "./settings/SettingsPage";
 
 const MAX_LINKS = 6;
 
+const TABS = [
+  { to: "/account", label: "Profile", end: true },
+  { to: "/account/lines-veils", label: "Lines and veils" },
+  { to: "/account/settings", label: "Settings" },
+  { to: "/account/device", label: "This device" },
+];
+
 /** The signed-in player's own profile, as others see it on their player page;
- * their lines and veils, which are never public; and their settings, with their
- * email and password. */
+ * their lines and veils, which are never public; their settings, with their
+ * email and password; and what this device keeps for games with no signal. */
 export function AccountPage() {
   const me = useMe();
   const id = me.data?.id ?? "";
@@ -24,10 +32,8 @@ export function AccountPage() {
     queryFn: () => unwrap(api.GET("/api/players/{user_id}", { params: { path: { user_id: id } } })),
     enabled: !!id,
   });
-  if (player.isPending) return <Loading />;
-  if (player.error) return <ErrorText error={player.error} />;
-
-  return (
+  const onDevice = !!useMatch("/account/device");
+  const title = (
     <>
       <PageTitle
         actions={
@@ -38,13 +44,23 @@ export function AccountPage() {
       >
         Your account
       </PageTitle>
-      <Tabs
-        tabs={[
-          { to: "/account", label: "Profile", end: true },
-          { to: "/account/lines-veils", label: "Lines and veils" },
-          { to: "/account/settings", label: "Settings" },
-        ]}
-      />
+      <Tabs tabs={TABS} />
+    </>
+  );
+  // This device works offline too: Remove is for a phone with no signal as much as any.
+  if (onDevice)
+    return (
+      <>
+        {title}
+        <DevicePanel />
+      </>
+    );
+  if (player.isPending) return <Loading />;
+  if (player.error) return <ErrorText error={player.error} />;
+
+  return (
+    <>
+      {title}
       <Routes>
         <Route
           index

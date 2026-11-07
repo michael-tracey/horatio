@@ -1,23 +1,30 @@
-import { Link, NavLink, Outlet, useMatch, useNavigate } from "react-router";
-import { api, unwrap } from "../api/client";
-import { useAction, useMe } from "../hooks";
+import { Link, NavLink, Outlet, useMatch } from "react-router";
+import { useMe } from "../hooks";
+import { NeedsConnection } from "../offline/NeedsConnection";
+import { OfflineStrip, useSendWaiting, useSignOut } from "../offline/Offline";
 import { NotificationBell } from "./NotificationBell";
 import { Splash } from "./Splash";
+import { ErrorText } from "./ui";
 
 export function Layout() {
   const me = useMe();
-  const navigate = useNavigate();
-  const signOut = useAction(async () => {
-    await unwrap(api.POST("/api/auth/logout"));
-    navigate("/sign-in");
-  });
+  // Signing out clears what is kept on this device for the person (#502).
+  const signOut = useSignOut();
+  useSendWaiting();
 
   const link = ({ isActive }: { isActive: boolean }) =>
     isActive ? "text-parchment" : "text-mist hover:text-parchment";
   // A downtime cycle's pages belong to its troupe.
   const inCycle = !!useMatch("/cycles/*");
 
-  // Until we know who is signed in, carry on the loading screen from index.html.
+  // Until we know who is signed in, carry on the loading screen from index.html;
+  // offline, with nothing kept here, there is no knowing.
+  if (me.isPending && me.fetchStatus === "paused")
+    return (
+      <main className="mx-auto max-w-5xl px-4 py-6">
+        <NeedsConnection />
+      </main>
+    );
   if (me.isPending) return <Splash />;
 
   return (
@@ -66,13 +73,20 @@ export function Layout() {
                 {me.data.display_name}
                 <span className="hidden sm:inline">{me.data.is_custodian && " (custodian)"}</span>
               </NavLink>
-              <button className="text-mist hover:text-parchment" onClick={() => signOut.mutate(undefined)}>
+              <button className="text-mist hover:text-parchment" onClick={signOut.signOut}>
                 Sign out
               </button>
             </nav>
           )}
         </div>
+        {signOut.error !== null && (
+          <div className="mx-auto max-w-5xl px-4 pb-3">
+            <ErrorText error={signOut.error} />
+          </div>
+        )}
       </header>
+      <OfflineStrip />
+      {signOut.dialog}
       <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
         <Outlet />
       </main>
