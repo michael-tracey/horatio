@@ -23,3 +23,8 @@ docs/*
 branding/
 # Copied to the server by the playbook, never built into the image.
 dark-pack/
+# Local-only working files: brag videos (GBs of frames), Claude Code agent
+# worktrees and scratch notes.
+brag-output*/
+.claude/
+ideas.md
