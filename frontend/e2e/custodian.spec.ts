@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { closeContextsAfterEach, run, PASSWORD, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab } from "./support";
 
@@ -619,4 +620,74 @@ test("the custodian merges two accounts of one person: the characters and staff 
   await expect(
     lead.page.getByText(`The custodian merged @${twice.handle} into @${real.handle}, the same person, moving Hester Vane, its narrator role: Signed up with Google and with email`),
   ).toBeVisible();
+});
+
+test("the custodian imports a troupe's characters from Yorick, matching a line and overwriting an NPC of the same name", async ({ browser }) => {
+  const custodian = await person(browser, "yorick-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "yorick-lead");
+  const troupeName = `Court of Yorick ${run}`;
+  const c = custodian.page;
+  // A card of the tab, by its title.
+  const card = (title: string) => c.locator("section").filter({ has: c.getByRole("heading", { name: title, exact: true }) });
+  await c.reload();
+  const created = await c.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(created.status(), await created.text()).toBeLessThan(300);
+  const troupeId: string = (await created.json()).id;
+  const agnes = `Agnes Wren ${run}`;
+  const thaddeus = `Thaddeus Ashby ${run}`;
+  // The made-up page from the backend's tests, its names and Yorick ids made this run's own.
+  const page = readFileSync("../backend/tests/fixtures/yorick_print.html", "utf8")
+    .replaceAll("aGnEsWr3n1", `aGnEsWr3n1${run}`)
+    .replaceAll("Th4ddAshby", `Th4ddAshby${run}`)
+    .replaceAll("Agnes Wren", agnes)
+    .replaceAll("Thaddeus Ashby", thaddeus)
+    .replaceAll("Mystery Woman", `Mystery Woman ${run}`);
+  // The lead has made Agnes already, by hand.
+  const npc = await lead.page.request.post(`/api/troupes/${troupeId}/npcs`, { headers: { "X-Horatio": "1" }, data: { name: agnes, wizard: false } });
+  expect(npc.status(), await npc.text()).toBe(201);
+
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "Import from Yorick" }).click();
+  await c.getByLabel("Troupe").selectOption({ label: troupeName });
+  await c.getByLabel("Print Characters page").setInputFiles({ name: "Print Troupe Characters.html", mimeType: "text/html", buffer: Buffer.from(page) });
+
+  // The dry run runs in the background, and saves nothing.
+  const dry = card("Dry run");
+  await expect(dry.getByText(/^3 characters read from the page: 2 to be made/)).toBeVisible({ timeout: 30_000 });
+  await expect(c.getByRole("button", { name: `Import into ${troupeName}` })).toBeDisabled();
+  await expect(c.getByText("1 printed character share a name with a character here: choose what to do with each first.")).toBeVisible();
+
+  // Agnes is here already: overwrite the NPC the lead made.
+  const shared = card("Already here under the same name");
+  await shared.getByLabel(agnes).selectOption({ label: `Overwrite ${agnes}` });
+  await expect(shared.getByText("Needs a choice")).toBeHidden();
+
+  // Police is Law Enforcement; the other unmatched line staff fix by hand.
+  const unmatched = card("Printed lines that matched nothing");
+  await unmatched.getByRole("button", { name: "Match Influences: The Underworld: Police x1 to…" }).click();
+  const dialog = c.getByRole("dialog", { name: "Match to…" });
+  await dialog.getByLabel("Horatio's Influence area").fill("Law Enforcement");
+  await dialog.getByRole("button", { name: "Match" }).click();
+  await expect(dialog).toBeHidden();
+  await unmatched.getByRole("listitem").filter({ hasText: "Backgrounds: Influences x1" }).getByRole("button", { name: "Staff will fix by hand" }).click();
+  await expect(card("The troupe's names").getByText("“Police” → Law Enforcement")).toBeVisible();
+  await expect(dry.getByText("Names or choices have changed since")).toBeVisible();
+
+  await dry.getByRole("button", { name: "Run the dry run again" }).click();
+  await expect(dry.getByText(/^3 characters read from the page: 2 to be made, 0 to be updated, 1 to be overwritten/)).toBeVisible({ timeout: 30_000 });
+  await expect(unmatched.getByText("Influences: The Underworld: Police x1")).toBeHidden();
+
+  // No backups here: say to go ahead without one, and import.
+  await c.getByLabel("Backups aren't set up on this server: import without one").check();
+  await c.getByRole("button", { name: `Import into ${troupeName}` }).click();
+  await c.getByRole("dialog", { name: `Import into ${troupeName}?` }).getByRole("button", { name: "Import" }).click();
+  const done = card("Imported");
+  await expect(done.getByText(/^3 characters read from the page: 2 made, 0 updated, 1 overwritten/)).toBeVisible({ timeout: 30_000 });
+  await expect(c.getByText("No page uploaded: the last one was imported, and deleted.")).toBeVisible();
+
+  // The lead finds them among the troupe's NPCs, Agnes once.
+  await lead.page.goto(`/troupes/${troupeId}/npcs`);
+  await expect(lead.page.getByRole("link", { name: thaddeus })).toBeVisible();
+  await expect(lead.page.getByRole("link", { name: agnes })).toHaveCount(1);
 });

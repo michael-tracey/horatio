@@ -1,73 +1,51 @@
 """Import a troupe's characters from Yorick's Print Characters page as sheeted NPCs
-of the troupe (#482), for staff to give each to its player as they sign up (#481):
-
-    uv run python -m horatio.import_yorick_print PAGE --troupe TROUPE [--dry-run]
-        [--names TABLE.toml ...] [--out FOLDER] [--as HANDLE] [--no-backup]
-
-PAGE is the page saved from the browser as HTML, with its `_files/` folder beside it
-(the portraits). TROUPE is the troupe's id or name. The characters are made by
-HANDLE, the troupe's lead storyteller unless given.
+of the troupe (#482), for staff to give each to its player as they sign up (#481).
+The custodian runs it in the app (horatio.yorick_imports, #518): this is the import
+itself, and its report.
 
 Each printed character (horatio.yorick_print) is matched to Horatio's names
-(horatio.yorick_names, with the table in yorick_names.toml and any --names tables
-over it) and made a sheeted NPC of the troupe, its traits set straight from the
-printout as staff set an NPC's. Rule checks do not stop it: what the sheet breaks is
-flagged on it as on any sheet, and listed in the report. Its portrait is attached,
-where the list shows one. It keeps its Yorick id as its `legacy_id` (or, with none, a
-stable hash of its printed name), and the log says it was imported.
+(horatio.yorick_names, with the table in yorick_names.toml and the troupe's own over
+it) and made a sheeted NPC of the troupe, its traits set straight from the printout
+as staff set an NPC's. Rule checks do not stop it: what the sheet breaks is flagged
+on it as on any sheet, and listed in the report. Its portrait is attached, where the
+list shows one. It keeps its Yorick id as its `legacy_id` (or, with none, a stable
+hash of its printed name), and the log says it was imported.
 
-**Running it again** updates the characters it made before, matched on `legacy_id`,
-rather than making them twice: their name and every trait the printout gives are set
-again. Nothing else is taken off, so what staff added by hand stays, and a picture
-staff changed is kept. A character given to its player since is left alone.
+**Importing it again** updates the characters it made before, matched on
+`legacy_id`, rather than making them twice: their name and every trait the printout
+gives are set again. Nothing else is taken off, so what staff added by hand stays, and
+a picture staff changed is kept. A character given to its player since is left alone.
 
-The whole import is one transaction. Before it writes anything it makes a database
-backup (horatio.backups), unless --no-backup says not to; a dry run needs none.
+**A character here under a printed name** (the troupe's NPCs and its players'
+characters, ignoring case and spacing), not linked to it by its Yorick id, is
+reported, and the printed character waits for the custodian's choice (`decisions`,
+by Yorick id): `overwrite` that one, which must be a sheeted NPC of the troupe, as
+an import again would; `skip` it; or import it as a `new` NPC beside it. Until then
+it is not imported.
 
-**What it writes for review**, in FOLDER (by default `yorick-import/` beside the page;
-keep it out of git, as it holds what the page holds): `report.txt`, a report for each
-character of what imported cleanly, every line it could not match, what the sheet
-breaks and what it costs at the troupe's prices; and `characters.json`, each character
-as read and as matched. The summary, with every unmatched line, is printed too.
-`--dry-run` does all of it and saves nothing: the import is rolled back.
-
-No XP is written: a character's XP is set when it is given to its player (#481).
+The whole import is one transaction; a dry run is rolled back. No XP is written: a
+character's XP is set when it is given to its player (#481).
 """
 
-import argparse
-import json
-import sys
-import tomllib
 import uuid
 from collections import Counter, defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, backups, npcs, pictures, sheets
-from horatio.config import get_settings
-from horatio.db import get_sessionmaker
-from horatio.models import Character, CharacterTrait, Troupe, User
+from horatio import audit, npcs, pictures, sheets
+from horatio.models import Character, CharacterTrait, Troupe, TroupeMembership, User
 from horatio.rules.pricing import fixed_rating
 from horatio.rules.store import read_troupe_rules
 from horatio.specializations import troupe_options
-from horatio.yorick_names import (
-    Catalogue,
-    Mapped,
-    Mapper,
-    Table,
-    Trait,
-    catalogue_of,
-    read_table,
-    spelling_renames,
-)
-from horatio.yorick_print import CannotRead, PrintedCharacter, read_file
+from horatio.yorick_names import Catalogue, Mapped, Mapper, Trait, catalogue_of
+from horatio.yorick_print import PrintedCharacter
 
 SPLAT = "vampire"
 # Unrated choices first: a faction needs its sect, a merit's value can depend on the
@@ -75,11 +53,29 @@ SPLAT = "vampire"
 FIRST = ("clan", "sect", "faction", "archetype")
 
 
-class CannotImport(Exception):
-    """The import can't go ahead at all; the message says why."""
-
-
 # --- one character ------------------------------------------------------------------------
+
+
+CHOICES = ("overwrite", "skip", "new")
+
+
+@dataclass
+class Match:
+    """A character here under a printed character's name."""
+
+    character_id: str
+    name: str
+    # "an NPC of the troupe", "@jane's character"
+    whose: str
+    # Only a sheeted NPC of the troupe can be overwritten: a player's sheet changes
+    # through the troupe's approvals, and a Stock NPC has no sheet.
+    overwritable: bool
+    # Its own Yorick id, where it was imported from another printed character.
+    legacy_id: str | None = None
+
+
+def same_name(name: str) -> str:
+    return " ".join(name.split()).casefold()
 
 
 @dataclass
@@ -88,7 +84,7 @@ class Result:
 
     printed: PrintedCharacter
     mapped: Mapped
-    # made | updated | skipped | failed
+    # made | updated | overwritten | skipped | undecided | failed
     outcome: str = "made"
     # Why it was skipped, or what went wrong.
     skipped_because: str = ""
@@ -104,6 +100,10 @@ class Result:
     # Traits the troupe's rules give no price for, with why.
     unpriced: list[tuple[str, str]] = field(default_factory=list)
     portrait: str = "none"
+    # Characters here under its name, not linked to it by its Yorick id.
+    matches: list[Match] = field(default_factory=list)
+    # What the custodian chose for it, if they have.
+    choice: str | None = None
 
     @property
     def clean(self) -> bool:
@@ -209,6 +209,7 @@ class Importer:
         *,
         pictures_root: Path | None,
         dry_run: bool = False,
+        decisions: Mapping[str, Mapping[str, Any]] | None = None,
     ) -> None:
         self.db = db
         self.troupe = troupe
@@ -217,6 +218,11 @@ class Importer:
         self.page_dir = page_dir
         self.pictures_root = pictures_root
         self.dry_run = dry_run
+        self.decisions = decisions or {}
+        # Characters here, by their name as compared, from before the import.
+        self.here: dict[str, list[Match]] = {}
+        # Those overwritten in this import: each by one printed character only.
+        self.overwritten: set[uuid.UUID] = set()
         # Picture folders written, removed again if the import does not go through.
         self.written: list[Path] = []
 
@@ -224,10 +230,54 @@ class Importer:
         found = self.db.scalars(select(Character).where(Character.legacy_id.in_(ids)))
         return {c.legacy_id: c for c in found if c.legacy_id is not None}
 
-    def run(self, printed: Sequence[PrintedCharacter]) -> list[Result]:
+    def characters_here(self) -> dict[str, list[Match]]:
+        """The troupe's characters still active, by name: its NPCs, those at home in
+        it, those built for it, and those visiting it."""
+        visiting = select(TroupeMembership.character_id).where(
+            TroupeMembership.troupe_id == self.troupe.id, TroupeMembership.left_at.is_(None)
+        )
+        rows = self.db.execute(
+            select(Character, User.handle)
+            .join(User, User.id == Character.player_id)
+            .where(
+                Character.status == "active",
+                or_(
+                    Character.owner_troupe_id == self.troupe.id,
+                    Character.home_troupe_id == self.troupe.id,
+                    Character.building_troupe_id == self.troupe.id,
+                    Character.id.in_(visiting),
+                ),
+            )
+            .order_by(Character.name, Character.id)
+        )
+        found: dict[str, list[Match]] = defaultdict(list)
+        for character, handle in rows:
+            npc = character.kind == "npc"
+            if npc and character.owner_troupe_id != self.troupe.id:
+                continue
+            sheeted = npc and character.npc_form == "sheeted" and character.splat == SPLAT
+            if not npc:
+                whose = f"@{handle}'s character"
+            elif character.npc_form == "stock":
+                whose = "a Stock NPC of the troupe"
+            else:
+                whose = "an NPC of the troupe"
+            found[same_name(character.name)].append(
+                Match(str(character.id), character.name, whose, sheeted, character.legacy_id)
+            )
+        return found
+
+    def run(
+        self,
+        printed: Sequence[PrintedCharacter],
+        progress: Callable[[int, int], None] | None = None,
+    ) -> list[Result]:
         before = self.existing([p.legacy_id for p in printed])
+        self.here = self.characters_here()
         results: list[Result] = []
-        for character in printed:
+        for done, character in enumerate(printed):
+            if progress is not None:
+                progress(done, len(printed))
             savepoint = self.db.begin_nested()
             try:
                 results.append(self.one(character, before.get(character.legacy_id)))
@@ -240,11 +290,60 @@ class Importer:
                 results.append(failed)
                 continue
             savepoint.commit()
+        if progress is not None:
+            progress(len(printed), len(printed))
         return results
+
+    def choose(self, printed: PrintedCharacter, result: Result) -> Character | None:
+        """For a printed character with no NPC of its own yet: the character to
+        overwrite, if the custodian chose one, or None. Sets the outcome where it is
+        not to be imported."""
+        result.matches = [
+            m
+            for m in self.here.get(same_name(printed.name), [])
+            if m.legacy_id != printed.legacy_id
+        ]
+        if not result.matches:
+            return None
+        decision = self.decisions.get(printed.legacy_id) or {}
+        choice = decision.get("choice")
+        target = next(
+            (m for m in result.matches if m.character_id == decision.get("character_id")), None
+        )
+        if choice == "overwrite" and (
+            target is None
+            or not target.overwritable
+            or uuid.UUID(target.character_id) in self.overwritten
+        ):
+            # The character chosen has gone, can no longer be overwritten, or another
+            # printed character has overwritten it already.
+            choice = None
+        result.choice = choice
+        if choice == "skip":
+            result.outcome = "skipped"
+            result.skipped_because = "you chose to skip it, as a character here has its name"
+        elif choice is None or choice not in CHOICES:
+            result.outcome = "undecided"
+            result.skipped_because = (
+                "a character here has its name: choose to overwrite it, skip it, or import it"
+                " as a new NPC"
+            )
+        elif choice == "overwrite" and target is not None:
+            return self.db.get_one(Character, uuid.UUID(target.character_id))
+        return None
 
     def one(self, printed: PrintedCharacter, npc: Character | None) -> Result:
         result = Result(printed, self.mapper.character(printed))
-        if npc is not None and (npc.kind != "npc" or npc.owner_troupe_id != self.troupe.id):
+        if npc is None:
+            npc = self.choose(printed, result)
+            if result.outcome in ("skipped", "undecided"):
+                return result
+            if npc is not None:
+                result.outcome = "overwritten"
+                self.overwritten.add(npc.id)
+                npc.legacy_id = printed.legacy_id
+                npc.name = printed.name
+        elif npc.kind != "npc" or npc.owner_troupe_id != self.troupe.id:
             result.outcome = "skipped"
             result.skipped_because = (
                 "it has been given to its player"
@@ -253,14 +352,14 @@ class Importer:
             )
             result.character_id = str(npc.id)
             return result
+        else:
+            result.outcome = "updated"
+            npc.name = printed.name
         if npc is None:
             npc = npcs.create_npc(
                 self.db, self.staff, self.troupe, SPLAT, printed.name, wizard=False
             )
             npc.legacy_id = printed.legacy_id
-        else:
-            result.outcome = "updated"
-            npc.name = printed.name
         self.db.flush()
         result.character_id = str(npc.id)
 
@@ -289,7 +388,9 @@ class Importer:
         audit.record(
             self.db,
             self.staff,
-            "npc.imported" if result.outcome == "made" else "npc.reimported",
+            {"made": "npc.imported", "overwritten": "npc.imported_over"}.get(
+                result.outcome, "npc.reimported"
+            ),
             troupe_id=self.troupe.id,
             character_id=npc.id,
             legacy_id=printed.legacy_id,
@@ -342,22 +443,30 @@ def plural(count: int, one: str, many: str | None = None) -> str:
 
 
 def summary(
-    results: Sequence[Result], dry_run: bool, left_out: Mapping[str, str] | None = None
+    results: Sequence[Result],
+    dry_run: bool,
+    left_out: Mapping[str, str] | None = None,
+    by_hand: Collection[str] = (),
 ) -> list[str]:
     """The import as a whole, and every printed line it could not match. `left_out` is
-    why the table leaves each heading to staff."""
+    why the table leaves each heading to staff; `by_hand`, the printed lines ("Merits:
+    Arcane (1)") staff will put right by hand, listed apart."""
     outcomes = Counter(r.outcome for r in results)
-    unmatched = [u for r in results for u in r.mapped.unmatched]
+    unmatched = [u for r in results for u in r.mapped.unmatched if u.source not in by_hand]
+    handed = [u for r in results for u in r.mapped.unmatched if u.source in by_hand]
     refused = [(s, why) for r in results for s, why in r.refused]
     lines = [
         f"{plural(len(results), 'character')} read from the page: "
         f"{outcomes['made']} {'to be made' if dry_run else 'made'}, "
         f"{outcomes['updated']} {'to be updated' if dry_run else 'updated'}, "
-        f"{outcomes['skipped']} skipped, {outcomes['failed']} failed.",
+        f"{outcomes['overwritten']} {'to be overwritten' if dry_run else 'overwritten'}, "
+        f"{outcomes['skipped']} skipped, {outcomes['undecided']} waiting for a choice, "
+        f"{outcomes['failed']} failed.",
         f"{sum(r.clean for r in results)} import cleanly; "
         f"{plural(len(unmatched), 'printed line')} matched nothing "
-        f"({len({(u.heading, u.text) for u in unmatched})} different), and "
-        f"{plural(len(refused), 'trait')} could not be put on a sheet.",
+        f"({len({(u.heading, u.text) for u in unmatched})} different)"
+        + (f", {len(handed)} more left for staff to put right by hand" if handed else "")
+        + f", and {plural(len(refused), 'trait')} could not be put on a sheet.",
         f"{sum(bool(r.problems) for r in results)} sheets break a rule check "
         f"({plural(sum(len(r.problems) for r in results), 'check')} in all); "
         f"{sum(bool(r.revalued) for r in results)} hold a merit or flaw at another value.",
@@ -372,6 +481,15 @@ def summary(
         for heading, count in sorted(left.items()):
             why = (left_out or {}).get(heading, "")
             lines.append(f"  {heading}: {plural(count, 'line')}" + (f". {why}" if why else ""))
+    waiting = [r for r in results if r.outcome == "undecided"]
+    if waiting:
+        lines += ["", "Waiting for a choice, as a character here has its name:"]
+        for r in waiting:
+            lines.append(f"  {r.printed.name}: " + "; ".join(m.whose for m in r.matches))
+    if handed:
+        lines += ["", "Left for staff to put right by hand:"]
+        for source, count in sorted(Counter(u.source for u in handed).items()):
+            lines.append(f"  {source}" + (f" x{count}" if count > 1 else ""))
     if unmatched or refused:
         lines += ["", "Printed lines that matched nothing, by heading:"]
         grouped: dict[str, Counter[str]] = defaultdict(Counter)
@@ -393,13 +511,17 @@ def character_report(result: Result) -> list[str]:
     head = f"== {printed.name} (Yorick id {printed.legacy_id}"
     head += f"; labelled {printed.label})" if printed.label else ")"
     lines = [head]
-    if result.outcome == "skipped":
-        return [*lines, f"Skipped: {result.skipped_because}."]
+    if result.matches:
+        lines.append("Here under its name:")
+        lines += [f"  {m.name}, {m.whose}" for m in result.matches]
+    if result.outcome in ("skipped", "undecided"):
+        return [*lines, f"Not imported: {result.skipped_because}."]
     if result.outcome == "failed":
         return [*lines, f"Failed: {result.skipped_because}"]
     mapped = result.mapped
+    done = {"made": "Made", "updated": "Updated", "overwritten": "Overwrote the NPC here"}
     lines.append(
-        f"{'Made' if result.outcome == 'made' else 'Updated'}: "
+        f"{done[result.outcome]}: "
         f"{plural(len(mapped.traits) - len(result.refused), 'trait')} imported"
         + (" cleanly." if result.clean else ".")
     )
@@ -426,180 +548,37 @@ def character_report(result: Result) -> list[str]:
     return lines
 
 
-def write_review(
-    folder: Path, results: Sequence[Result], dry_run: bool, left_out: Mapping[str, str]
-) -> None:
-    folder.mkdir(parents=True, exist_ok=True)
-    text = summary(results, dry_run, left_out)
+def report_text(
+    results: Sequence[Result],
+    dry_run: bool,
+    left_out: Mapping[str, str],
+    by_hand: Collection[str] = (),
+) -> str:
+    """The report: the summary, then each character's."""
+    text = summary(results, dry_run, left_out, by_hand)
     for result in results:
         text += ["", *character_report(result)]
-    (folder / "report.txt").write_text("\n".join(text) + "\n", encoding="utf-8")
-    records: list[dict[str, Any]] = [
-        {
-            "printed": asdict(r.printed),
-            "outcome": r.outcome,
-            "skipped_because": r.skipped_because,
-            "character_id": r.character_id,
-            "traits": [asdict(t) for t in r.mapped.traits],
-            "unmatched": [asdict(u) for u in r.mapped.unmatched],
-            "refused": r.refused,
-            "revalued": r.revalued,
-            "left_out": r.mapped.left_out,
-            "split": r.mapped.split,
-            "problems": r.problems,
-            "xp": r.xp,
-            "unpriced": r.unpriced,
-            "portrait": r.portrait,
-        }
-        for r in results
-    ]
-    (folder / "characters.json").write_text(
-        json.dumps(records, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-    )
+    return "\n".join(text) + "\n"
 
 
-# --- the command --------------------------------------------------------------------------
-
-
-def plain(text: str) -> str:
-    return " ".join(text.split()).casefold()
-
-
-def find_troupe(db: Session, text: str) -> Troupe:
-    try:
-        found = db.get(Troupe, uuid.UUID(text))
-    except ValueError:
-        found = None
-    if found is not None:
-        return found
-    named = list(db.scalars(select(Troupe).where(func.lower(Troupe.name) == plain(text))))
-    if not named:
-        raise CannotImport(f"No troupe has the id or name {text!r}.")
-    if len(named) > 1:
-        ids = ", ".join(str(t.id) for t in named)
-        raise CannotImport(f"More than one troupe is called {text!r}; give its id: {ids}.")
-    return named[0]
-
-
-def find_staff(db: Session, troupe: Troupe, handle: str | None) -> User:
-    if handle is None:
-        return db.get_one(User, troupe.lead_user_id)
-    found = db.scalar(select(User).where(func.lower(User.handle) == handle.strip().casefold()))
-    if found is None:
-        raise CannotImport(f"No one has the handle {handle!r}.")
-    return found
-
-
-def import_page(
-    db: Session,
-    troupe: Troupe,
-    staff: User,
-    printed: Sequence[PrintedCharacter],
-    page_dir: Path,
-    table: Table,
-    *,
-    dry_run: bool,
-) -> list[Result]:
-    """Import the printed characters in one transaction, and save them unless it is a
-    dry run or any of them failed."""
-    mapper = Mapper(table, catalogue_for(db, troupe))
-    importer = Importer(
-        db,
-        troupe,
-        staff,
-        mapper,
-        page_dir,
-        pictures_root=None if dry_run else pictures.upload_dir(),
-        dry_run=dry_run,
-    )
-    try:
-        results = importer.run(printed)
-        if dry_run or any(r.outcome == "failed" for r in results):
-            db.rollback()
-        else:
-            db.commit()
-    except BaseException:
-        db.rollback()
-        importer.undo_pictures()
-        raise
-    if not dry_run and any(r.outcome == "failed" for r in results):
-        importer.undo_pictures()
-    return results
-
-
-def make_backup() -> str:
-    """Back the database up (horatio.backups); the backup's name."""
-    directory = backups.backup_dir()
-    if directory is None:
-        raise CannotImport(
-            "Backups are not set up here (HORATIO_BACKUP_DIR), so none can be made first;"
-            " give --no-backup to import without one."
-        )
-    try:
-        return backups.make(directory, get_settings().database_url).name
-    except backups.BackupError as error:
-        raise CannotImport(f"The backup failed, so nothing was imported: {error}") from error
-
-
-def main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(
-        prog="python -m horatio.import_yorick_print",
-        description="Import a troupe's characters from Yorick's Print Characters page as NPCs.",
-    )
-    parser.add_argument(
-        "page", type=Path, help="the page saved as HTML, its _files folder beside it"
-    )
-    parser.add_argument("--troupe", required=True, help="the troupe's id or name")
-    parser.add_argument(
-        "--dry-run", action="store_true", help="report what it would do, and save nothing"
-    )
-    parser.add_argument(
-        "--names",
-        type=Path,
-        action="append",
-        default=[],
-        help="a table of more names, in yorick_names.toml's shape (can be given again)",
-    )
-    parser.add_argument(
-        "--out", type=Path, help="where to write the report and JSON (default: beside the page)"
-    )
-    parser.add_argument(
-        "--as", dest="handle", help="the staff member who makes them (default: the lead)"
-    )
-    parser.add_argument(
-        "--no-backup", action="store_true", help="import without making a backup first"
-    )
-    args = parser.parse_args(argv)
-    out: Path = args.out or args.page.parent / "yorick-import"
-    try:
-        printed = read_file(args.page)
-        table = read_table(args.names, renames=spelling_renames())
-        with get_sessionmaker()() as db:
-            troupe = find_troupe(db, args.troupe)
-            staff = find_staff(db, troupe, args.handle)
-            if not args.dry_run and not args.no_backup:
-                print(f"Backed up the database first: {make_backup()}")
-            results = import_page(
-                db, troupe, staff, printed, args.page.parent, table, dry_run=args.dry_run
-            )
-    except (CannotRead, CannotImport, OSError, tomllib.TOMLDecodeError) as error:
-        print(error, file=sys.stderr)
-        return 1
-    write_review(out, results, args.dry_run, table.left_out)
-    print("\n".join(summary(results, args.dry_run, table.left_out)))
-    print(f"\nThe report for each character, and the JSON, are in {out}.")
-    failed = [r for r in results if r.outcome == "failed"]
-    if args.dry_run:
-        print("Dry run: nothing was saved.")
-    elif failed:
-        print(
-            f"{plural(len(failed), 'character')} could not be imported (see the report),"
-            " so nothing was saved.",
-            file=sys.stderr,
-        )
-        return 1
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+def record_of(result: Result) -> dict[str, Any]:
+    """One character as read and as matched, for the report's JSON."""
+    r = result
+    return {
+        "printed": asdict(r.printed),
+        "outcome": r.outcome,
+        "skipped_because": r.skipped_because,
+        "character_id": r.character_id,
+        "matches": [asdict(m) for m in r.matches],
+        "choice": r.choice,
+        "traits": [asdict(t) for t in r.mapped.traits],
+        "unmatched": [asdict(u) for u in r.mapped.unmatched],
+        "refused": r.refused,
+        "revalued": r.revalued,
+        "left_out": r.mapped.left_out,
+        "split": r.mapped.split,
+        "problems": r.problems,
+        "xp": r.xp,
+        "unpriced": r.unpriced,
+        "portrait": r.portrait,
+    }

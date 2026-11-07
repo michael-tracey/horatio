@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 import { closeContextsAfterEach, makeCustodian, PASSWORD, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional } from "./support";
@@ -210,4 +210,15 @@ test("screenshots for the manual's Custodian part", async ({ browser }) => {
   await main.getByRole("link", { name: "Audit", exact: true }).click();
   await expect(main.getByRole("list", { name: "Audit log" })).toBeVisible();
   await shoot(main.locator("section", { has: c.getByRole("heading", { name: "Found" }) }), "audit", 520);
+
+  // Importing from Yorick: the made-up page from the backend's tests, checked by a dry run.
+  await main.getByRole("link", { name: "Import from Yorick", exact: true }).click();
+  await main.getByLabel("Troupe").selectOption({ label: "Harbour Lights" });
+  await main.getByLabel("Print Characters page").setInputFiles({
+    name: "Print Troupe Characters.html",
+    mimeType: "text/html",
+    buffer: readFileSync("../backend/tests/fixtures/yorick_print.html"),
+  });
+  await expect(main.getByText(/^3 characters read from the page/)).toBeVisible({ timeout: 30_000 });
+  await shoot(main, "yorick-import", 1400);
 });

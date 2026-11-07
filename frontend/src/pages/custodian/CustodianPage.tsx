@@ -8,6 +8,7 @@ import { ClanLogosTab } from "./ClanLogosTab";
 import { PeopleTab } from "./PeopleTab";
 import { SystemTab } from "./SystemTab";
 import { TroupeRequestsTab, useTroupeRequests } from "./TroupeRequestsTab";
+import { YorickImportTab } from "./YorickImportTab";
 
 /** What only the custodian can do, in one place. Anyone else is sent away. */
 export function CustodianPage() {
@@ -25,6 +26,7 @@ export function CustodianPage() {
           { to: "/custodian/troupe-requests", label: "Troupe requests", count: requests.data?.filter((r) => r.status === "pending").length ?? 0 },
           { to: "/custodian/archived-troupes", label: "Archived troupes" },
           { to: "/custodian/clan-logos", label: "Clan logos" },
+          { to: "/custodian/yorick-import", label: "Import from Yorick" },
           { to: "/custodian/backups", label: "Backups" },
           { to: "/custodian/audit", label: "Audit" },
           { to: "/custodian/system", label: "System" },
@@ -36,6 +38,7 @@ export function CustodianPage() {
         <Route path="troupe-requests" element={<TroupeRequestsTab />} />
         <Route path="archived-troupes" element={<ArchivedTroupesTab />} />
         <Route path="clan-logos" element={<ClanLogosTab />} />
+        <Route path="yorick-import" element={<YorickImportTab />} />
         <Route path="backups" element={<BackupsTab />} />
         <Route path="audit" element={<AuditTab />} />
         <Route path="system" element={<SystemTab />} />

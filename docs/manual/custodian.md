@@ -297,41 +297,70 @@ The files must never be committed to the repository. [dark-pack/README.md](https
 
 ## Importing characters from Yorick
 
-A troupe moving from Yorick can bring its characters with it, as sheeted NPCs of the troupe. Staff then give each one to its player as they sign up. Yorick's printout has no players, XP or history, so none of those come across: a character's XP is set when it's given to its player.
+A troupe moving from Yorick can bring its characters with it, as sheeted NPCs of the troupe. Staff then give each one to its player as they sign up (see [Giving an NPC to a player](running-a-troupe.md#giving-an-npc-to-a-player)). Yorick's printout has no players, XP or history, so none of those come across: a character's XP is set when it's given to its player.
 
-It's a command, run where Horatio runs, not a page in the app. You'll need:
+A troupe can come across over months, a few players at a time. Upload a newer page whenever you like: importing it again updates the characters made before, and what you've worked out for the troupe, its names and your choices, stays for the next page.
 
-- the troupe's **Print Characters** page from Yorick, saved from the browser as a complete web page: an `.html` file with a `_files` folder beside it, which holds the portraits;
-- the troupe made in Horatio, with its lead storyteller.
+You'll need:
 
-The page holds real players' names and emails. Keep it, and the reports the import writes beside it, out of any repository and out of shared folders.
+- the troupe made in Horatio, with its lead storyteller;
+- the troupe's **Print Characters** page from Yorick, saved from the browser as a complete web page. That gives an `.html` file and a folder of the same name ending in `_files`, which holds the portraits. Zip the two together. The `.html` alone works too, without portraits.
 
-### A dry run first
+The page holds real players' names and emails. Horatio keeps it only for the import, where only you can reach it, and deletes it once it's imported, when you choose **Delete the page**, or 30 days after you uploaded it. The report from it is deleted 30 days after it was made. Uploading, importing, deleting and downloading are recorded in the audit log.
 
-From the `backend` folder, run:
+![The import from Yorick, after a dry run](images/custodian/yorick-import.png)
 
-`uv run python -m horatio.import_yorick_print "Print Troupe Characters.html" --troupe "Troupe name" --dry-run`
+### Upload the page
 
-A dry run saves nothing. It prints a summary, with every printed line it couldn't match to Horatio's names, and writes a `yorick-import` folder beside the page holding:
+1. Open **Custodian › Import from Yorick**, and choose the **Troupe**.
+2. Choose **Upload the page**, and pick the zip or the `.html`. **Upload a newer page** replaces it later.
+3. Under **The NPCs are made by**, choose who makes them: the lead storyteller, or one of the troupe's storytellers.
 
-- `report.txt`: for each character, what imports cleanly, what it couldn't match, the rule checks its sheet breaks, and what it's worth in XP at the troupe's prices;
-- `characters.json`: each character as read and as matched, to check by hand.
+A dry run starts as soon as the page is uploaded. It saves nothing. It runs in the background, a minute or two for a big troupe, and you can leave the page while it does.
 
-Go through the unmatched list with the troupe's lead storyteller. Where a name should have matched, such as an Influence area written another way, add it to a table of your own in the shape of `backend/src/horatio/yorick_names.toml`, and run the dry run again with `--names your-table.toml`. Repeat until the list is clean, or holds only what staff will fix by hand afterwards. Lines the troupe's own lists don't allow (**Specialisations** in the troupe's settings) show as unmatched too.
+### Read the dry run
 
-### The real run
+**Dry run** sums up what the import would do: how many characters it would make or update, how many lines matched nothing, the rule checks the sheets break, and what they're worth in XP at the troupe's prices. **Download the report** has all of it, character by character, and **Download the characters as JSON** has each character as read and as matched. **Each character** lists them, with what became of each; open one to see its unmatched lines, rule checks and portrait.
 
-Run the same command without `--dry-run`. It:
+### Characters already here under the same name
 
-1. makes a backup first, as **Back up now** does ([Backups](#backups)), and stops if it can't. On your own computer, where backups aren't set up, add `--no-backup`;
-2. makes each character a sheeted NPC of the troupe, made by the lead storyteller (or whoever `--as` names, by handle), with its portrait where it has one;
-3. saves them all at once, or none if any one fails.
+Where a character already in the troupe has the name of one on the page, and isn't one this import made, the dry run lists it under **Already here under the same name**. Names match ignoring capitals and spacing. It looks at the troupe's NPCs and at its players' characters, at home, visiting or being built for it.
+
+Choose what to do with each:
+
+- **Overwrite** the one here: it becomes the imported character, its printed traits set as on a later import, keeping anything else on its sheet. Only a sheeted NPC of the troupe can be overwritten. A player's character changes through the troupe's approvals, and a Stock NPC has no sheet.
+- **Skip it**: it isn't imported, now or later, until you change your mind.
+- **Import it as a new NPC beside it**.
+
+Until you choose, it isn't imported, and the import waits. Your choice is kept for later pages.
+
+### Put names to what matched nothing
+
+**Printed lines that matched nothing** lists each line once, with the characters that printed it. For each:
+
+- **Match to…** gives it one of Horatio's names, such as an Influence area written another way, or a merit Yorick spells differently. Type to narrow the choices. It's kept in **The troupe's names**, for every character that printed it and for later pages. Remove one there with **×**.
+- **Staff will fix by hand** leaves it for the troupe's staff to put right on the sheets afterwards. It's counted apart, and the import goes ahead without it.
+
+Lines the troupe's own lists don't allow (**Specialisations** in the troupe's settings) show here too: add them to the troupe's list, or match them to one on it.
+
+A table of names written for the old command-line import, in the shape of `backend/src/horatio/yorick_names.toml`, can be added with **Add from a table…**.
+
+After changing names or choices, choose **Run the dry run again** to see what the import will do now. Repeat with the troupe's lead storyteller until the list is clean, or holds only what staff will fix by hand.
+
+### Import
+
+Under **Import**, choose **Import into *troupe***, then **Import**. It can't start while names or choices have changed since the dry run, or while a printed character still needs a choice. It:
+
+1. makes a backup first, as **Back up now** does ([Backups](#backups)), and stops if it can't. Where backups aren't set up, as on your own computer, tick **import without one** first;
+2. makes each character a sheeted NPC of the troupe, with its portrait where it has one;
+3. saves them all at once, or none if any one fails;
+4. deletes the page. The report stays, now saying what was done.
 
 Rule checks don't stop a character coming in: what its sheet breaks is flagged on it, as on any sheet. Each NPC's log says it was imported, with its Yorick id.
 
-Running it again updates the characters it made before, rather than making them twice. It sets their names and printed traits again, and leaves anything staff added by hand. A character already given to its player is left alone.
+Importing again updates the characters it made before, rather than making them twice. It sets their names and printed traits again, and leaves anything staff added by hand. A character already given to its player is left alone.
 
-On the repository's own server, `deploy/import-yorick-print.sh` does the same from your computer, with the same options, and brings the report back. See [deploy/README.md](https://github.com/michael-tracey/horatio/blob/main/deploy/README.md).
+If the server restarts during a dry run or an import, the page says so. Nothing was saved: run it again.
 
 ## The audit log
 

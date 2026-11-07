@@ -95,6 +95,7 @@ from horatio.api import (
     written_rules,
     xp_awards,
     xp_range,
+    yorick_imports,
 )
 from horatio.auth.deps import DbSession
 from horatio.auth.viewing import read_only_while_viewing
@@ -221,6 +222,7 @@ for module in (
     targets,
     projects,
     keywords,
+    yorick_imports,
 ):
     api.include_router(module.router)
 
