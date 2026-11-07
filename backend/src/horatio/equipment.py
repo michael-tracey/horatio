@@ -402,6 +402,28 @@ def apply(item: EquipmentItem, fields: ItemFields) -> None:
     item.staff_note = fields.staff_note
 
 
+@dataclass(frozen=True)
+class FromDowntime:
+    """The downtime response an item, or a change to one, came from (issue #508,
+    horatio.response_items). It arrives with the results, which tell the player, so
+    they aren't told again; its history links back to the response."""
+
+    cycle_id: uuid.UUID
+    cycle_name: str
+    response_id: uuid.UUID
+
+    @property
+    def reason(self) -> str:
+        return f"From the {self.cycle_name} downtime"
+
+    def recorded(self) -> dict[str, str]:
+        return {
+            "cycle_id": str(self.cycle_id),
+            "cycle": self.cycle_name,
+            "response_id": str(self.response_id),
+        }
+
+
 def give(
     db: Session,
     staff: User,
@@ -411,10 +433,12 @@ def give(
     *,
     template: str | None = None,
     expiry: Expiry | None = None,
+    downtime: FromDowntime | None = None,
 ) -> EquipmentItem:
     """Give a home character an item, checked by the rules it plays by. `template`:
     the template it was started from, kept in its history. `expiry`: when it expires,
-    if the troupe lets items expire (horatio.item_expiry)."""
+    if the troupe lets items expire (horatio.item_expiry). `downtime`: the response
+    it was given from, delivered now."""
     require_home(troupe, character)
     if character.status != "active":
         raise conflict(f"{character.name} is retired.")
@@ -437,7 +461,18 @@ def give(
     kept: dict[str, Any] = {"template": template} if template else {}
     if expires:
         kept["expiry"] = expires["to"]
-    record(db, item, "given", staff, troupe, after=character, changes=kept)
+    if downtime:
+        kept["downtime"] = downtime.recorded()
+    record(
+        db,
+        item,
+        "given",
+        staff,
+        troupe,
+        after=character,
+        reason=downtime.reason if downtime else "",
+        changes=kept,
+    )
     what = describe(rules, fields)
     then = f" It expires {item_expiry.when_text(expires['to'])}." if expires else ""
     audit.record(
@@ -448,14 +483,16 @@ def give(
         character_id=character.id,
         item=item.name,
         what=what,
+        **({"downtime": downtime.cycle_name} if downtime else {}),
     )
-    tell(
-        db,
-        character,
-        troupe,
-        "equipment.given",
-        f"{staff.display_name} gave {character.name} {item.name} ({what}).{then}",
-    )
+    if downtime is None:
+        tell(
+            db,
+            character,
+            troupe,
+            "equipment.given",
+            f"{staff.display_name} gave {character.name} {item.name} ({what}).{then}",
+        )
     return item
 
 
@@ -537,11 +574,13 @@ def change(
     *,
     expiry: Expiry | None = None,
     change_expiry: bool = False,
+    downtime: FromDowntime | None = None,
 ) -> EquipmentItem:
     """Change a held item, with a reason, checked by the rules its holder plays by.
     Its holder's player is told, unless only the staff note changed. With
     `change_expiry`, its expiry is set to `expiry`: extended, shortened, or with
-    None removed (horatio.item_expiry)."""
+    None removed (horatio.item_expiry). `downtime`: the response the change was
+    given from, delivered now, which is its reason; the results tell the player."""
     character = db.get_one(Character, item.character_id)
     require_home(troupe, character)
     if item.status != "held":
@@ -553,10 +592,12 @@ def change(
         changes["expiry"] = expires
     if not changes:
         raise unprocessable("Nothing has changed.")
-    reason = reason.strip()
+    reason = downtime.reason if downtime else reason.strip()
     told = changes_text(rules, changes)
     if told and not reason:
         raise unprocessable("Say why it changes: its holder's player is told.")
+    if downtime:
+        changes["downtime"] = downtime.recorded()
     if not fields.special:
         item.special_troupe_id = None
     elif item.special_troupe_id is None:
@@ -587,6 +628,7 @@ def change(
             changes=told,
             reason=reason,
         )
+    if told and downtime is None:
         tell(
             db,
             character,

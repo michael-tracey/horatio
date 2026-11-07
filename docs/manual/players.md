@@ -335,7 +335,7 @@ The card says when the downtime is **Due** and when it is **Accepted until** (th
 
 ### Results
 
-When the storytellers deliver the cycle's results, the **Results** tab shows how many are new, and the Characters page says **New results**. Each cycle's results are under its name and date, newest first and open: each answer sits under the action it answers. Older cycles fold away. A cycle re-delivered after a change says **Updated**. Your troupe may also send results by email or Discord.
+When the storytellers deliver the cycle's results, the **Results** tab shows how many are new, and the Characters page says **New results**. Each cycle's results are under its name and date, newest first and open: each answer sits under the action it answers. If the storytellers gave your character equipment with an answer, it says **You received**, and the item, or its new quality, is on the Equipment tab. Older cycles fold away. A cycle re-delivered after a change says **Updated**. Your troupe may also send results by email or Discord.
 
 ![The Results tab: a cycle's results, with the storytellers' answer under the action](images/players/results.png)
 
@@ -432,7 +432,7 @@ At game, the Play View's **Status** tab shows the status the character carries i
 
 ## Equipment
 
-The character's **Equipment** tab lists what it owns: weapons, protective gear, other gear and Vampiric Texts, each with its qualities and what they do, its facts and where it came from. Your storytellers give equipment. You can **Give** an item to another character or **Discard** it.
+The character's **Equipment** tab lists what it owns: weapons, protective gear, other gear and Vampiric Texts, each with its qualities and what they do, its facts and where it came from. Your storytellers give equipment, at any time or with your downtime results. You can **Give** an item to another character or **Discard** it.
 
 ## Quests
 
