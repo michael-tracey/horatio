@@ -55,6 +55,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   email_renames: false,
   email_pictures: false,
   email_titles: false,
+  bell_news: true,
+  email_news: false,
   email_digest: "at_once",
   whos_who_handle: false,
 };

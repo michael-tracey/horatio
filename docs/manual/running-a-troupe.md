@@ -14,7 +14,7 @@ Every troupe has exactly one **lead storyteller**, and as many **storytellers**,
 | Rename or remove any staff member's scene, clear old scenes | Yes | No | No | No |
 | Add, change and remove staff | Yes | Yes | No | No |
 | Change the house rules and troupe settings (Customise) | Yes | Yes | No (can read them) | No |
-| Set up connectors (Discord, email) | Yes | Yes | No (can read them) | No |
+| Set up connectors (Discord, email) and choose the Discord channels for news | Yes | Yes | No (can read them) | No |
 | Edit the troupe's profile, add games to the schedule | Yes | Yes | No | No |
 | See character sheets, the Characters list and the Players list | Yes | Yes | Yes | No |
 | Decide approvals, give exceptions, read backstories | Yes | Yes | Yes | No |
@@ -24,6 +24,7 @@ Every troupe has exactly one **lead storyteller**, and as many **storytellers**,
 | Give an NPC to a player, or make a claim link for it | Yes | Yes | No | No |
 | Give titles, status and equipment; keep locations, quests, shared backgrounds and the influence log | Yes | Yes | Yes | No |
 | Read the troupe log | Yes | Yes | Yes | No |
+| Write, schedule, publish and edit the troupe's news; keep its news agencies | Yes | Yes | Yes | No (can propose a story) |
 | Answer downtime actions assigned to them, or to any narrator | Yes | Yes | Yes | Yes |
 | See the staff list, the players' lines and veils, and who is coming to each game | Yes | Yes | Yes | Yes |
 | Keep the troupe's fill tables | Yes | Yes | Yes | No (can use them) |
@@ -88,12 +89,12 @@ A troupe's page has its tabs in groups. Which ones you see depends on your role.
 
 | Group | Tabs |
 | --- | --- |
-| Troupe | About, Profile, Who's Who, Nominations, House rules, Status, Staff, Log |
+| Troupe | About, Profile, News, Who's Who, Nominations, House rules, Status, Staff, Log |
 | Characters | Approvals, Characters, NPCs, At game, Award XP, Titles |
 | World | Locations, Equipment, Shared backgrounds |
 | Players | Players, Lines and veils |
 | Downtimes | Cycles, My work, Fill tables, Influence log, Quests |
-| Customise | Overview, Troupe settings, Rules, Specialisations, Connectors |
+| Customise | Overview, Troupe settings, Rules, Specialisations, News, Connectors |
 
 A number on a tab is how much waits on you there, such as approvals to decide.
 
@@ -111,7 +112,7 @@ The **About** tab is the troupe at a glance. For staff it starts with **Waiting 
 - **Influence entries that need details** and **Influence effects ending this week**;
 - **Characters with old status to resolve**.
 
-Below it are the **Games** to come (see [Game nights](#game-nights)), the troupe's description and next game, **Who may join**, the **XP floor and ceiling**, and for storytellers and assistant storytellers the **Latest in the log**.
+Below it are the **Latest news** headline, once there is news (see [News](#news)), the **Games** to come (see [Game nights](#game-nights)), the troupe's description and next game, **Who may join**, the **XP floor and ceiling**, and for storytellers and assistant storytellers the **Latest in the log**.
 
 ### My work
 
@@ -239,6 +240,66 @@ The **Status** tab in the Troupe group is a reference for everyone in the troupe
 The **Who's Who** tab shows the troupe's active characters as cards, for its players and staff. It is never public. The court comes first, in rank order, then a section for each clan with a seat, then **Other** for the clans without one, then those no longer with us. Search it by character, player or title, or filter it by clan and sect.
 
 What it shows of sect status is set under [Troupe settings](#customise-troupe-settings).
+
+## News
+
+The troupe's in-world news: stories its storytellers write as the troupe's own **news agencies**, such as a newspaper, a TV station or a Kindred rumour sheet. Everyone in the troupe gets every story: its home and visiting players, and its staff. A story goes out when you publish it, or at a time you schedule, to the **News** tab in the Troupe group and, if the troupe has one, to a Discord channel. How players read it is in [Players](players.md#reading-the-troupes-news).
+
+Each story is one-off: there are no repeating stories. For a regular bulletin, **Duplicate** last week's and change it.
+
+### News agencies
+
+**Customise › News** lists the troupe's agencies. Storytellers and assistant storytellers keep them. **Add an agency** asks for:
+
+- its **Name**, and a line of **Description** for staff;
+- its **Masthead colour**, shown behind its name, beside its stories and down the side of its Discord posts;
+- its own **Discord channel**, if it should post somewhere other than the troupe's news channel (storytellers only).
+
+Its **⋯** has **Edit…**, **Masthead picture…** (a nameplate or logo shown in place of its name) and **Retire**. A retired agency is no longer offered for new stories; its old stories stay, and **Bring back** returns it.
+
+### The news channel on Discord
+
+Under **News on Discord** on the same tab, a storyteller picks **The troupe's news channel** from the connected server's text channels. Stories from agencies without a channel of their own go there. With no Discord server connected, or no channel chosen, news is in the app only, and the desk says so beside each story. The server is connected under [Connectors](#connectors-discord-and-email); the switches there for downtime results (on or off, test mode, alert or full) don't apply to news.
+
+### Writing a story
+
+On the **News** tab, **News desk** opens the desk; **Write a story** starts one. A story has:
+
+- its **Agency** (required);
+- its **Headline** (required);
+- an optional **Dateline**: an in-world date or place, as text, shown above it;
+- the story itself, in the same editor as backstories;
+- an optional **Picture**. Adding a picture to a new story saves it as a draft first.
+
+**Preview** shows it as players will read it, and roughly as it will look on Discord.
+
+### Saving, scheduling and publishing
+
+- **Save draft** keeps it on the desk under **Drafts**, for staff only.
+- **Publish now** puts it on everyone's News tab at once, with a bell notification, and sends it to Discord within a minute.
+- **Schedule…** asks for a date and time, entered and shown on your own clock (your time zone under Account › Settings, or your device's). It goes out within a minute of then.
+
+The desk's **Scheduled** list shows what goes out next and when. Each story's **⋯** has **Change**, **Publish now** and **Cancel**, which turns it back into a draft.
+
+### Editing, unpublishing and duplicating
+
+A published story's **⋯** on the desk has:
+
+- **Edit**: saving changes it in the app at once, and edits its Discord post.
+- **Duplicate**: a new draft with the same agency, words and picture.
+- **Unpublish…**: after you confirm, it goes from everyone's News tab and its Discord post is deleted. It comes back to your drafts.
+
+A draft that was never published, or has been unpublished, can be deleted.
+
+On Discord, a story is an embed in its agency's colour, with the agency's name and masthead picture, the headline, the dateline and story, the picture, and a **Read in Horatio** link. A long story is split over several posts. If Discord refuses it, Horatio tries again for a while; if it still can't, the desk shows why, with **Retry** and **Mark as sent** (for when you've posted it yourself).
+
+### Narrators' proposals
+
+A narrator can propose a story but not publish one. From **Your proposals** on the News tab they write it as above and press **Send the proposal**. They see and change only their own proposals, and only until a storyteller or assistant storyteller takes them up or declines them. They read published stories as players do.
+
+Proposals wait on the desk under **Proposed by narrators**. Open one to edit it, then **Take it up as a draft**, **Schedule…**, **Publish now** or **Decline…**. A **Note** is sent to the narrator with Publish now or Decline; they're told either way.
+
+Publishing, scheduling, editing a published story, unpublishing, declining and changes to agencies and the news channel all go in the [troupe log](#the-troupe-log).
 
 ## Equipment
 
@@ -551,6 +612,8 @@ Tick **Need an approved backstory before accepting a character** to make approva
 - For **email**, set where **Replies go to** and a **Test address**.
 
 A connector the server isn't set up for says so; ask the custodian.
+
+The Discord channel for the troupe's news is chosen apart from these, under **Customise › News** (see [The news channel on Discord](#the-news-channel-on-discord)).
 
 ## Approvals
 

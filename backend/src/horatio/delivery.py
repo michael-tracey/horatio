@@ -1,6 +1,7 @@
 """Delivering downtime results through a troupe's connectors (CONTEXT.md:
-Connector, Channel), and a quest's news: its requirements, and each scenario's
-result, to each of its characters (horatio.quests).
+Connector, Channel), a quest's news: its requirements, and each scenario's
+result, to each of its characters (horatio.quests), and a troupe's posts to its
+Discord server (horatio.posts).
 
 Delivering a cycle records the in-app delivery at once and queues a `pending`
 delivery on each connector the troupe has switched on. `send_due` sends what
@@ -176,6 +177,37 @@ def backoff(attempts: int) -> timedelta:
 
 def send_one(db: Session, delivery: Delivery, at: datetime) -> None:
     """Try to send one locked, pending delivery, and record how it went."""
+    delivery.attempts += 1
+    try:
+        if delivery.post_id is not None:
+            from horatio import posts  # imports this module
+
+            external = posts.send(db, delivery)
+        else:
+            external = send_message(db, delivery)
+    except SendError as error:
+        delivery.last_error = error.reason
+        if error.retry and delivery.attempts < MAX_ATTEMPTS:
+            wait = backoff(delivery.attempts)
+            if error.retry_after is not None:
+                wait = max(wait, timedelta(seconds=error.retry_after))
+            delivery.next_attempt_at = at + wait
+        else:
+            if error.retry:
+                delivery.last_error = f"Gave up after {delivery.attempts} tries: {error.reason}"
+            delivery.status = "failed"
+            delivery.next_attempt_at = None
+        return
+    delivery.status = "sent"
+    delivery.sent_at = at
+    delivery.last_error = None
+    delivery.next_attempt_at = None
+    delivery.external_ids = external
+
+
+def send_message(db: Session, delivery: Delivery) -> dict[str, object]:
+    """Send a downtime's results, or a quest's news, to its character's player.
+    Returns what the connector called it, and where it went. Raises SendError."""
     if delivery.quest_id is not None:
         character, troupe, player = db.execute(
             select(Character, Troupe, User)
@@ -201,47 +233,27 @@ def send_one(db: Session, delivery: Delivery, at: datetime) -> None:
         what = delivery.subject or "downtime results"
         subject = f"{troupe.name}: {what} for {character.name} ({cycle.name})"
         link = results_link(character)
-    delivery.attempts += 1
     connector = CONNECTORS.get(delivery.channel)
     config = db.scalar(
         select(TroupeConnector).where(
             TroupeConnector.troupe_id == troupe.id, TroupeConnector.kind == delivery.channel
         )
     )
-    try:
-        if connector is None or config is None:
-            raise SendError(f"The troupe has no {delivery.channel} connector.", retry=False)
-        if (reason := connector.unavailable()) is not None:
-            raise SendError(reason, retry=False)
-        if suspensions.current(db, player.id) is not None:
-            raise SendError(f"{player.display_name}'s account is suspended.", retry=False)
-        recipient = Recipient(
-            character_id=character.id,
-            character_name=character.name,
-            player_name=player.display_name,
-            player_email=player.email,
-        )
-        target = connector.target(config.settings, recipient, delivery.test_mode)
-        message = Message(troupe=troupe.name, subject=subject, text=delivery.message, link=link)
-        external = connector.send(config.settings, target, message)
-    except SendError as error:
-        delivery.last_error = error.reason
-        if error.retry and delivery.attempts < MAX_ATTEMPTS:
-            wait = backoff(delivery.attempts)
-            if error.retry_after is not None:
-                wait = max(wait, timedelta(seconds=error.retry_after))
-            delivery.next_attempt_at = at + wait
-        else:
-            if error.retry:
-                delivery.last_error = f"Gave up after {delivery.attempts} tries: {error.reason}"
-            delivery.status = "failed"
-            delivery.next_attempt_at = None
-        return
-    delivery.status = "sent"
-    delivery.sent_at = at
-    delivery.last_error = None
-    delivery.next_attempt_at = None
-    delivery.external_ids = {**external, "target": target}
+    if connector is None or config is None:
+        raise SendError(f"The troupe has no {delivery.channel} connector.", retry=False)
+    if (reason := connector.unavailable()) is not None:
+        raise SendError(reason, retry=False)
+    if suspensions.current(db, player.id) is not None:
+        raise SendError(f"{player.display_name}'s account is suspended.", retry=False)
+    recipient = Recipient(
+        character_id=character.id,
+        character_name=character.name,
+        player_name=player.display_name,
+        player_email=player.email,
+    )
+    target = connector.target(config.settings, recipient, delivery.test_mode)
+    message = Message(troupe=troupe.name, subject=subject, text=delivery.message, link=link)
+    return {**connector.send(config.settings, target, message), "target": target}
 
 
 def send_due(db: Session, at: datetime | None = None, limit: int = 50) -> int:
@@ -291,14 +303,17 @@ def mark_sent(delivery: Delivery, user: User) -> None:
 
 
 def send_due_now() -> int:
-    """`send_due` in a session of its own, for the worker; then the notifications
+    """`send_due` in a session of its own, for the worker, after publishing the
+    posts scheduled for now (horatio.posts); then the notifications
     people asked for by email (horatio.notification_emails), the suspensions whose
     end date has passed (horatio.suspensions), the free changes by date that have
     run out (horatio.free_changes), and the items that have expired or are about to
     (horatio.item_expiry)."""
-    from horatio import free_changes, item_expiry, notification_emails
+    from horatio import free_changes, item_expiry, notification_emails, posts
     from horatio.db import get_sessionmaker
 
+    # Scheduled posts first, so their Discord deliveries go in the same round.
+    posts.publish_due_now()
     with get_sessionmaker()() as db:
         sent = send_due(db) + notification_emails.send_due(db)
     suspensions.end_due_now()

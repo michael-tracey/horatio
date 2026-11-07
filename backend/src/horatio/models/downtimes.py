@@ -361,16 +361,25 @@ class Response(Record):
 
 
 class Delivery(Record):
-    """Sending a submission's responses to its player (CONTEXT.md: Delivery)."""
+    """Sending a submission's responses to its player (CONTEXT.md: Delivery), a
+    quest's news to one of its characters, or a troupe's post to Discord."""
 
     __tablename__ = "deliveries"
     __table_args__ = (
         CheckConstraint("channel in ('horatio', 'discord', 'email')", name="channel"),
         CheckConstraint("status in ('pending', 'sent', 'failed')", name="status"),
         CheckConstraint(
-            "(submission_id is not null and quest_id is null and character_id is null)"
-            " or (submission_id is null and quest_id is not null and character_id is not null)",
+            "(submission_id is not null and quest_id is null and character_id is null"
+            " and post_id is null)"
+            " or (submission_id is null and quest_id is not null and character_id is not null"
+            " and post_id is null)"
+            " or (submission_id is null and quest_id is null and character_id is null"
+            " and post_id is not null)",
             name="one_subject",
+        ),
+        CheckConstraint(
+            "(post_id is null) = (action is null) and action in ('sync', 'delete')",
+            name="action",
         ),
         # Never send the same submission's results twice on one channel; an
         # update is a new revision.
@@ -395,6 +404,13 @@ class Delivery(Record):
     character_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("characters.id", ondelete="CASCADE")
     )
+    # A troupe's news story, to Discord (horatio.posts).
+    post_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("posts.id", ondelete="CASCADE"), index=True
+    )
+    # For a post: "sync" makes Discord show it as it now stands, posting or editing;
+    # "delete" removes the messages named in `external_ids`, once it is unpublished.
+    action: Mapped[str | None]
     # A quest's message's subject, such as "Quest: The Lost Journal".
     subject: Mapped[str] = mapped_column(default="", server_default="")
     # A downtime's results: 1 when first delivered, and one more for each update

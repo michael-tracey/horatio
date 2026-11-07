@@ -6,6 +6,9 @@ are httpx2."""
 
 import json
 from collections.abc import Callable, Iterator
+from dataclasses import dataclass
+from email import policy
+from email.parser import BytesParser
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
@@ -29,12 +32,44 @@ OPEN_CHANNEL = "202"
 TEST_CHANNEL = "203"
 
 
+def read_body(request: httpx.Request) -> tuple[dict[str, Any], dict[str, tuple[str, bytes]]]:
+    """A message's JSON, and its files by form field (filename, bytes), whether it
+    came as JSON or as a form with files."""
+    kind = request.headers.get("content-type", "")
+    if not kind.startswith("multipart/"):
+        return json.loads(request.content), {}
+    head = f"Content-Type: {kind}\r\n\r\n".encode()
+    form = BytesParser(policy=policy.HTTP).parsebytes(head + request.content)
+    payload: dict[str, Any] = {}
+    files: dict[str, tuple[str, bytes]] = {}
+    for part in form.iter_parts():
+        name = part.get_param("name", header="content-disposition")
+        data = part.get_payload(decode=True)
+        assert isinstance(name, str) and isinstance(data, bytes)
+        if name == "payload_json":
+            payload = json.loads(data)
+        else:
+            files[name] = (str(part.get_filename()), data)
+    return payload, files
+
+
+@dataclass
+class Posted:
+    channel: str
+    payload: dict[str, Any]
+    files: dict[str, tuple[str, bytes]]
+
+
 class FakeDiscord:
     """Enough of Discord's API for the connector: the code exchange, a server's
-    channels, and posting messages."""
+    channels, and posting, editing and deleting messages."""
 
     def __init__(self) -> None:
         self.posted: list[tuple[str, str]] = []
+        # Messages there now, by id; and every edit and deletion, in order.
+        self.messages: dict[str, Posted] = {}
+        self.edits: list[str] = []
+        self.deletions: list[str] = []
         self.gone: set[str] = set()
         # Responses to give, in order, before posting normally: (status, body).
         self.next: list[tuple[int, dict[str, Any]]] = []
@@ -68,17 +103,34 @@ class FakeDiscord:
                     {"id": "300", "type": 2, "name": "voice", "position": 4},
                 ],
             )
-        if path.startswith("/api/v10/channels/") and request.method == "POST":
+        if path.startswith("/api/v10/channels/"):
             if self.next:
                 code, body = self.next.pop(0)
                 return httpx.Response(code, json=body)
             channel = path.split("/")[4]
             if channel in self.gone:
                 return httpx.Response(404, json={"message": "Unknown Channel", "code": 10003})
-            body = json.loads(request.content)
-            assert body["allowed_mentions"] == {"parse": []}
-            self.posted.append((channel, body["content"]))
-            return httpx.Response(200, json={"id": str(len(self.posted))})
+            message_id = path.split("/")[6] if path.count("/") >= 6 else None
+            if request.method == "POST":
+                body, files = read_body(request)
+                assert body["allowed_mentions"] == {"parse": []}
+                self.posted.append((channel, body.get("content", "")))
+                new_id = str(len(self.posted))
+                self.messages[new_id] = Posted(channel, body, files)
+                return httpx.Response(200, json={"id": new_id})
+            there = self.messages.get(message_id or "")
+            if there is None or there.channel != channel:
+                return httpx.Response(404, json={"message": "Unknown Message", "code": 10008})
+            if request.method == "PATCH":
+                body, files = read_body(request)
+                assert body["allowed_mentions"] == {"parse": []}
+                self.messages[message_id or ""] = Posted(channel, body, files)
+                self.edits.append(message_id or "")
+                return httpx.Response(200, json={"id": message_id})
+            if request.method == "DELETE":
+                del self.messages[message_id or ""]
+                self.deletions.append(message_id or "")
+                return httpx.Response(204)
         return httpx.Response(404, json={"message": "Unknown"})
 
 
@@ -197,6 +249,64 @@ def test_a_failure_part_way_says_how_much_was_sent(fake_discord: FakeDiscord) ->
         connector.send({}, AGNES_CHANNEL, message(text))
 
     assert failed.value.reason.endswith("(1 of 3 parts were sent.)")
+
+
+# --- embeds, edited and deleted --------------------------------------------------------------
+
+
+def test_an_embed_goes_with_its_pictures_and_pings_nobody(fake_discord: FakeDiscord) -> None:
+    embed = {"title": "Fire at the docks", "image": {"url": "attachment://picture.webp"}}
+    picture = discord.File("picture.webp", b"RIFF-picture")
+
+    sent = discord.post_message(OPEN_CHANNEL, {"embeds": [embed]}, [picture])
+
+    there = fake_discord.messages[sent]
+    assert there.channel == OPEN_CHANNEL
+    assert there.payload["embeds"] == [embed]
+    assert there.payload["attachments"] == [{"id": 0, "filename": "picture.webp"}]
+    assert there.files == {"files[0]": ("picture.webp", b"RIFF-picture")}
+
+
+def test_an_edit_replaces_the_message_and_its_attachments(fake_discord: FakeDiscord) -> None:
+    picture = discord.File("picture.webp", b"old")
+    sent = discord.post_message(OPEN_CHANNEL, {"embeds": [{"title": "Old"}]}, [picture])
+
+    discord.edit_message(OPEN_CHANNEL, sent, {"embeds": [{"title": "New"}]})
+
+    there = fake_discord.messages[sent]
+    assert fake_discord.edits == [sent]
+    assert there.payload["embeds"] == [{"title": "New"}]
+    # No attachments listed: the old picture goes.
+    assert there.payload["attachments"] == []
+    assert there.files == {}
+
+
+def test_editing_a_message_someone_deleted_says_so(fake_discord: FakeDiscord) -> None:
+    with pytest.raises(SendError) as failed:
+        discord.edit_message(OPEN_CHANNEL, "404404", {"embeds": []})
+
+    assert (failed.value.status, failed.value.retry) == (404, False)
+
+
+def test_deleting_a_message_already_gone_is_no_failure(fake_discord: FakeDiscord) -> None:
+    sent = discord.post_message(OPEN_CHANNEL, {"embeds": [{"title": "Gone soon"}]})
+
+    discord.delete_message(OPEN_CHANNEL, sent)
+    discord.delete_message(OPEN_CHANNEL, sent)
+
+    assert sent not in fake_discord.messages
+    assert fake_discord.deletions == [sent]
+
+
+def test_a_failed_delete_worth_retrying_is_raised(fake_discord: FakeDiscord) -> None:
+    sent = discord.post_message(OPEN_CHANNEL, {"embeds": [{"title": "Stubborn"}]})
+    fake_discord.next = [(503, {})]
+
+    with pytest.raises(SendError) as failed:
+        discord.delete_message(OPEN_CHANNEL, sent)
+
+    assert failed.value.retry is True
+    assert sent in fake_discord.messages
 
 
 # --- connecting a troupe -----------------------------------------------------------------

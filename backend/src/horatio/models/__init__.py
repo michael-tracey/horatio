@@ -69,6 +69,7 @@ from horatio.models.play import (
     PlayGame,
     PoolModifier,
 )
+from horatio.models.posts import NewsAgency, Post, PostRead
 from horatio.models.quests import (
     Quest,
     QuestLogEntry,
@@ -157,6 +158,9 @@ __all__ = [
     "Nomination",
     "Remembrance",
     "Notification",
+    "NewsAgency",
+    "Post",
+    "PostRead",
     "OwedAction",
     "Project",
     "ProjectCycle",

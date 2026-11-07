@@ -68,6 +68,8 @@ class TroupeAction(StrEnum):
     MANAGE_QUESTS = "manage_quests"
     VIEW_RSVPS = "view_rsvps"
     RUN_CHECKIN = "run_checkin"
+    WRITE_POSTS = "write_posts"
+    PROPOSE_NEWS = "propose_news"
 
 
 _LEAD = {Role.LEAD_STORYTELLER}
@@ -137,6 +139,13 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     # and seeing who came. Checking in starts a character's night on its Play View,
     # as resetting games does (horatio.checkin).
     TroupeAction.RUN_CHECKIN: frozenset(_RUNNING),
+    # Writing the troupe's news: its agencies, and every story, to save, schedule,
+    # publish, edit, unpublish or decline (horatio.posts). Choosing Discord channels
+    # for it is managing connectors.
+    TroupeAction.WRITE_POSTS: frozenset(_RUNNING),
+    # Proposing a news story for the storytellers to publish or decline: a narrator
+    # sees and edits only their own proposals (horatio.posts).
+    TroupeAction.PROPOSE_NEWS: frozenset(_ALL_STAFF),
 }
 
 

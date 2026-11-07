@@ -1,5 +1,6 @@
 """Discord: downtime results posted by the one Horatio bot, which each troupe
-invites to its own server, in a private channel per character.
+invites to its own server, in a private channel per character; and the troupe's
+news, as embeds the bot edits and deletes as the story changes (horatio.posts).
 
 The bot's token, and the app's id and secret, are server configuration
 (`HORATIO_DISCORD_*`); no troupe stores a credential. A troupe connects its
@@ -8,14 +9,16 @@ invite's code exchange, never from the browser, so nobody can attach a server
 they could not add the bot to. Storytellers then pick each character's
 channel, and a test channel, from the server's text channels.
 
-Messages longer than Discord's 2,000 characters are split on paragraph
-boundaries and sent in order. Discord's rate limits are honoured: a short wait
-happens here, a longer one is left to the delivery worker.
+Messages longer than Discord's 2,000 characters, and embeds longer than
+`EMBED_LIMIT`, are split on paragraph boundaries and sent in order. Discord's
+rate limits are honoured: a short wait happens here, a longer one is left to the
+delivery worker.
 """
 
+import json
 import time
 import uuid
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlencode
@@ -28,6 +31,9 @@ from horatio.connectors import Connector, Message, Recipient, SendError, registe
 API = "https://discord.com/api/v10"
 AUTHORIZE = "https://discord.com/oauth2/authorize"
 LIMIT = 2000
+# An embed's text. Discord allows 4,096, and 6,000 across a message's embeds with
+# their titles, so this leaves room for the headline and the agency's name.
+EMBED_LIMIT = 4000
 # The bot needs only to see channels and send messages there: VIEW_CHANNEL (1 << 10)
 # and SEND_MESSAGES (1 << 11). No privileged intents.
 VIEW_CHANNEL = 1 << 10
@@ -101,9 +107,11 @@ def request(method: str, path: str, **kwargs: Any) -> httpx.Response:
             if response.status_code == 401:
                 raise SendError("Discord refused Horatio's bot token.", retry=False)
             if response.status_code == 403:
-                raise SendError("The Horatio bot cannot see or post in that channel.", retry=False)
+                raise SendError(
+                    "The Horatio bot cannot see or post in that channel.", retry=False, status=403
+                )
             if response.status_code == 404:
-                raise SendError("That channel or server no longer exists.", retry=False)
+                raise SendError("That channel or server no longer exists.", retry=False, status=404)
             if response.is_error:
                 raise SendError(
                     f"Discord refused the message ({response.status_code}).", retry=False
@@ -160,6 +168,59 @@ def pieces(text: str, limit: int) -> list[str]:
         if line_part:
             found.append(line_part)
     return found
+
+
+@dataclass(frozen=True)
+class File:
+    """A file sent with a message, such as a picture an embed shows as
+    `attachment://<name>`."""
+
+    name: str
+    data: bytes
+    content_type: str = "image/webp"
+
+
+def message_request(payload: Mapping[str, Any], files: Sequence[File]) -> dict[str, Any]:
+    """What to send for a message with `payload` (its embeds and so on) and `files`:
+    JSON, or a form with the files when there are any. The files listed are the
+    message's only attachments, so an edit drops any it had before. Nobody is ever
+    pinged, whatever the text says."""
+    body = {
+        **payload,
+        "allowed_mentions": {"parse": []},
+        "attachments": [{"id": n, "filename": f.name} for n, f in enumerate(files)],
+    }
+    if not files:
+        return {"json": body}
+    return {
+        "data": {"payload_json": json.dumps(body)},
+        "files": {f"files[{n}]": (f.name, f.data, f.content_type) for n, f in enumerate(files)},
+    }
+
+
+def post_message(channel: str, payload: Mapping[str, Any], files: Sequence[File] = ()) -> str:
+    """Post one message to a channel; returns its id. Raises SendError."""
+    sent = request("POST", f"/channels/{channel}/messages", **message_request(payload, files))
+    return str(sent.json()["id"])
+
+
+def edit_message(
+    channel: str, message_id: str, payload: Mapping[str, Any], files: Sequence[File] = ()
+) -> None:
+    """Change a message the bot posted. Raises SendError, with status 404 when the
+    message is no longer there."""
+    request(
+        "PATCH", f"/channels/{channel}/messages/{message_id}", **message_request(payload, files)
+    )
+
+
+def delete_message(channel: str, message_id: str) -> None:
+    """Delete a message the bot posted. One already gone is no failure."""
+    try:
+        request("DELETE", f"/channels/{channel}/messages/{message_id}")
+    except SendError as error:
+        if error.status != 404:
+            raise
 
 
 @dataclass(frozen=True)
@@ -242,7 +303,9 @@ class DiscordConnector(Connector):
     def check_settings(
         self, settings: Mapping[str, Any], current: Mapping[str, Any]
     ) -> dict[str, Any]:
-        """The server stays as Horatio connected it; channels must be its text channels."""
+        """The server stays as Horatio connected it; channels must be its text channels.
+        The channels for the troupe's posts are chosen apart from these
+        (horatio.api.posts), and kept."""
         guild_id = current.get("guild_id")
         channels = {
             str(uuid.UUID(str(character))): snowflake(channel, "A character's channel")
@@ -266,6 +329,7 @@ class DiscordConnector(Connector):
             "guild_name": current.get("guild_name"),
             "channels": channels,
             "test_channel": test_channel,
+            **({"post_channels": current["post_channels"]} if current.get("post_channels") else {}),
         }
 
     def target(self, settings: Mapping[str, Any], recipient: Recipient, test_mode: bool) -> str:

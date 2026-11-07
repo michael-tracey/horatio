@@ -82,6 +82,7 @@ def test_each_kind_is_off_until_chosen(client_for: Callable[[], TestClient]) -> 
         "email_renames",
         "email_pictures",
         "email_titles",
+        "email_news",
         "email_digest",
     }
     assert not any(v for k, v in shown.items() if k.startswith("email_") and k != "email_digest")

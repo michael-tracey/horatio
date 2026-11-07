@@ -26,6 +26,8 @@ NARRATOR_CAN = {
     TroupeAction.VIEW_LINES_VEILS,
     # Who says they are coming to each game, which every member of staff plans for (#420).
     TroupeAction.VIEW_RSVPS,
+    # Proposing a news story, which only storytellers publish (#510).
+    TroupeAction.PROPOSE_NEWS,
 }
 
 
