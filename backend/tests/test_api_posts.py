@@ -746,6 +746,8 @@ def test_deliveries_for_posts_name_their_action(
     actions = session.scalars(
         select(Delivery.action)
         .where(Delivery.post_id == uuid.UUID(post))
-        .order_by(Delivery.created_at)
+        # Ids are uuidv7, so they keep the order the rows were made in even when the
+        # test's one transaction gives both the same created_at.
+        .order_by(Delivery.id)
     )
     assert list(actions) == ["sync", "delete"]
