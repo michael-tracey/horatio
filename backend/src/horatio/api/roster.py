@@ -392,6 +392,8 @@ MESSAGES: dict[str, str] = {
     "downtime.reminded": "{actor} reminded the players of {characters} downtimes not yet"
     " submitted.",
     "downtime.allowance_adjusted": "{actor} adjusted {character}'s actions: {reason}",
+    "downtime.effect_applied": "{actor} applied {what} to {character}.",
+    "downtime.effect_removed": "{actor} took {what} off {character}.",
     "downtime.feeding_difficulty_set": "{actor} set {clan} feeding to {amount} this cycle:"
     " {reason}",
     "downtime.feeding_adjusted": "{actor} adjusted {character}'s feeding by {delta}: {reason}",
@@ -526,6 +528,7 @@ MESSAGES: dict[str, str] = {
     " background {generation}, techniques lost: {techniques}, Humanity lowered {humanity},"
     " Beast traits {beast}, flaw: {flaw}.",
     "house.golconda": "{actor} set the house option: Golconda Seekers {setting}.",
+    "house.rare_disciplines": "{actor} set the house option: rare disciplines take {setting}.",
     "house.languages": "{actor} set how many languages Linguistics gives: {setting}.",
     "house.clan_names": "{actor} chose to call the Assamites {name}.",
     "house.feeding": "{actor} set feeding to {feeding}, with optional rules: {rules}.",

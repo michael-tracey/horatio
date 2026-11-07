@@ -557,6 +557,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/background-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Background Changes
+         * @description The character's backgrounds raised or lowered for now, for its sheet.
+         */
+        get: operations["read_background_changes_api_characters__character_id__background_changes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/backstory": {
         parameters: {
             query?: never;
@@ -5410,6 +5430,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/responses/{response_id}/effects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Effects
+         * @description What staff have applied from this response, and what they can.
+         */
+        get: operations["read_effects_api_responses__response_id__effects_get"];
+        put?: never;
+        /** Apply Effect */
+        post: operations["apply_effect_api_responses__response_id__effects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/responses/{response_id}/effects/{effect_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Effect */
+        delete: operations["remove_effect_api_responses__response_id__effects__effect_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/responses/{response_id}/influence-entry": {
         parameters: {
             query?: never;
@@ -5486,7 +5544,7 @@ export interface paths {
         get?: never;
         /**
          * Set Pairing
-         * @description Pair a Cancel or Watch with the action of its target's it works on.
+         * @description Pair a Cancel or Observe with the action of its target's it works on.
          */
         put: operations["set_pairing_api_responses__response_id__pairing_put"];
         post?: never;
@@ -7473,6 +7531,99 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/keyword-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Reorder Keywords
+         * @description The order the form offers them in, which is also their order within a step of the
+         *     resolution order.
+         */
+        put: operations["reorder_keywords_api_troupes__troupe_id__keyword_order_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/keywords": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Keywords
+         * @description The troupe's downtime keywords, retired ones too, in its order: for its running
+         *     staff.
+         */
+        get: operations["list_keywords_api_troupes__troupe_id__keywords_get"];
+        put?: never;
+        /**
+         * Add Keyword
+         * @description A keyword of the troupe's own, at the end of its list.
+         */
+        post: operations["add_keyword_api_troupes__troupe_id__keywords_post"];
+        /**
+         * Reset Keywords
+         * @description Back to Horatio's keywords. The troupe's own are retired, so past downtimes keep
+         *     them.
+         */
+        delete: operations["reset_keywords_api_troupes__troupe_id__keywords_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/keywords/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change Keyword
+         * @description Rename, reword or change the rules of one keyword. A default keeps what follows
+         *     from it, under its new name.
+         */
+        put: operations["change_keyword_api_troupes__troupe_id__keywords__key__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/keywords/{key}/retired": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Retire Keyword
+         * @description Retire a keyword, so it is no longer offered, or bring it back. Past downtimes
+         *     keep it either way.
+         */
+        put: operations["retire_keyword_api_troupes__troupe_id__keywords__key__retired_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/languages": {
         parameters: {
             query?: never;
@@ -8115,6 +8266,27 @@ export interface paths {
         put?: never;
         /** Roll Table */
         post: operations["roll_table_api_troupes__troupe_id__random_tables__name__roll_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/rare-disciplines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Rare Disciplines
+         * @description Switch on or off the optional rule that rare disciplines take two downtime
+         *     actions a dot to learn. Dots learned before keep what they cost.
+         */
+        put: operations["set_rare_disciplines_api_troupes__troupe_id__rare_disciplines_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -9055,6 +9227,11 @@ export interface components {
             /** Amount */
             amount: number;
             /**
+             * Detail Ratings
+             * @default []
+             */
+            detail_ratings: number[];
+            /**
              * Min Rating
              * @default 1
              */
@@ -9064,7 +9241,7 @@ export interface components {
              * @default fixed
              * @enum {string}
              */
-            scheme: "fixed" | "per_dot";
+            scheme: "fixed" | "per_dot" | "per_detail";
         };
         /** AllowanceIn */
         AllowanceIn: {
@@ -9075,6 +9252,11 @@ export interface components {
             /** Category */
             category?: string | null;
             /**
+             * Detail Ratings
+             * @default []
+             */
+            detail_ratings: number[];
+            /**
              * Min Rating
              * @default 1
              */
@@ -9084,7 +9266,7 @@ export interface components {
              * @default fixed
              * @enum {string}
              */
-            scheme: "fixed" | "per_dot";
+            scheme: "fixed" | "per_dot" | "per_detail";
             /** Trait */
             trait?: string | null;
         };
@@ -9099,6 +9281,11 @@ export interface components {
              * @default
              */
             note: string;
+            /**
+             * Only
+             * @default
+             */
+            only: string;
             /** Source */
             source: string;
         };
@@ -9112,6 +9299,11 @@ export interface components {
             amount_text: string;
             /** Category */
             category: string | null;
+            /**
+             * Detail Ratings
+             * @default []
+             */
+            detail_ratings: number[];
             /** House */
             house: boolean;
             /** Id */
@@ -9127,7 +9319,7 @@ export interface components {
              * Scheme
              * @enum {string}
              */
-            scheme: "fixed" | "per_dot";
+            scheme: "fixed" | "per_dot" | "per_detail";
             /** Trait */
             trait: string | null;
             /** Who */
@@ -9231,18 +9423,8 @@ export interface components {
             /** Answers */
             answers: components["schemas"]["AnswerIn"][];
             feeding?: components["schemas"]["FeedingIn"] | null;
-        };
-        /**
-         * AppliedOut
-         * @description How staff applied a house merit or flaw (horatio.house_traits).
-         */
-        AppliedOut: {
-            /** Counts Toward Limit */
-            counts_toward_limit: boolean;
-            /** Free */
-            free: boolean;
-            /** Reason */
-            reason: string;
+            /** Quick Hands */
+            quick_hands?: boolean | null;
         };
         /** ApplyIn */
         ApplyIn: {
@@ -9592,6 +9774,36 @@ export interface components {
             characters: components["schemas"]["AwardableCharacter"][];
             /** Session Xp */
             session_xp: number;
+        };
+        /** BackgroundChangeOut */
+        BackgroundChangeOut: {
+            /** Delta */
+            delta: number;
+            /** Ends At */
+            ends_at: string | null;
+            /** Games Left */
+            games_left: number;
+            /** Source */
+            source: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+        };
+        /**
+         * BackgroundNowOut
+         * @description A background raised or lowered for now: "Resources 3 (+1 this month, Crafts)".
+         */
+        BackgroundNowOut: {
+            /** Changes */
+            changes: components["schemas"]["BackgroundChangeOut"][];
+            /** Now */
+            now: number;
+            /** Rating */
+            rating: number;
+            /** Trait */
+            trait: string;
         };
         /** BackgroundSpend */
         BackgroundSpend: {
@@ -10820,6 +11032,11 @@ export interface components {
             patrols: components["schemas"]["PatrolByOut"][];
             /** Poaching */
             poaching?: string | null;
+            /**
+             * Quick Hands
+             * @default false
+             */
+            quick_hands: boolean;
             /** Received */
             received: components["schemas"]["ReceivedOut"][];
             /** Reply */
@@ -12603,6 +12820,16 @@ export interface components {
             /** Pools */
             pools: components["schemas"]["PoolChoiceOut"][];
         };
+        /** EffectIn */
+        EffectIn: {
+            /** Character Id */
+            character_id?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "hungry_dead" | "indirect_attack" | "crafts" | "performance" | "overtaxed" | "recovery";
+        };
         /** EffectRef */
         EffectRef: {
             /** Active */
@@ -12614,6 +12841,16 @@ export interface components {
             id: string;
             /** Text */
             text: string;
+        };
+        /** EffectTargetOut */
+        EffectTargetOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** EmailChangeIn */
         EmailChangeIn: {
@@ -13750,6 +13987,13 @@ export interface components {
              */
             territories: boolean;
         };
+        /** FieldOut */
+        FieldOut: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+        };
         /**
          * FilterCondition
          * @description One condition of a character filter; see horatio.character_filter.
@@ -14771,7 +15015,7 @@ export interface components {
          * @description A troupe's own merit or flaw, marked ★ wherever it shows.
          */
         HouseMarkOut: {
-            applied?: components["schemas"]["AppliedOut"] | null;
+            applied?: components["schemas"]["horatio__api__sheets__AppliedOut"] | null;
             /** Archived */
             archived: boolean;
             /** Availability */
@@ -15528,6 +15772,121 @@ export interface components {
             /** Scenes */
             scenes: components["schemas"]["SceneOut"][];
         };
+        /**
+         * KeywordChoiceOut
+         * @description A downtime keyword, as the form offers it (horatio.keywords).
+         */
+        KeywordChoiceOut: {
+            /** Cost */
+            cost: number;
+            /** Effect */
+            effect: string | null;
+            /** Explanation */
+            explanation: string;
+            /** Fields */
+            fields: string[];
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Retired */
+            retired: boolean;
+        };
+        /** KeywordIn */
+        KeywordIn: {
+            /** Action Kinds */
+            action_kinds?: string[];
+            /**
+             * Computers Only
+             * @default false
+             */
+            computers_only: boolean;
+            /**
+             * Cost
+             * @default 1
+             */
+            cost: number;
+            /**
+             * Explanation
+             * @default
+             */
+            explanation: string;
+            /** Fields */
+            fields?: string[];
+            /** Name */
+            name: string;
+            /** Required For */
+            required_for?: string[];
+            /**
+             * Science
+             * @default false
+             */
+            science: boolean;
+            /**
+             * Step
+             * @default 5
+             */
+            step: number;
+        };
+        /** KeywordOut */
+        KeywordOut: {
+            /** Action Kinds */
+            action_kinds?: string[];
+            /**
+             * Computers Only
+             * @default false
+             */
+            computers_only: boolean;
+            /**
+             * Cost
+             * @default 1
+             */
+            cost: number;
+            /** Effect */
+            effect: string | null;
+            /**
+             * Explanation
+             * @default
+             */
+            explanation: string;
+            /** Fields */
+            fields?: string[];
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Position */
+            position: number;
+            /** Required For */
+            required_for?: string[];
+            /** Retired */
+            retired: boolean;
+            /**
+             * Science
+             * @default false
+             */
+            science: boolean;
+            /**
+             * Step
+             * @default 5
+             */
+            step: number;
+        };
+        /** KeywordsOut */
+        KeywordsOut: {
+            /** Action Kinds */
+            action_kinds: {
+                [key: string]: string;
+            };
+            /** Ages */
+            ages: string[];
+            /** Fields */
+            fields: components["schemas"]["FieldOut"][];
+            /** Keywords */
+            keywords: components["schemas"]["TroupeKeywordOut"][];
+            /** Steps */
+            steps: components["schemas"]["StepOut"][];
+        };
         /** KindOut */
         KindOut: {
             /** Allowed */
@@ -15603,6 +15962,24 @@ export interface components {
             id: string;
             /** Key */
             key: string;
+        };
+        /**
+         * LearningOut
+         * @description Something the character is learning, whose action came off this cycle: a
+         *     ready-made Learn action to confirm.
+         */
+        LearningOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Reason */
+            reason: string;
+            /** Teacher */
+            teacher: string;
+            /** What */
+            what: string;
         };
         /**
          * Leaving
@@ -16970,13 +17347,30 @@ export interface components {
              * @default []
              */
             influence: components["schemas"]["InfluenceStandingOut"][];
+            /**
+             * Keywords
+             * @default []
+             */
+            keywords: components["schemas"]["KeywordChoiceOut"][];
             /** Late */
             late: boolean;
+            /**
+             * Learning
+             * @default []
+             */
+            learning: components["schemas"]["LearningOut"][];
             /**
              * Player Nominations
              * @default false
              */
             player_nominations: boolean;
+            /**
+             * Question Keywords
+             * @default {}
+             */
+            question_keywords: {
+                [key: string]: string[];
+            };
             /** Questions */
             questions: components["schemas"]["QuestionOut"][];
             /**
@@ -16984,11 +17378,17 @@ export interface components {
              * @default []
              */
             quests: components["schemas"]["QuestChoiceOut"][];
+            quick_hands?: components["schemas"]["QuickHandsOut"] | null;
             /**
              * Remembrances
              * @default false
              */
             remembrances: boolean;
+            /**
+             * Required Keywords
+             * @default []
+             */
+            required_keywords: string[];
             /**
              * Short
              * @default {}
@@ -17514,6 +17914,11 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** OrderIn */
+        OrderIn: {
+            /** Keys */
+            keys: string[];
+        };
         /**
          * OtherOut
          * @description Another character at the game. Of another sect, only its name and sect.
@@ -17785,7 +18190,7 @@ export interface components {
         };
         /**
          * PairOut
-         * @description An action a Cancel or Watch is paired with, or one paired with it.
+         * @description An action a Cancel or Observe is paired with, or one paired with it.
          */
         PairOut: {
             /** Answer */
@@ -18278,6 +18683,11 @@ export interface components {
          *     game, which changes only between games, so the page loads it once.
          */
         PlayReference: {
+            /**
+             * Backgrounds Changed
+             * @default []
+             */
+            backgrounds_changed: components["schemas"]["BackgroundNowOut"][];
             /** Blood Per Turn */
             blood_per_turn: number;
             /** Disciplines */
@@ -20011,6 +20421,17 @@ export interface components {
             troupe_id: string;
             xp?: components["schemas"]["XpReviewOut"] | null;
         };
+        /**
+         * QuickHandsOut
+         * @description Quick Hands, Quick Work (Vol. II Issue 1, p. 76), for a character with it: two
+         *     more actions, no feeding, and the next game at half Blood.
+         */
+        QuickHandsOut: {
+            /** Can Change */
+            can_change: boolean;
+            /** On */
+            on: boolean;
+        };
         /** QuoteOut */
         QuoteOut: {
             /** Basis */
@@ -20034,6 +20455,11 @@ export interface components {
             players: number;
             /** Suggested */
             suggested: number;
+        };
+        /** RareDisciplinesIn */
+        RareDisciplinesIn: {
+            /** On */
+            on: boolean;
         };
         /**
          * RarityOut
@@ -20477,6 +20903,19 @@ export interface components {
             /** Successes */
             successes: number;
         };
+        /** ResponseEffectsOut */
+        ResponseEffectsOut: {
+            /** Applied */
+            applied: components["schemas"]["horatio__api__downtime_effects__AppliedOut"][];
+            /** Halved */
+            halved: boolean;
+            /** Indirect Cost */
+            indirect_cost: number | null;
+            /** Recovering */
+            recovering: boolean;
+            /** Targets */
+            targets: components["schemas"]["EffectTargetOut"][];
+        };
         /** ResultIn */
         ResultIn: {
             /**
@@ -20724,6 +21163,11 @@ export interface components {
              * @default []
              */
             skills: string[];
+        };
+        /** RetiredIn */
+        RetiredIn: {
+            /** Retired */
+            retired: boolean;
         };
         /** Retiring */
         Retiring: {
@@ -22151,6 +22595,13 @@ export interface components {
             /** Step */
             step: string;
         };
+        /** StepOut */
+        StepOut: {
+            /** Name */
+            name: string;
+            /** Step */
+            step: number;
+        };
         /**
          * StockFields
          * @description What a Stock NPC has in place of a sheet (MET: VTM pp. 489–490).
@@ -23295,6 +23746,53 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** TroupeKeywordOut */
+        TroupeKeywordOut: {
+            /** Action Kinds */
+            action_kinds?: string[];
+            /**
+             * Computers Only
+             * @default false
+             */
+            computers_only: boolean;
+            /**
+             * Cost
+             * @default 1
+             */
+            cost: number;
+            default?: components["schemas"]["KeywordOut"] | null;
+            /** Effect */
+            effect: string | null;
+            /**
+             * Explanation
+             * @default
+             */
+            explanation: string;
+            /** Fields */
+            fields?: string[];
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Position */
+            position: number;
+            /** Required For */
+            required_for?: string[];
+            /** Retired */
+            retired: boolean;
+            /**
+             * Science
+             * @default false
+             */
+            science: boolean;
+            /**
+             * Step
+             * @default 5
+             */
+            step: number;
+            /** Text */
+            text: string;
+        };
         /** TroupeKindOut */
         TroupeKindOut: {
             /** Catalogue */
@@ -23417,6 +23915,11 @@ export interface components {
             quest_requests_per_cycle: number;
             /** Quests Enabled */
             quests_enabled: boolean;
+            /**
+             * Rare Disciplines Two Actions
+             * @default false
+             */
+            rare_disciplines_two_actions: boolean;
             /**
              * Remembrances
              * @default false
@@ -24050,11 +24553,33 @@ export interface components {
              */
             influence_blocks: components["schemas"]["BlockWarningOut"][];
             influence_entry?: components["schemas"]["InfluenceEntryRef"] | null;
+            /**
+             * Keyword
+             * @default Narrative
+             */
+            keyword: string;
+            /** Keyword Key */
+            keyword_key?: string | null;
             quest?: components["schemas"]["QuestActionOut"] | null;
             /** Question */
             question: string;
+            /**
+             * Resolution
+             * @default 0
+             */
+            resolution: number;
             /** Status */
             status: string;
+            /**
+             * Step
+             * @default 5
+             */
+            step: number;
+            /**
+             * Step Name
+             * @default
+             */
+            step_name: string;
             /** Structured */
             structured: {
                 [key: string]: unknown;
@@ -24407,6 +24932,20 @@ export interface components {
             /** Willpower */
             willpower: number;
         };
+        /** AppliedOut */
+        horatio__api__downtime_effects__AppliedOut: {
+            /** Character Name */
+            character_name: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Text */
+            text: string;
+        };
         /** RemoveIn */
         horatio__api__house_traits__RemoveIn: {
             /** Reason */
@@ -24479,6 +25018,18 @@ export interface components {
              * @default false
              */
             email: boolean;
+        };
+        /**
+         * AppliedOut
+         * @description How staff applied a house merit or flaw (horatio.house_traits).
+         */
+        horatio__api__sheets__AppliedOut: {
+            /** Counts Toward Limit */
+            counts_toward_limit: boolean;
+            /** Free */
+            free: boolean;
+            /** Reason */
+            reason: string;
         };
         /** TeachingOut */
         horatio__api__teachers__TeachingOut: {
@@ -25561,6 +26112,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AttendedGame"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_background_changes_api_characters__character_id__background_changes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackgroundNowOut"][];
                 };
             };
             /** @description Validation Error */
@@ -35011,6 +35593,104 @@ export interface operations {
             };
         };
     };
+    read_effects_api_responses__response_id__effects_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseEffectsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_effect_api_responses__response_id__effects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EffectIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseEffectsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_effect_api_responses__response_id__effects__effect_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+                effect_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseEffectsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     log_answer_api_responses__response_id__influence_entry_post: {
         parameters: {
             query?: never;
@@ -39367,6 +40047,210 @@ export interface operations {
             };
         };
     };
+    reorder_keywords_api_troupes__troupe_id__keyword_order_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeywordsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_keywords_api_troupes__troupe_id__keywords_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeywordsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_keyword_api_troupes__troupe_id__keywords_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeywordIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeywordsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_keywords_api_troupes__troupe_id__keywords_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeywordsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_keyword_api_troupes__troupe_id__keywords__key__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeywordIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeywordsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retire_keyword_api_troupes__troupe_id__keywords__key__retired_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetiredIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeywordsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_languages_api_troupes__troupe_id__languages_get: {
         parameters: {
             query?: never;
@@ -40620,6 +41504,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Roll"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_rare_disciplines_api_troupes__troupe_id__rare_disciplines_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RareDisciplinesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
                 };
             };
             /** @description Validation Error */

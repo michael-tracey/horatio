@@ -163,16 +163,13 @@ def test_a_havens_location_doubles_the_cost_unless_staff_say_it_isnt_against_the
 ) -> None:
     troupe = scene.troupe
     visit = scene.action("Call on Corvin", aimed_at=[scene.corvin])
-    # Three general actions: the one aimed at Corvin costs two.
-    assert save(troupe.player, scene.agnes, [visit, scene.action("Feed", 2)]).status_code == 200
-    over = save(
-        troupe.player,
-        scene.agnes,
-        [visit, scene.action("Feed", 2), scene.action("Hunt", 3)],
-    )
+    # Four general actions, with Computer's (#506): the one aimed at Corvin costs two.
+    three = [visit, scene.action("Feed", 2), scene.action("Read", 3)]
+    assert save(troupe.player, scene.agnes, three).status_code == 200
+    over = save(troupe.player, scene.agnes, [*three, scene.action("Hunt", 4)])
     assert over.status_code == 422
     assert over.json()["detail"] == (
-        "That is more general actions than the 3 this character has, and 1 that costs 2 actions."
+        "That is more general actions than the 4 this character has, and 1 that costs 2 actions."
     )
     scene.submit(troupe.player, scene.agnes, [visit, scene.action("Feed", 2)])
     visit_id = scene.response_id("Call on Corvin")

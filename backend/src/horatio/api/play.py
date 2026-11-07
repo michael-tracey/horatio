@@ -28,6 +28,7 @@ from horatio import (
     sheets,
     teaching,
 )
+from horatio.api.downtime_effects import BackgroundNowOut, background_changes
 from horatio.api.downtimes import staff_troupe
 from horatio.api.equipment import EquipmentModifierOut, modifier_out
 from horatio.api.influence import InfluenceStandingOut, standing_out
@@ -780,6 +781,9 @@ class PlayReference(reference.Reference):
     # A PC's player's lines and veils, for the staff running its game; None for its
     # player, who knows their own, and for an NPC (horatio.lines_veils).
     lines_veils: LinesVeils | None = None
+    # Backgrounds raised or lowered for now: Crafts, Performance, overtaxed Resources
+    # (horatio.downtime_effects).
+    backgrounds_changed: list[BackgroundNowOut] = []
 
 
 def domitor_line(db: Session, character: Character) -> DomitorLine | None:
@@ -812,6 +816,7 @@ def read_reference(character_id: uuid.UUID, db: DbSession, user: CurrentUser) ->
         identities=identities_out(db, character),
         domitor=domitor_line(db, character),
         lines_veils=staff_lines_veils(db, user, character),
+        backgrounds_changed=background_changes(db, character),
     )
 
 

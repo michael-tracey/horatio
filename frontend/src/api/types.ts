@@ -308,3 +308,7 @@ export type RememberedOut = Schemas["RememberedOut"];
 export type MyRemembrancesOut = Schemas["MyRemembrancesOut"];
 export type MyMemoryOut = Schemas["MyMemoryOut"];
 export type CharacterRemembrancesOut = Schemas["CharacterRemembrancesOut"];
+export type ResponseEffectsOut = Schemas["ResponseEffectsOut"];
+export type BackgroundNowOut = Schemas["BackgroundNowOut"];
+export type QuickHandsOut = Schemas["QuickHandsOut"];
+export type AllowanceLineOut = Schemas["AllowanceLineOut"];

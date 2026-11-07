@@ -1244,6 +1244,7 @@ def record(db: Session, character: Character, actor: User, taps: Sequence[Tap]) 
                 event.held_status = play_status.spend_held(
                     db, character, actor, event.tracker, event.note
                 )
+                play_influence.status_spent(db, character, actor, event)
             if event.amount < 0 and event.tracker.startswith(equipment.ITEM):
                 event.equipment = equipment.by_tap(
                     db, character, actor, event.tracker, tap.given_to, event.note

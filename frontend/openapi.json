@@ -450,6 +450,15 @@
             "title": "Amount",
             "type": "integer"
           },
+          "detail_ratings": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 10,
+            "title": "Detail Ratings",
+            "type": "array"
+          },
           "min_rating": {
             "default": 1,
             "minimum": 1.0,
@@ -460,7 +469,8 @@
             "default": "fixed",
             "enum": [
               "fixed",
-              "per_dot"
+              "per_dot",
+              "per_detail"
             ],
             "title": "Scheme",
             "type": "string"
@@ -493,6 +503,15 @@
             ],
             "title": "Category"
           },
+          "detail_ratings": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 10,
+            "title": "Detail Ratings",
+            "type": "array"
+          },
           "min_rating": {
             "default": 1,
             "minimum": 1.0,
@@ -503,7 +522,8 @@
             "default": "fixed",
             "enum": [
               "fixed",
-              "per_dot"
+              "per_dot",
+              "per_detail"
             ],
             "title": "Scheme",
             "type": "string"
@@ -540,6 +560,11 @@
           "note": {
             "default": "",
             "title": "Note",
+            "type": "string"
+          },
+          "only": {
+            "default": "",
+            "title": "Only",
             "type": "string"
           },
           "source": {
@@ -580,6 +605,14 @@
             ],
             "title": "Category"
           },
+          "detail_ratings": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Detail Ratings",
+            "type": "array"
+          },
           "house": {
             "title": "House",
             "type": "boolean"
@@ -608,7 +641,8 @@
           "scheme": {
             "enum": [
               "fixed",
-              "per_dot"
+              "per_dot",
+              "per_detail"
             ],
             "title": "Scheme",
             "type": "string"
@@ -859,36 +893,23 @@
                 "type": "null"
               }
             ]
+          },
+          "quick_hands": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quick Hands"
           }
         },
         "required": [
           "answers"
         ],
         "title": "AnswersIn",
-        "type": "object"
-      },
-      "AppliedOut": {
-        "description": "How staff applied a house merit or flaw (horatio.house_traits).",
-        "properties": {
-          "counts_toward_limit": {
-            "title": "Counts Toward Limit",
-            "type": "boolean"
-          },
-          "free": {
-            "title": "Free",
-            "type": "boolean"
-          },
-          "reason": {
-            "title": "Reason",
-            "type": "string"
-          }
-        },
-        "required": [
-          "free",
-          "counts_toward_limit",
-          "reason"
-        ],
-        "title": "AppliedOut",
         "type": "object"
       },
       "ApplyIn": {
@@ -1756,6 +1777,80 @@
           "characters"
         ],
         "title": "AwardsOut",
+        "type": "object"
+      },
+      "BackgroundChangeOut": {
+        "properties": {
+          "delta": {
+            "title": "Delta",
+            "type": "integer"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "games_left": {
+            "title": "Games Left",
+            "type": "integer"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "delta",
+          "starts_at",
+          "ends_at",
+          "games_left"
+        ],
+        "title": "BackgroundChangeOut",
+        "type": "object"
+      },
+      "BackgroundNowOut": {
+        "description": "A background raised or lowered for now: \"Resources 3 (+1 this month, Crafts)\".",
+        "properties": {
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/BackgroundChangeOut"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "now": {
+            "title": "Now",
+            "type": "integer"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "trait": {
+            "title": "Trait",
+            "type": "string"
+          }
+        },
+        "required": [
+          "trait",
+          "rating",
+          "now",
+          "changes"
+        ],
+        "title": "BackgroundNowOut",
         "type": "object"
       },
       "BackgroundSpend": {
@@ -4928,6 +5023,11 @@
               }
             ],
             "title": "Poaching"
+          },
+          "quick_hands": {
+            "default": false,
+            "title": "Quick Hands",
+            "type": "boolean"
           },
           "received": {
             "items": {
@@ -9837,6 +9937,39 @@
         "title": "EffectChoicesOut",
         "type": "object"
       },
+      "EffectIn": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "kind": {
+            "enum": [
+              "hungry_dead",
+              "indirect_attack",
+              "crafts",
+              "performance",
+              "overtaxed",
+              "recovery"
+            ],
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "EffectIn",
+        "type": "object"
+      },
       "EffectRef": {
         "properties": {
           "active": {
@@ -9859,6 +9992,25 @@
           "active"
         ],
         "title": "EffectRef",
+        "type": "object"
+      },
+      "EffectTargetOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "EffectTargetOut",
         "type": "object"
       },
       "EmailChangeIn": {
@@ -13006,6 +13158,24 @@
         "title": "FeedingSettingIn",
         "type": "object"
       },
+      "FieldOut": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "FieldOut",
+        "type": "object"
+      },
       "FilterCondition": {
         "additionalProperties": false,
         "description": "One condition of a character filter; see horatio.character_filter.",
@@ -15448,7 +15618,7 @@
           "applied": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/AppliedOut"
+                "$ref": "#/components/schemas/horatio__api__sheets__AppliedOut"
               },
               {
                 "type": "null"
@@ -17379,6 +17549,273 @@
         "title": "KeptScenes",
         "type": "object"
       },
+      "KeywordChoiceOut": {
+        "description": "A downtime keyword, as the form offers it (horatio.keywords).",
+        "properties": {
+          "cost": {
+            "title": "Cost",
+            "type": "integer"
+          },
+          "effect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effect"
+          },
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          },
+          "fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "explanation",
+          "fields",
+          "cost",
+          "retired",
+          "effect"
+        ],
+        "title": "KeywordChoiceOut",
+        "type": "object"
+      },
+      "KeywordIn": {
+        "properties": {
+          "action_kinds": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Action Kinds",
+            "type": "array"
+          },
+          "computers_only": {
+            "default": false,
+            "title": "Computers Only",
+            "type": "boolean"
+          },
+          "cost": {
+            "default": 1,
+            "maximum": 5.0,
+            "minimum": 0.0,
+            "title": "Cost",
+            "type": "integer"
+          },
+          "explanation": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Explanation",
+            "type": "string"
+          },
+          "fields": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Fields",
+            "type": "array"
+          },
+          "name": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "required_for": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Required For",
+            "type": "array"
+          },
+          "science": {
+            "default": false,
+            "title": "Science",
+            "type": "boolean"
+          },
+          "step": {
+            "default": 5,
+            "maximum": 6.0,
+            "minimum": 1.0,
+            "title": "Step",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "KeywordIn",
+        "type": "object"
+      },
+      "KeywordOut": {
+        "properties": {
+          "action_kinds": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Action Kinds",
+            "type": "array"
+          },
+          "computers_only": {
+            "default": false,
+            "title": "Computers Only",
+            "type": "boolean"
+          },
+          "cost": {
+            "default": 1,
+            "maximum": 5.0,
+            "minimum": 0.0,
+            "title": "Cost",
+            "type": "integer"
+          },
+          "effect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effect"
+          },
+          "explanation": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Explanation",
+            "type": "string"
+          },
+          "fields": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Fields",
+            "type": "array"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "required_for": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Required For",
+            "type": "array"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          },
+          "science": {
+            "default": false,
+            "title": "Science",
+            "type": "boolean"
+          },
+          "step": {
+            "default": 5,
+            "maximum": 6.0,
+            "minimum": 1.0,
+            "title": "Step",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "key",
+          "position",
+          "retired",
+          "effect"
+        ],
+        "title": "KeywordOut",
+        "type": "object"
+      },
+      "KeywordsOut": {
+        "properties": {
+          "action_kinds": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Action Kinds",
+            "type": "object"
+          },
+          "ages": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Ages",
+            "type": "array"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/FieldOut"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "keywords": {
+            "items": {
+              "$ref": "#/components/schemas/TroupeKeywordOut"
+            },
+            "title": "Keywords",
+            "type": "array"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/StepOut"
+            },
+            "title": "Steps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "keywords",
+          "steps",
+          "fields",
+          "action_kinds",
+          "ages"
+        ],
+        "title": "KeywordsOut",
+        "type": "object"
+      },
       "KindOut": {
         "properties": {
           "allowed": {
@@ -17585,6 +18022,36 @@
           "key"
         ],
         "title": "LearnIn",
+        "type": "object"
+      },
+      "LearningOut": {
+        "description": "Something the character is learning, whose action came off this cycle: a\nready-made Learn action to confirm.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "teacher": {
+            "title": "Teacher",
+            "type": "string"
+          },
+          "what": {
+            "title": "What",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "reason",
+          "what",
+          "teacher"
+        ],
+        "title": "LearningOut",
         "type": "object"
       },
       "Leaving": {
@@ -20988,14 +21455,41 @@
             "title": "Influence",
             "type": "array"
           },
+          "keywords": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/KeywordChoiceOut"
+            },
+            "title": "Keywords",
+            "type": "array"
+          },
           "late": {
             "title": "Late",
             "type": "boolean"
+          },
+          "learning": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LearningOut"
+            },
+            "title": "Learning",
+            "type": "array"
           },
           "player_nominations": {
             "default": false,
             "title": "Player Nominations",
             "type": "boolean"
+          },
+          "question_keywords": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "default": {},
+            "title": "Question Keywords",
+            "type": "object"
           },
           "questions": {
             "items": {
@@ -21012,10 +21506,28 @@
             "title": "Quests",
             "type": "array"
           },
+          "quick_hands": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuickHandsOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "remembrances": {
             "default": false,
             "title": "Remembrances",
             "type": "boolean"
+          },
+          "required_keywords": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Required Keywords",
+            "type": "array"
           },
           "short": {
             "additionalProperties": {
@@ -22442,6 +22954,24 @@
         "title": "OptionOut",
         "type": "object"
       },
+      "OrderIn": {
+        "properties": {
+          "keys": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Keys",
+            "type": "array"
+          }
+        },
+        "required": [
+          "keys"
+        ],
+        "title": "OrderIn",
+        "type": "object"
+      },
       "OtherOut": {
         "description": "Another character at the game. Of another sect, only its name and sect.",
         "properties": {
@@ -23133,7 +23663,7 @@
         "type": "object"
       },
       "PairOut": {
-        "description": "An action a Cancel or Watch is paired with, or one paired with it.",
+        "description": "An action a Cancel or Observe is paired with, or one paired with it.",
         "properties": {
           "answer": {
             "title": "Answer",
@@ -24278,6 +24808,14 @@
       "PlayReference": {
         "description": "The Play View's Sheet and Pools tabs: everything there is to look up at a\ngame, which changes only between games, so the page loads it once.",
         "properties": {
+          "backgrounds_changed": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BackgroundNowOut"
+            },
+            "title": "Backgrounds Changed",
+            "type": "array"
+          },
           "blood_per_turn": {
             "title": "Blood Per Turn",
             "type": "integer"
@@ -28847,6 +29385,25 @@
         "title": "QueuedApproval",
         "type": "object"
       },
+      "QuickHandsOut": {
+        "description": "Quick Hands, Quick Work (Vol. II Issue 1, p. 76), for a character with it: two\nmore actions, no feeding, and the next game at half Blood.",
+        "properties": {
+          "can_change": {
+            "title": "Can Change",
+            "type": "boolean"
+          },
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on",
+          "can_change"
+        ],
+        "title": "QuickHandsOut",
+        "type": "object"
+      },
       "QuoteOut": {
         "properties": {
           "basis": {
@@ -28932,6 +29489,19 @@
           "suggested"
         ],
         "title": "RackOut",
+        "type": "object"
+      },
+      "RareDisciplinesIn": {
+        "properties": {
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "title": "RareDisciplinesIn",
         "type": "object"
       },
       "RarityOut": {
@@ -30088,6 +30658,52 @@
         "title": "ResourcesOut",
         "type": "object"
       },
+      "ResponseEffectsOut": {
+        "properties": {
+          "applied": {
+            "items": {
+              "$ref": "#/components/schemas/horatio__api__downtime_effects__AppliedOut"
+            },
+            "title": "Applied",
+            "type": "array"
+          },
+          "halved": {
+            "title": "Halved",
+            "type": "boolean"
+          },
+          "indirect_cost": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Indirect Cost"
+          },
+          "recovering": {
+            "title": "Recovering",
+            "type": "boolean"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/EffectTargetOut"
+            },
+            "title": "Targets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "applied",
+          "targets",
+          "indirect_cost",
+          "recovering",
+          "halved"
+        ],
+        "title": "ResponseEffectsOut",
+        "type": "object"
+      },
       "ResultIn": {
         "properties": {
           "ends": {
@@ -30716,6 +31332,19 @@
           "can_link"
         ],
         "title": "RetainersOut",
+        "type": "object"
+      },
+      "RetiredIn": {
+        "properties": {
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "retired"
+        ],
+        "title": "RetiredIn",
         "type": "object"
       },
       "Retiring": {
@@ -34471,6 +35100,24 @@
         "title": "StepNeed",
         "type": "object"
       },
+      "StepOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "step": {
+            "title": "Step",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "step",
+          "name"
+        ],
+        "title": "StepOut",
+        "type": "object"
+      },
       "StockFields": {
         "description": "What a Stock NPC has in place of a sheet (MET: VTM pp. 489\u2013490).",
         "properties": {
@@ -37463,6 +38110,117 @@
         "title": "TroupeEquipmentOut",
         "type": "object"
       },
+      "TroupeKeywordOut": {
+        "properties": {
+          "action_kinds": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Action Kinds",
+            "type": "array"
+          },
+          "computers_only": {
+            "default": false,
+            "title": "Computers Only",
+            "type": "boolean"
+          },
+          "cost": {
+            "default": 1,
+            "maximum": 5.0,
+            "minimum": 0.0,
+            "title": "Cost",
+            "type": "integer"
+          },
+          "default": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KeywordOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effect"
+          },
+          "explanation": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Explanation",
+            "type": "string"
+          },
+          "fields": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Fields",
+            "type": "array"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "required_for": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Required For",
+            "type": "array"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          },
+          "science": {
+            "default": false,
+            "title": "Science",
+            "type": "boolean"
+          },
+          "step": {
+            "default": 5,
+            "maximum": 6.0,
+            "minimum": 1.0,
+            "title": "Step",
+            "type": "integer"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "key",
+          "position",
+          "retired",
+          "effect",
+          "text"
+        ],
+        "title": "TroupeKeywordOut",
+        "type": "object"
+      },
       "TroupeKindOut": {
         "properties": {
           "catalogue": {
@@ -37729,6 +38487,11 @@
           },
           "quests_enabled": {
             "title": "Quests Enabled",
+            "type": "boolean"
+          },
+          "rare_disciplines_two_actions": {
+            "default": false,
+            "title": "Rare Disciplines Two Actions",
             "type": "boolean"
           },
           "remembrances": {
@@ -39410,6 +40173,22 @@
               }
             ]
           },
+          "keyword": {
+            "default": "Narrative",
+            "title": "Keyword",
+            "type": "string"
+          },
+          "keyword_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keyword Key"
+          },
           "quest": {
             "anyOf": [
               {
@@ -39424,8 +40203,23 @@
             "title": "Question",
             "type": "string"
           },
+          "resolution": {
+            "default": 0,
+            "title": "Resolution",
+            "type": "integer"
+          },
           "status": {
             "title": "Status",
+            "type": "string"
+          },
+          "step": {
+            "default": 5,
+            "title": "Step",
+            "type": "integer"
+          },
+          "step_name": {
+            "default": "",
+            "title": "Step Name",
             "type": "string"
           },
           "structured": {
@@ -40308,6 +41102,35 @@
         "title": "TeachingOut",
         "type": "object"
       },
+      "horatio__api__downtime_effects__AppliedOut": {
+        "properties": {
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "character_name",
+          "text"
+        ],
+        "title": "AppliedOut",
+        "type": "object"
+      },
       "horatio__api__house_traits__RemoveIn": {
         "properties": {
           "reason": {
@@ -40469,6 +41292,30 @@
           }
         },
         "title": "ResetIn",
+        "type": "object"
+      },
+      "horatio__api__sheets__AppliedOut": {
+        "description": "How staff applied a house merit or flaw (horatio.house_traits).",
+        "properties": {
+          "counts_toward_limit": {
+            "title": "Counts Toward Limit",
+            "type": "boolean"
+          },
+          "free": {
+            "title": "Free",
+            "type": "boolean"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "free",
+          "counts_toward_limit",
+          "reason"
+        ],
+        "title": "AppliedOut",
         "type": "object"
       },
       "horatio__api__teachers__TeachingOut": {
@@ -42170,6 +43017,54 @@
         "summary": "Attended",
         "tags": [
           "check-in"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/background-changes": {
+      "get": {
+        "description": "The character's backgrounds raised or lowered for now, for its sheet.",
+        "operationId": "read_background_changes_api_characters__character_id__background_changes_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BackgroundNowOut"
+                  },
+                  "title": "Response Read Background Changes Api Characters  Character Id  Background Changes Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Background Changes",
+        "tags": [
+          "downtime effects"
         ]
       }
     },
@@ -56804,6 +57699,154 @@
         ]
       }
     },
+    "/api/responses/{response_id}/effects": {
+      "get": {
+        "description": "What staff have applied from this response, and what they can.",
+        "operationId": "read_effects_api_responses__response_id__effects_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "response_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Response Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseEffectsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Effects",
+        "tags": [
+          "downtime effects"
+        ]
+      },
+      "post": {
+        "operationId": "apply_effect_api_responses__response_id__effects_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "response_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Response Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EffectIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseEffectsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apply Effect",
+        "tags": [
+          "downtime effects"
+        ]
+      }
+    },
+    "/api/responses/{response_id}/effects/{effect_id}": {
+      "delete": {
+        "operationId": "remove_effect_api_responses__response_id__effects__effect_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "response_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Response Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "effect_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Effect Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseEffectsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Effect",
+        "tags": [
+          "downtime effects"
+        ]
+      }
+    },
     "/api/responses/{response_id}/influence-entry": {
       "delete": {
         "description": "Take an answer back off the log.",
@@ -56993,7 +58036,7 @@
     },
     "/api/responses/{response_id}/pairing": {
       "put": {
-        "description": "Pair a Cancel or Watch with the action of its target's it works on.",
+        "description": "Pair a Cancel or Observe with the action of its target's it works on.",
         "operationId": "set_pairing_api_responses__response_id__pairing_put",
         "parameters": [
           {
@@ -63982,6 +65025,324 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/keyword-order": {
+      "put": {
+        "description": "The order the form offers them in, which is also their order within a step of the\nresolution order.",
+        "operationId": "reorder_keywords_api_troupes__troupe_id__keyword_order_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeywordsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reorder Keywords",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/keywords": {
+      "delete": {
+        "description": "Back to Horatio's keywords. The troupe's own are retired, so past downtimes keep\nthem.",
+        "operationId": "reset_keywords_api_troupes__troupe_id__keywords_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeywordsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset Keywords",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "get": {
+        "description": "The troupe's downtime keywords, retired ones too, in its order: for its running\nstaff.",
+        "operationId": "list_keywords_api_troupes__troupe_id__keywords_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeywordsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Keywords",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "post": {
+        "description": "A keyword of the troupe's own, at the end of its list.",
+        "operationId": "add_keyword_api_troupes__troupe_id__keywords_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeywordIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeywordsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Keyword",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/keywords/{key}": {
+      "put": {
+        "description": "Rename, reword or change the rules of one keyword. A default keeps what follows\nfrom it, under its new name.",
+        "operationId": "change_keyword_api_troupes__troupe_id__keywords__key__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeywordIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeywordsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Keyword",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/keywords/{key}/retired": {
+      "put": {
+        "description": "Retire a keyword, so it is no longer offered, or bring it back. Past downtimes\nkeep it either way.",
+        "operationId": "retire_keyword_api_troupes__troupe_id__keywords__key__retired_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetiredIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeywordsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retire Keyword",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/languages": {
       "get": {
         "description": "How many languages Linguistics gives in the troupe, and who holds more.",
@@ -66000,6 +67361,60 @@
         "summary": "Roll Table",
         "tags": [
           "responses"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/rare-disciplines": {
+      "put": {
+        "description": "Switch on or off the optional rule that rare disciplines take two downtime\nactions a dot to learn. Dots learned before keep what they cost.",
+        "operationId": "set_rare_disciplines_api_troupes__troupe_id__rare_disciplines_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RareDisciplinesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Rare Disciplines",
+        "tags": [
+          "house rules"
         ]
       }
     },

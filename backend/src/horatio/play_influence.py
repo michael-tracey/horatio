@@ -196,6 +196,33 @@ def spend(
     db.flush()
 
 
+def status_spent(db: Session, character: Character, actor: User, event: PlayEvent) -> None:
+    """A status spent for good on the tap `event` that gives downtime actions (Veteran:
+    one more between games, MET: VtM core p. 483) adds them to the next cycle to open,
+    as an owed action of minus that many. Undoing the tap cancels it with the rest."""
+    from horatio.rules.status import statuses_of
+    from horatio.sheets import rules_for
+
+    name = (event.held_status or {}).get("name")
+    found = statuses_of(rules_for(db, character).rule_set.traits).get(name or "")
+    if found is None or not found.spent_actions or not owes(character):
+        return
+    assert character.home_troupe_id is not None
+    day = game_day(db, character, event.game_id).removeprefix("Spent")
+    db.add(
+        OwedAction(
+            character_id=character.id,
+            troupe_id=character.home_troupe_id,
+            action_kind="general",
+            amount=-found.spent_actions,
+            reason=f"{found.name} spent{day}",
+            owed_by=actor.id,
+            play_event_id=event.id,
+        )
+    )
+    db.flush()
+
+
 def cancel(db: Session, actor: User, event: PlayEvent) -> None:
     """Undo a spend: its entry comes off the log, and what it owed is cancelled,
     given back to a cycle that has already taken it off."""

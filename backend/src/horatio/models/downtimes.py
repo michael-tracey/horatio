@@ -256,6 +256,13 @@ class OwedAction(Record):
     play_event_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("play_events.id", ondelete="CASCADE"), index=True
     )
+    # What owes it, where staff applied it from a response (horatio.downtime_effects):
+    # "hungry_dead" for Call of the Hungry Dead, which does not stack (MET: VtM core
+    # p. 181), "indirect_attack" for an indirect influence attack (p. 512).
+    source: Mapped[str | None]
+    response_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("responses.id", ondelete="CASCADE"), index=True
+    )
 
 
 class Submission(Record):
@@ -297,6 +304,9 @@ class Submission(Record):
     # With Feeding Territories: the characters whose patrol caught this one poaching,
     # by id (horatio.territories).
     feeding_caught_by: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    # The player used Quick Hands, Quick Work this cycle (Vol. II Issue 1, p. 76): two
+    # more general actions, no feeding, and the next game at half Blood.
+    quick_hands: Mapped[bool] = mapped_column(default=False, server_default="false")
 
 
 class Answer(Record):
@@ -494,3 +504,39 @@ class ProjectCycle(Record):
     started_over: Mapped[bool] = mapped_column(default=False, server_default="false")
     # The project's progress once the cycle was counted.
     progress: Mapped[int]
+
+
+class BackgroundChange(Record):
+    """A background raised or lowered for a while (horatio.downtime_effects): Crafts or
+    Performance in a downtime raise Resources or Fame by 1 until the troupe's next cycle
+    opens (MET: VtM core pp. 93, 96); overtaxed Resources are 2 lower until six games
+    and three months have passed, whichever is later, half that once three downtime
+    actions go on recovering (p. 103)."""
+
+    __tablename__ = "background_changes"
+    __table_args__ = (
+        CheckConstraint("source in ('crafts', 'performance', 'overtaxed')", name="source"),
+    )
+
+    character_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("characters.id", ondelete="CASCADE"), index=True
+    )
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"))
+    # The background's name: "Resources" or "Fame".
+    trait: Mapped[str]
+    delta: Mapped[int]
+    source: Mapped[str]
+    # The response staff applied it from; undoing it there removes it.
+    response_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("responses.id", ondelete="CASCADE"), index=True
+    )
+    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    # Overtaxed: the games to play and the date to pass, whichever is later. A month's
+    # boost has neither: it lasts until the troupe's next cycle opens.
+    games: Mapped[int] = mapped_column(default=0, server_default="0")
+    ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # The response whose three actions halved an overtaxed loss's wait.
+    halved_by_response_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("responses.id", ondelete="SET NULL")
+    )
+    added_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))

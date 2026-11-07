@@ -52,6 +52,8 @@ from horatio.rules.store import read_troupe_rules
 from horatio.sheets import conflict, unprocessable
 
 RESULTS = ("full", "half", "other")
+# The technique that stops a character feeding in a downtime (horatio.downtimes).
+QUICK_HANDS = "Quick Hands, Quick Work"
 RESULT_WORDS = {"full": "Full Blood next game.", "half": "Half Blood next game."}
 SETTINGS = ("off", "book")
 SETTING_TEXT = {
@@ -218,10 +220,10 @@ def participant_basis(
         return {"clan": None, "modifiers": [], "herd": 0}
     if participant.feeding is not None:
         return participant.feeding
-    from horatio.downtimes import allowance_sheet
+    from horatio.downtimes import allowance_sheet, held_statuses
 
     troupe_rules = read_troupe_rules(db, character.splat, cycle.troupe_id)
-    return rules.basis(troupe_rules, allowance_sheet(db, character))
+    return rules.basis(troupe_rules, allowance_sheet(db, character), held_statuses(db, character))
 
 
 def adjustments(db: Session, participant: CycleParticipant) -> list[FeedingAdjustment]:
@@ -402,12 +404,20 @@ def check_answer(
     character: Character,
     basis: dict[str, Any],
     answer: FeedingAnswer,
+    *,
+    quick_hands: bool = False,
 ) -> None:
     """Refuse what cannot be: negative numbers, gifts to someone not taking part,
-    or more Herd shared out than the character has."""
+    more Herd shared out than the character has, or feeding under Quick Hands, Quick
+    Work (horatio.downtimes), which still lets it give its Herd to others."""
     numbers = [answer.actions, answer.herd_own, answer.herd_saved, answer.herd_other]
     if any(n < 0 for n in numbers) or any(g.amount < 0 for g in answer.gifts):
         raise unprocessable("Feeding numbers cannot be negative.")
+    if quick_hands and (answer.actions or answer.herd_own or answer.territory):
+        raise unprocessable(
+            "Using Quick Hands, Quick Work, the character cannot feed or use its own Herd "
+            "this cycle."
+        )
     if answer.resonance and answer.resonance not in resonance.HUMORS:
         raise unprocessable(f"No humor {answer.resonance!r}.")
     if basis.get("clan") is None and not answer.empty:
@@ -468,10 +478,10 @@ def received(db: Session, cycle: DowntimeCycle, character_id: uuid.UUID) -> list
 
 
 def territory_fed(
-    db: Session, answer: FeedingAnswer, character_id: uuid.UUID
+    db: Session, answer: FeedingAnswer, character_id: uuid.UUID, *, anywhere: bool = False
 ) -> tuple[FeedingTerritory, bool] | None:
     """The territory the character feeds in with book feeding, and whether it is
-    poaching there."""
+    poaching there: never, for a character that may feed `anywhere` (Triumphant)."""
     if not answer.territory:
         return None
     found = db.get(FeedingTerritory, uuid.UUID(answer.territory))
@@ -479,7 +489,7 @@ def territory_fed(
         return None
     from horatio.territories import holds
 
-    return found, not holds(found, character_id)
+    return found, not (anywhere or holds(found, character_id))
 
 
 def tally(
@@ -496,13 +506,19 @@ def tally(
     downtimes that were submitted. With feeding territories, feeding in one stands in
     for a feeding action."""
     answer = answer_of(submission)
+    # Quick Hands, Quick Work takes no Herd from others.
     gifts = [
         (r.character_name, r.amount)
         for r in received(db, cycle, character.id)
-        if r.submitted or not submitted_only
+        if (r.submitted or not submitted_only)
+        and not (submission is not None and submission.quick_hands)
     ]
     counted = rules.tally(feeding_need, answer.actions, answer.herd_own, gifts)
-    fed = territory_fed(db, answer, character.id) if with_territories else None
+    fed = (
+        territory_fed(db, answer, character.id, anywhere=feeding_need.anywhere)
+        if with_territories
+        else None
+    )
     if fed is None:
         return counted
     territory, poaching = fed
@@ -567,7 +583,12 @@ def summary(
         if herd:
             parts.append("Herd: " + ", ".join(herd))
         if show.territories and participant is not None:
-            fed = territory_fed(db, answer, participant.character_id)
+            fed = territory_fed(
+                db,
+                answer,
+                participant.character_id,
+                anywhere=rules.feeds_anywhere(participant.feeding),
+            )
             if fed is not None:
                 parts.append(f"{'poaching' if fed[1] else 'feeding'} in {fed[0].name}")
     if show.territories and answer.patrolling:
@@ -609,6 +630,8 @@ def poached(
         fed = territory_fed(db, answer, participant.character_id)
         territory = fed[0] if fed else None
     if territory is None or territories.holds(territory, participant.character_id):
+        return None
+    if rules.feeds_anywhere(participant.feeding):
         return None
     return territory
 
@@ -836,24 +859,28 @@ def compose(db: Session, submission: Submission, show: Shown) -> str | None:
         with_resonance=show.resonance,
         territory_words=territory_text(db, submission, show),
     )
+    if found is None and submission.quick_hands:
+        found = f"*Result:* **{RESULT_WORDS['half']}**"
     if found is None:
         return None
     answer = answer_of(submission)
     participant = db.get_one(CycleParticipant, submission.participant_id)
     words = summary(db, answer, show=show, participant=participant)
     lines = ["**Feeding**"]
-    if words and (not answer.empty or show.rack):
+    if submission.quick_hands:
+        lines.append(f"*Your feeding:* none, using {QUICK_HANDS}")
+    elif words and (not answer.empty or show.rack):
         lines.append(f"*Your feeding:* {words}")
     return "\n".join(lines) + "\n" + found
 
 
 def mark_half_blood(db: Session, character: Character, submission: Submission) -> None:
-    """On delivery: a half answer starts the character's next Play View game at
-    half Blood; any other answer, at the usual amount. A game already started
-    but with nothing tapped yet is the next game."""
-    if submission.feeding_result is None:
+    """On delivery: a half answer, or Quick Hands, Quick Work, starts the character's
+    next Play View game at half Blood; any other answer, at the usual amount. A game
+    already started but with nothing tapped yet is the next game."""
+    if submission.feeding_result is None and not submission.quick_hands:
         return
-    half = submission.feeding_result == "half"
+    half = submission.feeding_result == "half" or submission.quick_hands
     game = db.scalar(
         select(PlayGame).where(PlayGame.character_id == character.id, PlayGame.ended_at.is_(None))
     )

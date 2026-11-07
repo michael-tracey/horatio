@@ -288,6 +288,14 @@ Downtimes come from the character's home troupe, one [cycle](glossary.md#downtim
 
 The form is the troupe's own. On the right, the cycle's card gives its due date and status (**Draft** or **Submitted**), and **Your actions** counts the actions you have of each kind, how many you've used, and where they come from: those everyone gets, those from the character's traits, and any adjustment the storytellers made. Actions the character owes for learning are taken off, and a red line says if it's short.
 
+Each line names its source, as the book has it:
+
+- **Traits that give actions:** Computer (one, spent as any other or on stopping or watching another character's action), each Science field (one, only for work in that field), the ritual Soul of the Homunculi (two) and Mytherceria's Ay Befriend (one no one can trace or watch). Your troupe can change any of these in its house rules.
+- **Status spent at a game:** spending Veteran on the Play View adds an action to the next downtime, such as "Veteran spent at the 3 Nov game". Undoing the tap takes it back.
+- **What others did to you:** staff take off what Call of the Hungry Dead or an indirect influence attack costs the character, such as "Call of the Hungry Dead against you".
+
+An action only for one thing, such as a Science action, says so on its question: "Of these, 1 Science action (Chemistry only)". Staff judge what fits.
+
 The questions follow. A question marked with a red asterisk must be answered.
 
 ![The downtime form: the Feeding section, an action, and on the right the cycle's due date and the actions left](images/players/downtime.png)
@@ -300,9 +308,17 @@ The **Feeding** section says how much feeding the character needs this cycle, an
 
 The troupe's optional rules add more: **Resonance you hunt for** (Blood Resonance), a territory to feed in and patrols (feeding territories), or the Rack, where you take a vessel instead of spending actions and Herd. Once a storyteller has answered your feeding, it can't change.
 
+A character holding the status Triumphant needs one feeding action fewer, and may feed in any territory without poaching. The Feeding section shows it as "Triumphant −1".
+
+### Quick Hands, Quick Work
+
+A character with the technique Quick Hands, Quick Work gets a choice at the top of its form each cycle: **Use Quick Hands, Quick Work this cycle (+2 actions; no feeding; start next game at half Blood)**. It's off until you tick it, and you can change it until you submit.
+
+While it's on, the character has two more general actions, shown as "Quick Hands, Quick Work" in **Your actions**. It can't spend actions feeding, use its own Herd or take Herd from others, so the Feeding section is closed, but it can still give its Herd to others. Its next game starts at half Blood.
+
 ### Actions, influence and quests
 
-Each action question has **Add an action** with how many are left of that kind, and **Remove this action** (with **Undo**) under each one.
+Each action question has **Add an action** with how many are left of that kind, and **Remove this action** (with **Undo**) under each one. Where the troupe uses the optional rule, learning a dot of a rare discipline from a teacher costs two actions, not one.
 
 - **Influence.** An action of an influence kind also asks for the **Specialisation** and the **Action**, offering the actions the character can reach with its influence.
 - **Quests.** *If your troupe runs quests:* the **Quest action** asks **Which quest** it's for: one the character is in or leads, or one shared with it or posted to the troupe, which it joins by choosing it.
@@ -354,6 +370,8 @@ The card says when the downtime is **Due** and when it is **Accepted until** (th
 When the storytellers deliver the cycle's results, the **Results** tab shows how many are new, and the Characters page says **New results**. Each cycle's results are under its name and date, newest first and open: each answer sits under the action it answers. Older cycles fold away. A cycle re-delivered after a change says **Updated**. Your troupe may also send results by email or Discord.
 
 ![The Results tab: a cycle's results, with the storytellers' answer under the action](images/players/results.png)
+
+A result can also change a background for a while. Two actions of Crafts (making something and selling it) raise Resources by 1, and two of Performance raise Fame by 1, until the troupe's next cycle opens. Overtaxed Resources are 2 lower for six games or three months, whichever is later, and three actions spent recovering halve that. The sheet's **Backgrounds changed for now** card and the Play View's Sheet tab show it, such as "Resources 3 (+1 this month, Crafts)".
 
 ### Reading the nominations
 

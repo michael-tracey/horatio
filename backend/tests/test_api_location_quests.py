@@ -532,6 +532,7 @@ def test_fancy_gives_an_elite_action_in_the_next_cycle(troupe: Troupe, agnes: st
         "source": "The Gala (Fancy)",
         "amount": 1,
         "note": "",
+        "only": "",
     } in mine["breakdown"]
 
 
@@ -553,6 +554,7 @@ def test_shunned_switches_fancy_off_for_the_cycle(troupe: Troupe, agnes: str) ->
         "source": "The Gala (Fancy)",
         "amount": 0,
         "note": "Not available this cycle.",
+        "only": "",
     } in mine["breakdown"]
 
 

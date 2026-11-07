@@ -14,6 +14,7 @@ from typing import Any
 
 from horatio.rules.model import SheetTrait, TroupeRules
 from horatio.rules.splats import SPLATS
+from horatio.rules.status import STATUS_CATEGORY
 
 # Feeding actions a clan needs when storytellers have not said otherwise.
 DEFAULT_DIFFICULTY = 1
@@ -25,15 +26,19 @@ def clan_family(name: str) -> str:
     return name.split(":")[0].strip()
 
 
-def basis(rules: TroupeRules, sheet: Sequence[SheetTrait]) -> dict[str, Any]:
+def basis(
+    rules: TroupeRules, sheet: Sequence[SheetTrait], statuses: Sequence[str] = ()
+) -> dict[str, Any]:
     """What the sheet says about feeding, kept on the participant when it joins a
     cycle: its clan (None for a character with none, which does not feed), the
     traits that change feeding, and its Herd rating. A splat that does not feed
-    on mortals (a ghoul, which drinks vitae) has none of them."""
+    on mortals (a ghoul, which drinks vitae) has none of them. `statuses` are the
+    fleeting and negative status it holds, which are not on the sheet (Triumphant)."""
     if not SPLATS[rules.rule_set.splat].panels.feed:
         return {"clan": None, "modifiers": [], "herd": 0}
     clan = next((t.name for t in sheet if t.category == "clan"), None)
     held = {(t.category, t.name) for t in sheet if t.rating is None or t.rating > 0}
+    held |= {(STATUS_CATEGORY, name) for name in statuses}
     modifiers = [
         {
             "source": m.trait,
@@ -42,6 +47,7 @@ def basis(rules: TroupeRules, sheet: Sequence[SheetTrait]) -> dict[str, Any]:
             "always_half": m.always_half,
             "page": m.page,
         }
+        | ({"anywhere": True} if m.anywhere else {})
         for m in rules.rule_set.feeding_modifiers
         if (m.category, m.trait) in held
     ]
@@ -86,6 +92,13 @@ class Need:
     herd_factor: int
     # No feeding brings the character to full Blood.
     always_half: bool
+    # It may feed in any feeding territory without poaching (Triumphant).
+    anywhere: bool = False
+
+
+def feeds_anywhere(feeding_basis: Mapping[str, Any] | None) -> bool:
+    """A trait or status lets the character feed in any territory without poaching."""
+    return any(m.get("anywhere") for m in (feeding_basis or {}).get("modifiers", []))
 
 
 def herd_note(factor: int) -> str:
@@ -106,6 +119,8 @@ def need(
         notes = [herd_note(m["herd_factor"])]
         if m["always_half"]:
             notes.append("always half Blood")
+        if m.get("anywhere"):
+            notes.append("feeds in any territory")
         lines.append(
             NeedLine(
                 m["source"],
@@ -120,7 +135,7 @@ def need(
     for delta, reason in adjustments:
         lines.append(NeedLine("Storyteller", delta, "adjustment", reason))
     needed = max(0, sum(line.amount for line in lines))
-    return Need(needed, tuple(lines), factor, always_half)
+    return Need(needed, tuple(lines), factor, always_half, feeds_anywhere(feeding_basis))
 
 
 @dataclass(frozen=True)

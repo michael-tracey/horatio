@@ -134,6 +134,8 @@ class AllowanceLineOut(BaseModel):
     # What the actions mean (Hunted's are owed to staying hidden, and what not
     # spending them does).
     note: str = ""
+    # What they may only be spent on: a Science's field, "Chemistry".
+    only: str = ""
 
 
 class AdjustmentOut(BaseModel):
@@ -377,6 +379,17 @@ class AnswersIn(BaseModel):
     answers: list[AnswerIn]
     # The Feeding section; left out, it stays as it was.
     feeding: FeedingIn | None = None
+    # Use Quick Hands, Quick Work this cycle; left out, it stays as it was.
+    quick_hands: bool | None = None
+
+
+class QuickHandsOut(BaseModel):
+    """Quick Hands, Quick Work (Vol. II Issue 1, p. 76), for a character with it: two
+    more actions, no feeding, and the next game at half Blood."""
+
+    on: bool
+    # It can change until the downtime is submitted.
+    can_change: bool
 
 
 class AnswerOut(AnswerIn):
@@ -443,6 +456,8 @@ class MyDowntime(BaseModel):
     influence: list[InfluenceStandingOut] = []
     # The Feeding section, for a character that feeds.
     feeding: MyFeedingOut | None = None
+    # The choice of Quick Hands, Quick Work, for a character with the technique.
+    quick_hands: QuickHandsOut | None = None
     # The quests its Quest action can name, when the form has one.
     quests: list[QuestChoiceOut] = []
     # Who its actions can be aimed at, and whether it can mark one a Cancel or
@@ -578,7 +593,7 @@ def participant_out(
         player_id=player.id,
         player_handle=player.handle,
         allowance=downtimes.effective_allowance(db, p),
-        breakdown=[AllowanceLineOut(**line) for line in p.allowance_breakdown],
+        breakdown=[AllowanceLineOut(**line) for line in downtimes.breakdown(db, p)],
         adjustments=[
             AdjustmentOut(action_kind=a.action_kind, delta=a.delta, reason=a.reason)
             for a in downtimes.adjustments(db, p)
@@ -1030,7 +1045,7 @@ def my_downtime_out(
         closes_at=cycle.closes_at,
         grace_ends_at=cycle.grace_ends_at,
         allowance=allowance,
-        breakdown=[AllowanceLineOut(**line) for line in participant.allowance_breakdown],
+        breakdown=[AllowanceLineOut(**line) for line in downtimes.breakdown(db, participant)],
         adjustments=[
             AdjustmentOut(action_kind=a.action_kind, delta=a.delta, reason=a.reason)
             for a in downtimes.adjustments(db, participant)
@@ -1053,6 +1068,13 @@ def my_downtime_out(
         completion_xp_awarded=completion_awarded(db, participant),
         influence=[standing_out(s) for t, s in standings.items() if t in asked],
         feeding=my_feeding_out(db, character, cycle, participant, submission),
+        quick_hands=QuickHandsOut(
+            on=submission is not None and submission.quick_hands,
+            can_change=submission is None or submission.status != "submitted",
+        )
+        if (submission is not None and submission.quick_hands)
+        or downtimes.has_quick_hands(db, character)
+        else None,
         quests=quest_choices(db, character, cycle, submission)
         if any(q.kind == "quest" for q in questions)
         else [],
@@ -1112,6 +1134,7 @@ def save_answers(
         participant,
         [downtimes.AnswerSpec(**a.model_dump()) for a in body.answers],
         feeding_answer(body.feeding) if body.feeding is not None else None,
+        body.quick_hands,
     )
     db.commit()
     return my_downtime_out(db, character, cycle, participant)
