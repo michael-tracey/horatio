@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from horatio import audit
 from horatio.api.downtimes import staff_troupe
+from horatio.api.play import PlayReference, PlayView, read_play, read_reference
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.viewing import read_only
 from horatio.models import (
@@ -88,6 +89,24 @@ class SceneOut(SceneSummary):
 
 class Cleared(BaseModel):
     removed: int
+
+
+class KeptCard(BaseModel):
+    """One character in the troupe's scenes, with what its card shows."""
+
+    character_id: uuid.UUID
+    play: PlayView
+    # The Sheet and Pools reference a sheeted card's pools come from; None for a
+    # Stock NPC, whose stat block is in its Play View.
+    reference: PlayReference | None
+
+
+class KeptScenes(BaseModel):
+    """Every scene of the troupe, with each card's Play View, for a phone to keep for
+    a game with no signal (issue #503): one request on weak signal, not one a card."""
+
+    scenes: list[SceneOut]
+    cards: list[KeptCard]
 
 
 def may_change(db: Session, user: User, troupe: Troupe, scene: Scene) -> bool:
@@ -265,6 +284,32 @@ def clear_scenes(
         )
     db.commit()
     return Cleared(removed=len(removed))
+
+
+@router.get("/kept")
+def kept_scenes(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> KeptScenes:
+    """The troupe's scenes and their cards, sheeted NPCs, Stock NPCs and PCs alike,
+    for its running staff to keep on a phone. Opening them this way doesn't count
+    as using them."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.RUN_SCENES)
+    found = list(
+        db.scalars(
+            select(Scene)
+            .where(Scene.troupe_id == troupe.id)
+            .order_by(Scene.last_used_at.desc(), Scene.id.desc())
+        )
+    )
+    scenes = [scene_out(db, user, troupe, s) for s in found]
+    stock = {p.character_id for s in scenes for p in s.stock}
+    cards: list[KeptCard] = []
+    for character_id in dict.fromkeys(c for s in scenes for c in s.characters):
+        try:
+            play = read_play(character_id, db, user)
+            reference = None if character_id in stock else read_reference(character_id, db, user)
+        except HTTPException:
+            continue  # gone from the troupe since it was pinned: its card says so online
+        cards.append(KeptCard(character_id=character_id, play=play, reference=reference))
+    return KeptScenes(scenes=scenes, cards=cards)
 
 
 @router.get("/{scene_id}")

@@ -751,6 +751,19 @@ If an award takes a character past the monthly figure, Horatio warns you (or, wi
 - A scene's maker, or the lead storyteller, renames or removes it. Removing a scene leaves its characters as they are.
 - The lead can clear **Old scenes** not used since a date.
 
+### Scenes at a game with no signal
+
+At a venue with no signal, you can still run a fight from your phone if you keep the troupe's scenes on it first.
+
+1. On your phone, turn on **Your account › This device › Keep my characters on this device** (it says the phone is yours; see [Using Horatio at a game with no signal](players.md#using-horatio-at-a-game-with-no-signal)).
+2. While you have signal, open the troupe's **Scenes** page and press **Keep tonight's scenes on this phone**. It keeps every scene of the troupe, every character on their cards (NPCs, Stock NPCs and the PCs in them) and what each card needs, for this troupe only. It then says when, and how much: *Kept 6:55 pm · 3 scenes, 14 NPCs, 2 PCs*, with **Update** and **Remove**.
+
+With signal, kept scenes follow what you see: a scene you open, a character you put in one or take out, and every tap. Press **Update** before you leave to be sure you have the newest.
+
+With no signal, the Scenes page and every kept scene open as usual. Tap the cards as ever: the taps wait on the phone, and a line under the header says how old the scenes are and how many taps are waiting. When the phone gets signal again they're sent. Two storytellers tapping the same NPC on two phones both count, in the order they were tapped. Changing a scene needs signal: making, renaming or removing one, and putting a character in or taking one out, all say **Needs a connection**. A scene made after you kept them says it isn't kept on this phone. No other staff screen works without signal.
+
+Kept scenes are listed in **This device**, each troupe with its own **Remove**. Turning **Keep my characters on this device** off, or signing out, removes them.
+
 ### Resetting after the game
 
 Under **After the game**, **Reset everyone…** then **Reset everyone for the next game** puts every character's trackers back. Each game's log is kept, under Past games on their Play View. Checking a character in at the next game does the same for that character.

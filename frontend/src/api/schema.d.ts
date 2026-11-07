@@ -8048,6 +8048,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/scenes/kept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Kept Scenes
+         * @description The troupe's scenes and their cards, sheeted NPCs, Stock NPCs and PCs alike,
+         *     for its running staff to keep on a phone. Opening them this way doesn't count
+         *     as using them.
+         */
+        get: operations["kept_scenes_api_troupes__troupe_id__scenes_kept_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/scenes/{scene_id}": {
         parameters: {
             query?: never;
@@ -15257,6 +15279,30 @@ export interface components {
         ItemsExpireIn: {
             /** On */
             on: boolean;
+        };
+        /**
+         * KeptCard
+         * @description One character in the troupe's scenes, with what its card shows.
+         */
+        KeptCard: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            play: components["schemas"]["PlayView"];
+            reference: components["schemas"]["PlayReference"] | null;
+        };
+        /**
+         * KeptScenes
+         * @description Every scene of the troupe, with each card's Play View, for a phone to keep for
+         *     a game with no signal (issue #503): one request on weak signal, not one a card.
+         */
+        KeptScenes: {
+            /** Cards */
+            cards: components["schemas"]["KeptCard"][];
+            /** Scenes */
+            scenes: components["schemas"]["SceneOut"][];
         };
         /** KindOut */
         KindOut: {
@@ -40132,6 +40178,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Cleared"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    kept_scenes_api_troupes__troupe_id__scenes_kept_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeptScenes"];
                 };
             };
             /** @description Validation Error */

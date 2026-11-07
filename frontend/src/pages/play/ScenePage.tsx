@@ -22,6 +22,8 @@ import { useModifiers } from "./useModifiers";
 import { usePlay } from "./usePlay";
 import { useReference } from "./useReference";
 import { useKeepAwake } from "./wakeLock";
+import { useOnline } from "../../offline/connection";
+import { NeedsSignal, ScenesStrip } from "../../offline/KeepScenes";
 import { expandPower } from "../troupe/stockNpcs";
 
 function cx(...classes: (string | false | null | undefined)[]): string {
@@ -38,6 +40,8 @@ function cx(...classes: (string | false | null | undefined)[]): string {
  */
 export function ScenePage() {
   const { troupeId = "", sceneId = "" } = useParams();
+  // With no signal, a kept scene opens and its cards take taps; its line-up waits for signal (#503).
+  const online = useOnline();
   const prefs = usePreferences();
   // As the Play View's switch on this device says, or the settings.
   const awake = useKeepAwake(prefs.keep_awake).held;
@@ -109,10 +113,18 @@ export function ScenePage() {
             </span>
           )}
         </div>
+        <ScenesStrip troupeId={troupeId} />
       </header>
       <main className="mx-auto flex max-w-6xl flex-col gap-3 px-4 pt-3">
         {!scene.data ? (
-          scene.isPending ? (
+          scene.isPending && scene.fetchStatus === "paused" ? (
+            <div role="status" className="py-8 text-center">
+              <p>This scene isn't kept on this phone, so it needs a connection.</p>
+              <Link to={list} className="text-sm text-gold underline hover:text-parchment">
+                Back to the kept scenes
+              </Link>
+            </div>
+          ) : scene.isPending ? (
             <p className="py-8 text-center text-mist">Loading…</p>
           ) : (
             <>
@@ -139,7 +151,7 @@ export function ScenePage() {
               <div className="flex flex-wrap items-baseline gap-x-3">
                 <h1 className="text-xl text-gold">{scene.data.name}</h1>
                 <span className="text-xs text-mist">{scene.data.mine ? "Your scene" : `${scene.data.created_by_name}'s scene`}</span>
-                {scene.data.can_change && (
+                {scene.data.can_change && online && (
                   <button type="button" className="text-xs text-mist underline hover:text-parchment" onClick={() => setRenaming(true)}>
                     Rename
                   </button>
@@ -147,7 +159,14 @@ export function ScenePage() {
               </div>
             )}
             <ErrorText error={changes.rename.error} />
-            <AddToScene roster={roster.data ?? []} pinned={pinned} onPin={(id) => pinning.mutate({ id, on: true })} error={roster.error ?? pinning.error} />
+            {online ? (
+              <AddToScene roster={roster.data ?? []} pinned={pinned} onPin={(id) => pinning.mutate({ id, on: true })} error={roster.error ?? pinning.error} />
+            ) : (
+              <div className="max-w-md text-sm">
+                <p>Add to the scene</p>
+                <NeedsSignal />
+              </div>
+            )}
             {pinned.length > 1 && (
               <button
                 type="button"
@@ -166,7 +185,7 @@ export function ScenePage() {
             ) : (
               <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="In the scene">
                 {shown.map((id) => {
-                  const remove = () => pinning.mutate({ id, on: false });
+                  const remove = online ? () => pinning.mutate({ id, on: false }) : undefined;
                   const stocked = stock.get(id);
                   return (
                     <li key={id} className="min-w-0">
@@ -395,7 +414,7 @@ function PoolsGlance({ pools, willpower, modifiers, on }: { pools: TestPool[]; w
  * tap. It has the same `usePlay` as its full Play View, the Stock one, so its taps,
  * Undo and log are everyone's.
  */
-function StockCard({ pin, back, onRemove }: { pin: SceneOut["stock"][number]; back: string; onRemove: () => void }) {
+function StockCard({ pin, back, onRemove }: { pin: SceneOut["stock"][number]; back: string; onRemove?: () => void }) {
   const characterId = pin.character_id;
   const { view, shown, tap, sync, accept } = usePlay(characterId);
   const [open, setOpen] = useState(() => loadOpen(characterId));
@@ -407,8 +426,8 @@ function StockCard({ pin, back, onRemove }: { pin: SceneOut["stock"][number]; ba
     return (
       <article className="flex flex-col gap-2 rounded-lg border border-ash bg-dusk p-3" aria-label={pin.name}>
         <h2 className="truncate text-lg leading-tight text-gold">{pin.name}</h2>
-        {view.isPending ? <p className="text-mist">Loading…</p> : <ErrorText error={view.error} />}
-        <Button variant="secondary" className="self-start" onClick={onRemove}>
+        {view.isPending ? <p className="text-mist">{view.fetchStatus === "paused" ? "Not kept on this phone: needs a connection." : "Loading…"}</p> : <ErrorText error={view.error} />}
+        <Button variant="secondary" className="self-start" onClick={onRemove} disabled={!onRemove} title={onRemove ? undefined : "Needs a connection"}>
           Remove from the scene
         </Button>
       </article>
@@ -463,7 +482,14 @@ function StockCard({ pin, back, onRemove }: { pin: SceneOut["stock"][number]; ba
       )}
       {open.includes("reset") && <ResetGame view={shown} sync={sync} onReset={accept} />}
       <ErrorText error={view.error} />
-      <button type="button" className="self-start text-xs text-mist underline hover:text-parchment" onClick={onRemove} aria-label={`Remove ${name} from the scene`}>
+      <button
+        type="button"
+        className="self-start text-xs text-mist underline hover:text-parchment disabled:no-underline disabled:opacity-50"
+        onClick={onRemove}
+        disabled={!onRemove}
+        title={onRemove ? undefined : "Needs a connection"}
+        aria-label={`Remove ${name} from the scene`}
+      >
         Remove from the scene
       </button>
     </article>
@@ -485,7 +511,7 @@ function rankOf(reference: PlayReference, shown: Shown, own: Modifier[]): Rank |
  * one query, its refresh and its queue of unsent taps are the same), with the
  * trackers a scene needs.
  */
-function SceneCard({ characterId, back, onRemove, onRank }: { characterId: string; back: string; onRemove: () => void; onRank: (id: string, rank: Rank | undefined) => void }) {
+function SceneCard({ characterId, back, onRemove, onRank }: { characterId: string; back: string; onRemove?: () => void; onRank: (id: string, rank: Rank | undefined) => void }) {
   const { view, shown, tap, sync, accept } = usePlay(characterId);
   const { reference } = useReference(characterId);
   const modifiers = useModifiers(characterId);
@@ -506,8 +532,8 @@ function SceneCard({ characterId, back, onRemove, onRank }: { characterId: strin
   if (!shown) {
     return (
       <article className="flex flex-col gap-2 rounded-lg border border-ash bg-dusk p-3" aria-label="Character in the scene">
-        {view.isPending ? <p className="text-mist">Loading…</p> : <ErrorText error={view.error} />}
-        <Button variant="secondary" className="self-start" onClick={onRemove}>
+        {view.isPending ? <p className="text-mist">{view.fetchStatus === "paused" ? "Not kept on this phone: needs a connection." : "Loading…"}</p> : <ErrorText error={view.error} />}
+        <Button variant="secondary" className="self-start" onClick={onRemove} disabled={!onRemove} title={onRemove ? undefined : "Needs a connection"}>
           Remove from the scene
         </Button>
       </article>
@@ -598,7 +624,14 @@ function SceneCard({ characterId, back, onRemove, onRank }: { characterId: strin
       )}
       {open.includes("reset") && <ResetGame view={shown} sync={sync} onReset={accept} />}
       <ErrorText error={view.error} />
-      <button type="button" className="self-start text-xs text-mist underline hover:text-parchment" onClick={onRemove} aria-label={`Remove ${name} from the scene`}>
+      <button
+        type="button"
+        className="self-start text-xs text-mist underline hover:text-parchment disabled:no-underline disabled:opacity-50"
+        onClick={onRemove}
+        disabled={!onRemove}
+        title={onRemove ? undefined : "Needs a connection"}
+        aria-label={`Remove ${name} from the scene`}
+      >
         Remove from the scene
       </button>
     </article>

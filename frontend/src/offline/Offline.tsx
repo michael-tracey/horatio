@@ -9,7 +9,7 @@ import { useDates } from "../dates";
 import { useMe } from "../hooks";
 import { isNoAnswer, useOnline } from "./connection";
 import { dropSent, keeping, keepsQuery, markAsked, mineOf, setKeeping, setKeptFor, tapsWaiting, waitingTaps, wasAsked, type Keeping } from "./keep";
-import { choicesChanged, dropRestored, forget, keptSummary, keptVersion, refresh, removeKept, save, subscribe, type KeptSummary } from "./store";
+import { choicesChanged, dropRestored, forget, keptSummary, keptVersion, refresh, removeKept, save, saveScenes, scenesTouched, subscribe, type KeptSummary } from "./store";
 
 /** This person's choice on this device, kept up to date as it changes. */
 export function useKeepChoice(userId: string | undefined): Keeping | null {
@@ -49,17 +49,27 @@ export function useKeptOnDevice() {
     if (!id) return;
     setKeptFor(on ? id : null);
     if (!on) return;
-    let timer: number | undefined;
+    // Each record written a second after the last answer for it, not at every one.
+    const timers = new Map<string, number>();
+    const later = (record: string, write: () => Promise<unknown>) => {
+      window.clearTimeout(timers.get(record));
+      timers.set(
+        record,
+        window.setTimeout(() => void write().catch(() => undefined), 1000),
+      );
+    };
     const unsubscribe = client.getQueryCache().subscribe((event) => {
       if (event.type !== "updated" || event.action.type !== "success") return;
+      const key = event.query.queryKey;
+      // A kept troupe's scenes follow what its staff see online: a new pin, a card's taps (#503).
+      for (const troupeId of scenesTouched(key)) later(`scenes:${troupeId}`, () => saveScenes(client, id, troupeId));
       const list = client.getQueryData<CharacterListOut[]>(["characters"]);
-      if (list && !keepsQuery(event.query.queryKey, mineOf(list, id))) return;
-      window.clearTimeout(timer);
-      timer = window.setTimeout(() => void save(client, id), 1000);
+      if (list && !keepsQuery(key, mineOf(list, id))) return;
+      later("person", () => save(client, id));
     });
     return () => {
       unsubscribe();
-      window.clearTimeout(timer);
+      for (const timer of timers.values()) window.clearTimeout(timer);
     };
   }, [client, id, on]);
 

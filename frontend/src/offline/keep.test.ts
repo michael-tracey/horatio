@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CharacterListOut } from "../api/types";
-import { clearDevice, dropSent, keeping, keepsQuery, keptCharacters, keptFor, markAsked, mineOf, recordKey, setKeeping, setKeptFor, tapsWaiting, waitingTaps, wasAsked } from "./keep";
+import { clearDevice, dropSent, keeping, keepsQuery, keepsSceneQuery, keptTroupes, scenesKey, setKeptTroupes, keptCharacters, keptFor, markAsked, mineOf, recordKey, setKeeping, setKeptFor, tapsWaiting, waitingTaps, wasAsked } from "./keep";
 
 class MemoryStorage implements Storage {
   private items = new Map<string, string>();
@@ -152,5 +152,28 @@ describe("taps waiting and signing out", () => {
     expect(keptFor(storage)).toBeNull();
     expect(storage.getItem("horatio.text-size")).toBe("large");
     expect(wasAsked(storage)).toBe(true);
+  });
+});
+
+describe("a troupe's kept scenes", () => {
+  const SCENE = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+  const kept = { troupe: HOME, scenes: new Set([SCENE]), cards: new Set([ROSA, OLD]) };
+
+  it("holds the troupe, its scene list, its scenes and every card's Play View, PCs too", () => {
+    for (const key of [["troupe", HOME], ["scenes", HOME, false], ["scenes", HOME, true], ["scene", SCENE], ["play", ROSA], ["play-reference", OLD]]) expect(keepsSceneQuery(key, kept)).toBe(true);
+  });
+
+  it("holds nothing of another troupe, or any other staff screen", () => {
+    for (const key of [["troupe", OTHER], ["scenes", OTHER, true], ["scene", OTHER], ["play", OTHER], ["roster", HOME], ["npcs", HOME], ["check-in", HOME], ["character", ROSA]])
+      expect(keepsSceneQuery(key, kept)).toBe(false);
+  });
+
+  it("is listed per person, each troupe under a key of its own", () => {
+    const storage = new MemoryStorage();
+    setKeptTroupes(ME, [HOME, HOME, OTHER], storage);
+    expect(keptTroupes(ME, storage)).toEqual([HOME, OTHER]);
+    expect(keptTroupes(OTHER, storage)).toEqual([]);
+    expect(scenesKey(ME, HOME)).not.toBe(scenesKey(ME, OTHER));
+    expect(scenesKey(ME, HOME)).not.toBe(scenesKey(OTHER, HOME));
   });
 });
