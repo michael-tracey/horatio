@@ -247,7 +247,7 @@ What it shows of sect status is set under [Troupe settings](#customise-troupe-se
 - **Give equipment** gives an item: weapons, protective gear and other gear with the book's qualities, or a Vampiric Text. Start from the book's items or the troupe's own templates; **Save as a template** keeps one for next time.
 - An item can be made special, with any number of qualities and effects of the troupe's own. A special item shows **Special, by** its troupe on its row.
 - The list is a table: each item, who holds it, its kind, qualities and grade, and when and by whom it was given. On a phone, each item folds into a card. Choose an item's name to read what it does.
-- Each item's **⋯**, at the end of its row, holds **History**, and, while it's held, **Change…**, **Move…** (to another home character), **Discard…** and **Take back…** (with a reason; its player is told). A discarded item's **⋯** offers **Restore to** its last holder instead.
+- Each item's **⋯**, at the end of its row, holds **History** (an item given from a downtime response says so there, linking to the response), and, while it's held, **Change…**, **Move…** (to another home character), **Discard…** and **Take back…** (with a reason; its player is told). A discarded item's **⋯** offers **Restore to** its last holder instead.
 - **Find items** searches by words, holder, kind, quality, grade, who gave it and when, held or discarded.
 - **Export CSV** downloads the list; **Find these characters** opens the Characters list on the holders.
 
@@ -640,8 +640,11 @@ The **Responses** tab holds every response in the cycle, by character. Filter by
 
 - Choose who writes each response: a staff member, or **Any narrator**. Tick several and assign them in one go from the bar at the foot of the screen.
 - Write a response and choose **Save response**. A **Fill table** can roll a random result into it.
+- **Give an item** gives the character equipment from the response, such as an item bought beyond its means or one it crafted. It opens the [Equipment](#equipment) editor, set to that character. **Add a quality** puts a quality, such as Antique, Stylish or Nondescript, on an item the character already holds; it must fit the item's grade, as any quality does.
 
 Only storytellers and assistant storytellers assign. Everyone writes what is assigned to them, from here or from [My work](#my-work).
+
+What a response gives shows under it, marked **With the results**: it reaches the character when the response is delivered, not before. Until then, **Change** or **Take off** it. Once delivered it's marked **Given**, and it's an item like any other, changed on the Equipment tab. Only storytellers and assistant storytellers give equipment; narrators see what a response gives, but can't add to it.
 
 ### Fill tables
 
@@ -659,7 +662,7 @@ The **Delivery** tab sends each submission's responses to its player.
 2. Tick **Also deliver the partly written** to send those with what's written so far.
 3. Choose **Deliver** (it says how many downtimes go).
 
-Results always appear in Horatio, and on each connector the troupe has on. A response written or changed after delivery goes out with the next delivery, as an update, and the table marks it **Changed since delivery**. A connector copy that failed can be retried, or marked as sent if you sent it yourself.
+Results always appear in Horatio, and on each connector the troupe has on. Equipment a response gives goes to the character as its results are delivered, and the results say **You received**. A response written or changed after delivery goes out with the next delivery, as an update, and the table marks it **Changed since delivery**; so does equipment added to a response already delivered. If something can't be given, such as a quality on an item the character no longer holds, Horatio stops the delivery and says which; change it or take it off the response, then deliver again. A connector copy that failed can be retried, or marked as sent if you sent it yourself.
 
 ### Marking a cycle complete
 

@@ -10803,6 +10803,16 @@
             "title": "Changes",
             "type": "object"
           },
+          "downtime": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EventDowntimeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "from_character_id": {
             "anyOf": [
               {
@@ -12056,6 +12066,32 @@
           "facts"
         ],
         "title": "EquipmentTemplateOut",
+        "type": "object"
+      },
+      "EventDowntimeOut": {
+        "description": "The downtime response an item, or a change to it, was given from (#508).",
+        "properties": {
+          "cycle_id": {
+            "format": "uuid",
+            "title": "Cycle Id",
+            "type": "string"
+          },
+          "cycle_name": {
+            "title": "Cycle Name",
+            "type": "string"
+          },
+          "response_id": {
+            "format": "uuid",
+            "title": "Response Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cycle_id",
+          "cycle_name",
+          "response_id"
+        ],
+        "title": "EventDowntimeOut",
         "type": "object"
       },
       "ExceptionAskOut": {
@@ -29621,6 +29657,324 @@
         "title": "ResourcesOut",
         "type": "object"
       },
+      "ResponseItemFieldsIn": {
+        "properties": {
+          "archaic": {
+            "default": false,
+            "title": "Archaic",
+            "type": "boolean"
+          },
+          "crafted": {
+            "default": false,
+            "title": "Crafted",
+            "type": "boolean"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Description",
+            "type": "string"
+          },
+          "effects": {
+            "items": {
+              "$ref": "#/components/schemas/SpecialEffectModel"
+            },
+            "maxItems": 20,
+            "title": "Effects",
+            "type": "array"
+          },
+          "grade": {
+            "enum": [
+              "cheap",
+              "standard",
+              "special"
+            ],
+            "title": "Grade",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "melee",
+              "ranged",
+              "protective",
+              "miscellaneous",
+              "text"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentItemQuality"
+            },
+            "maxItems": 30,
+            "title": "Qualities",
+            "type": "array"
+          },
+          "staff_note": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Staff Note",
+            "type": "string"
+          },
+          "template": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "grade"
+        ],
+        "title": "ResponseItemFieldsIn",
+        "type": "object"
+      },
+      "ResponseItemFieldsOut": {
+        "description": "A new item as staff built it, to change it before it is given.",
+        "properties": {
+          "archaic": {
+            "title": "Archaic",
+            "type": "boolean"
+          },
+          "crafted": {
+            "title": "Crafted",
+            "type": "boolean"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "effects": {
+            "items": {
+              "$ref": "#/components/schemas/SpecialEffectModel"
+            },
+            "title": "Effects",
+            "type": "array"
+          },
+          "grade": {
+            "title": "Grade",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "qualities": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentItemQuality"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "staff_note": {
+            "title": "Staff Note",
+            "type": "string"
+          },
+          "template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "grade",
+          "qualities",
+          "crafted",
+          "archaic",
+          "effects",
+          "description",
+          "staff_note",
+          "template"
+        ],
+        "title": "ResponseItemFieldsOut",
+        "type": "object"
+      },
+      "ResponseItemIn": {
+        "description": "What a response gives (horatio.response_items): a new item, as the Equipment\ntab gives one, or a quality on an item the character holds. One of the two.",
+        "properties": {
+          "item": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponseItemFieldsIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponseQualityIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "ResponseItemIn",
+        "type": "object"
+      },
+      "ResponseItemOut": {
+        "description": "Equipment a response gives the character, when it is delivered.",
+        "properties": {
+          "given_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "item": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponseItemFieldsOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "item_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Id"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponseQualityOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "text",
+          "given_at",
+          "item_id"
+        ],
+        "title": "ResponseItemOut",
+        "type": "object"
+      },
+      "ResponseQualityIn": {
+        "properties": {
+          "detail": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Detail",
+            "type": "string"
+          },
+          "item_id": {
+            "format": "uuid",
+            "title": "Item Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "name"
+        ],
+        "title": "ResponseQualityIn",
+        "type": "object"
+      },
+      "ResponseQualityOut": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "item_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Id"
+          },
+          "item_name": {
+            "title": "Item Name",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "name",
+          "detail",
+          "item_name"
+        ],
+        "title": "ResponseQualityOut",
+        "type": "object"
+      },
       "ResultIn": {
         "properties": {
           "ends": {
@@ -38818,6 +39172,11 @@
             "title": "Body",
             "type": "string"
           },
+          "can_give": {
+            "default": false,
+            "title": "Can Give",
+            "type": "boolean"
+          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -38864,6 +39223,14 @@
                 "type": "null"
               }
             ]
+          },
+          "items": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ResponseItemOut"
+            },
+            "title": "Items",
+            "type": "array"
           },
           "quest": {
             "anyOf": [
@@ -56023,6 +56390,176 @@
         "summary": "Log Answer",
         "tags": [
           "influence log"
+        ]
+      }
+    },
+    "/api/responses/{response_id}/items": {
+      "post": {
+        "description": "Give the character a new item, or a quality on one it holds, from the\nresponse: it reaches the character when the response is delivered, with the\nresults. Only its home troupe's storytellers and assistant storytellers.",
+        "operationId": "give_from_response_api_responses__response_id__items_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "response_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Response Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResponseItemIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Give From Response",
+        "tags": [
+          "responses"
+        ]
+      }
+    },
+    "/api/responses/{response_id}/items/{row_id}": {
+      "delete": {
+        "description": "Take it off the response, before it is delivered: nothing is given.",
+        "operationId": "remove_response_item_api_responses__response_id__items__row_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "response_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Response Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "row_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Row Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Response Item",
+        "tags": [
+          "responses"
+        ]
+      },
+      "put": {
+        "description": "Change what the response gives, before it is delivered.",
+        "operationId": "change_response_item_api_responses__response_id__items__row_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "response_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Response Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "row_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Row Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResponseItemIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Response Item",
+        "tags": [
+          "responses"
         ]
       }
     },

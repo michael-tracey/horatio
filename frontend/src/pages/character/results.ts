@@ -2,8 +2,8 @@
  * A delivered downtime result, read back into its parts so the Results tab can show
  * each response under the action it answers. Horatio writes the message
  * (horatio.responses.compose): a heading, then for each answered question a block
- * "**question**", "*Your action:* …", "*Result:* …", and for feeding "**Feeding**",
- * "*Your feeding:* …" and the answer. The message is what was delivered, kept as it
+ * "**question**", "*Your action:* …", "*Result:* …", perhaps "*You received:* …" (equipment
+ * the response gives, #508), and for feeding "**Feeding**", "*Your feeding:* …" and the answer. The message is what was delivered, kept as it
  * was, so it is read rather than rebuilt from today's responses.
  */
 
@@ -14,12 +14,15 @@ export type ResultPart = {
   action: string;
   actionLabel: "Your action" | "Your feeding";
   result: string;
+  /** Equipment the response gave: "Sniper rifle (Accurate, Long Range)"; "" for none. */
+  received: string;
 };
 
 const HEADING = /^\*\*(Updated d|D)owntime results for .*\*\*$/;
 const BOLD = /^\*\*(.+)\*\*$/;
 const ACTION = /^\*Your (action|feeding):\* ?(.*)$/;
 const RESULT = /^\*Result:\* ?(.*)$/;
+const RECEIVED = /^\*You received:\* ?(.*)$/;
 
 /** The message's parts, or null for a message not in Horatio's own shape (one
  * written some other way), which is then shown as it is. */
@@ -34,7 +37,7 @@ export function resultParts(message: string): ResultPart[] | null {
     const bold = line.match(BOLD);
     // A new block starts after a blank line, with its action next (or, for feeding, perhaps none).
     if (bold && lines[i - 1] === "" && (ACTION.test(lines[i + 1] ?? "") || bold[1] === "Feeding")) {
-      part = { heading: bold[1]!, action: "", actionLabel: "Your action", result: "" };
+      part = { heading: bold[1]!, action: "", actionLabel: "Your action", result: "", received: "" };
       parts.push(part);
       field = "heading";
       continue;
@@ -45,7 +48,11 @@ export function resultParts(message: string): ResultPart[] | null {
     }
     const action = field === "heading" ? line.match(ACTION) : null;
     const result = field !== "result" ? line.match(RESULT) : null;
-    if (action) {
+    // Horatio writes what a response gives on the block's last line, straight after the result.
+    const received = field === "result" && lines[i - 1] !== "" && (lines[i + 1] ?? "") === "" ? line.match(RECEIVED) : null;
+    if (received) {
+      part.received = received[1]!;
+    } else if (action) {
       part.action = action[2]!;
       part.actionLabel = action[1] === "feeding" ? "Your feeding" : "Your action";
       field = "action";
@@ -61,5 +68,5 @@ export function resultParts(message: string): ResultPart[] | null {
     }
   }
   if (!parts.length) return null;
-  return parts.map((p) => ({ ...p, action: p.action.trim(), result: p.result.trim() }));
+  return parts.map((p) => ({ ...p, action: p.action.trim(), result: p.result.trim(), received: p.received.trim() }));
 }

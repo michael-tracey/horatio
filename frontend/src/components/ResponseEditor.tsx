@@ -8,6 +8,7 @@ import { DISCOVERY_BLOCK, LOOKUP_LEVEL } from "../influenceLookups";
 import { questType } from "../pages/quests/quests";
 import { STATUS_NAMES } from "../pages/troupe/responsesList";
 import { CombinedAnswers, DiscoveryBlock, LookupFill, type Combined } from "./InfluenceLookupTools";
+import { ResponseItems } from "./ResponseItems";
 import { Badge, Button, ErrorText, Field, Input, Select, Textarea } from "./ui";
 
 /** One downtime action and the box to answer it in, with fill tables to roll from. */
@@ -48,7 +49,7 @@ export function ResponseEditor({
   const influence = item.influence;
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-ash bg-night/50 p-3">
+    <div id={`response-${item.id}`} className="flex scroll-mt-4 flex-col gap-2 rounded-md border border-ash bg-night/50 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <span>
           <strong className="text-gold">{item.character_name}</strong> · {item.question}
@@ -101,6 +102,7 @@ export function ResponseEditor({
         {extra}
       </div>
       <ErrorText error={save.error ?? roll.error} />
+      <ResponseItems item={item} troupeId={troupeId} />
       <CombinedAnswers others={others} onChange={setOthers} />
       {canLog && influence?.action_key === DISCOVERY_BLOCK && <DiscoveryBlock item={item} onWrite={setBody} />}
       {canLog && item.influence && <LogAnswer item={item} />}
