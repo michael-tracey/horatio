@@ -35,7 +35,7 @@ router = APIRouter(tags=["posts"])
 
 Kind = Literal["news", "announcement"]
 Status = Literal["draft", "proposed", "scheduled", "published", "declined"]
-COLOUR = r"^#[0-9a-f]{6}$"
+COLOUR = posts.COLOUR
 
 
 # --- shapes ----------------------------------------------------------------------------
@@ -908,32 +908,12 @@ def agency_channel(
     return known_channel(guild_id, wanted)
 
 
-def unique_name(db: Session, troupe: Troupe, name: str, agency_id: uuid.UUID | None) -> None:
-    clash = db.scalar(
-        select(NewsAgency.id).where(
-            NewsAgency.troupe_id == troupe.id,
-            NewsAgency.name == name,
-            NewsAgency.id != agency_id if agency_id else NewsAgency.id.is_not(None),
-        )
-    )
-    if clash is not None:
-        raise HTTPException(status.HTTP_409_CONFLICT, f"There is already an agency called {name}.")
-
-
 @router.post("/troupes/{troupe_id}/agencies", status_code=status.HTTP_201_CREATED)
 def new_agency(troupe_id: uuid.UUID, body: AgencyIn, db: DbSession, user: CurrentUser) -> AgencyOut:
     troupe = writing_troupe(db, user, troupe_id)
-    name = body.name.strip()
-    unique_name(db, troupe, name, None)
-    agency = NewsAgency(
-        troupe_id=troupe.id,
-        name=name,
-        description=body.description.strip(),
-        colour=body.colour,
-        discord_channel=agency_channel(db, user, troupe, None, body.discord_channel),
-    )
-    db.add(agency)
-    audit.record(db, user, "agency.created", troupe_id=troupe.id, name=name)
+    channel = agency_channel(db, user, troupe, None, body.discord_channel)
+    agency = posts.keep_agency(db, user, troupe, None, body.name, body.description, body.colour)
+    agency.discord_channel = channel
     db.commit()
     return agency_out(agency)
 
@@ -943,16 +923,10 @@ def change_agency(
     agency_id: uuid.UUID, body: AgencyIn, db: DbSession, user: CurrentUser
 ) -> AgencyOut:
     agency, troupe = own_agency(db, user, agency_id)
-    name = body.name.strip()
-    unique_name(db, troupe, name, agency.id)
     agency.discord_channel = agency_channel(
         db, user, troupe, agency.discord_channel, body.discord_channel
     )
-    before = agency.name
-    agency.name = name
-    agency.description = body.description.strip()
-    agency.colour = body.colour
-    audit.record(db, user, "agency.changed", troupe_id=troupe.id, name=name, was=before)
+    posts.keep_agency(db, user, troupe, agency, body.name, body.description, body.colour)
     db.commit()
     return agency_out(agency)
 

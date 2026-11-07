@@ -505,6 +505,7 @@ MESSAGES: dict[str, str] = {
     "scene.cleared": "{actor} removed the scenes not used since {since}: {count}.",
     "troupe.sects_limited": "{actor} set which sects may join: {sects}.",
     "troupe.splats_limited": "{actor} set which splats may join: {splats}.",
+    "house.settings_imported": "{actor} imported settings from {source}: {what}.",
     "house.check": "{actor} set the rule {check} to {strength}.",
     "house.check_added": "{actor} added a house check: {text} ({breaking})",
     "house.check_changed": "{actor} changed a house check: {text} ({breaking})",

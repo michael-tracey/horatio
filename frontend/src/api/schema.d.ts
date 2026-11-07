@@ -9024,6 +9024,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/settings-share": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Settings
+         * @description The troupe's settings that differ from Horatio's default, by section. Its running
+         *     staff may export them, to a file or to another troupe they run.
+         */
+        get: operations["export_settings_api_troupes__troupe_id__settings_share_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/settings-share/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Settings
+         * @description Import the ticked items, all or none, merging: what matches is changed, the rest
+         *     added, and nothing else in the troupe is touched. Copying from another troupe needs
+         *     its importer to run that one too.
+         */
+        post: operations["apply_settings_api_troupes__troupe_id__settings_share_apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/settings-share/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Review Settings
+         * @description Each item of a document against this troupe: new, changing what it has (with
+         *     before and after), the same as it has, or not importable here (with why). Nothing
+         *     is saved.
+         */
+        post: operations["review_settings_api_troupes__troupe_id__settings_share_review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/settle": {
         parameters: {
             query?: never;
@@ -9921,6 +9986,40 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * ActionKindItem
+         * @description A kind of downtime action the troupe added itself.
+         */
+        ActionKindItem: {
+            /**
+             * Actions
+             * @default []
+             */
+            actions: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /**
+             * Fields
+             * @default []
+             */
+            fields: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "action_kind";
+        };
         /** ActionKindOut */
         ActionKindOut: {
             /** Key */
@@ -10128,6 +10227,51 @@ export interface components {
             scheme: "fixed" | "per_dot" | "per_detail";
             /** Trait */
             trait?: string | null;
+        };
+        /**
+         * AllowanceItem
+         * @description The troupe's own rule for how many downtime actions characters get.
+         */
+        AllowanceItem: {
+            /** Action Kind */
+            action_kind: string;
+            /** Amount */
+            amount: number;
+            /** Category */
+            category?: string | null;
+            /**
+             * Detail Ratings
+             * @default []
+             */
+            detail_ratings: number[];
+            /**
+             * Min Rating
+             * @default 1
+             */
+            min_rating: number;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Scheme
+             * @default fixed
+             * @enum {string}
+             */
+            scheme: "fixed" | "per_dot" | "per_detail";
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /** Trait */
+            trait?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "allowance";
         };
         /** AllowanceLineOut */
         AllowanceLineOut: {
@@ -11373,6 +11517,51 @@ export interface components {
             wording_mode?: ("added" | "replaces") | null;
         };
         /**
+         * BookTraitItem
+         * @description The troupe's changes to one book trait (horatio.book_traits): a ban, its own
+         *     wording, and a merit or flaw's category.
+         */
+        BookTraitItem: {
+            /**
+             * Ban Reason
+             * @default
+             */
+            ban_reason: string;
+            /**
+             * Banned
+             * @default false
+             */
+            banned: boolean;
+            /** Category */
+            category: string;
+            /** Kind */
+            kind?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /**
+             * Type
+             * @default book_trait
+             * @constant
+             */
+            type: "book_trait";
+            /**
+             * Wording
+             * @default
+             */
+            wording: string;
+            /**
+             * Wording Mode
+             * @default added
+             * @enum {string}
+             */
+            wording_mode: "added" | "replaces";
+        };
+        /**
          * BookTraitOut
          * @description A troupe's change to one book trait.
          */
@@ -12292,6 +12481,24 @@ export interface components {
              */
             opens_at: string;
         };
+        /**
+         * CheckItem
+         * @description How the troupe plays one of the rule set's checks.
+         */
+        CheckItem: {
+            /** Check */
+            check: string;
+            /**
+             * Strength
+             * @enum {string}
+             */
+            strength: "refuse" | "complete" | "review" | "note" | "off";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "check";
+        };
         /** CheckOut */
         CheckOut: {
             /** About */
@@ -12714,6 +12921,42 @@ export interface components {
             /** Trait */
             trait?: string | null;
         };
+        /**
+         * CostItem
+         * @description The troupe's price for a trait or a category, perhaps under a condition.
+         */
+        CostItem: {
+            /** Category */
+            category: string;
+            /** Condition */
+            condition?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Rate */
+            rate?: number | null;
+            /**
+             * Scheme
+             * @enum {string}
+             */
+            scheme: "per_dot" | "progressive" | "table" | "fixed" | "free" | "not_allowed";
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /** Table */
+            table?: number[] | null;
+            /** Text */
+            text?: string | null;
+            /** Trait */
+            trait?: string | null;
+            /**
+             * Type
+             * @default cost
+             * @constant
+             */
+            type: "cost";
+        };
         /** CostOut */
         CostOut: {
             /** Category */
@@ -12771,6 +13014,26 @@ export interface components {
         CourtOrder: {
             /** Titles */
             titles: string[];
+        };
+        /**
+         * CreationItem
+         * @description What new characters start with in one category: these replace the troupe's.
+         */
+        CreationItem: {
+            /** Category */
+            category: string;
+            /** Rules */
+            rules: components["schemas"]["StartingRuleItem"][];
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "creation";
         };
         /** CreationOut */
         CreationOut: {
@@ -14982,6 +15245,25 @@ export interface components {
             label: string;
         };
         /**
+         * FillTableItem
+         * @description A fill table: its entries, one per line, `[Table]` references kept as written.
+         */
+        FillTableItem: {
+            /**
+             * Entries
+             * @default []
+             */
+            entries: string[];
+            /** Name */
+            name: string;
+            /**
+             * Type
+             * @default fill_table
+             * @constant
+             */
+            type: "fill_table";
+        };
+        /**
          * FilterCondition
          * @description One condition of a character filter; see horatio.character_filter.
          */
@@ -15977,6 +16259,52 @@ export interface components {
             /** Who */
             who: string;
         };
+        /**
+         * HouseCheckItem
+         * @description A check of the troupe's own (horatio.house_checks).
+         */
+        HouseCheckItem: {
+            /** Category */
+            category: string;
+            /** Condition */
+            condition: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Kind */
+            kind?: string | null;
+            /**
+             * Message
+             * @default
+             */
+            message: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "requires" | "forbids";
+            /** Name */
+            name?: string | null;
+            /** Name Prefix */
+            name_prefix?: string | null;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /** Step */
+            step?: string | null;
+            /**
+             * Strength
+             * @default refuse
+             * @enum {string}
+             */
+            strength: "refuse" | "complete" | "review" | "note";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "house_check";
+        };
         /** HouseCheckOut */
         HouseCheckOut: {
             /** House */
@@ -16197,6 +16525,65 @@ export interface components {
              * @default vampire
              */
             splat: string;
+        };
+        /**
+         * HouseTraitItem
+         * @description A merit or flaw the troupe made itself (horatio.house_traits).
+         */
+        HouseTraitItem: {
+            /**
+             * Availability
+             * @enum {string}
+             */
+            availability: "staff" | "building";
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "merits" | "flaws";
+            /**
+             * Creation Only
+             * @default false
+             */
+            creation_only: boolean;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Effects
+             * @default []
+             */
+            effects: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /**
+             * Kind
+             * @default General
+             * @enum {string}
+             */
+            kind: "General" | "Clan" | "Sabbat";
+            /** Name */
+            name: string;
+            /** Points */
+            points: number;
+            /**
+             * Requirement
+             * @default
+             */
+            requirement: string;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /**
+             * Type
+             * @default house_trait
+             * @constant
+             */
+            type: "house_trait";
         };
         /** HouseTraitOut */
         HouseTraitOut: {
@@ -16791,6 +17178,7 @@ export interface components {
             /** Total */
             total: number;
         };
+        JsonValue: unknown;
         /**
          * KeptCard
          * @description One character in the troupe's scenes, with what its card shows.
@@ -16870,6 +17258,64 @@ export interface components {
              * @default 5
              */
             step: number;
+        };
+        /**
+         * KeywordItem
+         * @description One of the troupe's downtime keywords, as it has changed or added it.
+         */
+        KeywordItem: {
+            /**
+             * Action Kinds
+             * @default [
+             *       "general"
+             *     ]
+             */
+            action_kinds: string[];
+            /**
+             * Computers Only
+             * @default false
+             */
+            computers_only: boolean;
+            /**
+             * Cost
+             * @default 1
+             */
+            cost: number;
+            /**
+             * Explanation
+             * @default
+             */
+            explanation: string;
+            /**
+             * Fields
+             * @default []
+             */
+            fields: string[];
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /**
+             * Required For
+             * @default []
+             */
+            required_for: string[];
+            /**
+             * Science
+             * @default false
+             */
+            science: boolean;
+            /**
+             * Step
+             * @default 5
+             */
+            step: number;
+            /**
+             * Type
+             * @default keyword
+             * @constant
+             */
+            type: "keyword";
         };
         /** KeywordOut */
         KeywordOut: {
@@ -18784,6 +19230,30 @@ export interface components {
              * @default
              */
             note: string;
+        };
+        /**
+         * NewsAgencyItem
+         * @description A news agency: its name, description and colour, never its picture or channel.
+         */
+        NewsAgencyItem: {
+            /**
+             * Colour
+             * @default #8b1e1e
+             */
+            colour: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Name */
+            name: string;
+            /**
+             * Type
+             * @default news_agency
+             * @constant
+             */
+            type: "news_agency";
         };
         /** NominationIn */
         NominationIn: {
@@ -23041,6 +23511,138 @@ export interface components {
             statuses: components["schemas"]["StatusRuleOut"][];
         };
         /**
+         * Sections
+         * @description The settings by section, as Customise groups them. The first seven are the
+         *     groups of its Troupe settings page.
+         */
+        Sections: {
+            /**
+             * Actions
+             * @default []
+             */
+            actions: (components["schemas"]["SettingItem"] | components["schemas"]["ActionKindItem"] | components["schemas"]["AllowanceItem"])[];
+            /**
+             * At Game
+             * @default []
+             */
+            at_game: components["schemas"]["SettingItem"][];
+            /**
+             * Backstories
+             * @default []
+             */
+            backstories: components["schemas"]["SettingItem"][];
+            /**
+             * Book Traits
+             * @default []
+             */
+            book_traits: components["schemas"]["BookTraitItem"][];
+            /**
+             * Checks
+             * @default []
+             */
+            checks: (components["schemas"]["CheckItem"] | components["schemas"]["HouseCheckItem"])[];
+            /**
+             * Costs
+             * @default []
+             */
+            costs: components["schemas"]["CostItem"][];
+            /**
+             * Downtimes
+             * @default []
+             */
+            downtimes: components["schemas"]["SettingItem"][];
+            /**
+             * Feeding
+             * @default []
+             */
+            feeding: components["schemas"]["SettingItem"][];
+            /**
+             * Fill Tables
+             * @default []
+             */
+            fill_tables: components["schemas"]["FillTableItem"][];
+            /**
+             * Free Changes
+             * @default []
+             */
+            free_changes: components["schemas"]["SettingItem"][];
+            /**
+             * House Traits
+             * @default []
+             */
+            house_traits: components["schemas"]["HouseTraitItem"][];
+            /**
+             * Keywords
+             * @default []
+             */
+            keywords: components["schemas"]["KeywordItem"][];
+            /**
+             * Languages
+             * @default []
+             */
+            languages: components["schemas"]["SettingItem"][];
+            /**
+             * Locations
+             * @default []
+             */
+            locations: components["schemas"]["SettingItem"][];
+            /**
+             * Names
+             * @default []
+             */
+            names: components["schemas"]["SettingItem"][];
+            /**
+             * News Agencies
+             * @default []
+             */
+            news_agencies: components["schemas"]["NewsAgencyItem"][];
+            /**
+             * Quests
+             * @default []
+             */
+            quests: components["schemas"]["SettingItem"][];
+            /**
+             * Retainers
+             * @default []
+             */
+            retainers: components["schemas"]["SettingItem"][];
+            /**
+             * Specialisations
+             * @default []
+             */
+            specialisations: components["schemas"]["SpecialisationItem"][];
+            /**
+             * Starting
+             * @default []
+             */
+            starting: (components["schemas"]["SettingItem"] | components["schemas"]["CreationItem"] | components["schemas"]["StartingTraitItem"])[];
+            /**
+             * Status Titles
+             * @default []
+             */
+            status_titles: components["schemas"]["SettingItem"][];
+            /**
+             * Teachers
+             * @default []
+             */
+            teachers: components["schemas"]["TeacherRuleItem"][];
+            /**
+             * Who May Join
+             * @default []
+             */
+            who_may_join: components["schemas"]["SettingItem"][];
+            /**
+             * Written Rules
+             * @default []
+             */
+            written_rules: (components["schemas"]["SettingItem"] | components["schemas"]["WrittenRuleItem"])[];
+            /**
+             * Xp
+             * @default []
+             */
+            xp: components["schemas"]["SettingItem"][];
+        };
+        /**
          * SeenOut
          * @description One status the other carries into its game. Its details (patron, where, the
          *     story) are there only when `known`: a negative status, or a fleeting one the
@@ -23130,6 +23732,87 @@ export interface components {
              */
             tone: string;
         };
+        /**
+         * SettingItem
+         * @description One of the troupe's own settings (a column of `troupes`), by its key.
+         */
+        SettingItem: {
+            /** Key */
+            key: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "setting";
+            value: components["schemas"]["JsonValue"];
+        };
+        /**
+         * SettingsDocument
+         * @description A troupe's settings, as Export writes them and Import reads them.
+         */
+        SettingsDocument: {
+            /** Exported On */
+            exported_on?: string | null;
+            /**
+             * Format
+             * @default horatio-troupe-settings
+             * @constant
+             */
+            format: "horatio-troupe-settings";
+            /**
+             * Horatio
+             * @default
+             */
+            horatio: string;
+            /**
+             * Rule Sets
+             * @default {}
+             */
+            rule_sets: {
+                [key: string]: number;
+            };
+            /**
+             * @default {
+             *       "actions": [],
+             *       "at_game": [],
+             *       "backstories": [],
+             *       "book_traits": [],
+             *       "checks": [],
+             *       "costs": [],
+             *       "downtimes": [],
+             *       "feeding": [],
+             *       "fill_tables": [],
+             *       "free_changes": [],
+             *       "house_traits": [],
+             *       "keywords": [],
+             *       "languages": [],
+             *       "locations": [],
+             *       "names": [],
+             *       "news_agencies": [],
+             *       "quests": [],
+             *       "retainers": [],
+             *       "specialisations": [],
+             *       "starting": [],
+             *       "status_titles": [],
+             *       "teachers": [],
+             *       "who_may_join": [],
+             *       "written_rules": [],
+             *       "xp": []
+             *     }
+             */
+            sections: components["schemas"]["Sections"];
+            /**
+             * Troupe
+             * @default
+             */
+            troupe: string;
+            /**
+             * Version
+             * @default 1
+             * @constant
+             */
+            version: 1;
+        };
         /** SettlementChoice */
         SettlementChoice: {
             /** Category */
@@ -23204,10 +23887,136 @@ export interface components {
             /** Starting */
             starting: number;
         };
+        /** ShareEditableOut */
+        ShareEditableOut: {
+            /** Field */
+            field: string;
+            /** Label */
+            label: string;
+            /** Lines */
+            lines: boolean;
+            /** Multiline */
+            multiline: boolean;
+        };
+        /** ShareExportOut */
+        ShareExportOut: {
+            document: components["schemas"]["SettingsDocument"];
+            /** Sections */
+            sections: components["schemas"]["ShareSectionOut"][];
+        };
+        /** ShareImportIn */
+        ShareImportIn: {
+            document: components["schemas"]["SettingsDocument"];
+            /** File Name */
+            file_name?: string | null;
+            /** From Troupe Id */
+            from_troupe_id?: string | null;
+            /** Items */
+            items: components["schemas"]["SharePickIn"][];
+        };
+        /** ShareImportOut */
+        ShareImportOut: {
+            /** Added */
+            added: number;
+            /** Changed */
+            changed: number;
+            /** Sections */
+            sections: components["schemas"]["ShareImportedSectionOut"][];
+        };
+        /** ShareImportedSectionOut */
+        ShareImportedSectionOut: {
+            /** Added */
+            added: number;
+            /** Changed */
+            changed: number;
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "who_may_join" | "xp" | "status_titles" | "at_game" | "downtimes" | "feeding" | "names" | "checks" | "costs" | "starting" | "actions" | "keywords" | "languages" | "house_traits" | "written_rules" | "book_traits" | "locations" | "quests" | "retainers" | "backstories" | "free_changes" | "teachers" | "specialisations" | "fill_tables" | "news_agencies";
+            /** Label */
+            label: string;
+        };
         /** ShareIn */
         ShareIn: {
             /** Character Ids */
             character_ids: string[];
+        };
+        /** SharePickIn */
+        SharePickIn: {
+            /** Index */
+            index: number;
+            /**
+             * Section
+             * @enum {string}
+             */
+            section: "who_may_join" | "xp" | "status_titles" | "at_game" | "downtimes" | "feeding" | "names" | "checks" | "costs" | "starting" | "actions" | "keywords" | "languages" | "house_traits" | "written_rules" | "book_traits" | "locations" | "quests" | "retainers" | "backstories" | "free_changes" | "teachers" | "specialisations" | "fill_tables" | "news_agencies";
+        };
+        /** ShareReviewIn */
+        ShareReviewIn: {
+            document: components["schemas"]["SettingsDocument"];
+        };
+        /** ShareReviewItemOut */
+        ShareReviewItemOut: {
+            /** After */
+            after: string | null;
+            /** Before */
+            before: string | null;
+            /** Editable */
+            editable: components["schemas"]["ShareEditableOut"][];
+            /** Index */
+            index: number;
+            /** Label */
+            label: string;
+            /** Reason */
+            reason: string | null;
+            /**
+             * Section
+             * @enum {string}
+             */
+            section: "who_may_join" | "xp" | "status_titles" | "at_game" | "downtimes" | "feeding" | "names" | "checks" | "costs" | "starting" | "actions" | "keywords" | "languages" | "house_traits" | "written_rules" | "book_traits" | "locations" | "quests" | "retainers" | "backstories" | "free_changes" | "teachers" | "specialisations" | "fill_tables" | "news_agencies";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "new" | "changes" | "same" | "cannot";
+        };
+        /** ShareReviewOut */
+        ShareReviewOut: {
+            /** Sections */
+            sections: components["schemas"]["ShareReviewSectionOut"][];
+            /** Troupe */
+            troupe: string;
+            /** Warnings */
+            warnings: string[];
+        };
+        /** ShareReviewSectionOut */
+        ShareReviewSectionOut: {
+            /** Group */
+            group: string | null;
+            /** Items */
+            items: components["schemas"]["ShareReviewItemOut"][];
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "who_may_join" | "xp" | "status_titles" | "at_game" | "downtimes" | "feeding" | "names" | "checks" | "costs" | "starting" | "actions" | "keywords" | "languages" | "house_traits" | "written_rules" | "book_traits" | "locations" | "quests" | "retainers" | "backstories" | "free_changes" | "teachers" | "specialisations" | "fill_tables" | "news_agencies";
+            /** Label */
+            label: string;
+        };
+        /** ShareSectionOut */
+        ShareSectionOut: {
+            /** Count */
+            count: number;
+            /** Group */
+            group: string | null;
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "who_may_join" | "xp" | "status_titles" | "at_game" | "downtimes" | "feeding" | "names" | "checks" | "costs" | "starting" | "actions" | "keywords" | "languages" | "house_traits" | "written_rules" | "book_traits" | "locations" | "quests" | "retainers" | "backstories" | "free_changes" | "teachers" | "specialisations" | "fill_tables" | "news_agencies";
+            /** Label */
+            label: string;
         };
         /** SharedBackgroundChange */
         SharedBackgroundChange: {
@@ -23585,6 +24394,22 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * SpecialisationItem
+         * @description An option the troupe offers for one kind of specialisation.
+         */
+        SpecialisationItem: {
+            /** Category */
+            category: string;
+            /** Name */
+            name: string;
+            /**
+             * Type
+             * @default specialisation
+             * @constant
+             */
+            type: "specialisation";
+        };
         /** Specialization */
         Specialization: {
             /** Name */
@@ -23745,6 +24570,43 @@ export interface components {
             } | null;
             /** When Text */
             when_text?: string | null;
+        };
+        /** StartingRuleItem */
+        StartingRuleItem: {
+            /** Picks */
+            picks?: number | null;
+            /** Points */
+            points?: number | null;
+            /** Rating */
+            rating?: number | null;
+            /** Restriction */
+            restriction?: string | null;
+            /** When */
+            when?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+        };
+        /**
+         * StartingTraitItem
+         * @description A trait the troupe's new characters start with, free.
+         */
+        StartingTraitItem: {
+            /** Category */
+            category: string;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating?: number | null;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "starting_trait";
         };
         /**
          * StatBlockOut
@@ -24554,6 +25416,64 @@ export interface components {
              */
             willpower: number;
         };
+        /**
+         * TeacherRuleItem
+         * @description A rule that a kind of trait needs a teacher (horatio.teaching).
+         */
+        TeacherRuleItem: {
+            /**
+             * Actions
+             * @default 0
+             */
+            actions: number;
+            /**
+             * Always
+             * @default false
+             */
+            always: boolean;
+            /** Category */
+            category: string;
+            /** Condition */
+            condition?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
+             * Games
+             * @default 0
+             */
+            games: number;
+            /**
+             * Holds
+             * @default same
+             * @enum {string}
+             */
+            holds: "same" | "rating";
+            /** Name Prefix */
+            name_prefix?: string | null;
+            /**
+             * Names
+             * @default []
+             */
+            names: string[];
+            /** Rating */
+            rating?: number | null;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+            /**
+             * Type
+             * @default teacher_rule
+             * @constant
+             */
+            type: "teacher_rule";
+            /**
+             * Willpower
+             * @default 0
+             */
+            willpower: number;
+        };
         /** TeacherRuleOut */
         TeacherRuleOut: {
             /**
@@ -25057,6 +25977,18 @@ export interface components {
          * @description A trait of the rule set for `splat`, or one of the troupe's own merits or flaws.
          */
         TraitLink: {
+            /** Category */
+            category: string;
+            /** Name */
+            name: string;
+            /**
+             * Splat
+             * @default vampire
+             */
+            splat: string;
+        };
+        /** TraitLinkItem */
+        TraitLinkItem: {
             /** Category */
             category: string;
             /** Name */
@@ -26116,6 +27048,32 @@ export interface components {
             /** Title */
             title: string;
             trait?: components["schemas"]["TraitLink"] | null;
+        };
+        /**
+         * WrittenRuleItem
+         * @description A house rule in words alone (horatio.written_rules).
+         */
+        WrittenRuleItem: {
+            /**
+             * Body
+             * @default
+             */
+            body: string;
+            /** Page */
+            page?: string | null;
+            /**
+             * Section
+             * @default
+             */
+            section: string;
+            /** Title */
+            title: string;
+            trait?: components["schemas"]["TraitLinkItem"] | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "written_rule";
         };
         /** WrittenRuleOut */
         WrittenRuleOut: {
@@ -44717,6 +45675,107 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SeatsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_settings_api_troupes__troupe_id__settings_share_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareExportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_settings_api_troupes__troupe_id__settings_share_apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShareImportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_settings_api_troupes__troupe_id__settings_share_review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShareReviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareReviewOut"];
                 };
             };
             /** @description Validation Error */

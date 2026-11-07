@@ -12,8 +12,6 @@ from horatio.api.downtimes import staff_troupe
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Troupe
 from horatio.permissions import TroupeAction
-from horatio.rules.store import read_troupe_rules
-from horatio.sheets import unprocessable
 
 router = APIRouter(prefix="/troupes/{troupe_id}", tags=["house rules"])
 
@@ -64,14 +62,7 @@ def set_free_changes(
     at once to the characters whose free changes are open; turning it on gives them to
     characters accepted from now on."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
-    known = {
-        key
-        for splat in troupe.allowed_splats
-        for key in read_troupe_rules(db, splat, troupe.id).rule_set.traits
-    }
-    for trait in body.excluded:
-        if (trait.category, trait.name) not in known:
-            raise unprocessable(f"There is no trait {trait.name} to exclude.")
+    free_changes.check_excluded(db, troupe, [(e.category, e.name) for e in body.excluded])
     free_changes.change_setting(
         db,
         user,

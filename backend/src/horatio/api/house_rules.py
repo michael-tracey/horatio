@@ -26,13 +26,14 @@ from horatio import (
     resonance,
     retainer_upkeep,
     territories,
+    troupe_settings,
 )
 from horatio.api.book_traits import BookTraitOut, book_traits_out
 from horatio.api.downtimes import staff_troupe
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.creation import RESTRICTION_TEXT
-from horatio.models import Character, HouseTrait, Troupe, User
+from horatio.models import HouseTrait, Troupe, User
 from horatio.permissions import TroupeAction
 from horatio.rules import checks, conditions, languages, pricing
 from horatio.rules.checks import REQUIREMENT_KEY, SECT_KEY, CheckData
@@ -55,7 +56,8 @@ from horatio.rules.store import (
     add_house_rule,
     change_house_allowance_rule,
     change_house_rule,
-    forget_rules,
+    check_house_cost_condition,
+    check_house_creation_conditions,
     house_allowance_rules,
     house_cost_rules,
     read_troupe_rules,
@@ -65,7 +67,7 @@ from horatio.rules.store import (
     set_check_override,
     set_house_creation_rules,
 )
-from horatio.sheets import apply_grants, playing_by, sync_troupe_fixed_ratings
+from horatio.sheets import sync_troupe_fixed_ratings
 
 router = APIRouter(prefix="/troupes/{troupe_id}", tags=["house rules"])
 
@@ -403,12 +405,8 @@ def add_cost(
     if body.trait is not None and (body.category, body.trait) not in rule_set.traits:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "No such trait.")
     rule = priced(body, body.category, body.trait, body.condition or None)
-    if rule.condition and not any(same_subject(r, rule) for r in rule_set.cost_rules):
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_CONTENT,
-            "A troupe price can only have the condition of a rule set price it replaces.",
-        )
     try:
+        check_house_cost_condition(rule, rule_set)
         row = add_house_rule(db, troupe.id, splat, rule)
     except DuplicateHouseRule:
         raise HTTPException(
@@ -579,17 +577,11 @@ def change_starting(
 ) -> StartingCategoryOut:
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
     splat = house_splat(db, troupe.id, splat)
-    current = starting_category(db, troupe.id, splat, category)
+    starting_category(db, troupe.id, splat, category)
     if not body.rules:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             "Give at least one pick or a budget; go back to the rule set's to undo a change.",
-        )
-    conditions_allowed = [r.when for r in current.book if r.when]
-    if any(r.when and r.when not in conditions_allowed for r in body.rules):
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_CONTENT,
-            "A starting rule can only have the condition of one of the rule set's.",
         )
     rules = [
         CreationRuleData(
@@ -604,6 +596,9 @@ def change_starting(
         for r in body.rules
     ]
     try:
+        check_house_creation_conditions(
+            rules, read_troupe_rules(db, splat, troupe.id).rule_set, category
+        )
         set_house_creation_rules(db, troupe.id, splat, category, rules)
     except ValueError as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
@@ -939,19 +934,7 @@ def set_golconda(
     """Switch on or off the optional rule that Golconda Seekers are Enlightened. The
     characters playing by the troupe's rules gain or lose it at once."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
-    if troupe.golconda_enlightened != body.on:
-        troupe.golconda_enlightened = body.on
-        audit.record(
-            db,
-            user,
-            "house.golconda",
-            troupe_id=troupe.id,
-            setting="are Enlightened" if body.on else "are not Enlightened",
-        )
-        db.flush()
-        forget_rules(db)
-        for character in playing_by(db, troupe.id):
-            apply_grants(db, user, character)
+    troupe_settings.set_golconda(db, user, troupe, body.on)
     db.commit()
     return troupe_out(db, user, troupe)
 
@@ -1104,41 +1087,9 @@ def set_clan_rarity(
     """Name how rare clans are here. Characters being built here take the rarity merit
     it names straight away; finished characters keep theirs."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
-    rule_set = read_troupe_rules(db, "vampire", troupe.id).rule_set
-    unknown = [c for c in body.rarities if ("clan", c) not in rule_set.traits or ":" in c]
-    if unknown:
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_CONTENT,
-            f"Not a clan: {', '.join(unknown)}. Name the clan; its bloodlines follow it.",
-        )
-    troupe.clan_rarity = dict(sorted(body.rarities.items()))
-    db.flush()
-    clan_merits.resync(db, building_here(db, troupe))
-    audit.record(
-        db,
-        user,
-        "house.clan_rarity",
-        troupe_id=troupe.id,
-        rarities=", ".join(f"{c} {r}" for c, r in troupe.clan_rarity.items()) or "the book's",
-    )
+    troupe_settings.set_clan_rarity(db, user, troupe, body.rarities)
     db.commit()
     return clan_rarity_out(db, troupe)
-
-
-def building_here(db: DbSession, troupe: Troupe) -> list[Character]:
-    """The characters still being built under the troupe's rules: homed here, or
-    built for it with no home yet."""
-    return list(
-        db.scalars(
-            select(Character).where(
-                (Character.home_troupe_id == troupe.id)
-                | (
-                    Character.home_troupe_id.is_(None) & (Character.building_troupe_id == troupe.id)
-                ),
-                Character.creation_completed_at.is_(None),
-            )
-        ).all()
-    )
 
 
 # --- Default bloodlines -----------------------------------------------------------
@@ -1219,34 +1170,7 @@ def set_default_bloodlines(
     being built here take the clan merits it means straight away; finished characters
     keep the bloodline and merits they have."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
-    rule_set = read_troupe_rules(db, "vampire", troupe.id).rule_set
-    unknown = [
-        f"{clan} as {line}"
-        for clan, line in body.defaults.items()
-        if ":" in clan
-        or ("clan", clan) not in rule_set.traits
-        or ("clan", line) not in rule_set.traits
-        or clan_merits.family_of(line) != clan
-    ]
-    if unknown:
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_CONTENT,
-            f"Not a clan and one of its bloodlines: {', '.join(unknown)}.",
-        )
-    troupe.default_bloodlines = dict(sorted(body.defaults.items()))
-    db.flush()
-    clan_merits.resync(db, building_here(db, troupe))
-    audit.record(
-        db,
-        user,
-        "house.default_bloodlines",
-        troupe_id=troupe.id,
-        defaults=", ".join(
-            f"{c} as {'the plain clan' if line == c else line}"
-            for c, line in troupe.default_bloodlines.items()
-        )
-        or "the book's",
-    )
+    troupe_settings.set_default_bloodlines(db, user, troupe, body.defaults)
     db.commit()
     return default_bloodlines_out(db, troupe)
 

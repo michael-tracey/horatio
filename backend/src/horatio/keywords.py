@@ -689,15 +689,22 @@ def change(
 
 
 def add(
-    db: Session, staff: User, troupe: Troupe, new: Change, action_kinds: Mapping[str, str]
+    db: Session,
+    staff: User,
+    troupe: Troupe,
+    new: Change,
+    action_kinds: Mapping[str, str],
+    key: str | None = None,
 ) -> DowntimeKeyword:
+    """Add a keyword of the troupe's own, under a new key; or under `key`, one of
+    another troupe's own keys, when its settings are imported (horatio.troupe_settings_share)."""
     check_change(new, action_kinds)
     found = materialise(db, troupe.id)
     if any(r.name.lower() == new.name.strip().lower() for r in found):
         raise conflict(f"There is already a keyword called {new.name.strip()}.")
     row = DowntimeKeyword(
         troupe_id=troupe.id,
-        key=f"own_{uuid.uuid4().hex[:8]}",
+        key=key or f"own_{uuid.uuid4().hex[:8]}",
         position=max((r.position for r in found), default=-1) + 1,
         name="",
     )

@@ -9,12 +9,12 @@ from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel, Field, StringConstraints
 from sqlalchemy.orm import Session
 
-from horatio import audit
+from horatio import audit, written_rules
 from horatio.api.downtimes import staff_troupe
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Troupe, WrittenRule
 from horatio.permissions import TroupeAction
-from horatio.written_rules import LinkedTrait, find_trait, last_in, linked_traits, listed, move
+from horatio.written_rules import LinkedTrait, find_trait, linked_traits, listed, move
 
 router = APIRouter(prefix="/troupes/{troupe_id}", tags=["written rules"])
 
@@ -111,6 +111,16 @@ def troupe_rule(db: Session, troupe: Troupe, rule_id: uuid.UUID) -> WrittenRule:
     return rule
 
 
+def words_of(db: Session, troupe: Troupe, body: WrittenRuleIn) -> written_rules.Words:
+    return written_rules.Words(
+        section=body.section,
+        title=body.title,
+        body=body.body,
+        trait_definition_id=trait_of(db, troupe, body.trait),
+        page=body.page or None,
+    )
+
+
 def trait_of(db: Session, troupe: Troupe, link: TraitLink | None) -> uuid.UUID | None:
     if link is None:
         return None
@@ -136,24 +146,7 @@ def add_written_rule(
 ) -> WrittenRulesOut:
     """Add a written rule, last in its section."""
     troupe = editable(db, user, troupe_id)
-    rule = WrittenRule(
-        troupe_id=troupe.id,
-        section=body.section,
-        title=body.title,
-        body=body.body,
-        position=last_in(db, troupe.id, body.section),
-        trait_definition_id=trait_of(db, troupe, body.trait),
-        page=body.page or None,
-    )
-    db.add(rule)
-    audit.record(
-        db,
-        user,
-        "house.written_rule_added",
-        troupe_id=troupe.id,
-        title=rule.title,
-        section=rule.section or "no section",
-    )
+    written_rules.add(db, user, troupe, words_of(db, troupe, body))
     db.commit()
     return written_out(db, troupe)
 
@@ -182,14 +175,7 @@ def change_written_rule(
             )
         db.commit()
         return written_out(db, troupe)
-    if body.section != rule.section:
-        rule.position = last_in(db, troupe.id, body.section)
-        rule.section = body.section
-    rule.title = body.title
-    rule.body = body.body
-    rule.trait_definition_id = trait_of(db, troupe, body.trait)
-    rule.page = body.page or None
-    audit.record(db, user, "house.written_rule_changed", troupe_id=troupe.id, title=rule.title)
+    written_rules.change(db, user, troupe, rule, words_of(db, troupe, body))
     db.commit()
     return written_out(db, troupe)
 
