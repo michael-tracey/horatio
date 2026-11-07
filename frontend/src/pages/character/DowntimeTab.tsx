@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useReducer, useRef, useState } from "react";
 import { api, ApiError, unwrap } from "../../api/client";
-import type { AnswerIn, FeedingIn, InfluenceStandingOut, MyDowntime, QuestChoiceOut, QuestionOut } from "../../api/types";
+import type { AllowanceLineOut, AnswerIn, FeedingIn, InfluenceStandingOut, MyDowntime, QuestChoiceOut, QuestionOut, QuickHandsOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { feedingActionsSpent } from "../../feeding";
@@ -12,7 +12,7 @@ import { questChoiceText } from "../quests/quests";
 import { BlockTarget } from "./BlockTarget";
 import { useLeaveWarning } from "./CartPanel";
 import { type Answers, EMPTY_FORM, type Form, formReducer, toAnswers, unsaved } from "./downtimeForm";
-import { FeedingCard } from "./FeedingCard";
+import { FeedingCard, withoutFeeding } from "./FeedingCard";
 import { NominationsForm } from "../nominations/NominationsForm";
 import { RemembrancesForm } from "../nominations/RemembrancesForm";
 
@@ -22,6 +22,13 @@ const spends = (q: QuestionOut) => q.kind === "action" || q.kind === "quest";
 /** "+3", "−2": an allowance line or adjustment, with a true minus. */
 function signed(n: number): string {
   return n < 0 ? `\u2212${-n}` : `+${n}`;
+}
+
+/** Actions only for one thing, as a question shows them: "1 Science action (Chemistry only)". */
+export function restrictedText(lines: AllowanceLineOut[], actionKind: string | null | undefined): string[] {
+  return lines
+    .filter((b) => b.only && b.action_kind === actionKind)
+    .map((b) => `${b.amount} ${b.source.split(":")[0]} ${b.amount === 1 ? "action" : "actions"} (${b.only} only)`);
 }
 
 /** How long typing has to stop for before the answers are saved. */
@@ -66,6 +73,18 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
       client.setQueryData(key, saved);
       setSavedAt(new Date());
     },
+  });
+  // Quick Hands, Quick Work goes up at once, with the form as it stands: it changes the allowance.
+  const quick = useAction(async (on: boolean) => {
+    const d = downtime.data!;
+    const fed = d.feeding && form.feeding ? (on ? withoutFeeding(form.feeding) : form.feeding) : null;
+    if (on && fed) change({ type: "feeding", feeding: fed });
+    const saved = await unwrap(
+      api.PUT("/api/characters/{character_id}/downtime/answers", { ...path, body: { answers: toAnswers(form.draft), feeding: fed, quick_hands: on } }),
+    );
+    client.setQueryData(key, saved);
+    setSavedAt(new Date());
+    return saved;
   });
   const submit = useAction(async (sent: Sent) => {
     await unwrap(api.PUT("/api/characters/{character_id}/downtime/answers", { ...path, body: { answers: sent.answers, feeding: sent.feeding } }));
@@ -161,8 +180,18 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
       <div className="flex flex-col gap-4">
+        {d.quick_hands && (
+          // While it saves, the box shows the choice just made.
+          <QuickHandsCard
+            choice={quick.isPending ? { ...d.quick_hands, on: quick.variables } : d.quick_hands}
+            busy={quick.isPending || saving}
+            error={quick.error}
+            onChange={(on) => quick.mutate(on)}
+          />
+        )}
         {d.feeding && feeding && (
           <FeedingCard
+            quickHands={d.quick_hands?.on ?? false}
             feeding={d.feeding}
             value={feeding}
             onChange={(value) => change({ type: "feeding", feeding: value })}
@@ -184,6 +213,7 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
               answers={answers}
               remaining={remaining}
               influence={q.kind === "action" ? d.influence?.find((s) => s.action_kind === q.action_kind) : undefined}
+              restricted={spends(q) ? restrictedText(d.breakdown, q.action_kind) : []}
               quests={d.quests ?? []}
               onChange={(next) => setAnswers(q.id, next)}
               onRemove={(i) => remove(q.id, i)}
@@ -242,6 +272,7 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
               <li key={i}>
                 {signed(b.amount)} {b.action_kind.replace(/_/g, " ")} {Math.abs(b.amount) === 1 ? "action" : "actions"}{" "}
                 {b.source === "Everyone" ? "(everyone gets these)" : `from ${b.source}`}
+                {b.only && ` (${b.only} only)`}
                 {b.note && <span className="block pl-3">{b.note}</span>}
               </li>
             ))}
@@ -262,12 +293,29 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
   );
 }
 
+/** Quick Hands, Quick Work (Vol. II Issue 1, p. 76): chosen each cycle, until the downtime is submitted. */
+function QuickHandsCard({ choice, busy, error, onChange }: { choice: QuickHandsOut; busy: boolean; error: unknown; onChange: (on: boolean) => void }) {
+  return (
+    <Card title="Quick Hands, Quick Work">
+      <label className="flex items-start gap-2 text-sm">
+        <input type="checkbox" className="mt-1" checked={choice.on} disabled={busy || !choice.can_change} onChange={(e) => onChange(e.target.checked)} />
+        <span>
+          Use Quick Hands, Quick Work this cycle (+2 actions; no feeding; start next game at half Blood)
+          {!choice.can_change && <span className="block text-xs text-mist">Fixed once the downtime is submitted.</span>}
+        </span>
+      </label>
+      <ErrorText error={error} />
+    </Card>
+  );
+}
+
 function QuestionCard({
   characterId,
   question,
   answers,
   remaining,
   influence,
+  restricted,
   quests,
   onChange,
   onRemove,
@@ -278,6 +326,8 @@ function QuestionCard({
   answers: Answers;
   remaining: number;
   influence?: InfluenceStandingOut;
+  /** Actions of its kind only for one thing: "1 Science action (Chemistry only)". */
+  restricted: string[];
   quests: QuestChoiceOut[];
   onChange: (answers: Answers) => void;
   onRemove: (index: number) => void;
@@ -298,6 +348,7 @@ function QuestionCard({
       }
     >
       {question.help_text && <p className="mb-3 text-sm text-mist">{question.help_text}</p>}
+      {restricted.length > 0 && <p className="mb-3 text-sm text-mist">Of these, {restricted.join(", ")}. Staff judge what fits.</p>}
       <div className="flex flex-col gap-3">
         {answers.map((a, i) => (
           <div key={i} className="flex flex-col gap-2">

@@ -28,6 +28,7 @@ from horatio.models.characters import (
 from horatio.models.downtimes import (
     AllowanceAdjustment,
     Answer,
+    BackgroundChange,
     CycleParticipant,
     Delivery,
     DowntimeCycle,
@@ -127,6 +128,7 @@ __all__ = [
     "AllowanceAdjustment",
     "AllowanceRule",
     "Answer",
+    "BackgroundChange",
     "CycleParticipant",
     "Delivery",
     "Diablerie",

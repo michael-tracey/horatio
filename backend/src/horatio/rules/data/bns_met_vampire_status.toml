@@ -1285,6 +1285,8 @@ type = "Fleeting"
 sect = "Anarch"
 passive = "Stock NPCs following you gain an extra simple action a turn (from one Veteran a turn)."
 spent = "One extra downtime action between games."
+# Spent at a game, the next downtime has one more general action (horatio.play).
+spent_actions = 1
 source = "Given with Warrant; popular acclaim, for fighting well in a major conflict for the Movement (p. 481)."
 
 [[traits]]

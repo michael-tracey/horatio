@@ -7,6 +7,15 @@ import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from ".
 import { useAction } from "../../hooks";
 import { useHouseSplat } from "./HouseSplat";
 import { InfluenceLookback } from "./InfluenceLookback";
+import { RareDisciplinesSetting } from "./RareDisciplinesSetting";
+
+type Scheme = AllowanceOut["scheme"];
+
+/** "1, 3, 5": the rating each further field needs, from what staff typed; null if it doesn't read. */
+export function fieldRatings(text: string): number[] | null {
+  const ratings = text.split(/[\s,]+/).filter(Boolean).map(Number);
+  return ratings.every((r) => Number.isInteger(r) && r >= 1) ? ratings : null;
+}
 
 /** An editor's target: a new trait rule, a rule set rule to replace, or a troupe rule to change. */
 type Editing = { kind: "new" } | { kind: "replace"; rule: AllowanceOut } | { kind: "change"; rule: AllowanceOut };
@@ -98,6 +107,7 @@ export function AllowancesSection({ troupeId, canEdit }: { troupeId: string; can
         </div>
         <ErrorText error={remove.error} />
       </Card>
+      <RareDisciplinesSetting troupeId={troupeId} canEdit={canEdit} />
       <InfluenceLookback troupeId={troupeId} canEdit={canEdit} />
     </div>
   );
@@ -108,7 +118,8 @@ function AllowanceEditor({ troupeId, splat, data, editing, onClose }: { troupeId
   const [actionKind, setActionKind] = useState(start?.action_kind ?? data.action_kinds[0]?.key ?? "general");
   const [category, setCategory] = useState(start?.category ?? "flaws");
   const [trait, setTrait] = useState(start?.trait ?? "");
-  const [scheme, setScheme] = useState<"fixed" | "per_dot">(start?.scheme ?? "fixed");
+  const [scheme, setScheme] = useState<Scheme>(start?.scheme ?? "fixed");
+  const [ratings, setRatings] = useState((start?.detail_ratings ?? []).join(", "));
   const [amount, setAmount] = useState(start?.amount.toString() ?? "-1");
   const [minRating, setMinRating] = useState(start?.min_rating.toString() ?? "1");
   const catalogue = useQuery({
@@ -120,7 +131,8 @@ function AllowanceEditor({ troupeId, splat, data, editing, onClose }: { troupeId
   const traits = (catalogue.data?.traits ?? []).filter((t) => t.category === category).map((t) => t.name);
   const everyone = start !== null && start.trait === null;
 
-  const body = { scheme, amount: Number(amount), min_rating: Number(minRating) };
+  const detailRatings = scheme === "per_detail" ? fieldRatings(ratings) : [];
+  const body = { scheme, amount: Number(amount), min_rating: Number(minRating), detail_ratings: detailRatings ?? [] };
   const save = useAction(async () => {
     if (editing.kind === "change") {
       await unwrap(
@@ -136,7 +148,7 @@ function AllowanceEditor({ troupeId, splat, data, editing, onClose }: { troupeId
     }
     onClose();
   });
-  const ready = amount.trim() !== "" && !Number.isNaN(Number(amount)) && (everyone || !!trait);
+  const ready = amount.trim() !== "" && !Number.isNaN(Number(amount)) && (everyone || !!trait) && detailRatings !== null;
   const kindName = data.action_kinds.find((k) => k.key === actionKind)?.name ?? actionKind;
 
   return (
@@ -191,9 +203,10 @@ function AllowanceEditor({ troupeId, splat, data, editing, onClose }: { troupeId
           {!everyone && (
             <>
               <Field label="How it counts">
-                <Select value={scheme} onChange={(e) => setScheme(e.target.value as "fixed" | "per_dot")}>
+                <Select value={scheme} onChange={(e) => setScheme(e.target.value as Scheme)}>
                   <option value="fixed">Once, at any rating</option>
                   <option value="per_dot">For each dot</option>
+                  <option value="per_detail">For each field held</option>
                 </Select>
               </Field>
               <Field label="From rating">
@@ -202,6 +215,14 @@ function AllowanceEditor({ troupeId, splat, data, editing, onClose }: { troupeId
             </>
           )}
         </div>
+        {!everyone && scheme === "per_detail" && (
+          <Field
+            label="Rating each field needs"
+            hint="Empty: one for every field, as the book has Science. 1, 3, 5: the first field at 1 dot, a second at 3 and a third at 5, counting the character's best."
+          >
+            <Input value={ratings} onChange={(e) => setRatings(e.target.value)} placeholder="1, 3, 5" />
+          </Field>
+        )}
         <ErrorText error={save.error} />
         <div className="flex gap-2">
           <Button type="submit" disabled={!ready || save.isPending}>

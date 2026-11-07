@@ -233,7 +233,9 @@ class AllowanceRule(Record):
     """`troupe_id` null: part of the generic rule set; set: a house rule."""
 
     __tablename__ = "allowance_rules"
-    __table_args__ = (CheckConstraint("scheme in ('fixed', 'per_dot')", name="scheme"),)
+    __table_args__ = (
+        CheckConstraint("scheme in ('fixed', 'per_dot', 'per_detail')", name="scheme"),
+    )
 
     rule_set_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rule_sets.id"), index=True)
     troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"), index=True)
@@ -246,6 +248,10 @@ class AllowanceRule(Record):
     amount: Mapped[int]
     # What it means, shown on the character's downtime (Hunted's actions).
     note: Mapped[str] = mapped_column(default="", server_default="")
+    # per_detail: the rating the character's best of the trait needs for its 1st, 2nd,
+    # 3rd... field to count (a troupe's Science variant: [1, 3, 5]); empty, every field
+    # counts (horatio.rules.allowance).
+    detail_ratings: Mapped[list[int]] = mapped_column(JSONB, default=list, server_default="[]")
 
 
 class CreationRule(Record):

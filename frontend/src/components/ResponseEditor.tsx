@@ -8,6 +8,7 @@ import { DISCOVERY_BLOCK, LOOKUP_LEVEL } from "../influenceLookups";
 import { questType } from "../pages/quests/quests";
 import { STATUS_NAMES } from "../pages/troupe/responsesList";
 import { CombinedAnswers, DiscoveryBlock, LookupFill, type Combined } from "./InfluenceLookupTools";
+import { ResponseEffects } from "./ResponseEffects";
 import { Badge, Button, ErrorText, Field, Input, Select, Textarea } from "./ui";
 
 /** One downtime action and the box to answer it in, with fill tables to roll from. */
@@ -104,6 +105,7 @@ export function ResponseEditor({
       <CombinedAnswers others={others} onChange={setOthers} />
       {canLog && influence?.action_key === DISCOVERY_BLOCK && <DiscoveryBlock item={item} onWrite={setBody} />}
       {canLog && item.influence && <LogAnswer item={item} />}
+      {canLog && <ResponseEffects item={item} />}
     </div>
   );
 }

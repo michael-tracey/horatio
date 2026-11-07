@@ -62,6 +62,7 @@ import { IdentityPanel } from "./Identities";
 import { RetainersPanel, useRetainers } from "./Retainers";
 import { givingMerits } from "./retainers";
 import { PowerChoices } from "./PowerChoices";
+import { BackgroundChanges } from "./BackgroundChanges";
 import { InfluenceEffects } from "./InfluenceEffects";
 import { DomitorCard } from "./Domitor";
 import { EmbraceCard } from "./Embrace";
@@ -614,6 +615,7 @@ export function SheetTab({
         {/* Staff run a ghoul's Embrace from here; once done, it shows what it did. */}
         {(hasDomitor || character.splat === "vampire") && character.kind === "pc" && <EmbraceCard character={character} catalogue={catalogue.data} />}
         <InfluenceEffects characterId={character.id} />
+        <BackgroundChanges characterId={character.id} />
         <Card dense title="Experience">
           <dl id="experience" className="grid grid-cols-3 gap-2 text-center">
             <div>

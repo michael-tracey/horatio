@@ -4,13 +4,24 @@ import { Button, Card, Field, Input, Notice, Select } from "../../components/ui"
 import { herdShared, needText, tally } from "../../feeding";
 import { Patrols, RackFeeding, TerritoryChoice } from "./FeedingVessels";
 
+/** Why the Feeding section is closed under Quick Hands, Quick Work (Vol. II Issue 1, p. 76). */
+export const QUICK_HANDS_FEEDING =
+  "Using Quick Hands, Quick Work, you don't feed this cycle: no feeding actions, no Herd of your own and no Herd from others. You start the next game at half Blood. You can still give your Herd to others.";
+
+/** What turning Quick Hands, Quick Work on takes out of the Feeding section. */
+export function withoutFeeding(value: FeedingIn): FeedingIn {
+  return { ...value, actions: 0, herd_own: 0, territory: "" };
+}
+
 /**
  * The Feeding section of the downtime form: feeding actions out of the general
  * actions, and the character's Herd shared out (its own feeding, gifts to other
  * characters, saved for game, other), never more dots than it has; and with Blood
  * Resonance, the humor the character hunts for; with feeding territories, the
  * territory it feeds in and its patrols. With the Rack, a vessel taken from it stands
- * in for the actions and Herd. The tally is advisory; storytellers decide.
+ * in for the actions and Herd. The tally is advisory; storytellers decide. Under
+ * Quick Hands, Quick Work the character doesn't feed: only giving its Herd away and
+ * patrols are left.
  */
 export function FeedingCard({
   feeding,
@@ -19,6 +30,7 @@ export function FeedingCard({
   actionsLeft,
   characterId,
   onDowntime,
+  quickHands = false,
 }: {
   feeding: MyFeedingOut;
   value: FeedingIn;
@@ -28,6 +40,8 @@ export function FeedingCard({
   characterId: string;
   /** The downtime as taking a vessel left it. */
   onDowntime: (saved: MyDowntime) => void;
+  /** Quick Hands, Quick Work is on this cycle. */
+  quickHands?: boolean;
 }) {
   const named = useClanName();
   const { needed, reasons } = needText(feeding.need);
@@ -42,11 +56,13 @@ export function FeedingCard({
   const hunted = feeding.humors.find((h) => h.key === value.resonance);
   const unchosen = feeding.recipients.filter((r) => !gifts.some((g) => g.character_id === r.character_id));
 
+  const noFeeding = quickHands && <Notice>{QUICK_HANDS_FEEDING}</Notice>;
+
   if (feeding.rack)
     return (
       <Card title="Feeding">
         {locked && <Notice>A storyteller has answered your feeding, so it can no longer change.</Notice>}
-        <RackFeeding feeding={feeding} characterId={characterId} onDowntime={onDowntime} />
+        {noFeeding || <RackFeeding feeding={feeding} characterId={characterId} onDowntime={onDowntime} />}
         <div className="mt-3 sm:max-w-sm">
           <Field label="Where and how">
             <Input disabled={locked} value={value.where ?? ""} onChange={(e) => onChange({ ...value, where: e.target.value })} placeholder="Optional" />
@@ -58,26 +74,30 @@ export function FeedingCard({
 
   return (
     <Card title="Feeding">
-      <p className="mb-3 text-sm">
-        You need <strong className="text-gold">{needed}</strong> feeding this cycle: {named(reasons)}.
-      </p>
+      {noFeeding || (
+        <p className="mb-3 text-sm">
+          You need <strong className="text-gold">{needed}</strong> feeding this cycle: {named(reasons)}.
+        </p>
+      )}
       {locked && <Notice>A storyteller has answered your feeding, so it can no longer change.</Notice>}
-      <div className="grid gap-3 sm:grid-cols-[12rem_1fr]">
-        <Field label="Actions spent feeding" hint={`Taken from your downtime actions (${actionsLeft} left).`}>
-          <Input
-            type="number"
-            min={0}
-            max={(value.actions ?? 0) + Math.max(0, actionsLeft)}
-            disabled={locked}
-            value={value.actions ?? 0}
-            onChange={(e) => onChange({ ...value, actions: number(e.target.value) })}
-          />
-        </Field>
-        <Field label="Where and how">
-          <Input disabled={locked} value={value.where ?? ""} onChange={(e) => onChange({ ...value, where: e.target.value })} placeholder="Optional" />
-        </Field>
-      </div>
-      {feeding.humors.length > 0 && (
+      {!quickHands && (
+        <div className="grid gap-3 sm:grid-cols-[12rem_1fr]">
+          <Field label="Actions spent feeding" hint={`Taken from your downtime actions (${actionsLeft} left).`}>
+            <Input
+              type="number"
+              min={0}
+              max={(value.actions ?? 0) + Math.max(0, actionsLeft)}
+              disabled={locked}
+              value={value.actions ?? 0}
+              onChange={(e) => onChange({ ...value, actions: number(e.target.value) })}
+            />
+          </Field>
+          <Field label="Where and how">
+            <Input disabled={locked} value={value.where ?? ""} onChange={(e) => onChange({ ...value, where: e.target.value })} placeholder="Optional" />
+          </Field>
+        </div>
+      )}
+      {!quickHands && feeding.humors.length > 0 && (
         <div className="mt-3 sm:max-w-sm">
           <Field
           label="Resonance you hunt for"
@@ -94,7 +114,7 @@ export function FeedingCard({
           </Field>
         </div>
       )}
-      <TerritoryChoice feeding={feeding} value={value} onChange={onChange} />
+      {!quickHands && <TerritoryChoice feeding={feeding} value={value} onChange={onChange} />}
       <Patrols feeding={feeding} value={value} onChange={onChange} actionsLeft={actionsLeft} />
 
       {feeding.herd > 0 && (
@@ -110,9 +130,11 @@ export function FeedingCard({
             )}
           </p>
           <div className="grid gap-3 sm:grid-cols-3">
-            <Field label="Use for my feeding">
-              <Input type="number" min={0} max={feeding.herd} value={value.herd_own ?? 0} onChange={(e) => onChange({ ...value, herd_own: number(e.target.value) })} />
-            </Field>
+            {!quickHands && (
+              <Field label="Use for my feeding">
+                <Input type="number" min={0} max={feeding.herd} value={value.herd_own ?? 0} onChange={(e) => onChange({ ...value, herd_own: number(e.target.value) })} />
+              </Field>
+            )}
             <Field label="Save for game" hint="Recorded for staff.">
               <Input type="number" min={0} max={feeding.herd} value={value.herd_saved ?? 0} onChange={(e) => onChange({ ...value, herd_saved: number(e.target.value) })} />
             </Field>
@@ -154,7 +176,7 @@ export function FeedingCard({
         </fieldset>
       )}
 
-      {feeding.received.length > 0 && (
+      {!quickHands && feeding.received.length > 0 && (
         <ul className="mt-4 text-sm">
           {feeding.received.map((r) => (
             <li key={r.character_id}>
@@ -163,9 +185,11 @@ export function FeedingCard({
           ))}
         </ul>
       )}
-      <p role="status" className={`mt-4 text-sm ${counted.enough ? "text-gold" : "text-mist"}`}>
-        {counted.text}
-      </p>
+      {!quickHands && (
+        <p role="status" className={`mt-4 text-sm ${counted.enough ? "text-gold" : "text-mist"}`}>
+          {counted.text}
+        </p>
+      )}
     </Card>
   );
 }

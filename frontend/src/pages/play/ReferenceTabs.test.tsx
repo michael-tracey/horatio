@@ -20,6 +20,7 @@ const reference: PlayReference = {
   blood_per_turn: 1,
   retainers: [],
   identities: [],
+  backgrounds_changed: [],
   traits: [
     trait("archetype", "Archetype", "Identity", "Loner", { rating: null, description: "You'd rather work alone." }),
     trait("attributes", "Attributes", "Attributes", "Physical", { rating: 5, description: "Strength, speed and toughness." }),
@@ -43,16 +44,22 @@ const reference: PlayReference = {
   ],
 };
 
-function sheet() {
+function sheet(shown: PlayReference = reference) {
   const client = new QueryClient({ defaultOptions: { queries: { enabled: false } } });
   render(
     <QueryClientProvider client={client}>
-      <SheetTab reference={reference} />
+      <SheetTab reference={shown} />
     </QueryClientProvider>,
   );
 }
 
 describe("SheetTab", () => {
+  it("shows a background raised for the month from a downtime", () => {
+    const crafts = { source: "crafts", delta: 1, starts_at: "2026-11-07T12:00:00Z", ends_at: null, games_left: 0 };
+    sheet({ ...reference, backgrounds_changed: [{ trait: "Resources", rating: 2, now: 3, changes: [crafts] }] });
+    expect(screen.getByText("Resources 3 (+1 this month, Crafts)")).toBeTruthy();
+  });
+
   it("gives a chevron only to a trait with something to say", () => {
     sheet();
     expect(screen.getByRole("button", { name: "Brawl" })).toBeTruthy();
