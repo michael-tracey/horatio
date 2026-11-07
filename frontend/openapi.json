@@ -312,6 +312,138 @@
         "title": "AgeCondition",
         "type": "object"
       },
+      "AimOut": {
+        "description": "Who an action is aimed at, for storytellers and assistant storytellers only\n(horatio.targets).",
+        "properties": {
+          "counter": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counter"
+          },
+          "located": {
+            "title": "Located",
+            "type": "boolean"
+          },
+          "not_against": {
+            "title": "Not Against",
+            "type": "boolean"
+          },
+          "paired": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PairOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targets": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Targets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "targets",
+          "counter",
+          "located",
+          "not_against",
+          "paired"
+        ],
+        "title": "AimOut",
+        "type": "object"
+      },
+      "AimedOut": {
+        "description": "One action aimed at a character.",
+        "properties": {
+          "also": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Also",
+            "type": "array"
+          },
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "counter": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counter"
+          },
+          "located": {
+            "title": "Located",
+            "type": "boolean"
+          },
+          "not_against": {
+            "title": "Not Against",
+            "type": "boolean"
+          },
+          "paired": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PairOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "response_id": {
+            "format": "uuid",
+            "title": "Response Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "response_id",
+          "character_id",
+          "character_name",
+          "question",
+          "answer",
+          "also",
+          "counter",
+          "located",
+          "not_against",
+          "paired",
+          "status"
+        ],
+        "title": "AimedOut",
+        "type": "object"
+      },
       "AllowanceChange": {
         "properties": {
           "amount": {
@@ -577,6 +709,11 @@
           "body": {
             "title": "Body",
             "type": "string"
+          },
+          "not_against": {
+            "default": false,
+            "title": "Not Against",
+            "type": "boolean"
           },
           "question_id": {
             "format": "uuid",
@@ -5362,6 +5499,35 @@
           "left_listed"
         ],
         "title": "CharacterOut",
+        "type": "object"
+      },
+      "CharacterProjectsOut": {
+        "properties": {
+          "paths": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Paths",
+            "type": "array"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectOut"
+            },
+            "title": "Projects",
+            "type": "array"
+          },
+          "staff": {
+            "title": "Staff",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "projects",
+          "paths",
+          "staff"
+        ],
+        "title": "CharacterProjectsOut",
         "type": "object"
       },
       "CharacterQuestionsOut": {
@@ -20754,6 +20920,11 @@
             "title": "Breakdown",
             "type": "array"
           },
+          "can_counter": {
+            "default": false,
+            "title": "Can Counter",
+            "type": "boolean"
+          },
           "closed": {
             "anyOf": [
               {
@@ -20857,6 +21028,14 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "targets": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TargetChoiceOut"
+            },
+            "title": "Targets",
+            "type": "array"
           }
         },
         "required": [
@@ -21575,6 +21754,19 @@
           "text"
         ],
         "title": "NominationIn",
+        "type": "object"
+      },
+      "NotAgainstIn": {
+        "properties": {
+          "not_against": {
+            "title": "Not Against",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "not_against"
+        ],
+        "title": "NotAgainstIn",
         "type": "object"
       },
       "NotAllowedOut": {
@@ -22938,6 +23130,68 @@
           "handle"
         ],
         "title": "Owner",
+        "type": "object"
+      },
+      "PairOut": {
+        "description": "An action a Cancel or Watch is paired with, or one paired with it.",
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "counter": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counter"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "response_id": {
+            "format": "uuid",
+            "title": "Response Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "response_id",
+          "character_name",
+          "question",
+          "answer"
+        ],
+        "title": "PairOut",
+        "type": "object"
+      },
+      "PairingIn": {
+        "properties": {
+          "response_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Id"
+          }
+        },
+        "required": [
+          "response_id"
+        ],
+        "title": "PairingIn",
         "type": "object"
       },
       "PanelsOut": {
@@ -26692,6 +26946,219 @@
           "by_action_kind"
         ],
         "title": "Progress",
+        "type": "object"
+      },
+      "ProjectCycleOut": {
+        "properties": {
+          "cycle_name": {
+            "title": "Cycle Name",
+            "type": "string"
+          },
+          "progress": {
+            "title": "Progress",
+            "type": "integer"
+          },
+          "spent": {
+            "title": "Spent",
+            "type": "integer"
+          },
+          "started_over": {
+            "title": "Started Over",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "cycle_name",
+          "spent",
+          "started_over",
+          "progress"
+        ],
+        "title": "ProjectCycleOut",
+        "type": "object"
+      },
+      "ProjectIn": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "path_change",
+              "research",
+              "other"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "monthly_minimum": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monthly Minimum"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Path",
+            "type": "string"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
+          "with_teacher": {
+            "default": false,
+            "title": "With Teacher",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "ProjectIn",
+        "type": "object"
+      },
+      "ProjectOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "history": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ProjectCycleOut"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "path_change",
+              "research",
+              "other"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "monthly_minimum": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monthly Minimum"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "progress": {
+            "title": "Progress",
+            "type": "integer"
+          },
+          "restarts": {
+            "title": "Restarts",
+            "type": "integer"
+          },
+          "sheet_change_due": {
+            "title": "Sheet Change Due",
+            "type": "boolean"
+          },
+          "starts_over": {
+            "default": false,
+            "title": "Starts Over",
+            "type": "boolean"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "integer"
+          },
+          "this_cycle": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "This Cycle"
+          },
+          "with_teacher": {
+            "title": "With Teacher",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "character_id",
+          "character_name",
+          "name",
+          "kind",
+          "target",
+          "monthly_minimum",
+          "progress",
+          "status",
+          "path",
+          "with_teacher",
+          "restarts",
+          "finished_at",
+          "sheet_change_due"
+        ],
+        "title": "ProjectOut",
         "type": "object"
       },
       "PronounsIn": {
@@ -34978,6 +35445,66 @@
         "title": "Taps",
         "type": "object"
       },
+      "TargetChoiceOut": {
+        "description": "A character an action can be aimed at (horatio.targets).",
+        "properties": {
+          "cost": {
+            "title": "Cost",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "cost"
+        ],
+        "title": "TargetChoiceOut",
+        "type": "object"
+      },
+      "TargetOut": {
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/AimedOut"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "own": {
+            "items": {
+              "$ref": "#/components/schemas/PairOut"
+            },
+            "title": "Own",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "actions",
+          "own"
+        ],
+        "title": "TargetOut",
+        "type": "object"
+      },
       "TeacherChoiceOut": {
         "properties": {
           "id": {
@@ -38794,6 +39321,16 @@
             ],
             "title": "Action Kind"
           },
+          "aim": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AimOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "answer": {
             "title": "Answer",
             "type": "string"
@@ -38826,6 +39363,14 @@
           "character_name": {
             "title": "Character Name",
             "type": "string"
+          },
+          "countered_by": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PairOut"
+            },
+            "title": "Countered By",
+            "type": "array"
           },
           "cycle_id": {
             "format": "uuid",
@@ -47523,6 +48068,101 @@
         ]
       }
     },
+    "/api/characters/{character_id}/projects": {
+      "get": {
+        "operationId": "character_projects_api_characters__character_id__projects_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterProjectsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Projects",
+        "tags": [
+          "projects"
+        ]
+      },
+      "post": {
+        "description": "Staff start a project; its player proposes one, for staff to confirm.",
+        "operationId": "start_project_api_characters__character_id__projects_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Project",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
     "/api/characters/{character_id}/pronouns": {
       "put": {
         "description": "Set the character's pronouns: its player, or for an NPC its troupe's staff.",
@@ -50787,6 +51427,54 @@
         ]
       }
     },
+    "/api/cycles/{cycle_id}/aimed": {
+      "get": {
+        "description": "Each character the cycle's submitted actions are aimed at, by name, with those\nactions: who, which question, and the answer.",
+        "operationId": "aimed_api_cycles__cycle_id__aimed_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TargetOut"
+                  },
+                  "title": "Response Aimed Api Cycles  Cycle Id  Aimed Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Aimed",
+        "tags": [
+          "targets"
+        ]
+      }
+    },
     "/api/cycles/{cycle_id}/close": {
       "post": {
         "operationId": "close_cycle_api_cycles__cycle_id__close_post",
@@ -51772,6 +52460,54 @@
         "summary": "Progress",
         "tags": [
           "responses"
+        ]
+      }
+    },
+    "/api/cycles/{cycle_id}/projects": {
+      "get": {
+        "description": "The troupe's projects, by character, with what the cycle has spent on each so\nfar and which start over when it completes.",
+        "operationId": "cycle_projects_api_cycles__cycle_id__projects_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectOut"
+                  },
+                  "title": "Response Cycle Projects Api Cycles  Cycle Id  Projects Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cycle Projects",
+        "tags": [
+          "projects"
         ]
       }
     },
@@ -54329,6 +55065,137 @@
         ]
       }
     },
+    "/api/projects/{project_id}/confirm": {
+      "post": {
+        "operationId": "confirm_api_projects__project_id__confirm_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/projects/{project_id}/drop": {
+      "post": {
+        "description": "Staff decline or stop a project; its player withdraws one they proposed.",
+        "operationId": "drop_api_projects__project_id__drop_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Drop",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/projects/{project_id}/sheet-changed": {
+      "post": {
+        "description": "Staff have changed the sheet's Morality to the finished Path change's Path.",
+        "operationId": "sheet_changed_api_projects__project_id__sheet_changed_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sheet Changed",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
     "/api/quest-requests/{request_id}/accept": {
       "post": {
         "description": "A narrator takes a request assigned to any narrator.",
@@ -56067,6 +56934,114 @@
         "summary": "Lookup",
         "tags": [
           "influence lookups"
+        ]
+      }
+    },
+    "/api/responses/{response_id}/not-against": {
+      "put": {
+        "description": "Say the action isn't against those it is aimed at, such as a friendly visit,\nso a Haven's Location doesn't double it; or that it is after all.",
+        "operationId": "set_not_against_api_responses__response_id__not_against_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "response_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Response Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotAgainstIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Not Against",
+        "tags": [
+          "targets"
+        ]
+      }
+    },
+    "/api/responses/{response_id}/pairing": {
+      "put": {
+        "description": "Pair a Cancel or Watch with the action of its target's it works on.",
+        "operationId": "set_pairing_api_responses__response_id__pairing_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "response_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Response Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PairingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Pairing",
+        "tags": [
+          "targets"
         ]
       }
     },

@@ -146,6 +146,10 @@ Short notes players write in their downtimes praising someone's roleplaying. The
 
 What anyone signed in can see about a person: their display name, handle, pronouns, when they joined, their bio, social media links and Discord username. Never their email.
 
+## Project
+
+Work a character does over several [downtime cycles](#downtime-cycle), such as changing its Path: a number of actions it takes, and perhaps a least number each month or it starts over. Its player proposes one or staff start it, and its actions count when each cycle completes.
+
 ## Quest
 
 If a troupe uses them, a goal a character pursues between and at games, with requirements to meet and scenarios to pass. Staff build each one, and record how it goes.

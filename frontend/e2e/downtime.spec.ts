@@ -776,6 +776,115 @@ test("staff share out a cycle's responses by character, and assign several in on
 });
 
 /**
+ * An action aimed at another character (#507): its player picks whom, staff see it
+ * on the cycle's Aimed at tab with a link to its response, and the character it is
+ * aimed at never learns of it.
+ */
+test("a player aims an action at another character, and only staff see who", async ({ browser }) => {
+  const custodian = await person(browser, "dtaim-cust");
+  const lead = await person(browser, "dtaim-lead");
+  const bramPlayer = await person(browser, "dtaim-bram");
+  const agnesPlayer = await person(browser, "dtaim-agnes");
+  const { bram, agnes, cycle, open } = await feedingTroupe(custodian, lead, bramPlayer, `Aimed Night ${run}`, agnesPlayer);
+  await open();
+
+  const b = bramPlayer.page;
+  await b.goto(`/characters/${bram}/downtime`);
+  const actions = b.locator("section").filter({ has: b.getByRole("heading", { name: "Downtime action" }) });
+  await actions.getByRole("button", { name: /^Add an action/ }).click();
+  await actions.getByRole("textbox", { name: "Downtime action" }).fill("Follow Agnes home from Elysium.");
+  await actions.getByLabel("Aimed at").selectOption({ label: "Agnes" });
+  await expect(actions.getByRole("button", { name: "No longer aimed at Agnes" })).toBeVisible();
+  await expect(actions.getByText("They don't learn who aimed it at them.", { exact: false })).toBeVisible();
+  await b.screenshot(shots("downtime-aimed"));
+  await b.getByRole("button", { name: "Submit downtime" }).click();
+  await expect(b.getByText("Submitted", { exact: true })).toBeVisible();
+
+  // Staff see it under Agnes, and follow it to its response.
+  const l = lead.page;
+  await l.goto(`/cycles/${cycle}/aimed`);
+  const atAgnes = l.getByRole("region", { name: "Aimed at Agnes" });
+  await expect(atAgnes.getByText("Follow Agnes home from Elysium.")).toBeVisible();
+  await expect(atAgnes.getByText("Bram", { exact: true })).toBeVisible();
+  await l.screenshot(shots("cycle-aimed"));
+  await atAgnes.getByRole("link", { name: /^Response/ }).click();
+  await expect(l).toHaveURL(/\/responses#response-/);
+  await expect(l.getByRole("note").filter({ hasText: "Aimed at Agnes" })).toBeVisible();
+
+  // Agnes's player learns nothing of it.
+  const a = agnesPlayer.page;
+  const refused = await a.request.get(`/api/cycles/${cycle}/aimed`);
+  expect(refused.status()).toBe(403);
+  await a.goto(`/characters/${agnes}/downtime`);
+  await expect(a.getByRole("heading", { name: "Downtime action" })).toBeVisible();
+  await expect(a.getByText("Follow Agnes", { exact: false })).toHaveCount(0);
+});
+
+/**
+ * A project over two cycles (#507): the player proposes it, staff confirm it, and
+ * each completed cycle counts the actions spent on it until it finishes.
+ */
+test("a project a player proposes advances over two cycles until it finishes", async ({ browser }) => {
+  const custodian = await person(browser, "dtproj-cust");
+  const lead = await person(browser, "dtproj-lead");
+  const player = await person(browser, "dtproj-player");
+  const { troupe, bram, cycle, send } = await feedingTroupe(custodian, lead, player, `Long Study ${run}`);
+  const p = player.page;
+  const l = lead.page;
+
+  await p.goto(`/characters/${bram}/downtime`);
+  const projects = p.locator("section").filter({ has: p.getByRole("heading", { name: "Projects" }) });
+  await projects.getByRole("button", { name: "Propose a project" }).click();
+  const form = projects.getByRole("form", { name: "Propose a project" });
+  await form.getByLabel("Kind").selectOption({ label: "Research" });
+  await form.getByLabel("Name").fill("The Book of Nod");
+  await form.getByLabel("Actions it takes").fill("2");
+  await form.getByRole("button", { name: "Propose it" }).click();
+  const book = projects.getByRole("listitem", { name: "The Book of Nod" });
+  await expect(book.getByText("Proposed")).toBeVisible();
+
+  // Staff confirm it from the cycle's Projects tab.
+  await l.goto(`/cycles/${cycle}/projects`);
+  const theirs = l.getByRole("listitem", { name: "Bram: The Book of Nod" });
+  await theirs.getByRole("button", { name: "Confirm" }).click();
+  await expect(theirs.getByText("Under way")).toBeVisible();
+
+  // An action counts toward it; completing the cycle counts it.
+  const spend = async (text: string) => {
+    await p.goto(`/characters/${bram}/downtime`);
+    const actions = p.locator("section").filter({ has: p.getByRole("heading", { name: "Downtime action" }) });
+    await actions.getByRole("button", { name: /^Add an action/ }).click();
+    await actions.getByRole("textbox", { name: "Downtime action" }).fill(text);
+    await actions.getByLabel("Counts toward").selectOption({ label: "The Book of Nod" });
+    await p.getByRole("button", { name: "Submit downtime" }).click();
+    await expect(p.getByText("Submitted", { exact: true })).toBeVisible();
+  };
+  await spend("Read the first fragments by candlelight.");
+  await l.reload();
+  await expect(theirs.getByText("1 action toward it this cycle so far.")).toBeVisible();
+  await l.screenshot(shots("cycle-projects"));
+  await send(l, "POST", `/api/cycles/${cycle}/close`, { add_to_ceiling: false });
+  await send(l, "POST", `/api/cycles/${cycle}/complete`);
+  await p.goto(`/characters/${bram}/downtime`);
+  await expect(book.getByText("1 of 2 actions")).toBeVisible();
+
+  const now = Date.now();
+  const next = await send(l, "POST", `/api/troupes/${troupe}/cycles`, {
+    name: "Second month",
+    closes_at: new Date(now + 7 * 86400e3).toISOString(),
+    grace_ends_at: new Date(now + 9 * 86400e3).toISOString(),
+  });
+  await send(l, "POST", `/api/cycles/${next.id}/open`);
+  await spend("Read the rest.");
+  await send(l, "POST", `/api/cycles/${next.id}/close`, { add_to_ceiling: false });
+  await send(l, "POST", `/api/cycles/${next.id}/complete`);
+  await p.goto(`/characters/${bram}/downtime`);
+  await expect(book.getByText("2 of 2 actions")).toBeVisible();
+  await expect(book.getByText("Finished")).toBeVisible();
+  await p.screenshot(shots("downtime-projects"));
+});
+
+/**
  * Running a cycle: staff add a character accepted after it opened, find who
  * hasn't submitted, and remind them, which their player sees in the bell.
  */

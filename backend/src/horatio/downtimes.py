@@ -37,6 +37,7 @@ from horatio import (
     responses,
     retainer_upkeep,
     suspensions,
+    targets,
 )
 from horatio.models import (
     AllowanceAdjustment,
@@ -905,6 +906,14 @@ class AnswerSpec:
     structured: dict[str, Any] | None = None
 
 
+def influence_part(structured: dict[str, Any] | None) -> dict[str, Any]:
+    """An answer's fields that its influence action is checked on: not who it is aimed
+    at, nor the project it counts toward."""
+    from horatio import projects
+
+    return projects.without_project(targets.without_aim(structured or {}))
+
+
 def check_answer(question: Question, spec: AnswerSpec) -> None:
     body = spec.body.strip()
     if question.answer_type == "choice" and body and body not in question.options:
@@ -929,8 +938,9 @@ def save_answers(
 ) -> Submission:
     """Replace the character's answers, and its Feeding section when given one.
     Blank answers are dropped, but for a Quest action that names its quest. Feeding
-    actions come out of the general actions."""
-    from horatio import quest_actions
+    actions come out of the general actions. An action aimed at someone whose Haven
+    has Location costs two (horatio.targets)."""
+    from horatio import projects, quest_actions
 
     ensure_can_submit(db, cycle, participant)
     suspensions.refuse_character(db, character)
@@ -978,14 +988,21 @@ def save_answers(
             "downtime actions this character has."
         )
     per_question: dict[uuid.UUID, int] = {}
+    # Actions of each kind that cost two, aimed at someone whose Haven has Location.
+    doubled: dict[str, int] = {}
     seen: set[tuple[uuid.UUID, int]] = set()
     chosen_quests: set[uuid.UUID] = set()
+    counters = 0
 
     def names_quest(spec: AnswerSpec) -> bool:
         question = shown.get(spec.question_id)
         return question is not None and question.kind == "quest" and bool(spec.structured)
 
     kept = [s for s in specs if s.body.strip() or names_quest(s)]
+    # Whose Havens have Location, of everyone the answers are aimed at.
+    located = targets.with_location(
+        db, cycle.troupe_id, {t for s in kept for t in targets.aimed_at(s.structured or {})}
+    )
     for spec in kept:
         question = shown.get(spec.question_id)
         if question is None:
@@ -994,6 +1011,18 @@ def save_answers(
             raise unprocessable(f"{question.prompt!r}: each answer needs its own slot, from 1.")
         seen.add((spec.question_id, spec.slot))
         check_answer(question, spec)
+        before = existing.get((spec.question_id, spec.slot))
+        spec.structured = targets.check(
+            db, character, cycle, question, spec.structured or {}, before
+        )
+        spec.structured = projects.check_answer(
+            db, character, cycle, question, spec.structured, before
+        )
+        counters += targets.counter_of(spec.structured) is not None
+        if counters > 1:
+            raise unprocessable(
+                "The Computer skill cancels or watches one action a cycle (MET: VTM p. 93)."
+            )
         if question.kind == "custom" and spec.slot != 1:
             raise unprocessable(f"{question.prompt!r} takes one answer.")
         if question.kind == "quest":
@@ -1017,15 +1046,24 @@ def save_answers(
                 raise unprocessable(f"{question.prompt!r} takes at most {question.max_answers}.")
             kind = question.action_kind or ""
             influence_type = influence.type_of(kind) if question.kind == "action" else None
-            before = existing.get((spec.question_id, spec.slot))
-            changed = before is None or (spec.structured or {}) != before.structured
+            changed = before is None or influence_part(spec.structured) != influence_part(
+                before.structured
+            )
             if influence_type is not None and changed:
                 # Checked when it changes, so a rating lowered since does not lock it.
                 standings = standings or influence.standings(db, character)
                 influence.check_answer(
                     standings[influence_type], question.prompt, spec.structured or {}
                 )
-            used[kind] = used.get(kind, 0) + 1
+            # Staff's word that it isn't against them holds while it is aimed as it was.
+            not_against = (
+                before is not None
+                and before.not_against
+                and targets.aiming(before.structured) == targets.aiming(spec.structured)
+            )
+            cost = targets.cost(spec.structured, not_against, located)
+            doubled[kind] = doubled.get(kind, 0) + (cost > 1)
+            used[kind] = used.get(kind, 0) + cost
             if used[kind] > allowance_now.get(kind, 0):
                 feeding_spent = fed if kind == "general" else 0
                 raise unprocessable(
@@ -1033,10 +1071,18 @@ def save_answers(
                     f"{allowance_now.get(kind, 0)} this character has"
                     + (
                         f", with {feeding_spent} spent feeding"
-                        + (" or patrolling." if show.territories else ".")
+                        + (" or patrolling" if show.territories else "")
                         if feeding_spent
-                        else "."
+                        else ""
                     )
+                    + (
+                        f", and {doubled[kind]} that "
+                        + ("costs" if doubled[kind] == 1 else "cost")
+                        + " 2 actions"
+                        if doubled[kind]
+                        else ""
+                    )
+                    + "."
                 )
 
     if submission is None:
@@ -1069,6 +1115,7 @@ def save_answers(
         if key not in seen:
             db.delete(answer)
     db.flush()
+    aimed_anew: list[Answer] = []
     for spec in kept:
         answer = existing.get((spec.question_id, spec.slot))
         if answer is None:
@@ -1077,7 +1124,14 @@ def save_answers(
             )
             db.add(answer)
         answer.body = spec.body.strip()
+        aimed_before = targets.aiming(answer.structured or {})
         answer.structured = spec.structured or {}
+        if targets.aiming(answer.structured) != aimed_before:
+            # Aimed anew, it is judged anew: staff's word on it no longer stands.
+            answer.not_against = False
+            answer.paired_answer_id = None
+            if submission.status == "submitted":
+                aimed_anew.append(answer)
     submission.feeding = feeding_answer.stored()
     # When the player last saved, for staff chasing downtimes: a change to the
     # answers alone would leave the submission's own row, and its time, as it was.
@@ -1086,6 +1140,8 @@ def save_answers(
     responses.sync_responses(db, submission)
     if submission.status == "submitted":
         quest_actions.join_chosen(db, player, character, submission)
+        for answer in aimed_anew:
+            targets.log(db, player, character, cycle, shown[answer.question_id], answer)
     return submission
 
 
@@ -1114,6 +1170,7 @@ def submit(
     if submission is None:
         submission = Submission(participant_id=participant.id)
         db.add(submission)
+    resubmitted = submission.status == "submitted"
     submission.status = "submitted"
     submission.submitted_at = now()
     submission.late = now() > cycle.closes_at
@@ -1130,6 +1187,9 @@ def submit(
     )
     award_completion_xp(db, player, character, cycle, participant)
     quest_actions.join_chosen(db, player, character, submission)
+    if not resubmitted:
+        # Changed after, an answer is noted as it is saved.
+        targets.log_submission(db, player, character, cycle, submission)
     return submission
 
 

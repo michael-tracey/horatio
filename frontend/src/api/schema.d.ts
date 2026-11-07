@@ -2467,6 +2467,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Character Projects */
+        get: operations["character_projects_api_characters__character_id__projects_get"];
+        put?: never;
+        /**
+         * Start Project
+         * @description Staff start a project; its player proposes one, for staff to confirm.
+         */
+        post: operations["start_project_api_characters__character_id__projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/pronouns": {
         parameters: {
             query?: never;
@@ -3530,6 +3551,27 @@ export interface paths {
         patch: operations["change_cycle_api_cycles__cycle_id__patch"];
         trace?: never;
     };
+    "/api/cycles/{cycle_id}/aimed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Aimed
+         * @description Each character the cycle's submitted actions are aimed at, by name, with those
+         *     actions: who, which question, and the answer.
+         */
+        get: operations["aimed_api_cycles__cycle_id__aimed_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cycles/{cycle_id}/close": {
         parameters: {
             query?: never;
@@ -3863,6 +3905,27 @@ export interface paths {
         };
         /** Progress */
         get: operations["progress_api_cycles__cycle_id__progress_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cycles/{cycle_id}/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cycle Projects
+         * @description The troupe's projects, by character, with what the cycle has spent on each so
+         *     far and which start over when it completes.
+         */
+        get: operations["cycle_projects_api_cycles__cycle_id__projects_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4798,6 +4861,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{project_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm */
+        post: operations["confirm_api_projects__project_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project_id}/drop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Drop
+         * @description Staff decline or stop a project; its player withdraws one they proposed.
+         */
+        post: operations["drop_api_projects__project_id__drop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project_id}/sheet-changed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sheet Changed
+         * @description Staff have changed the sheet's Morality to the finished Path change's Path.
+         */
+        post: operations["sheet_changed_api_projects__project_id__sheet_changed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/quest-requests/{request_id}/accept": {
         parameters: {
             query?: never;
@@ -5328,6 +5448,47 @@ export interface paths {
          */
         get: operations["lookup_api_responses__response_id__lookup_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/responses/{response_id}/not-against": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Not Against
+         * @description Say the action isn't against those it is aimed at, such as a friendly visit,
+         *     so a Haven's Location doesn't double it; or that it is after all.
+         */
+        put: operations["set_not_against_api_responses__response_id__not_against_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/responses/{response_id}/pairing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Pairing
+         * @description Pair a Cancel or Watch with the action of its target's it works on.
+         */
+        put: operations["set_pairing_api_responses__response_id__pairing_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -8840,6 +9001,55 @@ export interface components {
              */
             kind: "social_age";
         };
+        /**
+         * AimOut
+         * @description Who an action is aimed at, for storytellers and assistant storytellers only
+         *     (horatio.targets).
+         */
+        AimOut: {
+            /** Counter */
+            counter: string | null;
+            /** Located */
+            located: boolean;
+            /** Not Against */
+            not_against: boolean;
+            paired: components["schemas"]["PairOut"] | null;
+            /** Targets */
+            targets: string[];
+        };
+        /**
+         * AimedOut
+         * @description One action aimed at a character.
+         */
+        AimedOut: {
+            /** Also */
+            also: string[];
+            /** Answer */
+            answer: string;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Counter */
+            counter: string | null;
+            /** Located */
+            located: boolean;
+            /** Not Against */
+            not_against: boolean;
+            paired: components["schemas"]["PairOut"] | null;
+            /** Question */
+            question: string;
+            /**
+             * Response Id
+             * Format: uuid
+             */
+            response_id: string;
+            /** Status */
+            status: string;
+        };
         /** AllowanceChange */
         AllowanceChange: {
             /** Amount */
@@ -8953,6 +9163,11 @@ export interface components {
         AnswerOut: {
             /** Body */
             body: string;
+            /**
+             * Not Against
+             * @default false
+             */
+            not_against: boolean;
             /**
              * Question Id
              * Format: uuid
@@ -10743,6 +10958,15 @@ export interface components {
             splat: string;
             /** Status */
             status: string;
+        };
+        /** CharacterProjectsOut */
+        CharacterProjectsOut: {
+            /** Paths */
+            paths: string[];
+            /** Projects */
+            projects: components["schemas"]["ProjectOut"][];
+            /** Staff */
+            staff: boolean;
         };
         /** CharacterQuestionsOut */
         CharacterQuestionsOut: {
@@ -16712,6 +16936,11 @@ export interface components {
             answers: components["schemas"]["AnswerOut"][];
             /** Breakdown */
             breakdown: components["schemas"]["AllowanceLineOut"][];
+            /**
+             * Can Counter
+             * @default false
+             */
+            can_counter: boolean;
             /** Closed */
             closed?: string | null;
             /**
@@ -16769,6 +16998,11 @@ export interface components {
             };
             /** Status */
             status: string;
+            /**
+             * Targets
+             * @default []
+             */
+            targets: components["schemas"]["TargetChoiceOut"][];
         };
         /** MyFeedingOut */
         MyFeedingOut: {
@@ -17047,6 +17281,11 @@ export interface components {
             about_user_id?: string | null;
             /** Text */
             text: string;
+        };
+        /** NotAgainstIn */
+        NotAgainstIn: {
+            /** Not Against */
+            not_against: boolean;
         };
         /**
          * NotAllowedOut
@@ -17543,6 +17782,30 @@ export interface components {
              * Format: uuid
              */
             id: string;
+        };
+        /**
+         * PairOut
+         * @description An action a Cancel or Watch is paired with, or one paired with it.
+         */
+        PairOut: {
+            /** Answer */
+            answer: string;
+            /** Character Name */
+            character_name: string;
+            /** Counter */
+            counter?: string | null;
+            /** Question */
+            question: string;
+            /**
+             * Response Id
+             * Format: uuid
+             */
+            response_id: string;
+        };
+        /** PairingIn */
+        PairingIn: {
+            /** Response Id */
+            response_id: string | null;
         };
         /**
          * PanelsOut
@@ -19017,6 +19280,96 @@ export interface components {
             unassigned: number;
             /** Written */
             written: number;
+        };
+        /** ProjectCycleOut */
+        ProjectCycleOut: {
+            /** Cycle Name */
+            cycle_name: string;
+            /** Progress */
+            progress: number;
+            /** Spent */
+            spent: number;
+            /** Started Over */
+            started_over: boolean;
+        };
+        /** ProjectIn */
+        ProjectIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "path_change" | "research" | "other";
+            /** Monthly Minimum */
+            monthly_minimum?: number | null;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /**
+             * Path
+             * @default
+             */
+            path: string;
+            /** Target */
+            target?: number | null;
+            /**
+             * With Teacher
+             * @default false
+             */
+            with_teacher: boolean;
+        };
+        /** ProjectOut */
+        ProjectOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Finished At */
+            finished_at: string | null;
+            /**
+             * History
+             * @default []
+             */
+            history: components["schemas"]["ProjectCycleOut"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "path_change" | "research" | "other";
+            /** Monthly Minimum */
+            monthly_minimum: number | null;
+            /** Name */
+            name: string;
+            /** Path */
+            path: string;
+            /** Progress */
+            progress: number;
+            /** Restarts */
+            restarts: number;
+            /** Sheet Change Due */
+            sheet_change_due: boolean;
+            /**
+             * Starts Over
+             * @default false
+             */
+            starts_over: boolean;
+            /** Status */
+            status: string;
+            /** Target */
+            target: number;
+            /** This Cycle */
+            this_cycle?: number | null;
+            /** With Teacher */
+            with_teacher: boolean;
         };
         /** PronounsIn */
         PronounsIn: {
@@ -22162,6 +22515,35 @@ export interface components {
             /** Taps */
             taps: components["schemas"]["TapIn"][];
         };
+        /**
+         * TargetChoiceOut
+         * @description A character an action can be aimed at (horatio.targets).
+         */
+        TargetChoiceOut: {
+            /** Cost */
+            cost: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** TargetOut */
+        TargetOut: {
+            /** Actions */
+            actions: components["schemas"]["AimedOut"][];
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Own */
+            own: components["schemas"]["PairOut"][];
+        };
         /** TeacherChoiceOut */
         TeacherChoiceOut: {
             /**
@@ -23630,6 +24012,7 @@ export interface components {
         WorkItemOut: {
             /** Action Kind */
             action_kind: string | null;
+            aim?: components["schemas"]["AimOut"] | null;
             /** Answer */
             answer: string;
             /** Assigned To Any Narrator */
@@ -23645,6 +24028,11 @@ export interface components {
             character_id: string;
             /** Character Name */
             character_name: string;
+            /**
+             * Countered By
+             * @default []
+             */
+            countered_by: components["schemas"]["PairOut"][];
             /**
              * Cycle Id
              * Format: uuid
@@ -28940,6 +29328,72 @@ export interface operations {
             };
         };
     };
+    character_projects_api_characters__character_id__projects_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterProjectsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_project_api_characters__character_id__projects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     set_pronouns_api_characters__character_id__pronouns_put: {
         parameters: {
             query?: never;
@@ -30991,6 +31445,37 @@ export interface operations {
             };
         };
     };
+    aimed_api_cycles__cycle_id__aimed_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TargetOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     close_cycle_api_cycles__cycle_id__close_post: {
         parameters: {
             query?: never;
@@ -31604,6 +32089,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Progress"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cycle_projects_api_cycles__cycle_id__projects_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectOut"][];
                 };
             };
             /** @description Validation Error */
@@ -33337,6 +33853,99 @@ export interface operations {
             };
         };
     };
+    confirm_api_projects__project_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    drop_api_projects__project_id__drop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sheet_changed_api_projects__project_id__sheet_changed_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     accept_request_api_quest_requests__request_id__accept_post: {
         parameters: {
             query?: never;
@@ -34484,6 +35093,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LookupOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_not_against_api_responses__response_id__not_against_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotAgainstIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_pairing_api_responses__response_id__pairing_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PairingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItemOut"];
                 };
             };
             /** @description Validation Error */

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useReducer, useRef, useState } from "react";
 import { api, ApiError, unwrap } from "../../api/client";
-import type { AnswerIn, FeedingIn, InfluenceStandingOut, MyDowntime, QuestChoiceOut, QuestionOut } from "../../api/types";
+import type { AnswerIn, FeedingIn, InfluenceStandingOut, MyDowntime, ProjectOut, QuestChoiceOut, QuestionOut, TargetChoiceOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { feedingActionsSpent } from "../../feeding";
@@ -9,10 +9,12 @@ import { useAction } from "../../hooks";
 import { chosenAction, offered, reachable, reachNote } from "../../influence";
 import { DISCOVERY_BLOCK, LOOKUP_LEVEL, LOOKUP_NOTE } from "../../influenceLookups";
 import { questChoiceText } from "../quests/quests";
+import { actionCost, aimedAt, COUNTER_NAMES, counterOf, projectOf, withCounter, withProject, withTargets, type Counter } from "./aim";
 import { BlockTarget } from "./BlockTarget";
 import { useLeaveWarning } from "./CartPanel";
 import { type Answers, EMPTY_FORM, type Form, formReducer, toAnswers, unsaved } from "./downtimeForm";
 import { FeedingCard } from "./FeedingCard";
+import { ProjectsCard } from "./Projects";
 import { NominationsForm } from "../nominations/NominationsForm";
 import { RemembrancesForm } from "../nominations/RemembrancesForm";
 
@@ -47,6 +49,11 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
         throw error;
       }
     },
+  });
+  // The character's projects, for "Counts toward" and the Projects card (#507).
+  const projects = useQuery({
+    queryKey: ["projects", characterId],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/projects", path)),
   });
   const [form, change] = useReducer(formReducer, EMPTY_FORM);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
@@ -112,13 +119,27 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
   if (downtime.isPending) return <Loading />;
   if (downtime.error) return <ErrorText error={downtime.error} />;
   const d = downtime.data;
-  if (!d) return <Empty>There is no open downtime for this character. Downtimes come from its home troupe.</Empty>;
+  if (!d)
+    return (
+      <div className="flex flex-col gap-4">
+        <Empty>There is no open downtime for this character. Downtimes come from its home troupe.</Empty>
+        <ProjectsCard characterId={characterId} />
+      </div>
+    );
 
   const { draft, feeding } = form;
   // Feeding actions and patrols come out of the general actions.
   const fed = d.feeding && feeding ? feedingActionsSpent(feeding, d.feeding.rack ?? false, (d.feeding.territories ?? []).length > 0) : 0;
+  const targets = d.targets ?? [];
+  // Staff's word that an action isn't against those it is aimed at, as the server has it.
+  const notAgainst = (question: string, index: number) => !!d.answers.find((a) => a.question_id === question && a.slot === index + 1)?.not_against;
+  // An action aimed at someone whose Haven has Location costs two (#507).
+  const costOf = (q: QuestionOut, index: number) => (q.kind === "action" ? actionCost(draft[q.id]?.[index]?.structured, targets, notAgainst(q.id, index)) : 1);
   const used = (kind: string) =>
-    d.questions.filter((q) => q.action_kind === kind).reduce((n, q) => n + (draft[q.id]?.length ?? 0), 0) + (kind === "general" ? fed : 0);
+    d.questions
+      .filter((q) => q.action_kind === kind)
+      .reduce((n, q) => n + (draft[q.id] ?? []).reduce((m, _a, i) => m + costOf(q, i), 0), 0) + (kind === "general" ? fed : 0);
+  const active = (projects.data?.projects ?? []).filter((p) => p.status === "active");
   const setAnswers = (question: string, answers: Answers) => change({ type: "answers", question, answers });
   const remove = (question: string, index: number) => {
     const answers = draft[question] ?? [];
@@ -185,6 +206,10 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
               remaining={remaining}
               influence={q.kind === "action" ? d.influence?.find((s) => s.action_kind === q.action_kind) : undefined}
               quests={d.quests ?? []}
+              targets={targets}
+              canCounter={!!d.can_counter}
+              projects={active}
+              costs={answers.map((_a, i) => costOf(q, i))}
               onChange={(next) => setAnswers(q.id, next)}
               onRemove={(i) => remove(q.id, i)}
               onUndo={canUndo ? undo : undefined}
@@ -194,6 +219,7 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
         {/* Apart from the answers: they save as they are added, and spend no actions (#470, #471). */}
         {d.remembrances && <RemembrancesForm characterId={characterId} />}
         {d.player_nominations && <NominationsForm characterId={characterId} />}
+        <ProjectsCard characterId={characterId} />
         <ErrorText error={save.error ?? submit.error} />
         {/* On a phone, the buttons and what became of them stay at the foot of the screen. */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:-mx-4 max-lg:border-t max-lg:border-ash max-lg:bg-night/95 max-lg:px-4 max-lg:py-3 max-lg:backdrop-blur">
@@ -269,6 +295,10 @@ function QuestionCard({
   remaining,
   influence,
   quests,
+  targets,
+  canCounter,
+  projects,
+  costs,
   onChange,
   onRemove,
   onUndo,
@@ -279,6 +309,11 @@ function QuestionCard({
   remaining: number;
   influence?: InfluenceStandingOut;
   quests: QuestChoiceOut[];
+  targets: TargetChoiceOut[];
+  canCounter: boolean;
+  projects: ProjectOut[];
+  /** What each answer costs, in actions. */
+  costs: number[];
   onChange: (answers: Answers) => void;
   onRemove: (index: number) => void;
   /** Puts back the action just removed from this question. */
@@ -306,6 +341,16 @@ function QuestionCard({
             {influence && influence.actions.length > 0 && (
               <InfluenceFields characterId={characterId} standing={influence} fields={a.structured} onChange={(structured) => set(i, { ...a, structured })} />
             )}
+            {question.kind === "action" && (
+              <ActionFields
+                targets={targets}
+                canCounter={canCounter}
+                projects={projects}
+                cost={costs[i] ?? 1}
+                fields={a.structured}
+                onChange={(structured) => set(i, { ...a, structured })}
+              />
+            )}
             {spends(question) && (
               <Button variant="ghost" className="self-start px-0" onClick={() => onRemove(i)}>
                 Remove this action
@@ -330,6 +375,103 @@ function QuestionCard({
         {spends(question) && !noQuests && answers.length === 0 && !canAdd && <Empty>No actions of this kind left.</Empty>}
       </div>
     </Card>
+  );
+}
+
+/**
+ * Who an action is aimed at, whether it cancels or watches, and the project it
+ * counts toward (#507). Those it is aimed at never learn of it.
+ */
+function ActionFields({
+  targets,
+  canCounter,
+  projects,
+  cost,
+  fields,
+  onChange,
+}: {
+  targets: TargetChoiceOut[];
+  canCounter: boolean;
+  projects: ProjectOut[];
+  cost: number;
+  fields: Record<string, unknown> | undefined;
+  onChange: (fields: Record<string, unknown>) => void;
+}) {
+  const aimed = aimedAt(fields);
+  const counter = counterOf(fields);
+  const project = projectOf(fields);
+  const name = (id: string) => targets.find((t) => t.id === id)?.name ?? "Someone";
+  const others = targets.filter((t) => !aimed.includes(t.id));
+  // A project it counted toward stays a choice, though it has finished since.
+  const counted = project && !projects.some((p) => p.id === project) ? [{ id: project, name: "A finished project" }] : [];
+  if (!targets.length && !projects.length && !project) return null;
+  return (
+    <div className="flex flex-col gap-2 text-sm">
+      {(targets.length > 0 || aimed.length > 0) && (
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            {aimed.map((id) => (
+              <span key={id} className="inline-flex items-center gap-1 rounded-full border border-ash px-3 py-1">
+                {name(id)}
+                <button
+                  type="button"
+                  className="text-mist hover:text-parchment"
+                  aria-label={`No longer aimed at ${name(id)}`}
+                  onClick={() => onChange(withTargets(fields, aimed.filter((a) => a !== id)))}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            {others.length > 0 && (
+              <Select
+                aria-label="Aimed at"
+                className="w-auto"
+                value=""
+                onChange={(e) => e.target.value && onChange(withTargets(fields, [...aimed, e.target.value]))}
+              >
+                <option value="">{aimed.length ? "Also aimed at…" : "Aimed at… (optional)"}</option>
+                {others.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </div>
+          {aimed.length > 0 && <p className="text-xs text-mist">They don't learn who aimed it at them. Only your storytellers see it.</p>}
+          {cost > 1 && (
+            <p role="note" className="text-xs text-gold">
+              This costs 2 actions.
+            </p>
+          )}
+        </div>
+      )}
+      {canCounter && aimed.length === 1 && (
+        <Field label="With the Computer skill" hint="Cancel or watch one of their actions this month (MET: VTM p. 93). Your storytellers decide which, and whether it works.">
+          <Select value={counter ?? ""} onChange={(e) => onChange(withCounter(fields, (e.target.value || null) as Counter | null))}>
+            <option value="">Neither</option>
+            {(Object.keys(COUNTER_NAMES) as Counter[]).map((c) => (
+              <option key={c} value={c}>
+                {COUNTER_NAMES[c]} one of {name(aimed[0]!)}'s actions
+              </option>
+            ))}
+          </Select>
+        </Field>
+      )}
+      {(projects.length > 0 || project) && (
+        <Field label="Counts toward">
+          <Select value={project} onChange={(e) => onChange(withProject(fields, e.target.value))}>
+            <option value="">No project</option>
+            {[...projects, ...counted].map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      )}
+    </div>
   );
 }
 

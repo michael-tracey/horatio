@@ -20,6 +20,7 @@ from horatio import (
     remembrances,
     resonance,
     social_age,
+    targets,
     territories,
     xp_range,
 )
@@ -27,6 +28,7 @@ from horatio.api.influence import InfluenceStandingOut, standing_out
 from horatio.api.sheets import players_character
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
+    Answer,
     Character,
     CycleParticipant,
     DowntimeCycle,
@@ -378,6 +380,18 @@ class AnswersIn(BaseModel):
 
 class AnswerOut(AnswerIn):
     structured: dict[str, Any]  # type: ignore[assignment]
+    # Staff say it isn't against those it is aimed at, so it costs one action
+    # (horatio.targets).
+    not_against: bool = False
+
+
+class TargetChoiceOut(BaseModel):
+    """A character an action can be aimed at (horatio.targets)."""
+
+    id: uuid.UUID
+    name: str
+    # Actions an action aimed at them costs: 2 where their Haven doubles it.
+    cost: int
 
 
 class MyDowntime(BaseModel):
@@ -405,6 +419,10 @@ class MyDowntime(BaseModel):
     feeding: MyFeedingOut | None = None
     # The quests its Quest action can name, when the form has one.
     quests: list[QuestChoiceOut] = []
+    # Who its actions can be aimed at, and whether it can mark one a Cancel or
+    # Watch, with the Computer skill (horatio.targets).
+    targets: list[TargetChoiceOut] = []
+    can_counter: bool = False
     # Why the downtime is closed to this character though the cycle is open: the
     # troupe's absentee downtimes ask for a game attended lately (horatio.game_xp).
     closed: str | None = None
@@ -484,6 +502,20 @@ def quest_choices(
             )
         )
     return out
+
+
+def target_choices(
+    db: DbSession, character: Character, cycle: DowntimeCycle, answers: list[Answer]
+) -> list[TargetChoiceOut]:
+    """Who the character's actions can be aimed at, and any its answers already are
+    though they have left since."""
+    found = targets.choices(db, cycle.troupe_id, character)
+    offered = {c.id for c in found}
+    already = {t for a in answers for t in targets.aimed_at(a.structured)} - offered
+    if already:
+        found += list(db.scalars(select(Character).where(Character.id.in_(already))))
+    located = targets.with_location(db, cycle.troupe_id, {c.id for c in found})
+    return [TargetChoiceOut(id=c.id, name=c.name, cost=2 if c.id in located else 1) for c in found]
 
 
 def completion_awarded(db: DbSession, p: CycleParticipant) -> int | None:
@@ -945,6 +977,7 @@ def my_downtime_out(
     allowance = downtimes.effective_allowance(db, participant)
     submission: Submission | None = downtimes.submission_for(db, participant)
     questions = downtimes.visible_questions(db, cycle, character, allowance)
+    answers = downtimes.answers_for(db, submission) if submission else []
     asked = {influence.type_of(q.action_kind) for q in questions} - {None}
     standings = influence.standings(db, character) if asked else {}
     return MyDowntime(
@@ -961,8 +994,14 @@ def my_downtime_out(
         short=downtimes.shortfall(db, participant),
         questions=[question_out(q) for q in questions],
         answers=[
-            AnswerOut(question_id=a.question_id, slot=a.slot, body=a.body, structured=a.structured)
-            for a in (downtimes.answers_for(db, submission) if submission else [])
+            AnswerOut(
+                question_id=a.question_id,
+                slot=a.slot,
+                body=a.body,
+                structured=a.structured,
+                not_against=a.not_against,
+            )
+            for a in answers
         ],
         status=submission.status if submission else "draft",
         late=submission.late if submission else False,
@@ -973,6 +1012,10 @@ def my_downtime_out(
         quests=quest_choices(db, character, cycle, submission)
         if any(q.kind == "quest" for q in questions)
         else [],
+        targets=target_choices(db, character, cycle, answers)
+        if any(q.kind == "action" for q in questions)
+        else [],
+        can_counter=targets.has_computer(db, character),
         closed=downtimes.closed_to(db, cycle, participant),
         player_nominations=db.get_one(Troupe, cycle.troupe_id).player_nominations,
         remembrances=remembrances.on(db.get_one(Troupe, cycle.troupe_id))

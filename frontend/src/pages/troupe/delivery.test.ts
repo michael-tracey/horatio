@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { closeFacts, completeFacts, deliveredText, deliveryPlan } from "./delivery";
+import { closeFacts, completeFacts, deliveredText, deliveryPlan, projectFacts } from "./delivery";
 
 const downtime = (character_name: string, answered: number, to_answer: number, delivered = false, changed = false) => ({
   character_name,
@@ -74,5 +74,14 @@ describe("marking a cycle complete", () => {
       "Every response is written.",
       "Players have every result as it stands.",
     ]);
+  });
+
+  it("names the projects it starts over", () => {
+    expect(
+      projectFacts([
+        { character_name: "Agnes", name: "Path change: Night", starts_over: true },
+        { character_name: "Basil", name: "The Book of Nod", starts_over: false },
+      ]),
+    ).toEqual(["Agnes's Path change: Night starts over: too few actions on it this cycle."]);
   });
 });

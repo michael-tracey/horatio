@@ -643,6 +643,21 @@ The **Responses** tab holds every response in the cycle, by character. Filter by
 
 Only storytellers and assistant storytellers assign. Everyone writes what is assigned to them, from here or from [My work](#my-work).
 
+### Actions aimed at characters
+
+A player can aim an action at one or more characters of the troupe, home or visiting. The cycle's **Aimed at** tab lists, for each character, the submitted actions aimed at them: who, which question and the answer, each with a link to its response. Responses show who they're aimed at too. Only storytellers and assistant storytellers see either: no player learns who aimed at them, and a narrator writing the response doesn't see it. The troupe log notes each action aimed at someone as the downtime is submitted.
+
+- **A Haven's Location** (MET: VTM p. 102). An action aimed at a character whose Haven, on the troupe's [Locations](#locations), has the Location advantage costs two actions. The player sees only "This costs 2 actions". If it isn't against them, such as a friendly visit, or they no longer stay in their Haven, tick the box under it on its response and it costs 1; the player gets the action back.
+- **Cancel and Watch** (p. 93). A character with the Computer skill can mark one action a month as a **Cancel** or a **Watch** of one character's actions. On the **Aimed at** tab, choose which of that character's actions it works on; the two then show together, there and on both responses. Whether it works is yours to judge.
+
+### Projects
+
+Projects are work a character does over several cycles: a **Path change**, **Research** or **Other**. Each has a number of actions it takes and, if you like, a least number each month, or it starts over.
+
+- **Starting one.** On the character's **Projects** tab, choose **Start a project**. A player can propose one from their Downtime tab; you're told in the bell, and **Confirm** or **Decline** it there or on the cycle's **Projects** tab. **Stop** ends one under way.
+- **Progress.** A player counts an action toward a project under **Counts toward**. When you mark a cycle complete, each project goes up by the actions spent on it in submitted downtimes. One with fewer than its least that month starts over, back to none. The cycle's **Projects** tab shows what each has had so far this cycle, and warns in red of any that will start over; so does **Mark complete**. A character not taking part in a cycle keeps its progress.
+- **A Path change** takes the book's numbers: 9 actions with a teacher, 18 without, at least 1 a month (MET: VTM p. 306). When it finishes, you're told in the bell to change the character's Morality to the new Path on the sheet, which lowers Morality by 1. Make the change as usual, then choose **It's on the sheet**.
+
 ### Fill tables
 
 **Downtimes › Fill tables** gives random results for common actions. Make a table with a **Name** and its entries, one a line. An entry can name another table in square brackets, such as "You hunt near [Location].", to fill that part from it. **Roll** tries it. Storytellers and assistant storytellers keep the tables; narrators can roll them.
@@ -663,7 +678,7 @@ Results always appear in Horatio, and on each connector the troupe has on. A res
 
 ### Marking a cycle complete
 
-Once results are out, choose **Mark complete** on the Overview. Horatio says first what is unwritten or undelivered. You can still deliver from a complete cycle; those are the last results.
+Once results are out, choose **Mark complete** on the Overview. Horatio says first what is unwritten or undelivered, and which [projects](#projects) start over. Completing the cycle counts its actions toward projects. You can still deliver from a complete cycle; those are the last results.
 
 ### Player Nominations
 

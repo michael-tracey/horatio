@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CycleOut, StaffMember, WorkItemOut } from "../../api/types";
 import { ResponseEditor } from "../../components/ResponseEditor";
@@ -26,6 +27,12 @@ export function ResponsesTab({ cycle }: { cycle: CycleOut }) {
     queryKey: ["staff", cycle.troupe_id],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/staff", { params: { path: { troupe_id: cycle.troupe_id } } })),
   });
+  // A link to one response, from the Aimed at tab, shows it once the list is here.
+  const { hash } = useLocation();
+  const loaded = !!items.data;
+  useEffect(() => {
+    if (loaded && hash.startsWith("#response-")) document.getElementById(hash.slice(1))?.scrollIntoView({ block: "start" });
+  }, [loaded, hash]);
   if (items.isPending) return <Loading />;
   if (items.error) return <ErrorText error={items.error} />;
 

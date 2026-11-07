@@ -270,8 +270,17 @@ class Answer(Record):
     # Which answer to this question: an action question may be answered several times.
     slot: Mapped[int] = mapped_column(default=1, server_default="1")
     body: Mapped[str]
-    # The action kind's extra fields, such as an influence level.
+    # The action kind's extra fields, such as an influence level; the characters it
+    # is aimed at, a Cancel or Watch, and the project it counts toward
+    # (horatio.targets, horatio.projects).
     structured: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # Staff say an action aimed at a character isn't against them, such as a friendly
+    # visit, so a Haven's Location doesn't double its cost (horatio.targets).
+    not_against: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # A Cancel or Watch: the action of its target's that staff paired it with.
+    paired_answer_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("answers.id", ondelete="SET NULL"), index=True
+    )
 
 
 class Response(Record):
@@ -389,3 +398,60 @@ class RandomTable(Record):
     troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
     name: Mapped[str]
     entries: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+
+
+class Project(Record):
+    """Work a character does over several downtime cycles, such as changing its Path
+    (MET: VTM p. 306): a target number of actions, and perhaps a least number a
+    month or it starts over (horatio.projects)."""
+
+    __tablename__ = "projects"
+    __table_args__ = (
+        CheckConstraint("kind in ('path_change', 'research', 'other')", name="kind"),
+        CheckConstraint("status in ('proposed', 'active', 'finished', 'dropped')", name="status"),
+        CheckConstraint("target >= 1", name="target"),
+        CheckConstraint("monthly_minimum is null or monthly_minimum >= 1", name="monthly_minimum"),
+        CheckConstraint("progress >= 0", name="progress"),
+    )
+
+    character_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("characters.id", ondelete="CASCADE"), index=True
+    )
+    # The character's home troupe when it started: its staff keep the project, and
+    # its cycles' actions count toward it.
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    name: Mapped[str]
+    kind: Mapped[str]
+    target: Mapped[int]
+    # Fewer actions than this toward it in a cycle starts it over; null for no such rule.
+    monthly_minimum: Mapped[int | None]
+    progress: Mapped[int] = mapped_column(default=0, server_default="0")
+    # Proposed by its player until staff confirm it.
+    status: Mapped[str] = mapped_column(default="proposed", server_default="proposed")
+    # A Path change: the Path it changes to, and whether a teacher has it.
+    path: Mapped[str] = mapped_column(default="", server_default="")
+    with_teacher: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # How often it has started over.
+    restarts: Mapped[int] = mapped_column(default=0, server_default="0")
+    started_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    confirmed_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # A finished Path change: staff changed the sheet's Morality to the new Path.
+    sheet_changed_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+
+
+class ProjectCycle(Record):
+    """What one completed cycle did for a project: the actions spent on it, and
+    whether it started over for too few."""
+
+    __tablename__ = "project_cycles"
+    __table_args__ = (UniqueConstraint("project_id", "cycle_id"),)
+
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"), index=True
+    )
+    cycle_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("downtime_cycles.id"), index=True)
+    spent: Mapped[int]
+    started_over: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # The project's progress once the cycle was counted.
+    progress: Mapped[int]

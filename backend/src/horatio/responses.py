@@ -622,6 +622,10 @@ def deliver_cycle(
 
 
 def complete_cycle(db: Session, staff: User, cycle: DowntimeCycle) -> None:
+    """Mark the cycle complete, and count its actions toward projects
+    (horatio.projects)."""
+    from horatio import projects
+
     if cycle.status != "closed":
         raise conflict("Only a closed cycle can be completed.")
     cycle.status = "complete"
@@ -629,3 +633,4 @@ def complete_cycle(db: Session, staff: User, cycle: DowntimeCycle) -> None:
     audit.record(
         db, staff, "downtime.cycle_completed", troupe_id=cycle.troupe_id, cycle_id=cycle.id
     )
+    projects.cycle_completed(db, staff, cycle)
