@@ -1004,9 +1004,14 @@ class SettingKind(Kind[SettingItem]):
         if current is None:
             return False
         found = SETTINGS[item.key]
+        try:
+            mine = found.adapter.validate_python(current.value)
+        except ValidationError:
+            # A value its editor could no longer save: the import puts it right.
+            return False
         dump = found.adapter.dump_python
         return dump(found.adapter.validate_python(item.value), mode="json") == dump(
-            found.adapter.validate_python(current.value), mode="json"
+            mine, mode="json"
         )
 
     def words(self, item: SettingItem, current: SettingItem) -> tuple[str, str]:
@@ -2120,7 +2125,6 @@ def apply(
     try:
         with db.begin_nested(), audit.quiet(db):
             target = Target(db, troupe, document)
-            settings: list[tuple[SectionKey, Reviewed, SettingItem]] = []
             priced = False
             for section in order:
                 chosen_items = sorted(
@@ -2133,6 +2137,9 @@ def apply(
                         KIND_ORDER.index(found[1].type) if found[1].type in KIND_ORDER else 9
                     ),
                 )
+                # A section's settings are set together, first: those set as one
+                # (feeding, languages, free changes...) are always in one section.
+                settings: list[tuple[str, SettingItem]] = []
                 for index, item in chosen_items:
                     seen = review_item(target, section, index, item)
                     where = f"{SECTIONS[section][0]} › {seen.label}"
@@ -2140,23 +2147,19 @@ def apply(
                         raise unprocessable(f"{where}: {seen.reason}")
                     if seen.status == "same":
                         continue
+                    applied.count(section, seen.status)
                     if isinstance(item, SettingItem):
-                        settings.append((section, seen, item))
-                        # Who may join goes first, so the splats it adds are there.
-                        if section == "who_may_join":
-                            apply_settings(target, user, [item], where)
-                            applied.count(section, seen.status)
+                        settings.append((where, item))
                         continue
+                    if settings:
+                        apply_settings(target, user, settings)
+                        settings = []
                     kind = KINDS[item.type]
                     with failing(where):
                         kind.apply(target, user, item, kind.current(target, item))
                     priced = priced or item.type == "cost"
-                    applied.count(section, seen.status)
-            rest = [found for found in settings if found[0] != "who_may_join"]
-            if rest:
-                apply_settings(target, user, [item for _, _, item in rest], "Settings")
-                for kept, seen, _ in rest:
-                    applied.count(kept, seen.status)
+                if settings:
+                    apply_settings(target, user, settings)
             if priced:
                 # A troupe's fixed price for a fixed-rating merit is its value.
                 sync_troupe_fixed_ratings(db, troupe.id)
@@ -2186,16 +2189,16 @@ def failing(where: str) -> Iterator[None]:
         raise unprocessable(f"{where}: {error}") from error
 
 
-def apply_settings(
-    target: Target, user: User, chosen_items: Sequence[SettingItem], where: str
-) -> None:
-    """Set the troupe's settings, each through what sets it in Customise; those that
-    are set together (feeding, languages, free changes...) with the troupe's others."""
+def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, SettingItem]]) -> None:
+    """Set some of the troupe's settings, each through what sets it in Customise; those
+    that are set together (feeding, languages, free changes...) with the troupe's
+    others. A failure names the setting, or for several, them all."""
     db, troupe = target.db, target.troupe
     values: dict[str, Any] = {}
-    for item in chosen_items:
+    for _, item in chosen:
         setting = SETTINGS[item.key]
         values[item.key] = setting.adapter.validate_python(item.value)
+    where = chosen[0][0] if len(chosen) == 1 else "; ".join(w for w, _ in chosen)
 
     def now(key: str) -> Any:
         return values[key] if key in values else getattr(troupe, key)
