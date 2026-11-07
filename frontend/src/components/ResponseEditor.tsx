@@ -5,9 +5,12 @@ import { api, unwrap } from "../api/client";
 import type { QuestActionOut, WorkItemOut } from "../api/types";
 import { useAction } from "../hooks";
 import { DISCOVERY_BLOCK, LOOKUP_LEVEL } from "../influenceLookups";
+import { COUNTER_NAMES, type Counter } from "../pages/character/aim";
 import { questType } from "../pages/quests/quests";
 import { STATUS_NAMES } from "../pages/troupe/responsesList";
 import { CombinedAnswers, DiscoveryBlock, LookupFill, type Combined } from "./InfluenceLookupTools";
+import { ResponseEffects } from "./ResponseEffects";
+import { ResponseItems } from "./ResponseItems";
 import { Badge, Button, ErrorText, Field, Input, Select, Textarea } from "./ui";
 
 /** One downtime action and the box to answer it in, with fill tables to roll from. */
@@ -48,7 +51,7 @@ export function ResponseEditor({
   const influence = item.influence;
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-ash bg-night/50 p-3">
+    <div id={`response-${item.id}`} className="flex scroll-mt-20 flex-col gap-2 rounded-md border border-ash bg-night/50 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <span>
           <strong className="text-gold">{item.character_name}</strong> · {item.question}
@@ -60,10 +63,18 @@ export function ResponseEditor({
             </span>
           )}
         </span>
-        <Badge tone={item.status === "written" ? "gold" : "mist"}>{STATUS_NAMES[item.status as keyof typeof STATUS_NAMES] ?? item.status}</Badge>
+        <span className="flex flex-wrap items-center gap-2">
+          {/* Its keyword, and where it comes in the resolution order (#509). */}
+          <span className="text-xs text-mist" title={item.step_name}>
+            {item.keyword} · step {item.step}
+          </span>
+          <Badge tone={item.status === "written" ? "gold" : "mist"}>{STATUS_NAMES[item.status as keyof typeof STATUS_NAMES] ?? item.status}</Badge>
+        </span>
       </div>
+      {item.keyword_details.length > 0 && <p className="text-sm text-mist">{item.keyword_details.join(" · ")}</p>}
       <p className="text-sm whitespace-pre-line">{item.answer}</p>
       {item.quest && <QuestAction item={item} quest={item.quest} troupeId={troupeId} link={canLog} />}
+      {(item.aim || !!item.countered_by?.length) && <AimNote item={item} />}
       {item.influence_blocks.length > 0 && (
         <p className="text-sm text-gold" role="note">
           May be up against {item.influence_blocks.map((b) => b.text).join("; ")}. The cost is yours to judge.
@@ -101,9 +112,51 @@ export function ResponseEditor({
         {extra}
       </div>
       <ErrorText error={save.error ?? roll.error} />
+      <ResponseItems item={item} troupeId={troupeId} />
       <CombinedAnswers others={others} onChange={setOthers} />
       {canLog && influence?.action_key === DISCOVERY_BLOCK && <DiscoveryBlock item={item} onWrite={setBody} />}
       {canLog && item.influence && <LogAnswer item={item} />}
+      {canLog && <ResponseEffects item={item} />}
+    </div>
+  );
+}
+
+/**
+ * Who an action is aimed at, and the Cancels and Observes paired with it (#507): for
+ * storytellers and assistants only, as the server sends it to no one else. A Haven's
+ * Location doubles its cost unless they say it isn't against them.
+ */
+function AimNote({ item }: { item: WorkItemOut }) {
+  const aim = item.aim;
+  const waive = useAction((notAgainst: boolean) =>
+    unwrap(api.PUT("/api/responses/{response_id}/not-against", { params: { path: { response_id: item.id } }, body: { not_against: notAgainst } })),
+  );
+  return (
+    <div className="flex flex-col gap-1 text-sm" role="note">
+      {aim && (
+        <p>
+          <span className="text-mist">{aim.counter ? `${COUNTER_NAMES[aim.counter as Counter]}, aimed at` : "Aimed at"} </span>
+          {aim.targets.join(", ")}
+          {aim.paired && (
+            <span className="text-mist">
+              {" "}
+              · paired with {aim.paired.character_name}'s “{aim.paired.question}”: {aim.paired.answer}
+            </span>
+          )}
+        </p>
+      )}
+      {aim?.located && (
+        <label className="flex items-center gap-2 text-mist">
+          <input type="checkbox" checked={aim.not_against} disabled={waive.isPending} onChange={(e) => waive.mutate(e.target.checked)} />
+          {aim.not_against ? "Not against them: it costs 1 action." : "Their Haven's Location makes it cost 2 actions. Tick if it isn't against them."}
+        </label>
+      )}
+      {item.countered_by?.map((c) => (
+        <p key={c.response_id} className="text-gold">
+          {c.counter ? COUNTER_NAMES[c.counter as Counter] : "Paired"} by {c.character_name}: {c.answer}
+        </p>
+      ))}
+      <ErrorText error={waive.error} />
     </div>
   );
 }

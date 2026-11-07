@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useReducer, useRef, useState } from "react";
 import { api, ApiError, unwrap } from "../../api/client";
-import type { AnswerIn, FeedingIn, InfluenceStandingOut, MyDowntime, QuestChoiceOut, QuestionOut } from "../../api/types";
+import type { AllowanceLineOut, AnswerIn, FeedingIn, InfluenceStandingOut, KeywordChoiceOut, LearningOut, MyDowntime, ProjectOut, QuestChoiceOut, QuestionOut, QuickHandsOut, TargetChoiceOut, TerritoryOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { feedingActionsSpent } from "../../feeding";
@@ -9,10 +9,14 @@ import { useAction } from "../../hooks";
 import { chosenAction, offered, reachable, reachNote } from "../../influence";
 import { DISCOVERY_BLOCK, LOOKUP_LEVEL, LOOKUP_NOTE } from "../../influenceLookups";
 import { questChoiceText } from "../quests/quests";
+import { actionCost, aimedAt, COUNTER_NAMES, counterOf, projectOf, withCounter, withProject, withTargets, type Counter } from "./aim";
 import { BlockTarget } from "./BlockTarget";
 import { useLeaveWarning } from "./CartPanel";
 import { type Answers, EMPTY_FORM, type Form, formReducer, toAnswers, unsaved } from "./downtimeForm";
-import { FeedingCard } from "./FeedingCard";
+import { FeedingCard, withoutFeeding } from "./FeedingCard";
+import { KeywordChooser, KeywordFields, ReadyMade } from "./KeywordFields";
+import { baseCost, feedingFromAnswers, keywordOf, withKeywordFeeding } from "./keywords";
+import { ProjectsCard } from "./Projects";
 import { NominationsForm } from "../nominations/NominationsForm";
 import { RemembrancesForm } from "../nominations/RemembrancesForm";
 
@@ -22,6 +26,13 @@ const spends = (q: QuestionOut) => q.kind === "action" || q.kind === "quest";
 /** "+3", "−2": an allowance line or adjustment, with a true minus. */
 function signed(n: number): string {
   return n < 0 ? `\u2212${-n}` : `+${n}`;
+}
+
+/** Actions only for one thing, as a question shows them: "1 Science action (Chemistry only)". */
+export function restrictedText(lines: AllowanceLineOut[], actionKind: string | null | undefined): string[] {
+  return lines
+    .filter((b) => b.only && b.action_kind === actionKind)
+    .map((b) => `${b.amount} ${b.source.split(":")[0]} ${b.amount === 1 ? "action" : "actions"} (${b.only} only)`);
 }
 
 /** How long typing has to stop for before the answers are saved. */
@@ -48,6 +59,11 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
       }
     },
   });
+  // The character's projects, for "Counts toward" and the Projects card (#507).
+  const projects = useQuery({
+    queryKey: ["projects", characterId],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/projects", path)),
+  });
   const [form, change] = useReducer(formReducer, EMPTY_FORM);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [removed, setRemoved] = useState<Removed | null>(null);
@@ -60,15 +76,41 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
   // Saving waits on its own answer, not a refetch of the page. Saves go one at a time.
   const save = useMutation({
     scope: { id: `downtime-${characterId}` },
-    mutationFn: ({ answers, feeding }: Sent) => unwrap(api.PUT("/api/characters/{character_id}/downtime/answers", { ...path, body: { answers, feeding } })),
+    mutationFn: ({ answers, feeding }: Sent) =>
+      unwrap(
+        api.PUT("/api/characters/{character_id}/downtime/answers", {
+          ...path,
+          body: { answers, feeding },
+        }),
+      ),
     onSuccess: (saved, sent) => {
       change({ type: "saved", version: sent.version });
       client.setQueryData(key, saved);
       setSavedAt(new Date());
     },
   });
+  // Quick Hands, Quick Work goes up at once, with the form as it stands: it changes the allowance.
+  const quick = useAction(async (on: boolean) => {
+    const d = downtime.data!;
+    const fed = d.feeding && form.feeding ? (on ? withoutFeeding(form.feeding) : form.feeding) : null;
+    if (on && fed) change({ type: "feeding", feeding: fed });
+    const saved = await unwrap(
+      api.PUT("/api/characters/{character_id}/downtime/answers", {
+        ...path,
+        body: { answers: toAnswers(form.draft), feeding: fed, quick_hands: on },
+      }),
+    );
+    client.setQueryData(key, saved);
+    setSavedAt(new Date());
+    return saved;
+  });
   const submit = useAction(async (sent: Sent) => {
-    await unwrap(api.PUT("/api/characters/{character_id}/downtime/answers", { ...path, body: { answers: sent.answers, feeding: sent.feeding } }));
+    await unwrap(
+      api.PUT("/api/characters/{character_id}/downtime/answers", {
+        ...path,
+        body: { answers: sent.answers, feeding: sent.feeding },
+      }),
+    );
     change({ type: "saved", version: sent.version });
     setSavedAt(new Date());
     const submitted = await unwrap(api.POST("/api/characters/{character_id}/downtime/submit", path));
@@ -80,11 +122,27 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
   const failed = save.isError && save.variables?.version === form.version;
   const saving = save.isPending || submit.isPending;
   // The Feeding section goes with the answers once it has been loaded.
-  const sent = (f: Form, d: MyDowntime): Sent => ({ version: f.version, answers: toAnswers(f.draft), feeding: d.feeding && f.feeding ? f.feeding : null });
+  const sent = (f: Form, d: MyDowntime): Sent => ({
+    version: f.version,
+    answers: toAnswers(f.draft),
+    feeding: d.feeding && f.feeding ? f.feeding : null,
+  });
   // For the timer and for leaving, which run after the render they were set up in.
-  const latest = useRef({ form, data: downtime.data, busy: submit.isPending, inFlight: undefined as number | undefined, mutate: save.mutate });
+  const latest = useRef({
+    form,
+    data: downtime.data,
+    busy: submit.isPending,
+    inFlight: undefined as number | undefined,
+    mutate: save.mutate,
+  });
   useEffect(() => {
-    latest.current = { form, data: downtime.data, busy: submit.isPending, inFlight: save.isPending ? save.variables?.version : undefined, mutate: save.mutate };
+    latest.current = {
+      form,
+      data: downtime.data,
+      busy: submit.isPending,
+      inFlight: save.isPending ? save.variables?.version : undefined,
+      mutate: save.mutate,
+    };
   });
   const saveNow = (always = false) => {
     const { form, data, busy, inFlight, mutate } = latest.current;
@@ -112,13 +170,56 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
   if (downtime.isPending) return <Loading />;
   if (downtime.error) return <ErrorText error={downtime.error} />;
   const d = downtime.data;
-  if (!d) return <Empty>There is no open downtime for this character. Downtimes come from its home troupe.</Empty>;
+  if (!d)
+    return (
+      <div className="flex flex-col gap-4">
+        <Empty>There is no open downtime for this character. Downtimes come from its home troupe.</Empty>
+        <ProjectsCard characterId={characterId} />
+      </div>
+    );
 
   const { draft, feeding } = form;
-  // Feeding actions and patrols come out of the general actions.
-  const fed = d.feeding && feeding ? feedingActionsSpent(feeding, d.feeding.rack ?? false, (d.feeding.territories ?? []).length > 0) : 0;
+  // Keywords (#509): those each question offers, and what Feed and Patrol answers give the Feeding section.
+  const keywords = d.keywords ?? [];
+  const offeredBy = d.question_keywords ?? {};
+  const offered = (q: QuestionOut) => (offeredBy[q.id] ?? []).map((k) => keywords.find((w) => w.key === k)).filter((k): k is KeywordChoiceOut => !!k);
+  const keyworded = d.questions.filter((q) => q.id in offeredBy).flatMap((q) => (draft[q.id] ?? []).map((a) => a.structured));
+  const fromKeywords = feedingFromAnswers(keyworded, keywords);
+  const offersEffect = (effect: string) => keywords.some((k) => k.effect === effect && Object.values(offeredBy).some((keys) => keys.includes(k.key)));
+  const shownFeeding = feeding ? withKeywordFeeding(feeding, fromKeywords) : null;
+  // Feeding actions and patrols come out of the general actions, but for those Feed and Patrol answers give, which spend their own.
+  const fed =
+    d.feeding && shownFeeding
+      ? feedingActionsSpent(
+          {
+            ...shownFeeding,
+            actions: fromKeywords.actions != null ? 0 : shownFeeding.actions,
+            patrols: fromKeywords.patrols != null ? [] : shownFeeding.patrols,
+          },
+          d.feeding.rack ?? false,
+          (d.feeding.territories ?? []).length > 0,
+        )
+      : 0;
+  const targets = d.targets ?? [];
+  // Staff's word that an action isn't against those it is aimed at, as the server has it.
+  const notAgainst = (question: string, index: number) => !!d.answers.find((a) => a.question_id === question && a.slot === index + 1)?.not_against;
+  // An action aimed at someone whose Haven has Location costs two (#507); its keyword sets what it costs before that.
+  const costOf = (q: QuestionOut, index: number) => {
+    if (q.kind !== "action") return 1;
+    const fields = draft[q.id]?.[index]?.structured;
+    return baseCost(fields, keywords) * actionCost(fields, targets, notAgainst(q.id, index));
+  };
+  // Ready-made actions: what it is learning, and keywords it takes each cycle, not yet among its answers.
+  const answered = Object.values(draft).flatMap((answers) => answers.map((a) => a.structured));
+  const unconfirmed = (d.learning ?? []).filter((l) => !answered.some((f) => f?.owed_action_id === l.id));
+  const requiredMissing = (d.required_keywords ?? []).filter((k) => !answered.some((f) => keywordOf(f) === k));
+  const learnKey = keywords.find((k) => k.effect === "learn")?.key;
+  const readyIn = (key: string | undefined) => (key ? d.questions.find((q) => (offeredBy[q.id] ?? []).includes(key))?.id : undefined);
   const used = (kind: string) =>
-    d.questions.filter((q) => q.action_kind === kind).reduce((n, q) => n + (draft[q.id]?.length ?? 0), 0) + (kind === "general" ? fed : 0);
+    d.questions
+      .filter((q) => q.action_kind === kind)
+      .reduce((n, q) => n + (draft[q.id] ?? []).reduce((m, _a, i) => m + costOf(q, i), 0), 0) + (kind === "general" ? fed : 0);
+  const active = (projects.data?.projects ?? []).filter((p) => p.status === "active");
   const setAnswers = (question: string, answers: Answers) => change({ type: "answers", question, answers });
   const remove = (question: string, index: number) => {
     const answers = draft[question] ?? [];
@@ -161,10 +262,25 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
       <div className="flex flex-col gap-4">
+        {d.quick_hands && (
+          // While it saves, the box shows the choice just made.
+          <QuickHandsCard
+            choice={quick.isPending ? { ...d.quick_hands, on: quick.variables } : d.quick_hands}
+            busy={quick.isPending || saving}
+            error={quick.error}
+            onChange={(on) => quick.mutate(on)}
+          />
+        )}
         {d.feeding && feeding && (
           <FeedingCard
+            quickHands={d.quick_hands?.on ?? false}
             feeding={d.feeding}
-            value={feeding}
+            value={shownFeeding ?? feeding}
+            keywords={{
+              feed: offersEffect("feed"),
+              patrol: offersEffect("patrol"),
+              fromAnswers: fromKeywords,
+            }}
             onChange={(value) => change({ type: "feeding", feeding: value })}
             actionsLeft={(d.allowance.general ?? 0) - used("general")}
             characterId={characterId}
@@ -184,7 +300,20 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
               answers={answers}
               remaining={remaining}
               influence={q.kind === "action" ? d.influence?.find((s) => s.action_kind === q.action_kind) : undefined}
+              restricted={spends(q) ? restrictedText(d.breakdown, q.action_kind) : []}
               quests={d.quests ?? []}
+              targets={targets}
+              canCounter={!!d.can_counter}
+              projects={active}
+              costs={answers.map((_a, i) => costOf(q, i))}
+              offered={q.id in offeredBy ? offered(q) : null}
+              keywords={keywords}
+              territories={d.feeding?.territories ?? []}
+              learning={readyIn(learnKey) === q.id ? unconfirmed : []}
+              required={requiredMissing
+                .filter((k) => readyIn(k) === q.id)
+                .map((k) => keywords.find((w) => w.key === k)!)
+                .filter(Boolean)}
               onChange={(next) => setAnswers(q.id, next)}
               onRemove={(i) => remove(q.id, i)}
               onUndo={canUndo ? undo : undefined}
@@ -194,6 +323,13 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
         {/* Apart from the answers: they save as they are added, and spend no actions (#470, #471). */}
         {d.remembrances && <RemembrancesForm characterId={characterId} />}
         {d.player_nominations && <NominationsForm characterId={characterId} />}
+        <ProjectsCard characterId={characterId} />
+        {requiredMissing.length > 0 && (
+          <p className="text-sm text-gold">
+            Still to add: {requiredMissing.map((k) => keywords.find((w) => w.key === k)?.name ?? k).join(", ")}. Your character takes{" "}
+            {requiredMissing.length === 1 ? "it" : "them"} each cycle.
+          </p>
+        )}
         <ErrorText error={save.error ?? submit.error} />
         {/* On a phone, the buttons and what became of them stay at the foot of the screen. */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:-mx-4 max-lg:border-t max-lg:border-ash max-lg:bg-night/95 max-lg:px-4 max-lg:py-3 max-lg:backdrop-blur">
@@ -242,6 +378,7 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
               <li key={i}>
                 {signed(b.amount)} {b.action_kind.replace(/_/g, " ")} {Math.abs(b.amount) === 1 ? "action" : "actions"}{" "}
                 {b.source === "Everyone" ? "(everyone gets these)" : `from ${b.source}`}
+                {b.only && ` (${b.only} only)`}
                 {b.note && <span className="block pl-3">{b.note}</span>}
               </li>
             ))}
@@ -262,13 +399,39 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
   );
 }
 
+/** Quick Hands, Quick Work (Vol. II Issue 1, p. 76): chosen each cycle, until the downtime is submitted. */
+function QuickHandsCard({ choice, busy, error, onChange }: { choice: QuickHandsOut; busy: boolean; error: unknown; onChange: (on: boolean) => void }) {
+  return (
+    <Card title="Quick Hands, Quick Work">
+      <label className="flex items-start gap-2 text-sm">
+        <input type="checkbox" className="mt-1" checked={choice.on} disabled={busy || !choice.can_change} onChange={(e) => onChange(e.target.checked)} />
+        <span>
+          Use Quick Hands, Quick Work this cycle (+2 actions; no feeding; start next game at half Blood)
+          {!choice.can_change && <span className="block text-xs text-mist">Fixed once the downtime is submitted.</span>}
+        </span>
+      </label>
+      <ErrorText error={error} />
+    </Card>
+  );
+}
+
 function QuestionCard({
   characterId,
   question,
   answers,
   remaining,
   influence,
+  restricted,
   quests,
+  targets,
+  canCounter,
+  projects,
+  costs,
+  offered,
+  keywords,
+  territories,
+  learning,
+  required,
   onChange,
   onRemove,
   onUndo,
@@ -278,7 +441,23 @@ function QuestionCard({
   answers: Answers;
   remaining: number;
   influence?: InfluenceStandingOut;
+  /** Actions of its kind only for one thing: "1 Science action (Chemistry only)". */
+  restricted: string[];
   quests: QuestChoiceOut[];
+  targets: TargetChoiceOut[];
+  canCounter: boolean;
+  projects: ProjectOut[];
+  /** What each answer costs, in actions. */
+  costs: number[];
+  /** The keywords its answers can take, or null when they take none (#509). */
+  offered: KeywordChoiceOut[] | null;
+  /** Every keyword the form knows. */
+  keywords: KeywordChoiceOut[];
+  territories: TerritoryOut[];
+  /** Ready-made Learn actions to confirm here. */
+  learning: LearningOut[];
+  /** Keywords the character takes each cycle, ready to add here. */
+  required: KeywordChoiceOut[];
   onChange: (answers: Answers) => void;
   onRemove: (index: number) => void;
   /** Puts back the action just removed from this question. */
@@ -287,6 +466,9 @@ function QuestionCard({
   const noQuests = question.kind === "quest" && quests.length === 0;
   const canAdd = spends(question) && !noQuests && remaining > 0 && (question.max_answers == null || answers.length < question.max_answers);
   const set = (i: number, value: Answers[number]) => onChange(answers.map((a, j) => (j === i ? value : a)));
+  // With only one keyword to choose, it is chosen.
+  const fresh = (): Answers[number] => (offered?.length === 1 ? { body: "", structured: { keyword: offered[0]!.key } } : { body: "" });
+  const learn = offered?.find((k) => k.effect === "learn");
 
   return (
     <Card
@@ -298,21 +480,65 @@ function QuestionCard({
       }
     >
       {question.help_text && <p className="mb-3 text-sm text-mist">{question.help_text}</p>}
+      {restricted.length > 0 && <p className="mb-3 text-sm text-mist">Of these, {restricted.join(", ")}. Staff judge what fits.</p>}
       <div className="flex flex-col gap-3">
-        {answers.map((a, i) => (
-          <div key={i} className="flex flex-col gap-2">
-            {question.kind === "quest" && <QuestChoice quests={quests} fields={a.structured} onChange={(structured) => set(i, { ...a, structured })} />}
-            <AnswerInput question={question} value={a.body} onChange={(body) => set(i, { ...a, body })} />
-            {influence && influence.actions.length > 0 && (
-              <InfluenceFields characterId={characterId} standing={influence} fields={a.structured} onChange={(structured) => set(i, { ...a, structured })} />
-            )}
-            {spends(question) && (
-              <Button variant="ghost" className="self-start px-0" onClick={() => onRemove(i)}>
-                Remove this action
-              </Button>
-            )}
-          </div>
-        ))}
+        <ReadyMade
+          learning={canAdd || remaining >= 0 ? learning : []}
+          learn={learn}
+          required={canAdd ? required : []}
+          onAdd={(structured) => onChange([...answers, { body: "", structured }])}
+        />
+        {answers.map((a, i) => {
+          const key = keywordOf(a.structured);
+          const keyword = key ? keywords.find((k) => k.key === key) : undefined;
+          // A keyword first; an answer from before keywords, with no keyword, reads as Narrative.
+          const describing = !offered || !!keyword || !!a.body.trim();
+          return (
+            <div key={i} className="flex flex-col gap-2">
+              {question.kind === "quest" && <QuestChoice quests={quests} fields={a.structured} onChange={(structured) => set(i, { ...a, structured })} />}
+              {offered && (offered.length > 1 || (keyword && !offered.includes(keyword))) && (
+                <KeywordChooser
+                  name={`keyword-${question.id}-${i}`}
+                  offered={offered}
+                  keywords={keywords}
+                  fields={a.structured}
+                  onChange={(structured) => set(i, { ...a, structured })}
+                />
+              )}
+              {keyword && (
+                <KeywordFields keyword={keyword} fields={a.structured} territories={territories} onChange={(structured) => set(i, { ...a, structured })} />
+              )}
+              {describing && (
+                <AnswerInput
+                  question={question}
+                  value={a.body}
+                  placeholder={offered ? "Describe it in a sentence or two: what, where and how." : undefined}
+                  onChange={(body) => set(i, { ...a, body })}
+                />
+              )}
+              {influence && influence.actions.length > 0 && (
+                <InfluenceFields characterId={characterId} standing={influence} fields={a.structured} onChange={(structured) => set(i, { ...a, structured })} />
+              )}
+              {question.kind === "action" && describing && (
+                <ActionFields
+                  targets={targets}
+                  canCounter={canCounter && !offered}
+                  single={!!keyword?.fields.includes("character")}
+                  needed={!!keyword && (keyword.fields.includes("character") || keyword.fields.includes("target"))}
+                  projects={projects}
+                  cost={costs[i] ?? 1}
+                  fields={a.structured}
+                  onChange={(structured) => set(i, { ...a, structured })}
+                />
+              )}
+              {spends(question) && (
+                <Button variant="ghost" className="self-start px-0" onClick={() => onRemove(i)}>
+                  Remove this action
+                </Button>
+              )}
+            </div>
+          );
+        })}
         {onUndo && (
           <p className="flex items-center gap-2 text-sm text-mist">
             Action removed.
@@ -322,7 +548,7 @@ function QuestionCard({
           </p>
         )}
         {canAdd && (
-          <Button variant="secondary" className="self-start" onClick={() => onChange([...answers, { body: "" }])}>
+          <Button variant="secondary" className="self-start" onClick={() => onChange([...answers, fresh()])}>
             Add an action ({remaining} left)
           </Button>
         )}
@@ -330,6 +556,109 @@ function QuestionCard({
         {spends(question) && !noQuests && answers.length === 0 && !canAdd && <Empty>No actions of this kind left.</Empty>}
       </div>
     </Card>
+  );
+}
+
+/**
+ * Who an action is aimed at, whether it cancels or observes, and the project it
+ * counts toward (#507). Those it is aimed at never learn of it.
+ */
+function ActionFields({
+  targets,
+  canCounter,
+  single = false,
+  needed = false,
+  projects,
+  cost,
+  fields,
+  onChange,
+}: {
+  targets: TargetChoiceOut[];
+  canCounter: boolean;
+  /** Its keyword asks for one character (Observe, Cancel). */
+  single?: boolean;
+  /** Its keyword asks who it is aimed at. */
+  needed?: boolean;
+  projects: ProjectOut[];
+  cost: number;
+  fields: Record<string, unknown> | undefined;
+  onChange: (fields: Record<string, unknown>) => void;
+}) {
+  const aimed = aimedAt(fields);
+  const counter = counterOf(fields);
+  const project = projectOf(fields);
+  const name = (id: string) => targets.find((t) => t.id === id)?.name ?? "Someone";
+  const others = targets.filter((t) => !aimed.includes(t.id));
+  // A project it counted toward stays a choice, though it has finished since.
+  const counted = project && !projects.some((p) => p.id === project) ? [{ id: project, name: "A finished project" }] : [];
+  if (!targets.length && !projects.length && !project) return null;
+  return (
+    <div className="flex flex-col gap-2 text-sm">
+      {(targets.length > 0 || aimed.length > 0) && (
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            {aimed.map((id) => (
+              <span key={id} className="inline-flex items-center gap-1 rounded-full border border-ash px-3 py-1">
+                {name(id)}
+                <button
+                  type="button"
+                  className="text-mist hover:text-parchment"
+                  aria-label={`No longer aimed at ${name(id)}`}
+                  onClick={() => onChange(withTargets(fields, aimed.filter((a) => a !== id)))}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            {others.length > 0 && !(single && aimed.length > 0) && (
+              <Select
+                aria-label="Aimed at"
+                className="w-auto"
+                value=""
+                onChange={(e) => e.target.value && onChange(withTargets(fields, [...aimed, e.target.value]))}
+              >
+                <option value="">{aimed.length ? "Also aimed at…" : needed ? "Aimed at…" : "Aimed at… (optional)"}</option>
+                {others.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </div>
+          {aimed.length > 0 && <p className="text-xs text-mist">They don't learn who aimed it at them. Only your storytellers see it.</p>}
+          {cost > 1 && (
+            <p role="note" className="text-xs text-gold">
+              This costs 2 actions.
+            </p>
+          )}
+        </div>
+      )}
+      {canCounter && aimed.length === 1 && (
+        <Field label="With the Computer skill" hint="Cancel or observe one of their actions this month (MET: VTM p. 93). Your storytellers decide which, and whether it works.">
+          <Select value={counter ?? ""} onChange={(e) => onChange(withCounter(fields, (e.target.value || null) as Counter | null))}>
+            <option value="">Neither</option>
+            {(Object.keys(COUNTER_NAMES) as Counter[]).map((c) => (
+              <option key={c} value={c}>
+                {COUNTER_NAMES[c]} one of {name(aimed[0]!)}'s actions
+              </option>
+            ))}
+          </Select>
+        </Field>
+      )}
+      {(projects.length > 0 || project) && (
+        <Field label="Counts toward">
+          <Select value={project} onChange={(e) => onChange(withProject(fields, e.target.value))}>
+            <option value="">No project</option>
+            {[...projects, ...counted].map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      )}
+    </div>
   );
 }
 
@@ -391,7 +720,11 @@ function InfluenceFields({
       delete rest.block;
       delete rest.block_entry;
     }
-    onChange({ ...rest, specialization: spec || undefined, action: kept && reachable(standing, kept, spec) ? key : undefined });
+    onChange({
+      ...rest,
+      specialization: spec || undefined,
+      action: kept && reachable(standing, kept, spec) ? key : undefined,
+    });
   };
   return (
     <div className="grid gap-2 sm:grid-cols-2">
@@ -430,7 +763,17 @@ function InfluenceFields({
   );
 }
 
-function AnswerInput({ question, value, onChange }: { question: QuestionOut; value: string; onChange: (v: string) => void }) {
+function AnswerInput({
+  question,
+  value,
+  placeholder,
+  onChange,
+}: {
+  question: QuestionOut;
+  value: string;
+  placeholder?: string;
+  onChange: (v: string) => void;
+}) {
   switch (question.answer_type) {
     case "choice":
       return (
@@ -454,6 +797,6 @@ function AnswerInput({ question, value, onChange }: { question: QuestionOut; val
     case "short_text":
       return <Input value={value} onChange={(e) => onChange(e.target.value)} aria-label={question.prompt} />;
     default:
-      return <Textarea value={value} onChange={(e) => onChange(e.target.value)} aria-label={question.prompt} />;
+      return <Textarea value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} aria-label={question.prompt} />;
   }
 }

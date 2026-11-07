@@ -1922,6 +1922,29 @@ class Owed:
         return f"{doing} ({'; '.join(self.because)})" if self.because else doing
 
 
+# The disciplines most settings hold common (MET: VtM core p. 111); the rest are rare.
+COMMON_DISCIPLINES = frozenset(
+    {"Animalism", "Auspex", "Celerity", "Dominate", "Fortitude", "Obfuscate", "Potence", "Presence"}
+)
+
+
+def rare_costs_more(
+    db: Session,
+    character: Character,
+    sheet: Sequence[SheetTrait],
+    subject: SheetTrait,
+) -> bool:
+    """Under the home troupe's optional rule, learning a dot of a rare discipline from
+    a teacher (one out of clan) takes two downtime actions, not one (p. 113)."""
+    troupe = db.get(Troupe, character.home_troupe_id) if character.home_troupe_id else None
+    if troupe is None or not troupe.rare_disciplines_two_actions:
+        return False
+    if subject.category != "disciplines" or subject.name.split(":")[0] in COMMON_DISCIPLINES:
+        return False
+    in_clan = matches({"in_clan": True}, sheet, subject, check_context(db, character, sheet))
+    return not in_clan
+
+
 def owed_for(
     db: Session,
     character: Character,
@@ -1935,7 +1958,7 @@ def owed_for(
     character: per dot, or once for a trait bought whole (a merit). A trait on the
     sheet can waive it (Efficient Learner), or add to it, for some traits only (an
     out-of-clan discipline under Discipline Illiterate, which also stops the
-    waiver)."""
+    waiver). A troupe can make a rare discipline cost one more a dot."""
     if not category.downtime_actions or gained <= 0 or character.home_troupe_id is None:
         return Owed(0)
     rows = sheet_rows(db, character)
@@ -1955,9 +1978,12 @@ def owed_for(
         return Owed(0)
     because = [f"{w} does not help, under {stops[0]}" for w in waivers]
     per_dot = category.downtime_actions
+    sheet = [r.as_rules_trait() for r in rows]
+    subject = SheetTrait(category=category.key, name=name, rating=gained, detail=detail)
+    if name and rare_costs_more(db, character, sheet, subject):
+        per_dot += 1
+        because.append(f"a rare discipline: 1 more{'' if fixed else ' a dot'}")
     if adding and name:
-        sheet = [r.as_rules_trait() for r in rows]
-        subject = SheetTrait(category=category.key, name=name, rating=gained, detail=detail)
         context = check_context(db, character, sheet)
         for added in adding:
             if "when" in added and not matches(added["when"], sheet, subject, context):

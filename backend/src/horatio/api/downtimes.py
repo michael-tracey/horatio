@@ -13,6 +13,7 @@ from horatio import (
     downtimes,
     feeding,
     influence,
+    keywords,
     pictures,
     quest_actions,
     quests,
@@ -20,6 +21,7 @@ from horatio import (
     remembrances,
     resonance,
     social_age,
+    targets,
     territories,
     xp_range,
 )
@@ -27,6 +29,7 @@ from horatio.api.influence import InfluenceStandingOut, standing_out
 from horatio.api.sheets import players_character
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import (
+    Answer,
     Character,
     CycleParticipant,
     DowntimeCycle,
@@ -131,6 +134,8 @@ class AllowanceLineOut(BaseModel):
     # What the actions mean (Hunted's are owed to staying hidden, and what not
     # spending them does).
     note: str = ""
+    # What they may only be spent on: a Science's field, "Chemistry".
+    only: str = ""
 
 
 class AdjustmentOut(BaseModel):
@@ -374,10 +379,58 @@ class AnswersIn(BaseModel):
     answers: list[AnswerIn]
     # The Feeding section; left out, it stays as it was.
     feeding: FeedingIn | None = None
+    # Use Quick Hands, Quick Work this cycle; left out, it stays as it was.
+    quick_hands: bool | None = None
+
+
+class QuickHandsOut(BaseModel):
+    """Quick Hands, Quick Work (Vol. II Issue 1, p. 76), for a character with it: two
+    more actions, no feeding, and the next game at half Blood."""
+
+    on: bool
+    # It can change until the downtime is submitted.
+    can_change: bool
 
 
 class AnswerOut(AnswerIn):
     structured: dict[str, Any]  # type: ignore[assignment]
+    # Staff say it isn't against those it is aimed at, so it costs one action
+    # (horatio.targets).
+    not_against: bool = False
+
+
+class TargetChoiceOut(BaseModel):
+    """A character an action can be aimed at (horatio.targets)."""
+
+    id: uuid.UUID
+    name: str
+    # Actions an action aimed at them costs: 2 where their Haven doubles it.
+    cost: int
+
+
+class KeywordChoiceOut(BaseModel):
+    """A downtime keyword, as the form offers it (horatio.keywords)."""
+
+    key: str
+    name: str
+    explanation: str
+    # What it asks for besides the description, as this character is asked: character,
+    # target, territory, trait, teacher, item.
+    fields: list[str]
+    cost: int
+    retired: bool
+    # What follows from it on its own: its default's key, or None for the troupe's own.
+    effect: str | None
+
+
+class LearningOut(BaseModel):
+    """Something the character is learning, whose action came off this cycle: a
+    ready-made Learn action to confirm."""
+
+    id: uuid.UUID
+    reason: str
+    what: str
+    teacher: str
 
 
 class MyDowntime(BaseModel):
@@ -403,11 +456,25 @@ class MyDowntime(BaseModel):
     influence: list[InfluenceStandingOut] = []
     # The Feeding section, for a character that feeds.
     feeding: MyFeedingOut | None = None
+    # The choice of Quick Hands, Quick Work, for a character with the technique.
+    quick_hands: QuickHandsOut | None = None
     # The quests its Quest action can name, when the form has one.
     quests: list[QuestChoiceOut] = []
+    # Who its actions can be aimed at, and whether it can mark one a Cancel or
+    # Observe, with the Computer skill (horatio.targets).
+    targets: list[TargetChoiceOut] = []
+    can_counter: bool = False
     # Why the downtime is closed to this character though the cycle is open: the
     # troupe's absentee downtimes ask for a game attended lately (horatio.game_xp).
     closed: str | None = None
+    # Keywords (horatio.keywords): those any question offers or any answer has, in the
+    # troupe's order; the keys each question offers, by question id (none for a question
+    # whose answers take no keyword); what it is learning, as ready-made Learn actions;
+    # and the keywords it must take each cycle.
+    keywords: list[KeywordChoiceOut] = []
+    question_keywords: dict[str, list[str]] = {}
+    learning: list[LearningOut] = []
+    required_keywords: list[str] = []
     # The troupe uses Player Nominations, so the form has its section
     # (horatio.api.nominations).
     player_nominations: bool = False
@@ -486,6 +553,20 @@ def quest_choices(
     return out
 
 
+def target_choices(
+    db: DbSession, character: Character, cycle: DowntimeCycle, answers: list[Answer]
+) -> list[TargetChoiceOut]:
+    """Who the character's actions can be aimed at, and any its answers already are
+    though they have left since."""
+    found = targets.choices(db, cycle.troupe_id, character)
+    offered = {c.id for c in found}
+    already = {t for a in answers for t in targets.aimed_at(a.structured)} - offered
+    if already:
+        found += list(db.scalars(select(Character).where(Character.id.in_(already))))
+    located = targets.with_location(db, cycle.troupe_id, {c.id for c in found})
+    return [TargetChoiceOut(id=c.id, name=c.name, cost=2 if c.id in located else 1) for c in found]
+
+
 def completion_awarded(db: DbSession, p: CycleParticipant) -> int | None:
     if p.completion_xp_entry_id is None:
         return None
@@ -512,7 +593,7 @@ def participant_out(
         player_id=player.id,
         player_handle=player.handle,
         allowance=downtimes.effective_allowance(db, p),
-        breakdown=[AllowanceLineOut(**line) for line in p.allowance_breakdown],
+        breakdown=[AllowanceLineOut(**line) for line in downtimes.breakdown(db, p)],
         adjustments=[
             AdjustmentOut(action_kind=a.action_kind, delta=a.delta, reason=a.reason)
             for a in downtimes.adjustments(db, p)
@@ -945,15 +1026,26 @@ def my_downtime_out(
     allowance = downtimes.effective_allowance(db, participant)
     submission: Submission | None = downtimes.submission_for(db, participant)
     questions = downtimes.visible_questions(db, cycle, character, allowance)
+    answers = downtimes.answers_for(db, submission) if submission else []
     asked = {influence.type_of(q.action_kind) for q in questions} - {None}
     standings = influence.standings(db, character) if asked else {}
+    troupe = db.get_one(Troupe, cycle.troupe_id)
+    ctx, keyword_list = downtimes.answer_keywords(db, cycle, participant, character, troupe)
+    offered = {
+        str(q.id): [k.key for k in keywords.offered(keyword_list, q, ctx)]
+        for q in questions
+        if keywords.takes_keywords(keyword_list, q)
+    }
+    used = {keywords.keyword_of(a.structured) for a in answers} | {
+        k for keys in offered.values() for k in keys
+    }
     return MyDowntime(
         cycle_id=cycle.id,
         cycle_name=cycle.name,
         closes_at=cycle.closes_at,
         grace_ends_at=cycle.grace_ends_at,
         allowance=allowance,
-        breakdown=[AllowanceLineOut(**line) for line in participant.allowance_breakdown],
+        breakdown=[AllowanceLineOut(**line) for line in downtimes.breakdown(db, participant)],
         adjustments=[
             AdjustmentOut(action_kind=a.action_kind, delta=a.delta, reason=a.reason)
             for a in downtimes.adjustments(db, participant)
@@ -961,8 +1053,14 @@ def my_downtime_out(
         short=downtimes.shortfall(db, participant),
         questions=[question_out(q) for q in questions],
         answers=[
-            AnswerOut(question_id=a.question_id, slot=a.slot, body=a.body, structured=a.structured)
-            for a in (downtimes.answers_for(db, submission) if submission else [])
+            AnswerOut(
+                question_id=a.question_id,
+                slot=a.slot,
+                body=a.body,
+                structured=a.structured,
+                not_against=a.not_against,
+            )
+            for a in answers
         ],
         status=submission.status if submission else "draft",
         late=submission.late if submission else False,
@@ -970,11 +1068,48 @@ def my_downtime_out(
         completion_xp_awarded=completion_awarded(db, participant),
         influence=[standing_out(s) for t, s in standings.items() if t in asked],
         feeding=my_feeding_out(db, character, cycle, participant, submission),
+        quick_hands=QuickHandsOut(
+            on=submission is not None and submission.quick_hands,
+            can_change=submission is None or submission.status != "submitted",
+        )
+        if (submission is not None and submission.quick_hands)
+        or downtimes.has_quick_hands(db, character)
+        else None,
         quests=quest_choices(db, character, cycle, submission)
         if any(q.kind == "quest" for q in questions)
         else [],
+        targets=target_choices(db, character, cycle, answers)
+        if any(q.kind == "action" for q in questions)
+        else [],
+        can_counter=targets.has_computer(db, character),
         closed=downtimes.closed_to(db, cycle, participant),
-        player_nominations=db.get_one(Troupe, cycle.troupe_id).player_nominations,
+        keywords=[
+            KeywordChoiceOut(
+                key=k.key,
+                name=k.name,
+                explanation=k.explanation,
+                fields=list(keywords.asked_fields(k, ctx)),
+                cost=k.cost,
+                retired=k.retired,
+                effect=k.effect,
+            )
+            for k in keyword_list
+            if k.key in used
+        ],
+        question_keywords=offered,
+        learning=[
+            LearningOut(id=o.id, reason=o.reason, what=what, teacher=teacher)
+            for o in keywords.learning_owed(db, participant.id)
+            for what, teacher in [keywords.learning_text(o.reason)]
+        ]
+        if any(k.effect == keywords.LEARN_KEY for k in keyword_list if k.key in used)
+        else [],
+        required_keywords=[
+            k.key
+            for k in keywords.required_now(keyword_list, ctx)
+            if any(k.key in keys for keys in offered.values())
+        ],
+        player_nominations=troupe.player_nominations,
         remembrances=remembrances.on(db.get_one(Troupe, cycle.troupe_id))
         and bool(remembrances.in_cycle(db, cycle)),
     )
@@ -999,6 +1134,7 @@ def save_answers(
         participant,
         [downtimes.AnswerSpec(**a.model_dump()) for a in body.answers],
         feeding_answer(body.feeding) if body.feeding is not None else None,
+        body.quick_hands,
     )
     db.commit()
     return my_downtime_out(db, character, cycle, participant)

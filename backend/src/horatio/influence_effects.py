@@ -107,20 +107,25 @@ def boost_levels(rating: int, spent: int) -> int:
 
 
 def games_played(db: Session, effect: InfluenceEffect, at: datetime) -> int:
-    """The games the target has played since the effect began: Play View games with a
-    tap since then that have ended by `at`, or the troupe's scheduled games over by
-    then, whichever counts more (for a character whose player keeps no Play View)."""
+    """The games the target has played since the effect began, by `at`."""
     if effect.character_id is None:
         return effect.games  # the character is gone: only the dates count
+    return games_since(db, effect.character_id, effect.troupe_id, effect.starts_at, at)
+
+
+def games_since(
+    db: Session, character_id: uuid.UUID, troupe_id: uuid.UUID, since: datetime, at: datetime
+) -> int:
+    """The games a character has played since `since`: Play View games with a tap
+    since then that have ended by `at`, or the troupe's scheduled games over by then,
+    whichever counts more (for a character whose player keeps no Play View)."""
     played = (
         db.scalar(
             select(func.count(PlayGame.id)).where(
-                PlayGame.character_id == effect.character_id,
+                PlayGame.character_id == character_id,
                 PlayGame.ended_at.is_not(None),
                 PlayGame.ended_at <= at,
-                exists().where(
-                    PlayEvent.game_id == PlayGame.id, PlayEvent.happened_at >= effect.starts_at
-                ),
+                exists().where(PlayEvent.game_id == PlayGame.id, PlayEvent.happened_at >= since),
             )
         )
         or 0
@@ -128,8 +133,8 @@ def games_played(db: Session, effect: InfluenceEffect, at: datetime) -> int:
     scheduled = (
         db.scalar(
             select(func.count(ScheduledGame.id)).where(
-                ScheduledGame.troupe_id == effect.troupe_id,
-                ScheduledGame.starts_at >= effect.starts_at,
+                ScheduledGame.troupe_id == troupe_id,
+                ScheduledGame.starts_at >= since,
                 ScheduledGame.ends_at <= at,
             )
         )

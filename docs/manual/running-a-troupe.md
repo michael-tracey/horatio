@@ -247,7 +247,7 @@ What it shows of sect status is set under [Troupe settings](#customise-troupe-se
 - **Give equipment** gives an item: weapons, protective gear and other gear with the book's qualities, or a Vampiric Text. Start from the book's items or the troupe's own templates; **Save as a template** keeps one for next time.
 - An item can be made special, with any number of qualities and effects of the troupe's own. A special item shows **Special, by** its troupe on its row.
 - The list is a table: each item, who holds it, its kind, qualities and grade, and when and by whom it was given. On a phone, each item folds into a card. Choose an item's name to read what it does.
-- Each item's **⋯**, at the end of its row, holds **History**, and, while it's held, **Change…**, **Move…** (to another home character), **Discard…** and **Take back…** (with a reason; its player is told). A discarded item's **⋯** offers **Restore to** its last holder instead.
+- Each item's **⋯**, at the end of its row, holds **History** (an item given from a downtime response says so there, linking to the response), and, while it's held, **Change…**, **Move…** (to another home character), **Discard…** and **Take back…** (with a reason; its player is told). A discarded item's **⋯** offers **Restore to** its last holder instead.
 - **Find items** searches by words, holder, kind, quality, grade, who gave it and when, held or discarded.
 - **Export CSV** downloads the list; **Find these characters** opens the Characters list on the holders.
 
@@ -434,9 +434,35 @@ Starting XP, the XP floor and ceiling, and blood at the start of a game are unde
 
 ### Downtime actions
 
-**Downtime actions** sets how many actions of each kind characters get each cycle, and which traits add or take away actions (once at any rating, or for each dot, from a rating). A cycle keeps the allowances it was opened with.
+**Downtime actions** sets how many actions of each kind characters get each cycle, and which traits add or take away actions (once at any rating, for each dot, or for each field held, from a rating). A cycle keeps the allowances it was opened with.
+
+The book's own list includes Computer, each Science field, Soul of the Homunculi and Ay Befriend (Mytherceria 3). Choose **Change** on any of them to replace it with the troupe's own. Science counts **For each field held**: to give one for the first field, a second at 3 dots and a third at 5, set **Rating each field needs** to "1, 3, 5". The character's best Science counts.
+
+**Rare disciplines**, on the same page, is an optional rule (MET: VtM core p. 113), off until you switch it on: a dot of a rare discipline learned from a teacher, out of clan, takes two downtime actions instead of one. Every discipline but Animalism, Auspex, Celerity, Dominate, Fortitude, Obfuscate, Potence and Presence is rare.
 
 **Influence lookups**, on the same page, sets how many **Days to look back** Gossip and Insider Trading and Word on the Street look in the influence log, counted from when their cycle closes.
+
+### Downtime keywords
+
+**Downtime keywords** lists the keywords a player chooses first for each downtime action: what kind of action it is. Horatio's follow the book where it has a rule (MET: VTM pp. 93, 97, 111–113, 307–308) and the troupes' downtime primers for the rest: Feed, Patrol, Investigate, Beyond Your Means, Quest, Learn, Craft, Perform, Narrative, Rhetorical, Observe and Cancel. What follows from them on their own:
+
+- **Feed** actions are the character's feeding actions, which the Feeding section counts and the [Feeding tab](#feeding-in-a-cycle) answers as before. A Feed in a feeding territory stands in for one without spending an action, once a cycle.
+- **Patrol** actions are its patrols of the territories it holds.
+- **Learn** stands for what the character is learning: a discipline dot whose action came off the cycle shows on its form ready-made, and confirming it costs nothing more. Efficient Learner still waives the action, and teachers never spend one.
+- **Observe** and **Cancel** are the Computer skill's one action a cycle, aimed at one character: see [Actions aimed at characters](#actions-aimed-at-characters).
+- **Craft** and **Perform**: on their responses, **Effects on allowances and backgrounds** starts with the boost chosen, and says how many the character took.
+- **Beyond Your Means** asks for the item wanted, and **Give an item** on its response starts from it.
+- **Quest** is the form's Quest action.
+
+Each row says what the keyword asks for, what it's spent from and its step in the resolution order. The **⋯** at the end of a row holds:
+
+- **Edit…**: its **Name**, **What it is for** (one line, shown on the form), what **It asks for** (one character; who or what it's aimed at; a feeding territory; what to learn; the teacher; the item wanted), what it's **Spent from** (the action kinds, or **Only the Computer skill's action**), whether it **Fits a Science**, the **Actions it costs**, its **Step of the resolution order**, and whether it's **Required each cycle of** Neonates, Ancillae or Elders, such as an Eternal Struggle for Elders. Renamed, a keyword of Horatio's keeps what follows from it.
+- **Move up** and **Move down**: the order the form offers them in, and their order within a step.
+- **Retire**: no longer offered. Past downtimes keep it. **Offer it again** brings it back.
+
+**Add a keyword** adds one of your own. **Back to Horatio's keywords…** puts every one back as Horatio has it, and retires your own. The changes show on the troupe's **House rules** tab. Influence actions take no keyword: their influence action says what they are.
+
+The resolution order, under the list, is Land of the Sky's: influence Defends, Blocks, Boosts and Attacks; indirect influence attacks; other influence actions, highest first, with Word on the Street last; Cancels; the other downtime actions; and Observes last.
 
 ### Languages
 
@@ -624,7 +650,7 @@ The **Participants** tab shows each character, its player, where its downtime st
 
 - **Remind those not submitted** sends each player a notification, and an email if they've chosen to. It names the cycle's **Due**, or once that has passed, its **Accepted until**, in the player's own time zone.
 - **Add a character** adds one whose home is this troupe that joined after the cycle opened.
-- A character's ⋯ shows its actions, and lets you **Adjust** its allowance for this cycle with a reason, **Log influence**, **Accept late** (after the grace period, or when the troupe's absentee downtimes would shut it out), or **Remove from cycle**.
+- A character's ⋯ shows its actions and where each comes from, as its player sees them, and lets you **Adjust** its allowance for this cycle with a reason, **Log influence**, **Accept late** (after the grace period, or when the troupe's absentee downtimes would shut it out), or **Remove from cycle**.
 
 ### Feeding in a cycle
 
@@ -632,16 +658,44 @@ The **Participants** tab shows each character, its player, where its downtime st
 
 The **Feeding** tab starts with **Feeding by clan**: how many feeding actions each clan needs this cycle, which you can change with a reason. The next cycle starts with these numbers. Each character's card shows what it put towards its feeding and Horatio's tally; you answer **Full Blood next game**, **Half Blood next game** or something else, with flavour or a fill table. With the Vol. 2 rules on, it also has the Resonance and Dyscrasia, **The Rack** (lay out cards, then change any), and the cycle's feeding territories and poaching.
 
+A character holding Triumphant needs one feeding action fewer, and never poaches. A character using **Quick Hands, Quick Work** is marked on its card: it doesn't feed, and its results say it starts the next game at half Blood without your answering.
+
 ### Assigning and writing responses
 
 ![The Responses tab: responses by character, filtered and assigned.](images/running-a-troupe/responses.png)
 
-The **Responses** tab holds every response in the cycle, by character. Filter by **All**, **Unassigned**, **Assigned** or **Written**, by who has it, and by question.
+The **Responses** tab holds every response in the cycle, by character. Filter by **All**, **Unassigned**, **Assigned** or **Written**, by who has it, by question, and by [keyword](#downtime-keywords). **Order** › **In resolution order** lists them in the troupe's resolution order instead, under each step, so you can work through them in turn. Each response names its keyword and its step, and what the keyword's fields say, such as the territory or the item wanted. An answer from before keywords counts as Narrative.
 
 - Choose who writes each response: a staff member, or **Any narrator**. Tick several and assign them in one go from the bar at the foot of the screen.
 - Write a response and choose **Save response**. A **Fill table** can roll a random result into it.
+- **Effects on allowances and backgrounds**, for storytellers and assistant storytellers, applies what the action does to downtimes or backgrounds, with **Take back** to undo it:
+  - **Call of the Hungry Dead:** another character loses 1 action the next time it has downtime actions. It doesn't stack.
+  - **Indirect influence attack:** on a general influence action, another character loses 1 action for every 2 levels, or all it has. Use it where you choose the book's mechanical penalty.
+  - **Crafts** or **Performance:** Resources or Fame +1 until the next cycle opens.
+  - **Overtaxed Resources:** Resources −2 for six games or three months, whichever is later; and, from another action, **Recovering from overtaxing** halves the wait.
+
+  Actions lost come off the character's current downtime if it hasn't submitted, or else its next one.
+
+- **Give an item** gives the character equipment from the response, such as an item bought beyond its means or one it crafted. It opens the [Equipment](#equipment) editor, set to that character. **Add a quality** puts a quality, such as Antique, Stylish or Nondescript, on an item the character already holds; it must fit the item's grade, as any quality does.
 
 Only storytellers and assistant storytellers assign. Everyone writes what is assigned to them, from here or from [My work](#my-work).
+
+What a response gives shows under it, marked **With the results**: it reaches the character when the response is delivered, not before. Until then, **Change** or **Take off** it. Once delivered it's marked **Given**, and it's an item like any other, changed on the Equipment tab. Only storytellers and assistant storytellers give equipment; narrators see what a response gives, but can't add to it.
+
+### Actions aimed at characters
+
+A player can aim an action at one or more characters of the troupe, home or visiting. The cycle's **Aimed at** tab lists, for each character, the submitted actions aimed at them: who, which question and the answer, each with a link to its response. Responses show who they're aimed at too. Only storytellers and assistant storytellers see either: no player learns who aimed at them, and a narrator writing the response doesn't see it. The troupe log notes each action aimed at someone as the downtime is submitted.
+
+- **A Haven's Location** (MET: VTM p. 102). An action aimed at a character whose Haven, on the troupe's [Locations](#locations), has the Location advantage costs two actions. The player sees only "This costs 2 actions". If it isn't against them, such as a friendly visit, or they no longer stay in their Haven, tick the box under it on its response and it costs 1; the player gets the action back.
+- **Cancel and Observe** (p. 93). A character with the Computer skill can make one action a month a **Cancel** or an **Observe** of one character's actions, by its keyword. On the **Aimed at** tab, choose which of that character's actions it works on; the two then show together, there and on both responses. Whether it works is yours to judge.
+
+### Projects
+
+Projects are work a character does over several cycles: a **Path change**, **Research** or **Other**. Each has a number of actions it takes and, if you like, a least number each month, or it starts over.
+
+- **Starting one.** On the character's **Projects** tab, choose **Start a project**. A player can propose one from their Downtime tab; you're told in the bell, and **Confirm** or **Decline** it there or on the cycle's **Projects** tab. **Stop** ends one under way.
+- **Progress.** A player counts an action toward a project under **Counts toward**. When you mark a cycle complete, each project goes up by the actions spent on it in submitted downtimes. One with fewer than its least that month starts over, back to none. The cycle's **Projects** tab shows what each has had so far this cycle, and warns in red of any that will start over; so does **Mark complete**. A character not taking part in a cycle keeps its progress.
+- **A Path change** takes the book's numbers: 9 actions with a teacher, 18 without, at least 1 a month (MET: VTM p. 306). When it finishes, you're told in the bell to change the character's Morality to the new Path on the sheet, which lowers Morality by 1. Make the change as usual, then choose **It's on the sheet**.
 
 ### Fill tables
 
@@ -659,11 +713,11 @@ The **Delivery** tab sends each submission's responses to its player.
 2. Tick **Also deliver the partly written** to send those with what's written so far.
 3. Choose **Deliver** (it says how many downtimes go).
 
-Results always appear in Horatio, and on each connector the troupe has on. A response written or changed after delivery goes out with the next delivery, as an update, and the table marks it **Changed since delivery**. A connector copy that failed can be retried, or marked as sent if you sent it yourself.
+Results always appear in Horatio, and on each connector the troupe has on. Equipment a response gives goes to the character as its results are delivered, and the results say **You received**. A response written or changed after delivery goes out with the next delivery, as an update, and the table marks it **Changed since delivery**; so does equipment added to a response already delivered. If something can't be given, such as a quality on an item the character no longer holds, Horatio stops the delivery and says which; change it or take it off the response, then deliver again. A connector copy that failed can be retried, or marked as sent if you sent it yourself.
 
 ### Marking a cycle complete
 
-Once results are out, choose **Mark complete** on the Overview. Horatio says first what is unwritten or undelivered. You can still deliver from a complete cycle; those are the last results.
+Once results are out, choose **Mark complete** on the Overview. Horatio says first what is unwritten or undelivered, and which [projects](#projects) start over. Completing the cycle counts its actions toward projects. You can still deliver from a complete cycle; those are the last results.
 
 ### Player Nominations
 

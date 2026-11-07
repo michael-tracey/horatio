@@ -58,7 +58,17 @@ def allowance_rule_from_dict(raw: dict[str, Any], *, house: bool = False) -> All
         min_rating=raw.get("min_rating", 1),
         house=house,
         note=raw.get("note", ""),
+        detail_ratings=tuple(raw.get("detail_ratings", ())),
     )
+
+
+def check_scheme(rule: AllowanceRuleData, where: str) -> None:
+    if rule.scheme not in ("fixed", "per_dot", "per_detail"):
+        raise ValueError(f"{where}: unknown scheme {rule.scheme!r}")
+    if rule.detail_ratings and rule.scheme != "per_detail":
+        raise ValueError(f"{where}: ratings for each field go with one action a field")
+    if any(r < 1 for r in rule.detail_ratings):
+        raise ValueError(f"{where}: a field's rating is at least 1")
 
 
 def check_allowance_rule(
@@ -67,8 +77,7 @@ def check_allowance_rule(
     where = f"allowance rule for {rule.action_kind}"
     if rule.action_kind not in rule_set.action_kinds and rule.action_kind not in extra_kinds:
         raise ValueError(f"{where}: unknown action kind")
-    if rule.scheme not in ("fixed", "per_dot"):
-        raise ValueError(f"{where}: unknown scheme {rule.scheme!r}")
+    check_scheme(rule, where)
     if (rule.category is None) != (rule.trait is None):
         raise ValueError(f"{where}: name both a category and a trait, or neither")
     if rule.category is not None and (rule.category, rule.trait) not in rule_set.traits:
@@ -83,6 +92,7 @@ def feeding_modifier_from_dict(raw: dict[str, Any]) -> FeedingModifierData:
         herd_factor=raw.get("herd_factor", 1),
         always_half=raw.get("always_half", False),
         page=raw.get("page"),
+        anywhere=raw.get("anywhere", False),
     )
 
 
@@ -96,6 +106,8 @@ def feeding_modifier_to_dict(modifier: FeedingModifierData) -> dict[str, Any]:
         raw["always_half"] = True
     if modifier.page is not None:
         raw["page"] = modifier.page
+    if modifier.anywhere:
+        raw["anywhere"] = True
     return raw
 
 

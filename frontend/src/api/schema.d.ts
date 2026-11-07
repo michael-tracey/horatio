@@ -557,6 +557,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/background-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Background Changes
+         * @description The character's backgrounds raised or lowered for now, for its sheet.
+         */
+        get: operations["read_background_changes_api_characters__character_id__background_changes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/backstory": {
         parameters: {
             query?: never;
@@ -2467,6 +2487,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Character Projects */
+        get: operations["character_projects_api_characters__character_id__projects_get"];
+        put?: never;
+        /**
+         * Start Project
+         * @description Staff start a project; its player proposes one, for staff to confirm.
+         */
+        post: operations["start_project_api_characters__character_id__projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/pronouns": {
         parameters: {
             query?: never;
@@ -3530,6 +3571,27 @@ export interface paths {
         patch: operations["change_cycle_api_cycles__cycle_id__patch"];
         trace?: never;
     };
+    "/api/cycles/{cycle_id}/aimed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Aimed
+         * @description Each character the cycle's submitted actions are aimed at, by name, with those
+         *     actions: who, which question, and the answer.
+         */
+        get: operations["aimed_api_cycles__cycle_id__aimed_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cycles/{cycle_id}/close": {
         parameters: {
             query?: never;
@@ -3863,6 +3925,27 @@ export interface paths {
         };
         /** Progress */
         get: operations["progress_api_cycles__cycle_id__progress_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cycles/{cycle_id}/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cycle Projects
+         * @description The troupe's projects, by character, with what the cycle has spent on each so
+         *     far and which start over when it completes.
+         */
+        get: operations["cycle_projects_api_cycles__cycle_id__projects_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4798,6 +4881,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{project_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm */
+        post: operations["confirm_api_projects__project_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project_id}/drop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Drop
+         * @description Staff decline or stop a project; its player withdraws one they proposed.
+         */
+        post: operations["drop_api_projects__project_id__drop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project_id}/sheet-changed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sheet Changed
+         * @description Staff have changed the sheet's Morality to the finished Path change's Path.
+         */
+        post: operations["sheet_changed_api_projects__project_id__sheet_changed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/quest-requests/{request_id}/accept": {
         parameters: {
             query?: never;
@@ -5290,6 +5430,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/responses/{response_id}/effects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Effects
+         * @description What staff have applied from this response, and what they can.
+         */
+        get: operations["read_effects_api_responses__response_id__effects_get"];
+        put?: never;
+        /** Apply Effect */
+        post: operations["apply_effect_api_responses__response_id__effects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/responses/{response_id}/effects/{effect_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Effect */
+        delete: operations["remove_effect_api_responses__response_id__effects__effect_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/responses/{response_id}/influence-entry": {
         parameters: {
             query?: never;
@@ -5314,6 +5492,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/responses/{response_id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give From Response
+         * @description Give the character a new item, or a quality on one it holds, from the
+         *     response: it reaches the character when the response is delivered, with the
+         *     results. Only its home troupe's storytellers and assistant storytellers.
+         */
+        post: operations["give_from_response_api_responses__response_id__items_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/responses/{response_id}/items/{row_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change Response Item
+         * @description Change what the response gives, before it is delivered.
+         */
+        put: operations["change_response_item_api_responses__response_id__items__row_id__put"];
+        post?: never;
+        /**
+         * Remove Response Item
+         * @description Take it off the response, before it is delivered: nothing is given.
+         */
+        delete: operations["remove_response_item_api_responses__response_id__items__row_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/responses/{response_id}/lookup": {
         parameters: {
             query?: never;
@@ -5328,6 +5552,47 @@ export interface paths {
          */
         get: operations["lookup_api_responses__response_id__lookup_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/responses/{response_id}/not-against": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Not Against
+         * @description Say the action isn't against those it is aimed at, such as a friendly visit,
+         *     so a Haven's Location doesn't double it; or that it is after all.
+         */
+        put: operations["set_not_against_api_responses__response_id__not_against_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/responses/{response_id}/pairing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Pairing
+         * @description Pair a Cancel or Observe with the action of its target's it works on.
+         */
+        put: operations["set_pairing_api_responses__response_id__pairing_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -7312,6 +7577,99 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/keyword-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Reorder Keywords
+         * @description The order the form offers them in, which is also their order within a step of the
+         *     resolution order.
+         */
+        put: operations["reorder_keywords_api_troupes__troupe_id__keyword_order_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/keywords": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Keywords
+         * @description The troupe's downtime keywords, retired ones too, in its order: for its running
+         *     staff.
+         */
+        get: operations["list_keywords_api_troupes__troupe_id__keywords_get"];
+        put?: never;
+        /**
+         * Add Keyword
+         * @description A keyword of the troupe's own, at the end of its list.
+         */
+        post: operations["add_keyword_api_troupes__troupe_id__keywords_post"];
+        /**
+         * Reset Keywords
+         * @description Back to Horatio's keywords. The troupe's own are retired, so past downtimes keep
+         *     them.
+         */
+        delete: operations["reset_keywords_api_troupes__troupe_id__keywords_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/keywords/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change Keyword
+         * @description Rename, reword or change the rules of one keyword. A default keeps what follows
+         *     from it, under its new name.
+         */
+        put: operations["change_keyword_api_troupes__troupe_id__keywords__key__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/keywords/{key}/retired": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Retire Keyword
+         * @description Retire a keyword, so it is no longer offered, or bring it back. Past downtimes
+         *     keep it either way.
+         */
+        put: operations["retire_keyword_api_troupes__troupe_id__keywords__key__retired_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/languages": {
         parameters: {
             query?: never;
@@ -7954,6 +8312,27 @@ export interface paths {
         put?: never;
         /** Roll Table */
         post: operations["roll_table_api_troupes__troupe_id__random_tables__name__roll_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/rare-disciplines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Rare Disciplines
+         * @description Switch on or off the optional rule that rare disciplines take two downtime
+         *     actions a dot to learn. Dots learned before keep what they cost.
+         */
+        put: operations["set_rare_disciplines_api_troupes__troupe_id__rare_disciplines_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8840,10 +9219,64 @@ export interface components {
              */
             kind: "social_age";
         };
+        /**
+         * AimOut
+         * @description Who an action is aimed at, for storytellers and assistant storytellers only
+         *     (horatio.targets).
+         */
+        AimOut: {
+            /** Counter */
+            counter: string | null;
+            /** Located */
+            located: boolean;
+            /** Not Against */
+            not_against: boolean;
+            paired: components["schemas"]["PairOut"] | null;
+            /** Targets */
+            targets: string[];
+        };
+        /**
+         * AimedOut
+         * @description One action aimed at a character.
+         */
+        AimedOut: {
+            /** Also */
+            also: string[];
+            /** Answer */
+            answer: string;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Counter */
+            counter: string | null;
+            /** Located */
+            located: boolean;
+            /** Not Against */
+            not_against: boolean;
+            paired: components["schemas"]["PairOut"] | null;
+            /** Question */
+            question: string;
+            /**
+             * Response Id
+             * Format: uuid
+             */
+            response_id: string;
+            /** Status */
+            status: string;
+        };
         /** AllowanceChange */
         AllowanceChange: {
             /** Amount */
             amount: number;
+            /**
+             * Detail Ratings
+             * @default []
+             */
+            detail_ratings: number[];
             /**
              * Min Rating
              * @default 1
@@ -8854,7 +9287,7 @@ export interface components {
              * @default fixed
              * @enum {string}
              */
-            scheme: "fixed" | "per_dot";
+            scheme: "fixed" | "per_dot" | "per_detail";
         };
         /** AllowanceIn */
         AllowanceIn: {
@@ -8865,6 +9298,11 @@ export interface components {
             /** Category */
             category?: string | null;
             /**
+             * Detail Ratings
+             * @default []
+             */
+            detail_ratings: number[];
+            /**
              * Min Rating
              * @default 1
              */
@@ -8874,7 +9312,7 @@ export interface components {
              * @default fixed
              * @enum {string}
              */
-            scheme: "fixed" | "per_dot";
+            scheme: "fixed" | "per_dot" | "per_detail";
             /** Trait */
             trait?: string | null;
         };
@@ -8889,6 +9327,11 @@ export interface components {
              * @default
              */
             note: string;
+            /**
+             * Only
+             * @default
+             */
+            only: string;
             /** Source */
             source: string;
         };
@@ -8902,6 +9345,11 @@ export interface components {
             amount_text: string;
             /** Category */
             category: string | null;
+            /**
+             * Detail Ratings
+             * @default []
+             */
+            detail_ratings: number[];
             /** House */
             house: boolean;
             /** Id */
@@ -8917,7 +9365,7 @@ export interface components {
              * Scheme
              * @enum {string}
              */
-            scheme: "fixed" | "per_dot";
+            scheme: "fixed" | "per_dot" | "per_detail";
             /** Trait */
             trait: string | null;
             /** Who */
@@ -8953,6 +9401,11 @@ export interface components {
         AnswerOut: {
             /** Body */
             body: string;
+            /**
+             * Not Against
+             * @default false
+             */
+            not_against: boolean;
             /**
              * Question Id
              * Format: uuid
@@ -9016,18 +9469,8 @@ export interface components {
             /** Answers */
             answers: components["schemas"]["AnswerIn"][];
             feeding?: components["schemas"]["FeedingIn"] | null;
-        };
-        /**
-         * AppliedOut
-         * @description How staff applied a house merit or flaw (horatio.house_traits).
-         */
-        AppliedOut: {
-            /** Counts Toward Limit */
-            counts_toward_limit: boolean;
-            /** Free */
-            free: boolean;
-            /** Reason */
-            reason: string;
+            /** Quick Hands */
+            quick_hands?: boolean | null;
         };
         /** ApplyIn */
         ApplyIn: {
@@ -9377,6 +9820,36 @@ export interface components {
             characters: components["schemas"]["AwardableCharacter"][];
             /** Session Xp */
             session_xp: number;
+        };
+        /** BackgroundChangeOut */
+        BackgroundChangeOut: {
+            /** Delta */
+            delta: number;
+            /** Ends At */
+            ends_at: string | null;
+            /** Games Left */
+            games_left: number;
+            /** Source */
+            source: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+        };
+        /**
+         * BackgroundNowOut
+         * @description A background raised or lowered for now: "Resources 3 (+1 this month, Crafts)".
+         */
+        BackgroundNowOut: {
+            /** Changes */
+            changes: components["schemas"]["BackgroundChangeOut"][];
+            /** Now */
+            now: number;
+            /** Rating */
+            rating: number;
+            /** Trait */
+            trait: string;
         };
         /** BackgroundSpend */
         BackgroundSpend: {
@@ -10605,6 +11078,11 @@ export interface components {
             patrols: components["schemas"]["PatrolByOut"][];
             /** Poaching */
             poaching?: string | null;
+            /**
+             * Quick Hands
+             * @default false
+             */
+            quick_hands: boolean;
             /** Received */
             received: components["schemas"]["ReceivedOut"][];
             /** Reply */
@@ -10743,6 +11221,15 @@ export interface components {
             splat: string;
             /** Status */
             status: string;
+        };
+        /** CharacterProjectsOut */
+        CharacterProjectsOut: {
+            /** Paths */
+            paths: string[];
+            /** Projects */
+            projects: components["schemas"]["ProjectOut"][];
+            /** Staff */
+            staff: boolean;
         };
         /** CharacterQuestionsOut */
         CharacterQuestionsOut: {
@@ -12379,6 +12866,16 @@ export interface components {
             /** Pools */
             pools: components["schemas"]["PoolChoiceOut"][];
         };
+        /** EffectIn */
+        EffectIn: {
+            /** Character Id */
+            character_id?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "hungry_dead" | "indirect_attack" | "crafts" | "performance" | "overtaxed" | "recovery";
+        };
         /** EffectRef */
         EffectRef: {
             /** Active */
@@ -12390,6 +12887,16 @@ export interface components {
             id: string;
             /** Text */
             text: string;
+        };
+        /** EffectTargetOut */
+        EffectTargetOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** EmailChangeIn */
         EmailChangeIn: {
@@ -12777,6 +13284,7 @@ export interface components {
             changes: {
                 [key: string]: unknown;
             };
+            downtime?: components["schemas"]["EventDowntimeOut"] | null;
             /** From Character Id */
             from_character_id: string | null;
             /** From Name */
@@ -13195,6 +13703,24 @@ export interface components {
             qualities: components["schemas"]["EquipmentItemQuality"][];
         };
         /**
+         * EventDowntimeOut
+         * @description The downtime response an item, or a change to it, was given from (#508).
+         */
+        EventDowntimeOut: {
+            /**
+             * Cycle Id
+             * Format: uuid
+             */
+            cycle_id: string;
+            /** Cycle Name */
+            cycle_name: string;
+            /**
+             * Response Id
+             * Format: uuid
+             */
+            response_id: string;
+        };
+        /**
          * ExceptionAskOut
          * @description A trait asked for by exception: the rules it breaks, why, and whether free.
          */
@@ -13525,6 +14051,13 @@ export interface components {
              * @default false
              */
             territories: boolean;
+        };
+        /** FieldOut */
+        FieldOut: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
         };
         /**
          * FilterCondition
@@ -14547,7 +15080,7 @@ export interface components {
          * @description A troupe's own merit or flaw, marked ★ wherever it shows.
          */
         HouseMarkOut: {
-            applied?: components["schemas"]["AppliedOut"] | null;
+            applied?: components["schemas"]["horatio__api__sheets__AppliedOut"] | null;
             /** Archived */
             archived: boolean;
             /** Availability */
@@ -15304,6 +15837,121 @@ export interface components {
             /** Scenes */
             scenes: components["schemas"]["SceneOut"][];
         };
+        /**
+         * KeywordChoiceOut
+         * @description A downtime keyword, as the form offers it (horatio.keywords).
+         */
+        KeywordChoiceOut: {
+            /** Cost */
+            cost: number;
+            /** Effect */
+            effect: string | null;
+            /** Explanation */
+            explanation: string;
+            /** Fields */
+            fields: string[];
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Retired */
+            retired: boolean;
+        };
+        /** KeywordIn */
+        KeywordIn: {
+            /** Action Kinds */
+            action_kinds?: string[];
+            /**
+             * Computers Only
+             * @default false
+             */
+            computers_only: boolean;
+            /**
+             * Cost
+             * @default 1
+             */
+            cost: number;
+            /**
+             * Explanation
+             * @default
+             */
+            explanation: string;
+            /** Fields */
+            fields?: string[];
+            /** Name */
+            name: string;
+            /** Required For */
+            required_for?: string[];
+            /**
+             * Science
+             * @default false
+             */
+            science: boolean;
+            /**
+             * Step
+             * @default 5
+             */
+            step: number;
+        };
+        /** KeywordOut */
+        KeywordOut: {
+            /** Action Kinds */
+            action_kinds?: string[];
+            /**
+             * Computers Only
+             * @default false
+             */
+            computers_only: boolean;
+            /**
+             * Cost
+             * @default 1
+             */
+            cost: number;
+            /** Effect */
+            effect: string | null;
+            /**
+             * Explanation
+             * @default
+             */
+            explanation: string;
+            /** Fields */
+            fields?: string[];
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Position */
+            position: number;
+            /** Required For */
+            required_for?: string[];
+            /** Retired */
+            retired: boolean;
+            /**
+             * Science
+             * @default false
+             */
+            science: boolean;
+            /**
+             * Step
+             * @default 5
+             */
+            step: number;
+        };
+        /** KeywordsOut */
+        KeywordsOut: {
+            /** Action Kinds */
+            action_kinds: {
+                [key: string]: string;
+            };
+            /** Ages */
+            ages: string[];
+            /** Fields */
+            fields: components["schemas"]["FieldOut"][];
+            /** Keywords */
+            keywords: components["schemas"]["TroupeKeywordOut"][];
+            /** Steps */
+            steps: components["schemas"]["StepOut"][];
+        };
         /** KindOut */
         KindOut: {
             /** Allowed */
@@ -15379,6 +16027,24 @@ export interface components {
             id: string;
             /** Key */
             key: string;
+        };
+        /**
+         * LearningOut
+         * @description Something the character is learning, whose action came off this cycle: a
+         *     ready-made Learn action to confirm.
+         */
+        LearningOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Reason */
+            reason: string;
+            /** Teacher */
+            teacher: string;
+            /** What */
+            what: string;
         };
         /**
          * Leaving
@@ -16712,6 +17378,11 @@ export interface components {
             answers: components["schemas"]["AnswerOut"][];
             /** Breakdown */
             breakdown: components["schemas"]["AllowanceLineOut"][];
+            /**
+             * Can Counter
+             * @default false
+             */
+            can_counter: boolean;
             /** Closed */
             closed?: string | null;
             /**
@@ -16741,13 +17412,30 @@ export interface components {
              * @default []
              */
             influence: components["schemas"]["InfluenceStandingOut"][];
+            /**
+             * Keywords
+             * @default []
+             */
+            keywords: components["schemas"]["KeywordChoiceOut"][];
             /** Late */
             late: boolean;
+            /**
+             * Learning
+             * @default []
+             */
+            learning: components["schemas"]["LearningOut"][];
             /**
              * Player Nominations
              * @default false
              */
             player_nominations: boolean;
+            /**
+             * Question Keywords
+             * @default {}
+             */
+            question_keywords: {
+                [key: string]: string[];
+            };
             /** Questions */
             questions: components["schemas"]["QuestionOut"][];
             /**
@@ -16755,11 +17443,17 @@ export interface components {
              * @default []
              */
             quests: components["schemas"]["QuestChoiceOut"][];
+            quick_hands?: components["schemas"]["QuickHandsOut"] | null;
             /**
              * Remembrances
              * @default false
              */
             remembrances: boolean;
+            /**
+             * Required Keywords
+             * @default []
+             */
+            required_keywords: string[];
             /**
              * Short
              * @default {}
@@ -16769,6 +17463,11 @@ export interface components {
             };
             /** Status */
             status: string;
+            /**
+             * Targets
+             * @default []
+             */
+            targets: components["schemas"]["TargetChoiceOut"][];
         };
         /** MyFeedingOut */
         MyFeedingOut: {
@@ -17048,6 +17747,11 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** NotAgainstIn */
+        NotAgainstIn: {
+            /** Not Against */
+            not_against: boolean;
+        };
         /**
          * NotAllowedOut
          * @description A trait the troupe does not let anyone buy: a house price of "cannot be bought"
@@ -17274,6 +17978,11 @@ export interface components {
             option: {
                 [key: string]: unknown;
             };
+        };
+        /** OrderIn */
+        OrderIn: {
+            /** Keys */
+            keys: string[];
         };
         /**
          * OtherOut
@@ -17543,6 +18252,30 @@ export interface components {
              * Format: uuid
              */
             id: string;
+        };
+        /**
+         * PairOut
+         * @description An action a Cancel or Observe is paired with, or one paired with it.
+         */
+        PairOut: {
+            /** Answer */
+            answer: string;
+            /** Character Name */
+            character_name: string;
+            /** Counter */
+            counter?: string | null;
+            /** Question */
+            question: string;
+            /**
+             * Response Id
+             * Format: uuid
+             */
+            response_id: string;
+        };
+        /** PairingIn */
+        PairingIn: {
+            /** Response Id */
+            response_id: string | null;
         };
         /**
          * PanelsOut
@@ -18015,6 +18748,11 @@ export interface components {
          *     game, which changes only between games, so the page loads it once.
          */
         PlayReference: {
+            /**
+             * Backgrounds Changed
+             * @default []
+             */
+            backgrounds_changed: components["schemas"]["BackgroundNowOut"][];
             /** Blood Per Turn */
             blood_per_turn: number;
             /** Disciplines */
@@ -19018,6 +19756,96 @@ export interface components {
             /** Written */
             written: number;
         };
+        /** ProjectCycleOut */
+        ProjectCycleOut: {
+            /** Cycle Name */
+            cycle_name: string;
+            /** Progress */
+            progress: number;
+            /** Spent */
+            spent: number;
+            /** Started Over */
+            started_over: boolean;
+        };
+        /** ProjectIn */
+        ProjectIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "path_change" | "research" | "other";
+            /** Monthly Minimum */
+            monthly_minimum?: number | null;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /**
+             * Path
+             * @default
+             */
+            path: string;
+            /** Target */
+            target?: number | null;
+            /**
+             * With Teacher
+             * @default false
+             */
+            with_teacher: boolean;
+        };
+        /** ProjectOut */
+        ProjectOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Finished At */
+            finished_at: string | null;
+            /**
+             * History
+             * @default []
+             */
+            history: components["schemas"]["ProjectCycleOut"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "path_change" | "research" | "other";
+            /** Monthly Minimum */
+            monthly_minimum: number | null;
+            /** Name */
+            name: string;
+            /** Path */
+            path: string;
+            /** Progress */
+            progress: number;
+            /** Restarts */
+            restarts: number;
+            /** Sheet Change Due */
+            sheet_change_due: boolean;
+            /**
+             * Starts Over
+             * @default false
+             */
+            starts_over: boolean;
+            /** Status */
+            status: string;
+            /** Target */
+            target: number;
+            /** This Cycle */
+            this_cycle?: number | null;
+            /** With Teacher */
+            with_teacher: boolean;
+        };
         /** PronounsIn */
         PronounsIn: {
             /** Pronouns */
@@ -19658,6 +20486,17 @@ export interface components {
             troupe_id: string;
             xp?: components["schemas"]["XpReviewOut"] | null;
         };
+        /**
+         * QuickHandsOut
+         * @description Quick Hands, Quick Work (Vol. II Issue 1, p. 76), for a character with it: two
+         *     more actions, no feeding, and the next game at half Blood.
+         */
+        QuickHandsOut: {
+            /** Can Change */
+            can_change: boolean;
+            /** On */
+            on: boolean;
+        };
         /** QuoteOut */
         QuoteOut: {
             /** Basis */
@@ -19681,6 +20520,11 @@ export interface components {
             players: number;
             /** Suggested */
             suggested: number;
+        };
+        /** RareDisciplinesIn */
+        RareDisciplinesIn: {
+            /** On */
+            on: boolean;
         };
         /**
          * RarityOut
@@ -20124,6 +20968,142 @@ export interface components {
             /** Successes */
             successes: number;
         };
+        /** ResponseEffectsOut */
+        ResponseEffectsOut: {
+            /** Applied */
+            applied: components["schemas"]["horatio__api__downtime_effects__AppliedOut"][];
+            /** Halved */
+            halved: boolean;
+            /** Indirect Cost */
+            indirect_cost: number | null;
+            /** Recovering */
+            recovering: boolean;
+            /** Targets */
+            targets: components["schemas"]["EffectTargetOut"][];
+        };
+        /** ResponseItemFieldsIn */
+        ResponseItemFieldsIn: {
+            /**
+             * Archaic
+             * @default false
+             */
+            archaic: boolean;
+            /**
+             * Crafted
+             * @default false
+             */
+            crafted: boolean;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Effects */
+            effects?: components["schemas"]["SpecialEffectModel"][];
+            /**
+             * Grade
+             * @enum {string}
+             */
+            grade: "cheap" | "standard" | "special";
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "melee" | "ranged" | "protective" | "miscellaneous" | "text";
+            /** Name */
+            name: string;
+            /** Qualities */
+            qualities?: components["schemas"]["EquipmentItemQuality"][];
+            /**
+             * Staff Note
+             * @default
+             */
+            staff_note: string;
+            /** Template */
+            template?: string | null;
+        };
+        /**
+         * ResponseItemFieldsOut
+         * @description A new item as staff built it, to change it before it is given.
+         */
+        ResponseItemFieldsOut: {
+            /** Archaic */
+            archaic: boolean;
+            /** Crafted */
+            crafted: boolean;
+            /** Description */
+            description: string;
+            /** Effects */
+            effects: components["schemas"]["SpecialEffectModel"][];
+            /** Grade */
+            grade: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Qualities */
+            qualities: components["schemas"]["EquipmentItemQuality"][];
+            /** Staff Note */
+            staff_note: string;
+            /** Template */
+            template: string | null;
+        };
+        /**
+         * ResponseItemIn
+         * @description What a response gives (horatio.response_items): a new item, as the Equipment
+         *     tab gives one, or a quality on an item the character holds. One of the two.
+         */
+        ResponseItemIn: {
+            item?: components["schemas"]["ResponseItemFieldsIn"] | null;
+            quality?: components["schemas"]["ResponseQualityIn"] | null;
+        };
+        /**
+         * ResponseItemOut
+         * @description Equipment a response gives the character, when it is delivered.
+         */
+        ResponseItemOut: {
+            /** Given At */
+            given_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            item?: components["schemas"]["ResponseItemFieldsOut"] | null;
+            /** Item Id */
+            item_id: string | null;
+            /** Kind */
+            kind: string;
+            quality?: components["schemas"]["ResponseQualityOut"] | null;
+            /** Text */
+            text: string;
+        };
+        /** ResponseQualityIn */
+        ResponseQualityIn: {
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /** Name */
+            name: string;
+        };
+        /** ResponseQualityOut */
+        ResponseQualityOut: {
+            /** Detail */
+            detail: string;
+            /** Item Id */
+            item_id: string | null;
+            /** Item Name */
+            item_name: string;
+            /** Name */
+            name: string;
+        };
         /** ResultIn */
         ResultIn: {
             /**
@@ -20371,6 +21351,11 @@ export interface components {
              * @default []
              */
             skills: string[];
+        };
+        /** RetiredIn */
+        RetiredIn: {
+            /** Retired */
+            retired: boolean;
         };
         /** Retiring */
         Retiring: {
@@ -21798,6 +22783,13 @@ export interface components {
             /** Step */
             step: string;
         };
+        /** StepOut */
+        StepOut: {
+            /** Name */
+            name: string;
+            /** Step */
+            step: number;
+        };
         /**
          * StockFields
          * @description What a Stock NPC has in place of a sheet (MET: VTM pp. 489–490).
@@ -22161,6 +23153,35 @@ export interface components {
         Taps: {
             /** Taps */
             taps: components["schemas"]["TapIn"][];
+        };
+        /**
+         * TargetChoiceOut
+         * @description A character an action can be aimed at (horatio.targets).
+         */
+        TargetChoiceOut: {
+            /** Cost */
+            cost: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** TargetOut */
+        TargetOut: {
+            /** Actions */
+            actions: components["schemas"]["AimedOut"][];
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Character Name */
+            character_name: string;
+            /** Own */
+            own: components["schemas"]["PairOut"][];
         };
         /** TeacherChoiceOut */
         TeacherChoiceOut: {
@@ -22913,6 +23934,53 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** TroupeKeywordOut */
+        TroupeKeywordOut: {
+            /** Action Kinds */
+            action_kinds?: string[];
+            /**
+             * Computers Only
+             * @default false
+             */
+            computers_only: boolean;
+            /**
+             * Cost
+             * @default 1
+             */
+            cost: number;
+            default?: components["schemas"]["KeywordOut"] | null;
+            /** Effect */
+            effect: string | null;
+            /**
+             * Explanation
+             * @default
+             */
+            explanation: string;
+            /** Fields */
+            fields?: string[];
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Position */
+            position: number;
+            /** Required For */
+            required_for?: string[];
+            /** Retired */
+            retired: boolean;
+            /**
+             * Science
+             * @default false
+             */
+            science: boolean;
+            /**
+             * Step
+             * @default 5
+             */
+            step: number;
+            /** Text */
+            text: string;
+        };
         /** TroupeKindOut */
         TroupeKindOut: {
             /** Catalogue */
@@ -23035,6 +24103,11 @@ export interface components {
             quest_requests_per_cycle: number;
             /** Quests Enabled */
             quests_enabled: boolean;
+            /**
+             * Rare Disciplines Two Actions
+             * @default false
+             */
+            rare_disciplines_two_actions: boolean;
             /**
              * Remembrances
              * @default false
@@ -23630,6 +24703,7 @@ export interface components {
         WorkItemOut: {
             /** Action Kind */
             action_kind: string | null;
+            aim?: components["schemas"]["AimOut"] | null;
             /** Answer */
             answer: string;
             /** Assigned To Any Narrator */
@@ -23639,12 +24713,22 @@ export interface components {
             /** Body */
             body: string;
             /**
+             * Can Give
+             * @default false
+             */
+            can_give: boolean;
+            /**
              * Character Id
              * Format: uuid
              */
             character_id: string;
             /** Character Name */
             character_name: string;
+            /**
+             * Countered By
+             * @default []
+             */
+            countered_by: components["schemas"]["PairOut"][];
             /**
              * Cycle Id
              * Format: uuid
@@ -23662,11 +24746,48 @@ export interface components {
              */
             influence_blocks: components["schemas"]["BlockWarningOut"][];
             influence_entry?: components["schemas"]["InfluenceEntryRef"] | null;
+            /**
+             * Items
+             * @default []
+             */
+            items: components["schemas"]["ResponseItemOut"][];
+            /**
+             * Keyword
+             * @default Narrative
+             */
+            keyword: string;
+            /**
+             * Keyword Actions
+             * @default 0
+             */
+            keyword_actions: number;
+            /**
+             * Keyword Details
+             * @default []
+             */
+            keyword_details: string[];
+            /** Keyword Key */
+            keyword_key?: string | null;
             quest?: components["schemas"]["QuestActionOut"] | null;
             /** Question */
             question: string;
+            /**
+             * Resolution
+             * @default 0
+             */
+            resolution: number;
             /** Status */
             status: string;
+            /**
+             * Step
+             * @default 5
+             */
+            step: number;
+            /**
+             * Step Name
+             * @default
+             */
+            step_name: string;
             /** Structured */
             structured: {
                 [key: string]: unknown;
@@ -24019,6 +25140,20 @@ export interface components {
             /** Willpower */
             willpower: number;
         };
+        /** AppliedOut */
+        horatio__api__downtime_effects__AppliedOut: {
+            /** Character Name */
+            character_name: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Text */
+            text: string;
+        };
         /** RemoveIn */
         horatio__api__house_traits__RemoveIn: {
             /** Reason */
@@ -24091,6 +25226,18 @@ export interface components {
              * @default false
              */
             email: boolean;
+        };
+        /**
+         * AppliedOut
+         * @description How staff applied a house merit or flaw (horatio.house_traits).
+         */
+        horatio__api__sheets__AppliedOut: {
+            /** Counts Toward Limit */
+            counts_toward_limit: boolean;
+            /** Free */
+            free: boolean;
+            /** Reason */
+            reason: string;
         };
         /** TeachingOut */
         horatio__api__teachers__TeachingOut: {
@@ -25173,6 +26320,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AttendedGame"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_background_changes_api_characters__character_id__background_changes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackgroundNowOut"][];
                 };
             };
             /** @description Validation Error */
@@ -28940,6 +30118,72 @@ export interface operations {
             };
         };
     };
+    character_projects_api_characters__character_id__projects_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterProjectsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_project_api_characters__character_id__projects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     set_pronouns_api_characters__character_id__pronouns_put: {
         parameters: {
             query?: never;
@@ -30991,6 +32235,37 @@ export interface operations {
             };
         };
     };
+    aimed_api_cycles__cycle_id__aimed_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TargetOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     close_cycle_api_cycles__cycle_id__close_post: {
         parameters: {
             query?: never;
@@ -31604,6 +32879,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Progress"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cycle_projects_api_cycles__cycle_id__projects_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectOut"][];
                 };
             };
             /** @description Validation Error */
@@ -33337,6 +34643,99 @@ export interface operations {
             };
         };
     };
+    confirm_api_projects__project_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    drop_api_projects__project_id__drop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sheet_changed_api_projects__project_id__sheet_changed_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     accept_request_api_quest_requests__request_id__accept_post: {
         parameters: {
             query?: never;
@@ -34402,6 +35801,104 @@ export interface operations {
             };
         };
     };
+    read_effects_api_responses__response_id__effects_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseEffectsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_effect_api_responses__response_id__effects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EffectIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseEffectsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_effect_api_responses__response_id__effects__effect_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+                effect_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseEffectsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     log_answer_api_responses__response_id__influence_entry_post: {
         parameters: {
             query?: never;
@@ -34466,6 +35963,109 @@ export interface operations {
             };
         };
     };
+    give_from_response_api_responses__response_id__items_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResponseItemIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_response_item_api_responses__response_id__items__row_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+                row_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResponseItemIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_response_item_api_responses__response_id__items__row_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+                row_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     lookup_api_responses__response_id__lookup_get: {
         parameters: {
             query?: never;
@@ -34484,6 +36084,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LookupOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_not_against_api_responses__response_id__not_against_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotAgainstIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_pairing_api_responses__response_id__pairing_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PairingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItemOut"];
                 };
             };
             /** @description Validation Error */
@@ -38688,6 +40358,210 @@ export interface operations {
             };
         };
     };
+    reorder_keywords_api_troupes__troupe_id__keyword_order_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeywordsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_keywords_api_troupes__troupe_id__keywords_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeywordsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_keyword_api_troupes__troupe_id__keywords_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeywordIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeywordsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_keywords_api_troupes__troupe_id__keywords_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeywordsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_keyword_api_troupes__troupe_id__keywords__key__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeywordIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeywordsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retire_keyword_api_troupes__troupe_id__keywords__key__retired_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetiredIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeywordsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_languages_api_troupes__troupe_id__languages_get: {
         parameters: {
             query?: never;
@@ -39941,6 +41815,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Roll"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_rare_disciplines_api_troupes__troupe_id__rare_disciplines_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RareDisciplinesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
                 };
             };
             /** @description Validation Error */

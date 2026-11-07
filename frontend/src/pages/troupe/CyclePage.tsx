@@ -8,7 +8,9 @@ import { Badge, Button, Card, ErrorText, Field, Input, Loading, Notice, PageTitl
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { cycleStatus, kindLabels, pastDue, timeLeft } from "./cycles";
-import { closeFacts, completeFacts } from "./delivery";
+import { AimedTab } from "./AimedTab";
+import { CycleProjectsTab } from "./CycleProjectsTab";
+import { closeFacts, completeFacts, projectFacts } from "./delivery";
 import { DeliveryTab } from "./DeliveryTab";
 import { FeedingTab } from "./FeedingTab";
 import { NominationsReview } from "../nominations/NominationsReview";
@@ -59,6 +61,8 @@ export function CyclePage() {
           // A troupe that doesn't track feeding has no Feeding tab.
           ...(c.feeding ? [{ to: `${base}/feeding`, label: "Feeding" }] : []),
           { to: `${base}/responses`, label: "Responses" },
+          { to: `${base}/aimed`, label: "Aimed at" },
+          { to: `${base}/projects`, label: "Projects" },
           { to: `${base}/delivery`, label: "Delivery" },
           // A troupe that uses Player Nominations or Remembrances reviews and publishes them here.
           ...(c.player_nominations || c.remembrances ? [{ to: `${base}/nominations`, label: c.player_nominations ? "Nominations" : "Remembrances" }] : []),
@@ -70,6 +74,8 @@ export function CyclePage() {
         <Route path="participants" element={<ParticipantsTab cycle={c} />} />
         <Route path="feeding" element={<FeedingTab cycle={c} />} />
         <Route path="responses" element={<ResponsesTab cycle={c} />} />
+        <Route path="aimed" element={<AimedTab cycle={c} />} />
+        <Route path="projects" element={<CycleProjectsTab cycle={c} />} />
         <Route path="delivery" element={<DeliveryTab cycle={c} />} />
         {(c.player_nominations || c.remembrances) && <Route path="nominations" element={<NominationsReview cycle={c} />} />}
       </Routes>
@@ -90,6 +96,12 @@ function Overview({ cycle }: { cycle: CycleOut }) {
     queryFn: () => unwrap(api.GET("/api/cycles/{cycle_id}/deliveries", path)),
     enabled: cycle.status === "closed",
   });
+  // Projects that would start over, to say before marking the cycle complete (#507).
+  const projects = useQuery({
+    queryKey: ["cycle-projects", cycle.id],
+    queryFn: () => unwrap(api.GET("/api/cycles/{cycle_id}/projects", path)),
+    enabled: cycle.status === "closed",
+  });
   const [confirming, setConfirming] = useState<"close" | "complete" | null>(null);
   const open = useAction(() => unwrap(api.POST("/api/cycles/{cycle_id}/open", path)));
   const [toCeiling, setToCeiling] = useState(true);
@@ -108,11 +120,14 @@ function Overview({ cycle }: { cycle: CycleOut }) {
           isPast: pastDue(cycle, now),
         })
       : confirming === "complete" && p && deliveries.data
-        ? completeFacts({
-            unwritten: p.responses - p.written,
-            responses: p.responses,
-            undelivered: deliveries.data.participants.filter((d) => d.due).length,
-          })
+        ? [
+            ...completeFacts({
+              unwritten: p.responses - p.written,
+              responses: p.responses,
+              undelivered: deliveries.data.participants.filter((d) => d.due).length,
+            }),
+            ...projectFacts(projects.data ?? []),
+          ]
         : null;
 
   return (

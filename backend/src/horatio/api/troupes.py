@@ -64,6 +64,9 @@ class TroupeOut(BaseModel):
     diablerie_flaws: str
     # House option: Golconda Seekers hold the innate status Enlightened (Vol. 2, p. 267).
     golconda_enlightened: bool = False
+    # House option: a dot of a rare discipline from a teacher takes two downtime actions
+    # (MET: VtM core p. 113).
+    rare_disciplines_two_actions: bool = False
     # Feeding (horatio.feeding): "book", tracked in downtimes, or "off", left out of
     # Horatio; and the optional rule Blood Resonance, played while it is tracked.
     feeding: Literal["off", "book"] = "book"
@@ -323,6 +326,7 @@ def one_out(
         influence_lookback_days=troupe.influence_lookback_days,
         diablerie_flaws=troupe.diablerie_flaws,
         golconda_enlightened=troupe.golconda_enlightened,
+        rare_disciplines_two_actions=troupe.rare_disciplines_two_actions,
         feeding=troupe.feeding,  # type: ignore[arg-type]  # checked by the database
         feeding_resonance=troupe.feeding_resonance,
         feeding_territories=troupe.feeding_territories,

@@ -116,3 +116,30 @@ class EquipmentEvent(Record):
     reason: Mapped[str] = mapped_column(default="", server_default="")
     # For a change, each field changed: {field: {"from": ..., "to": ...}}.
     changes: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+
+
+class ResponseItem(Record):
+    """Equipment staff give from a downtime response (issue #508): a new item, or a
+    quality on an item the character holds. It reaches the character when the
+    response is delivered, with the results (horatio.response_items); until then
+    staff change it or take it off the response."""
+
+    __tablename__ = "response_items"
+    __table_args__ = (CheckConstraint("kind in ('item', 'quality')", name="kind"),)
+
+    response_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("responses.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str]
+    # A new item as staff built it (horatio.equipment.as_recorded), with the
+    # template it was started from; a quality, {name, detail, item_name}, with the
+    # name of the item it goes on as it was then.
+    fields: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # A quality's item; a new item's, once given.
+    item_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("equipment_items.id", ondelete="SET NULL")
+    )
+    # Who added it: the item's giver.
+    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    # When it reached the character; None until the response is delivered.
+    given_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
