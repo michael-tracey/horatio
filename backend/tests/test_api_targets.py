@@ -1,5 +1,5 @@
 """Downtime actions aimed at characters (#507): who sees them, a Haven's Location
-doubling their cost, and Computer's Cancel and Watch (MET: VTM pp. 93, 102)."""
+doubling their cost, and Computer's Cancel and Observe (MET: VTM pp. 93, 102)."""
 
 from collections.abc import Callable
 from typing import Any
@@ -211,9 +211,9 @@ def test_a_havens_location_doubles_the_cost_unless_staff_say_it_isnt_against_the
     assert "Agnes's action “Downtime action” is aimed at Corvin, Basil." in log
 
 
-def test_computer_cancels_or_watches_one_action_paired_by_staff(scene: Scene) -> None:
+def test_computer_cancels_or_observes_one_action_paired_by_staff(scene: Scene) -> None:
     troupe = scene.troupe
-    watch = scene.action("Watch Basil's email", aimed_at=[scene.basil], counter="watch")
+    watch = scene.action("Watch Basil's email", aimed_at=[scene.basil], counter="observe")
     for bad in (
         # Basil has no Computer skill.
         (
@@ -221,7 +221,7 @@ def test_computer_cancels_or_watches_one_action_paired_by_staff(scene: Scene) ->
             scene.basil,
             [scene.action("x", aimed_at=[scene.agnes], counter="cancel")],
         ),
-        # A Cancel or Watch is aimed at one character, once a cycle.
+        # A Cancel or Observe is aimed at one character, once a cycle.
         (
             troupe.player,
             scene.agnes,
@@ -251,7 +251,7 @@ def test_computer_cancels_or_watches_one_action_paired_by_staff(scene: Scene) ->
     watch_id = group["actions"][0]["response_id"]
     prince_id = scene.response_id("Visit the Prince")
 
-    # Only with an action of the one it is aimed at, and only a Cancel or Watch.
+    # Only with an action of the one it is aimed at, and only a Cancel or Observe.
     for wrong, code in (
         ((watch_id, scene.response_id("Read")), 422),
         ((scene.response_id("Feed"), prince_id), 409),
@@ -270,7 +270,7 @@ def test_computer_cancels_or_watches_one_action_paired_by_staff(scene: Scene) ->
     assert scene.aimed().json()[0]["actions"][0]["paired"]["character_name"] == "Basil"
     prince = troupe.storyteller.client.get(f"/responses/{prince_id}").json()
     assert [(p["character_name"], p["counter"]) for p in prince["countered_by"]] == [
-        ("Agnes", "watch")
+        ("Agnes", "observe")
     ]
     unpaired = troupe.storyteller.client.put(
         f"/responses/{watch_id}/pairing", json={"response_id": None}

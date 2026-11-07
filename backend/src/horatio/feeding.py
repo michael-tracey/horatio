@@ -310,6 +310,9 @@ class FeedingAnswer:
     # With the Rack: the simple challenge thrown for hunting outside it (win, tie or
     # lose), or "" before it hunts. Horatio sets it, never the player.
     hunt: str = ""
+    # The parts the downtime's Feed and Patrol answers give (horatio.keywords):
+    # "actions" (with the territory) and "patrols". Horatio sets it, never the player.
+    from_keywords: list[str] = field(default_factory=list[str])
 
     @property
     def patrolling(self) -> int:
@@ -351,7 +354,7 @@ class FeedingAnswer:
                 if p.actions
             ],
             "hunt": self.hunt,
-        }
+        } | ({"from_keywords": self.from_keywords} if self.from_keywords else {})
 
 
 def answer_of(submission: Submission | None) -> FeedingAnswer:
@@ -370,6 +373,7 @@ def answer_of(submission: Submission | None) -> FeedingAnswer:
             Patrol(uuid.UUID(p["territory_id"]), int(p["actions"])) for p in raw.get("patrols", [])
         ],
         hunt=str(raw.get("hunt", "")),
+        from_keywords=[str(p) for p in raw.get("from_keywords", [])],
     )
 
 

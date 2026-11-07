@@ -79,6 +79,44 @@ class Question(Record):
     visible_to: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
+class DowntimeKeyword(Record):
+    """One of a troupe's downtime keywords, as its house rules have it
+    (horatio.keywords): what kind of action an answer is. A troupe with no rows plays
+    Horatio's defaults; its first change writes them all, so its rows are the whole
+    list. A keyword is retired, never deleted, so past downtimes keep it."""
+
+    __tablename__ = "downtime_keywords"
+    __table_args__ = (
+        UniqueConstraint("troupe_id", "key"),
+        CheckConstraint("cost >= 0", name="cost"),
+        CheckConstraint("step between 1 and 6", name="step"),
+    )
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    # One of the defaults' keys (whose effects it keeps), or the troupe's own.
+    key: Mapped[str]
+    position: Mapped[int]
+    name: Mapped[str]
+    # One line on the form, saying what the keyword is for.
+    explanation: Mapped[str] = mapped_column(default="", server_default="")
+    # What it asks for besides the description: character, target, territory, trait,
+    # teacher, item.
+    fields: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    # The action kinds it can be spent from.
+    action_kinds: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    # Only as the one action a cycle the Computer skill gives (MET: VTM p. 93).
+    computers_only: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Fits a Science action (p. 97).
+    science: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Actions it costs.
+    cost: Mapped[int] = mapped_column(default=1, server_default="1")
+    # Required each cycle of characters of these social ages.
+    required_for: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    # Where it comes in the resolution order (horatio.keywords.STEPS).
+    step: Mapped[int] = mapped_column(default=5, server_default="5")
+    retired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class CycleParticipant(Record):
     """A character taking part in a downtime cycle, and its action allowance,
     fixed when it joined the cycle."""
@@ -271,13 +309,14 @@ class Answer(Record):
     slot: Mapped[int] = mapped_column(default=1, server_default="1")
     body: Mapped[str]
     # The action kind's extra fields, such as an influence level; the characters it
-    # is aimed at, a Cancel or Watch, and the project it counts toward
-    # (horatio.targets, horatio.projects).
+    # is aimed at, a Cancel or Observe, and the project it counts toward
+    # (horatio.targets, horatio.projects); its keyword and the keyword's fields
+    # (horatio.keywords).
     structured: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
     # Staff say an action aimed at a character isn't against them, such as a friendly
     # visit, so a Haven's Location doesn't double its cost (horatio.targets).
     not_against: Mapped[bool] = mapped_column(default=False, server_default="false")
-    # A Cancel or Watch: the action of its target's that staff paired it with.
+    # A Cancel or Observe: the action of its target's that staff paired it with.
     paired_answer_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("answers.id", ondelete="SET NULL"), index=True
     )

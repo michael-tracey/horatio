@@ -46,6 +46,7 @@ from horatio.api import (
     influence_history,
     influence_log,
     influence_lookups,
+    keywords,
     lines_veils,
     location_quests,
     locations,
@@ -215,6 +216,7 @@ for module in (
     remembrances,
     targets,
     projects,
+    keywords,
 ):
     api.include_router(module.router)
 

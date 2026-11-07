@@ -12,9 +12,10 @@ storytellers. Never the target's player, and never a narrator: what narrators ar
 shown of an answer leaves it out (`without_aim`). The troupe's log notes it when the
 downtime is submitted, belonging to no character, so it reaches no character's log.
 
-**Cancel and Watch** (MET: VTM p. 93): the Computer skill lets a character cancel or
-watch one downtime action of another character's. Its player marks one action a cycle
-as a Cancel or a Watch (`counter`), aimed at one character. Staff pair it with the
+**Cancel and Observe** (MET: VTM p. 93): the Computer skill lets a character cancel or
+observe one downtime action of another character's. Its player marks one action a cycle
+as a Cancel or an Observe (`counter`), aimed at one character; with keywords
+(horatio.keywords), choosing the Cancel or Observe keyword marks it. Staff pair it with the
 action of that character's it works on (`Answer.paired_answer_id`), and judge whether
 it does.
 
@@ -50,8 +51,8 @@ from horatio.sheets import conflict, sheet_rows, unprocessable
 
 AIMED_AT = "aimed_at"
 COUNTER = "counter"
-COUNTERS = {"cancel": "Cancel", "watch": "Watch"}
-# The skill that cancels or watches (p. 93), and the Haven advantage that doubles (p. 102).
+COUNTERS = {"cancel": "Cancel", "observe": "Observe"}
+# The skill that cancels or observes (p. 93), and the Haven advantage that doubles (p. 102).
 COMPUTER = "Computer"
 LOCATION = "Location"
 KEYS = (AIMED_AT, COUNTER)
@@ -72,7 +73,7 @@ def aimed_at(structured: Mapping[str, Any]) -> list[uuid.UUID]:
 
 
 def counter_of(structured: Mapping[str, Any]) -> str | None:
-    """ "cancel" or "watch" for a Cancel or Watch, else None."""
+    """ "cancel" or "observe" for a Cancel or Observe, else None."""
     value = structured.get(COUNTER)
     return value if value in COUNTERS else None
 
@@ -148,7 +149,7 @@ def check(
 ) -> dict[str, Any]:
     """An answer's `structured` with who it is aimed at as it is kept. The targets
     must be characters it can aim at; one it was aimed at before stays, though it
-    has left since. A Cancel or Watch is aimed at one character, by a character with
+    has left since. A Cancel or Observe is aimed at one character, by a character with
     the Computer skill."""
     raw = structured.get(AIMED_AT)
     if raw is not None and (
@@ -170,7 +171,7 @@ def check(
         raise unprocessable(f"{question.prompt!r}: choose characters of this troupe to aim it at.")
     if counter is not None:
         if counter not in COUNTERS:
-            raise unprocessable(f"{question.prompt!r}: an action cancels or watches, or neither.")
+            raise unprocessable(f"{question.prompt!r}: an action cancels or observes, or neither.")
         if len(targets) != 1:
             raise unprocessable(
                 f"{question.prompt!r}: a {COUNTERS[counter]} is aimed at one character."
@@ -178,7 +179,7 @@ def check(
         if counter_of(had) != counter and not has_computer(db, character):
             raise unprocessable(
                 f"{question.prompt!r}: only a character with the Computer skill can cancel or "
-                "watch another's action (p. 93)."
+                "observe another's action (p. 93)."
             )
     kept = without_aim(structured)
     if targets:
@@ -239,7 +240,7 @@ class Aimed:
     item: responses.WorkItem
     # The target's Haven has Location, so it costs two unless it isn't against them.
     located: bool
-    # A Cancel or Watch: the target's action staff paired it with.
+    # A Cancel or Observe: the target's action staff paired it with.
     paired: responses.WorkItem | None = None
 
 
@@ -247,7 +248,7 @@ class Aimed:
 class Target:
     character: Character
     actions: list[Aimed] = field(default_factory=list[Aimed])
-    # Its own actions this cycle, for pairing a Cancel or Watch with.
+    # Its own actions this cycle, for pairing a Cancel or Observe with.
     own: list[responses.WorkItem] = field(default_factory=list[responses.WorkItem])
 
 
@@ -275,7 +276,7 @@ def by_target(db: Session, cycle: DowntimeCycle) -> list[Target]:
 
 
 def paired_item(db: Session, item: responses.WorkItem) -> responses.WorkItem | None:
-    """The action a Cancel or Watch is paired with."""
+    """The action a Cancel or Observe is paired with."""
     if item.answer.paired_answer_id is None:
         return None
     response_id = db.scalar(
@@ -285,7 +286,7 @@ def paired_item(db: Session, item: responses.WorkItem) -> responses.WorkItem | N
 
 
 def countered_by(db: Session, item: responses.WorkItem) -> list[responses.WorkItem]:
-    """The Cancels and Watches staff paired with this action."""
+    """The Cancels and Observes staff paired with this action."""
     found = db.scalars(select(Answer.id).where(Answer.paired_answer_id == item.answer.id))
     ids = set(found)
     if not ids:
@@ -320,18 +321,18 @@ def pair(
     troupe: Troupe,
     paired: responses.WorkItem | None,
 ) -> None:
-    """Pair a Cancel or Watch with the action of its target's it works on, or undo
+    """Pair a Cancel or Observe with the action of its target's it works on, or undo
     the pairing with None."""
     counter = counter_of(item.answer.structured)
     if counter is None:
-        raise conflict("Only a Cancel or Watch is paired with another action.")
+        raise conflict("Only a Cancel or Observe is paired with another action.")
     if paired is not None:
         if paired.cycle.id != item.cycle.id or paired.character.id not in aimed_at(
             item.answer.structured
         ):
             raise unprocessable("Pair it with an action of the character it is aimed at.")
         if paired.question.kind != "action" or counter_of(paired.answer.structured):
-            raise unprocessable("A Cancel or Watch can't be paired with that action.")
+            raise unprocessable("A Cancel or Observe can't be paired with that action.")
     item.answer.paired_answer_id = paired.answer.id if paired else None
     db.flush()
     audit.record(

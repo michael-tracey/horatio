@@ -25,13 +25,13 @@ class AimedOut(BaseModel):
     answer: str
     # Who else it is aimed at.
     also: list[str]
-    # cancel | watch
+    # cancel | observe
     counter: str | None
     # The target's Haven has Location, so it costs two actions unless it isn't
     # against them.
     located: bool
     not_against: bool
-    # A Cancel or Watch: the target's action staff paired it with.
+    # A Cancel or Observe: the target's action staff paired it with.
     paired: PairOut | None
     status: str
 
@@ -40,7 +40,7 @@ class TargetOut(BaseModel):
     character_id: uuid.UUID
     character_name: str
     actions: list[AimedOut]
-    # Its own actions this cycle, to pair a Cancel or Watch with.
+    # Its own actions this cycle, to pair a Cancel or Observe with.
     own: list[PairOut]
 
 
@@ -107,7 +107,7 @@ def set_not_against(
 def set_pairing(
     response_id: uuid.UUID, body: PairingIn, db: DbSession, user: CurrentUser
 ) -> WorkItemOut:
-    """Pair a Cancel or Watch with the action of its target's it works on."""
+    """Pair a Cancel or Observe with the action of its target's it works on."""
     item, troupe = response_item(db, user, response_id)
     require_troupe_action(db, user, troupe, TroupeAction.ASSIGN_RESPONSES)
     paired = responses.item_for(db, body.response_id) if body.response_id else None

@@ -32,6 +32,7 @@ from horatio import (
     feeding,
     influence,
     item_expiry,
+    keywords,
     notifications,
     preferences,
     responses,
@@ -927,6 +928,52 @@ def check_answer(question: Question, spec: AnswerSpec) -> None:
         raise unprocessable(f"{question.prompt!r}: answer yes or no.")
 
 
+def answer_keywords(
+    db: Session,
+    cycle: DowntimeCycle,
+    participant: CycleParticipant,
+    character: Character,
+    troupe: Troupe,
+) -> tuple[keywords.Context, list[keywords.Keyword]]:
+    """What decides the keywords the character is offered, and the troupe's keywords."""
+    show = feeding.shown(troupe)
+    feeds = (
+        show.tracked
+        and not show.rack
+        and feeding.participant_basis(db, participant, character, cycle).get("clan") is not None
+    )
+    return keywords.context(db, character, troupe, feeds), keywords.troupe_keywords(db, troupe.id)
+
+
+def keywords_feed(
+    answer: feeding.FeedingAnswer,
+    before: feeding.FeedingAnswer,
+    fed: keywords.Fed,
+    show: feeding.Shown,
+) -> bool:
+    """The Feeding section with the actions, territory and patrols the Feed and Patrol
+    answers give, in place of the section's own. Once they are gone, so are what they
+    gave. Whether answers give any of it, now or before."""
+    had = list(before.from_keywords)
+    parts: list[str] = []
+    if fed.actions is not None:
+        answer.actions = fed.actions
+        if show.territories:
+            answer.territory = fed.territory or ""
+        parts.append("actions")
+    elif "actions" in had:
+        answer.actions = 0
+        if show.territories:
+            answer.territory = ""
+    if fed.patrols is not None and show.territories:
+        answer.patrols = [feeding.Patrol(t, n) for t, n in fed.patrols.items()]
+        parts.append("patrols")
+    elif "patrols" in had:
+        answer.patrols = []
+    answer.from_keywords = parts
+    return bool(parts or had)
+
+
 def save_answers(
     db: Session,
     player: User,
@@ -955,12 +1002,47 @@ def save_answers(
     feeding_before = feeding.answer_of(submission)
     troupe = db.get_one(Troupe, cycle.troupe_id)
     tracked = feeding.tracked(troupe)
+    show = feeding.shown(troupe)
+
+    def names_quest(spec: AnswerSpec) -> bool:
+        question = shown.get(spec.question_id)
+        return question is not None and question.kind == "quest" and bool(spec.structured)
+
+    kept = [s for s in specs if s.body.strip() or names_quest(s)]
+    # Each answer's keyword and its fields (horatio.keywords), checked first: Feed and
+    # Patrol answers make the Feeding section's actions and patrols.
+    ctx, keyword_list = answer_keywords(db, cycle, participant, character, troupe)
+    by_key = keywords.by_key(keyword_list)
+    owed = {o.id: o for o in keywords.learning_owed(db, participant.id)}
+    checked: dict[tuple[uuid.UUID, int], keywords.Checked] = {}
+    confirmed: set[str] = set()
+    for spec in kept:
+        question = shown.get(spec.question_id)
+        if question is None or question.kind != "action":
+            continue
+        before = existing.get((spec.question_id, spec.slot))
+        spec.structured, found = keywords.check_answer(
+            db, by_key, ctx, question, spec.structured or {}, before, owed
+        )
+        owed_id = spec.structured.get(keywords.OWED)
+        if owed_id is not None:
+            if owed_id in confirmed:
+                raise unprocessable("Each thing learned is one Learn action.")
+            confirmed.add(owed_id)
+        checked[(spec.question_id, spec.slot)] = found
+    from_answers = keywords.feeding_from(
+        [
+            (c.keyword, s.structured or {})
+            for s in kept
+            if (c := checked.get((s.question_id, s.slot)))
+        ]
+    )
+
     if feeding_answer is None or not tracked:
         # A troupe that doesn't track feeding keeps what was entered before, for when
         # it switches feeding on again, and its actions count for nothing.
         feeding_answer = feeding_before
     else:
-        show = feeding.shown(troupe)
         # What a rule that is off would set stays as it was; Horatio alone throws the hunt.
         feeding_answer.hunt = feeding_before.hunt
         if not show.resonance:
@@ -968,6 +1050,12 @@ def save_answers(
         if not show.territories:
             feeding_answer.territory = feeding_before.territory
             feeding_answer.patrols = feeding_before.patrols
+    derived = (
+        tracked
+        and not show.rack
+        and keywords_feed(feeding_answer, feeding_before, from_answers, show)
+    )
+    if derived or feeding_answer is not feeding_before:
         feeding.check_answer(
             db,
             cycle,
@@ -975,11 +1063,19 @@ def save_answers(
             feeding.participant_basis(db, participant, character, cycle),
             feeding_answer,
         )
-    # Feeding actions and patrols come out of the general actions; with the Rack, a
-    # vessel stands in for feeding actions.
-    show = feeding.shown(troupe)
-    fed = feeding_answer.actions if tracked and not show.rack else 0
-    fed += feeding_answer.patrolling if show.territories else 0
+    # Feeding actions and patrols come out of the general actions, but for those Feed and
+    # Patrol answers give, which spend their own; with the Rack, a vessel stands in for
+    # feeding actions.
+    fed = (
+        feeding_answer.actions
+        if tracked and not show.rack and "actions" not in feeding_answer.from_keywords
+        else 0
+    )
+    fed += (
+        feeding_answer.patrolling
+        if show.territories and "patrols" not in feeding_answer.from_keywords
+        else 0
+    )
     used: dict[str, int] = {"general": fed}
     if fed > allowance_now.get("general", 0):
         raise unprocessable(
@@ -993,12 +1089,6 @@ def save_answers(
     seen: set[tuple[uuid.UUID, int]] = set()
     chosen_quests: set[uuid.UUID] = set()
     counters = 0
-
-    def names_quest(spec: AnswerSpec) -> bool:
-        question = shown.get(spec.question_id)
-        return question is not None and question.kind == "quest" and bool(spec.structured)
-
-    kept = [s for s in specs if s.body.strip() or names_quest(s)]
     # Whose Havens have Location, of everyone the answers are aimed at.
     located = targets.with_location(
         db, cycle.troupe_id, {t for s in kept for t in targets.aimed_at(s.structured or {})}
@@ -1018,10 +1108,13 @@ def save_answers(
         spec.structured = projects.check_answer(
             db, character, cycle, question, spec.structured, before
         )
-        counters += targets.counter_of(spec.structured) is not None
+        found = checked.get((spec.question_id, spec.slot))
+        counters += targets.counter_of(spec.structured) is not None or bool(
+            found and found.keyword and found.keyword.computers_only
+        )
         if counters > 1:
             raise unprocessable(
-                "The Computer skill cancels or watches one action a cycle (MET: VTM p. 93)."
+                "The Computer skill cancels or observes one action a cycle (MET: VTM p. 93)."
             )
         if question.kind == "custom" and spec.slot != 1:
             raise unprocessable(f"{question.prompt!r} takes one answer.")
@@ -1061,8 +1154,9 @@ def save_answers(
                 and before.not_against
                 and targets.aiming(before.structured) == targets.aiming(spec.structured)
             )
-            cost = targets.cost(spec.structured, not_against, located)
-            doubled[kind] = doubled.get(kind, 0) + (cost > 1)
+            base = found.cost if found is not None else 1
+            cost = base * targets.cost(spec.structured, not_against, located)
+            doubled[kind] = doubled.get(kind, 0) + (cost > base)
             used[kind] = used.get(kind, 0) + cost
             if used[kind] > allowance_now.get(kind, 0):
                 feeding_spent = fed if kind == "general" else 0
@@ -1145,6 +1239,39 @@ def save_answers(
     return submission
 
 
+def keyword_gaps(
+    db: Session,
+    cycle: DowntimeCycle,
+    participant: CycleParticipant,
+    character: Character,
+    submission: Submission | None,
+    allowance_now: dict[str, int],
+) -> list[str]:
+    """What the answers' keywords ask for that they don't give yet, and the keywords
+    the character must take each cycle that no answer has (horatio.keywords)."""
+    troupe = db.get_one(Troupe, cycle.troupe_id)
+    ctx, keyword_list = answer_keywords(db, cycle, participant, character, troupe)
+    by_key = keywords.by_key(keyword_list)
+    questions = {q.id: q for q in visible_questions(db, cycle, character, allowance_now)}
+    answers = answers_for(db, submission) if submission else []
+    gaps: list[str] = []
+    for answer in answers:
+        key = keywords.keyword_of(answer.structured)
+        keyword = by_key.get(key) if key else None
+        if keyword is None:
+            continue
+        lacking = keywords.missing(keyword, answer.structured, ctx)
+        if lacking:
+            gaps.append(f"say {' and '.join(lacking)} for your {keyword.name} action")
+    taken = {keywords.keyword_of(a.structured) for a in answers}
+    for keyword in keywords.required_now(keyword_list, ctx):
+        if keyword.key in taken:
+            continue
+        if any(keywords.fits(keyword, q, ctx) for q in questions.values()):
+            gaps.append(f"add a {keyword.name} action, which {ctx.age}s take each cycle")
+    return gaps
+
+
 def submit(
     db: Session,
     player: User,
@@ -1167,6 +1294,9 @@ def submit(
     ]
     if missing:
         raise unprocessable("Answer these first: " + "; ".join(missing))
+    gaps = keyword_gaps(db, cycle, participant, character, submission, allowance_now)
+    if gaps:
+        raise unprocessable("Before you submit: " + "; ".join(gaps) + ".")
     if submission is None:
         submission = Submission(participant_id=participant.id)
         db.add(submission)

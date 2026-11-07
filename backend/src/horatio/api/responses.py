@@ -2,6 +2,7 @@
 and players reading their results."""
 
 import uuid
+from collections.abc import Mapping
 from datetime import datetime
 from typing import Any, Literal
 
@@ -11,7 +12,9 @@ from sqlalchemy import func, select
 
 from horatio import (
     downtimes,
+    influence,
     influence_log,
+    keywords,
     quest_actions,
     quest_requirements,
     quests,
@@ -42,6 +45,7 @@ from horatio.permissions import (
     require_troupe_action,
     visible_character,
 )
+from horatio.rules.model import TroupeRules
 from horatio.rules.store import read_troupe_rules
 
 router = APIRouter(tags=["responses"])
@@ -91,13 +95,13 @@ class QuestActionOut(BaseModel):
 
 
 class PairOut(BaseModel):
-    """An action a Cancel or Watch is paired with, or one paired with it."""
+    """An action a Cancel or Observe is paired with, or one paired with it."""
 
     response_id: uuid.UUID
     character_name: str
     question: str
     answer: str
-    # cancel | watch, for the Cancel or Watch of the pair.
+    # cancel | observe, for the Cancel or Observe of the pair.
     counter: str | None = None
 
 
@@ -106,13 +110,13 @@ class AimOut(BaseModel):
     (horatio.targets)."""
 
     targets: list[str]
-    # cancel | watch
+    # cancel | observe
     counter: str | None
     # Aimed at someone whose Haven has Location, so it costs two actions...
     located: bool
     # ...unless staff say it isn't against them.
     not_against: bool
-    # A Cancel or Watch: the target's action staff paired it with.
+    # A Cancel or Observe: the target's action staff paired it with.
     paired: PairOut | None
 
 
@@ -136,10 +140,19 @@ class WorkItemOut(BaseModel):
     influence_blocks: list[BlockWarningOut] = []
     # A Quest action's quest.
     quest: QuestActionOut | None = None
-    # Who it is aimed at, and the Cancels and Watches paired with it: for
+    # Who it is aimed at, and the Cancels and Observes paired with it: for
     # storytellers and assistant storytellers, never narrators.
     aim: AimOut | None = None
     countered_by: list[PairOut] = []
+    # Its keyword (horatio.keywords), or what stands in for one: Narrative for an action
+    # from before keywords, the influence action kind, Quest, or Question.
+    keyword: str = "Narrative"
+    keyword_key: str | None = None
+    # Its step in the troupe's resolution order, and where it comes in that order among
+    # the cycle's responses, from 1 (0 when shown alone).
+    step: int = keywords.NORMAL_STEP
+    step_name: str = ""
+    resolution: int = 0
     status: str
     assigned_to_user_id: uuid.UUID | None
     assigned_to_any_narrator: bool
@@ -312,11 +325,37 @@ def aim_out(db: DbSession, item: responses.WorkItem) -> AimOut | None:
     )
 
 
-def item_out(db: DbSession, item: responses.WorkItem, *, running: bool) -> WorkItemOut:
+def placed(
+    rules: TroupeRules, item: responses.WorkItem, keyword_map: Mapping[str, keywords.Keyword]
+) -> keywords.Placed:
+    """Where the answer comes in the troupe's resolution order."""
+    kind = item.question.action_kind
+    influence_type = influence.type_of(kind)
+    action = (
+        influence.answer_action(rules, influence_type, item.answer.structured)
+        if influence_type is not None
+        else None
+    )
+    kinds = {k: v.name for k, v in rules.action_kinds().items()}
+    return keywords.place(keyword_map, item.question, item.answer.structured, kinds, action)
+
+
+def item_out(
+    db: DbSession,
+    item: responses.WorkItem,
+    *,
+    running: bool,
+    keyword_map: Mapping[str, keywords.Keyword] | None = None,
+    resolution: int = 0,
+) -> WorkItemOut:
     """`running`: for a storyteller or assistant storyteller, who sees who an action
-    is aimed at; a narrator never does."""
+    is aimed at; a narrator never does. `keyword_map`: the troupe's keywords, when
+    the caller has them."""
     # The rules of the troupe running the cycle, where the action was taken.
     rules = read_troupe_rules(db, item.character.splat, item.cycle.troupe_id)
+    if keyword_map is None:
+        keyword_map = keywords.by_key(keywords.troupe_keywords(db, item.cycle.troupe_id))
+    place = placed(rules, item, keyword_map)
     return WorkItemOut(
         id=item.response.id,
         cycle_id=item.cycle.id,
@@ -334,6 +373,11 @@ def item_out(db: DbSession, item: responses.WorkItem, *, running: bool) -> WorkI
         quest=quest_action_out(db, item),
         aim=aim_out(db, item) if running else None,
         countered_by=[pair_out(i) for i in targets.countered_by(db, item)] if running else [],
+        keyword=place.label,
+        keyword_key=place.key,
+        step=place.step,
+        step_name=keywords.STEPS[place.step],
+        resolution=resolution,
         status=item.response.status,
         assigned_to_user_id=item.response.assigned_to_user_id,
         assigned_to_any_narrator=item.response.assigned_to_any_narrator,
@@ -384,7 +428,28 @@ def work_cycles(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[
 def all_responses(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[WorkItemOut]:
     """Every response in the cycle, for storytellers and assistant storytellers."""
     cycle, _ = staff_cycle(db, user, cycle_id, TroupeAction.ASSIGN_RESPONSES)
-    return [item_out(db, i, running=True) for i in responses.work_items(db, cycle)]
+    return items_out(db, cycle, responses.work_items(db, cycle), running=True)
+
+
+def items_out(
+    db: DbSession, cycle: DowntimeCycle, items: list[responses.WorkItem], *, running: bool
+) -> list[WorkItemOut]:
+    """The responses as they come (by character), each with where it comes in the
+    troupe's resolution order: by step, then within a step by the keywords' order (an
+    influence action by its level), then by character."""
+    keyword_map = keywords.by_key(keywords.troupe_keywords(db, cycle.troupe_id))
+    rules: dict[str, TroupeRules] = {}
+    order: list[tuple[tuple[Any, ...], int]] = []
+    for n, item in enumerate(items):
+        splat = item.character.splat
+        rules.setdefault(splat, read_troupe_rules(db, splat, cycle.troupe_id))
+        place = placed(rules[splat], item, keyword_map)
+        order.append(((place.step, place.rank, item.character.name, n), n))
+    rank = {n: r for r, (_, n) in enumerate(sorted(order), start=1)}
+    return [
+        item_out(db, item, running=running, keyword_map=keyword_map, resolution=rank[n])
+        for n, item in enumerate(items)
+    ]
 
 
 @router.get("/cycles/{cycle_id}/responses/mine")
@@ -392,7 +457,7 @@ def my_responses(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[
     """Responses assigned to me, and for narrators the any-narrator pool."""
     cycle, troupe = staff_cycle(db, user, cycle_id, TroupeAction.ANSWER_ASSIGNED_RESPONSES)
     running = responses.is_running(db, user, troupe)
-    return [item_out(db, i, running=running) for i in responses.mine(db, user, cycle)]
+    return items_out(db, cycle, responses.mine(db, user, cycle), running=running)
 
 
 @router.get("/cycles/{cycle_id}/progress")

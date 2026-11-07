@@ -16,9 +16,11 @@ from horatio import (
     audit,
     clan_merits,
     diablerie,
+    downtimes,
     feeding,
     free_changes,
     game_xp,
+    keywords,
     play_status,
     rack,
     resonance,
@@ -1485,6 +1487,12 @@ def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
     found.extend(
         HouseSettingOut(name=name, text=text, book_text=book)
         for name, text, book in game_xp.house_settings(troupe)
+    )
+    found.extend(
+        HouseSettingOut(name=name, text=text, book_text=book)
+        for name, text, book in keywords.house_settings(
+            db, troupe, downtimes.troupe_action_kinds(db, troupe)
+        )
     )
     return found
 
