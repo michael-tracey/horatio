@@ -643,6 +643,76 @@ test("a lead makes Soul Shard a general flaw on the Book traits page, and a play
   await expect(categories.getByRole("listitem").filter({ hasText: "Soul Shard" })).toContainText("General here; Sabbat in the book.");
 });
 
+test("a lead exports one troupe's settings and imports them into another, leaving out a section and renaming the troupe in its house wording (#521)", async ({ browser }) => {
+  const custodian = await person(browser, "sharing-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "sharing-lead");
+  const ashen = `Ashen Court ${run}`;
+  const briar = `Briar Court ${run}`;
+  const headers = { "X-Horatio": "1" };
+  await custodian.page.reload();
+  const ids: string[] = [];
+  for (const name of [ashen, briar]) {
+    const made = await custodian.page.request.post("/api/troupes", { headers, data: { name, lead_handle: lead.handle } });
+    expect(made.status(), await made.text()).toBe(201);
+    ids.push((await made.json()).id);
+  }
+  const [ashenId, briarId] = ids as [string, string];
+
+  // Ashen Court has its own wording for Iron Will, starting with its name, and gives more XP a session.
+  const l = lead.page;
+  const wording = (troupe: string) => `${troupe}: only the Prince's favourites have it.`;
+  const worded = await l.request.put(`/api/troupes/${ashenId}/book-traits`, {
+    headers,
+    data: { category: "merits", name: "Iron Will", wording: wording(ashen), wording_mode: "added" },
+  });
+  expect(worded.status(), await worded.text()).toBe(200);
+  const xp = await l.request.patch(`/api/troupes/${ashenId}`, { headers, data: { session_xp: 12 } });
+  expect(xp.status(), await xp.text()).toBe(200);
+
+  // The lead exports Ashen Court's settings: every section that differs, ticked.
+  await l.goto(`/troupes/${ashenId}/share`);
+  const exporting = l.locator("section").filter({ has: l.getByRole("heading", { name: "Export", exact: true }) });
+  await expect(exporting.getByRole("checkbox", { name: /^Book traits/ })).toBeChecked();
+  await expect(exporting.getByRole("checkbox", { name: /^XP/ })).toBeChecked();
+  const [download] = await Promise.all([l.waitForEvent("download"), exporting.getByRole("button", { name: "Export", exact: true }).click()]);
+  expect(download.suggestedFilename()).toMatch(/^ashen-court-\d+-settings-\d{4}-\d{2}-\d{2}\.json$/);
+  const file = await download.path();
+
+  // …and imports the file into Briar Court, leaving out the XP.
+  await l.goto(`/troupes/${briarId}/share`);
+  await l.getByLabel("Settings file").setInputFiles(file);
+  await expect(l.getByText(`From ${ashen}`)).toBeVisible();
+  const choosing = l.getByRole("group", { name: "What to import" });
+  const books = choosing.getByRole("region", { name: "Book traits" });
+  await books.getByRole("button", { name: /Show items/ }).click();
+  await expect(books.getByRole("listitem").filter({ hasText: "Iron Will" })).toContainText("New");
+  await choosing.getByRole("checkbox", { name: "XP", exact: true }).uncheck();
+  await expect(l.getByText("Adds 1, changes 0.")).toBeVisible();
+
+  // The wording names Ashen Court: find & replace makes it Briar Court's.
+  const replacing = l.getByRole("region", { name: "Find and replace" });
+  await replacing.getByRole("button", { name: `Replace “${ashen}” with “${briar}”` }).click();
+  await expect(replacing.getByLabel("Find")).toHaveValue(ashen);
+  await expect(replacing.getByText("1 match in 1 item")).toBeVisible();
+  await replacing.getByRole("button", { name: "Replace all" }).click();
+  await expect(replacing.getByText("0 matches in 0 items")).toBeVisible();
+  await books.getByRole("button", { name: /^Edit/ }).click();
+  await expect(books.getByLabel("House wording")).toHaveValue(wording(briar));
+  await books.getByRole("button", { name: "Cancel" }).click();
+  await expect(choosing.getByRole("checkbox", { name: "XP", exact: true })).not.toBeChecked();
+  await l.screenshot(shots("share-settings"));
+  await l.getByRole("button", { name: "Import", exact: true }).click();
+  await expect(l.getByText("Imported: 1 added, 0 changed (Book traits).")).toBeVisible();
+
+  // Briar Court's players read the wording, with its own name; its session XP is as it was.
+  await l.goto(`/troupes/${briarId}/house-rules`);
+  const changed = l.locator("section").filter({ has: l.getByRole("heading", { name: "Changed wording", exact: true }) });
+  await expect(changed.getByRole("listitem").filter({ hasText: "Iron Will" })).toContainText(wording(briar));
+  const briarNow = await (await l.request.get(`/api/troupes/${briarId}`)).json();
+  expect(briarNow.session_xp).toBe(8);
+});
+
 test("a troupe's XP floor and ceiling: new characters start at the floor, and staff settle a joiner's XP", async ({ browser }) => {
   // A whole character creation, then a home troupe request.
   test.slow();

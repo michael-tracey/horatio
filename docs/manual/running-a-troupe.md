@@ -95,7 +95,7 @@ A troupe's page has its tabs in groups. Which ones you see depends on your role.
 | World | Locations, Equipment, Shared backgrounds |
 | Players | Players, Lines and veils |
 | Downtimes | Cycles, My work, Fill tables, Influence log, Quests |
-| Customise | Overview, Troupe settings, Rules, Specialisations, News, Connectors |
+| Customise | Overview, Troupe settings, Rules, Specialisations, News, Connectors, Share settings |
 
 A number on a tab is how much waits on you there, such as approvals to decide.
 
@@ -643,6 +643,47 @@ Tick **Need an approved backstory before accepting a character** to make approva
 A connector the server isn't set up for says so; ask the custodian.
 
 The Discord channels for the troupe's news and its announcements are chosen apart from these, under **Customise › News** (see [The news channel on Discord](#the-news-channel-on-discord) and [Announcements on Discord](#announcements-on-discord)).
+
+## Customise: share settings
+
+**Customise › Share settings** carries a troupe's customisation to another troupe: to start a new chronicle from rules you already have, or to give your rules to another storyteller, even one on another Horatio server.
+
+### Exporting
+
+Storytellers and assistant storytellers can export. The checklist lists each section that differs from Horatio's default, with how many items it holds, all ticked. Untick a section to leave it out, then choose **Export**. The file downloads as `<troupe>-settings-<date>.json`. It names traits, checks and categories by name, never by Horatio's internal ids, so it works on any server.
+
+### Importing
+
+Storytellers and the lead can import. Nothing can be imported into an archived troupe.
+
+1. **Choose where from:** **Choose a file…** for an exported file, or **Or copy from a troupe you run** to take another troupe's settings straight across. You must run both troupes.
+2. **Choose what comes in.** Each section shows how many of its items are ticked. Tick or untick a whole section, or **Show items** to choose one at a time. **Select all** and **Select none** do every section at once. Each item says where it stands:
+   - **New**: this troupe doesn't have it yet.
+   - **Changes yours**: this troupe has it, and it differs. **Yours** and **Becomes** show what changes.
+   - **Same as yours**: nothing to do, so it's unticked.
+   - **Can't import**: unticked, with why, such as a trait this troupe's rule set doesn't have.
+3. **Edit the words on the way in.** An item with text, such as a house merit's description or a book trait's house wording, has **Edit**. Change the text and choose **Done**. **Find and replace** changes text across all the ticked items at once, and says how many matches it finds in how many items. Text that names the troupe it came from ("Court of Ashes: …") is the usual case, and Horatio offers to replace that name with this troupe's.
+4. **Import.** The line above the button says what the import will do, such as "Adds 14, changes 6". **Download this troupe's settings first** keeps a copy of what you have, in case you want it back.
+
+An import is all or nothing. Each item is checked as it would be if you made it by hand in Customise. If one fails, such as a house check whose condition doesn't fit this troupe's rules, nothing is saved, and the message names the item. The troupe log gets one entry: who imported, from which file or troupe, and how many items were added and changed in each section.
+
+### Merging
+
+An import merges. An item that matches one this troupe has replaces it: a house merit or flaw by its name, a price by its trait and condition, a written rule by its section and title, a fill table by its name, and so on. Everything else is added. Nothing the file leaves out is reset or removed. Specialisations are only ever added. A house check or teacher rule just like one you have isn't added twice.
+
+### What is and isn't carried
+
+Carried, where it differs from Horatio's default: the troupe settings, and everything under **Rules** (checks, costs, starting points, downtime actions, downtime keywords, languages, house merits and flaws, written rules, book traits, location rules, quest settings, Retainers, backstory settings, free changes and teachers). Also the troupe's specialisations, fill tables, and news agencies: an agency's name, description and colour only, never its picture or Discord channel. Archived house merits, retired keywords and retired agencies are left out.
+
+Never carried:
+
+- characters, NPCs and anything else that's play, not settings;
+- staff, players, games, downtime cycles and logs;
+- the troupe's name, description, profile, portrait, banner, contact and whether it is public;
+- connectors (Discord channels, tokens);
+- the troupe's titles and seated clans, its own equipment templates, house location qualities and backstory question sets.
+
+If the backstory settings coming in need questions this troupe doesn't have, the review says so: add them under **Rules › Backstories**.
 
 ## Approvals
 
