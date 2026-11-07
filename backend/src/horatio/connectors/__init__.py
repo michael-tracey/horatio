@@ -40,12 +40,21 @@ class SendError(Exception):
     """Sending failed. `retry` says whether trying again later could help (the
     service was down, or asked us to slow down); if not, someone must fix it."""
 
-    def __init__(self, reason: str, *, retry: bool, retry_after: float | None = None) -> None:
+    def __init__(
+        self,
+        reason: str,
+        *,
+        retry: bool,
+        retry_after: float | None = None,
+        status: int | None = None,
+    ) -> None:
         super().__init__(reason)
         self.reason = reason
         self.retry = retry
         # Seconds the service asked us to wait, if it said.
         self.retry_after = retry_after
+        # The service's HTTP status, where it answered with one.
+        self.status = status
 
 
 class Connector(ABC):

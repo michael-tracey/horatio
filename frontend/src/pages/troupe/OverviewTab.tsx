@@ -7,6 +7,8 @@ import { LogList } from "../../components/LogList";
 import { AtHandle } from "../../components/PersonPicker";
 import { Card, ErrorText, Loading } from "../../components/ui";
 import { useDates } from "../../dates";
+import { useAgencies, useGlance } from "../news/queries";
+import { Masthead } from "../news/Story";
 import { GamesCard } from "./GamesCard";
 import type { abilities } from "./roles";
 import { sectsText, useSplatsText } from "./SettingsTab";
@@ -15,7 +17,7 @@ import { XpRangeCard } from "./XpRange";
 
 /**
  * The troupe at a glance, to read: for its staff, what is waiting on them first;
- * for its members, the games to come, to say whether they are coming, and its
+ * for its members, the latest of its news, the games to come, to say whether they are coming, and its
  * calendar to subscribe to; then what the troupe is, when it next plays and who leads it; who may join; its
  * XP floor and ceiling; and, for its running staff, the latest of its log. Nothing
  * here is a setting: those are under Customise, and the full profile is on the
@@ -33,6 +35,7 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
     <div className="grid gap-6 md:grid-cols-2">
       {can.staff && !troupe.archived && <WaitingCard troupeId={troupe.id} />}
       {/* For its members: the same people as see its Who's Who. */}
+      {troupe.whos_who && !troupe.archived && <LatestNews troupeId={troupe.id} />}
       {troupe.whos_who && !troupe.archived && <GamesCard troupe={troupe} canAddGames={can.storyteller} running={can.running} />}
       <Summary troupe={troupe} />
       <JoinCard troupe={troupe} link={change && settings} />
@@ -169,6 +172,32 @@ function RecentLog({ troupeId }: { troupeId: string }) {
       ) : (
         <LogList entries={log.data} linkTo={(e) => (e.character_id ? `/characters/${e.character_id}?troupe=${troupeId}` : null)} />
       )}
+    </Card>
+  );
+}
+
+/** The troupe's latest news headline (#510), with how many stories the person hasn't read. Nothing until there is news. */
+function LatestNews({ troupeId }: { troupeId: string }) {
+  const glance = useGlance(troupeId);
+  const agencies = useAgencies(troupeId);
+  const latest = glance.data?.latest_news;
+  if (!latest) return null;
+  const unread = glance.data?.news_unread ?? 0;
+  return (
+    <Card
+      title="Latest news"
+      className="md:col-span-2"
+      actions={
+        <Link to={`/troupes/${troupeId}/news`} className="text-sm text-mist underline hover:text-parchment">
+          {unread > 0 ? `${unread} unread` : "All the news"}
+        </Link>
+      }
+    >
+      <Link to={`/troupes/${troupeId}/news/${latest.id}`} className="flex flex-col gap-1 hover:text-gold">
+        <Masthead agency={agencies.data?.find((a) => a.id === latest.agency_id)} small />
+        <span className="font-display text-lg">{latest.title}</span>
+        {latest.dateline && <span className="text-xs text-mist italic">{latest.dateline}</span>}
+      </Link>
     </Card>
   );
 }

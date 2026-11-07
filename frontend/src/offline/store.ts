@@ -172,6 +172,14 @@ export async function refresh(client: QueryClient, userId: string, shelf: Shelf 
       ...(c.home_troupe_id ? [fetch(["troupe", c.home_troupe_id], () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: c.home_troupe_id! } } })))] : []),
     ]);
   }
+  // Each troupe's latest news (#510), to read at a game with no signal.
+  for (const troupeId of mineOf(list, userId).troupes) {
+    const path = { params: { path: { troupe_id: troupeId } } };
+    await Promise.allSettled([
+      fetch(["agencies", troupeId], () => unwrap(api.GET("/api/troupes/{troupe_id}/agencies", path))),
+      fetch(["posts", troupeId, "news"], () => unwrap(api.GET("/api/troupes/{troupe_id}/posts", { params: { path: { troupe_id: troupeId }, query: { kind: "news" } } }))),
+    ]);
+  }
   return save(client, userId, shelf, Date.now());
 }
 

@@ -7,14 +7,14 @@ from urllib.parse import urlencode
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from horatio import audit
 from horatio.api.connectors import connector_row
 from horatio.api.downtimes import staff_troupe
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.connectors import SendError, discord
-from horatio.models import Character, TroupeConnector
+from horatio.models import Character, NewsAgency, TroupeConnector
 from horatio.permissions import TroupeAction
 
 router = APIRouter(tags=["connectors"])
@@ -108,8 +108,12 @@ def discord_callback(
         db.commit()
         return back(failure.reason)
     if guild_id != settings.get("guild_id"):
-        # A different server: channels picked in the old one mean nothing here.
+        # A different server: channels picked in the old one mean nothing here,
+        # including those for the troupe's news (horatio.posts).
         settings = {"channels": {}, "test_channel": None}
+        db.execute(
+            update(NewsAgency).where(NewsAgency.troupe_id == troupe.id).values(discord_channel=None)
+        )
     row.settings = {**settings, "guild_id": guild_id, "guild_name": guild_name}
     audit.record(db, user, "connector.discord_connected", troupe_id=troupe.id, server=guild_name)
     db.commit()

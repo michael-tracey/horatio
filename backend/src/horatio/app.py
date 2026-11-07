@@ -58,6 +58,7 @@ from horatio.api import (
     play,
     play_others,
     players,
+    posts,
     power_choices,
     preferences,
     printing,
@@ -211,6 +212,7 @@ for module in (
     written_rules,
     nominations,
     remembrances,
+    posts,
 ):
     api.include_router(module.router)
 

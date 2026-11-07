@@ -7,7 +7,8 @@ import type { CharacterListOut } from "../api/types";
  * A person chooses, on each device, whether their characters are kept there
  * ("Keep my characters on this device"). Kept, the answers the app has for their
  * own active characters (the sheet, the Play View, its reference and powers), the
- * rules those need, and who they are, are stored under their own key, so one
+ * rules those need, who they are, and their troupes' latest news (the last 30
+ * days, #510), are stored under their own key, so one
  * person's never shows for another. Staff screens and other players' characters
  * are never kept, whoever the person is, but for one thing: the running staff of a
  * troupe may keep its scenes, each troupe they press it in under a key of its own
@@ -122,6 +123,9 @@ export function keepsQuery(key: QueryKey, mine: Mine): boolean {
   if (typeof what !== "string") return false;
   if (PERSON.has(what) || RULES.has(what)) return true;
   if (what === "troupe") return typeof of === "string" && mine.troupes.has(of);
+  // A troupe's news: its agencies, and the first page of its list (the last 30 days), not a filtered or older page.
+  if (what === "agencies" || what === "posts-glance") return typeof of === "string" && mine.troupes.has(of);
+  if (what === "posts") return key.length === 3 && typeof of === "string" && mine.troupes.has(of);
   if (CHARACTER.has(what)) return typeof of === "string" && mine.characters.has(of);
   return false;
 }

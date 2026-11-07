@@ -378,10 +378,12 @@ def notify(
     *,
     troupe_id: uuid.UUID | None = None,
     character_id: uuid.UUID | None = None,
+    email: bool = True,
 ) -> None:
     """Leave a message for each of `user_ids`, in the same transaction as the event,
-    and an email for those who want this kind by email. The clan stored as Assamite is
-    named as the troupe calls it then, and stays so (horatio.clan_names)."""
+    and an email for those who want this kind by email (unless `email` is False: the
+    caller emails apart from the bell, as horatio.posts does). The clan stored as
+    Assamite is named as the troupe calls it then, and stays so (horatio.clan_names)."""
     user_ids = list(dict.fromkeys(user_ids))
     troupe = db.get(Troupe, troupe_id) if troupe_id is not None else None
     summary = clan_names.shown(summary, clan_names.troupe_name(troupe))
@@ -397,7 +399,8 @@ def notify(
             )
         )
     db.flush()
-    notification_emails.queue(db, user_ids, kind, summary, link, troupe_id=troupe_id)
+    if email:
+        notification_emails.queue(db, user_ids, kind, summary, link, troupe_id=troupe_id)
 
 
 def mark_read(db: Session, user: User, ids: Iterable[uuid.UUID] | None = None) -> None:

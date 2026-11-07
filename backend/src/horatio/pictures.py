@@ -15,6 +15,9 @@ Horatio shows, all WebP, in `HORATIO_UPLOAD_DIR`:
   whole picture for moving the crop; its banner, cut 3:1 from the middle, 1500
   and 750 px wide.
 
+- a troupe's post's picture, or a news agency's masthead (issue #510): the whole
+  picture, shrunk to 1200 and 600 px wide.
+
 Each upload (and each new crop) is kept in a directory of its own, named by a new
 id, so its address changes and no cache ever shows the one it replaced.
 """
@@ -61,6 +64,9 @@ PICTURE_FILES = {
 LOGO_FILES = {f"{s}.webp" for s in LOGOS}
 TROUPE_PORTRAIT_FILES = {*(f"{s}.webp" for s in SQUARES), "full.webp"}
 BANNER_FILES = {f"{w}.webp" for w in BANNERS}
+# A post's picture or a masthead, at these widths, keeping its shape.
+POST_WIDTHS = (1200, 600)
+POST_FILES = {f"{w}.webp" for w in POST_WIDTHS}
 
 
 class PictureError(Exception):
@@ -218,6 +224,18 @@ def write_banner(directory: Path, image: Image.Image) -> None:
         _webp(wide, directory / f"{width}.webp")
 
 
+def write_post_picture(directory: Path, image: Image.Image) -> None:
+    """Write a post's picture's (or a masthead's) files into `directory`, which must
+    be new: the whole picture at each width, never made bigger, transparency kept."""
+    directory.mkdir(parents=True)
+    for width in POST_WIDTHS:
+        fitted = image
+        if image.width > width:
+            height = max(1, round(image.height * width / image.width))
+            fitted = image.resize((width, height), Image.Resampling.LANCZOS)
+        _webp(fitted, directory / f"{width}.webp")
+
+
 def write_logo(directory: Path, image: Image.Image) -> None:
     """Write a clan logo's files into `directory`, which must be new: the whole
     logo, centred on a transparent square."""
@@ -259,6 +277,19 @@ def troupe_portrait_dir(root: Path, troupe_id: uuid.UUID, portrait_id: uuid.UUID
 
 def banner_dir(root: Path, troupe_id: uuid.UUID, banner_id: uuid.UUID) -> Path:
     return troupe_dir(root, troupe_id) / "banners" / str(banner_id)
+
+
+def post_picture_dir(root: Path, troupe_id: uuid.UUID, picture_id: uuid.UUID) -> Path:
+    return troupe_dir(root, troupe_id) / "posts" / str(picture_id)
+
+
+def post_picture_file(
+    root: Path, troupe_id: uuid.UUID, picture_id: uuid.UUID, name: str
+) -> Path | None:
+    if name not in POST_FILES:
+        return None
+    path = post_picture_dir(root, troupe_id, picture_id) / name
+    return path if path.is_file() else None
 
 
 def picture_file(
@@ -335,3 +366,10 @@ def banner_url(troupe_id: uuid.UUID, banner_id: uuid.UUID | None) -> str | None:
     if banner_id is None:
         return None
     return f"/api/troupes/{troupe_id}/banners/{banner_id}"
+
+
+def post_picture_url(troupe_id: uuid.UUID, picture_id: uuid.UUID | None) -> str | None:
+    """Where the app finds a post's picture or a masthead: add "/1200.webp" or "/600.webp"."""
+    if picture_id is None:
+        return None
+    return f"/api/troupes/{troupe_id}/post-pictures/{picture_id}"

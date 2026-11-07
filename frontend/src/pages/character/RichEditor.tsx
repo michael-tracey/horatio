@@ -27,10 +27,23 @@ function readCaret(view: EditorView, event: globalThis.KeyboardEvent) {
 
 /**
  * The backstory's formatted editor (issue #426), loaded only when someone writes a
- * backstory. It opens Markdown and hands back Markdown on every change; parts the
- * player didn't touch come back exactly as they were (see keepUnchanged).
+ * backstory, and a troupe's news (#510). It opens Markdown and hands back Markdown on
+ * every change; parts the writer didn't touch come back exactly as they were (see
+ * keepUnchanged).
  */
-export default function RichEditor({ initial, onChange, label, describedBy }: { initial: string; onChange: (markdown: string) => void; label: string; describedBy?: string }) {
+export default function RichEditor({
+  initial,
+  onChange,
+  label,
+  describedBy,
+  placeholder = "Write your backstory here…",
+}: {
+  initial: string;
+  onChange: (markdown: string) => void;
+  label: string;
+  describedBy?: string;
+  placeholder?: string;
+}) {
   const changed = useRef(onChange);
   changed.current = onChange;
   const start = useRef<{ original: string; normalised: string } | null>(null);
@@ -38,7 +51,7 @@ export default function RichEditor({ initial, onChange, label, describedBy }: { 
   // The same options on every render: Tiptap resets the editor's view whenever they
   // differ, which can move the cursor while the player types.
   const [fixed] = useState(() => ({
-    extensions: editorExtensions({ placeholder: "Write your backstory here…", onRefused: () => setRefused(true) }),
+    extensions: editorExtensions({ placeholder, onRefused: () => setRefused(true) }),
     content: toDoc(initial),
     // Made once the editor is on the page, not while rendering: one made while
     // rendering can be thrown away by Tiptap before React finishes mounting it (as

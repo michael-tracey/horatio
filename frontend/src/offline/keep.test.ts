@@ -103,6 +103,11 @@ describe("what is kept", () => {
     expect(keepsQuery(["troupe", OTHER], mine)).toBe(false);
   });
 
+  it("keeps the latest news of a kept character's troupe, not a filtered or older page, nor the desk", () => {
+    for (const key of [["posts", HOME, "news"], ["agencies", HOME], ["posts-glance", HOME]]) expect(keepsQuery(key, mine)).toBe(true);
+    for (const key of [["posts", OTHER, "news"], ["posts", HOME, "news", "agency-id"], ["post-desk", HOME, "news"], ["agencies", OTHER]]) expect(keepsQuery(key, mine)).toBe(false);
+  });
+
   it("never keeps staff screens, other characters on the Play View, or anything between games", () => {
     for (const key of [["scenes", HOME, false], ["scene", ROSA], ["roster", HOME], ["npcs", HOME], ["check-in", HOME], ["play-others", ROSA], ["xp", ROSA], ["results", ROSA], ["player", ME], ["notifications"]])
       expect(keepsQuery(key, mine)).toBe(false);
