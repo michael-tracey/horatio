@@ -9,7 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from horatio.models import XpEntry
+from horatio.models import Character, XpEntry
 from tests.api_helpers import Person, Troupe
 from tests.test_api_cart import rating, sheet, spend
 from tests.test_api_creation import build, creating
@@ -113,6 +113,35 @@ def test_a_finished_neonate_raises_generation_and_earlier_buys_are_repriced(
         troupe.player, character_id, rating("skills", "Dodge", 4, from_rating=3), dry_run=True
     )
     assert next_dot.json()["lines"][0]["cost"] == 8
+
+
+def test_repricing_uses_the_troupe_s_own_conditioned_prices(troupe: Troupe) -> None:
+    """A troupe's skills at × 1 for Generation 2 (issue #522): moving to Generation 3
+    before acceptance reprices them at the book's × 2."""
+    added = troupe.storyteller.client.post(
+        f"/troupes/{troupe.id}/costs",
+        json={
+            "category": "skills",
+            "condition": {"generation": 2},
+            "scheme": "progressive",
+            "rate": 1,
+        },
+    )
+    assert added.status_code == 201, added.text
+    character_id = neonate(troupe)
+    character = troupe.session.get_one(Character, uuid.UUID(character_id))
+    character.building_troupe_id = uuid.UUID(troupe.id)
+    troupe.session.flush()
+    buy(troupe.player, character_id, generation(2, 1))
+
+    at_2 = buy(troupe.player, character_id, rating("skills", "Brawl", 5, from_rating=4))
+    assert priced(at_2) == [(5, None, [])]
+    to_3 = buy(troupe.player, character_id, generation(3, 2))
+
+    assert [r for _, _, r in priced(to_3)] == [[("Brawl 4 → 5", 5)]]
+    assert history(troupe.player, character_id, "reprice") == [
+        ("Generation 2 → 3: Brawl 4 → 5 repriced", -5)
+    ]
 
 
 def test_lowering_generation_again_refunds_its_dots_and_reprices_back(troupe: Troupe) -> None:

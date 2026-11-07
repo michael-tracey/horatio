@@ -4,7 +4,7 @@ from collections.abc import Callable, Mapping, Sequence, Set
 from dataclasses import dataclass, field, fields
 from typing import Any
 
-from horatio.rules.model import SheetTrait, TroupeRules
+from horatio.rules.model import RuleSetData, SheetTrait, TroupeRules
 
 Facts = Mapping[str, Any]
 FactsFn = Callable[[TroupeRules, Sequence[SheetTrait], SheetTrait], Facts]
@@ -60,6 +60,9 @@ class Splat:
     in_clan: Callable[[TroupeRules, Sequence[SheetTrait]], list[str]] = lambda _r, _s: []
     # How each fact reads in plain words (horatio.rules.conditions.describe).
     fact_words: Mapping[str, Any] = field(default_factory=dict)
+    # Every set of facts a character could have, for telling whether a troupe's
+    # condition could ever hold, and whether two could hold together.
+    possible_facts: Callable[[RuleSetData], list[Facts]] = lambda _r: []
     # The splat's name in the app: "Vampire".
     label: str = ""
     # A character of this splat is bound to a vampire, its domitor (horatio.domitors),
@@ -245,6 +248,36 @@ def vampire_facts(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetT
     }
 
 
+def clan_facts(rule_set: RuleSetData) -> list[dict[str, str]]:
+    """Each clan or bloodline a character could have, or none yet, with its clan."""
+    clans = sorted(name for category, name in rule_set.traits if category == "clan")
+    return [{"clan": c, "clan_family": c.split(":")[0].strip()} for c in ["", *clans]]
+
+
+def vampire_possible_facts(rule_set: RuleSetData) -> list[Facts]:
+    """Generation background 1 to 5 (MET: VTM pp. 100-102), in-clan or not, each clan."""
+    return rule_set.remembered(
+        ("vampire possible facts",),
+        lambda: [
+            {"generation": generation, "in_clan": in_clan, **clan}
+            for generation in range(1, 6)
+            for in_clan in (True, False)
+            for clan in clan_facts(rule_set)
+        ],
+    )
+
+
+def ghoul_possible_facts(rule_set: RuleSetData) -> list[Facts]:
+    return rule_set.remembered(
+        ("ghoul possible facts",),
+        lambda: [
+            {"in_clan": in_clan, **clan}
+            for in_clan in (True, False)
+            for clan in clan_facts(rule_set)
+        ],
+    )
+
+
 # --- Ghoul ------------------------------------------------------------------
 # A ghoul has no clan of its own: its sheet holds its domitor's clan and bloodline
 # (MET: VTM p. 296), so its in-clan disciplines are its domitor's clan's. A Caitiff
@@ -285,6 +318,7 @@ SPLATS: dict[str, Splat] = {
             "clan": "{}",
             "clan_family": "{} clan",
         },
+        possible_facts=vampire_possible_facts,
         label="Vampire",
     ),
     "ghoul": Splat(
@@ -296,6 +330,7 @@ SPLATS: dict[str, Splat] = {
             "clan": "{}",
             "clan_family": "{} clan",
         },
+        possible_facts=ghoul_possible_facts,
         label="Ghoul",
         has_domitor=True,
         clans_from="vampire",

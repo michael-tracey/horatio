@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab, builtVampire, ATTRIBUTES_AND_FOCUSES, PASSWORD } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab, builtVampire, ATTRIBUTES_AND_FOCUSES, PASSWORD, tapMid } from "./support";
 
 /** A troupe's setup: its rules, XP range, staff, profile and archiving, and asking for one. */
 
@@ -260,6 +260,60 @@ test("a troupe's players read its house rules: a price the lead changes shows th
   await expect(attributes.getByText("House rule: Training is slow here")).toBeVisible();
   await expect(p.getByText(/The storytellers approve it before the troupe accepts the character/)).toBeVisible();
   await p.screenshot(shots("house-rules"));
+});
+
+test("a lead prices skills at 1× for Generation background 2, and a Generation ●● character pays that in the cart (#522)", async ({ browser }) => {
+  const custodian = await person(browser, "genprice-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "genprice-lead");
+  const player = await person(browser, "genprice-player");
+  const troupeName = `House of the Second Dot ${run}`;
+  const headers = { "X-Horatio": "1" };
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  await backstoryOptional(custodian.page, troupeId);
+
+  // The lead adds a price only for Generation background 2, with no JSON: rising, at 1 XP.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules/costs`);
+  await l.getByRole("button", { name: "Add a price" }).click();
+  await l.getByLabel("Category").selectOption({ label: "Skills" });
+  await l.getByRole("button", { name: "Add a condition" }).click();
+  await l.getByLabel("Condition 1", { exact: true }).selectOption({ label: "Generation background" });
+  await l.getByLabel("Condition 1: how").selectOption({ label: "is" });
+  await l.getByLabel("Condition 1: rating").selectOption("2");
+  await l.getByLabel("How it's priced").selectOption({ label: "Rising: each dot costs its number × the amount" });
+  await l.getByLabel("XP per dot").fill("1");
+  await expect(l.getByRole("row", { name: "As written 2 6 12 20 30" })).toBeVisible();
+  await expect(l.getByRole("row", { name: "With the change 1 3 6 10 15" })).toBeVisible();
+  await l.screenshot(shots("costs-condition"));
+  await l.getByRole("button", { name: "Save price" }).click();
+  await expect(l.getByText("All Skills, Generation background 2", { exact: true })).toBeVisible();
+  await expect(l.getByText("Only house rules (1)")).toBeVisible();
+
+  // A Generation ●● character the troupe accepts pays 1× for Brawl, not the book's 2×.
+  const p = player.page;
+  const id = await builtVampire(p, "Sabeline", "Brujah", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Generation", 2], ["Herd", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  const asked = await p.request.post(`/api/characters/${id}/home-troupe`, { headers, data: { troupe_id: troupeId } });
+  expect(asked.status(), await asked.text()).toBeLessThan(300);
+  const accepted = await l.request.post(`/api/approvals/${(await asked.json()).id}/approve`, { headers, data: {} });
+  expect(accepted.status(), await accepted.text()).toBeLessThan(300);
+  await p.goto(`/characters/${id}`);
+  await tapMid(p, "Raise Brawl");
+  const cart = p.getByRole("list", { name: "Changes in the cart" });
+  await expect(cart.getByRole("listitem").filter({ hasText: "Brawl 4 → 5" })).toContainText("Brawl 4 → 5 · 5 XP");
+  await p.screenshot(shots("cart-condition"));
+
+  // The house rules say it in plain words.
+  await p.goto(`/troupes/${troupeId}/house-rules`);
+  const costs = p.locator("section").filter({ has: p.getByRole("heading", { name: "Costs", exact: true }) });
+  await expect(costs.getByRole("listitem").filter({ hasText: "All Skills, Generation background 2" })).toContainText("1 XP × the new rating");
 });
 
 test("a lead chooses the accelerated chart of languages, and the House rules tab shows it (#437)", async ({ browser }) => {

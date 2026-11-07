@@ -7416,6 +7416,18 @@
       },
       "CostChange": {
         "properties": {
+          "condition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condition"
+          },
           "rate": {
             "anyOf": [
               {
@@ -7723,6 +7735,14 @@
               "$ref": "#/components/schemas/CostOut"
             },
             "title": "Costs",
+            "type": "array"
+          },
+          "facts": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Facts",
             "type": "array"
           }
         },
