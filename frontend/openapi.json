@@ -17158,6 +17158,61 @@
         "title": "ItemsExpireIn",
         "type": "object"
       },
+      "KeptCard": {
+        "description": "One character in the troupe's scenes, with what its card shows.",
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "play": {
+            "$ref": "#/components/schemas/PlayView"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayReference"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "character_id",
+          "play",
+          "reference"
+        ],
+        "title": "KeptCard",
+        "type": "object"
+      },
+      "KeptScenes": {
+        "description": "Every scene of the troupe, with each card's Play View, for a phone to keep for\na game with no signal (issue #503): one request on weak signal, not one a card.",
+        "properties": {
+          "cards": {
+            "items": {
+              "$ref": "#/components/schemas/KeptCard"
+            },
+            "title": "Cards",
+            "type": "array"
+          },
+          "scenes": {
+            "items": {
+              "$ref": "#/components/schemas/SceneOut"
+            },
+            "title": "Scenes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "scenes",
+          "cards"
+        ],
+        "title": "KeptScenes",
+        "type": "object"
+      },
       "KindOut": {
         "properties": {
           "allowed": {
@@ -65332,6 +65387,50 @@
           }
         },
         "summary": "Create Scene",
+        "tags": [
+          "scenes"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/scenes/kept": {
+      "get": {
+        "description": "The troupe's scenes and their cards, sheeted NPCs, Stock NPCs and PCs alike,\nfor its running staff to keep on a phone. Opening them this way doesn't count\nas using them.",
+        "operationId": "kept_scenes_api_troupes__troupe_id__scenes_kept_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeptScenes"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Kept Scenes",
         "tags": [
           "scenes"
         ]

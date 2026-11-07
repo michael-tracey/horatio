@@ -1,9 +1,9 @@
 import { QueryClient } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { CharacterListOut } from "../api/types";
-import { keeping, recordKey, setKeeping, setKeptFor, tapsWaiting } from "./keep";
+import { keeping, keptTroupes, recordKey, scenesKey, setKeeping, setKeptFor, tapsWaiting } from "./keep";
 import { memoryShelf } from "./shelf";
-import { dropRestored, forget, removeKept, restore, save, type Kept } from "./store";
+import { dropRestored, forget, keptScenesSummary, removeKept, removeScenes, restore, save, saveScenes, scenesTouched, type Kept, type KeptScenes } from "./store";
 
 const ME = "11111111-1111-4111-8111-111111111111";
 const OTHER = "22222222-2222-4222-8222-222222222222";
@@ -111,5 +111,70 @@ describe("removing and signing out", () => {
     expect(tapsWaiting()).toBe(0);
     expect(client.getQueryData(["play", ROSA])).toBeUndefined();
     expect(client.getQueryData(["me"])).toBeNull();
+  });
+});
+
+describe("a troupe's kept scenes", () => {
+  const TROUPE = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+  const SCENE = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+  const NPC = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+
+  function running() {
+    const client = signedIn();
+    client.setQueryData(["troupe", TROUPE], { name: "Court of Ashes" });
+    client.setQueryData(["scenes", TROUPE, false], [{ id: SCENE }]);
+    client.setQueryData(["scene", SCENE], { id: SCENE, characters: [NPC, BRAM] });
+    client.setQueryData(["play", NPC], { kind: "npc", blood: 5 });
+    client.setQueryData(["play", BRAM], { kind: "pc", blood: 3 });
+    client.setQueryData(["roster", TROUPE], [{ id: NPC }]);
+    return client;
+  }
+
+  it("keeps the scenes, each card's Play View, PCs too, and nothing else of the troupe", async () => {
+    const shelf = memoryShelf();
+    const kept = await saveScenes(running(), ME, TROUPE, shelf, 1000);
+    expect(kept).toMatchObject({ troupeName: "Court of Ashes", keptAt: 1000, sceneIds: [SCENE], cards: [NPC, BRAM], npcs: 1, pcs: 1 });
+    const record = shelf.items.get(scenesKey(ME, TROUPE)) as KeptScenes;
+    expect(record.queries.map((q) => q.queryKey[0]).sort()).toEqual(["play", "play", "scene", "scenes", "troupe"]);
+    expect(keptTroupes(ME)).toEqual([TROUPE]);
+    // Its cards' answers, when they change, are written again.
+    expect(scenesTouched(["play", NPC])).toEqual([TROUPE]);
+    expect(scenesTouched(["play", ROSA])).toEqual([]);
+  });
+
+  it("follows the line-up: a card taken off the scene goes from what's kept", async () => {
+    const shelf = memoryShelf();
+    const client = running();
+    await saveScenes(client, ME, TROUPE, shelf);
+    client.setQueryData(["scene", SCENE], { id: SCENE, characters: [NPC] });
+    await saveScenes(client, ME, TROUPE, shelf);
+    const record = shelf.items.get(scenesKey(ME, TROUPE)) as KeptScenes;
+    expect(record.cards).toEqual([NPC]);
+    expect(record.queries.some((q) => q.queryKey[1] === BRAM)).toBe(false);
+  });
+
+  it("goes back in the app as it opens, and goes with Remove, the device's setting, or signing out", async () => {
+    const shelf = memoryShelf();
+    await save(signedIn(), ME, shelf);
+    await saveScenes(running(), ME, TROUPE, shelf);
+    setKeeping(ME, "on");
+    setKeptFor(ME);
+    const opening = new QueryClient();
+    await restore(opening, shelf);
+    expect(opening.getQueryData(["play", NPC])).toEqual({ kind: "npc", blood: 5 });
+
+    await removeScenes(ME, TROUPE, shelf);
+    expect(shelf.items.has(scenesKey(ME, TROUPE))).toBe(false);
+    expect(keptScenesSummary(TROUPE)).toBeNull();
+
+    await saveScenes(running(), ME, TROUPE, shelf);
+    await removeKept(ME, shelf);
+    expect(shelf.items.has(scenesKey(ME, TROUPE))).toBe(false);
+    expect(keptTroupes(ME)).toEqual([]);
+
+    await saveScenes(running(), ME, TROUPE, shelf);
+    await forget(signedIn(), ME, shelf);
+    expect(shelf.items.has(scenesKey(ME, TROUPE))).toBe(false);
+    expect(keptTroupes(ME)).toEqual([]);
   });
 });

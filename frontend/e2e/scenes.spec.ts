@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, openScene } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, openScene, backstoryOptional, builtVampire, ATTRIBUTES_AND_FOCUSES } from "./support";
 
 /** Scenes: storytellers pinning NPCs and tapping for them. */
 
@@ -368,6 +368,101 @@ test("two storytellers share a troupe's named scenes: each pins, taps and sees t
   expect(log.map((e) => e.message)).toEqual(
     expect.arrayContaining(["named-lead removed the scene Warehouse ambush.", "named-lead renamed the scene Elysium, ballroom to Elysium, gallery."]),
   );
+});
+
+test("staff keep a troupe's scenes on their phones: with no signal both tap the same NPC, and both taps count, in order, once they reconnect (#503)", async ({ browser }) => {
+  test.slow();
+  // Two storytellers' own phones, with the service worker, each keeping their characters there.
+  const own = { serviceWorkers: "allow" as const, storageState: { cookies: [], origins: [] } };
+  const custodian = await person(browser, "kept-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "kept-lead", own);
+  const second = await person(browser, "kept-storyteller", own);
+  const player = await person(browser, "kept-player");
+  for (const s of [lead, second]) await s.page.getByRole("dialog", { name: "Your own phone?" }).getByRole("button", { name: "Yes, keep them here" }).click();
+  const headers = { "X-Horatio": "1" };
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Dead Spots ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  const l = lead.page;
+  const staffed = await l.request.put(`/api/troupes/${troupeId}/staff`, { headers, data: { handle: second.handle, role: "storyteller" } });
+  expect(staffed.status(), await staffed.text()).toBe(200);
+  await backstoryOptional(l, troupeId);
+
+  // An NPC and a player's PC, in one scene.
+  const npc = await l.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: "Morrow", wizard: false } });
+  expect(npc.status(), await npc.text()).toBe(201);
+  const morrow: string = (await npc.json()).id;
+  const wren = await builtVampire(player.page, "Wren", "Brujah", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  const asked = await player.page.request.post(`/api/characters/${wren}/home-troupe`, { headers, data: { troupe_id: troupeId } });
+  expect(asked.status(), await asked.text()).toBeLessThan(300);
+  const [request] = await (await l.request.get(`/api/troupes/${troupeId}/approvals`)).json();
+  const approved = await l.request.post(`/api/approvals/${request.id}/approve`, { headers, data: {} });
+  expect(approved.status(), await approved.text()).toBeLessThan(300);
+  const crypt = await l.request.post(`/api/troupes/${troupeId}/scenes`, { headers, data: { name: "Crypt", characters: [morrow, wren] } });
+  expect(crypt.status(), await crypt.text()).toBe(201);
+  const cryptUrl = `/play/troupes/${troupeId}/scenes/${(await crypt.json()).id}`;
+
+  // Each keeps tonight's scenes on their phone, from the Scenes page.
+  for (const s of [lead, second]) {
+    await s.page.goto(`/play/troupes/${troupeId}/scenes`);
+    const keep = s.page.getByRole("region", { name: "Kept on this phone" });
+    await keep.getByRole("button", { name: "Keep tonight's scenes on this phone" }).click();
+    await expect(keep).toContainText(/^Kept .* · 1 scene, 1 NPC, 1 PC/);
+    await s.page.evaluate(async () => void (await navigator.serviceWorker.ready));
+  }
+  await l.screenshot(shots("scenes-kept"));
+  // A scene made afterwards isn't kept.
+  const later = await l.request.post(`/api/troupes/${troupeId}/scenes`, { headers, data: { name: "Rooftop" } });
+  const laterUrl = `/play/troupes/${troupeId}/scenes/${(await later.json()).id}`;
+
+  // No signal on either phone: the Scenes page and the kept scene open.
+  for (const s of [lead, second]) await s.page.context().setOffline(true);
+  await l.reload();
+  await expect(l.getByRole("listitem", { name: "Crypt" })).toBeVisible();
+  await expect(l.getByLabel("Connection")).toContainText(/^Offline · scenes as of /);
+  await expect(l.getByRole("button", { name: "New scene" })).toBeDisabled();
+  await l.goto(laterUrl);
+  await expect(l.getByText("This scene isn't kept on this phone, so it needs a connection.")).toBeVisible();
+  await l.getByRole("link", { name: "Back to the kept scenes" }).click();
+  await l.getByRole("link", { name: "Crypt" }).click();
+  await second.page.goto(cryptUrl);
+  const card = (p: Page, name: string) => p.getByRole("article", { name });
+  for (const p of [l, second.page]) await expect(card(p, "Morrow").getByLabel(/^Blood: \d+ of \d+$/)).toBeVisible();
+  // Changing the line-up needs a connection.
+  await expect(l.getByText("Needs a connection", { exact: true })).toBeVisible();
+  await expect(l.getByRole("combobox", { name: "Add to the scene" })).toHaveCount(0);
+  await expect(card(l, "Morrow").getByRole("button", { name: "Remove Morrow from the scene" })).toBeDisabled();
+
+  // The lead taps Morrow, then the second storyteller does, and taps Wren too.
+  const before = (await (await custodian.page.request.get(`/api/characters/${morrow}/play`)).json()).blood.value;
+  await card(l, "Morrow").getByRole("button", { name: "Spend Blood", exact: true }).click();
+  await expect(card(l, "Morrow").getByRole("status")).toHaveText("Offline · 1 tap waiting");
+  await card(second.page, "Morrow").getByRole("button", { name: "Spend Blood", exact: true }).click();
+  await card(second.page, "Wren").getByRole("button", { name: "Spend Willpower", exact: true }).click();
+  await expect(second.page.getByLabel("Connection")).toContainText("2 taps waiting to send");
+  await second.page.screenshot(shots("scenes-offline"));
+
+  // Back online, both phones send, and both taps on Morrow count, in the order they happened.
+  for (const s of [second, lead]) await s.page.context().setOffline(false);
+  for (const p of [l, second.page]) for (const name of ["Morrow", "Wren"]) await expect(card(p, name).getByRole("status")).toHaveText("Saved");
+  const after = await (await custodian.page.request.get(`/api/characters/${morrow}/play`)).json();
+  expect(after.blood.value).toBe(before - 2);
+  const spends = after.log.filter((e: { tracker: string; kind: string }) => e.kind === "change" && e.tracker === "blood");
+  expect(spends.map((e: { actor_name: string }) => e.actor_name).reverse()).toEqual(["kept-lead", "kept-storyteller"]);
+  const wrenAfter = await (await player.page.request.get(`/api/characters/${wren}/play`)).json();
+  expect(wrenAfter.willpower.value).toBe(wrenAfter.willpower.most - 1);
+
+  // Signing out clears what the phone kept.
+  await l.goto("/characters");
+  await l.getByRole("button", { name: "Sign out" }).click();
+  await expect(l.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  expect(await l.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("horatio.offline.scenes.")))).toEqual([]);
 });
 
 test("a Stock werewolf in a scene: Rage and health tapped on its card and undone, and its Stock Play View from Full view", async ({ browser }) => {

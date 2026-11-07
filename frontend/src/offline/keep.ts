@@ -9,7 +9,9 @@ import type { CharacterListOut } from "../api/types";
  * own active characters (the sheet, the Play View, its reference and powers), the
  * rules those need, and who they are, are stored under their own key, so one
  * person's never shows for another. Staff screens and other players' characters
- * are never kept, whoever the person is. Signing out clears it all.
+ * are never kept, whoever the person is, but for one thing: the running staff of a
+ * troupe may keep its scenes, each troupe they press it in under a key of its own
+ * (#503). Signing out clears it all.
  */
 
 export type Keeping = "on" | "off";
@@ -176,4 +178,41 @@ export function tapsWaiting(storage: Storage | undefined = globalThis.localStora
 export function clearDevice(storage: Storage | undefined = globalThis.localStorage): void {
   for (const key of keysOf(storage)) if (QUEUE.test(key) || CHARACTER_DATA.test(key)) write(storage, key, null);
   setKeptFor(null, storage);
+}
+
+// --- A troupe's scenes, kept by its running staff (#503) -------------------------
+
+const SCENES = "horatio.offline.scenes.";
+
+/** The troupes whose scenes a person keeps on this device. */
+export function keptTroupes(userId: string, storage: Storage | undefined = globalThis.localStorage): string[] {
+  try {
+    const parsed: unknown = JSON.parse(read(storage, SCENES + userId) ?? "[]");
+    return Array.isArray(parsed) ? parsed.filter((t): t is string => typeof t === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+export function setKeptTroupes(userId: string, troupes: string[], storage: Storage | undefined = globalThis.localStorage): void {
+  write(storage, SCENES + userId, troupes.length ? JSON.stringify([...new Set(troupes)]) : null);
+}
+
+/** The key a troupe's kept scenes are stored under: the person's, and that troupe's alone. */
+export function scenesKey(userId: string, troupeId: string): string {
+  return `scenes:${userId}:${troupeId}`;
+}
+
+/** What a troupe's kept scenes may hold: the troupe, its scenes, and the characters on their cards. */
+export type SceneSet = { troupe: string; scenes: Set<string>; cards: Set<string> };
+
+/** Whether a query's answer belongs with a troupe's kept scenes. PCs on a card are kept
+ * too: a fight is half a scene without them, and its staff see their Play Views anyway. */
+export function keepsSceneQuery(key: QueryKey, kept: SceneSet): boolean {
+  const [what, of] = key;
+  if (typeof of !== "string") return false;
+  if (what === "troupe" || what === "scenes") return of === kept.troupe;
+  if (what === "scene") return kept.scenes.has(of);
+  if (what === "play" || what === "play-reference") return kept.cards.has(of);
+  return false;
 }

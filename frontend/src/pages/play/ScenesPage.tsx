@@ -9,6 +9,8 @@ import { useDates } from "../../dates";
 import { useMe } from "../../hooks";
 import { abilities } from "../troupe/roles";
 import { SaveDeviceScene } from "./DeviceScene";
+import { useOnline } from "../../offline/connection";
+import { KeepScenes, NeedsSignal, ScenesStrip } from "../../offline/KeepScenes";
 
 // How often to look for scenes other staff made or changed, as the Play View does.
 export const SCENE_REFRESH = 15_000;
@@ -67,6 +69,8 @@ export function ScenesPage() {
   });
   const changes = useSceneChanges(troupeId);
   const lead = troupe.data ? abilities(troupe.data.my_role, me.data?.is_custodian ?? false).lead : false;
+  // With no signal, kept scenes open, but making, renaming and removing them wait for it (#503).
+  const online = useOnline();
 
   return (
     <div className="min-h-screen bg-night pb-16 text-parchment">
@@ -77,10 +81,17 @@ export function ScenesPage() {
           </Link>
           <h1 className="text-lg">Scenes</h1>
         </div>
+        <ScenesStrip troupeId={troupeId} />
       </header>
       <main className="mx-auto flex max-w-3xl flex-col gap-4 px-4 pt-3">
-        <SaveDeviceScene troupeId={troupeId} onSave={(name, characters) => changes.create.mutateAsync({ name, characters })} />
-        <NewScene onCreate={async (name) => navigate(`/play/troupes/${troupeId}/scenes/${(await changes.create.mutateAsync({ name })).id}`)} error={changes.create.error} pending={changes.create.isPending} />
+        <KeepScenes troupeId={troupeId} />
+        {online && <SaveDeviceScene troupeId={troupeId} onSave={(name, characters) => changes.create.mutateAsync({ name, characters })} />}
+        <NewScene
+          onCreate={async (name) => navigate(`/play/troupes/${troupeId}/scenes/${(await changes.create.mutateAsync({ name })).id}`)}
+          error={changes.create.error}
+          pending={changes.create.isPending}
+          online={online}
+        />
         <div className="flex gap-1" role="group" aria-label="Whose scenes">
           {(
             [
@@ -102,18 +113,18 @@ export function ScenesPage() {
         ) : (
           <ul className="divide-y divide-ash rounded-lg border border-ash bg-dusk">
             {scenes.data.map((s) => (
-              <SceneRow key={s.id} troupeId={troupeId} scene={s} changes={changes} />
+              <SceneRow key={s.id} troupeId={troupeId} scene={s} changes={changes} online={online} />
             ))}
           </ul>
         )}
         <ErrorText error={changes.rename.error ?? changes.remove.error} />
-        {lead && <ClearOldScenes troupeId={troupeId} mine={mine} />}
+        {lead && online && <ClearOldScenes troupeId={troupeId} mine={mine} />}
       </main>
     </div>
   );
 }
 
-function NewScene({ onCreate, error, pending }: { onCreate: (name: string) => Promise<unknown>; error: unknown; pending: boolean }) {
+function NewScene({ onCreate, error, pending, online }: { onCreate: (name: string) => Promise<unknown>; error: unknown; pending: boolean; online: boolean }) {
   const [name, setName] = useState("");
   return (
     <form
@@ -128,10 +139,11 @@ function NewScene({ onCreate, error, pending }: { onCreate: (name: string) => Pr
           <Input value={name} maxLength={80} placeholder="Elysium, ballroom" onChange={(e) => setName(e.target.value)} />
         </Field>
       </div>
-      <Button type="submit" disabled={pending || !name.trim()}>
+      <Button type="submit" disabled={pending || !name.trim() || !online}>
         New scene
       </Button>
       <div className="basis-full">
+        {!online && <NeedsSignal />}
         <ErrorText error={error} />
       </div>
     </form>
@@ -140,7 +152,7 @@ function NewScene({ onCreate, error, pending }: { onCreate: (name: string) => Pr
 
 type Changes = ReturnType<typeof useSceneChanges>;
 
-function SceneRow({ troupeId, scene, changes }: { troupeId: string; scene: SceneSummary; changes: Changes }) {
+function SceneRow({ troupeId, scene, changes, online }: { troupeId: string; scene: SceneSummary; changes: Changes; online: boolean }) {
   const dates = useDates();
   const [renaming, setRenaming] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -166,7 +178,7 @@ function SceneRow({ troupeId, scene, changes }: { troupeId: string; scene: Scene
               {scene.mine ? "Yours" : `By ${scene.created_by_name}`} · {scene.count === 1 ? "1 character" : `${scene.count} characters`} · last used {dates.dateTime(scene.last_used_at)}
             </span>
           </span>
-          {scene.can_change && (
+          {scene.can_change && online && (
             <span className="flex gap-1">
               <Button variant="ghost" className="px-2" aria-label={`Rename ${scene.name}`} onClick={() => setRenaming(true)}>
                 Rename

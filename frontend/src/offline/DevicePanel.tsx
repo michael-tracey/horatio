@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Link } from "react-router";
 import { Button, Card, ErrorText } from "../components/ui";
 import { useDates } from "../dates";
@@ -8,7 +8,13 @@ import { manualLink } from "../manualLink";
 import { Setting } from "../pages/settings/SettingsPage";
 import { isNoAnswer, useOnline } from "./connection";
 import { useKeepChoice, useKept, useSetKeeping } from "./Offline";
-import { loadSummary, refresh, removeKept } from "./store";
+import { keptText } from "./KeepScenes";
+import { keptScenesSummaries, keptVersion, loadSummary, refresh, removeKept, removeScenes, subscribe } from "./store";
+
+function useKeptScenesList() {
+  useSyncExternalStore(subscribe, keptVersion);
+  return keptScenesSummaries();
+}
 
 /** "120 KB", "1.4 MB". */
 export function sizeText(bytes: number): string {
@@ -26,6 +32,8 @@ export function DevicePanel() {
   const choice = useKeepChoice(id);
   const on = choice === "on";
   const kept = useKept();
+  // A troupe's scenes, kept by its running staff from its Scenes page (#503).
+  const scenes = useKeptScenesList();
   const online = useOnline();
   const dates = useDates();
   const client = useQueryClient();
@@ -98,6 +106,19 @@ export function DevicePanel() {
           ) : (
             <p className="text-sm text-mist">{busy ? "Keeping your characters…" : "Nothing is kept here yet. Update now keeps your characters in play."}</p>
           )}
+          {scenes.map((k) => (
+            <div key={k.troupeId} role="group" aria-label={`Scenes of ${k.troupeName}`} className="flex flex-wrap items-center justify-between gap-2 border-t border-ash/60 pt-3 text-sm">
+              <span>
+                <span className="block text-parchment">Scenes of {k.troupeName}</span>
+                <span className="block text-xs text-mist">
+                  Kept {dates.dateTime(new Date(k.keptAt))} · {keptText(k)} · about {sizeText(k.bytes)}
+                </span>
+              </span>
+              <Button variant="ghost" disabled={busy} aria-label={`Remove the scenes of ${k.troupeName}`} onClick={() => void act(() => removeScenes(id, k.troupeId))}>
+                Remove
+              </Button>
+            </div>
+          ))}
           <ErrorText error={error} />
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" disabled={busy || !online} onClick={() => void act(() => refresh(client, id))}>

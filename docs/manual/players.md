@@ -410,7 +410,7 @@ Venues are often basements with no signal. Horatio can keep your own characters 
 
 The same tab shows what's kept now (the characters, when they were last updated and roughly how much space it takes), with **Update now**, worth pressing before you leave for a game, and **Remove from this device**.
 
-**With no signal.** A line under the menu says you're offline and how old what you're seeing is: *Offline · your characters as of 7:42 pm*. On the Play View, the saved pill says **Offline** with the taps waiting, and *Your sheet as of…* under it. Other screens, such as downtimes, Spend XP, other characters and every staff screen, say they need a connection, with a link back to your character. Nothing but Play View taps waits to be sent: anything else you try offline says **Needs a connection.**
+**With no signal.** A line under the menu says you're offline and how old what you're seeing is: *Offline · your characters as of 7:42 pm*. On the Play View, the saved pill says **Offline** with the taps waiting, and *Your sheet as of…* under it. Other screens, such as downtimes, Spend XP, other characters and every staff screen (but for the scenes staff keep; see [Scenes at a game with no signal](running-a-troupe.md#scenes-at-a-game-with-no-signal)), say they need a connection, with a link back to your character. Nothing but Play View taps waits to be sent: anything else you try offline says **Needs a connection.**
 
 **Signing out** clears everything kept for you on the device, taps not yet sent included. If any are waiting, Horatio asks first. If your session ends while you're offline, your sheet still shows and your taps still wait; they're sent once you sign in again.
 

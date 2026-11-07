@@ -286,3 +286,58 @@ def test_opening_a_scene_marks_it_used(troupe: Troupe, session: Session) -> None
 
     troupe.lead.client.get(f"/troupes/{troupe.id}/scenes/{first['id']}")
     assert [s["name"] for s in scenes(troupe.lead, troupe)] == ["First", "Second"]
+
+
+def kept(person: Person, troupe: Troupe) -> dict[str, Any]:
+    response = person.client.get(f"/troupes/{troupe.id}/scenes/kept")
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def test_running_staff_keep_every_scene_with_its_cards_in_one_request(
+    troupe: Troupe, session: Session
+) -> None:
+    lucien = npc(troupe, "Lucien")
+    made = troupe.storyteller.client.post(
+        f"/troupes/{troupe.id}/npcs",
+        json={"name": "Ghoul guard", "npc_form": "stock", "stock": {"rating": 2}},
+    )
+    guard = made.json()["id"]
+    agnes = new_character(troupe, troupe.player, "Agnes")
+    make_home_troupe_member(session, troupe, agnes)
+    gate = new_scene(troupe.storyteller, troupe, "Gate", characters=[lucien, guard])
+    hall = new_scene(troupe.assistant, troupe, "Hall", characters=[agnes, lucien])
+    send(troupe.storyteller, lucien, tap("blood", -2))
+
+    bundle = kept(troupe.storyteller, troupe)
+    # Every scene, whoever made it, as each would open.
+    assert [s["name"] for s in bundle["scenes"]] == ["Hall", "Gate"]
+    assert bundle["scenes"][1] == troupe.storyteller.client.get(
+        f"/troupes/{troupe.id}/scenes/{gate['id']}"
+    ).json() | {"last_used_at": bundle["scenes"][1]["last_used_at"]}
+    # Each character once, sheeted NPCs, Stock NPCs and PCs, with what its card shows.
+    cards = {c["character_id"]: c for c in bundle["cards"]}
+    assert list(cards) == [agnes, lucien, guard]
+    assert cards[lucien]["play"] == view(troupe.storyteller, lucien)
+    assert cards[agnes]["play"]["character_name"] == "Agnes"
+    assert cards[agnes]["reference"] is not None
+    assert cards[guard]["reference"] is None
+    assert cards[guard]["play"]["stock"] is not None
+    assert hall["characters"] == [agnes, lucien]
+
+
+def test_only_running_staff_keep_a_troupes_scenes(troupe: Troupe) -> None:
+    new_scene(troupe.storyteller, troupe, "Rooftop", characters=[npc(troupe, "Lucien")])
+    for person in (troupe.narrator, troupe.player, troupe.stranger):
+        assert person.client.get(f"/troupes/{troupe.id}/scenes/kept").status_code == 403
+    assert len(kept(troupe.lead, troupe)["cards"]) == 1
+
+
+def test_keeping_scenes_does_not_count_as_using_them(troupe: Troupe, session: Session) -> None:
+    scene = new_scene(troupe.storyteller, troupe, "Last month")
+    then = datetime.now(UTC) - timedelta(days=40)
+    session.get_one(Scene, scene["id"]).last_used_at = then
+    session.flush()
+    kept(troupe.lead, troupe)
+    session.expire_all()
+    assert session.get_one(Scene, scene["id"]).last_used_at == then
