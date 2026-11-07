@@ -10,7 +10,7 @@ values are data a troupe can change; what a fact means stays in code.
 """
 
 import operator
-from collections.abc import Callable, Collection, Mapping
+from collections.abc import Callable, Collection, Iterable, Mapping
 from typing import Any
 
 OPERATORS: dict[str, Callable[[Any, Any], bool]] = {
@@ -35,6 +35,17 @@ def holds(condition: Mapping[str, Any] | None, facts: Mapping[str, Any]) -> bool
         elif value != test:
             return False
     return True
+
+
+def could_hold(condition: Mapping[str, Any] | None, possible: Iterable[Mapping[str, Any]]) -> bool:
+    """Whether some character's facts, of those `possible`, meet the condition. A test
+    of the wrong kind of value (a Generation of "two") never holds."""
+    if not condition:
+        return True
+    try:
+        return any(holds(condition, facts) for facts in possible)
+    except TypeError:
+        return False
 
 
 def clause_count(condition: Mapping[str, Any] | None) -> int:
@@ -86,3 +97,5 @@ def validate(condition: Mapping[str, Any] | None, known_facts: Collection[str]) 
             for op in test:
                 if op not in OPERATORS:
                     raise ValueError(f"unknown operator {op!r} for fact {fact!r}")
+                if op == "in" and not isinstance(test[op], list | tuple):
+                    raise ValueError(f"'in' for fact {fact!r} needs a list")

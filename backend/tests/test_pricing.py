@@ -1,7 +1,11 @@
 """How a troupe's rules choose a cost rule and price a trait."""
 
+from dataclasses import replace
+from typing import Any
+
 import pytest
 
+from horatio.rules.conditions import could_hold
 from horatio.rules.files import DATA_DIR, check_cost_rule, load_rule_set
 from horatio.rules.model import (
     CategoryData,
@@ -17,9 +21,12 @@ from horatio.rules.pricing import (
     NotAllowed,
     RatingOutOfRange,
     UnknownCategory,
+    choose_rule,
     purchase_cost,
+    tie,
     trait_cost,
 )
+from horatio.rules.splats import SPLATS
 
 CATEGORIES = {
     "skills": CategoryData(key="skills", name="Skills", group="Skills", max_rating=10),
@@ -170,6 +177,79 @@ def test_a_house_rule_for_one_merit_leaves_other_merits_alone() -> None:
     assert cost(rules, other) == 2
 
 
+# The book's skills prices (MET: VTM p. 99): new rating × 2, or × 1 at Generation 1.
+BOOK_SKILLS = (
+    CostRuleData("skills", "progressive", rate=2),
+    CostRuleData("skills", "progressive", rate=1, condition={"generation": 1}),
+)
+CLANS = {
+    ("clan", name): TraitData(category="clan", name=name)
+    for name in ("Brujah", "Brujah: True Brujah", "Ventrue")
+}
+
+
+def with_clans(*cost_rules: CostRuleData) -> RuleSetData:
+    return replace(rule_set(*cost_rules), traits={**rule_set().traits, **CLANS})
+
+
+@pytest.mark.parametrize("with_book_generation_1", [True, False])
+@pytest.mark.parametrize(
+    "condition",
+    [{"generation": 2}, {"generation": {"lte": 2}}, {"generation": {"gte": 1, "lte": 2}}],
+)
+def test_a_troupe_price_with_its_own_condition(
+    with_book_generation_1: bool, condition: dict[str, Any]
+) -> None:
+    """A troupe's Generation 2 skills at × 1: Generation 1 still × 1 (the book's, or
+    the troupe's range, which wins its tie with the book's), Generation 3 and up × 2."""
+    book = BOOK_SKILLS if with_book_generation_1 else BOOK_SKILLS[:1]
+    house = CostRuleData("skills", "progressive", rate=1, condition=condition, house=True)
+    rules = TroupeRules(rule_set(*book), house_rules=[house])
+
+    def brawl_at(generation_rating: int) -> int:
+        return cost(rules, skill(3), generation(generation_rating))
+
+    generation_1 = 6 if with_book_generation_1 or condition != {"generation": 2} else 12
+    assert [brawl_at(g) for g in (1, 2, 3, 5)] == [generation_1, 6, 12, 12]
+    chosen = choose_rule(rules, [skill(3), generation(1)], skill(3))
+    assert chosen.house == (condition != {"generation": 2})
+
+
+def test_a_troupe_condition_could_hold_or_not() -> None:
+    possible = SPLATS["vampire"].possible_facts(with_clans())
+
+    assert could_hold({"generation": {"gte": 3, "lte": 4}, "in_clan": False}, possible)
+    assert could_hold({"clan_family": "Brujah", "clan": "Brujah: True Brujah"}, possible)
+    assert not could_hold({"generation": 6}, possible)
+    assert not could_hold({"generation": {"gt": 2, "lt": 3}}, possible)
+    assert not could_hold({"clan_family": "Ventrue", "clan": "Brujah"}, possible)
+    assert not could_hold({"generation": {"lt": "three"}}, possible)
+
+
+def test_two_troupe_prices_that_could_tie_are_found() -> None:
+    def house(condition: dict[str, Any] | None, trait: str | None = None) -> CostRuleData:
+        return CostRuleData(
+            "skills", "per_dot", rate=1, trait=trait, condition=condition, house=True
+        )
+
+    rules = with_clans(*BOOK_SKILLS)
+    generation_2 = house({"generation": 2})
+    brujah = house({"clan_family": "Brujah"})
+
+    # A Brujah of Generation 2 meets both, and both test one fact.
+    assert tie(brujah, [generation_2], rules) == generation_2
+    # Never both at once; or one is more specific; or about another trait.
+    assert tie(house({"generation": 3}), [generation_2], rules) is None
+    assert (
+        tie(house({"generation": {"gte": 3}}), [house({"generation": {"lte": 2}})], rules) is None
+    )
+    assert tie(house({"generation": 2, "clan_family": "Brujah"}), [generation_2], rules) is None
+    assert tie(house({"generation": 2}, "Brawl"), [brujah], rules) is None
+    # A more specific price settles it where both hold: here, the only place they do.
+    settled = house({"generation": 2, "clan_family": "Brujah"})
+    assert tie(brujah, [generation_2, settled], rules) is None
+
+
 def test_tied_rules_are_refused_rather_than_guessed() -> None:
     rules = TroupeRules(
         rule_set(
@@ -215,6 +295,10 @@ def test_conditions_may_only_test_the_splats_facts() -> None:
     with pytest.raises(ValueError, match="unknown operator"):
         check_cost_rule(
             CostRuleData("skills", "free", condition={"generation": {"about": 2}}), rule_set()
+        )
+    with pytest.raises(ValueError, match="needs a list"):
+        check_cost_rule(
+            CostRuleData("skills", "free", condition={"generation": {"in": 2}}), rule_set()
         )
 
 
