@@ -2,7 +2,7 @@
 Observe (issue #509)
 
 Revision ID: 0151
-Revises: 0149
+Revises: 0150
 Create Date: 2026-11-07 18:00:00.000000
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0151"
-down_revision: str | None = "0149"
+down_revision: str | None = "0150"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

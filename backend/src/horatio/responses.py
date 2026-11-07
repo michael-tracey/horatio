@@ -11,7 +11,8 @@ Delivery sends a submission's written responses to its player: in Horatio, and
 on each connector the troupe has on (horatio.delivery). By default only
 downtimes with every response written go. Responses can still be written or
 changed once delivered; the downtime then shows as changed, and the next
-delivery sends it again as an update.
+delivery sends it again as an update. Equipment staff give from a response goes to
+the character with its delivery (horatio.response_items).
 """
 
 import random
@@ -25,7 +26,7 @@ from itertools import combinations
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, delivery, feeding
+from horatio import audit, delivery, feeding, response_items
 from horatio.models import (
     Answer,
     Character,
@@ -368,6 +369,7 @@ def delivered(db: Session, submission_id: uuid.UUID) -> bool:
 
 HEADING = "**Downtime results for "
 UPDATED_HEADING = "**Updated downtime results for "
+RECEIVED = "*You received:* "
 
 
 def feeding_shown(db: Session, cycle: DowntimeCycle) -> feeding.Shown:
@@ -383,23 +385,26 @@ def compose(
     shown: feeding.Shown | None = None,
 ) -> str:
     """The message a player receives: the answer to their feeding, if the troupe
-    tracks it, then each answered question, what they did, and the result. `shown`
-    overrides the troupe's feeding setting."""
+    tracks it, then each answered question, what they did, the result, and any
+    equipment it gives (horatio.response_items). `shown` overrides the troupe's
+    feeding setting."""
     rows = db.execute(
         select(Question, Answer, Response)
         .join(Answer, Answer.question_id == Question.id)
         .join(Response, Response.answer_id == Answer.id)
         .where(Answer.submission_id == submission.id, Response.status == "written")
         .order_by(Question.position, Answer.slot)
-    )
+    ).all()
+    given = response_items.on_responses(db, [response.id for _, _, response in rows])
     parts = [f"{HEADING}{character.name} ({cycle.name})**"]
     fed = feeding.compose(db, submission, shown or feeding_shown(db, cycle))
     if fed is not None:
         parts.append(fed)
     for question, answer, response in rows:
-        parts.append(
-            f"**{question.prompt}**\n*Your action:* {answer.body}\n*Result:* {response.body}"
-        )
+        part = f"**{question.prompt}**\n*Your action:* {answer.body}\n*Result:* {response.body}"
+        if response.id in given:
+            part += f"\n{RECEIVED}{response_items.received(given[response.id])}"
+        parts.append(part)
     return "\n\n".join(parts)
 
 
@@ -550,7 +555,8 @@ def deliver_cycle(
     responses are all written (and, with `partial`, those partly answered too),
     for the first time, or again as an update if responses were written or
     changed since. Each goes out in Horatio and is queued on each of the troupe's
-    connectors that has not had it; with them go the quest results recorded
+    connectors that has not had it, and the equipment its responses give goes to the
+    character (horatio.response_items); with them go the quest results recorded
     through the cycle (horatio.quest_actions)."""
     from horatio import quest_actions
 
@@ -567,6 +573,8 @@ def deliver_cycle(
             fed = feeding.compose(db, submission, feeding_shown(db, cycle))
             if fed is not None and (last is None or fed not in last.message):
                 feeding.mark_half_blood(db, character, submission)
+            # What its responses give goes to the character now, with the results.
+            response_items.deliver(db, cycle, troupe, character, submission)
             db.add(
                 Delivery(
                     submission_id=submission.id,

@@ -82,6 +82,12 @@ function Result({ message }: { message: string }) {
               <RichText text={p.result} />
             </div>
           )}
+          {p.received && (
+            <p className="mt-2 text-sm">
+              <span className="text-xs text-gold">You received: </span>
+              {p.received}
+            </p>
+          )}
         </section>
       ))}
     </div>

@@ -27,7 +27,7 @@ export function ResponsesTab({ cycle }: { cycle: CycleOut }) {
     queryKey: ["staff", cycle.troupe_id],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/staff", { params: { path: { troupe_id: cycle.troupe_id } } })),
   });
-  // A link to one response, from the Aimed at tab, shows it once the list is here.
+  // A link to one response, from the Aimed at tab or an item's history (#508), shows it once the list is here.
   const { hash } = useLocation();
   const loaded = !!items.data;
   useEffect(() => {

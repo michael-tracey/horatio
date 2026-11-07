@@ -1178,6 +1178,95 @@ test("a character's tabs show a downtime due and new results, and on a phone bot
   await expect(main.getByRole("link", { name: /^Results \d/ })).toHaveCount(0);
 });
 
+/**
+ * Equipment from a response (#508): staff give an item while writing the answer; it
+ * reaches the character with the results, which say so, and its history links back.
+ */
+test("staff give an item from a response, and the player receives it with the results", async ({ browser }) => {
+  const custodian = await person(browser, "respitem-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "respitem-lead");
+  const player = await person(browser, "respitem-player");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "GET" | "POST" | "PUT", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data: method === "GET" ? undefined : (data ?? {}) });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Response Items ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  const { id } = await send(player.page, "POST", "/api/characters", { splat: "vampire", name: "Dorcas" });
+  await send(player.page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+  const picks: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, list] of Object.entries(picks))
+    await send(player.page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+  await send(player.page, "POST", `/api/characters/${id}/creation/complete`);
+  const asked = await send(player.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+  const now = Date.now();
+  const cycle = await send(lead.page, "POST", `/api/troupes/${troupe.id}/cycles`, {
+    name: "Beyond means month",
+    closes_at: new Date(now + 7 * 86400e3).toISOString(),
+    grace_ends_at: new Date(now + 9 * 86400e3).toISOString(),
+  });
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/open`);
+  const form = await send(player.page, "GET", `/api/characters/${id}/downtime`);
+  const question = form.questions.find((q: { prompt: string }) => q.prompt === "Downtime action");
+  await send(player.page, "PUT", `/api/characters/${id}/downtime/answers`, { answers: [{ question_id: question.id, slot: 1, body: "Buy a rifle I can't afford." }] });
+  await send(player.page, "POST", `/api/characters/${id}/downtime/submit`);
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/close`, { add_to_ceiling: false });
+
+  // The lead answers, and gives the rifle from the response with the Equipment tab's editor.
+  const l = lead.page;
+  await l.goto(`/cycles/${cycle.id}/responses`);
+  await l.getByLabel("Response to Dorcas").fill("A dealer at the docks owes you one.");
+  await l.getByRole("button", { name: "Save response" }).click();
+  const receives = l.getByRole("region", { name: "What Dorcas receives" });
+  await receives.getByRole("button", { name: "Give an item" }).click();
+  const editor = l.getByRole("dialog", { name: "Give Dorcas an item" }).getByRole("form", { name: "Give equipment" });
+  await editor.getByLabel("Name", { exact: true }).fill("Sniper rifle");
+  await editor.getByLabel("Kind").selectOption({ label: "Ranged weapon" });
+  for (const quality of ["Accurate", "Long Range"]) await editor.getByLabel("Add a quality").selectOption({ label: quality });
+  await editor.getByRole("button", { name: "Give to Dorcas" }).click();
+  await expect(l.getByRole("dialog")).toHaveCount(0);
+  // It waits for the results.
+  await expect(receives).toContainText("Gives: Sniper rifle (Accurate, Long Range)");
+  await expect(receives.getByText("With the results")).toBeVisible();
+  const held = await send(player.page, "GET", `/api/characters/${id}/equipment`);
+  expect(held.items).toEqual([]);
+
+  // Delivered (feeding unanswered, so in part), it's given, and the player reads it with the results.
+  expect(await send(lead.page, "POST", `/api/cycles/${cycle.id}/deliver`, { partial: true })).toMatchObject({ delivered: 1 });
+  await l.reload();
+  await expect(receives).toContainText("Received: Sniper rifle (Accurate, Long Range)");
+  await expect(receives.getByRole("button", { name: /^Take .* off$/ })).toHaveCount(0);
+  const p = player.page;
+  await p.goto(`/characters/${id}`);
+  await characterTab(p, "Results");
+  await expect(p.getByText("You received:")).toBeVisible();
+  await expect(p.getByText("Sniper rifle (Accurate, Long Range)")).toBeVisible();
+  await characterTab(p, "Equipment");
+  await expect(p.locator("main").getByText("Sniper rifle").first()).toBeVisible();
+
+  // Its history says where it came from, and leads back to the response.
+  await l.goto(`/troupes/${troupe.id}/equipment`);
+  const row = "Sniper rifle, held by Dorcas";
+  await l.getByRole("table", { name: "Equipment", exact: true }).getByRole("row", { name: row }).getByRole("button", { name: `Actions for ${row}` }).click();
+  await l.getByRole("menu", { name: `Actions for ${row}` }).getByRole("menuitem", { name: "History" }).click();
+  await l.getByRole("dialog", { name: "History of Sniper rifle" }).getByRole("link", { name: "From the Beyond means month downtime" }).click();
+  await expect(l).toHaveURL(new RegExp(`/cycles/${cycle.id}/responses#response-`));
+  await expect(l.getByLabel("Response to Dorcas")).toHaveValue("A dealer at the docks owes you one.");
+});
+
 test("feeding in a downtime: Herd given to another character, both answered, and half Blood at the next game", async ({ browser }) => {
   const custodian = await person(browser, "dtfeed-custodian");
   makeCustodian(custodian.email);

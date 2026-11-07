@@ -5492,6 +5492,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/responses/{response_id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give From Response
+         * @description Give the character a new item, or a quality on one it holds, from the
+         *     response: it reaches the character when the response is delivered, with the
+         *     results. Only its home troupe's storytellers and assistant storytellers.
+         */
+        post: operations["give_from_response_api_responses__response_id__items_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/responses/{response_id}/items/{row_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change Response Item
+         * @description Change what the response gives, before it is delivered.
+         */
+        put: operations["change_response_item_api_responses__response_id__items__row_id__put"];
+        post?: never;
+        /**
+         * Remove Response Item
+         * @description Take it off the response, before it is delivered: nothing is given.
+         */
+        delete: operations["remove_response_item_api_responses__response_id__items__row_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/responses/{response_id}/lookup": {
         parameters: {
             query?: never;
@@ -13238,6 +13284,7 @@ export interface components {
             changes: {
                 [key: string]: unknown;
             };
+            downtime?: components["schemas"]["EventDowntimeOut"] | null;
             /** From Character Id */
             from_character_id: string | null;
             /** From Name */
@@ -13654,6 +13701,24 @@ export interface components {
             page: string | null;
             /** Qualities */
             qualities: components["schemas"]["EquipmentItemQuality"][];
+        };
+        /**
+         * EventDowntimeOut
+         * @description The downtime response an item, or a change to it, was given from (#508).
+         */
+        EventDowntimeOut: {
+            /**
+             * Cycle Id
+             * Format: uuid
+             */
+            cycle_id: string;
+            /** Cycle Name */
+            cycle_name: string;
+            /**
+             * Response Id
+             * Format: uuid
+             */
+            response_id: string;
         };
         /**
          * ExceptionAskOut
@@ -20916,6 +20981,129 @@ export interface components {
             /** Targets */
             targets: components["schemas"]["EffectTargetOut"][];
         };
+        /** ResponseItemFieldsIn */
+        ResponseItemFieldsIn: {
+            /**
+             * Archaic
+             * @default false
+             */
+            archaic: boolean;
+            /**
+             * Crafted
+             * @default false
+             */
+            crafted: boolean;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Effects */
+            effects?: components["schemas"]["SpecialEffectModel"][];
+            /**
+             * Grade
+             * @enum {string}
+             */
+            grade: "cheap" | "standard" | "special";
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "melee" | "ranged" | "protective" | "miscellaneous" | "text";
+            /** Name */
+            name: string;
+            /** Qualities */
+            qualities?: components["schemas"]["EquipmentItemQuality"][];
+            /**
+             * Staff Note
+             * @default
+             */
+            staff_note: string;
+            /** Template */
+            template?: string | null;
+        };
+        /**
+         * ResponseItemFieldsOut
+         * @description A new item as staff built it, to change it before it is given.
+         */
+        ResponseItemFieldsOut: {
+            /** Archaic */
+            archaic: boolean;
+            /** Crafted */
+            crafted: boolean;
+            /** Description */
+            description: string;
+            /** Effects */
+            effects: components["schemas"]["SpecialEffectModel"][];
+            /** Grade */
+            grade: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Qualities */
+            qualities: components["schemas"]["EquipmentItemQuality"][];
+            /** Staff Note */
+            staff_note: string;
+            /** Template */
+            template: string | null;
+        };
+        /**
+         * ResponseItemIn
+         * @description What a response gives (horatio.response_items): a new item, as the Equipment
+         *     tab gives one, or a quality on an item the character holds. One of the two.
+         */
+        ResponseItemIn: {
+            item?: components["schemas"]["ResponseItemFieldsIn"] | null;
+            quality?: components["schemas"]["ResponseQualityIn"] | null;
+        };
+        /**
+         * ResponseItemOut
+         * @description Equipment a response gives the character, when it is delivered.
+         */
+        ResponseItemOut: {
+            /** Given At */
+            given_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            item?: components["schemas"]["ResponseItemFieldsOut"] | null;
+            /** Item Id */
+            item_id: string | null;
+            /** Kind */
+            kind: string;
+            quality?: components["schemas"]["ResponseQualityOut"] | null;
+            /** Text */
+            text: string;
+        };
+        /** ResponseQualityIn */
+        ResponseQualityIn: {
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /** Name */
+            name: string;
+        };
+        /** ResponseQualityOut */
+        ResponseQualityOut: {
+            /** Detail */
+            detail: string;
+            /** Item Id */
+            item_id: string | null;
+            /** Item Name */
+            item_name: string;
+            /** Name */
+            name: string;
+        };
         /** ResultIn */
         ResultIn: {
             /**
@@ -24525,6 +24713,11 @@ export interface components {
             /** Body */
             body: string;
             /**
+             * Can Give
+             * @default false
+             */
+            can_give: boolean;
+            /**
              * Character Id
              * Format: uuid
              */
@@ -24553,6 +24746,11 @@ export interface components {
              */
             influence_blocks: components["schemas"]["BlockWarningOut"][];
             influence_entry?: components["schemas"]["InfluenceEntryRef"] | null;
+            /**
+             * Items
+             * @default []
+             */
+            items: components["schemas"]["ResponseItemOut"][];
             /**
              * Keyword
              * @default Narrative
@@ -35743,6 +35941,109 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    give_from_response_api_responses__response_id__items_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResponseItemIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_response_item_api_responses__response_id__items__row_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+                row_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResponseItemIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_response_item_api_responses__response_id__items__row_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                response_id: string;
+                row_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItemOut"];
+                };
             };
             /** @description Validation Error */
             422: {

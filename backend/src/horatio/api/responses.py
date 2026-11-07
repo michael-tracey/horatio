@@ -12,20 +12,30 @@ from sqlalchemy import func, select
 
 from horatio import (
     downtimes,
+    equipment,
     influence,
     influence_log,
     keywords,
     quest_actions,
     quest_requirements,
     quests,
+    response_items,
     responses,
     targets,
 )
 from horatio.api.downtimes import staff_cycle, staff_troupe
+from horatio.api.equipment import EquipmentItemQuality
 from horatio.api.influence import InfluenceAnswerOut, answer_out
 from horatio.api.influence_effects import BlockWarningOut, block_warnings
 from horatio.api.sheets import players_character
+from horatio.api.troupe_equipment import (
+    EquipmentItemFieldsIn,
+    SpecialEffectModel,
+    fields_in,
+    refusal,
+)
 from horatio.auth.deps import CurrentUser, DbSession
+from horatio.equipment import EquipmentRefused, ItemQuality
 from horatio.models import (
     CycleParticipant,
     Delivery,
@@ -35,6 +45,7 @@ from horatio.models import (
     QuestScenario,
     RandomTable,
     Response,
+    ResponseItem,
     Submission,
     Troupe,
     User,
@@ -120,6 +131,67 @@ class AimOut(BaseModel):
     paired: PairOut | None
 
 
+class ResponseItemFieldsIn(EquipmentItemFieldsIn):
+    # The template it was started from, for its history.
+    template: str | None = Field(default=None, max_length=200)
+
+
+class ResponseQualityIn(BaseModel):
+    # An item the character holds.
+    item_id: uuid.UUID
+    name: str = Field(max_length=100)
+    detail: str = Field(default="", max_length=300)
+
+
+class ResponseItemIn(BaseModel):
+    """What a response gives (horatio.response_items): a new item, as the Equipment
+    tab gives one, or a quality on an item the character holds. One of the two."""
+
+    item: ResponseItemFieldsIn | None = None
+    quality: ResponseQualityIn | None = None
+
+
+class ResponseItemFieldsOut(BaseModel):
+    """A new item as staff built it, to change it before it is given."""
+
+    name: str
+    kind: str
+    grade: str
+    qualities: list[EquipmentItemQuality]
+    crafted: bool
+    archaic: bool
+    effects: list[SpecialEffectModel]
+    description: str
+    staff_note: str
+    template: str | None
+
+
+class ResponseQualityOut(BaseModel):
+    item_id: uuid.UUID | None
+    name: str
+    detail: str
+    # The item's name when the quality was added.
+    item_name: str
+
+
+class ResponseItemOut(BaseModel):
+    """Equipment a response gives the character, when it is delivered."""
+
+    id: uuid.UUID
+    # item | quality
+    kind: str
+    # As the results say it: "Sniper rifle (Accurate, Scoped)".
+    text: str
+    # When it reached the character; None until the response is delivered.
+    given_at: datetime | None
+    # The item made, once given; or the item a quality goes on.
+    item_id: uuid.UUID | None
+    # Only for those who give equipment (WorkItemOut.can_give): a new item's fields,
+    # with its staff note, or the quality.
+    item: ResponseItemFieldsOut | None = None
+    quality: ResponseQualityOut | None = None
+
+
 class WorkItemOut(BaseModel):
     """What a staff member needs to write a response. No character sheet: narrators
     never see sheets, and this is what narrators are shown."""
@@ -157,6 +229,11 @@ class WorkItemOut(BaseModel):
     assigned_to_user_id: uuid.UUID | None
     assigned_to_any_narrator: bool
     body: str
+    # Equipment it gives the character when delivered (horatio.response_items).
+    items: list[ResponseItemOut] = []
+    # The reader gives equipment from it: the character's home troupe's storytellers
+    # and assistant storytellers.
+    can_give: bool = False
 
 
 class QuestResultIn(BaseModel):
@@ -325,6 +402,48 @@ def aim_out(db: DbSession, item: responses.WorkItem) -> AimOut | None:
     )
 
 
+def response_item_out(row: ResponseItem, gives: bool) -> ResponseItemOut:
+    fields = row.fields
+    return ResponseItemOut(
+        id=row.id,
+        kind=row.kind,
+        text=response_items.text(row),
+        given_at=row.given_at,
+        item_id=row.item_id,
+        item=(
+            ResponseItemFieldsOut(
+                name=fields["name"],
+                kind=fields["kind"],
+                grade=fields["grade"],
+                qualities=[EquipmentItemQuality(**q) for q in fields.get("qualities", [])],
+                crafted=fields.get("crafted", False),
+                archaic=fields.get("archaic", False),
+                effects=[SpecialEffectModel(**e) for e in fields.get("effects", [])],
+                description=fields.get("description", ""),
+                staff_note=fields.get("staff_note", ""),
+                template=fields.get("template"),
+            )
+            if gives and row.kind == response_items.ITEM
+            else None
+        ),
+        quality=(
+            ResponseQualityOut(
+                item_id=row.item_id,
+                name=fields["name"],
+                detail=fields.get("detail", ""),
+                item_name=fields["item_name"],
+            )
+            if gives and row.kind == response_items.QUALITY
+            else None
+        ),
+    )
+
+
+def gives_equipment(db: DbSession, user: User, troupe: Troupe) -> bool:
+    """Whether the reader gives equipment from the troupe's responses."""
+    return equipment.can_manage(db, user, troupe)
+
+
 def placed(
     rules: TroupeRules, item: responses.WorkItem, keyword_map: Mapping[str, keywords.Keyword]
 ) -> keywords.Placed:
@@ -347,12 +466,17 @@ def item_out(
     running: bool,
     keyword_map: Mapping[str, keywords.Keyword] | None = None,
     resolution: int = 0,
+    gives: bool = False,
+    given: list[ResponseItem] | None = None,
 ) -> WorkItemOut:
     """`running`: for a storyteller or assistant storyteller, who sees who an action
     is aimed at; a narrator never does. `keyword_map`: the troupe's keywords, when
-    the caller has them."""
+    the caller has them. `gives`: the reader gives the troupe's equipment. `given`:
+    what the response gives, if already looked up."""
     # The rules of the troupe running the cycle, where the action was taken.
     rules = read_troupe_rules(db, item.character.splat, item.cycle.troupe_id)
+    if given is None:
+        given = response_items.on_responses(db, [item.response.id]).get(item.response.id, [])
     if keyword_map is None:
         keyword_map = keywords.by_key(keywords.troupe_keywords(db, item.cycle.troupe_id))
     place = placed(rules, item, keyword_map)
@@ -382,6 +506,8 @@ def item_out(
         assigned_to_user_id=item.response.assigned_to_user_id,
         assigned_to_any_narrator=item.response.assigned_to_any_narrator,
         body=item.response.body,
+        items=[response_item_out(r, gives) for r in given],
+        can_give=gives and equipment.home_of(item.character) == item.cycle.troupe_id,
     )
 
 
@@ -427,16 +553,25 @@ def work_cycles(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[
 @router.get("/cycles/{cycle_id}/responses")
 def all_responses(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[WorkItemOut]:
     """Every response in the cycle, for storytellers and assistant storytellers."""
-    cycle, _ = staff_cycle(db, user, cycle_id, TroupeAction.ASSIGN_RESPONSES)
-    return items_out(db, cycle, responses.work_items(db, cycle), running=True)
+    cycle, troupe = staff_cycle(db, user, cycle_id, TroupeAction.ASSIGN_RESPONSES)
+    return items_out(db, user, troupe, cycle, responses.work_items(db, cycle), running=True)
 
 
 def items_out(
-    db: DbSession, cycle: DowntimeCycle, items: list[responses.WorkItem], *, running: bool
+    db: DbSession,
+    user: User,
+    troupe: Troupe,
+    cycle: DowntimeCycle,
+    items: list[responses.WorkItem],
+    *,
+    running: bool,
 ) -> list[WorkItemOut]:
     """The responses as they come (by character), each with where it comes in the
     troupe's resolution order: by step, then within a step by the keywords' order (an
-    influence action by its level), then by character."""
+    influence action by its level), then by character; and what they give, looked up
+    at once."""
+    gives = gives_equipment(db, user, troupe)
+    given = response_items.on_responses(db, [i.response.id for i in items])
     keyword_map = keywords.by_key(keywords.troupe_keywords(db, cycle.troupe_id))
     rules: dict[str, TroupeRules] = {}
     order: list[tuple[tuple[Any, ...], int]] = []
@@ -447,7 +582,15 @@ def items_out(
         order.append(((place.step, place.rank, item.character.name, n), n))
     rank = {n: r for r, (_, n) in enumerate(sorted(order), start=1)}
     return [
-        item_out(db, item, running=running, keyword_map=keyword_map, resolution=rank[n])
+        item_out(
+            db,
+            item,
+            running=running,
+            keyword_map=keyword_map,
+            resolution=rank[n],
+            gives=gives,
+            given=given.get(item.response.id, []),
+        )
         for n, item in enumerate(items)
     ]
 
@@ -457,7 +600,7 @@ def my_responses(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[
     """Responses assigned to me, and for narrators the any-narrator pool."""
     cycle, troupe = staff_cycle(db, user, cycle_id, TroupeAction.ANSWER_ASSIGNED_RESPONSES)
     running = responses.is_running(db, user, troupe)
-    return items_out(db, cycle, responses.mine(db, user, cycle), running=running)
+    return items_out(db, user, troupe, cycle, responses.mine(db, user, cycle), running=running)
 
 
 @router.get("/cycles/{cycle_id}/progress")
@@ -526,7 +669,12 @@ def assign(
     require_troupe_action(db, user, troupe, TroupeAction.ASSIGN_RESPONSES)
     responses.assign(db, user, item, troupe, body.user_id, body.any_narrator)
     db.commit()
-    return item_out(db, item, running=responses.is_running(db, user, troupe))
+    return item_out(
+        db,
+        item,
+        running=responses.is_running(db, user, troupe),
+        gives=gives_equipment(db, user, troupe),
+    )
 
 
 @router.put("/cycles/{cycle_id}/responses/assignment")
@@ -550,7 +698,12 @@ def accept(response_id: uuid.UUID, db: DbSession, user: CurrentUser) -> WorkItem
     item, troupe = response_item(db, user, response_id)
     responses.accept(db, user, item, troupe)
     db.commit()
-    return item_out(db, item, running=responses.is_running(db, user, troupe))
+    return item_out(
+        db,
+        item,
+        running=responses.is_running(db, user, troupe),
+        gives=gives_equipment(db, user, troupe),
+    )
 
 
 @router.post("/responses/{response_id}/decline")
@@ -558,7 +711,12 @@ def decline(response_id: uuid.UUID, db: DbSession, user: CurrentUser) -> WorkIte
     item, troupe = response_item(db, user, response_id)
     responses.decline(db, user, item, troupe)
     db.commit()
-    return item_out(db, item, running=responses.is_running(db, user, troupe))
+    return item_out(
+        db,
+        item,
+        running=responses.is_running(db, user, troupe),
+        gives=gives_equipment(db, user, troupe),
+    )
 
 
 @router.get("/responses/{response_id}")
@@ -567,7 +725,12 @@ def read_response(response_id: uuid.UUID, db: DbSession, user: CurrentUser) -> W
     visible = responses.can_write(db, user, item, troupe) or item.response.assigned_to_any_narrator
     if not visible:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such response.")
-    return item_out(db, item, running=responses.is_running(db, user, troupe))
+    return item_out(
+        db,
+        item,
+        running=responses.is_running(db, user, troupe),
+        gives=gives_equipment(db, user, troupe),
+    )
 
 
 @router.put("/responses/{response_id}")
@@ -577,7 +740,12 @@ def write(response_id: uuid.UUID, body: Writing, db: DbSession, user: CurrentUse
         raise HTTPException(status.HTTP_403_FORBIDDEN, "This response is not assigned to you.")
     responses.write(db, user, item, troupe, body.body)
     db.commit()
-    return item_out(db, item, running=responses.is_running(db, user, troupe))
+    return item_out(
+        db,
+        item,
+        running=responses.is_running(db, user, troupe),
+        gives=gives_equipment(db, user, troupe),
+    )
 
 
 @router.post("/responses/{response_id}/quest-result")
@@ -592,7 +760,89 @@ def record_quest_result(
         raise HTTPException(status.HTTP_403_FORBIDDEN, "This response is not assigned to you.")
     quest_actions.record(db, user, item, body.result, body.text, ends=body.ends)
     db.commit()
-    return item_out(db, item, running=responses.is_running(db, user, troupe))
+    return item_out(
+        db,
+        item,
+        running=responses.is_running(db, user, troupe),
+        gives=gives_equipment(db, user, troupe),
+    )
+
+
+# --- equipment given from a response (horatio.response_items) -------------------------------
+
+
+def giving_in(body: ResponseItemIn) -> response_items.Giving:
+    if (body.item is None) == (body.quality is None):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "Give an item or a quality, not both."
+        )
+    if body.item is not None:
+        return response_items.NewItem(fields_in(body.item), body.item.template)
+    assert body.quality is not None
+    quality = body.quality
+    return response_items.NewQuality(quality.item_id, ItemQuality(quality.name, quality.detail))
+
+
+def response_row(item: responses.WorkItem, row_id: uuid.UUID, db: DbSession) -> ResponseItem:
+    row = db.get(ResponseItem, row_id)
+    if row is None or row.response_id != item.response.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "The response gives no such thing.")
+    return row
+
+
+def given_out(db: DbSession, user: User, item: responses.WorkItem, troupe: Troupe) -> WorkItemOut:
+    return item_out(
+        db,
+        item,
+        running=responses.is_running(db, user, troupe),
+        gives=gives_equipment(db, user, troupe),
+    )
+
+
+@router.post("/responses/{response_id}/items", status_code=status.HTTP_201_CREATED)
+def give_from_response(
+    response_id: uuid.UUID, body: ResponseItemIn, db: DbSession, user: CurrentUser
+) -> WorkItemOut:
+    """Give the character a new item, or a quality on one it holds, from the
+    response: it reaches the character when the response is delivered, with the
+    results. Only its home troupe's storytellers and assistant storytellers."""
+    item, troupe = response_item(db, user, response_id)
+    try:
+        response_items.add(db, user, item, troupe, giving_in(body))
+    except EquipmentRefused as error:
+        raise refusal(error) from None
+    db.commit()
+    return given_out(db, user, item, troupe)
+
+
+@router.put("/responses/{response_id}/items/{row_id}")
+def change_response_item(
+    response_id: uuid.UUID,
+    row_id: uuid.UUID,
+    body: ResponseItemIn,
+    db: DbSession,
+    user: CurrentUser,
+) -> WorkItemOut:
+    """Change what the response gives, before it is delivered."""
+    item, troupe = response_item(db, user, response_id)
+    row = response_row(item, row_id, db)
+    try:
+        response_items.change(db, user, item, troupe, row, giving_in(body))
+    except EquipmentRefused as error:
+        raise refusal(error) from None
+    db.commit()
+    return given_out(db, user, item, troupe)
+
+
+@router.delete("/responses/{response_id}/items/{row_id}")
+def remove_response_item(
+    response_id: uuid.UUID, row_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> WorkItemOut:
+    """Take it off the response, before it is delivered: nothing is given."""
+    item, troupe = response_item(db, user, response_id)
+    response_items.remove(db, user, item, troupe, response_row(item, row_id, db))
+    db.commit()
+    return given_out(db, user, item, troupe)
 
 
 # --- fill tables ------------------------------------------------------------------------

@@ -46,6 +46,8 @@ export function EquipmentEditor({
   holders,
   holder: fixedHolder,
   item,
+  start,
+  send,
   onDone,
 }: {
   troupeId: string;
@@ -56,6 +58,10 @@ export function EquipmentEditor({
   holder?: EquipmentHolderOut;
   /** Changing this item, rather than giving a new one. */
   item?: EquipmentItemOut;
+  /** A new item to start from, and the template it came from: one a response gives, to change it. */
+  start?: { draft: Draft; template: string | null };
+  /** Sends the new item somewhere other than straight to the holder, such as a downtime response (#508); it has no expiry. */
+  send?: (item: ReturnType<typeof body> & { template: string | null }) => Promise<unknown>;
   onDone: (name: string) => void;
 }) {
   const [holderId, setHolderId] = useState(fixedHolder?.id ?? item?.character_id ?? "");
@@ -63,8 +69,8 @@ export function EquipmentEditor({
   const splat = holder?.splat ?? "vampire";
   const rules = useEquipmentRules(splat);
   const templates = useTroupeTemplates(troupeId);
-  const [draft, setDraft] = useState<Draft>(item ? fromItem(item) : NEW_ITEM);
-  const [template, setTemplate] = useState<string | null>(null);
+  const [draft, setDraft] = useState<Draft>(item ? fromItem(item) : (start?.draft ?? NEW_ITEM));
+  const [template, setTemplate] = useState<string | null>(start?.template ?? null);
   const [page, setPage] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [savedTemplate, setSavedTemplate] = useState<string | null>(null);
@@ -72,7 +78,8 @@ export function EquipmentEditor({
   const choices = useExpiryChoices(troupeId);
   const [expiry, setExpiry] = useState<ExpiryDraft>(fromExpiry(item?.expiry));
   // Sent only while the troupe lets items expire: left out, a change keeps the expiry.
-  const expires = choices.data?.on ? { expiry: expiryBody(expiry) } : {};
+  const expiring = !!choices.data?.on && !send;
+  const expires = expiring ? { expiry: expiryBody(expiry) } : {};
 
   const checked = body(draft);
   const check = useQuery({
@@ -95,6 +102,8 @@ export function EquipmentEditor({
           body: { ...checked, reason, ...expires },
         }),
       );
+    } else if (send) {
+      await send({ ...checked, template });
     } else {
       await unwrap(
         api.POST("/api/troupes/{troupe_id}/equipment", {
@@ -117,7 +126,7 @@ export function EquipmentEditor({
   const own = templates.data ?? [];
   const qualities = qualityChoices(book, draft.kind, draft.qualities);
   const problems = check.data?.problems ?? [];
-  const label = item ? `Change ${item.name}` : "Give equipment";
+  const label = item ? `Change ${item.name}` : start ? `Change ${start.draft.name}` : "Give equipment";
   const text = draft.kind === "text";
 
   const startFrom = (value: string) => {
@@ -331,7 +340,7 @@ export function EquipmentEditor({
         )}
       </div>
 
-      {choices.data?.on && <ExpiryFields expiry={expiry} setExpiry={setExpiry} cycleName={choices.data.cycle_name} />}
+      {expiring && <ExpiryFields expiry={expiry} setExpiry={setExpiry} cycleName={choices.data?.cycle_name ?? null} />}
 
       <Field label="Description (optional)" hint="Where it came from, or what it looks like. Its holder's player sees it.">
         <Textarea rows={2} value={draft.description} onChange={(e) => set({ description: e.target.value })} />
@@ -348,7 +357,7 @@ export function EquipmentEditor({
       {savedTemplate && <Notice>Saved {savedTemplate} as one of {troupeName}'s templates.</Notice>}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={save.isPending || !draft.name.trim() || (!item && !holderId)}>
-          {item ? "Save changes" : holder ? `Give to ${holder.name}` : "Give"}
+          {item || start ? "Save changes" : holder ? `Give to ${holder.name}` : "Give"}
         </Button>
         {!item && (
           <Button type="button" variant="secondary" disabled={keep.isPending || !draft.name.trim()} onClick={() => keep.mutate(undefined)}>

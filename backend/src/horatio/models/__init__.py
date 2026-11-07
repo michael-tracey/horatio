@@ -46,7 +46,7 @@ from horatio.models.downtimes import (
     TroupeConnector,
 )
 from horatio.models.email_changes import EmailChange
-from horatio.models.equipment import EquipmentEvent, EquipmentItem
+from horatio.models.equipment import EquipmentEvent, EquipmentItem, ResponseItem
 from horatio.models.influence import InfluenceEntry
 from horatio.models.influence_blocks import InfluenceBlock
 from horatio.models.influence_effects import InfluenceEffect
@@ -153,6 +153,7 @@ __all__ = [
     "TroupeLocationQuality",
     "RandomTable",
     "Response",
+    "ResponseItem",
     "Nomination",
     "Remembrance",
     "Notification",

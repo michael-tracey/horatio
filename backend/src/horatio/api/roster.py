@@ -381,6 +381,10 @@ MESSAGES: dict[str, str] = {
     "response.assigned": "{actor} assigned {character}'s downtime response.",
     "response.accepted": "{actor} took on {character}'s downtime response.",
     "response.declined": "{actor} handed back {character}'s downtime response.",
+    "response.item_added": "{actor} added {what} to {character}'s downtime response, to give"
+    " with the results.",
+    "response.item_changed": "{actor} changed what {character}'s downtime response gives: {what}.",
+    "response.item_removed": "{actor} took {what} off {character}'s downtime response.",
     "downtime.delivered": "{actor} delivered {count} downtime results.",
     "connector.changed": "{actor} turned the {connector} connector {state}.",
     "connector.discord_connected": "{actor} connected the Discord server {server}.",
