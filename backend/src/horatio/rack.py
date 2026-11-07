@@ -256,6 +256,8 @@ def take(
         raise conflict("A storyteller has already answered your feeding; it can no longer change.")
     before = taken(db, participant)
     card = card_of(db, cycle, card_id) if card_id is not None else None
+    if card is not None and submission is not None and submission.quick_hands:
+        raise unprocessable("Using Quick Hands, Quick Work, the character cannot feed this cycle.")
     if card is not None and card is not before:
         if card.taken_by is not None:
             raise conflict("Someone has taken that vessel already.")

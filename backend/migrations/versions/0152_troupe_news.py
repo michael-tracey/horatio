@@ -2,7 +2,7 @@
 deliveries to Discord (issue #510)
 
 Revision ID: 0152
-Revises: 0147
+Revises: 0151
 Create Date: 2026-11-07 12:00:00.000000
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0152"
-down_revision: str | None = "0147"
+down_revision: str | None = "0151"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

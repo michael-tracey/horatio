@@ -79,6 +79,44 @@ class Question(Record):
     visible_to: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
+class DowntimeKeyword(Record):
+    """One of a troupe's downtime keywords, as its house rules have it
+    (horatio.keywords): what kind of action an answer is. A troupe with no rows plays
+    Horatio's defaults; its first change writes them all, so its rows are the whole
+    list. A keyword is retired, never deleted, so past downtimes keep it."""
+
+    __tablename__ = "downtime_keywords"
+    __table_args__ = (
+        UniqueConstraint("troupe_id", "key"),
+        CheckConstraint("cost >= 0", name="cost"),
+        CheckConstraint("step between 1 and 6", name="step"),
+    )
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    # One of the defaults' keys (whose effects it keeps), or the troupe's own.
+    key: Mapped[str]
+    position: Mapped[int]
+    name: Mapped[str]
+    # One line on the form, saying what the keyword is for.
+    explanation: Mapped[str] = mapped_column(default="", server_default="")
+    # What it asks for besides the description: character, target, territory, trait,
+    # teacher, item.
+    fields: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    # The action kinds it can be spent from.
+    action_kinds: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    # Only as the one action a cycle the Computer skill gives (MET: VTM p. 93).
+    computers_only: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Fits a Science action (p. 97).
+    science: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Actions it costs.
+    cost: Mapped[int] = mapped_column(default=1, server_default="1")
+    # Required each cycle of characters of these social ages.
+    required_for: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    # Where it comes in the resolution order (horatio.keywords.STEPS).
+    step: Mapped[int] = mapped_column(default=5, server_default="5")
+    retired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class CycleParticipant(Record):
     """A character taking part in a downtime cycle, and its action allowance,
     fixed when it joined the cycle."""
@@ -218,6 +256,13 @@ class OwedAction(Record):
     play_event_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("play_events.id", ondelete="CASCADE"), index=True
     )
+    # What owes it, where staff applied it from a response (horatio.downtime_effects):
+    # "hungry_dead" for Call of the Hungry Dead, which does not stack (MET: VtM core
+    # p. 181), "indirect_attack" for an indirect influence attack (p. 512).
+    source: Mapped[str | None]
+    response_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("responses.id", ondelete="CASCADE"), index=True
+    )
 
 
 class Submission(Record):
@@ -259,6 +304,9 @@ class Submission(Record):
     # With Feeding Territories: the characters whose patrol caught this one poaching,
     # by id (horatio.territories).
     feeding_caught_by: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    # The player used Quick Hands, Quick Work this cycle (Vol. II Issue 1, p. 76): two
+    # more general actions, no feeding, and the next game at half Blood.
+    quick_hands: Mapped[bool] = mapped_column(default=False, server_default="false")
 
 
 class Answer(Record):
@@ -270,8 +318,18 @@ class Answer(Record):
     # Which answer to this question: an action question may be answered several times.
     slot: Mapped[int] = mapped_column(default=1, server_default="1")
     body: Mapped[str]
-    # The action kind's extra fields, such as an influence level.
+    # The action kind's extra fields, such as an influence level; the characters it
+    # is aimed at, a Cancel or Observe, and the project it counts toward
+    # (horatio.targets, horatio.projects); its keyword and the keyword's fields
+    # (horatio.keywords).
     structured: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # Staff say an action aimed at a character isn't against them, such as a friendly
+    # visit, so a Haven's Location doesn't double its cost (horatio.targets).
+    not_against: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # A Cancel or Observe: the action of its target's that staff paired it with.
+    paired_answer_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("answers.id", ondelete="SET NULL"), index=True
+    )
 
 
 class Response(Record):
@@ -405,3 +463,96 @@ class RandomTable(Record):
     troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
     name: Mapped[str]
     entries: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+
+
+class Project(Record):
+    """Work a character does over several downtime cycles, such as changing its Path
+    (MET: VTM p. 306): a target number of actions, and perhaps a least number a
+    month or it starts over (horatio.projects)."""
+
+    __tablename__ = "projects"
+    __table_args__ = (
+        CheckConstraint("kind in ('path_change', 'research', 'other')", name="kind"),
+        CheckConstraint("status in ('proposed', 'active', 'finished', 'dropped')", name="status"),
+        CheckConstraint("target >= 1", name="target"),
+        CheckConstraint("monthly_minimum is null or monthly_minimum >= 1", name="monthly_minimum"),
+        CheckConstraint("progress >= 0", name="progress"),
+    )
+
+    character_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("characters.id", ondelete="CASCADE"), index=True
+    )
+    # The character's home troupe when it started: its staff keep the project, and
+    # its cycles' actions count toward it.
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    name: Mapped[str]
+    kind: Mapped[str]
+    target: Mapped[int]
+    # Fewer actions than this toward it in a cycle starts it over; null for no such rule.
+    monthly_minimum: Mapped[int | None]
+    progress: Mapped[int] = mapped_column(default=0, server_default="0")
+    # Proposed by its player until staff confirm it.
+    status: Mapped[str] = mapped_column(default="proposed", server_default="proposed")
+    # A Path change: the Path it changes to, and whether a teacher has it.
+    path: Mapped[str] = mapped_column(default="", server_default="")
+    with_teacher: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # How often it has started over.
+    restarts: Mapped[int] = mapped_column(default=0, server_default="0")
+    started_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    confirmed_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # A finished Path change: staff changed the sheet's Morality to the new Path.
+    sheet_changed_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+
+
+class ProjectCycle(Record):
+    """What one completed cycle did for a project: the actions spent on it, and
+    whether it started over for too few."""
+
+    __tablename__ = "project_cycles"
+    __table_args__ = (UniqueConstraint("project_id", "cycle_id"),)
+
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"), index=True
+    )
+    cycle_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("downtime_cycles.id"), index=True)
+    spent: Mapped[int]
+    started_over: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # The project's progress once the cycle was counted.
+    progress: Mapped[int]
+
+
+class BackgroundChange(Record):
+    """A background raised or lowered for a while (horatio.downtime_effects): Crafts or
+    Performance in a downtime raise Resources or Fame by 1 until the troupe's next cycle
+    opens (MET: VtM core pp. 93, 96); overtaxed Resources are 2 lower until six games
+    and three months have passed, whichever is later, half that once three downtime
+    actions go on recovering (p. 103)."""
+
+    __tablename__ = "background_changes"
+    __table_args__ = (
+        CheckConstraint("source in ('crafts', 'performance', 'overtaxed')", name="source"),
+    )
+
+    character_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("characters.id", ondelete="CASCADE"), index=True
+    )
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"))
+    # The background's name: "Resources" or "Fame".
+    trait: Mapped[str]
+    delta: Mapped[int]
+    source: Mapped[str]
+    # The response staff applied it from; undoing it there removes it.
+    response_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("responses.id", ondelete="CASCADE"), index=True
+    )
+    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    # Overtaxed: the games to play and the date to pass, whichever is later. A month's
+    # boost has neither: it lasts until the troupe's next cycle opens.
+    games: Mapped[int] = mapped_column(default=0, server_default="0")
+    ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # The response whose three actions halved an overtaxed loss's wait.
+    halved_by_response_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("responses.id", ondelete="SET NULL")
+    )
+    added_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))

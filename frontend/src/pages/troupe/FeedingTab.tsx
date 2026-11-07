@@ -165,9 +165,16 @@ function CharacterFeeding({ cycle, character: c, humors, rack }: { cycle: CycleO
         <span className="flex flex-wrap gap-2">
           <Badge tone={submitted ? "gold" : "mist"}>{c.submission_status === "submitted" ? "Submitted" : c.submission_status === "draft" ? "Draft" : "Not started"}</Badge>
           {c.result && <Badge tone="gold">{RESULTS.find(([r]) => r === c.result)?.[1]}</Badge>}
+          {c.quick_hands && <Badge>Quick Hands, Quick Work</Badge>}
         </span>
       }
     >
+      {c.quick_hands && (
+        <p className="mb-2 text-sm text-gold">
+          Using Quick Hands, Quick Work this cycle: two more actions, no feeding and no Herd of its own or from others. It starts the next game at half Blood, which goes out with
+          its results without an answer here.
+        </p>
+      )}
       {rack ? (
         <p className={`text-sm ${c.vessel ? "text-gold" : "text-mist"}`} aria-label={`${c.character_name}'s vessel`}>
           {c.vessel ? `Took Feeding Card ${cardLine(c.vessel)}${c.vessel.territory_name ? `, from ${c.vessel.territory_name}` : ""}.` : "No vessel taken yet."}

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CycleOut, StaffMember, WorkItemOut } from "../../api/types";
 import { ResponseEditor } from "../../components/ResponseEditor";
@@ -7,7 +8,7 @@ import { useToast } from "../../components/Toast";
 import { Button, Empty, ErrorText, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { roleLabel } from "./roles";
-import { assigneeOf, byCharacter, questionsOf, responsesCount, shows, STATUS_NAMES, type ResponseFilter, type Status } from "./responsesList";
+import { assigneeOf, byCharacter, byStep, keywordsOf, questionsOf, responsesCount, shows, STATUS_NAMES, type ResponseFilter, type Status } from "./responsesList";
 
 /**
  * Every response in a cycle, for storytellers and assistants to share out and
@@ -15,7 +16,9 @@ import { assigneeOf, byCharacter, questionsOf, responsesCount, shows, STATUS_NAM
  * by question, and ticked to assign several in one go.
  */
 export function ResponsesTab({ cycle }: { cycle: CycleOut }) {
-  const [filter, setFilterState] = useState<ResponseFilter>({ status: "all", assignee: "", question: "" });
+  const [filter, setFilterState] = useState<ResponseFilter>({ status: "all", assignee: "", question: "", keyword: "" });
+  // By character, or in the troupe's resolution order, step by step (#509).
+  const [inOrder, setInOrder] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [folded, setFolded] = useState<Set<string>>(new Set());
   const items = useQuery({
@@ -26,6 +29,12 @@ export function ResponsesTab({ cycle }: { cycle: CycleOut }) {
     queryKey: ["staff", cycle.troupe_id],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/staff", { params: { path: { troupe_id: cycle.troupe_id } } })),
   });
+  // A link to one response, from the Aimed at tab or an item's history (#508), shows it once the list is here.
+  const { hash } = useLocation();
+  const loaded = !!items.data;
+  useEffect(() => {
+    if (loaded && hash.startsWith("#response-")) document.getElementById(hash.slice(1))?.scrollIntoView({ block: "start" });
+  }, [loaded, hash]);
   if (items.isPending) return <Loading />;
   if (items.error) return <ErrorText error={items.error} />;
 
@@ -36,8 +45,11 @@ export function ResponsesTab({ cycle }: { cycle: CycleOut }) {
   };
   const all = items.data;
   const shown = all.filter((i) => shows(i, filter));
-  const groups = byCharacter(shown);
+  const groups = inOrder
+    ? byStep(shown).map((g) => ({ characterId: `step-${g.step}`, name: `${g.step}. ${g.name}`, items: g.items }))
+    : byCharacter(shown);
   const questions = questionsOf(all);
+  const keywords = keywordsOf(all);
   const members = staff.data ?? [];
   const tick = (ids: string[], on: boolean) => {
     const next = new Set(selected);
@@ -80,6 +92,33 @@ export function ResponsesTab({ cycle }: { cycle: CycleOut }) {
               </Select>
             </label>
           )}
+          {keywords.length > 1 && (
+            <label className="flex flex-col gap-1 text-sm text-mist">
+              Keyword
+              <Select className="w-auto" value={filter.keyword} onChange={(e) => setFilter({ keyword: e.target.value })}>
+                <option value="">Every keyword</option>
+                {keywords.map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+              </Select>
+            </label>
+          )}
+          <label className="flex flex-col gap-1 text-sm text-mist">
+            Order
+            <Select
+              className="w-auto"
+              value={inOrder ? "order" : "character"}
+              onChange={(e) => {
+                setInOrder(e.target.value === "order");
+                setFolded(new Set());
+              }}
+            >
+              <option value="character">By character</option>
+              <option value="order">In resolution order</option>
+            </Select>
+          </label>
           {groups.length > 1 && (
             <Button
               variant="ghost"
@@ -102,7 +141,7 @@ export function ResponsesTab({ cycle }: { cycle: CycleOut }) {
             return (
               <section key={group.characterId} aria-label={group.name} className="flex flex-col gap-2">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-ash pb-1">
-                  <Tick label={`Select all of ${group.name}'s`} ids={ids} selected={selected} onChange={tick} hidden />
+                  <Tick label={inOrder ? `Select all at step ${group.name}` : `Select all of ${group.name}'s`} ids={ids} selected={selected} onChange={tick} hidden />
                   <button
                     type="button"
                     aria-expanded={open}

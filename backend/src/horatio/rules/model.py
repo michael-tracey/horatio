@@ -129,7 +129,7 @@ class ActionKindData:
     house: bool = False
 
 
-AllowanceScheme = Literal["fixed", "per_dot"]
+AllowanceScheme = Literal["fixed", "per_dot", "per_detail"]
 
 
 @dataclass(frozen=True)
@@ -147,6 +147,11 @@ class AllowanceRuleData:
     # What it means, shown on the character's downtime beside the actions: Hunted's
     # two actions go on staying hidden, and what not spending them does.
     note: str = ""
+    # per_detail, one for each field of the trait held (each Science, MET: VtM core
+    # p. 97): the rating the character's best of the trait needs for its 1st, 2nd,
+    # 3rd... field to count, and no more fields than it names. Empty, every field
+    # counts. A troupe's variant of Science: (1, 3, 5).
+    detail_ratings: tuple[int, ...] = ()
 
     @property
     def key(self) -> tuple[str, str | None, str | None]:
@@ -166,6 +171,9 @@ class FeedingModifierData:
     herd_factor: int = 1
     always_half: bool = False
     page: str | None = None
+    # May feed in any feeding territory without poaching: Triumphant's right to feed
+    # in any of the sect's domains (MET: VtM core p. 316).
+    anywhere: bool = False
 
 
 @dataclass(frozen=True)

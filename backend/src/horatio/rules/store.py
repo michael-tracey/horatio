@@ -42,6 +42,7 @@ from horatio.rules.files import (
     check_allowance_rule,
     check_cost_rule,
     check_creation_rules,
+    check_scheme,
     feeding_modifier_from_dict,
     feeding_modifier_to_dict,
 )
@@ -401,6 +402,7 @@ def allowance_row(
         scheme=rule.scheme,
         amount=rule.amount,
         note=rule.note,
+        detail_ratings=list(rule.detail_ratings),
     )
 
 
@@ -457,11 +459,11 @@ def change_house_allowance_rule(
     row = session.get(AllowanceRule, rule_id)
     if row is None or row.troupe_id != troupe_id:
         raise LookupError("no such house rule")
-    if rule.scheme not in ("fixed", "per_dot"):
-        raise ValueError(f"unknown scheme {rule.scheme!r}")
+    check_scheme(rule, "allowance rule")
     row.scheme = rule.scheme
     row.amount = rule.amount
     row.min_rating = rule.min_rating
+    row.detail_ratings = list(rule.detail_ratings)
     session.flush()
 
 
@@ -744,6 +746,7 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
             min_rating=row.min_rating,
             house=row.troupe_id is not None,
             note=row.note,
+            detail_ratings=tuple(row.detail_ratings),
         )
 
     creation_rows = list(

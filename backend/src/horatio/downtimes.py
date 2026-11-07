@@ -32,25 +32,31 @@ from horatio import (
     feeding,
     influence,
     item_expiry,
+    keywords,
     notifications,
     preferences,
     responses,
     retainer_upkeep,
     suspensions,
+    targets,
 )
 from horatio.models import (
     AllowanceAdjustment,
     Answer,
     AuditEvent,
     Character,
+    CharacterTrait,
     CycleParticipant,
     Delivery,
     DowntimeCycle,
+    HeldStatus,
     OwedAction,
     Question,
     Response,
     RuleSet,
     Submission,
+    TraitCategory,
+    TraitDefinition,
     Troupe,
     User,
     XpEntry,
@@ -351,6 +357,12 @@ def allowance_sheet(db: Session, character: Character) -> list[SheetTrait]:
     return sheet
 
 
+def held_statuses(db: Session, character: Character) -> list[str]:
+    """The fleeting and negative status the character holds, by name: Triumphant
+    changes its feeding (horatio.rules.feeding)."""
+    return list(db.scalars(select(HeldStatus.name).where(HeldStatus.character_id == character.id)))
+
+
 def fill_allowance(
     db: Session, participant: CycleParticipant, character: Character, troupe: Troupe
 ) -> None:
@@ -365,11 +377,12 @@ def fill_allowance(
         if line.action_kind in totals:
             totals[line.action_kind] += line.amount
             found.append(line)
-    participant.feeding = feeding_rules.basis(rules, sheet)
+    participant.feeding = feeding_rules.basis(rules, sheet, held_statuses(db, character))
     participant.allowance = totals
     participant.allowance_breakdown = [
         {"action_kind": line.action_kind, "source": line.source, "amount": line.amount}
         | ({"note": line.note} if line.note else {})
+        | ({"only": line.only} if line.only else {})
         for line in found
     ]
 
@@ -648,25 +661,38 @@ def counts(db: Session, cycle_ids: Sequence[uuid.UUID]) -> dict[uuid.UUID, Count
     return found
 
 
-def owe_actions(db: Session, user: User, character: Character, amount: int, reason: str) -> None:
+def owe_actions(
+    db: Session,
+    user: User,
+    character: Character,
+    amount: int,
+    reason: str,
+    *,
+    source: str | None = None,
+    response_id: uuid.UUID | None = None,
+) -> OwedAction | None:
     """Record downtime actions the character owes its home troupe, and take them
-    from its current cycle if it has not submitted yet."""
+    from its current cycle if it has not submitted yet. `source` and `response_id`
+    say what owes them, where staff applied it from a response
+    (horatio.downtime_effects)."""
     if amount <= 0 or character.home_troupe_id is None or character.kind != "pc":
-        return
-    db.add(
-        OwedAction(
-            character_id=character.id,
-            troupe_id=character.home_troupe_id,
-            action_kind="general",
-            amount=amount,
-            reason=reason,
-            owed_by=user.id,
-        )
+        return None
+    debt = OwedAction(
+        character_id=character.id,
+        troupe_id=character.home_troupe_id,
+        action_kind="general",
+        amount=amount,
+        reason=reason,
+        owed_by=user.id,
+        source=source,
+        response_id=response_id,
     )
+    db.add(debt)
     db.flush()
     current = current_participation(db, character)
     if current is not None:
         settle_owed_actions(db, current[1], current[0])
+    return debt
 
 
 def settle_owed_actions(db: Session, participant: CycleParticipant, cycle: DowntimeCycle) -> None:
@@ -744,9 +770,88 @@ def adjustments(db: Session, participant: CycleParticipant) -> list[AllowanceAdj
     )
 
 
+# --- Quick Hands, Quick Work ------------------------------------------------------------
+# A technique (Vol. II Issue 1, p. 76): used in a downtime, it gives two more actions,
+# but the character cannot feed, use its own Herd or take Herd from others, and starts
+# its next game at half Blood. The player chooses it on the form each cycle, until the
+# downtime is submitted. Giving its Herd to others is still allowed: the technique
+# stops only the character's own use of what restores Blood.
+
+QUICK_HANDS = ("techniques", "Quick Hands, Quick Work")
+QUICK_HANDS_ACTIONS = 2
+QUICK_HANDS_NOTE = (
+    "No feeding this cycle, and the next game starts at half Blood (Vol. II Issue 1, p. 76)."
+)
+
+
+def has_quick_hands(db: Session, character: Character) -> bool:
+    category, name = QUICK_HANDS
+    return (
+        db.scalar(
+            select(CharacterTrait.id)
+            .join(TraitDefinition, CharacterTrait.trait_definition_id == TraitDefinition.id)
+            .join(TraitCategory, TraitDefinition.category_id == TraitCategory.id)
+            .where(
+                CharacterTrait.character_id == character.id,
+                TraitCategory.key == category,
+                TraitDefinition.name == name,
+                or_(CharacterTrait.rating.is_(None), CharacterTrait.rating != 0),
+            )
+            .limit(1)
+        )
+        is not None
+    )
+
+
+def quick_hands_on(db: Session, participant: CycleParticipant) -> bool:
+    return bool(
+        db.scalar(select(Submission.quick_hands).where(Submission.participant_id == participant.id))
+    )
+
+
+def extra_lines(db: Session, participant: CycleParticipant) -> list[dict[str, Any]]:
+    """Breakdown lines the player's choices this cycle add: Quick Hands, Quick Work."""
+    if not quick_hands_on(db, participant):
+        return []
+    return [
+        {
+            "action_kind": "general",
+            "source": QUICK_HANDS[1],
+            "amount": QUICK_HANDS_ACTIONS,
+            "note": QUICK_HANDS_NOTE,
+        }
+    ]
+
+
+def choose_quick_hands(
+    db: Session, character: Character, participant: CycleParticipant, on: bool
+) -> None:
+    """Use the technique this cycle, or not, until the downtime is submitted."""
+    submission = submission_for(db, participant)
+    if (submission.quick_hands if submission else False) == on:
+        return
+    if submission is not None and submission.status == "submitted":
+        raise conflict("Quick Hands, Quick Work can only change before the downtime is submitted.")
+    if on and not has_quick_hands(db, character):
+        raise unprocessable("This character doesn't have Quick Hands, Quick Work.")
+    if submission is None:
+        submission = Submission(participant_id=participant.id)
+        db.add(submission)
+    submission.quick_hands = on
+    db.flush()
+
+
+def breakdown(db: Session, participant: CycleParticipant) -> list[dict[str, Any]]:
+    """Where the allowance came from: the sheet when the cycle opened, and the
+    player's choices this cycle."""
+    return [*participant.allowance_breakdown, *extra_lines(db, participant)]
+
+
 def allowance_totals(db: Session, participant: CycleParticipant) -> dict[str, int]:
     """The allowance with its adjustments, before any is stopped at zero."""
     totals = dict(participant.allowance)
+    for line in extra_lines(db, participant):
+        totals[line["action_kind"]] = totals.get(line["action_kind"], 0) + line["amount"]
     for adjustment in adjustments(db, participant):
         totals[adjustment.action_kind] = totals.get(adjustment.action_kind, 0) + adjustment.delta
     return totals
@@ -768,7 +873,7 @@ def shortfall(
     one): counted from the breakdown, before the allowance stopped at zero.
     `adjusted` is its adjustments, when already loaded."""
     totals: dict[str, int] = {}
-    for line in participant.allowance_breakdown:
+    for line in breakdown(db, participant):
         totals[line["action_kind"]] = totals.get(line["action_kind"], 0) + line["amount"]
     for adjustment in adjustments(db, participant) if adjusted is None else adjusted:
         totals[adjustment.action_kind] = totals.get(adjustment.action_kind, 0) + adjustment.delta
@@ -905,6 +1010,14 @@ class AnswerSpec:
     structured: dict[str, Any] | None = None
 
 
+def influence_part(structured: dict[str, Any] | None) -> dict[str, Any]:
+    """An answer's fields that its influence action is checked on: not who it is aimed
+    at, nor the project it counts toward."""
+    from horatio import projects
+
+    return projects.without_project(targets.without_aim(structured or {}))
+
+
 def check_answer(question: Question, spec: AnswerSpec) -> None:
     body = spec.body.strip()
     if question.answer_type == "choice" and body and body not in question.options:
@@ -918,6 +1031,54 @@ def check_answer(question: Question, spec: AnswerSpec) -> None:
         raise unprocessable(f"{question.prompt!r}: answer yes or no.")
 
 
+def answer_keywords(
+    db: Session,
+    cycle: DowntimeCycle,
+    participant: CycleParticipant,
+    character: Character,
+    troupe: Troupe,
+) -> tuple[keywords.Context, list[keywords.Keyword]]:
+    """What decides the keywords the character is offered, and the troupe's keywords."""
+    show = feeding.shown(troupe)
+    # Under Quick Hands, Quick Work the character doesn't feed this cycle.
+    feeds = (
+        show.tracked
+        and not show.rack
+        and not quick_hands_on(db, participant)
+        and feeding.participant_basis(db, participant, character, cycle).get("clan") is not None
+    )
+    return keywords.context(db, character, troupe, feeds), keywords.troupe_keywords(db, troupe.id)
+
+
+def keywords_feed(
+    answer: feeding.FeedingAnswer,
+    before: feeding.FeedingAnswer,
+    fed: keywords.Fed,
+    show: feeding.Shown,
+) -> bool:
+    """The Feeding section with the actions, territory and patrols the Feed and Patrol
+    answers give, in place of the section's own. Once they are gone, so are what they
+    gave. Whether answers give any of it, now or before."""
+    had = list(before.from_keywords)
+    parts: list[str] = []
+    if fed.actions is not None:
+        answer.actions = fed.actions
+        if show.territories:
+            answer.territory = fed.territory or ""
+        parts.append("actions")
+    elif "actions" in had:
+        answer.actions = 0
+        if show.territories:
+            answer.territory = ""
+    if fed.patrols is not None and show.territories:
+        answer.patrols = [feeding.Patrol(t, n) for t, n in fed.patrols.items()]
+        parts.append("patrols")
+    elif "patrols" in had:
+        answer.patrols = []
+    answer.from_keywords = parts
+    return bool(parts or had)
+
+
 def save_answers(
     db: Session,
     player: User,
@@ -926,14 +1087,21 @@ def save_answers(
     participant: CycleParticipant,
     specs: Sequence[AnswerSpec],
     feeding_answer: feeding.FeedingAnswer | None = None,
+    quick_hands: bool | None = None,
 ) -> Submission:
     """Replace the character's answers, and its Feeding section when given one.
-    Blank answers are dropped, but for a Quest action that names its quest. Feeding
-    actions come out of the general actions."""
-    from horatio import quest_actions
+    Blank answers are dropped, but for a Quest action that names its quest and an
+    action with a keyword (horatio.keywords). Feeding actions come out of the general
+    actions. An action aimed at someone whose Haven has Location costs two
+    (horatio.targets). `quick_hands` uses Quick Hands, Quick
+    Work this cycle, or not; left out, it stays as it was."""
+    from horatio import projects, quest_actions
 
     ensure_can_submit(db, cycle, participant)
     suspensions.refuse_character(db, character)
+    if quick_hands is not None:
+        choose_quick_hands(db, character, participant, quick_hands)
+    using_quick_hands = quick_hands_on(db, participant)
     allowance_now = effective_allowance(db, participant)
     shown = {q.id: q for q in visible_questions(db, cycle, character, allowance_now)}
 
@@ -945,12 +1113,52 @@ def save_answers(
     feeding_before = feeding.answer_of(submission)
     troupe = db.get_one(Troupe, cycle.troupe_id)
     tracked = feeding.tracked(troupe)
+    show = feeding.shown(troupe)
+
+    def names_quest(spec: AnswerSpec) -> bool:
+        question = shown.get(spec.question_id)
+        return question is not None and question.kind == "quest" and bool(spec.structured)
+
+    # An answer with a keyword is kept as it is filled in, its description still to come.
+    kept = [
+        s
+        for s in specs
+        if s.body.strip() or names_quest(s) or keywords.keyword_of(s.structured or {})
+    ]
+    # Each answer's keyword and its fields (horatio.keywords), checked first: Feed and
+    # Patrol answers make the Feeding section's actions and patrols.
+    ctx, keyword_list = answer_keywords(db, cycle, participant, character, troupe)
+    by_key = keywords.by_key(keyword_list)
+    owed = {o.id: o for o in keywords.learning_owed(db, participant.id)}
+    checked: dict[tuple[uuid.UUID, int], keywords.Checked] = {}
+    confirmed: set[str] = set()
+    for spec in kept:
+        question = shown.get(spec.question_id)
+        if question is None or question.kind != "action":
+            continue
+        before = existing.get((spec.question_id, spec.slot))
+        spec.structured, found = keywords.check_answer(
+            db, by_key, ctx, question, spec.structured or {}, before, owed
+        )
+        owed_id = spec.structured.get(keywords.OWED)
+        if owed_id is not None:
+            if owed_id in confirmed:
+                raise unprocessable("Each thing learned is one Learn action.")
+            confirmed.add(owed_id)
+        checked[(spec.question_id, spec.slot)] = found
+    from_answers = keywords.feeding_from(
+        [
+            (c.keyword, s.structured or {})
+            for s in kept
+            if (c := checked.get((s.question_id, s.slot)))
+        ]
+    )
+
     if feeding_answer is None or not tracked:
         # A troupe that doesn't track feeding keeps what was entered before, for when
         # it switches feeding on again, and its actions count for nothing.
         feeding_answer = feeding_before
     else:
-        show = feeding.shown(troupe)
         # What a rule that is off would set stays as it was; Horatio alone throws the hunt.
         feeding_answer.hunt = feeding_before.hunt
         if not show.resonance:
@@ -958,18 +1166,33 @@ def save_answers(
         if not show.territories:
             feeding_answer.territory = feeding_before.territory
             feeding_answer.patrols = feeding_before.patrols
+    derived = (
+        tracked
+        and not show.rack
+        and keywords_feed(feeding_answer, feeding_before, from_answers, show)
+    )
+    if derived or feeding_answer is not feeding_before:
         feeding.check_answer(
             db,
             cycle,
             character,
             feeding.participant_basis(db, participant, character, cycle),
             feeding_answer,
+            quick_hands=using_quick_hands,
         )
-    # Feeding actions and patrols come out of the general actions; with the Rack, a
-    # vessel stands in for feeding actions.
-    show = feeding.shown(troupe)
-    fed = feeding_answer.actions if tracked and not show.rack else 0
-    fed += feeding_answer.patrolling if show.territories else 0
+    # Feeding actions and patrols come out of the general actions, but for those Feed and
+    # Patrol answers give, which spend their own; with the Rack, a vessel stands in for
+    # feeding actions.
+    fed = (
+        feeding_answer.actions
+        if tracked and not show.rack and "actions" not in feeding_answer.from_keywords
+        else 0
+    )
+    fed += (
+        feeding_answer.patrolling
+        if show.territories and "patrols" not in feeding_answer.from_keywords
+        else 0
+    )
     used: dict[str, int] = {"general": fed}
     if fed > allowance_now.get("general", 0):
         raise unprocessable(
@@ -978,14 +1201,17 @@ def save_answers(
             "downtime actions this character has."
         )
     per_question: dict[uuid.UUID, int] = {}
+    # Actions of each kind that cost two, aimed at someone whose Haven has Location.
+    doubled: dict[str, int] = {}
     seen: set[tuple[uuid.UUID, int]] = set()
     chosen_quests: set[uuid.UUID] = set()
-
-    def names_quest(spec: AnswerSpec) -> bool:
-        question = shown.get(spec.question_id)
-        return question is not None and question.kind == "quest" and bool(spec.structured)
-
-    kept = [s for s in specs if s.body.strip() or names_quest(s)]
+    counters = 0
+    # General actions on keywords that don't fit a Science, with feeding's.
+    unscientific = fed
+    # Whose Havens have Location, of everyone the answers are aimed at.
+    located = targets.with_location(
+        db, cycle.troupe_id, {t for s in kept for t in targets.aimed_at(s.structured or {})}
+    )
     for spec in kept:
         question = shown.get(spec.question_id)
         if question is None:
@@ -994,6 +1220,21 @@ def save_answers(
             raise unprocessable(f"{question.prompt!r}: each answer needs its own slot, from 1.")
         seen.add((spec.question_id, spec.slot))
         check_answer(question, spec)
+        before = existing.get((spec.question_id, spec.slot))
+        spec.structured = targets.check(
+            db, character, cycle, question, spec.structured or {}, before
+        )
+        spec.structured = projects.check_answer(
+            db, character, cycle, question, spec.structured, before
+        )
+        found = checked.get((spec.question_id, spec.slot))
+        counters += targets.counter_of(spec.structured) is not None or bool(
+            found and found.keyword and found.keyword.computers_only
+        )
+        if counters > 1:
+            raise unprocessable(
+                "The Computer skill cancels or observes one action a cycle (MET: VTM p. 93)."
+            )
         if question.kind == "custom" and spec.slot != 1:
             raise unprocessable(f"{question.prompt!r} takes one answer.")
         if question.kind == "quest":
@@ -1017,15 +1258,30 @@ def save_answers(
                 raise unprocessable(f"{question.prompt!r} takes at most {question.max_answers}.")
             kind = question.action_kind or ""
             influence_type = influence.type_of(kind) if question.kind == "action" else None
-            before = existing.get((spec.question_id, spec.slot))
-            changed = before is None or (spec.structured or {}) != before.structured
+            changed = before is None or influence_part(spec.structured) != influence_part(
+                before.structured
+            )
             if influence_type is not None and changed:
                 # Checked when it changes, so a rating lowered since does not lock it.
                 standings = standings or influence.standings(db, character)
                 influence.check_answer(
                     standings[influence_type], question.prompt, spec.structured or {}
                 )
-            used[kind] = used.get(kind, 0) + 1
+            # Staff's word that it isn't against them holds while it is aimed as it was.
+            not_against = (
+                before is not None
+                and before.not_against
+                and targets.aiming(before.structured) == targets.aiming(spec.structured)
+            )
+            base = found.cost if found is not None else 1
+            cost = base * targets.cost(spec.structured, not_against, located)
+            doubled[kind] = doubled.get(kind, 0) + (cost > base)
+            used[kind] = used.get(kind, 0) + cost
+            keyword = found.keyword if found is not None else by_key.get(keywords.NARRATIVE)
+            if kind == "general" and (
+                question.kind != "action" or not (keyword and keyword.science)
+            ):
+                unscientific += cost
             if used[kind] > allowance_now.get(kind, 0):
                 feeding_spent = fed if kind == "general" else 0
                 raise unprocessable(
@@ -1033,12 +1289,29 @@ def save_answers(
                     f"{allowance_now.get(kind, 0)} this character has"
                     + (
                         f", with {feeding_spent} spent feeding"
-                        + (" or patrolling." if show.territories else ".")
+                        + (" or patrolling" if show.territories else "")
                         if feeding_spent
-                        else "."
+                        else ""
                     )
+                    + (
+                        f", and {doubled[kind]} that "
+                        + ("costs" if doubled[kind] == 1 else "cost")
+                        + " 2 actions"
+                        if doubled[kind]
+                        else ""
+                    )
+                    + "."
                 )
 
+    science = science_actions(participant)
+    if science and unscientific > allowance_now.get("general", 0) - science:
+        raise unprocessable(
+            f"{science} of this character's actions "
+            + ("is a Science action" if science == 1 else "are Science actions")
+            + ", only for keywords that fit a Science (MET: VTM p. 97), such as "
+            + ", ".join(k.name for k in keyword_list if k.science and not k.retired)
+            + "."
+        )
     if submission is None:
         submission = Submission(participant_id=participant.id)
         db.add(submission)
@@ -1069,6 +1342,7 @@ def save_answers(
         if key not in seen:
             db.delete(answer)
     db.flush()
+    aimed_anew: list[Answer] = []
     for spec in kept:
         answer = existing.get((spec.question_id, spec.slot))
         if answer is None:
@@ -1077,7 +1351,14 @@ def save_answers(
             )
             db.add(answer)
         answer.body = spec.body.strip()
+        aimed_before = targets.aiming(answer.structured or {})
         answer.structured = spec.structured or {}
+        if targets.aiming(answer.structured) != aimed_before:
+            # Aimed anew, it is judged anew: staff's word on it no longer stands.
+            answer.not_against = False
+            answer.paired_answer_id = None
+            if submission.status == "submitted":
+                aimed_anew.append(answer)
     submission.feeding = feeding_answer.stored()
     # When the player last saved, for staff chasing downtimes: a change to the
     # answers alone would leave the submission's own row, and its time, as it was.
@@ -1086,7 +1367,54 @@ def save_answers(
     responses.sync_responses(db, submission)
     if submission.status == "submitted":
         quest_actions.join_chosen(db, player, character, submission)
+        for answer in aimed_anew:
+            targets.log(db, player, character, cycle, shown[answer.question_id], answer)
     return submission
+
+
+def science_actions(participant: CycleParticipant) -> int:
+    """The general actions the character's Sciences give (MET: VTM p. 97), each only for
+    its field: they go only on keywords that fit a Science (horatio.keywords)."""
+    return sum(
+        int(line["amount"])
+        for line in participant.allowance_breakdown
+        if line.get("only") and line["action_kind"] == "general" and line["amount"] > 0
+    )
+
+
+def keyword_gaps(
+    db: Session,
+    cycle: DowntimeCycle,
+    participant: CycleParticipant,
+    character: Character,
+    submission: Submission | None,
+    allowance_now: dict[str, int],
+) -> list[str]:
+    """What the answers' keywords ask for that they don't give yet, and the keywords
+    the character must take each cycle that no answer has (horatio.keywords)."""
+    troupe = db.get_one(Troupe, cycle.troupe_id)
+    ctx, keyword_list = answer_keywords(db, cycle, participant, character, troupe)
+    by_key = keywords.by_key(keyword_list)
+    questions = {q.id: q for q in visible_questions(db, cycle, character, allowance_now)}
+    answers = answers_for(db, submission) if submission else []
+    gaps: list[str] = []
+    for answer in answers:
+        key = keywords.keyword_of(answer.structured)
+        keyword = by_key.get(key) if key else None
+        if keyword is None:
+            continue
+        lacking = keywords.missing(keyword, answer.structured, ctx)
+        if not answer.body.strip():
+            lacking.append("what it is")
+        if lacking:
+            gaps.append(f"say {' and '.join(lacking)} for your {keyword.name} action")
+    taken = {keywords.keyword_of(a.structured) for a in answers}
+    for keyword in keywords.required_now(keyword_list, ctx):
+        if keyword.key in taken:
+            continue
+        if any(keywords.fits(keyword, q, ctx) for q in questions.values()):
+            gaps.append(f"add a {keyword.name} action, which {ctx.age}s take each cycle")
+    return gaps
 
 
 def submit(
@@ -1111,9 +1439,13 @@ def submit(
     ]
     if missing:
         raise unprocessable("Answer these first: " + "; ".join(missing))
+    gaps = keyword_gaps(db, cycle, participant, character, submission, allowance_now)
+    if gaps:
+        raise unprocessable("Before you submit: " + "; ".join(gaps) + ".")
     if submission is None:
         submission = Submission(participant_id=participant.id)
         db.add(submission)
+    resubmitted = submission.status == "submitted"
     submission.status = "submitted"
     submission.submitted_at = now()
     submission.late = now() > cycle.closes_at
@@ -1130,6 +1462,9 @@ def submit(
     )
     award_completion_xp(db, player, character, cycle, participant)
     quest_actions.join_chosen(db, player, character, submission)
+    if not resubmitted:
+        # Changed after, an answer is noted as it is saved.
+        targets.log_submission(db, player, character, cycle, submission)
     return submission
 
 

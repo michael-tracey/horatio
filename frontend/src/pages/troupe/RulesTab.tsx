@@ -17,6 +17,7 @@ import { pageText } from "./bookPage";
 import { CostsSection } from "./CostsSection";
 import { FreeChangesSettings } from "./FreeChangesSettings";
 import { HouseTraitsSection } from "./HouseTraitsSection";
+import { KeywordsSection } from "./KeywordsSection";
 import { LanguagesSection } from "./LanguagesSection";
 import { LocationRulesSection } from "./LocationRulesSection";
 import { OwnChecks } from "./OwnChecks";
@@ -79,6 +80,7 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
           { to: `${base}/costs`, label: "Costs" },
           { to: `${base}/starting`, label: "Starting points" },
           { to: `${base}/actions`, label: "Downtime actions" },
+          { to: `${base}/keywords`, label: "Downtime keywords" },
           { to: `${base}/languages`, label: "Languages" },
           { to: `${base}/house-traits`, label: "House merits and flaws" },
           { to: `${base}/written`, label: "Written rules" },
@@ -96,6 +98,7 @@ export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boo
         <Route path="costs" element={<CostsSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="starting" element={<StartingSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="actions" element={<AllowancesSection troupeId={troupeId} canEdit={canEdit} />} />
+        <Route path="keywords" element={<KeywordsSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="languages" element={<LanguagesSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="house-traits" element={<HouseTraitsSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="written" element={<WrittenRulesSection troupeId={troupeId} canEdit={canEdit} />} />

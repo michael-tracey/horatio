@@ -26,6 +26,7 @@ import { AtHandle } from "../../components/PersonPicker";
 import { CharacterPicture } from "./Picture";
 import { QuestsTab } from "./QuestsTab";
 import { ResultsTab } from "./ResultsTab";
+import { ProjectsCard } from "./Projects";
 import { newResults, useSeenUpTo } from "./resultsSeen";
 import { CharacterShared } from "../troupe/SharedBackground";
 import { ChoiceInfo } from "./Info";
@@ -168,6 +169,8 @@ export function CharacterPage() {
   }
 
   const mine = c.player_id === me.data?.id;
+  // Its home troupe's storytellers and assistants keep its projects (#507).
+  const keepsProjects = !mine && !!home.data && abilities(home.data.my_role, custodian).running;
   // While its player is still creating it, the page leads back to the wizard, and the
   // tabs for a character in play (experience, downtimes, influence) wait until it's done.
   const creating = mine && !c.creation_complete;
@@ -231,6 +234,7 @@ export function CharacterPage() {
                   ]
                 : []),
               ...(influence && !creating ? [{ to: `${base}/influence`, label: "Influence" }] : []),
+              ...(keepsProjects && !creating ? [{ to: `${base}/projects`, label: "Projects" }] : []),
             ],
           },
           {
@@ -266,6 +270,7 @@ export function CharacterPage() {
         <Route path="log" element={<CharacterLogTab characterId={c.id} />} />
         {influence && <Route path="influence" element={<InfluenceTab character={c} mine={mine} />} />}
         <Route path="shared" element={<CharacterShared characterId={c.id} />} />
+        {keepsProjects && <Route path="projects" element={<ProjectsCard characterId={c.id} />} />}
         {backstory.data?.read && <Route path="backstory" element={<BackstoryTab character={c} />} />}
         {creating && <Route path="create/:step?" element={<CreationWizard character={c} />} />}
         {mine && (

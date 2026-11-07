@@ -109,10 +109,25 @@ def test_narrators_see_only_their_work_and_never_the_sheet(scene: Scene) -> None
         "influence_blocks",
         # A Quest action's quest: its scenario and requirements, never a sheet.
         "quest",
+        # Who an action is aimed at: always empty for a narrator.
+        "aim",
+        "countered_by",
+        # Its keyword and where it comes in the resolution order (#509).
+        "keyword",
+        "keyword_key",
+        "step",
+        "step_name",
+        "resolution",
+        "keyword_actions",
+        "keyword_details",
         "status",
         "assigned_to_user_id",
         "assigned_to_any_narrator",
         "body",
+        # Equipment it gives, as the player will read it; how it was built only for
+        # those who give equipment (test_api_response_items).
+        "items",
+        "can_give",
     }
     assert troupe.narrator.client.get(f"/characters/{scene.agnes}/sheet").status_code == 404
 

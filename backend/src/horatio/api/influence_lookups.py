@@ -201,7 +201,7 @@ def accept_block(
     entry = troupe_entry(db, user, body.entry_id)
     influence_lookups.accept_block(db, user, item, troupe, entry)
     db.commit()
-    return item_out(db, item)
+    return item_out(db, item, running=True)
 
 
 @router.delete("/responses/{response_id}/discovery-block", status_code=status.HTTP_204_NO_CONTENT)

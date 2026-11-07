@@ -118,6 +118,8 @@ class CharacterFeedingOut(BaseModel):
     poaching: str | None = None
     patrols: list[PatrolByOut] = []
     caught_by: list[uuid.UUID] = []
+    # It used Quick Hands, Quick Work this cycle: no feeding, half Blood next game.
+    quick_hands: bool = False
 
 
 class TerritoryUseOut(TerritoryOut):
@@ -240,6 +242,7 @@ def character_out(
         if poached
         else [],
         caught_by=[uuid.UUID(i) for i in submission.feeding_caught_by] if submission else [],
+        quick_hands=submission is not None and submission.quick_hands,
     )
 
 

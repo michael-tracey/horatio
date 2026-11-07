@@ -28,13 +28,17 @@ from horatio.models.characters import (
 from horatio.models.downtimes import (
     AllowanceAdjustment,
     Answer,
+    BackgroundChange,
     CycleParticipant,
     Delivery,
     DowntimeCycle,
+    DowntimeKeyword,
     FeedingAdjustment,
     FeedingCard,
     FeedingTerritory,
     OwedAction,
+    Project,
+    ProjectCycle,
     Question,
     RandomTable,
     Response,
@@ -42,7 +46,7 @@ from horatio.models.downtimes import (
     TroupeConnector,
 )
 from horatio.models.email_changes import EmailChange
-from horatio.models.equipment import EquipmentEvent, EquipmentItem
+from horatio.models.equipment import EquipmentEvent, EquipmentItem, ResponseItem
 from horatio.models.influence import InfluenceEntry
 from horatio.models.influence_blocks import InfluenceBlock
 from horatio.models.influence_effects import InfluenceEffect
@@ -128,6 +132,7 @@ __all__ = [
     "AllowanceAdjustment",
     "AllowanceRule",
     "Answer",
+    "BackgroundChange",
     "CycleParticipant",
     "Delivery",
     "Diablerie",
@@ -136,6 +141,7 @@ __all__ = [
     "StatusSuppression",
     "DisciplinePurchase",
     "DowntimeCycle",
+    "DowntimeKeyword",
     "EmailNotice",
     "FeedingAdjustment",
     "FeedingCard",
@@ -148,6 +154,7 @@ __all__ = [
     "TroupeLocationQuality",
     "RandomTable",
     "Response",
+    "ResponseItem",
     "Nomination",
     "Remembrance",
     "Notification",
@@ -156,6 +163,8 @@ __all__ = [
     "PostDismissal",
     "PostRead",
     "OwedAction",
+    "Project",
+    "ProjectCycle",
     "PasswordReset",
     "PlayCounter",
     "PoolModifier",
