@@ -406,7 +406,7 @@ Venues are often basements with no signal. Horatio can keep your own characters 
 **Turning it on.** The first time you sign in on a device, Horatio asks once: *Is this your own phone?* Choose **Yes, keep them here** on your own phone, or **No, online only** on a borrowed or shared one. Until you answer, nothing is kept. You can change it at any time in **Your account › This device**, under **Keep my characters on this device**:
 
 - **Off: online only.** Nothing is kept on the device.
-- **On: my characters work offline.** The sheets, Play Views and powers of every character you have in play, in every troupe, are kept on the device and brought up to date whenever there's signal.
+- **On: my characters work offline.** The sheets, Play Views and powers of every character you have in play, in every troupe, are kept on the device and brought up to date whenever there's signal, with their home troupe's news from the last 30 days.
 
 The same tab shows what's kept now (the characters, when they were last updated and roughly how much space it takes), with **Update now**, worth pressing before you leave for a game, and **Remove from this device**.
 
@@ -459,6 +459,18 @@ The troupe's page (its **About** tab) shows its upcoming **Games** to its member
 > **If your troupe uses this:** under **Missed a game?**, you can mark a character absentee for a game it missed, until the game's XP is awarded. An absentee game never counts as attended, and gets the troupe's absentee XP.
 
 ![The troupe's Games card: a game tonight with check-in open, and one to come, answered Coming](images/players/games.png)
+
+## Reading the troupe's news
+
+A troupe's **News** tab, in its Troupe group, has the in-world news its storytellers write: stories from its news agencies, such as a newspaper or a rumour sheet, newest first, each under its agency's masthead. Every player with a character in the troupe, home or visiting, gets every story. **From** shows one agency's stories only. The troupe's **About** tab shows the latest headline.
+
+A dot marks each story you haven't read, and the News tab shows how many there are. Opening a story reads it; **Mark all as read** clears the lot. Stories from the last 30 days show first; **Show older stories** brings back the rest.
+
+Each new story also comes to the bell, as "New from *agency*: headline". To stop that, choose **Not in the bell** for **Troupe news in the bell** under Account › Settings, in **Troupes**. News doesn't come by email unless you turn on **Troupe news** under **Notifications by email**, so a busy week of news doesn't fill your inbox.
+
+If your characters are kept on your phone (see [Using Horatio at a game with no signal](#using-horatio-at-a-game-with-no-signal)), their home troupe's news from the last 30 days is kept too, to read at a game with no signal.
+
+Many troupes also post their news to a channel on their Discord server.
 
 ## The character log
 

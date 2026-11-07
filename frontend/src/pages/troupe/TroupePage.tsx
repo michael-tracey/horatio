@@ -17,6 +17,9 @@ import { LogTab } from "./LogTab";
 import { StockNpcBuilder } from "./StockNpcBuilder";
 import { NpcsTab } from "./NpcsTab";
 import { MyWork, WorkTab } from "./WorkTab";
+import { AgenciesTab } from "../news/AgenciesTab";
+import { PostsSection } from "../news/PostsSection";
+import { useGlance } from "../news/queries";
 import { NominationsFooter } from "../nominations/NominationsFooter";
 import { NominationsTab } from "../nominations/NominationsTab";
 import { OverviewTab } from "./OverviewTab";
@@ -53,6 +56,8 @@ export function TroupePage() {
   const staff = troupe.data ? abilities(troupe.data.my_role, me.data?.is_custodian ?? false).staff : false;
   const waiting = useWaiting(troupeId, staff && !troupe.data?.archived);
   const counts = tabCounts(waiting.data);
+  // What its members haven't read of its news (#510).
+  const glance = useGlance(troupeId, !!troupe.data?.whos_who && !troupe.data.archived);
 
   if (troupe.isPending) return <Loading />;
   if (troupe.error) return <ErrorText error={troupe.error} />;
@@ -85,6 +90,7 @@ export function TroupePage() {
             tabs: [
               { to: base, label: "About", end: true },
               { to: `${base}/profile`, label: "Profile" },
+              ...(t.whos_who && !t.archived ? [{ to: `${base}/news`, label: "News", count: glance.data?.news_unread ?? 0, countLabel: "unread" }] : []),
               ...(t.whos_who ? [{ to: `${base}/whos-who`, label: "Who's Who" }] : []),
               ...(t.nominations ? [{ to: `${base}/nominations`, label: t.player_nominations ? "Nominations" : "Remembrances" }] : []),
               { to: `${base}/house-rules`, label: "House rules" },
@@ -139,6 +145,7 @@ export function TroupePage() {
               ...(can.running ? [{ to: `${base}/settings`, label: "Troupe settings" }] : []),
               ...(can.running ? [{ to: `${base}/rules`, label: "Rules" }] : []),
               ...(can.running ? [{ to: `${base}/specializations`, label: "Specialisations" }] : []),
+              ...(can.running ? [{ to: `${base}/news-agencies`, label: "News" }] : []),
               ...(can.running ? [{ to: `${base}/connectors`, label: "Connectors" }] : []),
             ],
           },
@@ -150,6 +157,8 @@ export function TroupePage() {
         <Route path="profile" element={<ProfileTab troupe={t} can={can} />} />
         <Route path="house-rules" element={<HouseRulesTab troupe={t} staff={can.running} />} />
         <Route path="status" element={<StatusRulesTab troupe={t} />} />
+        {t.whos_who && !t.archived && <Route path="news/*" element={<PostsSection troupeId={t.id} kind="news" writes={can.running} proposes={can.staff && !can.running} />} />}
+        {can.running && <Route path="news-agencies" element={<AgenciesTab troupeId={t.id} archived={t.archived} />} />}
         {can.staff && <Route path="staff" element={<StaffTab troupe={t} canManage={can.storyteller} />} />}
         {t.whos_who && <Route path="whos-who" element={<WhosWhoTab troupeId={t.id} />} />}
         {t.nominations && (

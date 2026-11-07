@@ -50,6 +50,81 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agencies/{agency_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change Agency */
+        put: operations["change_agency_api_agencies__agency_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agencies/{agency_id}/picture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Masthead
+         * @description A masthead picture, shown in place of the agency's name.
+         */
+        post: operations["upload_masthead_api_agencies__agency_id__picture_post"];
+        /** Remove Masthead */
+        delete: operations["remove_masthead_api_agencies__agency_id__picture_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agencies/{agency_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Agency */
+        post: operations["restore_agency_api_agencies__agency_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agencies/{agency_id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retire Agency
+         * @description Take it off the list for new stories; its stories stay.
+         */
+        post: operations["retire_agency_api_agencies__agency_id__retire_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/approvals/{approval_id}/approve": {
         parameters: {
             query?: never;
@@ -4716,6 +4791,248 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/posts/{post_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Post */
+        get: operations["read_post_api_posts__post_id__get"];
+        /**
+         * Change Post
+         * @description Change what a post says. A published one changes in the app at once and on
+         *     Discord by the worker.
+         */
+        put: operations["change_post_api_posts__post_id__put"];
+        post?: never;
+        /**
+         * Delete Post
+         * @description Throw away a post never published, or since unpublished: storytellers any,
+         *     a narrator their own proposal.
+         */
+        delete: operations["delete_post_api_posts__post_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/posts/{post_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept Proposal
+         * @description Take up a narrator's proposal as a draft, to edit and publish later.
+         */
+        post: operations["accept_proposal_api_posts__post_id__accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/posts/{post_id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decline Proposal
+         * @description Turn down a narrator's proposal, telling them, with a note if given.
+         */
+        post: operations["decline_proposal_api_posts__post_id__decline_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/posts/{post_id}/discord/mark-sent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark Post Sent
+         * @description Record that someone saw to Discord by hand.
+         */
+        post: operations["mark_post_sent_api_posts__post_id__discord_mark_sent_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/posts/{post_id}/discord/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry Post
+         * @description Try a failed post to Discord again, straight away.
+         */
+        post: operations["retry_post_api_posts__post_id__discord_retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/posts/{post_id}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Duplicate Post
+         * @description A new draft with the same words, agency and picture.
+         */
+        post: operations["duplicate_post_api_posts__post_id__duplicate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/posts/{post_id}/picture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Post Picture */
+        post: operations["upload_post_picture_api_posts__post_id__picture_post"];
+        /** Remove Post Picture */
+        delete: operations["remove_post_picture_api_posts__post_id__picture_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/posts/{post_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish Post
+         * @description Publish it now. A note goes to the narrator who proposed it, if one did.
+         */
+        post: operations["publish_post_api_posts__post_id__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/posts/{post_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark Read */
+        post: operations["mark_read_api_posts__post_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/posts/{post_id}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Schedule Post
+         * @description Publish it at a time to come; the worker publishes it then.
+         */
+        post: operations["schedule_post_api_posts__post_id__schedule_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/posts/{post_id}/unpublish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unpublish Post
+         * @description Take it out of the app and off Discord; it goes back to the drafts.
+         */
+        post: operations["unpublish_post_api_posts__post_id__unpublish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/posts/{post_id}/unschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unschedule Post
+         * @description Cancel a scheduled post: it goes back to the drafts.
+         */
+        post: operations["unschedule_post_api_posts__post_id__unschedule_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/preferences": {
         parameters: {
             query?: never;
@@ -5758,6 +6075,27 @@ export interface paths {
         head?: never;
         /** Change Troupe */
         patch: operations["change_troupe_api_troupes__troupe_id__patch"];
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/agencies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Agencies
+         * @description The troupe's news agencies, retired ones last, for its members.
+         */
+        get: operations["list_agencies_api_troupes__troupe_id__agencies_get"];
+        put?: never;
+        /** New Agency */
+        post: operations["new_agency_api_troupes__troupe_id__agencies_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/troupes/{troupe_id}/allowances": {
@@ -7770,6 +8108,133 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/post-channels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Post Channels
+         * @description The Discord channels the troupe's posts go to, and those to choose from.
+         */
+        get: operations["post_channels_api_troupes__troupe_id__post_channels_get"];
+        /**
+         * Choose Post Channel
+         * @description Choose the channel for a kind of post, or none (in the app only).
+         */
+        put: operations["choose_post_channel_api_troupes__troupe_id__post_channels_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/post-pictures/{picture_id}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Post Picture
+         * @description A post's picture or a masthead, for the troupe's members. Its files never
+         *     change (a new one has a new id), so browsers may keep them, privately.
+         */
+        get: operations["post_picture_api_troupes__troupe_id__post_pictures__picture_id___name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Posts
+         * @description The troupe's published posts of a kind, newest first: the last 30 days (and
+         *     at least the latest few), or a page of older ones before `before`.
+         */
+        get: operations["list_posts_api_troupes__troupe_id__posts_get"];
+        put?: never;
+        /**
+         * New Post
+         * @description A new draft; from a narrator, a proposal for the storytellers.
+         */
+        post: operations["new_post_api_troupes__troupe_id__posts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/posts/desk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Desk
+         * @description What is being written, not yet published.
+         */
+        get: operations["desk_api_troupes__troupe_id__posts_desk_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/posts/glance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Glance
+         * @description How many posts the caller hasn't read, and the latest headline.
+         */
+        get: operations["glance_api_troupes__troupe_id__posts_glance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/posts/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark All Read */
+        post: operations["mark_all_read_api_troupes__troupe_id__posts_read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/print": {
         parameters: {
             query?: never;
@@ -8839,6 +9304,43 @@ export interface components {
              * @enum {string}
              */
             kind: "social_age";
+        };
+        /** AgencyIn */
+        AgencyIn: {
+            /**
+             * Colour
+             * @default #8b1e1e
+             */
+            colour: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Discord Channel */
+            discord_channel?: string | null;
+            /** Name */
+            name: string;
+        };
+        /** AgencyOut */
+        AgencyOut: {
+            /** Colour */
+            colour: string;
+            /** Description */
+            description: string;
+            /** Discord Channel */
+            discord_channel: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Picture */
+            picture: string | null;
+            /** Retired */
+            retired: boolean;
         };
         /** AllowanceChange */
         AllowanceChange: {
@@ -10001,6 +10503,14 @@ export interface components {
              */
             splat: string;
         };
+        /** Body_upload_masthead_api_agencies__agency_id__picture_post */
+        Body_upload_masthead_api_agencies__agency_id__picture_post: {
+            /**
+             * File
+             * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
+             */
+            file: string;
+        };
         /** Body_upload_picture_api_characters__character_id__picture_post */
         Body_upload_picture_api_characters__character_id__picture_post: {
             /** Crop Size */
@@ -10023,6 +10533,14 @@ export interface components {
             crop_x?: number | null;
             /** Crop Y */
             crop_y?: number | null;
+            /**
+             * File
+             * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
+             */
+            file: string;
+        };
+        /** Body_upload_post_picture_api_posts__post_id__picture_post */
+        Body_upload_post_picture_api_posts__post_id__picture_post: {
             /**
              * File
              * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
@@ -10467,6 +10985,16 @@ export interface components {
             cost: number;
             sheet: components["schemas"]["SheetOut"];
         };
+        /** ChannelIn */
+        ChannelIn: {
+            /** Channel */
+            channel: string | null;
+            /**
+             * Kind
+             * @constant
+             */
+            kind: "news";
+        };
         /** ChannelOut */
         ChannelOut: {
             /** Category */
@@ -10477,6 +11005,19 @@ export interface components {
             name: string;
             /** Private */
             private: boolean;
+        };
+        /** ChannelsOut */
+        ChannelsOut: {
+            /** Can Change */
+            can_change: boolean;
+            /** Channels */
+            channels: components["schemas"]["ChannelOut"][];
+            /** News */
+            news: string | null;
+            /** Server */
+            server: string | null;
+            /** Unavailable */
+            unavailable: string | null;
         };
         /** CharacterAward */
         CharacterAward: {
@@ -11875,6 +12416,17 @@ export interface components {
             /** Type */
             type: string;
         };
+        /**
+         * Desk
+         * @description What staff are writing: every proposal, draft, scheduled and declined story
+         *     for the storytellers and assistant storytellers; a narrator's own proposals.
+         */
+        Desk: {
+            /** Posts */
+            posts: components["schemas"]["PostOut"][];
+            /** Writes */
+            writes: boolean;
+        };
         /** DetailChange */
         DetailChange: {
             /** Category */
@@ -12169,6 +12721,21 @@ export interface components {
             switches: string[];
             /** Versus */
             versus: string | null;
+        };
+        /**
+         * DiscordOut
+         * @description How a post stands on Discord, for its staff.
+         */
+        DiscordOut: {
+            /** Next Attempt At */
+            next_attempt_at: string | null;
+            /** Reason */
+            reason: string | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "app_only" | "waiting" | "sent" | "failed";
         };
         /** DiscordSetup */
         DiscordSetup: {
@@ -14209,6 +14776,15 @@ export interface components {
             name: string;
             /** Rating */
             rating: number;
+        };
+        /**
+         * Glance
+         * @description For the troupe's tabs and front page.
+         */
+        Glance: {
+            latest_news: components["schemas"]["PostOut"] | null;
+            /** News Unread */
+            news_unread: number;
         };
         /** GolcondaIn */
         GolcondaIn: {
@@ -16988,6 +17564,29 @@ export interface components {
             /** Token */
             token: string;
         };
+        /** NewPost */
+        NewPost: {
+            /** Agency Id */
+            agency_id?: string | null;
+            /**
+             * Body
+             * @default
+             */
+            body: string;
+            /**
+             * Dateline
+             * @default
+             */
+            dateline: string;
+            /**
+             * Kind
+             * @default news
+             * @constant
+             */
+            kind: "news";
+            /** Title */
+            title: string;
+        };
         /** NewScene */
         NewScene: {
             /** Characters */
@@ -17077,11 +17676,6 @@ export interface components {
             home: boolean;
             /** Player Name */
             player_name: string;
-        };
-        /** NoteIn */
-        NoteIn: {
-            /** Note */
-            note: string;
         };
         /** NotificationOut */
         NotificationOut: {
@@ -18523,6 +19117,78 @@ export interface components {
             /** When */
             when: string;
         };
+        /** PostIn */
+        PostIn: {
+            /** Agency Id */
+            agency_id?: string | null;
+            /**
+             * Body
+             * @default
+             */
+            body: string;
+            /**
+             * Dateline
+             * @default
+             */
+            dateline: string;
+            /** Title */
+            title: string;
+        };
+        /** PostOut */
+        PostOut: {
+            /** Agency Id */
+            agency_id: string | null;
+            /** Author */
+            author: string;
+            /** Body */
+            body: string;
+            /** Dateline */
+            dateline: string;
+            discord: components["schemas"]["DiscordOut"] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @constant
+             */
+            kind: "news";
+            /** Mine */
+            mine: boolean;
+            /** Note */
+            note: string;
+            /** Picture */
+            picture: string | null;
+            /** Proposed By */
+            proposed_by: string | null;
+            /** Publish At */
+            publish_at: string | null;
+            /** Published At */
+            published_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "proposed" | "scheduled" | "published" | "declined";
+            /** Title */
+            title: string;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Unread */
+            unread: boolean;
+        };
+        /** PostPage */
+        PostPage: {
+            /** Older */
+            older: boolean;
+            /** Posts */
+            posts: components["schemas"]["PostOut"][];
+        };
         /** PowerChoicesIn */
         PowerChoicesIn: {
             /** Discipline */
@@ -18643,6 +19309,11 @@ export interface components {
              */
             badge_size: "3x5" | "3x4" | "cr80" | "4x6";
             /**
+             * Bell News
+             * @default true
+             */
+            bell_news: boolean;
+            /**
              * Clock
              * @default 12
              * @enum {string}
@@ -18675,6 +19346,11 @@ export interface components {
              * @default false
              */
             email_downtime_reminders: boolean;
+            /**
+             * Email News
+             * @default false
+             */
+            email_news: boolean;
             /**
              * Email Pictures
              * @default false
@@ -20746,6 +21422,14 @@ export interface components {
             mine: boolean;
             /** Name */
             name: string;
+        };
+        /** ScheduleIn */
+        ScheduleIn: {
+            /**
+             * Publish At
+             * Format: date-time
+             */
+            publish_at: string;
         };
         /** ScheduledGameIn */
         ScheduledGameIn: {
@@ -24092,6 +24776,19 @@ export interface components {
              */
             email: boolean;
         };
+        /** NoteIn */
+        horatio__api__posts__NoteIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** NoteIn */
+        horatio__api__quests__NoteIn: {
+            /** Note */
+            note: string;
+        };
         /** TeachingOut */
         horatio__api__teachers__TeachingOut: {
             /** Asked */
@@ -24210,6 +24907,169 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_agency_api_agencies__agency_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agency_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgencyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_masthead_api_agencies__agency_id__picture_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agency_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_masthead_api_agencies__agency_id__picture_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_masthead_api_agencies__agency_id__picture_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agency_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_agency_api_agencies__agency_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agency_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retire_agency_api_agencies__agency_id__retire_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agency_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyOut"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -33196,6 +34056,487 @@ export interface operations {
             };
         };
     };
+    read_post_api_posts__post_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_post_api_posts__post_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PostIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_post_api_posts__post_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_proposal_api_posts__post_id__accept_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decline_proposal_api_posts__post_id__decline_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["horatio__api__posts__NoteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_post_sent_api_posts__post_id__discord_mark_sent_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_post_api_posts__post_id__discord_retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    duplicate_post_api_posts__post_id__duplicate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_post_picture_api_posts__post_id__picture_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_post_picture_api_posts__post_id__picture_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_post_picture_api_posts__post_id__picture_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_post_api_posts__post_id__publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["horatio__api__posts__NoteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_read_api_posts__post_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    schedule_post_api_posts__post_id__schedule_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unpublish_post_api_posts__post_id__unpublish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unschedule_post_api_posts__post_id__unschedule_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_preferences_api_preferences_get: {
         parameters: {
             query?: never;
@@ -33678,7 +35019,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["NoteIn"];
+                "application/json": components["schemas"]["horatio__api__quests__NoteIn"];
             };
         };
         responses: {
@@ -35251,6 +36592,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_agencies_api_troupes__troupe_id__agencies_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    new_agency_api_troupes__troupe_id__agencies_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgencyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyOut"];
                 };
             };
             /** @description Validation Error */
@@ -39539,6 +40946,268 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_channels_api_troupes__troupe_id__post_channels_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    choose_post_channel_api_troupes__troupe_id__post_channels_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChannelIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_picture_api_troupes__troupe_id__post_pictures__picture_id___name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                picture_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_posts_api_troupes__troupe_id__posts_get: {
+        parameters: {
+            query?: {
+                kind?: "news";
+                agency_id?: string | null;
+                before?: string | null;
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    new_post_api_troupes__troupe_id__posts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewPost"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    desk_api_troupes__troupe_id__posts_desk_get: {
+        parameters: {
+            query?: {
+                kind?: "news";
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Desk"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    glance_api_troupes__troupe_id__posts_glance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Glance"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_all_read_api_troupes__troupe_id__posts_read_post: {
+        parameters: {
+            query?: {
+                kind?: "news";
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };

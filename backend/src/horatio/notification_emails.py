@@ -66,6 +66,7 @@ TOPICS = (
     Topic("renames", "Character renames", ("character.renamed",)),
     Topic("pictures", "Pictures removed", ("picture.removed",)),
     Topic("titles", "Titles chosen", ("title",)),
+    Topic("news", "Troupe news", ("news.published",)),
 )
 BY_NAME = {topic.name: topic for topic in TOPICS}
 # An unsubscribe link that turns off every kind, as a digest carries.

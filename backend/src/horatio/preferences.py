@@ -46,6 +46,10 @@ class Preferences(BaseModel):
     email_renames: bool = False
     email_pictures: bool = False
     email_titles: bool = False
+    # The troupe's news (#510): in the bell unless the person turns it off; by email
+    # only if they turn it on, so a busy week of news doesn't flood inboxes.
+    bell_news: bool = True
+    email_news: bool = False
     # Each email as it happens, or everything gathered into one a day.
     email_digest: Literal["at_once", "daily"] = "at_once"
     # Troupes' Who's Who names the player by their handle, not their name (#264).
