@@ -34,6 +34,7 @@ import { RulesTab } from "./RulesTab";
 import { SettingsTab } from "./SettingsTab";
 import { SetupTab } from "./SetupTab";
 import { SharedBackgroundsTab } from "./SharedBackgroundsTab";
+import { ShareSettingsTab } from "./ShareSettingsTab";
 import { SpecializationsTab } from "./SpecializationsTab";
 import { StaffTab } from "./StaffTab";
 import { StatusRulesTab } from "./StatusRulesSection";
@@ -148,6 +149,7 @@ export function TroupePage() {
               ...(can.running ? [{ to: `${base}/specializations`, label: "Specialisations" }] : []),
               ...(can.running ? [{ to: `${base}/news-agencies`, label: "News" }] : []),
               ...(can.running ? [{ to: `${base}/connectors`, label: "Connectors" }] : []),
+              ...(can.running ? [{ to: `${base}/share`, label: "Share settings" }] : []),
             ],
           },
         ]}
@@ -189,6 +191,7 @@ export function TroupePage() {
         {can.running && <Route path="log" element={<LogTab troupeId={t.id} />} />}
         {can.running && <Route path="downtimes" element={<CyclesTab troupeId={t.id} />} />}
         {can.running && <Route path="connectors" element={<ConnectorsTab troupeId={t.id} canEdit={can.storyteller} />} />}
+        {can.running && <Route path="share" element={<ShareSettingsTab troupe={t} canImport={can.storyteller && !t.archived} />} />}
         {can.staff && <Route path="work" element={<WorkTab troupeId={t.id} />} />}
         {can.staff && <Route path="work/:cycleId" element={<MyWork troupeId={t.id} canLog={can.running} />} />}
         {can.running && <Route path="influence/*" element={<InfluenceLogTab troupeId={t.id} />} />}
