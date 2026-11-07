@@ -1,7 +1,7 @@
 """Rule sets in the database: loading the generic rules in, and reading troupe rules out."""
 
 import uuid
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
 from functools import wraps
 from typing import Any, Concatenate
@@ -27,6 +27,7 @@ from horatio.models import (
     Troupe,
 )
 from horatio.rules.checks import REQUIREMENT_KEY, check_from_dict, check_to_dict
+from horatio.rules.conditions import could_hold
 from horatio.rules.equipment import (
     EquipmentRules,
     GradeData,
@@ -71,6 +72,8 @@ from horatio.rules.model import (
     TroupeRules,
     house_page,
 )
+from horatio.rules.pricing import tie
+from horatio.rules.splats import SPLATS
 from horatio.rules.status import status_rules_from_dict, status_rules_to_dict, titles_from
 
 RULES_CACHE = "horatio.troupe_rules"
@@ -627,12 +630,11 @@ def add_house_rule(
     session: Session, troupe_id: uuid.UUID, splat: str, rule: CostRuleData
 ) -> CostRule:
     """Add one house rule, after checking the pricing code could apply it. A
-    troupe has at most one price for each trait (or category) and condition."""
+    troupe has at most one price for each trait (or category) and condition, and
+    none that would tie with another (`check_house_price`)."""
     rules = read_troupe_rules(session, splat, troupe_id)
     house = replace(rule, house=True)
-    check_cost_rule(house, rules.rule_set)
-    if any(same_subject(r, house) for r in rules.house_rules):
-        raise DuplicateHouseRule("the troupe already has a price for that")
+    check_house_price(house, rules.house_rules, rules.rule_set)
 
     rule_set = session.scalars(select(RuleSet).where(RuleSet.splat == splat)).one()
     category = session.scalars(
@@ -669,12 +671,35 @@ class DuplicateHouseRule(ValueError):
     pass
 
 
-def check_house_cost_condition(rule: CostRuleData, rule_set: RuleSetData) -> None:
-    """A troupe price can only have the condition of a rule set price it replaces."""
-    if rule.condition and not any(same_subject(r, rule) for r in rule_set.cost_rules):
-        raise ValueError(
-            "A troupe price can only have the condition of a rule set price it replaces."
-        )
+class UnmetCondition(ValueError):
+    pass
+
+
+class TiedHouseRule(ValueError):
+    """Two of a troupe's prices that would tie: `rule`, the one being saved where
+    there is one, and `other`."""
+
+    def __init__(self, rule: CostRuleData, other: CostRuleData) -> None:
+        super().__init__("the price would tie with another of the troupe's")
+        self.rule = rule
+        self.other = other
+
+
+def check_house_price(
+    rule: CostRuleData, others: Sequence[CostRuleData], rule_set: RuleSetData
+) -> None:
+    """Refuse a troupe's price the pricing code could not apply, one for what another
+    of its prices already prices, one whose condition no character could meet, or one
+    that would tie with another of its prices (horatio.rules.pricing.tie). Its
+    condition can be any built from the splat's facts, not only a rule set price's."""
+    check_cost_rule(rule, rule_set)
+    if any(same_subject(r, rule) for r in others):
+        raise DuplicateHouseRule("the troupe already has a price for that")
+    if not could_hold(rule.condition, SPLATS[rule_set.splat].possible_facts(rule_set)):
+        raise UnmetCondition("No character could meet that condition.")
+    other = tie(rule, others, rule_set)
+    if other is not None:
+        raise TiedHouseRule(rule, other)
 
 
 def same_subject(a: CostRuleData, b: CostRuleData) -> bool:
@@ -706,13 +731,15 @@ def house_cost_rules(
 def change_house_rule(
     session: Session, troupe_id: uuid.UUID, splat: str, rule_id: uuid.UUID, rule: CostRuleData
 ) -> CostRule:
-    """Change how a troupe's cost rule prices its trait or category; what it
-    prices, and when, stay as they are."""
+    """Change how a troupe's cost rule prices its trait or category, and when; what
+    it prices stays as it is."""
     row = session.get(CostRule, rule_id)
     if row is None or row.troupe_id != troupe_id:
         raise LookupError("no such house rule")
     rules = read_troupe_rules(session, splat, troupe_id)
-    check_cost_rule(replace(rule, house=True), rules.rule_set)
+    others = [r for i, r in house_cost_rules(session, splat, troupe_id) if i != rule_id]
+    check_house_price(replace(rule, house=True), others, rules.rule_set)
+    row.condition = dict(rule.condition) if rule.condition else None
     row.scheme = rule.scheme
     row.rate = rule.rate
     row.cost_table = list(rule.table) if rule.table else None
@@ -723,9 +750,18 @@ def change_house_rule(
 
 @changes_rules
 def remove_house_rule(session: Session, troupe_id: uuid.UUID, rule_id: uuid.UUID) -> None:
+    """Remove a troupe's price, unless that would leave two of its others tied, as it
+    can when it was the more specific price that settled between them."""
     row = session.get(CostRule, rule_id)
     if row is None or row.troupe_id != troupe_id:
         raise LookupError("no such house rule")
+    splat = session.get_one(RuleSet, row.rule_set_id).splat
+    rules = read_troupe_rules(session, splat, troupe_id)
+    left = [r for i, r in house_cost_rules(session, splat, troupe_id) if i != rule_id]
+    for n, rule in enumerate(left):
+        other = tie(rule, left[:n] + left[n + 1 :], rules.rule_set)
+        if other is not None:
+            raise TiedHouseRule(rule, other)
     session.delete(row)
     session.flush()
 

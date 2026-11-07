@@ -52,11 +52,11 @@ from horatio.rules.model import (
 from horatio.rules.splats import SPLATS
 from horatio.rules.store import (
     DuplicateHouseRule,
+    TiedHouseRule,
     add_house_allowance_rule,
     add_house_rule,
     change_house_allowance_rule,
     change_house_rule,
-    check_house_cost_condition,
     check_house_creation_conditions,
     house_allowance_rules,
     house_cost_rules,
@@ -262,6 +262,9 @@ class CostsOut(BaseModel):
     categories: list[CostCategoryOut]
     # By category, each troupe price after the rule set price it replaces.
     costs: list[CostOut]
+    # What a price's condition can test for this splat (horatio.rules.splats):
+    # "generation", "in_clan", "clan", "clan_family".
+    facts: list[str] = []
 
 
 class CostChange(BaseModel):
@@ -269,13 +272,16 @@ class CostChange(BaseModel):
     rate: int | None = None
     table: list[int] | None = None
     text: str | None = None
+    # Only for characters who meet it, in the facts vocabulary (horatio.rules.conditions):
+    # {"generation": {"lte": 2}}. A rule set price's own condition gives that price a new
+    # amount here. Left out when changing a price, its condition stays as it is; a price
+    # that replaces a rule set price always keeps that price's condition.
+    condition: dict[str, Any] | None = None
 
 
 class CostIn(CostChange):
     category: str
     trait: str | None = None
-    # Only a rule set price's own condition, to give that price a new amount here.
-    condition: dict[str, Any] | None = None
 
 
 def unit(rule_set: RuleSetData, category: str) -> str:
@@ -301,6 +307,22 @@ def cost_out(
         fixed_rating=trait.properties.get("rating") if trait else None,
         house=rule.house,
         replaced=replaced,
+    )
+
+
+def price_subject(rule_set: RuleSetData, rule: CostRuleData) -> str:
+    """What a price is about, in a few words: "All Skills, Generation background 2"."""
+    what = rule.trait or f"All {rule_set.categories[rule.category].name}"
+    when = conditions.describe(rule.condition, SPLATS[rule_set.splat].fact_words)
+    return f"{what}, {when}" if when else what
+
+
+def tied(rule_set: RuleSetData, error: TiedHouseRule) -> HTTPException:
+    return HTTPException(
+        status.HTTP_409_CONFLICT,
+        f"That ties with the troupe's price for {price_subject(rule_set, error.other)}: "
+        "a character could meet both conditions, and neither is more specific. "
+        "Change one of the conditions.",
     )
 
 
@@ -332,6 +354,7 @@ def costs_out(db: DbSession, troupe_id: uuid.UUID, splat: str = "vampire") -> Co
             if c.rated and not c.derived
         ],
         costs=sorted([*generic, *(cost_out(rules.rule_set, r, i) for i, r in house)], key=order),
+        facts=[f for f in SPLATS[splat].fact_words if f in SPLATS[splat].fact_names],
     )
 
 
@@ -406,12 +429,13 @@ def add_cost(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "No such trait.")
     rule = priced(body, body.category, body.trait, body.condition or None)
     try:
-        check_house_cost_condition(rule, rule_set)
         row = add_house_rule(db, troupe.id, splat, rule)
     except DuplicateHouseRule:
         raise HTTPException(
             status.HTTP_409_CONFLICT, "The troupe already has a price for that; change it instead."
         ) from None
+    except TiedHouseRule as error:
+        raise tied(rule_set, error) from None
     except ValueError as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
     sync_values(db, troupe.id, splat, rule)
@@ -432,9 +456,26 @@ def change_cost(
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
     splat = house_splat(db, troupe.id, splat)
     old = house_cost(troupe.id, db, splat, cost_id)
-    rule = priced(body, old.category, old.trait, old.condition)
+    rule_set = read_troupe_rules(db, splat, troupe.id).rule_set
+    condition = old.condition
+    if "condition" in body.model_fields_set:
+        condition = body.condition or None
+        replaces = any(same_subject(old, r) for r in rule_set.cost_rules)
+        if replaces and dict(condition or {}) != dict(old.condition or {}):
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                "This price replaces the rule set's, so it keeps that price's condition. "
+                "Add a new price for another condition.",
+            )
+    rule = priced(body, old.category, old.trait, condition)
     try:
         change_house_rule(db, troupe.id, splat, cost_id, rule)
+    except DuplicateHouseRule:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "The troupe already has a price for that condition."
+        ) from None
+    except TiedHouseRule as error:
+        raise tied(rule_set, error) from None
     except ValueError as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
     sync_values(db, troupe.id, splat, rule)
@@ -454,7 +495,16 @@ def remove_cost(
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
     splat = house_splat(db, troupe.id, splat)
     old = house_cost(troupe.id, db, splat, cost_id)
-    remove_house_rule(db, troupe.id, cost_id)
+    try:
+        remove_house_rule(db, troupe.id, cost_id)
+    except TiedHouseRule as error:
+        rule_set = read_troupe_rules(db, splat, troupe.id).rule_set
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Without it, the troupe's prices for {price_subject(rule_set, error.rule)} and "
+            f"{price_subject(rule_set, error.other)} would tie: a character could meet both "
+            "conditions. Change one of them first.",
+        ) from None
     sync_values(db, troupe.id, splat, old)
     log_price(db, user, "house.cost_removed", troupe.id, splat, old)
     db.commit()
@@ -1280,13 +1330,11 @@ def splat_house_rules(db: DbSession, troupe_id: uuid.UUID, splat: str) -> SplatH
     for rule in sorted(rules.house_rules, key=lambda r: (position[r.category], r.trait or "")):
         category = rule_set.categories[rule.category].name
         trait = rule_set.traits.get((rule.category, rule.trait)) if rule.trait else None
-        when = conditions.describe(rule.condition, SPLATS[splat].fact_words)
-        what = rule.trait or f"All {category}"
         book = next((r for r in rule_set.cost_rules if same_subject(rule, r)), None)
         costs.append(
             HouseCostOut(
                 category=category,
-                subject=f"{what}, {when}" if when else what,
+                subject=price_subject(rule_set, rule),
                 price_text=pricing.describe(rule, unit(rule_set, rule.category)),
                 book_text=pricing.describe(book, unit(rule_set, book.category)) if book else None,
                 text=rule.text,

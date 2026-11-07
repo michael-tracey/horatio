@@ -89,14 +89,15 @@ from horatio.rules.model import (
 )
 from horatio.rules.splats import SPLATS
 from horatio.rules.store import (
+    TiedHouseRule,
     add_house_action_kind,
     add_house_allowance_rule,
     add_house_rule,
     change_house_action_kind,
     change_house_allowance_rule,
     change_house_rule,
-    check_house_cost_condition,
     check_house_creation_conditions,
+    check_house_price,
     forget_rules,
     house_allowance_rules,
     house_cost_rules,
@@ -1186,16 +1187,44 @@ class CostKind(Kind[CostItem]):
         return cost_item(item.splat, found[1]) if found else None
 
     def problem(self, target: Target, item: CostItem) -> str | None:
-        return target.trait_problem(item.splat, item.category, item.trait)
+        problem = target.trait_problem(item.splat, item.category, item.trait)
+        rule_set = target.rules(item.splat).rule_set if problem is None else None
+        if rule_set is None or (item.trait and (item.category, item.trait) not in rule_set.traits):
+            # A house merit coming in the same import is checked as it is priced.
+            return problem
+        # As the Costs editor checks it: a condition some character could meet, and
+        # no tie with another of the troupe's prices.
+        found = self.found(target, item)
+        others = [
+            r
+            for i, r in house_cost_rules(target.db, item.splat, target.troupe.id)
+            if found is None or i != found[0]
+        ]
+        try:
+            check_house_price(cost_rule(item), others, rule_set)
+        except TiedHouseRule as error:
+            return self.tie_reason(target, item.splat, error)
+        except ValueError as error:
+            return str(error)
+        return None
+
+    def tie_reason(self, target: Target, splat: str, error: TiedHouseRule) -> str:
+        other = cost_item(splat, error.other)
+        return (
+            f"It ties with this troupe's price for {self.label(target, other)}: a character "
+            "could meet both conditions, and neither is more specific."
+        )
 
     def apply(self, target: Target, user: User, item: CostItem, current: CostItem | None) -> None:
         rule = cost_rule(item)
         found = self.found(target, item)
-        if found is None:
-            check_house_cost_condition(rule, target.rules(item.splat).rule_set)
-            add_house_rule(target.db, target.troupe.id, item.splat, rule)
-        else:
-            change_house_rule(target.db, target.troupe.id, item.splat, found[0], rule)
+        try:
+            if found is None:
+                add_house_rule(target.db, target.troupe.id, item.splat, rule)
+            else:
+                change_house_rule(target.db, target.troupe.id, item.splat, found[0], rule)
+        except TiedHouseRule as error:
+            raise unprocessable(self.tie_reason(target, item.splat, error)) from error
 
 
 class CreationKind(Kind[CreationItem]):

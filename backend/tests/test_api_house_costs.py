@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from tests.api_helpers import Person, Troupe, finish, new_character
+from tests.test_api_sect_status import put_trait
 from tests.test_api_sheets import buy, make_home_troupe_member, sheet
 
 pytestmark = pytest.mark.usefixtures("without_bank")
@@ -99,6 +100,175 @@ def test_a_category_price_leaves_more_specific_rule_set_prices_alone(
     ]
 
 
+def test_a_troupe_price_with_its_own_condition(troupe: Troupe, session: Session) -> None:
+    """Skills at × 1 for Generation 2 as well as the book's Generation 1 (issue #522)."""
+    added = add(
+        troupe, category="skills", condition={"generation": 2}, scheme="progressive", rate=1
+    )
+    assert added.status_code == 201, added.text
+    assert (added.json()["condition_text"], added.json()["replaced"]) == (
+        "Generation background 2",
+        False,
+    )
+    priced_at = {}
+    for rating in (1, 2, 3):
+        character_id = homed(troupe, session, name=f"Gen {rating}")
+        put_trait(session, character_id, "backgrounds", "Generation", rating)
+        priced_at[rating] = buy(troupe.player, character_id, "skills", "Brawl", 2).json()["cost"]
+
+    assert priced_at == {1: 3, 2: 3, 3: 6}
+    listed = costs(troupe)
+    assert "generation" in listed["facts"]
+    ours = [(c["condition_text"], c["price_text"]) for c in listed["costs"] if c["house"]]
+    assert ours == [("Generation background 2", "1 XP × the new rating")]
+    shown = troupe.player.client.get(f"/troupes/{troupe.id}/house-rules").json()
+    assert [c["subject"] for c in shown["splats"][0]["costs"]] == [
+        "All Skills, Generation background 2"
+    ]
+    log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
+    assert "storyteller priced Skills (Generation background 2) at 1 XP × the new rating." in log
+
+
+def test_conditions_on_in_clan_and_clan_for_one_trait(troupe: Troupe, session: Session) -> None:
+    clan_price = add(
+        troupe,
+        category="disciplines",
+        trait="Potence",
+        condition={"clan_family": "Brujah", "generation": {"gte": 2, "lte": 3}},
+        scheme="per_dot",
+        rate=1,
+    )
+    assert clan_price.status_code == 201, clan_price.text
+    assert clan_price.json()["condition_text"] == (
+        "Brujah clan, Generation background 2 or more and 3 or less"
+    )
+    # As specific as the book's out-of-clan prices, so the troupe's wins.
+    out_of_clan = add(
+        troupe,
+        category="disciplines",
+        condition={"in_clan": False, "clan_family": "Brujah"},
+        scheme="per_dot",
+        rate=9,
+    )
+    assert out_of_clan.status_code == 201, out_of_clan.text
+    brujah = homed(troupe, session, clan="Brujah")
+    put_trait(session, brujah, "backgrounds", "Generation", 2)
+
+    assert buy(troupe.player, brujah, "disciplines", "Potence", 1).json()["cost"] == 1
+    assert buy(troupe.player, brujah, "disciplines", "Dominate", 1).json()["cost"] == 9
+
+
+def test_a_condition_must_be_one_a_character_could_meet(troupe: Troupe) -> None:
+    def refused(condition: dict[str, Any]) -> str:
+        response = add(troupe, category="skills", condition=condition, scheme="per_dot", rate=1)
+        assert response.status_code == 422, response.text
+        return response.json()["detail"]
+
+    assert "unknown fact 'social_age'" in refused({"social_age": "Ancilla"})
+    assert "unknown operator 'about'" in refused({"generation": {"about": 2}})
+    assert refused({"generation": 6}) == "No character could meet that condition."
+    assert refused({"clan": "Brujah", "clan_family": "Ventrue"}) == (
+        "No character could meet that condition."
+    )
+    assert refused({"generation": {"lte": "two"}}) == "No character could meet that condition."
+
+
+def test_a_tie_between_troupe_prices_is_refused_when_saved(
+    troupe: Troupe, session: Session
+) -> None:
+    add(troupe, category="skills", condition={"generation": 2}, scheme="progressive", rate=1)
+
+    clash = add(troupe, category="skills", condition={"in_clan": False}, scheme="per_dot", rate=4)
+    as_range = add(
+        troupe, category="skills", condition={"generation": {"lte": 2}}, scheme="per_dot", rate=4
+    )
+
+    assert clash.status_code == 409
+    assert clash.json()["detail"].startswith(
+        "That ties with the troupe's price for All Skills, Generation background 2:"
+    )
+    assert as_range.status_code == 409
+    # Never both at once, or more specific: no tie.
+    other = add(troupe, category="skills", condition={"generation": 3}, scheme="per_dot", rate=4)
+    assert other.status_code == 201, other.text
+    narrower = add(
+        troupe,
+        category="skills",
+        condition={"generation": 2, "clan_family": "Brujah"},
+        scheme="per_dot",
+        rate=4,
+    )
+    assert narrower.status_code == 201, narrower.text
+    # Changing a price into a tie is refused as well.
+    url = f"/troupes/{troupe.id}/costs/{other.json()['id']}"
+    changed = troupe.storyteller.client.put(
+        url, json={"scheme": "per_dot", "rate": 4, "condition": {"generation": {"gte": 2}}}
+    )
+    assert changed.status_code == 409, changed.text
+    # No price was left tied, so pricing never has to refuse one.
+    character_id = homed(troupe, session)
+    put_trait(session, character_id, "backgrounds", "Generation", 2)
+    assert buy(troupe.player, character_id, "skills", "Brawl", 1).json()["cost"] == 1
+
+
+def test_removing_the_price_that_settles_a_tie_is_refused(troupe: Troupe) -> None:
+    def price(condition: dict[str, Any]) -> Any:
+        added = add(troupe, category="skills", condition=condition, scheme="per_dot", rate=1)
+        assert added.status_code == 201, added.text
+        return added.json()
+
+    price({"generation": 2})
+    settles = price({"generation": 2, "clan_family": "Brujah"})
+    # Only Brujah of Generation 2 meet both, and the price above settles that.
+    price({"clan_family": "Brujah"})
+
+    removed = troupe.storyteller.client.delete(f"/troupes/{troupe.id}/costs/{settles['id']}")
+
+    assert removed.status_code == 409
+    assert "would tie" in removed.json()["detail"]
+
+
+def test_changing_a_troupe_price_s_condition(troupe: Troupe, session: Session) -> None:
+    mine = add(troupe, category="skills", condition={"generation": 2}, scheme="progressive", rate=1)
+    url = f"/troupes/{troupe.id}/costs/{mine.json()['id']}"
+
+    assert troupe.narrator.client.put(url, json={"scheme": "fixed", "rate": 1}).status_code == 403
+    # Left out, the condition stays.
+    kept = troupe.storyteller.client.put(url, json={"scheme": "progressive", "rate": 1})
+    assert kept.json()["condition"] == {"generation": 2}
+    changed = troupe.storyteller.client.put(
+        url, json={"scheme": "progressive", "rate": 1, "condition": {"generation": {"lte": 3}}}
+    )
+
+    assert changed.status_code == 200, changed.text
+    assert changed.json()["condition_text"] == "Generation background 3 or less"
+    character_id = homed(troupe, session)
+    put_trait(session, character_id, "backgrounds", "Generation", 3)
+    assert buy(troupe.player, character_id, "skills", "Brawl", 2).json()["cost"] == 3
+
+    # A price that replaces the rule set's keeps that price's condition.
+    book = add(
+        troupe, category="backgrounds", condition={"generation": 1}, scheme="per_dot", rate=1
+    )
+    book_url = f"/troupes/{troupe.id}/costs/{book.json()['id']}"
+    moved = troupe.storyteller.client.put(
+        book_url, json={"scheme": "per_dot", "rate": 1, "condition": {"generation": 4}}
+    )
+    assert moved.status_code == 422
+    same = troupe.storyteller.client.put(
+        book_url, json={"scheme": "per_dot", "rate": 2, "condition": {"generation": 1}}
+    )
+    assert same.status_code == 200, same.text
+
+
+def test_only_storytellers_set_prices_with_conditions(troupe: Troupe) -> None:
+    price = {"category": "skills", "condition": {"generation": 2}, "scheme": "free"}
+
+    assert add(troupe, troupe.narrator, **price).status_code == 403
+    assert add(troupe, troupe.assistant, **price).status_code == 403
+    assert add(troupe, **price).status_code == 201
+
+
 def test_a_merit_price_beats_the_category_but_not_a_clan_price(
     troupe: Troupe, session: Session
 ) -> None:
@@ -118,8 +288,8 @@ def test_a_merit_price_beats_the_category_but_not_a_clan_price(
 def test_prices_that_could_not_apply_are_refused(troupe: Troupe) -> None:
     # Merits are priced one at a time, never as a whole category.
     assert add(troupe, category="merits", scheme="per_dot", rate=2).status_code == 422
-    # A condition is only a rule set price's own, to replace it.
-    made_up = add(troupe, category="skills", condition={"generation": 4}, scheme="per_dot", rate=1)
+    # A condition tests only the splat's facts.
+    made_up = add(troupe, category="skills", condition={"rank": 4}, scheme="per_dot", rate=1)
     assert made_up.status_code == 422
     assert add(troupe, category="skills", scheme="per_dot").status_code == 422
     assert add(troupe, category="skills", trait="Juggling", scheme="free").status_code == 422

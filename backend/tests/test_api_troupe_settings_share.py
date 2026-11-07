@@ -19,6 +19,12 @@ from tests.test_api_renames import other_troupe, troupe_log
 pytestmark = pytest.mark.usefixtures("without_bank")
 
 CHILD = "Child of the Crossroads"
+GENERATION_2_SKILLS = {
+    "category": "skills",
+    "condition": {"generation": 2},
+    "scheme": "progressive",
+    "rate": 1,
+}
 
 
 @pytest.fixture
@@ -112,6 +118,8 @@ def customise(troupe: Troupe) -> None:
         ),
         201,
     )
+    # A price with a condition of the troupe's own (#522).
+    ok(client.post(f"{base}/costs", json=GENERATION_2_SKILLS), 201)
     ok(
         client.put(
             f"{base}/creation/skills",
@@ -298,6 +306,13 @@ def test_a_round_trip_gives_the_new_troupe_the_same_rules(troupe: Troupe) -> Non
     # The rules the new troupe's characters play by follow.
     costs = ok(troupe.storyteller.client.get(f"/troupes/{fresh}/costs"))["costs"]
     assert any(c["trait"] == "Iron Will" and c["price_text"] == "5 XP" for c in costs)
+    conditioned = next(c for c in costs if c["condition"] == {"generation": 2})
+    assert (conditioned["category"], conditioned["scheme"], conditioned["rate"]) == (
+        "skills",
+        "progressive",
+        1,
+    )
+    assert conditioned["house"]
     allowances = ok(troupe.storyteller.client.get(f"/troupes/{fresh}/allowances"))["rules"]
     assert any(r["trait"] == CHILD and r["house"] for r in allowances)
 
@@ -396,6 +411,43 @@ def test_items_that_cant_be_found_here_cant_be_imported(troupe: Troupe) -> None:
     )
 
 
+def test_a_price_that_would_tie_with_one_of_the_troupes_cant_be_imported(
+    troupe: Troupe,
+) -> None:
+    ok(
+        troupe.storyteller.client.post(f"/troupes/{troupe.id}/costs", json=GENERATION_2_SKILLS),
+        201,
+    )
+    document = exported(troupe.storyteller, troupe.id)
+    fresh = second(troupe)
+    # Not in-clan and Generation 2: a character could be both, and neither is narrower.
+    ok(
+        troupe.storyteller.client.post(
+            f"/troupes/{fresh}/costs",
+            json={
+                "category": "skills",
+                "condition": {"in_clan": False},
+                "scheme": "per_dot",
+                "rate": 4,
+            },
+        ),
+        201,
+    )
+
+    found = reviewed(troupe.storyteller, fresh, document)
+
+    price = found[("costs", "Skills (Generation background 2)")]
+    assert price["status"] == "cannot"
+    assert price["reason"].startswith("It ties with this troupe's price for Skills (")
+    assert price["reason"].endswith(
+        "a character could meet both conditions, and neither is more specific."
+    )
+    refused = apply(troupe.storyteller, fresh, document, picks(document, "costs"))
+    assert refused.status_code == 422
+    assert refused.json()["detail"].startswith("Costs › Skills (Generation background 2): It ties")
+    assert len(exported(troupe.storyteller, fresh)["sections"]["costs"]) == 1
+
+
 def test_an_import_merges_and_leaves_the_rest_alone(troupe: Troupe) -> None:
     customise(troupe)
     document = exported(troupe.storyteller, troupe.id)
@@ -436,7 +488,7 @@ def test_an_import_merges_and_leaves_the_rest_alone(troupe: Troupe) -> None:
     after = exported(troupe.storyteller, fresh)["sections"]
     assert {"type": "setting", "key": "downtime_xp", "value": 5} in after["xp"]
     assert sorted(h["name"] for h in after["house_traits"]) == [CHILD, "Hearth-bound"]
-    assert sorted(c["trait"] for c in after["costs"]) == ["Calm Heart", "Iron Will"]
+    assert sorted(c["trait"] or "" for c in after["costs"]) == ["", "Calm Heart", "Iron Will"]
     # A fill table of the same name has the imported entries; another is left be.
     assert {t["name"]: t["entries"] for t in after["fill_tables"]} == {
         "Patrol": ["Quiet", "[Fight]"],

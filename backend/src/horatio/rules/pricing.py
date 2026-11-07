@@ -10,7 +10,8 @@ and a rule testing more facts beats one testing fewer; a house rule wins a
 tie. So a troupe re-pricing all merits leaves a generic price for one merit
 alone, and a troupe replaces a generic rule by giving the same trait and
 condition its own price. Two rules left tied is a mistake in the rules, and
-is refused rather than guessed at.
+is refused rather than guessed at, and a troupe cannot save a price that would
+leave one (`tie`).
 
 A power a merit opens past its Generation (horatio.rules.grants, open_barred) costs
 the merit's price instead, whatever the cost rules say: Hard as Steel's Fortitude
@@ -22,7 +23,7 @@ from dataclasses import dataclass
 
 from horatio.rules.conditions import clause_count, holds
 from horatio.rules.grants import Opening, matching, opening, priced
-from horatio.rules.model import CostRuleData, SheetTrait, TroupeRules
+from horatio.rules.model import CostRuleData, RuleSetData, SheetTrait, TroupeRules
 from horatio.rules.splats import SPLATS
 
 
@@ -60,6 +61,10 @@ class Quote:
     opening: Opening | None = None
 
 
+def specificity(rule: CostRuleData) -> tuple[bool, int, bool]:
+    return (rule.trait is not None, clause_count(rule.condition), rule.house)
+
+
 def choose_rule(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTrait) -> CostRuleData:
     facts = SPLATS[rules.splat].facts(rules, sheet, trait)
 
@@ -74,9 +79,6 @@ def choose_rule(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTra
     if not matching:
         raise NoCostRule(f"no cost rule for {trait.category} {trait.name!r}")
 
-    def specificity(rule: CostRuleData) -> tuple[bool, int, bool]:
-        return (rule.trait is not None, clause_count(rule.condition), rule.house)
-
     best = max(specificity(r) for r in matching)
     chosen = [r for r in matching if specificity(r) == best]
     if len(chosen) > 1:
@@ -84,6 +86,35 @@ def choose_rule(rules: TroupeRules, sheet: Sequence[SheetTrait], trait: SheetTra
             f"{len(chosen)} equally specific cost rules for {trait.category} {trait.name!r}"
         )
     return chosen[0]
+
+
+def tie(
+    rule: CostRuleData, others: Sequence[CostRuleData], rule_set: RuleSetData
+) -> CostRuleData | None:
+    """Another of the troupe's prices that `rule` would tie with: one about the same
+    trait (or category) with as many conditions, where some character could meet both
+    and no more specific price would settle it. None if there is none."""
+    rivals = [
+        r
+        for r in others
+        if (r.category, r.trait) == (rule.category, rule.trait)
+        and specificity(r) == specificity(rule)
+    ]
+    if not rivals:
+        return None
+    narrower = [
+        r
+        for r in [*others, *rule_set.cost_rules]
+        if (r.category, r.trait) == (rule.category, rule.trait)
+        and clause_count(r.condition) > clause_count(rule.condition)
+    ]
+    for facts in SPLATS[rule_set.splat].possible_facts(rule_set):
+        if not holds(rule.condition, facts) or any(holds(r.condition, facts) for r in narrower):
+            continue
+        found = next((r for r in rivals if holds(r.condition, facts)), None)
+        if found is not None:
+            return found
+    return None
 
 
 def price(rule: CostRuleData, rating: int) -> int:
