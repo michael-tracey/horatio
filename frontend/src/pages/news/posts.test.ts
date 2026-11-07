@@ -21,6 +21,11 @@ function post(over: Partial<PostOut>): PostOut {
     publish_at: null,
     published_at: null,
     unread: false,
+    byline: "",
+    pinned_until: null,
+    pinned: false,
+    dismissed: false,
+    important: false,
     discord: null,
     ...over,
   };

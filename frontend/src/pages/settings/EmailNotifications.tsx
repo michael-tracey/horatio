@@ -5,7 +5,7 @@ import { Card, Loading, Notice } from "../../components/ui";
 import { usePreferences } from "../../hooks";
 import { Choice, Setting } from "./SettingsPage";
 
-type EmailKind = "email_downtime" | "email_downtime_reminders" | "email_approvals" | "email_troupe_requests" | "email_renames" | "email_pictures" | "email_titles" | "email_news";
+type EmailKind = "email_downtime" | "email_downtime_reminders" | "email_approvals" | "email_troupe_requests" | "email_renames" | "email_pictures" | "email_titles" | "email_news" | "email_announcements";
 
 /** Each kind of notification that can come by email (horatio.notification_emails.TOPICS). */
 const KINDS: [EmailKind, string, string][] = [
@@ -16,6 +16,7 @@ const KINDS: [EmailKind, string, string][] = [
   ["email_renames", "Character renames", "When a character you play or run is renamed."],
   ["email_pictures", "Pictures removed", "When someone removes a picture you added."],
   ["email_titles", "Titles chosen", "When a player in a troupe you run chooses, gives up or switches their character's title."],
+  ["email_announcements", "Troupe announcements", "Each announcement from your troupes' staff. On unless you turn it off. One they mark important comes anyway."],
   ["email_news", "Troupe news", "Each new story from your troupes' news agencies. Off unless you turn it on, so a busy week doesn't fill your inbox."],
 ];
 
@@ -37,7 +38,7 @@ export function EmailNotifications() {
         <Notice>Email isn't set up on this server, so notifications come only to the bell.</Notice>
       ) : (
         <>
-          <p className="text-xs text-mist">The bell always has them. Every email has a link to stop that kind.</p>
+          <p className="text-xs text-mist">The bell always has them, unless you turn troupe news or announcements off there under Troupes. Every email has a link to stop that kind.</p>
           {KINDS.map(([name, label, hint]) => (
             <Setting key={name} label={label} hint={hint}>
               <Choice

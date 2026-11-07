@@ -57,6 +57,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   email_titles: false,
   bell_news: true,
   email_news: false,
+  bell_announcements: true,
+  email_announcements: true,
   email_digest: "at_once",
   whos_who_handle: false,
 };

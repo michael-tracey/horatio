@@ -4981,6 +4981,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/posts/{post_id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dismiss Banner
+         * @description Hide a pinned announcement's banner from the front page, for the caller only.
+         *     It stays at the top of the Announcements tab while it is pinned.
+         */
+        post: operations["dismiss_banner_api_posts__post_id__dismiss_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/posts/{post_id}/duplicate": {
         parameters: {
             query?: never;
@@ -5070,6 +5091,26 @@ export interface paths {
          * @description Publish it at a time to come; the worker publishes it then.
          */
         post: operations["schedule_post_api_posts__post_id__schedule_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/posts/{post_id}/unpin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unpin Post
+         * @description Take an announcement off the front page before its time.
+         */
+        post: operations["unpin_post_api_posts__post_id__unpin_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8565,7 +8606,8 @@ export interface paths {
         };
         /**
          * Glance
-         * @description How many posts the caller hasn't read, and the latest headline.
+         * @description How many posts of each kind the caller hasn't read, the latest headline, and
+         *     the pinned announcements they haven't dismissed.
          */
         get: operations["glance_api_troupes__troupe_id__posts_glance_get"];
         put?: never;
@@ -11464,9 +11506,9 @@ export interface components {
             channel: string | null;
             /**
              * Kind
-             * @constant
+             * @enum {string}
              */
-            kind: "news";
+            kind: "news" | "announcement";
         };
         /** ChannelOut */
         ChannelOut: {
@@ -11481,6 +11523,8 @@ export interface components {
         };
         /** ChannelsOut */
         ChannelsOut: {
+            /** Announcements */
+            announcements: string | null;
             /** Can Change */
             can_change: boolean;
             /** Channels */
@@ -15315,6 +15359,10 @@ export interface components {
          * @description For the troupe's tabs and front page.
          */
         Glance: {
+            /** Announcements Unread */
+            announcements_unread: number;
+            /** Banners */
+            banners: components["schemas"]["PostOut"][];
             latest_news: components["schemas"]["PostOut"] | null;
             /** News Unread */
             news_unread: number;
@@ -18278,11 +18326,18 @@ export interface components {
              */
             dateline: string;
             /**
+             * Important
+             * @default false
+             */
+            important: boolean;
+            /**
              * Kind
              * @default news
-             * @constant
+             * @enum {string}
              */
-            kind: "news";
+            kind: "news" | "announcement";
+            /** Pinned Until */
+            pinned_until?: string | null;
             /** Title */
             title: string;
         };
@@ -19869,6 +19924,13 @@ export interface components {
              * @default
              */
             dateline: string;
+            /**
+             * Important
+             * @default false
+             */
+            important: boolean;
+            /** Pinned Until */
+            pinned_until?: string | null;
             /** Title */
             title: string;
         };
@@ -19880,25 +19942,35 @@ export interface components {
             author: string;
             /** Body */
             body: string;
+            /** Byline */
+            byline: string;
             /** Dateline */
             dateline: string;
             discord: components["schemas"]["DiscordOut"] | null;
+            /** Dismissed */
+            dismissed: boolean;
             /**
              * Id
              * Format: uuid
              */
             id: string;
+            /** Important */
+            important: boolean;
             /**
              * Kind
-             * @constant
+             * @enum {string}
              */
-            kind: "news";
+            kind: "news" | "announcement";
             /** Mine */
             mine: boolean;
             /** Note */
             note: string;
             /** Picture */
             picture: string | null;
+            /** Pinned */
+            pinned: boolean;
+            /** Pinned Until */
+            pinned_until: string | null;
             /** Proposed By */
             proposed_by: string | null;
             /** Publish At */
@@ -20047,6 +20119,11 @@ export interface components {
              */
             badge_size: "3x5" | "3x4" | "cr80" | "4x6";
             /**
+             * Bell Announcements
+             * @default true
+             */
+            bell_announcements: boolean;
+            /**
              * Bell News
              * @default true
              */
@@ -20063,6 +20140,11 @@ export interface components {
              * @enum {string}
              */
             date_format: "day_month" | "month_day" | "iso";
+            /**
+             * Email Announcements
+             * @default true
+             */
+            email_announcements: boolean;
             /**
              * Email Approvals
              * @default false
@@ -35585,6 +35667,35 @@ export interface operations {
             };
         };
     };
+    dismiss_banner_api_posts__post_id__dismiss_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     duplicate_post_api_posts__post_id__duplicate_post: {
         parameters: {
             query?: never;
@@ -35760,6 +35871,37 @@ export interface operations {
                 "application/json": components["schemas"]["ScheduleIn"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unpin_post_api_posts__post_id__unpin_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -42936,7 +43078,7 @@ export interface operations {
     list_posts_api_troupes__troupe_id__posts_get: {
         parameters: {
             query?: {
-                kind?: "news";
+                kind?: "news" | "announcement";
                 agency_id?: string | null;
                 before?: string | null;
             };
@@ -43006,7 +43148,7 @@ export interface operations {
     desk_api_troupes__troupe_id__posts_desk_get: {
         parameters: {
             query?: {
-                kind?: "news";
+                kind?: "news" | "announcement";
             };
             header?: never;
             path: {
@@ -43070,7 +43212,7 @@ export interface operations {
     mark_all_read_api_troupes__troupe_id__posts_read_post: {
         parameters: {
             query?: {
-                kind?: "news";
+                kind?: "news" | "announcement";
             };
             header?: never;
             path: {

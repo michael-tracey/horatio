@@ -1,5 +1,8 @@
-"""A troupe's posts (issue #510): news stories its storytellers write as the
-troupe's own in-world news agencies, for everyone in the troupe.
+"""A troupe's posts: news stories its storytellers write as the troupe's own
+in-world news agencies (issue #510), and announcements, out of character, from its
+storytellers and assistant storytellers (#511), for everyone in the troupe. The two
+kinds share everything here, and are never mixed: each has its own list, unread
+count, bell and email setting, and Discord channel.
 
 Everyone in the troupe gets every post: its staff, and the players of its active
 characters, home or visiting (horatio.permissions.is_member). Posts never cross
@@ -8,7 +11,7 @@ troupes and never repeat; Duplicate copies one as a new draft.
 A post is, in turn:
 
 - `draft`: being written by the troupe's storytellers and assistant storytellers;
-- `proposed`: a narrator's story, sent for them to take up (it becomes a draft),
+- `proposed`: a narrator's news story, sent for them to take up (it becomes a draft),
   schedule, publish or decline. A narrator sees and edits only their own
   proposals, and only while they wait;
 - `declined`: a proposal the storytellers turned down, with a note;
@@ -26,6 +29,11 @@ published post queues another sync; unpublishing queues a "delete" of its messag
 Failures back off and wait for staff to retry or mark as sent, as downtime results
 do (horatio.delivery). With no Discord server, or no channel chosen, a post is in
 the app only, and its staff are told why.
+
+An announcement has no agency: its byline is its writer and their role. It can be
+pinned to the troupe's front page and the top of its list until a time, after which
+it unpins itself; each person can dismiss its banner for themselves. An important
+one emails everyone, even those who turned announcement emails off.
 """
 
 import uuid
@@ -34,7 +42,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -46,6 +54,7 @@ from horatio.models import (
     Delivery,
     NewsAgency,
     Post,
+    PostDismissal,
     PostRead,
     Troupe,
     TroupeConnector,
@@ -54,6 +63,7 @@ from horatio.models import (
     User,
 )
 from horatio.notifications import notify
+from horatio.permissions import Role, troupe_role
 
 
 @dataclass(frozen=True)
@@ -69,7 +79,14 @@ class Kind:
     bell: str
 
 
-KINDS = {"news": Kind("news", "news", "story", "news", "bell_news")}
+KINDS = {
+    "news": Kind("news", "news", "story", "news", "bell_news"),
+    "announcement": Kind(
+        "announcement", "announcements", "announcement", "announcements", "bell_announcements"
+    ),
+}
+# An announcement's embed on Discord: Horatio's gold, as it has no masthead.
+ANNOUNCEMENT_COLOUR = "#c9a24a"
 
 # What a device keeps, and what the list shows first: the last 30 days, and at
 # least the latest few, however old.
@@ -160,9 +177,9 @@ def discord_messages(
     post: Post, agency: NewsAgency | None
 ) -> list[tuple[dict[str, Any], list[discord.File]]]:
     """The post as Discord messages, an embed each: the first under the masthead
-    (its colour, the agency's name and picture) with the headline, linking to the
-    post in Horatio; the text split over as many as it needs; the picture, and a
-    Read in Horatio link, on the last."""
+    (its colour, the agency's name and picture), or for an announcement its byline,
+    with the headline or title, linking to the post in Horatio; the text split over
+    as many as it needs; the picture, and a Read in Horatio link, on the last."""
     url = f"{get_settings().public_url.rstrip('/')}{link(post)}"
     text = "\n\n".join(t for t in (f"*{post.dateline}*" if post.dateline else "", post.body) if t)
     # Room at the end of the last part for the link.
@@ -170,7 +187,7 @@ def discord_messages(
     parts = discord.split(text, discord.EMBED_LIMIT - len(read) - 2) if text else []
     parts = parts or [""]
     parts[-1] = f"{parts[-1]}\n\n{read}" if parts[-1] else read
-    tint = colour(agency.colour if agency else "#8b1e1e")
+    tint = colour(agency.colour if agency else ANNOUNCEMENT_COLOUR)
     masthead = picture_file(post.troupe_id, agency.picture_id if agency else None, "1200.webp")
     picture = picture_file(post.troupe_id, post.picture_id, "1200.webp")
     messages: list[tuple[dict[str, Any], list[discord.File]]] = []
@@ -182,6 +199,8 @@ def discord_messages(
             embed["url"] = url
             if agency is not None:
                 embed["author"] = {"name": agency.name[:256]}
+            elif post.byline:
+                embed["author"] = {"name": post.byline[:256]}
             if masthead is not None:
                 embed["thumbnail"] = {"url": "attachment://masthead.webp"}
                 files.append(discord.File("masthead.webp", masthead))
@@ -322,8 +341,32 @@ def queue_delete(db: Session, post: Post, by: uuid.UUID) -> None:
 
 def summary(db: Session, post: Post) -> str:
     """What the bell says about a published post."""
+    if post.kind == "announcement":
+        return f"Announcement: {post.title}"
     agency = db.get(NewsAgency, post.agency_id) if post.agency_id else None
     return f"New from {agency.name}: {post.title}" if agency else post.title
+
+
+ROLE_NAMES = {
+    Role.LEAD_STORYTELLER: "Lead storyteller",
+    Role.STORYTELLER: "Storyteller",
+    Role.ASSISTANT_STORYTELLER: "Assistant storyteller",
+    Role.NARRATOR: "Narrator",
+}
+
+
+def byline(db: Session, troupe: Troupe, user_id: uuid.UUID) -> str:
+    """Who an announcement is from, as it goes out: "Mara Quinn, Lead storyteller"."""
+    writer = db.get_one(User, user_id)
+    role = troupe_role(db, writer, troupe)
+    if role is not None:
+        return f"{writer.display_name}, {ROLE_NAMES[role]}"
+    return f"{writer.display_name}, Custodian" if writer.is_custodian else writer.display_name
+
+
+def pinned(post: Post, at: datetime | None = None) -> bool:
+    """An announcement pinned now: it unpins itself once its time passes."""
+    return post.pinned_until is not None and post.pinned_until > (at or now())
 
 
 def described(db: Session, post: Post) -> dict[str, Any]:
@@ -351,6 +394,8 @@ def publish(db: Session, post: Post, by: User | None, note: str = "") -> None:
     publisher = post.published_by or post.author_id
     if note:
         post.note = note
+    if post.kind == "announcement":
+        post.byline = byline(db, troupe, post.author_id)
     db.flush()
     queue_sync(db, post, publisher)
     tell_everyone(db, troupe, post, publisher)
@@ -367,12 +412,16 @@ def publish(db: Session, post: Post, by: User | None, note: str = "") -> None:
     data = described(db, post)
     if by is None:
         data["scheduled"] = True
-    audit.record(db, by or db.get(User, publisher), "post.published", troupe_id=troupe.id, **data)
+    actor = by or db.get(User, publisher)
+    audit.record(db, actor, "post.published", troupe_id=troupe.id, **data)
+    if post.important:
+        audit.record(db, actor, "post.important", troupe_id=troupe.id, **described(db, post))
 
 
 def tell_everyone(db: Session, troupe: Troupe, post: Post, publisher: uuid.UUID) -> None:
     """The bell for everyone in the troupe who keeps it on for this kind, and an
-    email for those who asked for one; never the person who published it."""
+    email for those who want one (everyone, for an important announcement); never
+    the person who published it."""
     people = [p for p in members(db, troupe) if p != publisher]
     if not people:
         return
@@ -385,7 +434,9 @@ def tell_everyone(db: Session, troupe: Troupe, post: Post, publisher: uuid.UUID)
         if getattr(preferences.read(u), bell)
     ]
     notify(db, ringing, kind, words, link(post), troupe_id=troupe.id, email=False)
-    notification_emails.queue(db, people, kind, words, link(post), troupe_id=troupe.id)
+    notification_emails.queue(
+        db, people, kind, words, link(post), troupe_id=troupe.id, forced=post.important
+    )
 
 
 def publish_due(db: Session, at: datetime | None = None, limit: int = 50) -> int:
@@ -437,13 +488,20 @@ def published(
 ) -> tuple[list[Post], bool]:
     """Published posts, newest first, and whether there are older ones. The first
     page is the last 30 days, and at least the latest few; each older page, the
-    next few before `before`."""
+    next few before `before`. Announcements pinned now come first on the first page,
+    and on no other."""
     query = select(Post).where(
         Post.troupe_id == troupe_id, Post.kind == kind, Post.status == "published"
     )
     if agency_id is not None:
         query = query.where(Post.agency_id == agency_id)
     query = query.order_by(Post.published_at.desc(), Post.id.desc())
+    pins: list[Post] = []
+    if kind == "announcement":
+        at = now()
+        if before is None:
+            pins = list(db.scalars(query.where(Post.pinned_until > at)))
+        query = query.where(or_(Post.pinned_until.is_(None), Post.pinned_until <= at))
     if before is not None:
         found = list(db.scalars(query.where(Post.published_at < before).limit(PAGE + 1)))
         return found[:PAGE], len(found) > PAGE
@@ -455,7 +513,7 @@ def published(
     older = oldest is not None and bool(
         db.scalar(query.where(Post.published_at < oldest).limit(1).with_only_columns(Post.id))
     )
-    return recent, older
+    return pins + recent, older
 
 
 def read_ids(db: Session, user: User, posts: Sequence[Post]) -> set[uuid.UUID]:
@@ -501,3 +559,47 @@ def unread(db: Session, user: User, troupe_id: uuid.UUID, kind: str) -> int:
 
 def mark_all_read(db: Session, user: User, troupe_id: uuid.UUID, kind: str) -> None:
     mark_read(db, user, db.scalars(unread_query(user, troupe_id, kind).with_only_columns(Post.id)))
+
+
+# --- pinned announcements --------------------------------------------------------------
+
+
+def dismissed_ids(db: Session, user: User, posts: Sequence[Post]) -> set[uuid.UUID]:
+    """Those of the posts whose banner the person has dismissed."""
+    if not posts:
+        return set()
+    return set(
+        db.scalars(
+            select(PostDismissal.post_id).where(
+                PostDismissal.user_id == user.id,
+                PostDismissal.post_id.in_([p.id for p in posts]),
+            )
+        )
+    )
+
+
+def dismiss(db: Session, user: User, post: Post) -> None:
+    """Hide a pinned announcement's banner, for this person only."""
+    db.execute(
+        insert(PostDismissal)
+        .values(post_id=post.id, user_id=user.id)
+        .on_conflict_do_nothing(index_elements=["post_id", "user_id"])
+    )
+
+
+def banners(db: Session, user: User, troupe_id: uuid.UUID) -> list[Post]:
+    """The troupe's pinned announcements the person hasn't dismissed, newest first."""
+    gone = select(PostDismissal.post_id).where(PostDismissal.user_id == user.id)
+    return list(
+        db.scalars(
+            select(Post)
+            .where(
+                Post.troupe_id == troupe_id,
+                Post.kind == "announcement",
+                Post.status == "published",
+                Post.pinned_until > now(),
+                Post.id.not_in(gone),
+            )
+            .order_by(Post.published_at.desc(), Post.id.desc())
+        )
+    )

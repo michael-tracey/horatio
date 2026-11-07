@@ -4858,7 +4858,10 @@
             "title": "Channel"
           },
           "kind": {
-            "const": "news",
+            "enum": [
+              "news",
+              "announcement"
+            ],
             "title": "Kind",
             "type": "string"
           }
@@ -4907,6 +4910,17 @@
       },
       "ChannelsOut": {
         "properties": {
+          "announcements": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Announcements"
+          },
           "can_change": {
             "title": "Can Change",
             "type": "boolean"
@@ -4957,6 +4971,7 @@
           "unavailable",
           "channels",
           "news",
+          "announcements",
           "can_change"
         ],
         "title": "ChannelsOut",
@@ -15072,6 +15087,17 @@
       "Glance": {
         "description": "For the troupe's tabs and front page.",
         "properties": {
+          "announcements_unread": {
+            "title": "Announcements Unread",
+            "type": "integer"
+          },
+          "banners": {
+            "items": {
+              "$ref": "#/components/schemas/PostOut"
+            },
+            "title": "Banners",
+            "type": "array"
+          },
           "latest_news": {
             "anyOf": [
               {
@@ -15089,7 +15115,9 @@
         },
         "required": [
           "news_unread",
-          "latest_news"
+          "latest_news",
+          "announcements_unread",
+          "banners"
         ],
         "title": "Glance",
         "type": "object"
@@ -22478,11 +22506,31 @@
             "title": "Dateline",
             "type": "string"
           },
+          "important": {
+            "default": false,
+            "title": "Important",
+            "type": "boolean"
+          },
           "kind": {
-            "const": "news",
             "default": "news",
+            "enum": [
+              "news",
+              "announcement"
+            ],
             "title": "Kind",
             "type": "string"
+          },
+          "pinned_until": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned Until"
           },
           "title": {
             "maxLength": 200,
@@ -26659,6 +26707,23 @@
             "title": "Dateline",
             "type": "string"
           },
+          "important": {
+            "default": false,
+            "title": "Important",
+            "type": "boolean"
+          },
+          "pinned_until": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned Until"
+          },
           "title": {
             "maxLength": 200,
             "minLength": 1,
@@ -26694,6 +26759,10 @@
             "title": "Body",
             "type": "string"
           },
+          "byline": {
+            "title": "Byline",
+            "type": "string"
+          },
           "dateline": {
             "title": "Dateline",
             "type": "string"
@@ -26708,13 +26777,24 @@
               }
             ]
           },
+          "dismissed": {
+            "title": "Dismissed",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
             "type": "string"
           },
+          "important": {
+            "title": "Important",
+            "type": "boolean"
+          },
           "kind": {
-            "const": "news",
+            "enum": [
+              "news",
+              "announcement"
+            ],
             "title": "Kind",
             "type": "string"
           },
@@ -26736,6 +26816,22 @@
               }
             ],
             "title": "Picture"
+          },
+          "pinned": {
+            "title": "Pinned",
+            "type": "boolean"
+          },
+          "pinned_until": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned Until"
           },
           "proposed_by": {
             "anyOf": [
@@ -26814,6 +26910,11 @@
           "publish_at",
           "published_at",
           "unread",
+          "byline",
+          "pinned_until",
+          "pinned",
+          "dismissed",
+          "important",
           "discord"
         ],
         "title": "PostOut",
@@ -27089,6 +27190,11 @@
             "title": "Badge Size",
             "type": "string"
           },
+          "bell_announcements": {
+            "default": true,
+            "title": "Bell Announcements",
+            "type": "boolean"
+          },
           "bell_news": {
             "default": true,
             "title": "Bell News",
@@ -27112,6 +27218,11 @@
             ],
             "title": "Date Format",
             "type": "string"
+          },
+          "email_announcements": {
+            "default": true,
+            "title": "Email Announcements",
+            "type": "boolean"
           },
           "email_approvals": {
             "default": false,
@@ -57311,6 +57422,43 @@
         ]
       }
     },
+    "/api/posts/{post_id}/dismiss": {
+      "post": {
+        "description": "Hide a pinned announcement's banner from the front page, for the caller only.\nIt stays at the top of the Announcements tab while it is pinned.",
+        "operationId": "dismiss_banner_api_posts__post_id__dismiss_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "post_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Post Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Dismiss Banner",
+        "tags": [
+          "posts"
+        ]
+      }
+    },
     "/api/posts/{post_id}/duplicate": {
       "post": {
         "description": "A new draft with the same words, agency and picture.",
@@ -57588,6 +57736,50 @@
           }
         },
         "summary": "Schedule Post",
+        "tags": [
+          "posts"
+        ]
+      }
+    },
+    "/api/posts/{post_id}/unpin": {
+      "post": {
+        "description": "Take an announcement off the front page before its time.",
+        "operationId": "unpin_post_api_posts__post_id__unpin_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "post_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Post Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unpin Post",
         "tags": [
           "posts"
         ]
@@ -69041,8 +69233,11 @@
             "name": "kind",
             "required": false,
             "schema": {
-              "const": "news",
               "default": "news",
+              "enum": [
+                "news",
+                "announcement"
+              ],
               "title": "Kind",
               "type": "string"
             }
@@ -69182,8 +69377,11 @@
             "name": "kind",
             "required": false,
             "schema": {
-              "const": "news",
               "default": "news",
+              "enum": [
+                "news",
+                "announcement"
+              ],
               "title": "Kind",
               "type": "string"
             }
@@ -69219,7 +69417,7 @@
     },
     "/api/troupes/{troupe_id}/posts/glance": {
       "get": {
-        "description": "How many posts the caller hasn't read, and the latest headline.",
+        "description": "How many posts of each kind the caller hasn't read, the latest headline, and\nthe pinned announcements they haven't dismissed.",
         "operationId": "glance_api_troupes__troupe_id__posts_glance_get",
         "parameters": [
           {
@@ -69280,8 +69478,11 @@
             "name": "kind",
             "required": false,
             "schema": {
-              "const": "news",
               "default": "news",
+              "enum": [
+                "news",
+                "announcement"
+              ],
               "title": "Kind",
               "type": "string"
             }

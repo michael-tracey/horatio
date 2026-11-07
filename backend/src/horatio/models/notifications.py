@@ -53,3 +53,6 @@ class EmailNotice(Record):
     )
     attempts: Mapped[int] = mapped_column(default=0, server_default="0")
     last_error: Mapped[str | None]
+    # Sent whether or not the person wants this kind by email: an important
+    # announcement (horatio.posts).
+    forced: Mapped[bool] = mapped_column(default=False, server_default="false")

@@ -104,3 +104,64 @@ test("news: a storyteller makes an agency and schedules a story, it goes out, an
   await expect(p.getByRole("heading", { name: "Latest news" })).toBeVisible();
   await expect(p.getByRole("link", { name: /Fire at the harbour warehouses/ })).toBeVisible();
 });
+
+test("announcements: a storyteller pins one, a player sees its banner, dismisses it, and reads it under Announcements, never under News", async ({ browser }) => {
+  const custodian = await person(browser, "noticeboard-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "noticeboard-lead");
+  const player = await person(browser, "noticeboard-reader");
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Notice Board Court ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  const id = await builtVampire(player.page, "Philippa", "Brujah", NEONATE);
+  const asked = await send(player.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+
+  // The lead writes one on the Announcements tab, pinned for two days, and publishes it.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}`);
+  await troupeTab(l, /^Announcements/).click();
+  await l.getByRole("link", { name: "Announcements desk" }).click();
+  await l.getByRole("link", { name: "Write an announcement" }).click();
+  await expect(l.getByLabel("Agency")).toHaveCount(0);
+  await l.getByLabel("Title").fill("New venue parking");
+  await l.getByRole("textbox", { name: "The announcement", exact: true }).click();
+  await l.keyboard.type("Park in the back lot off Elm Street from this game on.");
+  await expect(l.getByText(/Emails everyone in the troupe as it's published/)).toBeVisible();
+  const day = await l.evaluate(() => {
+    const at = new Date(Date.now() + 2 * 86_400_000);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`;
+  });
+  await l.getByLabel(/^Pin to the front page until/).fill(day);
+  await l.getByRole("button", { name: "Publish now" }).click();
+  await expect(l.getByRole("heading", { name: "New venue parking" })).toBeVisible();
+  await expect(l.getByText("noticeboard-lead, Lead storyteller")).toBeVisible();
+
+  // The player sees its banner on the troupe's front page, and dismisses it.
+  const p = player.page;
+  await p.goto(`/troupes/${troupe.id}`);
+  const banners = p.getByRole("list", { name: "Pinned announcements" });
+  await expect(banners.getByRole("link", { name: "New venue parking" })).toBeVisible();
+  await expect(banners).toContainText("noticeboard-lead, Lead storyteller");
+  await p.screenshot(shots("announcement-banner"));
+  await banners.getByRole("button", { name: "Dismiss “New venue parking”" }).click();
+  await expect(p.getByRole("list", { name: "Pinned announcements" })).toHaveCount(0);
+
+  // Not under News; under Announcements, pinned first and unread, until opened.
+  await troupeTab(p, /^News/).click();
+  await expect(p.getByText("No stories yet.")).toBeVisible();
+  await troupeTab(p, /^Announcements 1 unread$/).click();
+  const notice = p.getByRole("link", { name: /^Unread: Pinned: New venue parking, from noticeboard-lead, Lead storyteller/ });
+  await expect(notice).toBeVisible();
+  await notice.click();
+  await expect(p.getByRole("heading", { name: "New venue parking" })).toBeVisible();
+  await expect(p.getByText("Park in the back lot off Elm Street from this game on.")).toBeVisible();
+  await p.screenshot(shots("announcement"));
+  await p.getByRole("link", { name: "All announcements" }).click();
+  await expect(p.getByRole("link", { name: /^Pinned: New venue parking/ })).toBeVisible();
+  await expect(troupeTab(p, /^Announcements$/)).toBeVisible();
+  // Dismissed for them only: the banner is gone from the front page for good.
+  await troupeTab(p, /^About$/).click();
+  await expect(p.getByRole("heading", { name: "Who may join" })).toBeVisible();
+  await expect(p.getByRole("list", { name: "Pinned announcements" })).toHaveCount(0);
+});

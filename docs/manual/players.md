@@ -463,7 +463,7 @@ Venues are often basements with no signal. Horatio can keep your own characters 
 **Turning it on.** The first time you sign in on a device, Horatio asks once: *Is this your own phone?* Choose **Yes, keep them here** on your own phone, or **No, online only** on a borrowed or shared one. Until you answer, nothing is kept. You can change it at any time in **Your account › This device**, under **Keep my characters on this device**:
 
 - **Off: online only.** Nothing is kept on the device.
-- **On: my characters work offline.** The sheets, Play Views and powers of every character you have in play, in every troupe, are kept on the device and brought up to date whenever there's signal, with their home troupe's news from the last 30 days.
+- **On: my characters work offline.** The sheets, Play Views and powers of every character you have in play, in every troupe, are kept on the device and brought up to date whenever there's signal, with their home troupe's news and announcements from the last 30 days.
 
 The same tab shows what's kept now (the characters, when they were last updated and roughly how much space it takes), with **Update now**, worth pressing before you leave for a game, and **Remove from this device**.
 
@@ -528,6 +528,16 @@ Each new story also comes to the bell, as "New from *agency*: headline". To stop
 If your characters are kept on your phone (see [Using Horatio at a game with no signal](#using-horatio-at-a-game-with-no-signal)), their home troupe's news from the last 30 days is kept too, to read at a game with no signal.
 
 Many troupes also post their news to a channel on their Discord server.
+
+## Troupe announcements
+
+A troupe's **Announcements** tab, beside News, has out-of-character messages from its staff: a game moved, new parking at the venue, downtimes due on Friday. Each is signed by the staff member who wrote it and their role. Everyone in the troupe gets every announcement. They're never mixed with the in-world news, and have their own unread dots and count on the tab.
+
+**Banners.** Staff can pin an announcement to the troupe's front page for a while. It shows as a banner at the top of the troupe's **About** tab, and first on the Announcements tab. **Dismiss** hides the banner for you alone; the announcement stays on the Announcements tab.
+
+**Bell and email.** Each announcement comes to the bell as "Announcement: *title*" and, unlike news, by email too, since they're often practical. Turn either off under Account › Settings: **Troupe announcements in the bell** in **Troupes**, and **Troupe announcements** under **Notifications by email**. One the staff mark **Important** is emailed to everyone in the troupe even so.
+
+If your characters are kept on your phone, their home troupe's announcements from the last 30 days, and any pinned, are kept too.
 
 ## The character log
 

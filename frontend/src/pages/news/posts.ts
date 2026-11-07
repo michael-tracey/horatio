@@ -1,13 +1,14 @@
 import type { PostOut } from "../../api/types";
 
 /**
- * A troupe's posts (horatio.posts): what the News pages share. Each kind of post
- * has its own list, desk and words, and they never mix.
+ * A troupe's posts (horatio.posts): what the News and Announcements pages share.
+ * Each kind of post has its own list, desk and words, and they never mix.
  */
 export type Kind = PostOut["kind"];
 
-export const KINDS: Record<Kind, { path: string; title: string; noun: string; nouns: string; channel: string }> = {
-  news: { path: "news", title: "News", noun: "story", nouns: "stories", channel: "news" },
+export const KINDS: Record<Kind, { path: string; title: string; noun: string; one: string; nouns: string; channel: string }> = {
+  news: { path: "news", title: "News", noun: "story", one: "a story", nouns: "stories", channel: "news" },
+  announcement: { path: "announcements", title: "Announcements", noun: "announcement", one: "an announcement", nouns: "announcements", channel: "announcements" },
 };
 
 /** The queries a kind's published list is kept under: the first page alone is kept on a device (#502). */
@@ -69,6 +70,9 @@ export function inkOn(colour: string): string {
   const light = 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
   return light > 0.4 ? "#111111" : "#f4ecd8";
 }
+
+/** An announcement's colour, on Discord and beside it, as it has no masthead (horatio.posts.ANNOUNCEMENT_COLOUR). */
+export const ANNOUNCEMENT_COLOUR = "#c9a24a";
 
 /** Discord's limit on an embed's text, less room for the headline (horatio.connectors.discord.EMBED_LIMIT). */
 export const EMBED_LIMIT = 4000;
