@@ -13,8 +13,9 @@ import { olderPosts, postPath, useAgencies, useMarkRead, usePost, usePublished }
 import { StoryCard, StoryView } from "./Story";
 
 /**
- * A troupe's posts of one kind (#510), at /troupes/<id>/news: the list everyone in
- * the troupe reads, each post's own page, and for its staff the desk and the editor.
+ * A troupe's posts of one kind, at /troupes/<id>/news (#510) or /announcements
+ * (#511): the list everyone in the troupe reads, each post's own page, and for its
+ * staff the desk and the editor.
  * `writes`: a storyteller or assistant storyteller; `proposes`: a narrator, who only
  * proposes news.
  */
@@ -136,8 +137,8 @@ function PostList({ troupeId, kind, writes, proposes }: { troupeId: string; kind
       )}
       <ErrorText error={error ?? markAll.error} />
       <p className="text-center text-xs text-mist">
-        <Link to={manualLink("players", "reading-the-troupes-news")} className="underline hover:text-parchment">
-          About the troupe's news
+        <Link to={kind === "news" ? manualLink("players", "reading-the-troupes-news") : manualLink("players", "troupe-announcements")} className="underline hover:text-parchment">
+          About the troupe's {words.title.toLowerCase()}
         </Link>
       </p>
     </div>
@@ -197,7 +198,7 @@ function WritePost({ troupeId, kind, writes }: { troupeId: string; kind: Kind; w
   const back = postId ? "../../desk" : "../desk";
 
   const save = async (fields: Fields, post?: PostOut): Promise<PostOut> => {
-    const body = { agency_id: fields.agency_id, title: fields.title, dateline: fields.dateline, body: fields.body };
+    const body = { agency_id: fields.agency_id, title: fields.title, dateline: fields.dateline, body: fields.body, pinned_until: fields.pinned_until, important: fields.important };
     if (post) return unwrap(api.PUT("/api/posts/{post_id}", { ...postPath(post.id), body }));
     return unwrap(api.POST("/api/troupes/{troupe_id}/posts", { params: { path: { troupe_id: troupeId } }, body: { ...body, kind } }));
   };
@@ -225,7 +226,7 @@ function WritePost({ troupeId, kind, writes }: { troupeId: string; kind: Kind; w
   if (postId && !existing.data) return <ErrorText error={existing.error ?? "No such post."} />;
   const post = postId ? existing.data : undefined;
   const words = KINDS[kind];
-  const heading = !post ? (writes ? `Write a ${words.noun}` : `Propose a ${words.noun}`) : post.status === "published" ? `Edit the published ${words.noun}` : `Edit the ${words.noun}`;
+  const heading = !post ? (writes ? `Write ${words.one}` : `Propose ${words.one}`) : post.status === "published" ? `Edit the published ${words.noun}` : `Edit the ${words.noun}`;
   return (
     <Card title={heading} className="mx-auto max-w-3xl">
       <PostForm

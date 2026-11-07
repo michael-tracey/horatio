@@ -178,6 +178,9 @@ export async function refresh(client: QueryClient, userId: string, shelf: Shelf 
     await Promise.allSettled([
       fetch(["agencies", troupeId], () => unwrap(api.GET("/api/troupes/{troupe_id}/agencies", path))),
       fetch(["posts", troupeId, "news"], () => unwrap(api.GET("/api/troupes/{troupe_id}/posts", { params: { path: { troupe_id: troupeId }, query: { kind: "news" } } }))),
+      // Its announcements, pinned ones first (#511).
+      fetch(["posts", troupeId, "announcement"], () => unwrap(api.GET("/api/troupes/{troupe_id}/posts", { params: { path: { troupe_id: troupeId }, query: { kind: "announcement" } } }))),
+      fetch(["posts-glance", troupeId], () => unwrap(api.GET("/api/troupes/{troupe_id}/posts/glance", path))),
     ]);
   }
   return save(client, userId, shelf, Date.now());

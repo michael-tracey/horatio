@@ -38,7 +38,8 @@ class Preferences(BaseModel):
     # Normal or larger text, everywhere but on paper (#107).
     text_size: Literal["normal", "large"] = "normal"
     # Which notifications also come by email, not only to the bell: each is off
-    # until the person turns it on (#106, horatio.notification_emails.TOPICS).
+    # until the person turns it on, but announcements (#106,
+    # horatio.notification_emails.TOPICS).
     email_downtime: bool = False
     email_downtime_reminders: bool = False
     email_approvals: bool = False
@@ -50,6 +51,10 @@ class Preferences(BaseModel):
     # only if they turn it on, so a busy week of news doesn't flood inboxes.
     bell_news: bool = True
     email_news: bool = False
+    # The troupe's announcements (#511): in the bell and by email unless the person
+    # turns them off, as they are often practical. An important one emails anyway.
+    bell_announcements: bool = True
+    email_announcements: bool = True
     # Each email as it happens, or everything gathered into one a day.
     email_digest: Literal["at_once", "daily"] = "at_once"
     # Troupes' Who's Who names the player by their handle, not their name (#264).

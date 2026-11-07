@@ -11,14 +11,15 @@ const RichEditor = lazy(() => import("../character/RichEditor"));
 export const MAX_BYTES = 10 * 1024 * 1024;
 export const ACCEPT = "image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif";
 
-export type Fields = { agency_id: string | null; title: string; dateline: string; body: string };
+export type Fields = { agency_id: string | null; title: string; dateline: string; body: string; pinned_until: string | null; important: boolean };
 
 /** What the writer asked for: save it as it is, send it as a proposal, publish it, schedule it, or decline a proposal. */
 export type Action = { do: "draft" } | { do: "save" } | { do: "propose" } | { do: "publish"; note: string } | { do: "schedule"; at: string } | { do: "decline"; note: string };
 
 /**
- * Writing a post (#510): its agency, headline, dateline, body in the rich text editor,
- * and picture, with a preview as players and Discord will show it. What it can do
+ * Writing a post (#510): a news story's agency, headline and dateline, or an
+ * announcement's title, pin and Important tick (#511); the body in the rich text
+ * editor, and a picture, with a preview as players and Discord will show it. What it can do
  * next depends on who writes and where it stands: storytellers and assistant
  * storytellers save drafts, publish and schedule (on their own clock), and take up or
  * decline narrators' proposals; a narrator only sends a proposal and changes it while
@@ -51,11 +52,18 @@ export function PostForm({
   const words = KINDS[kind];
   const usable = agencies.filter((a) => !a.retired || a.id === post?.agency_id);
   const [fields, setFields] = useState<Fields>({
-    agency_id: post?.agency_id ?? (usable.length === 1 ? usable[0]!.id : null),
+    agency_id: post?.agency_id ?? (kind === "news" && usable.length === 1 ? usable[0]!.id : null),
     title: post?.title ?? "",
     dateline: post?.dateline ?? "",
     body: post?.body ?? "",
+    pinned_until: post?.pinned_until ?? null,
+    important: post?.important ?? false,
   });
+  // An announcement's pin, as the day it ends on the writer's clock; one left as it was keeps its time.
+  const pinnedDay = post?.pinned_until ? dates.toInput(post.pinned_until).slice(0, 10) : "";
+  const [pinDay, setPinDay] = useState(pinnedDay);
+  const pin = !pinDay ? null : pinDay === pinnedDay ? (post?.pinned_until ?? null) : dates.fromInput(`${pinDay}T23:59`).toISOString();
+  const pinProblem = pinDay && pinDay !== pinnedDay && pin && new Date(pin).getTime() <= Date.now() ? "Pin it until a day to come." : null;
   const set = (change: Partial<Fields>) => setFields((f) => ({ ...f, ...change }));
   const [view, setView] = useState<"write" | "preview">("write");
   const [when, setWhen] = useState(() => (post?.publish_at ? dates.toInput(post.publish_at) : ""));
@@ -66,6 +74,7 @@ export function PostForm({
   const [missing, setMissing] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const bodyHint = useId();
+  const importantHint = useId();
 
   const status = post?.status;
   const published = status === "published";
@@ -73,11 +82,11 @@ export function PostForm({
   const agency = agencies.find((a) => a.id === fields.agency_id);
   const problem = scheduling ? scheduleProblem(when, when ? dates.fromInput(when) : null) : null;
 
-  /** Act, once what it needs is there: a headline, and for news an agency. */
+  /** Act, once what it needs is there: a headline (or title), and for news an agency. */
   const act = (action: Action) => {
-    const lacking = !fields.title.trim() ? "Write a headline." : kind === "news" && !fields.agency_id ? "Choose the agency it comes from." : null;
+    const lacking = !fields.title.trim() ? (kind === "news" ? "Write a headline." : "Write a title.") : kind === "news" && !fields.agency_id ? "Choose the agency it comes from." : pinProblem;
     setMissing(lacking);
-    if (!lacking) onAction({ ...fields, title: fields.title.trim() }, action);
+    if (!lacking) onAction({ ...fields, title: fields.title.trim(), pinned_until: kind === "announcement" ? pin : null }, action);
   };
 
   return (
@@ -94,9 +103,9 @@ export function PostForm({
       {view === "preview" ? (
         <div className="flex flex-col gap-4">
           <h3 className="text-sm text-mist">As players will read it</h3>
-          <StoryView post={{ ...fields, picture: post?.picture ?? null, published_at: null }} agency={agency} />
+          <StoryView post={{ ...fields, kind, byline: post?.byline || "Your name and role", picture: post?.picture ?? null, published_at: null }} agency={agency} />
           <h3 className="text-sm text-mist">Roughly as it will look on Discord</h3>
-          <DiscordPreview post={{ ...fields, picture: post?.picture ?? null }} agency={agency} />
+          <DiscordPreview post={{ ...fields, kind, byline: post?.byline || "Your name and role", picture: post?.picture ?? null }} agency={agency} />
         </div>
       ) : (
         <div className="flex flex-col gap-4">
@@ -113,7 +122,7 @@ export function PostForm({
               </Select>
             </Field>
           )}
-          <Field label="Headline">
+          <Field label={kind === "news" ? "Headline" : "Title"}>
             <Input value={fields.title} maxLength={200} onChange={(e) => set({ title: e.target.value })} />
           </Field>
           {kind === "news" && (
@@ -162,6 +171,32 @@ export function PostForm({
             {!post && <span className="text-xs text-mist">Adding a picture saves the {words.noun} {writes ? "as a draft" : "as your proposal"} first.</span>}
             {tooBig && <ErrorText error="That picture is over 10 MB. Try a smaller one." />}
           </div>
+          {kind === "announcement" && (
+            <>
+              <div className="flex flex-col gap-2 text-sm">
+                <Field label="Pin to the front page until (optional)" hint="A banner on the troupe's About tab, and first on Announcements, to the end of that day. Each person can dismiss the banner.">
+                  <DateInput value={pinDay} onChange={(e) => setPinDay(e.target.value)} />
+                </Field>
+                {pinDay && (
+                  <Button type="button" variant="ghost" className="min-h-8 self-start px-3" onClick={() => setPinDay("")}>
+                    Don't pin it
+                  </Button>
+                )}
+                {pinProblem && <p className="text-blood-bright">{pinProblem}</p>}
+              </div>
+              <div className="flex flex-col gap-1 rounded-md border border-ash p-3 text-sm">
+                <label className="inline-flex items-center gap-2">
+                  <input type="checkbox" className="h-5 w-5 accent-[var(--color-gold)]" checked={fields.important} disabled={published} aria-describedby={importantHint} onChange={(e) => set({ important: e.target.checked })} />
+                  Important
+                </label>
+                <span id={importantHint} className="text-xs text-mist">
+                  {published
+                    ? "Important acts only as an announcement is published."
+                    : "Emails everyone in the troupe as it's published, even players who've turned off announcement emails. Keep it for what can't wait, such as a game moved or cancelled. The troupe log records who used it."}
+                </span>
+              </div>
+            </>
+          )}
         </div>
       )}
 

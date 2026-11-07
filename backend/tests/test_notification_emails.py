@@ -72,8 +72,10 @@ def unsubscribe_token(message: EmailMessage) -> str:
 
 
 def test_each_kind_is_off_until_chosen(client_for: Callable[[], TestClient]) -> None:
+    """All but troupe announcements, which are often practical (#511)."""
     person = sign_up(client_for, "settler")
     shown = person.client.get("/preferences").json()
+    assert shown.pop("email_announcements") is True
     assert {name for name in shown if name.startswith("email_")} == {
         "email_downtime",
         "email_downtime_reminders",

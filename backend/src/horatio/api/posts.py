@@ -1,10 +1,12 @@
-"""A troupe's news (issue #510): its agencies, its stories, and the Discord
-channels they go to. What a post is and how it goes out is in horatio.posts.
+"""A troupe's news (issue #510) and announcements (#511): news agencies, posts of
+each kind, and the Discord channels they go to. What a post is and how it goes out
+is in horatio.posts.
 
-Every member of the troupe reads its published stories. Its storytellers and
-assistant storytellers write, schedule, publish, edit, unpublish and decline
-them, and keep its agencies; a narrator proposes stories and sees only their own
-proposals. Choosing a Discord channel is managing connectors, a storyteller's.
+Every member of the troupe reads its published posts. Its storytellers and
+assistant storytellers write, schedule, publish, edit, pin, unpublish and decline
+them, and keep its agencies; a narrator proposes news stories and sees only their
+own proposals, and has nothing to do with announcements. Choosing a Discord
+channel is managing connectors, a storyteller's.
 """
 
 import shutil
@@ -31,7 +33,7 @@ from horatio.permissions import TroupeAction, allows, is_member, troupe_role
 
 router = APIRouter(tags=["posts"])
 
-Kind = Literal["news"]
+Kind = Literal["news", "announcement"]
 Status = Literal["draft", "proposed", "scheduled", "published", "declined"]
 COLOUR = r"^#[0-9a-f]{6}$"
 
@@ -90,6 +92,15 @@ class PostOut(BaseModel):
     published_at: datetime | None
     # Published, and not yet read by the caller.
     unread: bool
+    # An announcement's byline, once published: "Mara Quinn, Lead storyteller".
+    byline: str
+    # An announcement pinned to the front page until then; `pinned` while it is,
+    # and `dismissed` once the caller has dismissed its banner.
+    pinned_until: datetime | None
+    pinned: bool
+    dismissed: bool
+    # An important announcement emails everyone, even those who turned it off.
+    important: bool
     # For its storytellers and assistant storytellers: where it is on Discord, or
     # (not yet published) why it will be in the app only. None for anyone else.
     discord: DiscordOut | None
@@ -115,6 +126,9 @@ class PostIn(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     body: str = Field(default="", max_length=40_000)
     dateline: str = Field(default="", max_length=200)
+    # An announcement's: pinned to the front page until then, and important.
+    pinned_until: AwareDatetime | None = None
+    important: bool = False
 
 
 class NewPost(PostIn):
@@ -134,6 +148,10 @@ class Glance(BaseModel):
 
     news_unread: int
     latest_news: PostOut | None
+    # Announcements are counted apart from news, never with it.
+    announcements_unread: int
+    # Pinned announcements whose banner the caller hasn't dismissed, newest first.
+    banners: list[PostOut]
 
 
 class ChannelsOut(BaseModel):
@@ -143,6 +161,7 @@ class ChannelsOut(BaseModel):
     channels: list[ChannelOut]
     # The channel chosen for each kind of post, if any.
     news: str | None
+    announcements: str | None
     # Whether the caller may choose (a storyteller's, as connectors are).
     can_change: bool
 
@@ -249,6 +268,8 @@ def posts_out(db: Session, user: User, troupe: Troupe, found: list[Post]) -> lis
     """The posts as the caller sees them, asking the database a few times in all."""
     writes = may(db, user, troupe, TroupeAction.WRITE_POSTS)
     read = posts.read_ids(db, user, [p for p in found if p.status == "published"])
+    dismissed = posts.dismissed_ids(db, user, [p for p in found if p.pinned_until])
+    at = delivery.now()
     people = {p.author_id for p in found} | {p.proposed_by for p in found if p.proposed_by}
     names: dict[uuid.UUID, str] = {
         i: n for i, n in db.execute(select(User.id, User.display_name).where(User.id.in_(people)))
@@ -281,6 +302,11 @@ def posts_out(db: Session, user: User, troupe: Troupe, found: list[Post]) -> lis
             publish_at=p.publish_at,
             published_at=p.published_at,
             unread=p.status == "published" and p.id not in read,
+            byline=p.byline,
+            pinned_until=p.pinned_until,
+            pinned=p.status == "published" and posts.pinned(p, at),
+            dismissed=p.id in dismissed,
+            important=p.important,
             discord=discord_out(p, targets, latest.get(p.id)) if targets else None,
         )
         for p in found
@@ -362,12 +388,15 @@ def desk(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser, kind: Kind = "n
 
 @router.get("/troupes/{troupe_id}/posts/glance")
 def glance(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Glance:
-    """How many posts the caller hasn't read, and the latest headline."""
+    """How many posts of each kind the caller hasn't read, the latest headline, and
+    the pinned announcements they haven't dismissed."""
     troupe = member_troupe(db, user, troupe_id)
     latest, _ = posts.published(db, troupe.id, "news")
     return Glance(
         news_unread=posts.unread(db, user, troupe.id, "news"),
         latest_news=posts_out(db, user, troupe, latest[:1])[0] if latest else None,
+        announcements_unread=posts.unread(db, user, troupe.id, "announcement"),
+        banners=posts_out(db, user, troupe, posts.banners(db, user, troupe.id)),
     )
 
 
@@ -393,6 +422,17 @@ def mark_all_read(
     db.commit()
 
 
+@router.post("/posts/{post_id}/dismiss", status_code=status.HTTP_204_NO_CONTENT)
+def dismiss_banner(post_id: uuid.UUID, db: DbSession, user: CurrentUser) -> None:
+    """Hide a pinned announcement's banner from the front page, for the caller only.
+    It stays at the top of the Announcements tab while it is pinned."""
+    post = visible_post(db, user, post_id)
+    if post.kind != "announcement" or post.status != "published":
+        raise HTTPException(status.HTTP_409_CONFLICT, "Only an announcement has a banner.")
+    posts.dismiss(db, user, post)
+    db.commit()
+
+
 # --- writing ---------------------------------------------------------------------------
 
 
@@ -406,6 +446,7 @@ def new_post(troupe_id: uuid.UUID, body: NewPost, db: DbSession, user: CurrentUs
     ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "You cannot do that in this troupe.")
     check_agency(db, troupe, body.kind, body.agency_id)
+    check_pin(body)
     post = Post(
         troupe_id=troupe.id,
         kind=body.kind,
@@ -413,9 +454,11 @@ def new_post(troupe_id: uuid.UUID, body: NewPost, db: DbSession, user: CurrentUs
         agency_id=body.agency_id if body.kind == "news" else None,
         title=body.title.strip(),
         body=body.body,
-        dateline=body.dateline.strip(),
+        dateline=body.dateline.strip() if body.kind == "news" else "",
         author_id=user.id,
         proposed_by=None if writes else user.id,
+        pinned_until=body.pinned_until if body.kind == "announcement" else None,
+        important=body.important if body.kind == "announcement" else False,
     )
     db.add(post)
     db.commit()
@@ -428,11 +471,58 @@ def change_post(post_id: uuid.UUID, body: PostIn, db: DbSession, user: CurrentUs
     Discord by the worker."""
     post, troupe, _ = written_post(db, user, post_id)
     check_agency(db, troupe, post.kind, body.agency_id, keeping=post.agency_id)
-    post.agency_id = body.agency_id if post.kind == "news" else None
+    news = post.kind == "news"
+    said = (post.agency_id, post.title, post.body, post.dateline)
+    post.agency_id = body.agency_id if news else None
     post.title = body.title.strip()
     post.body = body.body
-    post.dateline = body.dateline.strip()
-    edited(db, user, post)
+    post.dateline = body.dateline.strip() if news else ""
+    if not news:
+        if body.pinned_until != post.pinned_until:
+            check_pin(body)
+            pin(db, user, post, body.pinned_until)
+        post.important = body.important
+    if said != (post.agency_id, post.title, post.body, post.dateline):
+        edited(db, user, post)
+    db.commit()
+    return post_out(db, user, post)
+
+
+def check_pin(body: PostIn) -> None:
+    if body.pinned_until is not None and body.pinned_until <= delivery.now():
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "Pin it until a time to come, or not at all."
+        )
+
+
+def pin(db: Session, user: User, post: Post, until: datetime | None) -> None:
+    """Pin an announcement until a time, or unpin it; a published one's pinning goes
+    in the log."""
+    post.pinned_until = until
+    if post.status != "published":
+        return
+    if until is None:
+        audit.record(
+            db, user, "post.unpinned", troupe_id=post.troupe_id, **posts.described(db, post)
+        )
+    else:
+        audit.record(
+            db,
+            user,
+            "post.pinned",
+            troupe_id=post.troupe_id,
+            until=until.isoformat(),
+            **posts.described(db, post),
+        )
+
+
+@router.post("/posts/{post_id}/unpin")
+def unpin_post(post_id: uuid.UUID, db: DbSession, user: CurrentUser) -> PostOut:
+    """Take an announcement off the front page before its time."""
+    post, _ = writer_post(db, user, post_id)
+    if post.kind != "announcement" or post.pinned_until is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "That isn't pinned.")
+    pin(db, user, post, None)
     db.commit()
     return post_out(db, user, post)
 
@@ -556,6 +646,7 @@ def duplicate_post(post_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Post
         body=post.body,
         dateline=post.dateline,
         author_id=user.id,
+        important=post.important,
     )
     root = pictures.upload_dir()
     if post.picture_id is not None and root is not None:
@@ -743,6 +834,7 @@ def post_channels(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Cha
         unavailable=unavailable,
         channels=channels,
         news=chosen.get("news"),
+        announcements=chosen.get("announcement"),
         can_change=may(db, user, troupe, TroupeAction.MANAGE_CONNECTORS),
     )
 

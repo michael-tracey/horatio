@@ -32,12 +32,13 @@ class NewsAgency(Record):
 
 
 class Post(Record):
-    """A troupe's news story (horatio.posts): written, perhaps scheduled, then
-    published to every member in the app and to Discord."""
+    """A troupe's news story, or an announcement from its staff (horatio.posts):
+    written, perhaps scheduled, then published to every member in the app and to
+    Discord. The two kinds never mix."""
 
     __tablename__ = "posts"
     __table_args__ = (
-        CheckConstraint("kind in ('news')", name="kind"),
+        CheckConstraint("kind in ('news', 'announcement')", name="kind"),
         CheckConstraint(
             "status in ('draft', 'proposed', 'scheduled', 'published', 'declined')",
             name="status",
@@ -52,7 +53,7 @@ class Post(Record):
     kind: Mapped[str]
     status: Mapped[str] = mapped_column(default="draft", server_default="draft")
     agency_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("news_agencies.id"))
-    # A story's headline.
+    # A story's headline, an announcement's title.
     title: Mapped[str]
     # Markdown, from the rich text editor.
     body: Mapped[str] = mapped_column(default="", server_default="")
@@ -68,6 +69,15 @@ class Post(Record):
     publish_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     published_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    # An announcement's byline, set as it is published so it reads the same later:
+    # its writer and their role, "Mara Quinn, Lead storyteller".
+    byline: Mapped[str] = mapped_column(default="", server_default="")
+    # An announcement pinned to the troupe's front page and the top of its list
+    # until then; it unpins itself after.
+    pinned_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # An important announcement emails everyone, even those who turned off
+    # announcement emails.
+    important: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Where it is on Discord while published: {"channel": id, "message_ids": [...]}.
     discord: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
 
@@ -76,6 +86,18 @@ class PostRead(Record):
     """Someone has read a published post: it has no unread dot for them."""
 
     __tablename__ = "post_reads"
+    __table_args__ = (UniqueConstraint("post_id", "user_id"),)
+
+    post_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("posts.id", ondelete="CASCADE"))
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+
+
+class PostDismissal(Record):
+    """Someone has dismissed a pinned announcement's banner, for themselves."""
+
+    __tablename__ = "post_dismissals"
     __table_args__ = (UniqueConstraint("post_id", "user_id"),)
 
     post_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("posts.id", ondelete="CASCADE"))

@@ -104,7 +104,7 @@ describe("what is kept", () => {
   });
 
   it("keeps the latest news of a kept character's troupe, not a filtered or older page, nor the desk", () => {
-    for (const key of [["posts", HOME, "news"], ["agencies", HOME], ["posts-glance", HOME]]) expect(keepsQuery(key, mine)).toBe(true);
+    for (const key of [["posts", HOME, "news"], ["posts", HOME, "announcement"], ["agencies", HOME], ["posts-glance", HOME]]) expect(keepsQuery(key, mine)).toBe(true);
     for (const key of [["posts", OTHER, "news"], ["posts", HOME, "news", "agency-id"], ["post-desk", HOME, "news"], ["agencies", OTHER]]) expect(keepsQuery(key, mine)).toBe(false);
   });
 

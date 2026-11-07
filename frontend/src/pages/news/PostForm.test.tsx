@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AgencyOut, PostOut } from "../../api/types";
 import { PostForm } from "./PostForm";
+import { Banners } from "./Story";
 
 afterEach(cleanup);
 
@@ -28,18 +29,23 @@ function post(over: Partial<PostOut>): PostOut {
     publish_at: null,
     published_at: null,
     unread: false,
+    byline: "",
+    pinned_until: null,
+    pinned: false,
+    dismissed: false,
+    important: false,
     discord: null,
     ...over,
   };
 }
 
-function form(props: { post?: PostOut; writes?: boolean; agencies?: AgencyOut[] }) {
+function form(props: { post?: PostOut; writes?: boolean; agencies?: AgencyOut[]; kind?: PostOut["kind"] }) {
   const onAction = vi.fn();
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } });
   render(
     <QueryClientProvider client={client}>
       <MemoryRouter>
-        <PostForm kind="news" post={props.post} writes={props.writes ?? true} agencies={props.agencies ?? [HERALD, OLD]} onAction={onAction} onPicture={vi.fn()} onRemovePicture={vi.fn()} onCancel={vi.fn()} />
+        <PostForm kind={props.kind ?? "news"} post={props.post} writes={props.writes ?? true} agencies={props.agencies ?? [HERALD, OLD]} onAction={onAction} onPicture={vi.fn()} onRemovePicture={vi.fn()} onCancel={vi.fn()} />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -61,7 +67,7 @@ describe("PostForm", () => {
 
     fireEvent.change(screen.getByLabelText("Agency"), { target: { value: "herald" } });
     fireEvent.click(button("Publish now"));
-    expect(onAction).toHaveBeenCalledWith({ agency_id: "herald", title: "Fire at the docks", dateline: "", body: "" }, { do: "publish", note: "" });
+    expect(onAction).toHaveBeenCalledWith({ agency_id: "herald", title: "Fire at the docks", dateline: "", body: "", pinned_until: null, important: false }, { do: "publish", note: "" });
   });
 
   it("offers a retired agency only to a story that already has it, and picks the only one", () => {
@@ -125,7 +131,7 @@ describe("PostForm", () => {
     expect(screen.queryByRole("button", { name: "Publish now" })).toBeNull();
     fireEvent.change(screen.getByLabelText("Headline"), { target: { value: "Fire out at the docks" } });
     fireEvent.click(button("Save changes"));
-    expect(onAction.mock.calls[0]).toEqual([{ agency_id: "herald", title: "Fire out at the docks", dateline: "Boston", body: "Smoke over the harbour." }, { do: "save" }]);
+    expect(onAction.mock.calls[0]).toEqual([{ agency_id: "herald", title: "Fire out at the docks", dateline: "Boston", body: "Smoke over the harbour.", pinned_until: null, important: false }, { do: "save" }]);
   });
 
   it("previews it as players and Discord will show it", () => {
@@ -133,5 +139,71 @@ describe("PostForm", () => {
     fireEvent.click(button("Preview"));
     expect(screen.getByRole("heading", { name: "Fire at the docks" })).toBeTruthy();
     expect(screen.getByLabelText("On Discord").textContent).toContain("Read in Horatio");
+  });
+});
+
+describe("PostForm for an announcement", () => {
+  it("has a title and no agency or dateline, and explains Important before it's ticked", () => {
+    const onAction = form({ kind: "announcement" });
+    expect(screen.queryByLabelText("Agency")).toBeNull();
+    expect(screen.queryByLabelText(/Dateline/)).toBeNull();
+    const important = screen.getByRole("checkbox", { name: "Important" });
+    expect(important.getAttribute("aria-describedby")).toBeTruthy();
+    expect(screen.getByText(/Emails everyone in the troupe as it's published, even players who've turned off announcement emails/)).toBeTruthy();
+
+    fireEvent.click(button("Save draft"));
+    expect(screen.getByText("Write a title.")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Game moved to Saturday" } });
+    fireEvent.click(important);
+    fireEvent.click(button("Publish now"));
+    expect(onAction).toHaveBeenCalledWith(
+      { agency_id: null, title: "Game moved to Saturday", dateline: "", body: "", pinned_until: null, important: true },
+      { do: "publish", note: "" },
+    );
+  });
+
+  it("pins it to the end of the day chosen, on the writer's clock, and can stop pinning it", () => {
+    const onAction = form({ kind: "announcement", post: post({ kind: "announcement", agency_id: null, dateline: "", title: "Parking" }) });
+    const next = new Date(Date.now() + 5 * 86_400_000);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const day = `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}`;
+    fireEvent.change(screen.getByLabelText(/^Pin to the front page until/), { target: { value: day } });
+    fireEvent.click(button("Save draft"));
+    const pinned = new Date(onAction.mock.calls[0]![0].pinned_until);
+    expect([pinned.getDate(), pinned.getHours(), pinned.getMinutes()]).toEqual([next.getDate(), 23, 59]);
+
+    fireEvent.click(button("Don't pin it"));
+    fireEvent.click(button("Save draft"));
+    expect(onAction.mock.calls[1]![0].pinned_until).toBeNull();
+  });
+
+  it("refuses a pin that has already ended", () => {
+    const onAction = form({ kind: "announcement", post: post({ kind: "announcement", agency_id: null }) });
+    fireEvent.change(screen.getByLabelText(/^Pin to the front page until/), { target: { value: "2020-01-01" } });
+    fireEvent.click(button("Save draft"));
+    expect(screen.getAllByText("Pin it until a day to come.").length).toBeGreaterThan(0);
+    expect(onAction).not.toHaveBeenCalled();
+  });
+
+  it("can't make a published one important after the fact", () => {
+    form({ kind: "announcement", post: post({ kind: "announcement", agency_id: null, status: "published", published_at: "2026-11-07T18:00:00Z" }) });
+    expect((screen.getByRole("checkbox", { name: "Important" }) as HTMLInputElement).disabled).toBe(true);
+  });
+});
+
+describe("Banners", () => {
+  it("shows each pinned announcement with who it's from, and dismisses it", () => {
+    const onDismiss = vi.fn();
+    const pinned = post({ id: "a1", kind: "announcement", agency_id: null, title: "New venue parking", body: "Use the back lot.", byline: "Mara Quinn, Lead storyteller", pinned: true });
+    render(
+      <MemoryRouter>
+        <Banners troupeId="t" banners={[pinned]} busy={false} onDismiss={onDismiss} />
+      </MemoryRouter>,
+    );
+    const list = screen.getByRole("list", { name: "Pinned announcements" });
+    expect(list.textContent).toContain("Announcement · Mara Quinn, Lead storyteller");
+    expect(screen.getByRole("link", { name: "New venue parking" }).getAttribute("href")).toBe("/troupes/t/announcements/a1");
+    fireEvent.click(button("Dismiss “New venue parking”"));
+    expect(onDismiss).toHaveBeenCalledWith(pinned);
   });
 });

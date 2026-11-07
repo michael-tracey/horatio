@@ -315,6 +315,16 @@ export function SettingsPage({ player }: { player: PlayerOut }) {
               ]}
             />
           </Setting>
+          <Setting label="Troupe announcements in the bell" hint="Each announcement from your troupes' staff, such as a game moved. Email for it is under Notifications by email.">
+            <Choice
+              name="bell_announcements"
+              label="Troupe announcements in the bell"
+              choices={[
+                [true, "In the bell"],
+                [false, "Not in the bell"],
+              ]}
+            />
+          </Setting>
         </Card>
       </fieldset>
       <ErrorText error={set.error} />
