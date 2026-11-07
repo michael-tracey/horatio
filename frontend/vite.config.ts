@@ -1,5 +1,6 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig } from "vitest/config";
 
 // Proxying /api to the API keeps the app and API on one origin, which sign-in
@@ -7,7 +8,38 @@ import { defineConfig } from "vitest/config";
 const apiPort = process.env.HORATIO_API_PORT ?? "8000";
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    // The service worker keeps the app itself (its page, scripts, styles, fonts and
+    // icons) so it opens with no signal (#502). It never answers the API: a
+    // player's own characters are kept by the app (src/offline), and nothing that
+    // changes something is ever answered from what is kept. Only in a build: the dev
+    // server has none, and the e2e suite blocks it but for the tests that ask for it.
+    VitePWA({
+      registerType: "prompt",
+      injectRegister: false,
+      // public/site.webmanifest is the manifest.
+      manifest: false,
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,woff2,webp,ico,svg}", "*.png", "*.webmanifest"],
+        // The link preview's picture and the big logo are for other sites, not the app.
+        globIgnores: ["preview.jpg", "logo.png"],
+        navigateFallback: "index.html",
+        navigateFallbackDenylist: [/^\/api\//],
+        // The rules and the manual make some of the app's files big.
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
+        cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.origin === "https://fonts.googleapis.com" || url.origin === "https://fonts.gstatic.com",
+            handler: "StaleWhileRevalidate",
+            options: { cacheName: "fonts", expiration: { maxEntries: 20 }, cacheableResponse: { statuses: [0, 200] } },
+          },
+        ],
+      },
+    }),
+  ],
   server: {
     proxy: { "/api": `http://localhost:${apiPort}` },
     // The user manual is bundled from ../docs/manual (src/manual/content.ts).

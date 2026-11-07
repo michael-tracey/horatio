@@ -2,6 +2,8 @@ import { cloneElement, useCallback, useEffect, useId, useLayoutEffect, useRef, u
 import type { ButtonHTMLAttributes, CSSProperties, InputHTMLAttributes, ReactElement, ReactNode, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 import { Link, NavLink, useLocation } from "react-router";
 import { usePreferences } from "../hooks";
+import { useOnline } from "../offline/connection";
+import { NeedsConnection } from "../offline/NeedsConnection";
 import { pipGroups } from "../ratings";
 
 function cx(...classes: (string | false | null | undefined)[]): string {
@@ -127,7 +129,10 @@ export function Notice({ children }: { children: ReactNode }) {
   return <p className="rounded-md border border-gold/40 bg-gold/10 px-3 py-2 text-sm">{children}</p>;
 }
 
+/** Waiting for an answer; offline, with nothing kept to show, the screen says it needs a connection (#502). */
 export function Loading() {
+  const online = useOnline();
+  if (!online) return <NeedsConnection />;
   return <p className="py-8 text-center text-mist">Loading…</p>;
 }
 

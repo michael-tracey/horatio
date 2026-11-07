@@ -12,6 +12,9 @@ import { ForgotPasswordPage, ResetPasswordPage, SignInPage, SignUpPage } from ".
 import { TroupesPage } from "./pages/TroupesPage";
 import { UnsubscribePage } from "./pages/UnsubscribePage";
 import { withNext } from "./next";
+import { NeedsConnection } from "./offline/NeedsConnection";
+import { KeepQuestion, useKeptOnDevice } from "./offline/Offline";
+import { UpdatePrompt } from "./offline/UpdatePrompt";
 import { LazyPages } from "./staleBuild";
 import { useTextSize } from "./textSize";
 
@@ -45,6 +48,8 @@ function ToScenes() {
 function RequireSignIn() {
   const me = useMe();
   const location = useLocation();
+  // Offline with nothing kept here, it can't know who is signed in.
+  if (me.isPending && me.fetchStatus === "paused") return <NeedsConnection />;
   if (me.isPending) return <Loading />;
   if (!me.data) {
     // Sign in, then on to where they were going.
@@ -60,6 +65,17 @@ function RequireSignIn() {
 
 export function App() {
   useTextSize();
+  useKeptOnDevice();
+  return (
+    <>
+      <KeepQuestion />
+      <UpdatePrompt />
+      <AppRoutes />
+    </>
+  );
+}
+
+function AppRoutes() {
   return (
     <Routes>
       {/* The printed sheet stands alone: no header, black on white. So does the

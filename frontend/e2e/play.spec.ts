@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, openScene, undoInHeader, backstoryOptional, builtVampire, ATTRIBUTES_AND_FOCUSES } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, openScene, undoInHeader, backstoryOptional, builtVampire, characterTab, ATTRIBUTES_AND_FOCUSES } from "./support";
 
 /** The Play View at a game: blood, feeding, the Beast and derangements. */
 
@@ -387,6 +387,103 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(strip).toHaveCount(0);
   await expect(p.getByText("Undid: Celerity on")).toBeVisible();
   await expect(p.getByText("Undid: Blood 8 → 7")).toHaveCount(2);
+});
+
+test("kept on the phone, a player's character opens with no signal: the sheet, the Play View and its powers, and taps go when the signal returns (#502)", async ({ browser }) => {
+  // The player's own phone, with the service worker that keeps the app, and asked the first time they sign in.
+  const { page: p } = await person(browser, "offline-keeper", { serviceWorkers: "allow", storageState: { cookies: [], origins: [] } });
+  const question = p.getByRole("dialog", { name: "Your own phone?" });
+  await expect(question).toContainText("Is this your own phone?");
+  const id = await builtVampire(p, "Nocturne", "Brujah", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  await question.getByRole("button", { name: "Yes, keep them here" }).click();
+  await expect(question).toBeHidden();
+
+  // Account › This device says what is kept here.
+  await p.goto("/account/device");
+  await expect(p.getByRole("radio", { name: "On: my characters work offline" })).toHaveAttribute("aria-checked", "true");
+  const kept = p.getByRole("group", { name: "Kept on this device" });
+  await p.getByRole("button", { name: "Update now" }).click();
+  await expect(kept).toContainText("Kept here now: Nocturne");
+  await expect(kept).toContainText(/Updated .* · about \d+ KB/);
+  await p.screenshot(shots("offline-device"));
+  await p.evaluate(async () => void (await navigator.serviceWorker.ready));
+
+  // No signal: the app opens to the player's characters, kept on the phone.
+  await p.context().setOffline(true);
+  await p.goto("/characters");
+  await expect(p.getByRole("heading", { name: "Your characters" })).toBeVisible();
+  await expect(p.getByLabel("Connection")).toContainText(/^Offline · your characters as of /);
+  await p.getByRole("link", { name: /Nocturne/ }).click();
+  await expect(p.getByRole("heading", { name: /Nocturne/ })).toBeVisible();
+  await expect(p.getByText("Brawl", { exact: true }).first()).toBeVisible();
+  // A screen between games needs a connection, and says so.
+  await characterTab(p, "Downtime");
+  await expect(p.getByText("The Downtime tab needs a connection.")).toBeVisible();
+  await p.screenshot(shots("offline-needs-connection"));
+
+  // The Play View: a tap waits on the phone, through a reload, and the powers are there.
+  await p.goto(`/play/characters/${id}`);
+  await expect(p.getByRole("heading", { name: "Nocturne" })).toBeVisible();
+  await p.getByRole("button", { name: "Spend Willpower", exact: true }).click();
+  await expect(p.getByRole("status")).toHaveText("Offline · 1 tap waiting");
+  await expect(p.getByText(/^Your sheet as of /)).toBeVisible();
+  await p.reload();
+  await expect(p.getByRole("status")).toHaveText("Offline · 1 tap waiting");
+  await p.getByRole("button", { name: "Spend Willpower", exact: true }).click();
+  await expect(p.getByRole("status")).toHaveText("Offline · 2 taps waiting");
+  await p.getByRole("tab", { name: "Pools" }).click();
+  await expect(p.getByText("Celerity", { exact: true }).first()).toBeVisible();
+  await p.screenshot(shots("offline-play"));
+
+  // The signal returns: the taps go.
+  await p.context().setOffline(false);
+  await expect(p.getByRole("status")).toHaveText("Saved");
+  const view = await (await p.request.get(`/api/characters/${id}/play`)).json();
+  expect(view.willpower.value).toBe(view.willpower.most - 2);
+
+  // Signing out with a tap not yet sent warns first, then clears the phone.
+  const me = await (await p.request.get("/api/auth/me")).json();
+  await p.route("**/play/taps", (route) => route.fulfill({ status: 503, json: { detail: "Down for a moment." } }));
+  await p.getByRole("tab", { name: "Tracker" }).click();
+  await p.getByRole("button", { name: "Spend Willpower", exact: true }).click();
+  await expect(p.getByRole("status")).toHaveText("Saving · 1 tap waiting");
+  await p.goto("/characters");
+  await p.getByRole("button", { name: "Sign out" }).click();
+  const leaving = p.getByRole("dialog", { name: "Sign out?" });
+  await expect(leaving).toContainText("1 tap hasn't been sent yet. Sign out anyway?");
+  await leaving.getByRole("button", { name: "Sign out anyway" }).click();
+  await expect(p.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  expect(await p.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("horatio.play.") || k === "horatio.offline.who"))).toEqual([]);
+  const left = await p.evaluate(
+    (key) =>
+      new Promise((done) => {
+        const opened = indexedDB.open("horatio-offline");
+        opened.onsuccess = () => {
+          const got = opened.result.transaction("kept").objectStore("kept").get(key);
+          got.onsuccess = () => done(got.result ?? null);
+        };
+      }),
+    `person:${me.id}`,
+  );
+  expect(left).toBeNull();
+});
+
+test("online only, nothing is kept: with no signal, the app says it needs a connection (#502)", async ({ browser }) => {
+  // A browser that answered "No, online only" (the suite's), with the service worker.
+  const { page: p } = await person(browser, "offline-borrow", { serviceWorkers: "allow" });
+  await p.goto("/account/device");
+  await expect(p.getByRole("radio", { name: "Off: online only" })).toHaveAttribute("aria-checked", "true");
+  await expect(p.getByText("Nothing is kept here. For a borrowed or shared phone.")).toBeVisible();
+  await p.evaluate(async () => void (await navigator.serviceWorker.ready));
+  await p.context().setOffline(true);
+  await p.reload();
+  await expect(p.getByText("Your account needs a connection.")).toBeVisible();
+  await p.goto("/characters");
+  await expect(p.getByText("The Characters page needs a connection.")).toBeVisible();
 });
 
 test("Shape of the Beast on the Play View: a Huge fight form adds Healthy levels and Brawl, flight form ends it, and the Scene shows it", async ({ browser }) => {

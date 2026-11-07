@@ -1,6 +1,6 @@
 import { Component, Suspense, type ErrorInfo, type ReactNode } from "react";
 import { useLocation } from "react-router";
-import { Button, Loading } from "./components/ui";
+import { Button } from "./components/ui";
 
 // After a deploy, a tab opened before it asks for page files that no longer
 // exist. Reloading fetches the new index.html, which names the new ones.
@@ -66,7 +66,7 @@ export function LazyPages({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   return (
     <Boundary resetKey={pathname}>
-      <Suspense fallback={<Loading />}>{children}</Suspense>
+      <Suspense fallback={<p className="py-8 text-center text-mist">Loading…</p>}>{children}</Suspense>
     </Boundary>
   );
 }
