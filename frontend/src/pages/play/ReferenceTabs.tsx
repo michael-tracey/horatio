@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from "react";
 import type { DisciplinePowers, PlayItem, PlayReference, PowerSwitch, TestPool } from "../../api/types";
+import { changedText } from "../../backgroundChanges";
 import { useClanName } from "../../components/ClanNames";
 import { HouseMark } from "../../components/HouseMark";
 import { TraitInfo } from "../../components/TraitInfo";
 import { Rating } from "../../components/ui";
+import { useDates } from "../../dates";
 import { pipsOf } from "../../ratings";
 import { IdentityNote } from "../character/Identities";
 import { RetainerLines } from "../character/Retainers";
@@ -104,6 +106,7 @@ export function SheetTab({ reference }: { reference: PlayReference }) {
   // The Retainers listed once, under the last Retainer bought; with none bought, under
   // the first merit that gives one.
   const named = useClanName();
+  const dates = useDates();
   const giving = givingMerits(reference.retainers);
   const retainersUnder =
     reference.traits.filter((t) => t.category === "backgrounds" && t.name === "Retainers").at(-1) ??
@@ -116,6 +119,16 @@ export function SheetTab({ reference }: { reference: PlayReference }) {
   }
   return (
     <div className="grid gap-3 md:grid-cols-2">
+      {/* Backgrounds raised or lowered from a downtime: Crafts, Performance, overtaxed Resources. */}
+      {(reference.backgrounds_changed ?? []).length > 0 && (
+        <Panel title="Changed for now">
+          <ul className="text-sm text-parchment">
+            {reference.backgrounds_changed.map((b) => (
+              <li key={b.trait}>{changedText(b, dates)}</li>
+            ))}
+          </ul>
+        </Panel>
+      )}
       {/* A ghoul's domitor, whose clan it takes, and the weakness it plays for roleplay only (MET: VtM core p. 297). */}
       {reference.domitor && (
         <Panel title="Domitor">

@@ -200,6 +200,16 @@ function ParticipantDetail({ cycle, participant }: { cycle: CycleOut; participan
           .join(" · ") || "No actions"}
         {participant.completion_xp_awarded != null && <span className="text-mist"> · earned {participant.completion_xp_awarded} XP for completing</span>}
       </p>
+      {/* Where the actions came from, as the player sees it. */}
+      <ul className="mt-1 text-xs text-mist" aria-label={`Where ${participant.character_name}'s actions come from`}>
+        {participant.breakdown.map((b, i) => (
+          <li key={i}>
+            {b.amount < 0 ? "\u2212" : "+"}
+            {Math.abs(b.amount)} {b.action_kind.replace(/_/g, " ")} {b.source === "Everyone" ? "(everyone gets these)" : `from ${b.source}`}
+            {b.only && ` (${b.only} only)`}
+          </li>
+        ))}
+      </ul>
       {participant.adjustments.map((a, i) => (
         <p key={i} className="text-xs text-mist">
           {a.delta > 0 ? "+" : ""}

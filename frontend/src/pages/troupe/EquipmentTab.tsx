@@ -578,7 +578,17 @@ function History({ troupeId, item }: { troupeId: string; item: EquipmentItemOut 
             {e.actor_name && `, ${e.actor_name}`}:
           </span>{" "}
           {e.summary}
-          {e.reason && ` (${e.reason})`}
+          {e.downtime ? (
+            <>
+              {" ("}
+              <Link to={`/cycles/${e.downtime.cycle_id}/responses#response-${e.downtime.response_id}`} className="text-gold hover:text-parchment">
+                {e.reason}
+              </Link>
+              )
+            </>
+          ) : (
+            e.reason && ` (${e.reason})`
+          )}
         </li>
       ))}
     </ol>

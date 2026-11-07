@@ -16,9 +16,11 @@ from horatio import (
     audit,
     clan_merits,
     diablerie,
+    downtimes,
     feeding,
     free_changes,
     game_xp,
+    keywords,
     play_status,
     rack,
     resonance,
@@ -39,6 +41,7 @@ from horatio.rules.house_checks import is_house_check
 from horatio.rules.model import (
     ActionKindData,
     AllowanceRuleData,
+    AllowanceScheme,
     CostRuleData,
     CreationRuleData,
     RuleSetData,
@@ -658,8 +661,11 @@ class AllowanceOut(BaseModel):
     category: str | None
     trait: str | None
     min_rating: int
-    scheme: Literal["fixed", "per_dot"]
+    scheme: AllowanceScheme
     amount: int
+    # per_detail: the rating the best of the trait needs for its 1st, 2nd... field to
+    # count; empty, every field counts.
+    detail_ratings: list[int] = []
     # Who gets it and how much, in plain words: "Hunted", "−2 downtime actions".
     who: str
     amount_text: str
@@ -674,9 +680,13 @@ class AllowancesOut(BaseModel):
 
 
 class AllowanceChange(BaseModel):
-    scheme: Literal["fixed", "per_dot"] = "fixed"
+    # per_detail: one for each field of the trait held, such as each Science (p. 97).
+    scheme: AllowanceScheme = "fixed"
     amount: int
     min_rating: int = Field(default=1, ge=1)
+    # per_detail: the rating the best of the trait needs for its 1st, 2nd... field to
+    # count, such as [1, 3, 5]; empty, every field counts.
+    detail_ratings: list[int] = Field(default=[], max_length=10)
 
 
 class AllowanceIn(AllowanceChange):
@@ -698,6 +708,10 @@ def allowance_out(
     amount_text = f"{sign}{abs(rule.amount)} {plural[0].lower()}{plural[1:]}"
     if rule.scheme == "per_dot":
         amount_text += " per dot"
+    if rule.scheme == "per_detail":
+        amount_text += " for each field"
+        if rule.detail_ratings:
+            amount_text += ", at " + ", ".join(str(r) for r in rule.detail_ratings)
     who = rule.trait or "Everyone"
     if rule.trait and rule.min_rating > 1:
         who += f" at {rule.min_rating} or more"
@@ -709,6 +723,7 @@ def allowance_out(
         min_rating=rule.min_rating,
         scheme=rule.scheme,
         amount=rule.amount,
+        detail_ratings=list(rule.detail_ratings),
         who=who,
         amount_text=amount_text,
         house=rule.house,
@@ -795,6 +810,7 @@ def add_allowance(
         trait=body.trait or None,
         min_rating=body.min_rating,
         house=True,
+        detail_ratings=tuple(body.detail_ratings),
     )
     try:
         row = add_house_allowance_rule(db, troupe.id, splat, rule)
@@ -821,8 +837,17 @@ def change_allowance(
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
     splat = house_splat(db, troupe.id, splat)
     old = house_allowance(db, troupe.id, splat, rule_id)
-    rule = replace(old, scheme=body.scheme, amount=body.amount, min_rating=body.min_rating)
-    change_house_allowance_rule(db, troupe.id, rule_id, rule)
+    rule = replace(
+        old,
+        scheme=body.scheme,
+        amount=body.amount,
+        min_rating=body.min_rating,
+        detail_ratings=tuple(body.detail_ratings),
+    )
+    try:
+        change_house_allowance_rule(db, troupe.id, rule_id, rule)
+    except ValueError as error:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
     log_allowance(db, user, "house.allowance_changed", troupe.id, splat, rule)
     db.commit()
     return next(r for r in allowances_out(db, troupe.id, splat).rules if r.id == rule_id)
@@ -927,6 +952,32 @@ def set_golconda(
         forget_rules(db)
         for character in playing_by(db, troupe.id):
             apply_grants(db, user, character)
+    db.commit()
+    return troupe_out(db, user, troupe)
+
+
+class RareDisciplinesIn(BaseModel):
+    # Learning a dot of a rare discipline from a teacher takes two downtime actions
+    # (MET: VtM core p. 113).
+    on: bool
+
+
+@router.put("/rare-disciplines")
+def set_rare_disciplines(
+    troupe_id: uuid.UUID, body: RareDisciplinesIn, db: DbSession, user: CurrentUser
+) -> TroupeOut:
+    """Switch on or off the optional rule that rare disciplines take two downtime
+    actions a dot to learn. Dots learned before keep what they cost."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    if troupe.rare_disciplines_two_actions != body.on:
+        troupe.rare_disciplines_two_actions = body.on
+        audit.record(
+            db,
+            user,
+            "house.rare_disciplines",
+            troupe_id=troupe.id,
+            setting="two actions a dot" if body.on else "one action a dot",
+        )
     db.commit()
     return troupe_out(db, user, troupe)
 
@@ -1485,6 +1536,12 @@ def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
     found.extend(
         HouseSettingOut(name=name, text=text, book_text=book)
         for name, text, book in game_xp.house_settings(troupe)
+    )
+    found.extend(
+        HouseSettingOut(name=name, text=text, book_text=book)
+        for name, text, book in keywords.house_settings(
+            db, troupe, downtimes.troupe_action_kinds(db, troupe)
+        )
     )
     return found
 

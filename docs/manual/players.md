@@ -288,6 +288,14 @@ Downtimes come from the character's home troupe, one [cycle](glossary.md#downtim
 
 The form is the troupe's own. On the right, the cycle's card gives its due date and status (**Draft** or **Submitted**), and **Your actions** counts the actions you have of each kind, how many you've used, and where they come from: those everyone gets, those from the character's traits, and any adjustment the storytellers made. Actions the character owes for learning are taken off, and a red line says if it's short.
 
+Each line names its source, as the book has it:
+
+- **Traits that give actions:** Computer (one, spent as any other or on cancelling or observing another character's action), each Science field (one, only for work in that field), the ritual Soul of the Homunculi (two) and Mytherceria's Ay Befriend (one no one can trace or observe). Your troupe can change any of these in its house rules.
+- **Status spent at a game:** spending Veteran on the Play View adds an action to the next downtime, such as "Veteran spent at the 3 Nov game". Undoing the tap takes it back.
+- **What others did to you:** staff take off what Call of the Hungry Dead or an indirect influence attack costs the character, such as "Call of the Hungry Dead against you".
+
+An action only for one thing, such as a Science action, says so on its question: "Of these, 1 Science action (Chemistry only)". A Science action goes only on a [keyword](#keywords-what-kind-of-action) that fits a Science, such as Investigate, Craft or Narrative; staff judge what fits its field.
+
 The questions follow. A question marked with a red asterisk must be answered.
 
 ![The downtime form: the Feeding section, an action, and on the right the cycle's due date and the actions left](images/players/downtime.png)
@@ -296,16 +304,63 @@ The questions follow. A question marked with a red asterisk must be answered.
 
 > **If your troupe uses this:** feeding is tracked in downtimes as the core book has it unless the troupe has switched it off.
 
-The **Feeding** section says how much feeding the character needs this cycle, and why. Spend **Actions spent feeding** (taken from your general actions), and say **Where and how**. If the character has Herd, share its dots out: **Use for my feeding**, **Save for game**, **Other**, or **Give Herd to another character** in the cycle. A line at the foot tallies whether it's enough; the storytellers decide. A character that feeds short comes to the next game at half Blood.
+The **Feeding** section says how much feeding the character needs this cycle, and why. To feed, give one of your actions the **Feed** [keyword](#keywords-what-kind-of-action): each Feed action is a feeding action, and the section counts them ("1 feeding action, from your Feed actions below"). Say **Where and how** here. Where the troupe has no Feed keyword, spend **Actions spent feeding** here instead, taken from your general actions. If the character has Herd, share its dots out: **Use for my feeding**, **Save for game**, **Other**, or **Give Herd to another character** in the cycle. A line at the foot tallies whether it's enough; the storytellers decide. A character that feeds short comes to the next game at half Blood.
 
-The troupe's optional rules add more: **Resonance you hunt for** (Blood Resonance), a territory to feed in and patrols (feeding territories), or the Rack, where you take a vessel instead of spending actions and Herd. Once a storyteller has answered your feeding, it can't change.
+The troupe's optional rules add more: **Resonance you hunt for** (Blood Resonance), feeding territories, or the Rack, where you take a vessel instead of spending actions and Herd. With feeding territories, a Feed action's **Feed in a territory** names one: once a cycle, feeding there stands in for a feeding action without spending one. A **Patrol** action patrols a territory the character holds; the section lists the patrols. Once a storyteller has answered your feeding, it can't change.
+
+A character holding the status Triumphant needs one feeding action fewer, and may feed in any territory without poaching. The Feeding section shows it as "Triumphant −1".
+
+### Quick Hands, Quick Work
+
+A character with the technique Quick Hands, Quick Work gets a choice at the top of its form each cycle: **Use Quick Hands, Quick Work this cycle (+2 actions; no feeding; start next game at half Blood)**. It's off until you tick it, and you can change it until you submit.
+
+While it's on, the character has two more general actions, shown as "Quick Hands, Quick Work" in **Your actions**. It can't spend actions feeding, use its own Herd or take Herd from others, so the Feeding section is closed, but it can still give its Herd to others. Its next game starts at half Blood.
 
 ### Actions, influence and quests
 
-Each action question has **Add an action** with how many are left of that kind, and **Remove this action** (with **Undo**) under each one.
+Each action question has **Add an action** with how many are left of that kind, and **Remove this action** (with **Undo**) under each one. Where the troupe uses the optional rule, learning a dot of a rare discipline from a teacher costs two actions, not one.
+
+#### Keywords: what kind of action
+
+A new action asks **What kind of action is it?** first, with each of its **keywords** explained: Feed, Patrol, Investigate, Learn, Narrative and so on. Choose one, then fill in what it asks for, then describe the action in a sentence or two. Only the keywords that action can be are offered; with just one, it's chosen for you.
+
+| Keyword | It asks for | What follows |
+|---|---|---|
+| **Feed** | Optionally, a feeding territory | It's a feeding action, counted in the Feeding section. |
+| **Patrol** | A territory the character holds | It patrols it against poachers. Only with feeding territories. |
+| **Investigate** | Who or what: a character, or something else in words | Staff find out what they can. |
+| **Beyond Your Means** | The item wanted | One item with one quality, given with your results if it works. |
+| **Learn** | What to learn, and the teacher if any | See below. |
+| **Craft**, **Perform** | Just the description | Two in a month can raise Resources or Fame by one for the month. |
+| **Narrative** | Just the description | Anything else: an NPC, a ritual. |
+| **Rhetorical** | Just the description | Colour, with no effect on the game. |
+| **Observe**, **Cancel** | One character | With the Computer skill only: see [Aiming an action at someone](#aiming-an-action-at-someone). |
+
+The Quest action is the form's own **Quest** question. Your troupe may rename these, add its own or retire some, so its list can differ; the troupe's **House rules** tab lists its changes.
+
+- **Changing the keyword.** **Change** beside it offers the others. What you wrote stays; if the new one doesn't ask for something you filled in, such as the territory, it warns you first, and **Keep** leaves it as it was.
+- **Ready-made actions.** What the character is learning, such as a discipline dot whose action came off this downtime, shows ready-made at the top of the question: **Confirm** makes it a Learn action, which costs nothing more. A keyword your troupe asks of your character each cycle, such as Eternal Struggle for an elder, shows there too, with **Add it**; the form won't submit without it.
+- **Before submitting,** each action needs its description, and what its keyword asks for, such as who or what an Investigate is aimed at. Until then it saves as a draft as you go.
+- **Old actions,** from before keywords, count as Narrative.
 
 - **Influence.** An action of an influence kind also asks for the **Specialisation** and the **Action**, offering the actions the character can reach with its influence.
 - **Quests.** *If your troupe runs quests:* the **Quest action** asks **Which quest** it's for: one the character is in or leads, or one shared with it or posted to the troupe, which it joins by choosing it.
+
+### Aiming an action at someone
+
+Under an action, **Aimed at…** names a character of the troupe it's aimed at, such as one you're spying on, investigating or working against. Choose more than one if the action names several, and **×** takes one off. It's optional, and the characters aimed at never learn who aimed at them: only the storytellers and assistant storytellers see it.
+
+- **This costs 2 actions.** Some characters are harder to act against: aimed at one of them, the action costs two of your actions, and **Your actions** counts it so. The storytellers can count it as one if it isn't against them, such as a friendly visit.
+- **Cancel or observe.** A character with the Computer skill can cancel or observe one action of another character's each month (MET: VTM p. 93): choose the **Cancel** or **Observe** keyword, and the one character it's aimed at. A Cancel stops one of their actions; they learn it was cancelled, but not by whom. An Observe tells you of one of their actions, and they never learn of it. The storytellers decide which of their actions it works on, and whether it works.
+
+### Projects
+
+Some work takes more than one downtime, such as changing your character's Path. The **Projects** card at the foot of the Downtime tab shows each of the character's projects: how many actions it has had of how many it needs, and any rule about a least number each month. It shows even when no downtime is open.
+
+- **Propose a project** to start one: choose its **Kind** (**Path change**, **Research** or **Other**), and give it a name, the **Actions it takes** and, if you like, **At least this many a month**. The storytellers confirm it before actions count toward it. **Withdraw** takes back one they haven't confirmed yet. They can also start one for you.
+- **Spending on it.** Under an action, **Counts toward** names the project it's for. When the storytellers mark the cycle complete, the project goes up by the actions spent on it in your submitted downtime.
+- **Starting over.** A project with a least number a month starts over, back to none, after a cycle with fewer actions on it than that.
+- **A Path change** needs 9 actions with a teacher who follows the new Path, or 18 without, and at least 1 every month, or it starts over (MET: VTM p. 306). When it's finished, the storytellers change your character's Morality to the new Path on the sheet; it goes down by 1 as it does.
 
 ### Player Nominations
 
@@ -335,9 +390,11 @@ The card says when the downtime is **Due** and when it is **Accepted until** (th
 
 ### Results
 
-When the storytellers deliver the cycle's results, the **Results** tab shows how many are new, and the Characters page says **New results**. Each cycle's results are under its name and date, newest first and open: each answer sits under the action it answers. Older cycles fold away. A cycle re-delivered after a change says **Updated**. Your troupe may also send results by email or Discord.
+When the storytellers deliver the cycle's results, the **Results** tab shows how many are new, and the Characters page says **New results**. Each cycle's results are under its name and date, newest first and open: each answer sits under the action it answers. If the storytellers gave your character equipment with an answer, it says **You received**, and the item, or its new quality, is on the Equipment tab. Older cycles fold away. A cycle re-delivered after a change says **Updated**. Your troupe may also send results by email or Discord.
 
 ![The Results tab: a cycle's results, with the storytellers' answer under the action](images/players/results.png)
+
+A result can also change a background for a while. Two actions of Crafts (making something and selling it) raise Resources by 1, and two of Performance raise Fame by 1, until the troupe's next cycle opens. Overtaxed Resources are 2 lower for six games or three months, whichever is later, and three actions spent recovering halve that. The sheet's **Backgrounds changed for now** card and the Play View's Sheet tab show it, such as "Resources 3 (+1 this month, Crafts)".
 
 ### Reading the nominations
 
@@ -432,7 +489,7 @@ At game, the Play View's **Status** tab shows the status the character carries i
 
 ## Equipment
 
-The character's **Equipment** tab lists what it owns: weapons, protective gear, other gear and Vampiric Texts, each with its qualities and what they do, its facts and where it came from. Your storytellers give equipment. You can **Give** an item to another character or **Discard** it.
+The character's **Equipment** tab lists what it owns: weapons, protective gear, other gear and Vampiric Texts, each with its qualities and what they do, its facts and where it came from. Your storytellers give equipment, at any time or with your downtime results. You can **Give** an item to another character or **Discard** it.
 
 ## Quests
 

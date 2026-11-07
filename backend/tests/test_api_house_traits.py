@@ -751,9 +751,8 @@ def test_its_downtime_actions_and_feeding_count_in_a_cycle(troupe: Troupe) -> No
 
     participants = troupe.assistant.client.get(f"/cycles/{cycle['id']}/participants").json()
     assert participants[0]["allowance"]["general"] == 4
-    assert {"action_kind": "general", "source": "Night Errands", "amount": 1, "note": ""} in (
-        participants[0]["breakdown"]
-    )
+    night_errands = {"source": "Night Errands", "amount": 1, "note": "", "only": ""}
+    assert {"action_kind": "general", **night_errands} in (participants[0]["breakdown"])
     lines = my_downtime(troupe.player, character_id).json()["feeding"]["need"]["lines"]
     assert [(line["source"], line["amount"]) for line in lines if line["kind"] == "trait"] == [
         ("Night Errands", -1)

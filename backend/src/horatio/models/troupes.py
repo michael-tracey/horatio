@@ -72,6 +72,11 @@ class Troupe(Imported, Record):
     # Golconda Seeker holds the innate status Enlightened (Vol. 2, p. 267). Off unless
     # switched on (horatio.rules.grants.HOUSE_OPTIONS).
     golconda_enlightened: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # House option: learning a dot of a rare discipline from a teacher takes two downtime
+    # actions, not one (MET: VtM core p. 113). Off unless switched on (horatio.sheets).
+    rare_disciplines_two_actions: Mapped[bool] = mapped_column(
+        default=False, server_default="false"
+    )
     # House rule: how many languages Linguistics gives (horatio.rules.languages):
     # "book", one per dot; "accelerated", the accelerated chart; or "custom", its own
     # figure for each rating in languages_table (kept while another is chosen). And

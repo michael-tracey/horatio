@@ -147,6 +147,14 @@ class EquipmentItemOut(BaseModel):
     expiry: ExpiryOut | None = None
 
 
+class EventDowntimeOut(BaseModel):
+    """The downtime response an item, or a change to it, was given from (#508)."""
+
+    cycle_id: uuid.UUID
+    cycle_name: str
+    response_id: uuid.UUID
+
+
 class EquipmentEventOut(BaseModel):
     id: uuid.UUID
     # given | changed | taken_back, and from #282 passed | discarded | restored.
@@ -164,6 +172,8 @@ class EquipmentEventOut(BaseModel):
     summary: str
     # For a change, each field changed: {field: {"from": ..., "to": ...}}.
     changes: dict[str, Any]
+    # Given from a downtime response: its reason says so, linking to it.
+    downtime: EventDowntimeOut | None = None
 
 
 class EquipmentItemDetailOut(EquipmentItemOut):
@@ -480,6 +490,15 @@ class Reader:
                     rules, e, self.troupe(e.troupe_id).name if e.troupe_id else None
                 ),
                 changes=e.changes,
+                downtime=(
+                    EventDowntimeOut(
+                        cycle_id=source["cycle_id"],
+                        cycle_name=source["cycle"],
+                        response_id=source["response_id"],
+                    )
+                    if (source := e.changes.get("downtime"))
+                    else None
+                ),
             )
             for e in equipment.history(self.db, item)
         ]

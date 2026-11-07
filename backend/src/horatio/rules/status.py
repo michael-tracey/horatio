@@ -11,6 +11,8 @@ the trait's properties:
     sect        "General" for the status every sect has (pp. 313-317), else the sect
     passive     what holding it does, in a line of our own words
     spent       what spending it does
+    spent_actions  downtime actions spending it at a game adds to the next
+                downtime (Veteran's one, p. 483)
     source      where it usually comes from: a title, a merit, another status
     censure     a negative status: what its holder must not do (p. 316)
     punishment  a negative status: what breaking the censure brings
@@ -125,6 +127,7 @@ class StatusData:
     sect: str
     passive: str = ""
     spent: str = ""
+    spent_actions: int = 0
     source: str = ""
     page: str | None = None
     censure: str = ""
@@ -313,6 +316,7 @@ def status_from_trait(name: str, properties: Mapping[str, Any], page: str | None
         sect=properties.get("sect", ""),
         passive=properties.get("passive", ""),
         spent=properties.get("spent", ""),
+        spent_actions=properties.get("spent_actions", 0),
         source=properties.get("source", ""),
         page=page,
         censure=properties.get("censure", ""),

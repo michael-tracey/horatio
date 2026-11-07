@@ -177,10 +177,15 @@ test("screenshots for the Players part of the manual", async ({ browser }) => {
 
   await p.goto(`/characters/${lucian}/downtime`);
   await expect(card(p, "Feeding")).toBeVisible();
-  await p.getByLabel("Actions spent feeding").fill("1");
   await p.getByLabel("Where and how").fill("The night market by the river");
+  // Each action's keyword first: a Feed action is a feeding action (#509).
   await p.getByRole("button", { name: /^Add an action/ }).first().click();
-  await p.getByRole("textbox", { name: "Downtime action" }).first().fill("Ask around the docks about who bought the old print shop.");
+  await p.getByRole("radio", { name: /^Feed/ }).click();
+  await p.getByRole("textbox", { name: "Downtime action" }).first().fill("Hunt the night market by the river.");
+  await p.getByRole("button", { name: /^Add an action/ }).first().click();
+  await p.getByRole("radio", { name: /^Investigate/ }).click();
+  await p.getByLabel("Or something else").fill("The old print shop");
+  await p.getByRole("textbox", { name: "Downtime action" }).nth(1).fill("Ask around the docks about who bought the old print shop.");
   await expect(p.getByText(/^Saved \d/)).toBeVisible({ timeout: 15_000 });
   await p.locator("main").screenshot(shot("downtime"));
   await p.getByRole("button", { name: "Submit downtime" }).click();
