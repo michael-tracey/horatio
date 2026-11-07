@@ -19,8 +19,9 @@ from tests.test_api_downtimes import (
     save,
 )
 from tests.test_api_feeding import set_feeding, staff_view, territory, vampire
-from tests.test_api_sect_status import put_trait
 from tests.test_api_owed_actions import approve_all, take
+from tests.test_api_quests import give as give_trait
+from tests.test_api_sect_status import put_trait
 
 pytestmark = pytest.mark.usefixtures("without_bank")
 
@@ -165,7 +166,8 @@ def test_what_a_keyword_asks_for_is_needed_to_submit(troupe: Troupe) -> None:
     assert "who or what it is aimed at for your Investigate action" in refused.json()["detail"]
 
     # A character, or something else in words.
-    for fields in ({"aimed_at": [bram]}, {"subject": "The missing ghoul"}):
+    aims: list[dict[str, Any]] = [{"aimed_at": [bram]}, {"subject": "The missing ghoul"}]
+    for fields in aims:
         saved = save(troupe.player, agnes, [action(form, "Dig", "investigate", **fields)])
         assert saved.status_code == 200, saved.text
         assert submit(troupe.player, agnes).status_code == 200
@@ -414,3 +416,45 @@ def test_troupes_rename_retire_and_add_keywords_as_house_rules(troupe: Troupe) -
     names_now = [(k["name"], k["retired"]) for k in reset.json()["keywords"]]
     assert names_now[: len(DEFAULT_ORDER)] == [(n, False) for n in DEFAULT_ORDER]
     assert ("Hunt", True) in names_now
+
+
+def test_science_actions_go_only_on_keywords_that_fit_a_science(troupe: Troupe) -> None:
+    agnes = member_character(troupe, troupe.player, "Agnes")
+    give_trait(troupe.session, agnes, "skills", "Science", 1, "Physics")
+    open_cycle(troupe, new_cycle(troupe))
+    form = my_downtime(troupe.player, agnes).json()
+    assert form["allowance"]["general"] == 4
+
+    performing = [action(form, f"Sing {n}", "perform", n) for n in (1, 2, 3, 4)]
+    refused = save(troupe.player, agnes, performing)
+    assert refused.status_code == 422
+    assert "1 of this character's actions is a Science action" in refused.json()["detail"]
+    # One of them on a keyword that fits: Investigate, Craft or Narrative.
+    fitting = [*performing[:3], action(form, "Test the blood", "investigate", 4)]
+    assert save(troupe.player, agnes, fitting).status_code == 200
+
+
+def test_staff_see_how_many_craft_actions_a_character_took(troupe: Troupe) -> None:
+    agnes = member_character(troupe, troupe.player, "Agnes")
+    cycle = open_cycle(troupe, new_cycle(troupe))
+    form = my_downtime(troupe.player, agnes).json()
+    answers = [
+        action(form, "Forge a blade", "craft"),
+        action(form, "Sell it", "craft", 2),
+        action(form, "Sing", "perform", 3),
+    ]
+    assert save(troupe.player, agnes, answers).status_code == 200
+    assert submit(troupe.player, agnes).status_code == 200
+    counts = {i["answer"]: i["keyword_actions"] for i in responses(troupe, cycle)}
+    assert counts == {"Forge a blade": 2, "Sell it": 2, "Sing": 1}
+
+
+def test_an_action_with_a_keyword_saves_before_it_is_described(troupe: Troupe) -> None:
+    agnes = member_character(troupe, troupe.player, "Agnes")
+    open_cycle(troupe, new_cycle(troupe))
+    form = my_downtime(troupe.player, agnes).json()
+    saved = save(troupe.player, agnes, [action(form, "", "narrative"), action(form, "", None, 2)])
+    assert saved.status_code == 200, saved.text
+    assert [a["structured"] for a in saved.json()["answers"]] == [{"keyword": "narrative"}]
+    refused = submit(troupe.player, agnes)
+    assert "say what it is for your Narrative action" in refused.json()["detail"]

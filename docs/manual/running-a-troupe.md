@@ -442,6 +442,28 @@ The book's own list includes Computer, each Science field, Soul of the Homunculi
 
 **Influence lookups**, on the same page, sets how many **Days to look back** Gossip and Insider Trading and Word on the Street look in the influence log, counted from when their cycle closes.
 
+### Downtime keywords
+
+**Downtime keywords** lists the keywords a player chooses first for each downtime action: what kind of action it is. Horatio's follow the book where it has a rule (MET: VTM pp. 93, 97, 111–113, 307–308) and the troupes' downtime primers for the rest: Feed, Patrol, Investigate, Beyond Your Means, Quest, Learn, Craft, Perform, Narrative, Rhetorical, Observe and Cancel. What follows from them on their own:
+
+- **Feed** actions are the character's feeding actions, which the Feeding section counts and the [Feeding tab](#feeding-in-a-cycle) answers as before. A Feed in a feeding territory stands in for one without spending an action, once a cycle.
+- **Patrol** actions are its patrols of the territories it holds.
+- **Learn** stands for what the character is learning: a discipline dot whose action came off the cycle shows on its form ready-made, and confirming it costs nothing more. Efficient Learner still waives the action, and teachers never spend one.
+- **Observe** and **Cancel** are the Computer skill's one action a cycle, aimed at one character: see [Actions aimed at characters](#actions-aimed-at-characters).
+- **Craft** and **Perform**: on their responses, **Effects on allowances and backgrounds** starts with the boost chosen, and says how many the character took.
+- **Beyond Your Means** asks for the item wanted, and **Give an item** on its response starts from it.
+- **Quest** is the form's Quest action.
+
+Each row says what the keyword asks for, what it's spent from and its step in the resolution order. The **⋯** at the end of a row holds:
+
+- **Edit…**: its **Name**, **What it is for** (one line, shown on the form), what **It asks for** (one character; who or what it's aimed at; a feeding territory; what to learn; the teacher; the item wanted), what it's **Spent from** (the action kinds, or **Only the Computer skill's action**), whether it **Fits a Science**, the **Actions it costs**, its **Step of the resolution order**, and whether it's **Required each cycle of** Neonates, Ancillae or Elders, such as an Eternal Struggle for Elders. Renamed, a keyword of Horatio's keeps what follows from it.
+- **Move up** and **Move down**: the order the form offers them in, and their order within a step.
+- **Retire**: no longer offered. Past downtimes keep it. **Offer it again** brings it back.
+
+**Add a keyword** adds one of your own. **Back to Horatio's keywords…** puts every one back as Horatio has it, and retires your own. The changes show on the troupe's **House rules** tab. Influence actions take no keyword: their influence action says what they are.
+
+The resolution order, under the list, is Land of the Sky's: influence Defends, Blocks, Boosts and Attacks; indirect influence attacks; other influence actions, highest first, with Word on the Street last; Cancels; the other downtime actions; and Observes last.
+
 ### Languages
 
 **Languages from Linguistics** sets how many languages each rating of Linguistics gives: **Book** (one a dot), **Accelerated chart**, or **Custom**, and whether Natural Linguist doubles it. Characters already holding more than a new chart allows keep them, and are listed under **Holding more than the chart allows** for you to settle with their players.
@@ -642,7 +664,7 @@ A character holding Triumphant needs one feeding action fewer, and never poaches
 
 ![The Responses tab: responses by character, filtered and assigned.](images/running-a-troupe/responses.png)
 
-The **Responses** tab holds every response in the cycle, by character. Filter by **All**, **Unassigned**, **Assigned** or **Written**, by who has it, and by question.
+The **Responses** tab holds every response in the cycle, by character. Filter by **All**, **Unassigned**, **Assigned** or **Written**, by who has it, by question, and by [keyword](#downtime-keywords). **Order** › **In resolution order** lists them in the troupe's resolution order instead, under each step, so you can work through them in turn. Each response names its keyword and its step, and what the keyword's fields say, such as the territory or the item wanted. An answer from before keywords counts as Narrative.
 
 - Choose who writes each response: a staff member, or **Any narrator**. Tick several and assign them in one go from the bar at the foot of the screen.
 - Write a response and choose **Save response**. A **Fill table** can roll a random result into it.
@@ -665,7 +687,7 @@ What a response gives shows under it, marked **With the results**: it reaches th
 A player can aim an action at one or more characters of the troupe, home or visiting. The cycle's **Aimed at** tab lists, for each character, the submitted actions aimed at them: who, which question and the answer, each with a link to its response. Responses show who they're aimed at too. Only storytellers and assistant storytellers see either: no player learns who aimed at them, and a narrator writing the response doesn't see it. The troupe log notes each action aimed at someone as the downtime is submitted.
 
 - **A Haven's Location** (MET: VTM p. 102). An action aimed at a character whose Haven, on the troupe's [Locations](#locations), has the Location advantage costs two actions. The player sees only "This costs 2 actions". If it isn't against them, such as a friendly visit, or they no longer stay in their Haven, tick the box under it on its response and it costs 1; the player gets the action back.
-- **Cancel and Watch** (p. 93). A character with the Computer skill can mark one action a month as a **Cancel** or a **Watch** of one character's actions. On the **Aimed at** tab, choose which of that character's actions it works on; the two then show together, there and on both responses. Whether it works is yours to judge.
+- **Cancel and Observe** (p. 93). A character with the Computer skill can make one action a month a **Cancel** or an **Observe** of one character's actions, by its keyword. On the **Aimed at** tab, choose which of that character's actions it works on; the two then show together, there and on both responses. Whether it works is yours to judge.
 
 ### Projects
 

@@ -411,8 +411,16 @@ _Avoid_: Shout-out, kudos, props
 Memories of a retired character, asked of the troupe in one downtime cycle: the open one if it isn't yet past Due, or else the next to open. Its home troupe's storytellers and assistant storytellers open them, as it retires or later; its player can ask for them. Each writer gives one memory, reviewed and published with the cycle's Player Nominations, never starred. Published, they stay with the character and on the Who's Who, even if the troupe stops using them. A troupe uses them only if it switches them on.
 _Avoid_: Eulogies, obituary, memorial
 
+**Keyword**:
+What kind of action one downtime action is, chosen first by its player from those its action kind allows: Feed, Patrol, Investigate, Learn, Narrative and so on. It sets what else the answer asks for, what it costs and where staff resolve it, and some act on their own: Feed answers are the character's feeding actions, Learn stands for what learning owes. A troupe changes its keywords as house rules; a retired one stays on past downtimes, and an answer with none counts as Narrative.
+_Avoid_: Action type, category, tag
+
+**Resolution Order**:
+The order staff resolve a cycle's actions in, by step: influence conflicts first, then indirect influence attacks, other influence actions highest first, Cancels, the other actions, and Observes last. A keyword sets its step; within a step, actions come in the keywords' order.
+_Avoid_: Priority, initiative
+
 **Target**:
-A character a downtime action is aimed at, chosen by its player from the troupe's characters, home or visiting, not retired. Only the troupe's storytellers and assistant storytellers see it; the target's player and narrators never do. Aimed at someone whose Haven has Location, an action costs two, unless staff say it isn't against them. A character with Computer can make one action a cycle a **Cancel** or **Watch** of its target's actions, which staff pair with the action it works on.
+A character a downtime action is aimed at, chosen by its player from the troupe's characters, home or visiting, not retired. Only the troupe's storytellers and assistant storytellers see it; the target's player and narrators never do. Aimed at someone whose Haven has Location, an action costs two, unless staff say it isn't against them. A character with Computer can make one action a cycle a **Cancel** or **Observe** of its target's actions, which staff pair with the action it works on.
 _Avoid_: Victim, subject, mark
 
 **Project**:

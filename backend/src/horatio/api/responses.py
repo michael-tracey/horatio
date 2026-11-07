@@ -37,6 +37,7 @@ from horatio.api.troupe_equipment import (
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.equipment import EquipmentRefused, ItemQuality
 from horatio.models import (
+    Answer,
     CycleParticipant,
     Delivery,
     DowntimeCycle,
@@ -225,6 +226,11 @@ class WorkItemOut(BaseModel):
     step: int = keywords.NORMAL_STEP
     step_name: str = ""
     resolution: int = 0
+    # A Craft or Perform action: how many of them the character took this cycle, as
+    # two raise Resources or Fame for the month (horatio.downtime_effects).
+    keyword_actions: int = 0
+    # What its keyword's fields say, in words: the territory, what to learn, the item.
+    keyword_details: list[str] = []
     status: str
     assigned_to_user_id: uuid.UUID | None
     assigned_to_any_narrator: bool
@@ -439,6 +445,16 @@ def response_item_out(row: ResponseItem, gives: bool) -> ResponseItemOut:
     )
 
 
+def keyword_actions(db: DbSession, item: responses.WorkItem, key: str | None) -> int:
+    """For a Craft or Perform action, how many the character's downtime has."""
+    if key not in (keywords.CRAFT, keywords.PERFORM):
+        return 0
+    found = db.scalars(
+        select(Answer.structured).where(Answer.submission_id == item.answer.submission_id)
+    )
+    return sum(1 for s in found if keywords.keyword_of(s) == key)
+
+
 def gives_equipment(db: DbSession, user: User, troupe: Troupe) -> bool:
     """Whether the reader gives equipment from the troupe's responses."""
     return equipment.can_manage(db, user, troupe)
@@ -502,6 +518,8 @@ def item_out(
         step=place.step,
         step_name=keywords.STEPS[place.step],
         resolution=resolution,
+        keyword_actions=keyword_actions(db, item, place.key),
+        keyword_details=keywords.details(db, item.answer.structured),
         status=item.response.status,
         assigned_to_user_id=item.response.assigned_to_user_id,
         assigned_to_any_narrator=item.response.assigned_to_any_narrator,

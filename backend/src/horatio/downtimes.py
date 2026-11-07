@@ -1040,9 +1040,11 @@ def answer_keywords(
 ) -> tuple[keywords.Context, list[keywords.Keyword]]:
     """What decides the keywords the character is offered, and the troupe's keywords."""
     show = feeding.shown(troupe)
+    # Under Quick Hands, Quick Work the character doesn't feed this cycle.
     feeds = (
         show.tracked
         and not show.rack
+        and not quick_hands_on(db, participant)
         and feeding.participant_basis(db, participant, character, cycle).get("clan") is not None
     )
     return keywords.context(db, character, troupe, feeds), keywords.troupe_keywords(db, troupe.id)
@@ -1088,9 +1090,10 @@ def save_answers(
     quick_hands: bool | None = None,
 ) -> Submission:
     """Replace the character's answers, and its Feeding section when given one.
-    Blank answers are dropped, but for a Quest action that names its quest. Feeding
-    actions come out of the general actions. An action aimed at someone whose Haven
-    has Location costs two (horatio.targets). `quick_hands` uses Quick Hands, Quick
+    Blank answers are dropped, but for a Quest action that names its quest and an
+    action with a keyword (horatio.keywords). Feeding actions come out of the general
+    actions. An action aimed at someone whose Haven has Location costs two
+    (horatio.targets). `quick_hands` uses Quick Hands, Quick
     Work this cycle, or not; left out, it stays as it was."""
     from horatio import projects, quest_actions
 
@@ -1116,7 +1119,12 @@ def save_answers(
         question = shown.get(spec.question_id)
         return question is not None and question.kind == "quest" and bool(spec.structured)
 
-    kept = [s for s in specs if s.body.strip() or names_quest(s)]
+    # An answer with a keyword is kept as it is filled in, its description still to come.
+    kept = [
+        s
+        for s in specs
+        if s.body.strip() or names_quest(s) or keywords.keyword_of(s.structured or {})
+    ]
     # Each answer's keyword and its fields (horatio.keywords), checked first: Feed and
     # Patrol answers make the Feeding section's actions and patrols.
     ctx, keyword_list = answer_keywords(db, cycle, participant, character, troupe)
@@ -1198,6 +1206,8 @@ def save_answers(
     seen: set[tuple[uuid.UUID, int]] = set()
     chosen_quests: set[uuid.UUID] = set()
     counters = 0
+    # General actions on keywords that don't fit a Science, with feeding's.
+    unscientific = fed
     # Whose Havens have Location, of everyone the answers are aimed at.
     located = targets.with_location(
         db, cycle.troupe_id, {t for s in kept for t in targets.aimed_at(s.structured or {})}
@@ -1267,6 +1277,11 @@ def save_answers(
             cost = base * targets.cost(spec.structured, not_against, located)
             doubled[kind] = doubled.get(kind, 0) + (cost > base)
             used[kind] = used.get(kind, 0) + cost
+            keyword = found.keyword if found is not None else by_key.get(keywords.NARRATIVE)
+            if kind == "general" and (
+                question.kind != "action" or not (keyword and keyword.science)
+            ):
+                unscientific += cost
             if used[kind] > allowance_now.get(kind, 0):
                 feeding_spent = fed if kind == "general" else 0
                 raise unprocessable(
@@ -1288,6 +1303,15 @@ def save_answers(
                     + "."
                 )
 
+    science = science_actions(participant)
+    if science and unscientific > allowance_now.get("general", 0) - science:
+        raise unprocessable(
+            f"{science} of this character's actions "
+            + ("is a Science action" if science == 1 else "are Science actions")
+            + ", only for keywords that fit a Science (MET: VTM p. 97), such as "
+            + ", ".join(k.name for k in keyword_list if k.science and not k.retired)
+            + "."
+        )
     if submission is None:
         submission = Submission(participant_id=participant.id)
         db.add(submission)
@@ -1348,6 +1372,16 @@ def save_answers(
     return submission
 
 
+def science_actions(participant: CycleParticipant) -> int:
+    """The general actions the character's Sciences give (MET: VTM p. 97), each only for
+    its field: they go only on keywords that fit a Science (horatio.keywords)."""
+    return sum(
+        int(line["amount"])
+        for line in participant.allowance_breakdown
+        if line.get("only") and line["action_kind"] == "general" and line["amount"] > 0
+    )
+
+
 def keyword_gaps(
     db: Session,
     cycle: DowntimeCycle,
@@ -1370,6 +1404,8 @@ def keyword_gaps(
         if keyword is None:
             continue
         lacking = keywords.missing(keyword, answer.structured, ctx)
+        if not answer.body.strip():
+            lacking.append("what it is")
         if lacking:
             gaps.append(f"say {' and '.join(lacking)} for your {keyword.name} action")
     taken = {keywords.keyword_of(a.structured) for a in answers}

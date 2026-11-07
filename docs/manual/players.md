@@ -290,11 +290,11 @@ The form is the troupe's own. On the right, the cycle's card gives its due date 
 
 Each line names its source, as the book has it:
 
-- **Traits that give actions:** Computer (one, spent as any other or on stopping or watching another character's action), each Science field (one, only for work in that field), the ritual Soul of the Homunculi (two) and Mytherceria's Ay Befriend (one no one can trace or watch). Your troupe can change any of these in its house rules.
+- **Traits that give actions:** Computer (one, spent as any other or on cancelling or observing another character's action), each Science field (one, only for work in that field), the ritual Soul of the Homunculi (two) and Mytherceria's Ay Befriend (one no one can trace or observe). Your troupe can change any of these in its house rules.
 - **Status spent at a game:** spending Veteran on the Play View adds an action to the next downtime, such as "Veteran spent at the 3 Nov game". Undoing the tap takes it back.
 - **What others did to you:** staff take off what Call of the Hungry Dead or an indirect influence attack costs the character, such as "Call of the Hungry Dead against you".
 
-An action only for one thing, such as a Science action, says so on its question: "Of these, 1 Science action (Chemistry only)". Staff judge what fits.
+An action only for one thing, such as a Science action, says so on its question: "Of these, 1 Science action (Chemistry only)". A Science action goes only on a [keyword](#keywords-what-kind-of-action) that fits a Science, such as Investigate, Craft or Narrative; staff judge what fits its field.
 
 The questions follow. A question marked with a red asterisk must be answered.
 
@@ -304,9 +304,9 @@ The questions follow. A question marked with a red asterisk must be answered.
 
 > **If your troupe uses this:** feeding is tracked in downtimes as the core book has it unless the troupe has switched it off.
 
-The **Feeding** section says how much feeding the character needs this cycle, and why. Spend **Actions spent feeding** (taken from your general actions), and say **Where and how**. If the character has Herd, share its dots out: **Use for my feeding**, **Save for game**, **Other**, or **Give Herd to another character** in the cycle. A line at the foot tallies whether it's enough; the storytellers decide. A character that feeds short comes to the next game at half Blood.
+The **Feeding** section says how much feeding the character needs this cycle, and why. To feed, give one of your actions the **Feed** [keyword](#keywords-what-kind-of-action): each Feed action is a feeding action, and the section counts them ("1 feeding action, from your Feed actions below"). Say **Where and how** here. Where the troupe has no Feed keyword, spend **Actions spent feeding** here instead, taken from your general actions. If the character has Herd, share its dots out: **Use for my feeding**, **Save for game**, **Other**, or **Give Herd to another character** in the cycle. A line at the foot tallies whether it's enough; the storytellers decide. A character that feeds short comes to the next game at half Blood.
 
-The troupe's optional rules add more: **Resonance you hunt for** (Blood Resonance), a territory to feed in and patrols (feeding territories), or the Rack, where you take a vessel instead of spending actions and Herd. Once a storyteller has answered your feeding, it can't change.
+The troupe's optional rules add more: **Resonance you hunt for** (Blood Resonance), feeding territories, or the Rack, where you take a vessel instead of spending actions and Herd. With feeding territories, a Feed action's **Feed in a territory** names one: once a cycle, feeding there stands in for a feeding action without spending one. A **Patrol** action patrols a territory the character holds; the section lists the patrols. Once a storyteller has answered your feeding, it can't change.
 
 A character holding the status Triumphant needs one feeding action fewer, and may feed in any territory without poaching. The Feeding section shows it as "Triumphant −1".
 
@@ -320,6 +320,29 @@ While it's on, the character has two more general actions, shown as "Quick Hands
 
 Each action question has **Add an action** with how many are left of that kind, and **Remove this action** (with **Undo**) under each one. Where the troupe uses the optional rule, learning a dot of a rare discipline from a teacher costs two actions, not one.
 
+#### Keywords: what kind of action
+
+A new action asks **What kind of action is it?** first, with each of its **keywords** explained: Feed, Patrol, Investigate, Learn, Narrative and so on. Choose one, then fill in what it asks for, then describe the action in a sentence or two. Only the keywords that action can be are offered; with just one, it's chosen for you.
+
+| Keyword | It asks for | What follows |
+|---|---|---|
+| **Feed** | Optionally, a feeding territory | It's a feeding action, counted in the Feeding section. |
+| **Patrol** | A territory the character holds | It patrols it against poachers. Only with feeding territories. |
+| **Investigate** | Who or what: a character, or something else in words | Staff find out what they can. |
+| **Beyond Your Means** | The item wanted | One item with one quality, given with your results if it works. |
+| **Learn** | What to learn, and the teacher if any | See below. |
+| **Craft**, **Perform** | Just the description | Two in a month can raise Resources or Fame by one for the month. |
+| **Narrative** | Just the description | Anything else: an NPC, a ritual. |
+| **Rhetorical** | Just the description | Colour, with no effect on the game. |
+| **Observe**, **Cancel** | One character | With the Computer skill only: see [Aiming an action at someone](#aiming-an-action-at-someone). |
+
+The Quest action is the form's own **Quest** question. Your troupe may rename these, add its own or retire some, so its list can differ; the troupe's **House rules** tab lists its changes.
+
+- **Changing the keyword.** **Change** beside it offers the others. What you wrote stays; if the new one doesn't ask for something you filled in, such as the territory, it warns you first, and **Keep** leaves it as it was.
+- **Ready-made actions.** What the character is learning, such as a discipline dot whose action came off this downtime, shows ready-made at the top of the question: **Confirm** makes it a Learn action, which costs nothing more. A keyword your troupe asks of your character each cycle, such as Eternal Struggle for an elder, shows there too, with **Add it**; the form won't submit without it.
+- **Before submitting,** each action needs its description, and what its keyword asks for, such as who or what an Investigate is aimed at. Until then it saves as a draft as you go.
+- **Old actions,** from before keywords, count as Narrative.
+
 - **Influence.** An action of an influence kind also asks for the **Specialisation** and the **Action**, offering the actions the character can reach with its influence.
 - **Quests.** *If your troupe runs quests:* the **Quest action** asks **Which quest** it's for: one the character is in or leads, or one shared with it or posted to the troupe, which it joins by choosing it.
 
@@ -328,7 +351,7 @@ Each action question has **Add an action** with how many are left of that kind, 
 Under an action, **Aimed at…** names a character of the troupe it's aimed at, such as one you're spying on, investigating or working against. Choose more than one if the action names several, and **×** takes one off. It's optional, and the characters aimed at never learn who aimed at them: only the storytellers and assistant storytellers see it.
 
 - **This costs 2 actions.** Some characters are harder to act against: aimed at one of them, the action costs two of your actions, and **Your actions** counts it so. The storytellers can count it as one if it isn't against them, such as a friendly visit.
-- **Cancel or watch.** A character with the Computer skill can cancel or watch one action of another character's each month (MET: VTM p. 93). Aim an action at one character, and choose **Cancel** or **Watch** under **With the Computer skill**. The storytellers decide which of their actions it works on, and whether it works.
+- **Cancel or observe.** A character with the Computer skill can cancel or observe one action of another character's each month (MET: VTM p. 93): choose the **Cancel** or **Observe** keyword, and the one character it's aimed at. A Cancel stops one of their actions; they learn it was cancelled, but not by whom. An Observe tells you of one of their actions, and they never learn of it. The storytellers decide which of their actions it works on, and whether it works.
 
 ### Projects
 

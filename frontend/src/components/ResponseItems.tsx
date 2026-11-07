@@ -112,7 +112,9 @@ function GiveItem({
   const c = character.data;
   const holder = { id: c.id, name: c.name, kind: c.kind, player_name: null, splat: c.splat };
   const was = editing?.item;
-  const start: { draft: Draft; template: string | null } | undefined = was
+  // A Beyond Your Means action (#509) asks for one item: the editor starts from it.
+  const wanted = item.keyword_key === "beyond_your_means" && typeof item.structured.item === "string" ? item.structured.item : "";
+  const start: { draft: Draft; template: string | null; fresh?: boolean } | undefined = was
     ? {
         draft: {
           ...NEW_ITEM,
@@ -124,7 +126,9 @@ function GiveItem({
         },
         template: was.template ?? null,
       }
-    : undefined;
+    : wanted
+      ? { draft: { ...NEW_ITEM, name: wanted, kind: "miscellaneous", grade: "cheap" }, template: null, fresh: true }
+      : undefined;
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm text-mist">It goes to {c.name} when this response is delivered, with the results, and shows there as received.</p>

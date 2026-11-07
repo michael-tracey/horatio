@@ -476,6 +476,32 @@ def required_now(keywords: Sequence[Keyword], ctx: Context) -> list[Keyword]:
     return [k for k in keywords if not k.retired and ctx.age and ctx.age in k.required_for]
 
 
+def details(db: Session, structured: Mapping[str, Any]) -> list[str]:
+    """What the answer's keyword fields say, in words, for staff: never who it is aimed
+    at, which only some staff see (horatio.targets)."""
+    from horatio.models import FeedingTerritory
+
+    found: list[str] = []
+    territory = structured.get(TERRITORY)
+    if territory:
+        try:
+            row = db.get(FeedingTerritory, uuid.UUID(str(territory)))
+        except ValueError:
+            row = None
+        found.append(f"Territory: {row.name if row else 'one no longer listed'}")
+    for key, label in (
+        (SUBJECT, "About"),
+        (LEARN, "Learning"),
+        (TEACHER, "Teacher"),
+        (ITEM, "Wanted"),
+    ):
+        if text(structured, key):
+            found.append(f"{label}: {text(structured, key)}")
+    if structured.get(OWED):
+        found.append("Already taken from the allowance, as learning owes")
+    return found
+
+
 # --- what follows: feeding ----------------------------------------------------------------
 
 

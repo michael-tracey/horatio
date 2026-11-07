@@ -40545,6 +40545,19 @@
             "title": "Keyword",
             "type": "string"
           },
+          "keyword_actions": {
+            "default": 0,
+            "title": "Keyword Actions",
+            "type": "integer"
+          },
+          "keyword_details": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Keyword Details",
+            "type": "array"
+          },
           "keyword_key": {
             "anyOf": [
               {

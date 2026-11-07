@@ -62,6 +62,10 @@ A discipline dot bought once a character has a home troupe. The XP is spent at o
 
 What a character does between games: the player fills in the troupe's form, and staff answer each action with a response.
 
+## Downtime keyword
+
+What kind of action a downtime action is, such as Feed, Investigate or Learn, which its player chooses first. It decides what the action asks for, what it can be spent from and where staff resolve it, and some do something on their own: Feed actions are feeding actions. A troupe changes its keywords as [house rules](#house-rule).
+
 ## Downtime cycle
 
 One round of downtimes for a troupe, with the date it opens, the date downtimes are due, and a grace period for late ones. Often just called a cycle.

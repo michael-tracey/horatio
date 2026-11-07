@@ -1,6 +1,9 @@
 import type { WorkItemOut } from "../../api/types";
 
-type Item = Pick<WorkItemOut, "id" | "character_id" | "character_name" | "question" | "status" | "assigned_to_user_id" | "assigned_to_any_narrator">;
+type Item = Pick<
+  WorkItemOut,
+  "id" | "character_id" | "character_name" | "question" | "status" | "assigned_to_user_id" | "assigned_to_any_narrator" | "keyword" | "step" | "step_name" | "resolution"
+>;
 
 export type Status = "all" | "unassigned" | "assigned" | "written";
 
@@ -13,15 +16,34 @@ export function assigneeOf(item: Item): string {
   return item.assigned_to_user_id ?? "none";
 }
 
-export type ResponseFilter = { status: Status; assignee: string; question: string };
+export type ResponseFilter = { status: Status; assignee: string; question: string; keyword: string };
 
-/** Whether a response shows under the filter; an empty assignee or question means any. */
+/** Whether a response shows under the filter; an empty assignee, question or keyword means any. */
 export function shows(item: Item, filter: ResponseFilter): boolean {
   return (
     (filter.status === "all" || item.status === filter.status) &&
     (!filter.assignee || assigneeOf(item) === filter.assignee) &&
-    (!filter.question || item.question === filter.question)
+    (!filter.question || item.question === filter.question) &&
+    (!filter.keyword || item.keyword === filter.keyword)
   );
+}
+
+/** The keywords the responses have (#509), each once, in the troupe's resolution order. */
+export function keywordsOf(items: Item[]): string[] {
+  return [...new Set([...items].sort((a, b) => a.resolution - b.resolution).map((i) => i.keyword))];
+}
+
+export type StepGroup<T extends Item> = { step: number; name: string; items: T[] };
+
+/** Responses in the troupe's resolution order (#509), under each step of it. */
+export function byStep<T extends Item>(items: T[]): StepGroup<T>[] {
+  const groups: StepGroup<T>[] = [];
+  for (const item of [...items].sort((a, b) => a.resolution - b.resolution)) {
+    const last = groups[groups.length - 1];
+    if (last && last.step === item.step) last.items.push(item);
+    else groups.push({ step: item.step, name: item.step_name, items: [item] });
+  }
+  return groups;
 }
 
 /** The questions the responses answer, each once, in the order they first come. */

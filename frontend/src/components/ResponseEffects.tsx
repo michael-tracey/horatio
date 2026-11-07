@@ -27,7 +27,9 @@ export function effectChoices(effects: ResponseEffectsOut): { kind: Kind; label:
  */
 export function ResponseEffects({ item }: { item: WorkItemOut }) {
   const [open, setOpen] = useState(false);
-  const [kind, setKind] = useState<Kind | "">("");
+  // A Craft or Perform action (#509) comes with its boost ready to apply.
+  const boost: Kind | "" = item.keyword_key === "craft" ? "crafts" : item.keyword_key === "perform" ? "performance" : "";
+  const [kind, setKind] = useState<Kind | "">(boost);
   const [target, setTarget] = useState("");
   const client = useQueryClient();
   const key = ["response-effects", item.id];
@@ -106,6 +108,12 @@ export function ResponseEffects({ item }: { item: WorkItemOut }) {
             Apply
           </Button>
         </form>
+      )}
+      {boost && (
+        <p className="text-xs text-mist">
+          {item.character_name} took {item.keyword_actions === 1 ? "1 " + item.keyword + " action" : `${item.keyword_actions} ${item.keyword} actions`} this cycle. Two, one to
+          make or rehearse and one to sell or perform, raise {boost === "crafts" ? "Resources" : "Fame"} by 1 for the month.
+        </p>
       )}
       <ErrorText error={apply.error ?? remove.error} />
     </section>

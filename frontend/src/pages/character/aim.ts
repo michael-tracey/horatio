@@ -3,8 +3,8 @@ import type { TargetChoiceOut } from "../../api/types";
 /** An action's extra fields, as the form keeps them. */
 type Fields = Record<string, unknown> | undefined;
 
-export type Counter = "cancel" | "watch";
-export const COUNTER_NAMES: Record<Counter, string> = { cancel: "Cancel", watch: "Watch" };
+export type Counter = "cancel" | "observe";
+export const COUNTER_NAMES: Record<Counter, string> = { cancel: "Cancel", observe: "Observe" };
 
 /** The characters an action is aimed at, by id (#507). */
 export function aimedAt(fields: Fields): string[] {
@@ -14,7 +14,7 @@ export function aimedAt(fields: Fields): string[] {
 
 export function counterOf(fields: Fields): Counter | null {
   const raw = fields?.counter;
-  return raw === "cancel" || raw === "watch" ? raw : null;
+  return raw === "cancel" || raw === "observe" ? raw : null;
 }
 
 export function projectOf(fields: Fields): string {
@@ -29,7 +29,7 @@ function withField(fields: Fields, key: string, value: unknown): Record<string, 
 }
 
 /**
- * The fields aimed at `ids`. A Cancel or Watch is aimed at one character, so it goes
+ * The fields aimed at `ids`. A Cancel or Observe is aimed at one character, so it goes
  * when there is any other number of them.
  */
 export function withTargets(fields: Fields, ids: string[]): Record<string, unknown> {

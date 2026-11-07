@@ -58,8 +58,8 @@ export function EquipmentEditor({
   holder?: EquipmentHolderOut;
   /** Changing this item, rather than giving a new one. */
   item?: EquipmentItemOut;
-  /** A new item to start from, and the template it came from: one a response gives, to change it. */
-  start?: { draft: Draft; template: string | null };
+  /** A new item to start from, and the template it came from: one a response gives, to change it, or (`fresh`) one to give, filled in from what was asked for. */
+  start?: { draft: Draft; template: string | null; fresh?: boolean };
   /** Sends the new item somewhere other than straight to the holder, such as a downtime response (#508); it has no expiry. */
   send?: (item: ReturnType<typeof body> & { template: string | null }) => Promise<unknown>;
   onDone: (name: string) => void;
@@ -126,7 +126,8 @@ export function EquipmentEditor({
   const own = templates.data ?? [];
   const qualities = qualityChoices(book, draft.kind, draft.qualities);
   const problems = check.data?.problems ?? [];
-  const label = item ? `Change ${item.name}` : start ? `Change ${start.draft.name}` : "Give equipment";
+  const changing = !!item || (!!start && !start.fresh);
+  const label = item ? `Change ${item.name}` : changing && start ? `Change ${start.draft.name}` : "Give equipment";
   const text = draft.kind === "text";
 
   const startFrom = (value: string) => {
@@ -357,7 +358,7 @@ export function EquipmentEditor({
       {savedTemplate && <Notice>Saved {savedTemplate} as one of {troupeName}'s templates.</Notice>}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={save.isPending || !draft.name.trim() || (!item && !holderId)}>
-          {item || start ? "Save changes" : holder ? `Give to ${holder.name}` : "Give"}
+          {changing ? "Save changes" : holder ? `Give to ${holder.name}` : "Give"}
         </Button>
         {!item && (
           <Button type="button" variant="secondary" disabled={keep.isPending || !draft.name.trim()} onClick={() => keep.mutate(undefined)}>

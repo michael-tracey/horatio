@@ -10,7 +10,7 @@ import { STATUS_NAMES } from "./responsesList";
 /**
  * The cycle's actions aimed at characters, by the character they are aimed at
  * (#507): who, which question and the answer, each linking to its response. Where
- * staff resolve spying, cancelling and watching. Players never see it.
+ * staff resolve spying, cancelling and observing. Players never see it.
  */
 export function AimedTab({ cycle }: { cycle: CycleOut }) {
   const aimed = useQuery({
@@ -67,7 +67,7 @@ function AimedAction({ cycleId, target, action: a }: { cycleId: string; target: 
       )}
       {counter && (
         <label className="flex flex-col gap-1 text-mist">
-          Which of {target.character_name}'s actions it {a.counter === "cancel" ? "cancels" : "watches"}
+          Which of {target.character_name}'s actions it {a.counter === "cancel" ? "cancels" : "observes"}
           <Select value={a.paired?.response_id ?? ""} onChange={(e) => pair.mutate(e.target.value)} disabled={pair.isPending}>
             <option value="">Not paired yet</option>
             {target.own.map((o) => (

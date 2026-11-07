@@ -449,6 +449,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await characterTab(p, "Downtime");
   await expect(p.getByText(/^Due [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}( \d{4})?, \d{1,2}:\d{2} [ap]m \S+$/)).toBeVisible();
   await p.getByRole("button", { name: /Add an action/ }).first().click();
+  await p.getByRole("radio", { name: /^Narrative/ }).click();
   await p.getByLabel("Downtime action").fill("Hunt along the river docks.");
   // An influence action is named. Agnes's own Police specialisation lets her Elite 1 reach a level-2 action.
   const influence = p.locator("section").filter({ has: p.getByRole("heading", { name: "Elite influence action" }) });
@@ -792,6 +793,7 @@ test("a player aims an action at another character, and only staff see who", asy
   await b.goto(`/characters/${bram}/downtime`);
   const actions = b.locator("section").filter({ has: b.getByRole("heading", { name: "Downtime action" }) });
   await actions.getByRole("button", { name: /^Add an action/ }).click();
+  await actions.getByRole("radio", { name: /^Investigate/ }).click();
   await actions.getByRole("textbox", { name: "Downtime action" }).fill("Follow Agnes home from Elysium.");
   await actions.getByLabel("Aimed at").selectOption({ label: "Agnes" });
   await expect(actions.getByRole("button", { name: "No longer aimed at Agnes" })).toBeVisible();
@@ -854,6 +856,7 @@ test("a project a player proposes advances over two cycles until it finishes", a
     await p.goto(`/characters/${bram}/downtime`);
     const actions = p.locator("section").filter({ has: p.getByRole("heading", { name: "Downtime action" }) });
     await actions.getByRole("button", { name: /^Add an action/ }).click();
+    await actions.getByRole("radio", { name: /^Narrative/ }).click();
     await actions.getByRole("textbox", { name: "Downtime action" }).fill(text);
     await actions.getByLabel("Counts toward").selectOption({ label: "The Book of Nod" });
     await p.getByRole("button", { name: "Submit downtime" }).click();
@@ -1051,6 +1054,7 @@ test("a downtime keeps the player's writing: autosave, a failed save, a refetch,
   // The answer saves itself once typing stops, and is there after a reload.
   const saved = p.getByText(/^Saved \d/);
   await p.getByRole("button", { name: /Add an action/ }).first().click();
+  await p.getByRole("radio", { name: /^Narrative/ }).click();
   const answer = p.getByLabel("Downtime action");
   await answer.fill("Watch the docks for the courier.");
   await expect(p.getByText("Not saved yet")).toBeVisible();
@@ -1459,6 +1463,9 @@ test("what the book gives and takes: Science's own action, Quick Hands, Quick Wo
   await expect(feeding.getByText(/Using Quick Hands, Quick Work, you don't feed this cycle/)).toBeVisible();
   await expect(feeding.getByLabel("Use for my feeding")).toHaveCount(0);
   await p.getByRole("button", { name: /^Add an action/ }).first().click();
+  // Not feeding this cycle, she isn't offered Feed.
+  await expect(p.getByRole("radio", { name: /^Feed/ })).toHaveCount(0);
+  await p.getByRole("radio", { name: /^Craft/ }).click();
   await p.getByRole("textbox", { name: "Downtime action" }).fill("Paint a portrait of the Prince and sell it");
   await p.getByRole("button", { name: "Submit downtime" }).click();
   await expect(p.getByText("Submitted", { exact: true })).toBeVisible();
@@ -1638,6 +1645,98 @@ test("with Blood Resonance, the player hunts for a humor and staff answer with t
   await expect(l.getByText("Blood Resonance", { exact: true })).toBeVisible();
 });
 
+test("a player chooses each action's keyword first: Feed, Investigate, and a Learn action ready-made (#509)", async ({ browser }) => {
+  const people = [await person(browser, "dtkw-custodian"), await person(browser, "dtkw-lead"), await person(browser, "dtkw-player")] as const;
+  const other = await person(browser, "dtkw-other");
+  const { lead: l, player: b, troupe, bram, open, send } = await feedingTroupe(...people, `Keyword Court ${run}`, other);
+  // Bram learns a second dot of Potence, which owes a downtime action of the cycle that opens.
+  await send(l, "POST", `/api/characters/${bram}/xp`, { amount: 10, reason: "Game, last month" });
+  await send(b, "PUT", `/api/characters/${bram}/traits`, { category: "disciplines", name: "Potence", rating: 2 });
+  for (const asked of await send(l, "GET", `/api/troupes/${troupe}/approvals`)) await send(l, "POST", `/api/approvals/${asked.id}/approve`);
+  await open();
+
+  await b.goto(`/characters/${bram}/downtime`);
+  const feeding = b.locator("section").filter({ has: b.getByRole("heading", { name: "Feeding" }) });
+  const actions = b.locator("section").filter({ has: b.getByRole("heading", { name: "Downtime action" }) });
+  await expect(feeding.getByText("0 feeding actions, from your Feed actions below.")).toBeVisible();
+  await expect(feeding.getByLabel("Actions spent feeding")).toHaveCount(0);
+
+  // What he is learning is ready-made: he confirms it, and it costs nothing more.
+  await expect(actions.getByRole("list", { name: "Ready-made actions" })).toContainText("Potence 2");
+  await actions.getByRole("button", { name: "Confirm learning Potence 2" }).click();
+  await expect(actions.getByLabel("What to learn")).toHaveValue("Potence 2");
+  await expect(actions.getByLabel("What to learn")).toBeDisabled();
+  await actions.getByRole("textbox", { name: "Downtime action" }).fill("Learn to take a beating from the old sparring master.");
+
+  // A new action asks its keyword first, from those it can be: no Observe without the Computer skill.
+  await actions.getByRole("button", { name: /^Add an action/ }).click();
+  await expect(actions.getByRole("radio", { name: /^Observe/ })).toHaveCount(0);
+  await expect(actions.getByRole("textbox", { name: "Downtime action" })).toHaveCount(1);
+  await actions.getByRole("radio", { name: /^Feed/ }).click();
+  await actions.getByRole("textbox", { name: "Downtime action" }).nth(1).fill("Hunt the late trains.");
+  await expect(feeding.getByText("1 feeding action, from your Feed actions below.")).toBeVisible();
+  await expect(feeding.getByRole("status")).toHaveText("Enough feeding: 1 of the 1 needed (1 feeding action) ✓");
+
+  await actions.getByRole("button", { name: /^Add an action/ }).click();
+  await actions.getByRole("radio", { name: /^Investigate/ }).click();
+  await actions.getByLabel("Aimed at").nth(2).selectOption({ label: "Agnes" });
+  await actions.getByLabel("Or something else").fill("Her new ghoul");
+  await actions.getByRole("textbox", { name: "Downtime action" }).nth(2).fill("Find out where Agnes found her new ghoul.");
+  // Changing the keyword keeps what he wrote, after a warning of what goes.
+  await actions.getByRole("button", { name: "Change Investigate to another kind of action" }).click();
+  await actions.getByRole("radio", { name: /^Narrative/ }).last().click();
+  await expect(actions.getByRole("alert")).toHaveText(/Changing it to Narrative drops what it is aimed at\. What you wrote stays\./);
+  await actions.getByRole("button", { name: "Keep Investigate" }).first().click();
+  await actions.getByRole("button", { name: "Keep Investigate" }).click();
+  await expect(actions.getByRole("textbox", { name: "Downtime action" }).nth(2)).toHaveValue("Find out where Agnes found her new ghoul.");
+  await b.screenshot(shots("downtime-keywords"));
+  await b.getByRole("button", { name: "Submit downtime" }).click();
+  await expect(b.getByText("Submitted", { exact: true })).toBeVisible();
+});
+
+test("staff reorder the troupe's keywords, and filter and order the responses by them (#509)", async ({ browser }) => {
+  const people = [await person(browser, "dtkwo-custodian"), await person(browser, "dtkwo-lead"), await person(browser, "dtkwo-player")] as const;
+  const { lead: l, player: b, troupe, bram, cycle, send } = await feedingTroupe(...people, `Keyword Order Court ${run}`);
+  const form = await send(b, "GET", `/api/characters/${bram}/downtime`);
+  const general = form.questions.find((q: { prompt: string }) => q.prompt === "Downtime action").id;
+  const answer = (slot: number, body: string, keyword: string | null) => ({ question_id: general, slot, body, structured: keyword ? { keyword } : {} });
+  await send(b, "PUT", `/api/characters/${bram}/downtime/answers`, {
+    answers: [answer(1, "Sing at the Elysium", "perform"), answer(2, "Hunt the late trains", "feed"), answer(3, "Call on the Prince", null)],
+  });
+  await send(b, "POST", `/api/characters/${bram}/downtime/submit`);
+
+  // The lead moves Narrative to the top, and renames Perform.
+  await l.goto(`/troupes/${troupe}/rules/keywords`);
+  const table = l.getByRole("table", { name: "Downtime keywords" });
+  await expect(table.getByRole("row").nth(1)).toContainText("Feed");
+  for (let i = 0; i < 8; i++) {
+    await table.getByRole("button", { name: "Actions for Narrative" }).click();
+    await l.getByRole("menuitem", { name: "Move up" }).click();
+  }
+  await expect(table.getByRole("row").nth(1)).toContainText("Narrative");
+  await table.getByRole("button", { name: "Actions for Perform" }).click();
+  await l.getByRole("menuitem", { name: "Edit…" }).click();
+  const dialog = l.getByRole("dialog", { name: "Edit Perform" });
+  await dialog.getByLabel("Name").fill("Recital");
+  await dialog.getByRole("button", { name: "Save keyword" }).click();
+  await expect(table.getByText("Changed from Perform")).toBeVisible();
+  await l.screenshot(shots("rules-keywords"));
+
+  // On the Responses tab: filtered by keyword, and in the resolution order, Narrative first now.
+  await l.goto(`/cycles/${cycle}/responses`);
+  await l.getByRole("combobox", { name: /^Keyword/ }).selectOption("Recital");
+  await expect(l.getByText("Sing at the Elysium")).toBeVisible();
+  await expect(l.getByText("Hunt the late trains")).toHaveCount(0);
+  await l.getByRole("combobox", { name: /^Keyword/ }).selectOption("");
+  await l.getByRole("combobox", { name: /^Order/ }).selectOption("In resolution order");
+  const step = l.getByRole("region", { name: /^5\. Downtime actions/ });
+  await expect(step.getByText(/^(Call on the Prince|Hunt the late trains|Sing at the Elysium)$/)).toHaveText([
+    "Call on the Prince",
+    "Hunt the late trains",
+    "Sing at the Elysium",
+  ]);
+});
+
 test("feeding territories: a holder patrols hers, a poacher is caught there, and both read what came of it", async ({ browser }) => {
   const people = [await person(browser, "dtterr-custodian"), await person(browser, "dtterr-lead"), await person(browser, "dtterr-player")] as const;
   const holder = await person(browser, "dtterr-holder");
@@ -1661,15 +1760,27 @@ test("feeding territories: a holder patrols hers, a poacher is caught there, and
 
   // Agnes feeds in her territory and patrols it; Bram feeds there too, which is poaching.
   await a.goto(`/characters/${agnes}/downtime`);
+  // Feed and Patrol actions (#509) are her feeding and her patrol.
   const hers = a.locator("section").filter({ has: a.getByRole("heading", { name: "Feeding" }) });
-  await hers.getByLabel("Feed in a territory").selectOption({ label: "Docks (yours)" });
-  await hers.getByLabel("Actions patrolling Docks").fill("1");
+  const herActions = a.locator("section").filter({ has: a.getByRole("heading", { name: "Downtime action" }) });
+  await herActions.getByRole("button", { name: /^Add an action/ }).click();
+  await herActions.getByRole("radio", { name: /^Feed/ }).click();
+  await herActions.getByLabel("Feed in a territory").selectOption({ label: "Docks (yours)" });
+  await herActions.getByRole("textbox", { name: "Downtime action" }).fill("Feed on the night shift at the docks.");
+  await herActions.getByRole("button", { name: /^Add an action/ }).click();
+  await herActions.getByRole("radio", { name: /^Patrol/ }).click();
+  await herActions.getByLabel("Territory to patrol").selectOption({ label: "Docks (yours)" });
+  await herActions.getByRole("textbox", { name: "Downtime action" }).nth(1).fill("Walk the wharves at midnight.");
   await expect(hers.getByRole("status")).toHaveText("Enough feeding: 1 of the 1 needed (1 from feeding in Docks) ✓");
+  await expect(hers.getByText("Patrolling Docks (1 action), from your Patrol actions.")).toBeVisible();
   await a.getByRole("button", { name: "Submit downtime" }).click();
   await expect(a.getByText("Submitted", { exact: true })).toBeVisible();
   await b.goto(`/characters/${bram}/downtime`);
-  const his = b.locator("section").filter({ has: b.getByRole("heading", { name: "Feeding" }) });
+  const his = b.locator("section").filter({ has: b.getByRole("heading", { name: "Downtime action" }) });
+  await his.getByRole("button", { name: /^Add an action/ }).click();
+  await his.getByRole("radio", { name: /^Feed/ }).click();
   await his.getByLabel("Feed in a territory").selectOption({ label: "Docks (held by Agnes)" });
+  await his.getByRole("textbox", { name: "Downtime action" }).fill("Slip into the docks after the shift change.");
   await expect(his.getByText("That is poaching: Agnes may be patrolling it.")).toBeVisible();
   await b.screenshot(shots("downtime-feeding-territory"));
   await b.getByRole("button", { name: "Submit downtime" }).click();
@@ -1689,7 +1800,8 @@ test("feeding territories: a holder patrols hers, a poacher is caught there, and
   await l.screenshot(shots("cycle-feeding-territories"));
 
   await send(l, "POST", `/api/cycles/${cycle}/close`, { add_to_ceiling: false });
-  expect((await send(l, "POST", `/api/cycles/${cycle}/deliver`)).delivered).toBe(2);
+  // Their Feed and Patrol actions are responses still to write: the feeding answers go first.
+  expect((await send(l, "POST", `/api/cycles/${cycle}/deliver`, { partial: true })).delivered).toBe(2);
   await b.goto(`/characters/${bram}/results`);
   await expect(b.getByText("You were caught poaching in Docks by Agnes.")).toBeVisible();
   await a.goto(`/characters/${agnes}/results`);

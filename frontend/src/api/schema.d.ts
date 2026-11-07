@@ -24756,6 +24756,16 @@ export interface components {
              * @default Narrative
              */
             keyword: string;
+            /**
+             * Keyword Actions
+             * @default 0
+             */
+            keyword_actions: number;
+            /**
+             * Keyword Details
+             * @default []
+             */
+            keyword_details: string[];
             /** Keyword Key */
             keyword_key?: string | null;
             quest?: components["schemas"]["QuestActionOut"] | null;

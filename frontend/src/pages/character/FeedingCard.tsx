@@ -3,6 +3,7 @@ import { useClanName } from "../../components/ClanNames";
 import { Button, Card, Field, Input, Notice, Select } from "../../components/ui";
 import { herdShared, needText, tally } from "../../feeding";
 import { Patrols, RackFeeding, TerritoryChoice } from "./FeedingVessels";
+import type { KeywordFeeding } from "./keywords";
 
 /** Why the Feeding section is closed under Quick Hands, Quick Work (Vol. II Issue 1, p. 76). */
 export const QUICK_HANDS_FEEDING =
@@ -31,6 +32,7 @@ export function FeedingCard({
   characterId,
   onDowntime,
   quickHands = false,
+  keywords,
 }: {
   feeding: MyFeedingOut;
   value: FeedingIn;
@@ -42,6 +44,11 @@ export function FeedingCard({
   onDowntime: (saved: MyDowntime) => void;
   /** Quick Hands, Quick Work is on this cycle. */
   quickHands?: boolean;
+  /**
+   * With keywords (#509): whether the form offers Feed and Patrol, whose answers are the
+   * feeding actions, the territory and the patrols, and what they give now.
+   */
+  keywords?: { feed: boolean; patrol: boolean; fromAnswers: KeywordFeeding };
 }) {
   const named = useClanName();
   const { needed, reasons } = needText(feeding.need);
@@ -52,11 +59,36 @@ export function FeedingCard({
   const locked = feeding.locked;
   const number = (n: string) => Math.max(0, Number(n) || 0);
   const setGift = (i: number, change: Partial<(typeof gifts)[number]>) =>
-    onChange({ ...value, gifts: gifts.map((g, j) => (j === i ? { ...g, ...change } : g)) });
+    onChange({
+      ...value,
+      gifts: gifts.map((g, j) => (j === i ? { ...g, ...change } : g)),
+    });
   const hunted = feeding.humors.find((h) => h.key === value.resonance);
   const unchosen = feeding.recipients.filter((r) => !gifts.some((g) => g.character_id === r.character_id));
 
   const noFeeding = quickHands && <Notice>{QUICK_HANDS_FEEDING}</Notice>;
+  // Feed and Patrol answers stand in for the section's own feeding actions, territory and
+  // patrols, but for what was entered here before the form had them.
+  const fromAnswers = keywords?.fromAnswers;
+  const byFeed = !!keywords?.feed && (fromAnswers?.actions != null || (!value.actions && !value.territory));
+  const byPatrol = !!keywords?.patrol && (fromAnswers?.patrols != null || !(value.patrols ?? []).some((p) => p.actions));
+  const fedIn = byFeed && value.territory ? feeding.territories.find((t) => t.id === value.territory) : undefined;
+  const patrols = byPatrol ? (
+    (value.patrols ?? []).length > 0 && (
+      <p className="mt-3 text-sm">
+        Patrolling{" "}
+        {(value.patrols ?? [])
+          .map(
+            (p) =>
+              `${feeding.territories.find((t) => t.id === p.territory_id)?.name ?? "a territory"} (${p.actions === 1 ? "1 action" : `${p.actions} actions`})`,
+          )
+          .join(", ")}
+        , from your Patrol actions.
+      </p>
+    )
+  ) : (
+    <Patrols feeding={feeding} value={value} onChange={onChange} actionsLeft={actionsLeft} />
+  );
 
   if (feeding.rack)
     return (
@@ -68,7 +100,7 @@ export function FeedingCard({
             <Input disabled={locked} value={value.where ?? ""} onChange={(e) => onChange({ ...value, where: e.target.value })} placeholder="Optional" />
           </Field>
         </div>
-        <Patrols feeding={feeding} value={value} onChange={onChange} actionsLeft={actionsLeft} />
+        {patrols}
       </Card>
     );
 
@@ -82,16 +114,24 @@ export function FeedingCard({
       {locked && <Notice>A storyteller has answered your feeding, so it can no longer change.</Notice>}
       {!quickHands && (
         <div className="grid gap-3 sm:grid-cols-[12rem_1fr]">
-          <Field label="Actions spent feeding" hint={`Taken from your downtime actions (${actionsLeft} left).`}>
-            <Input
-              type="number"
-              min={0}
-              max={(value.actions ?? 0) + Math.max(0, actionsLeft)}
-              disabled={locked}
-              value={value.actions ?? 0}
-              onChange={(e) => onChange({ ...value, actions: number(e.target.value) })}
-            />
-          </Field>
+          {byFeed ? (
+            <p className="text-sm">
+              <strong className="text-gold">{value.actions === 1 ? "1 feeding action" : `${value.actions ?? 0} feeding actions`}</strong>
+              {fedIn && `, and feeding in ${fedIn.name}`}, from your Feed actions below.{" "}
+              <span className="text-mist">To feed, choose Feed for one of your actions.</span>
+            </p>
+          ) : (
+            <Field label="Actions spent feeding" hint={`Taken from your downtime actions (${actionsLeft} left).`}>
+              <Input
+                type="number"
+                min={0}
+                max={(value.actions ?? 0) + Math.max(0, actionsLeft)}
+                disabled={locked}
+                value={value.actions ?? 0}
+                onChange={(e) => onChange({ ...value, actions: number(e.target.value) })}
+              />
+            </Field>
+          )}
           <Field label="Where and how">
             <Input disabled={locked} value={value.where ?? ""} onChange={(e) => onChange({ ...value, where: e.target.value })} placeholder="Optional" />
           </Field>
@@ -114,8 +154,8 @@ export function FeedingCard({
           </Field>
         </div>
       )}
-      {!quickHands && <TerritoryChoice feeding={feeding} value={value} onChange={onChange} />}
-      <Patrols feeding={feeding} value={value} onChange={onChange} actionsLeft={actionsLeft} />
+      {!quickHands && !byFeed && <TerritoryChoice feeding={feeding} value={value} onChange={onChange} />}
+      {patrols}
 
       {feeding.herd > 0 && (
         <fieldset className="mt-4 flex flex-col gap-3 border-t border-ash pt-3" disabled={locked}>
@@ -180,7 +220,8 @@ export function FeedingCard({
         <ul className="mt-4 text-sm">
           {feeding.received.map((r) => (
             <li key={r.character_id}>
-              {r.character_name} gave you {r.amount} Herd.{!r.submitted && <span className="text-mist"> (Not submitted yet.)</span>}
+              {r.character_name} gave you {r.amount} Herd.
+              {!r.submitted && <span className="text-mist"> (Not submitted yet.)</span>}
             </li>
           ))}
         </ul>

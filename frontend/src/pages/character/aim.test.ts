@@ -16,11 +16,11 @@ describe("aiming an action", () => {
     expect(projectOf(withProject(fields, "p1"))).toBe("p1");
   });
 
-  it("drops a Cancel or Watch unless it is aimed at one character", () => {
-    const watching = withCounter(withTargets(undefined, ["basil"]), "watch");
-    expect(counterOf(watching)).toBe("watch");
-    expect(counterOf(withTargets(watching, ["basil", "corvin"]))).toBeNull();
-    expect(counterOf(withTargets(watching, ["corvin"]))).toBe("watch");
+  it("drops a Cancel or Observe unless it is aimed at one character", () => {
+    const observing = withCounter(withTargets(undefined, ["basil"]), "observe");
+    expect(counterOf(observing)).toBe("observe");
+    expect(counterOf(withTargets(observing, ["basil", "corvin"]))).toBeNull();
+    expect(counterOf(withTargets(observing, ["corvin"]))).toBe("observe");
     expect(counterOf({ counter: "steal" })).toBeNull();
   });
 

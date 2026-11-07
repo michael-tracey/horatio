@@ -63,8 +63,15 @@ export function ResponseEditor({
             </span>
           )}
         </span>
-        <Badge tone={item.status === "written" ? "gold" : "mist"}>{STATUS_NAMES[item.status as keyof typeof STATUS_NAMES] ?? item.status}</Badge>
+        <span className="flex flex-wrap items-center gap-2">
+          {/* Its keyword, and where it comes in the resolution order (#509). */}
+          <span className="text-xs text-mist" title={item.step_name}>
+            {item.keyword} · step {item.step}
+          </span>
+          <Badge tone={item.status === "written" ? "gold" : "mist"}>{STATUS_NAMES[item.status as keyof typeof STATUS_NAMES] ?? item.status}</Badge>
+        </span>
       </div>
+      {item.keyword_details.length > 0 && <p className="text-sm text-mist">{item.keyword_details.join(" · ")}</p>}
       <p className="text-sm whitespace-pre-line">{item.answer}</p>
       {item.quest && <QuestAction item={item} quest={item.quest} troupeId={troupeId} link={canLog} />}
       {(item.aim || !!item.countered_by?.length) && <AimNote item={item} />}
@@ -115,7 +122,7 @@ export function ResponseEditor({
 }
 
 /**
- * Who an action is aimed at, and the Cancels and Watches paired with it (#507): for
+ * Who an action is aimed at, and the Cancels and Observes paired with it (#507): for
  * storytellers and assistants only, as the server sends it to no one else. A Haven's
  * Location doubles its cost unless they say it isn't against them.
  */
