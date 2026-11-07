@@ -2,13 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { TroupeOut } from "../../api/types";
+import type { PostOut, TroupeOut } from "../../api/types";
+import { useToast } from "../../components/Toast";
+import { useAction } from "../../hooks";
 import { LogList } from "../../components/LogList";
 import { AtHandle } from "../../components/PersonPicker";
 import { Card, ErrorText, Loading } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAgencies, useGlance } from "../news/queries";
-import { Masthead } from "../news/Story";
+import { Banners, Masthead } from "../news/Story";
 import { GamesCard } from "./GamesCard";
 import type { abilities } from "./roles";
 import { sectsText, useSplatsText } from "./SettingsTab";
@@ -17,7 +19,7 @@ import { XpRangeCard } from "./XpRange";
 
 /**
  * The troupe at a glance, to read: for its staff, what is waiting on them first;
- * for its members, the latest of its news, the games to come, to say whether they are coming, and its
+ * for its members, its pinned announcements and the latest of its news, the games to come, to say whether they are coming, and its
  * calendar to subscribe to; then what the troupe is, when it next plays and who leads it; who may join; its
  * XP floor and ceiling; and, for its running staff, the latest of its log. Nothing
  * here is a setting: those are under Customise, and the full profile is on the
@@ -35,6 +37,7 @@ export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnTyp
     <div className="grid gap-6 md:grid-cols-2">
       {can.staff && !troupe.archived && <WaitingCard troupeId={troupe.id} />}
       {/* For its members: the same people as see its Who's Who. */}
+      {troupe.whos_who && !troupe.archived && <PinnedBanners troupeId={troupe.id} />}
       {troupe.whos_who && !troupe.archived && <LatestNews troupeId={troupe.id} />}
       {troupe.whos_who && !troupe.archived && <GamesCard troupe={troupe} canAddGames={can.storyteller} running={can.running} />}
       <Summary troupe={troupe} />
@@ -199,5 +202,20 @@ function LatestNews({ troupeId }: { troupeId: string }) {
         {latest.dateline && <span className="text-xs text-mist italic">{latest.dateline}</span>}
       </Link>
     </Card>
+  );
+}
+
+/** Pinned announcements (#511) the person hasn't dismissed, as banners at the top. */
+function PinnedBanners({ troupeId }: { troupeId: string }) {
+  const glance = useGlance(troupeId);
+  const toast = useToast();
+  const dismiss = useAction((post: PostOut) => unwrap(api.POST("/api/posts/{post_id}/dismiss", { params: { path: { post_id: post.id } } })));
+  return (
+    <Banners
+      troupeId={troupeId}
+      banners={glance.data?.banners ?? []}
+      busy={dismiss.isPending}
+      onDismiss={(post) => dismiss.mutate(post, { onSuccess: () => toast({ message: "Dismissed. It's still under Announcements." }) })}
+    />
   );
 }

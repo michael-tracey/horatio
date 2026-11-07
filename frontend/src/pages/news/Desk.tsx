@@ -35,7 +35,7 @@ export function Desk({ troupeId, kind, writes }: { troupeId: string; kind: Kind;
           {words.title}, as players read it
         </Link>
         <Link to="../write" relative="path" className="inline-flex min-h-10 items-center rounded-md bg-blood px-4 text-sm font-medium text-parchment hover:bg-blood-bright">
-          {writes ? `Write a ${words.noun}` : `Propose a ${words.noun}`}
+          {writes ? `Write ${words.one}` : `Propose ${words.one}`}
         </Link>
       </span>
       {!writes && <p className="text-sm text-mist">Your proposals wait here for a storyteller or assistant storyteller to publish or decline. You can change one until then.</p>}
@@ -83,13 +83,14 @@ function DeskRow({ post, agency, writes, kind }: { post: PostOut; agency: Agency
   const [open, setOpen] = useState<Opened | null>(null);
   const close = () => setOpen(null);
   const path = postPath(post.id);
-  const run = useAction(async (what: "publish" | "unschedule" | "unpublish" | "duplicate" | "delete" | "retry" | "mark-sent") => {
+  const run = useAction(async (what: "publish" | "unschedule" | "unpublish" | "duplicate" | "delete" | "retry" | "mark-sent" | "unpin") => {
     if (what === "publish") return unwrap(api.POST("/api/posts/{post_id}/publish", { ...path, body: { note: "" } }));
     if (what === "unschedule") return unwrap(api.POST("/api/posts/{post_id}/unschedule", path));
     if (what === "unpublish") return unwrap(api.POST("/api/posts/{post_id}/unpublish", path));
     if (what === "duplicate") return unwrap(api.POST("/api/posts/{post_id}/duplicate", path));
     if (what === "retry") return unwrap(api.POST("/api/posts/{post_id}/discord/retry", path));
     if (what === "mark-sent") return unwrap(api.POST("/api/posts/{post_id}/discord/mark-sent", path));
+    if (what === "unpin") return unwrap(api.POST("/api/posts/{post_id}/unpin", path));
     await unwrap(api.DELETE("/api/posts/{post_id}", path));
     return null;
   });
@@ -121,6 +122,12 @@ function DeskRow({ post, agency, writes, kind }: { post: PostOut; agency: Agency
           {post.title}
         </Link>
         <span className="text-xs text-mist">{status}</span>
+        {(post.pinned_until || post.important) && (
+          <span className="flex flex-wrap gap-1">
+            {post.pinned_until && (post.status !== "published" || post.pinned) && <Badge tone="gold">Pinned until {dates.dueDay(post.pinned_until)}</Badge>}
+            {post.important && <Badge tone="blood">Important</Badge>}
+          </span>
+        )}
         {discord && <span className={`text-xs ${failed ? "text-blood-bright" : "text-mist"}`}>{discord}</span>}
         {failed && (
           <span className="flex flex-wrap gap-2">
@@ -145,6 +152,7 @@ function DeskRow({ post, agency, writes, kind }: { post: PostOut; agency: Agency
             {["draft", "proposed"].includes(post.status) && <MenuItem onSelect={() => setOpen("schedule")}>Schedule…</MenuItem>}
             {post.status === "scheduled" && <MenuItem onSelect={() => run.mutate("unschedule", { onSuccess: done("Cancelled: it's a draft again.") })}>Cancel</MenuItem>}
             {post.status === "proposed" && <MenuItem onSelect={() => setOpen("decline")}>Decline…</MenuItem>}
+            {post.pinned_until && (post.status !== "published" || post.pinned) && <MenuItem onSelect={() => run.mutate("unpin", { onSuccess: done("Unpinned.") })}>Unpin</MenuItem>}
             {post.status === "published" && (
               <MenuItem danger onSelect={() => setOpen("unpublish")}>
                 Unpublish…

@@ -139,9 +139,10 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     # and seeing who came. Checking in starts a character's night on its Play View,
     # as resetting games does (horatio.checkin).
     TroupeAction.RUN_CHECKIN: frozenset(_RUNNING),
-    # Writing the troupe's news: its agencies, and every story, to save, schedule,
-    # publish, edit, unpublish or decline (horatio.posts). Choosing Discord channels
-    # for it is managing connectors.
+    # Writing the troupe's news and announcements: its agencies, and every post, to
+    # save, schedule, publish, edit, pin, unpublish or decline (horatio.posts).
+    # Choosing Discord channels for them is managing connectors. Narrators neither
+    # write nor propose announcements.
     TroupeAction.WRITE_POSTS: frozenset(_RUNNING),
     # Proposing a news story for the storytellers to publish or decline: a narrator
     # sees and edits only their own proposals (horatio.posts).

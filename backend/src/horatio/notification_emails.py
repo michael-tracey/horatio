@@ -2,15 +2,16 @@
 
 Each person chooses in Account → Settings which kinds of notification reach them
 by email as well as in the bell (`TOPICS`, a setting each, all off until they
-turn one on), and whether each email goes at once or everything waiting is
-gathered into one a day, at `DIGEST_HOUR` in their time zone (UTC while they
-follow their device's, which the server cannot know).
+turn one on but announcements, which are on), and whether each email goes at
+once or everything waiting is gathered into one a day, at `DIGEST_HOUR` in their
+time zone (UTC while they follow their device's, which the server cannot know).
 
 `queue` keeps an `EmailNotice` for each person who wants that kind, in the same
 transaction as what happened; nothing is kept while the server has no email set
 up. The delivery worker (horatio.delivery) calls `send_due`, which sends what is
 due, each person's notices locked while they go so two workers never send them
-twice. A notice the person no longer wants by the time it is due is dropped. A
+twice. A notice the person no longer wants by the time it is due is dropped,
+unless it is `forced`: an important announcement goes to everyone. A
 temporary refusal is tried again later, backing off as deliveries do; after
 `delivery.MAX_ATTEMPTS`, or a permanent refusal, the notices are dropped and the reason
 logged: the bell still has them.
@@ -67,6 +68,7 @@ TOPICS = (
     Topic("pictures", "Pictures removed", ("picture.removed",)),
     Topic("titles", "Titles chosen", ("title",)),
     Topic("news", "Troupe news", ("news.published",)),
+    Topic("announcements", "Troupe announcements", ("announcement.published",)),
 )
 BY_NAME = {topic.name: topic for topic in TOPICS}
 # An unsubscribe link that turns off every kind, as a digest carries.
@@ -106,9 +108,11 @@ def queue(
     link: str,
     *,
     troupe_id: uuid.UUID | None = None,
+    forced: bool = False,
 ) -> None:
     """Keep the notification to email to each of `user_ids` who wants this kind by
-    email, at once or with their digest."""
+    email, at once or with their digest; `forced`, to each of them whether they
+    want it or not (an important announcement)."""
     topic = topic_for(kind)
     ids = list(dict.fromkeys(user_ids))
     if topic is None or not ids or not email.configured():
@@ -118,7 +122,7 @@ def queue(
     # Someone suspended gets no notification emails (horatio.suspensions).
     for user in db.scalars(select(User).where(User.id.in_(ids), ~suspensions.suspended_user())):
         prefs = preferences.read(user)
-        if not wants(prefs, topic):
+        if not forced and not wants(prefs, topic):
             continue
         db.add(
             EmailNotice(
@@ -128,6 +132,7 @@ def queue(
                 summary=summary,
                 link=link,
                 due_at=at if prefs.email_digest == "at_once" else next_digest(prefs, at),
+                forced=forced,
             )
         )
     db.flush()
@@ -202,8 +207,14 @@ def to(user: User) -> str:
 def one_email(user: User, notice: EmailNotice) -> EmailMessage:
     """One notification, as it happened."""
     mail = email.new_message(to(user), line(notice).removesuffix("."))
+    why = (
+        "Its staff marked this important, so it comes to everyone in the troupe.\n"
+        if notice.forced
+        else ""
+    )
     mail.set_content(
         f"Hello {user.display_name},\n\n{line(notice)}\n\n{absolute(notice.link)}\n\n"
+        + why
         + footer(user, notice.topic)
     )
     mail["List-Unsubscribe"] = f"<{unsubscribe_url(user, notice.topic)}>"
@@ -239,7 +250,7 @@ def send_to(db: Session, user: User, notices: list[EmailNotice], at: datetime) -
     wanted: list[EmailNotice] = []
     for notice in notices:
         topic = BY_NAME.get(notice.topic)
-        if suspended or topic is None or not wants(prefs, topic):
+        if suspended or topic is None or not (notice.forced or wants(prefs, topic)):
             db.delete(notice)
         else:
             wanted.append(notice)

@@ -378,6 +378,10 @@ MESSAGES: dict[str, str] = {
     "post.edited": "{actor} edited {what} “{title}”, which is published.",
     "post.unpublished": "{actor} unpublished {what} “{title}”.",
     "post.declined": "{actor} declined {what} “{title}”, which a narrator proposed.",
+    "post.pinned": "{actor} pinned {what} “{title}” to the front page.",
+    "post.unpinned": "{actor} unpinned {what} “{title}”.",
+    "post.important": "{actor} sent {what} “{title}” as important, emailing everyone in the"
+    " troupe.",
     "post.delivery_retried": "{actor} retried sending {what} “{title}” to Discord.",
     "post.delivery_marked_sent": "{actor} marked {what} “{title}” as sent to Discord by hand.",
     "post.channel_chosen": "{actor} changed the troupe's Discord {what} ({state}).",

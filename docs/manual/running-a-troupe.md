@@ -14,7 +14,7 @@ Every troupe has exactly one **lead storyteller**, and as many **storytellers**,
 | Rename or remove any staff member's scene, clear old scenes | Yes | No | No | No |
 | Add, change and remove staff | Yes | Yes | No | No |
 | Change the house rules and troupe settings (Customise) | Yes | Yes | No (can read them) | No |
-| Set up connectors (Discord, email) and choose the Discord channels for news | Yes | Yes | No (can read them) | No |
+| Set up connectors (Discord, email) and choose the Discord channels for news and announcements | Yes | Yes | No (can read them) | No |
 | Edit the troupe's profile, add games to the schedule | Yes | Yes | No | No |
 | See character sheets, the Characters list and the Players list | Yes | Yes | Yes | No |
 | Decide approvals, give exceptions, read backstories | Yes | Yes | Yes | No |
@@ -25,6 +25,7 @@ Every troupe has exactly one **lead storyteller**, and as many **storytellers**,
 | Give titles, status and equipment; keep locations, quests, shared backgrounds and the influence log | Yes | Yes | Yes | No |
 | Read the troupe log | Yes | Yes | Yes | No |
 | Write, schedule, publish and edit the troupe's news; keep its news agencies | Yes | Yes | Yes | No (can propose a story) |
+| Write, schedule, publish, pin and edit the troupe's announcements | Yes | Yes | Yes | No |
 | Answer downtime actions assigned to them, or to any narrator | Yes | Yes | Yes | Yes |
 | See the staff list, the players' lines and veils, and who is coming to each game | Yes | Yes | Yes | Yes |
 | Keep the troupe's fill tables | Yes | Yes | Yes | No (can use them) |
@@ -89,7 +90,7 @@ A troupe's page has its tabs in groups. Which ones you see depends on your role.
 
 | Group | Tabs |
 | --- | --- |
-| Troupe | About, Profile, News, Who's Who, Nominations, House rules, Status, Staff, Log |
+| Troupe | About, Profile, News, Announcements, Who's Who, Nominations, House rules, Status, Staff, Log |
 | Characters | Approvals, Characters, NPCs, At game, Award XP, Titles |
 | World | Locations, Equipment, Shared backgrounds |
 | Players | Players, Lines and veils |
@@ -112,7 +113,7 @@ The **About** tab is the troupe at a glance. For staff it starts with **Waiting 
 - **Influence entries that need details** and **Influence effects ending this week**;
 - **Characters with old status to resolve**.
 
-Below it are the **Latest news** headline, once there is news (see [News](#news)), the **Games** to come (see [Game nights](#game-nights)), the troupe's description and next game, **Who may join**, the **XP floor and ceiling**, and for storytellers and assistant storytellers the **Latest in the log**.
+Members see any pinned announcements first, as banners (see [Announcements](#announcements)). Below it are the **Latest news** headline, once there is news (see [News](#news)), the **Games** to come (see [Game nights](#game-nights)), the troupe's description and next game, **Who may join**, the **XP floor and ceiling**, and for storytellers and assistant storytellers the **Latest in the log**.
 
 ### My work
 
@@ -300,6 +301,30 @@ A narrator can propose a story but not publish one. From **Your proposals** on t
 Proposals wait on the desk under **Proposed by narrators**. Open one to edit it, then **Take it up as a draft**, **Schedule…**, **Publish now** or **Decline…**. A **Note** is sent to the narrator with Publish now or Decline; they're told either way.
 
 Publishing, scheduling, editing a published story, unpublishing, declining and changes to agencies and the news channel all go in the [troupe log](#the-troupe-log).
+
+## Announcements
+
+Announcements are out-of-character messages from the troupe's staff to everyone in it: "Game moved to Saturday", "New venue parking", "Downtimes due Friday". They work like [news](#news), with the same desk, editor, scheduling, Duplicate, Unpublish and Discord retries, but they're kept apart everywhere: their own **Announcements** tab beside News, their own unread count, their own email setting and their own Discord channel. Announcements never appear under News, and news never appears under Announcements.
+
+Storytellers and assistant storytellers write them. Narrators can't write or propose them; they read them as players do. There are no repeating announcements: **Duplicate** last week's reminder.
+
+### Writing an announcement
+
+On the **Announcements** tab, **Announcements desk** opens the desk; **Write an announcement** starts one. An announcement has a **Title**, the message itself in the rich text editor, and an optional **Picture**. It has no agency: its byline is the writer and their role, such as "Mara Quinn, Lead storyteller", set when it's published. **Save draft**, **Publish now** and **Schedule…** work as they do for news, and **Preview** shows it as players and Discord will.
+
+### Pinning to the front page
+
+**Pin to the front page until** takes a day. Until the end of that day, the announcement is a banner at the top of the troupe's **About** tab for everyone in the troupe, and first on the Announcements tab. Each person can dismiss the banner for themselves; it stays pinned on the Announcements tab. It unpins itself after the day. To unpin it sooner, clear the day in the editor, or choose **Unpin** from its **⋯** on the desk.
+
+### Important
+
+Tick **Important** for what can't wait, such as a game moved or cancelled. As it's published, an important announcement is emailed to everyone in the troupe, even players who've turned announcement emails off. The editor says so beside the tick. Use it sparingly: the troupe log records who used it. Ticking it on an announcement already published sends nothing.
+
+### Announcements on Discord
+
+Under **Customise › News**, **Announcements on Discord** picks the troupe's announcements channel, separately from the news channel. An announcement goes there as a plain embed with its title, byline, message (split over several posts if it's long), picture and a **Read in Horatio** link. Editing it edits the post, and unpublishing deletes it. With no Discord server connected, or no announcements channel chosen, it's in the app only, and the desk says so.
+
+Publishing, editing a published announcement, pinning and unpinning, unpublishing and using Important go in the [troupe log](#the-troupe-log).
 
 ## Equipment
 
@@ -587,7 +612,7 @@ Tick **Need an approved backstory before accepting a character** to make approva
 
 A connector the server isn't set up for says so; ask the custodian.
 
-The Discord channel for the troupe's news is chosen apart from these, under **Customise › News** (see [The news channel on Discord](#the-news-channel-on-discord)).
+The Discord channels for the troupe's news and its announcements are chosen apart from these, under **Customise › News** (see [The news channel on Discord](#the-news-channel-on-discord) and [Announcements on Discord](#announcements-on-discord)).
 
 ## Approvals
 
