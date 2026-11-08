@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, run, PASSWORD, shots, person, characterTab } from "./support";
+import { expect, test, type Page } from "@playwright/test";
+import { closeContextsAfterEach, run, PASSWORD, shots, person, characterTab, makeCustodian } from "./support";
 
 /** A person's account and settings: handle, password, dates, text size, notifications and the Play View. */
 
@@ -35,6 +35,77 @@ test("settings are kept on the account, and each change says it is saved", async
   await expect(page.getByLabel("Time zone")).toHaveAttribute("placeholder", "Follow this device");
   await expect(page.getByText(/This device is on .+ time\./)).toBeVisible();
   await page.screenshot(shots("settings"));
+});
+
+test("Show ratings as is kept through signing out and in, a reload and another device, and the NPC builder follows it", async ({ browser }) => {
+  test.slow();
+  const custodian = await person(browser, "ratingset-cust");
+  makeCustodian(custodian.email);
+  // The storyteller's own phone, which keeps what it last had for them (#502).
+  const lead = await person(browser, "ratingset-lead", { storageState: { cookies: [], origins: [] } });
+  const p = lead.page;
+  await p.getByRole("dialog", { name: "Your own phone?" }).getByRole("button", { name: "Yes, keep them here" }).click();
+  const headers = { "X-Horatio": "1" };
+  const troupe = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Kept Ratings ${run}`, lead_handle: lead.handle } });
+  expect(troupe.status(), await troupe.text()).toBe(201);
+  const made = await p.request.post(`/api/troupes/${(await troupe.json()).id}/npcs`, { headers, data: { name: "Vespertine", wizard: false } });
+  expect(made.status(), await made.text()).toBe(201);
+  const npc = (await made.json()).id;
+  const rated = await p.request.put(`/api/characters/${npc}/npc/ratings`, { headers, data: { category: "attributes", name: "Physical", rating: 7, detail: "" } });
+  expect(rated.status(), await rated.text()).toBe(200);
+
+  const choose = async (page: Page, ratings: "Numbers" | "Pips") => {
+    await page.goto("/account/settings");
+    const radio = page.getByRole("radiogroup", { name: "Show ratings as" }).getByRole("radio", { name: ratings });
+    await expect(radio).toBeVisible();
+    if ((await radio.getAttribute("aria-checked")) === "true") return;
+    await Promise.all([page.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.ok()), radio.click()]);
+  };
+  // The NPC builder's buttons and the Play View's sheet show ratings as the setting says.
+  const shows = async (page: Page, ratings: "Numbers" | "Pips") => {
+    await page.goto(`/characters/${npc}`);
+    await expect(page.getByRole("button", { name: "Physical 7" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: "Physical 7" })).toHaveText(ratings === "Numbers" ? "7" : "●");
+    await expect(page.getByRole("button", { name: "Physical 8" })).toHaveText(ratings === "Numbers" ? "8" : "○");
+    await page.goto(`/play/characters/${npc}`);
+    await page.getByRole("tab", { name: "Sheet" }).click();
+    await expect(page.getByLabel("7 dots").first()).toBeVisible();
+    await expect(page.getByRole("img", { name: "7 dots" })).toHaveCount(ratings === "Pips" ? 1 : 0);
+  };
+
+  await choose(p, "Pips");
+  await shows(p, "Pips");
+  await choose(p, "Numbers");
+  await shows(p, "Numbers");
+  await p.goto(`/characters/${npc}`);
+  await expect(p.getByRole("button", { name: "Physical 7" })).toBeVisible();
+  await p.screenshot(shots("npc-builder-numbers"));
+
+  // Signed out and in again: numbers straight away, and after a reload.
+  await p.goto("/characters");
+  await p.getByRole("button", { name: "Sign out" }).click();
+  await p.getByLabel("Email or handle").fill(lead.email);
+  await p.getByLabel("Password").fill(PASSWORD);
+  await p.getByRole("button", { name: "Sign in" }).click();
+  await expect(p.getByRole("heading", { name: "Your characters" })).toBeVisible();
+  await shows(p, "Numbers");
+  await p.reload();
+  await shows(p, "Numbers");
+
+  // Changed on another device: this one shows it as it opens again, however
+  // recently it kept its own copy.
+  const other = await (await browser.newContext()).newPage();
+  await other.goto("/sign-in");
+  await other.getByLabel("Email or handle").fill(lead.email);
+  await other.getByLabel("Password").fill(PASSWORD);
+  await other.getByRole("button", { name: "Sign in" }).click();
+  await expect(other.getByRole("heading", { name: "Your characters" })).toBeVisible();
+  await choose(other, "Pips");
+  await p.reload();
+  await shows(p, "Pips");
+  await p.goto(`/characters/${npc}`);
+  await expect(p.getByRole("button", { name: "Physical 7" })).toBeVisible();
+  await p.screenshot(shots("npc-builder-pips"));
 });
 
 test("notifications by email: a choice per kind, once the server can send email", async ({ browser }) => {

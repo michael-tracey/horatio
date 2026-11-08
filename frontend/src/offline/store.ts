@@ -84,6 +84,16 @@ function summarise({ queries: _, ...rest }: Kept): KeptSummary {
 /** Who the answers restored as the app opened belong to, until they are on screen for them. */
 let restored: string | null = null;
 
+/**
+ * Kept answers, to show until the server's own arrive and never to be taken for them:
+ * each is asked for afresh as a screen opens it, however recently it was kept. Kept a
+ * moment ago, before a change on another device or one made just before closing, the
+ * person's settings would otherwise stand for a minute (#528).
+ */
+function askAfresh(queries: Queries): Queries {
+  return queries.map((q) => ({ ...q, state: { ...q.state, isInvalidated: true } }));
+}
+
 /** As the app opens: put back the answers kept for whoever last kept theirs here. */
 export async function restore(client: QueryClient, shelf: Shelf = indexedShelf, storage: Storage | undefined = globalThis.localStorage): Promise<string | null> {
   const who = keptFor(storage);
@@ -92,11 +102,11 @@ export async function restore(client: QueryClient, shelf: Shelf = indexedShelf, 
   if (!kept) return null;
   // Kept answers stay in memory while the app is open, whether a screen shows them or not.
   const options = { defaultOptions: { queries: { gcTime: Infinity } } };
-  hydrate(client, { queries: kept.queries, mutations: [] }, options);
+  hydrate(client, { queries: askAfresh(kept.queries), mutations: [] }, options);
   for (const troupeId of keptTroupes(who, storage)) {
     const scenes = await shelf.get<KeptScenes>(scenesKey(who, troupeId));
     if (!scenes) continue;
-    hydrate(client, { queries: scenes.queries, mutations: [] }, options);
+    hydrate(client, { queries: askAfresh(scenes.queries), mutations: [] }, options);
     sceneSummaries.set(troupeId, summariseScenes(scenes));
   }
   restored = who;
