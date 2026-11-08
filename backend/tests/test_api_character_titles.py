@@ -480,7 +480,7 @@ def test_the_migration_holds_no_book_title_to_one_and_keeps_the_troupes_own(
 ) -> None:
     """#551: every troupe's book titles start with One holder at a time off; a title of
     its own it held to one keeps it."""
-    before = ScriptDirectory.from_config(alembic_config).get_revision("0156").down_revision
+    before = ScriptDirectory.from_config(alembic_config).get_revision("0157").down_revision
     assert isinstance(before, str)
     command.downgrade(alembic_config, before)
     user, troupe = uuid.uuid4(), uuid.uuid4()
