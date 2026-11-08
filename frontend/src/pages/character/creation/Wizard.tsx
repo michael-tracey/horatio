@@ -47,6 +47,22 @@ const FROM_MERITS: Record<string, { category: string; name: string }[]> = {
   disciplines: DISCIPLINES_FROM_MERITS,
 };
 
+/** What each step's fold of merits and flaws is called: what it gives, and what it costs (#545). */
+const OPTIONAL: Record<string, string> = {
+  concept: "Optional: in-clan disciplines from merits (costs merit points)",
+  focuses: "Optional: focuses from merits and flaws (costs merit points / gives flaw points)",
+  skills: "Optional: skills from merits (costs merit points)",
+  backgrounds: "Optional: backgrounds from merits and flaws (costs merit points / gives flaw points)",
+  disciplines: "Optional: disciplines from merits and flaws (costs merit points / gives flaw points)",
+};
+
+const inFold = (step: string, trait: { category: string; name: string }) => !!FROM_MERITS[step]?.some((m) => m.category === trait.category && m.name === trait.name);
+
+/** Whether the character holds any of the merits or flaws a step's fold offers. */
+function fromMeritTaken(sheet: SheetOut, step: string): boolean {
+  return sheet.traits.some((t) => (t.rating ?? 0) > 0 && inFold(step, t));
+}
+
 /** Wizard steps, in the order a player builds a character. Any category with
  * creation picks that no step names gets a step of its own before merits. */
 const ORDER: Step[] = [
@@ -514,26 +530,6 @@ function StepView({
         <div className="mb-6 flex flex-col gap-2 empty:hidden">
           {clanChoiceHere.current && <ClanChoice character={character} creation={creation} catalogue={catalogue} />}
           {inClanHere.current && <InClanPicker character={character} sheet={sheet} catalogue={catalogue} />}
-          <MoveStartingDots character={character} creation={creation} picks={picks.disciplines ?? {}} />
-        </div>
-      )}
-      {FROM_MERITS[step.key] && step.key !== "concept" && (
-        <div className="mb-6">
-          <FromMerits
-            character={character}
-            creation={creation}
-            sheet={sheet}
-            catalogue={catalogue}
-            traits={FROM_MERITS[step.key]!}
-            choices={step.key === "disciplines" ? { [INEPT]: ineptChoices(creation) } : undefined}
-            steps={steps}
-            step={step}
-          />
-        </div>
-      )}
-      {step.key === "disciplines" && (
-        <div className="mb-6">
-          <InClanNow creation={creation} />
         </div>
       )}
       {step.key === "merits" && <FreeTraitsToChoose character={character} sheet={sheet} />}
@@ -619,6 +615,28 @@ function StepView({
         })}
       </fieldset>
       {savedNote && <p className="mt-4 text-sm text-mist">{savedNote}</p>}
+      {/* Under the picks: the in-clan disciplines they go on, and starting dots that could move. */}
+      {step.key === "disciplines" && (
+        <div className="mt-6 flex flex-col gap-2 empty:hidden">
+          <InClanNow creation={creation} />
+          {!ghoul && <MoveStartingDots character={character} creation={creation} picks={picks.disciplines ?? {}} />}
+        </div>
+      )}
+      {/* What merits and flaws change on this step: below its picks, folded (#545). */}
+      {FROM_MERITS[step.key] && step.key !== "concept" && (
+        <Optional label={OPTIONAL[step.key]!} open={fromMeritTaken(sheet, step.key) || here.some((n) => !!n.trait && inFold(step.key, n.trait))} className="mt-6">
+          <FromMerits
+            character={character}
+            creation={creation}
+            sheet={sheet}
+            catalogue={catalogue}
+            traits={FROM_MERITS[step.key]!}
+            choices={step.key === "disciplines" ? { [INEPT]: ineptChoices(creation) } : undefined}
+            steps={steps}
+            step={step}
+          />
+        </Optional>
+      )}
       {needs.length > 0 && (
         <div className="mt-6">
           <Notice>Before moving on: {needs.map((n) => named(n.message)).join(" ")}</Notice>
@@ -696,8 +714,6 @@ function ConceptStep({
       </Select>
     </Field>
   );
-  // Open from the start once one of its merits is taken, so it isn't hidden.
-  const meritTaken = FROM_MERITS.concept!.some((m) => sheet.traits.some((t) => t.category === m.category && t.name === m.name && (t.rating ?? 0) > 0));
   return (
     <div className="flex flex-col gap-4">
       {ghoul ? (
@@ -725,12 +741,9 @@ function ConceptStep({
       )}
       <BuildForCharacter character={character} />
       {clan && !ghoul && (
-        <details open={meritTaken}>
-          <summary className="cursor-pointer py-1 text-sm text-gold pointer-coarse:py-2.5">Optional: in-clan disciplines from merits (costs merit points)</summary>
-          <div className="mt-2">
-            <FromMerits character={character} creation={creation} sheet={sheet} catalogue={catalogue} traits={FROM_MERITS.concept!} />
-          </div>
-        </details>
+        <Optional label={OPTIONAL.concept!} open={fromMeritTaken(sheet, "concept")}>
+          <FromMerits character={character} creation={creation} sheet={sheet} catalogue={catalogue} traits={FROM_MERITS.concept!} />
+        </Optional>
       )}
     </div>
   );
@@ -754,6 +767,26 @@ function ClanCard({ clan, creation, catalogue }: { clan: string; creation: Creat
       )}
       {merits && <p className="text-mist">{named(merits)}</p>}
     </section>
+  );
+}
+
+/**
+ * A part of a step the player may skip, folded under the step's own choices. Open from
+ * the start, and opened by itself, once something in it is taken (or a notice is about
+ * it), so it isn't hidden; closing it is the player's.
+ */
+function Optional({ label, open, className, children }: { label: string; open: boolean; className?: string; children: ReactNode }) {
+  const [shown, setShown] = useState(open);
+  const [was, setWas] = useState(open);
+  if (open !== was) {
+    setWas(open);
+    if (open) setShown(true);
+  }
+  return (
+    <details open={shown} onToggle={(e) => setShown(e.currentTarget.open)} className={className}>
+      <summary className="cursor-pointer py-1 text-sm text-gold pointer-coarse:py-2.5">{label}</summary>
+      <div className="mt-2 flex flex-col gap-2">{children}</div>
+    </details>
   );
 }
 
