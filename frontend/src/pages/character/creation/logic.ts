@@ -20,8 +20,7 @@ export function left(picks: Picks, allowed: Allowed, rating: number): number {
 
 /**
  * Whether the picks rank the traits: every rating has exactly one pick, as
- * attributes' 7 / 5 / 3 or a single focus. Only a ranking swaps; elsewhere
- * (skills' one 4, two 3s…) a trait already picked is not offered again.
+ * attributes' 7 / 5 / 3 or a single focus.
  */
 export function isRanking(allowed: Allowed): boolean {
   return Object.values(allowed).every((n) => n === 1);
@@ -37,11 +36,11 @@ export function clear(picks: Picks, name: string): Picks {
 
 /**
  * Choose `name` for a slot at `rating`, in place of `holder` (the pick in the slot
- * now, if any). In a ranking, choosing a trait placed at another rating swaps the
- * two (so Physical 7 / Mental 3 becomes Mental 7 / Physical 3). A skill bought once
- * per field (`fielded`) can be chosen again, for another field, under a key of its
- * own. Anything that does not fit leaves the picks as they were. Gives the picks,
- * and the key now in the slot.
+ * now, if any). A trait picked at another rating moves (see `move`), so in a ranking
+ * Physical 7 / Mental 3 becomes Mental 7 / Physical 3. A skill bought once per field
+ * (`fielded`) can be chosen again, for another field, under a key of its own.
+ * Anything that does not fit leaves the picks as they were. Gives the picks, and the
+ * key now in the slot.
  */
 export function choose(
   picks: Picks,
@@ -54,19 +53,47 @@ export function choose(
   const unchanged = { picks, key: holder };
   if (!(rating in allowed)) return unchanged;
   if (holder !== null && traitOf(holder) === name) return unchanged;
-  if (isRanking(allowed)) {
-    const next = holder === null ? { ...picks } : clear(picks, holder);
-    const mine = picks[name];
-    if (holder !== null && mine !== undefined) next[holder] = mine;
-    next[name] = rating;
-    return { picks: next, key: name };
-  }
+  if (!fielded && name in picks && picks[name] !== rating) return move(picks, allowed, rating, holder, name);
   const next = holder === null ? { ...picks } : clear(picks, holder);
   if (name in next && !fielded) return unchanged;
   if (left(next, allowed, rating) <= 0) return unchanged;
   const key = name in next ? nextCopy(Object.keys(next), name) : name;
   next[key] = rating;
   return { picks: next, key };
+}
+
+/** What became of the pick a move took the slot of: gone to the slot the move left, or taken off. */
+export type Moved = { picks: Picks; key: string | null; holder: "swapped" | "off" | null };
+
+/**
+ * Move the pick `key`, placed at another rating, to a slot at `rating`, in place of
+ * `holder` (the pick in the slot now, if any). The holder takes the slot the move
+ * left when it fits there (`fits`: not barred at that rating, say), a swap; if not,
+ * it is taken off, and that slot is left empty. Each pick keeps its key, so a skill's
+ * field moves with it. Anything that does not fit leaves the picks as they were.
+ */
+export function move(
+  picks: Picks,
+  allowed: Allowed,
+  rating: number,
+  holder: string | null,
+  key: string,
+  fits: (name: string, rating: number) => boolean = () => true,
+): Moved {
+  const from = picks[key];
+  const unchanged: Moved = { picks, key: holder, holder: null };
+  if (from === undefined || from === rating || holder === key || !(rating in allowed)) return unchanged;
+  const next = { ...picks };
+  delete next[key];
+  if (holder !== null) delete next[holder];
+  if (left(next, allowed, rating) <= 0) return unchanged;
+  next[key] = rating;
+  if (holder === null) return { picks: next, key, holder: null };
+  if (left(next, allowed, from) > 0 && fits(traitOf(holder), from)) {
+    next[holder] = from;
+    return { picks: next, key, holder: "swapped" };
+  }
+  return { picks: next, key, holder: "off" };
 }
 
 /**

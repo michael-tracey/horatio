@@ -1,9 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, NpcPicksOut as PicksOut, NpcPoolOut as PoolOut } from "../../api/types";
 import { useClanName } from "../../components/ClanNames";
 import { Badge, Button, Card, ErrorText, Rating, Select } from "../../components/ui";
-import { useAction, usePreferences } from "../../hooks";
+import { useAction } from "../../hooks";
+import { seatPicks } from "./creation/logic";
+import { ExtraPick, Slot, SlotRows, oneOf, type Choice } from "./creation/Slots";
 
 type Placed = PoolOut["placed"][number];
 type Body = { category: string; name: string; detail: string; rating?: number; replacing?: { name: string; detail: string } };
@@ -15,7 +18,8 @@ const shown = (name: string, detail: string) => (detail ? `${name}: ${detail}` :
  * An NPC built without the wizard has its creation picks fitted to its sheet, so its
  * creation dots are free as a player character's are (#527). Staff put the fitting
  * right where the player picked otherwise: a pick placed by hand stays, one taken off
- * a trait stays off, and the rest are fitted around them.
+ * a trait stays off, and the rest are fitted around them. The picks show in the
+ * wizard's slots, a row for each rating.
  */
 export function NpcPicks({ character }: { character: CharacterOut }) {
   const path = { params: { path: { character_id: character.id } } };
@@ -28,6 +32,9 @@ export function NpcPicks({ character }: { character: CharacterOut }) {
   if (!data?.fitted) return null;
   const byHand = data.kept_off.length > 0 || data.pools.some((p) => p.placed.some((x) => x.by === "staff"));
   const busy = place.isPending || off.isPending || refit.isPending;
+  const shownPools = data.pools.filter((pool) => pool.allowed > 0 || pool.placed.length > 0);
+  // Each category's picks together, a row for each rating, in the order the API gives.
+  const categories = [...new Set(shownPools.filter((p) => p.kind === "picks").map((p) => p.category))];
 
   return (
     <Card
@@ -41,18 +48,24 @@ export function NpcPicks({ character }: { character: CharacterOut }) {
       }
     >
       <p className="mb-3 text-xs text-mist">
-        Fitted to the sheet so its creation dots are free, as a player character&apos;s are. Where its player picked otherwise, set the pick here: picks set by hand stay put, and the rest fit around them.
+        Fitted to the sheet so its creation dots are free, as a player character&apos;s are. Where its player picked otherwise, set the pick here: picks set by hand stay put, and the rest fit around them. An empty slot is a pick the fitting found no trait for.
       </p>
-      <div className="flex flex-col gap-3">
-        {data.pools
-          .filter((pool) => pool.allowed > 0 || pool.placed.length > 0)
-          .map((pool) =>
-            pool.kind === "points" ? (
-              <Budget key={`${pool.category}/0`} pool={pool} busy={busy} named={named} place={(b) => place.mutate(b)} off={(b) => off.mutate(b)} />
-            ) : (
-              <Slots key={`${pool.category}/${pool.rating}`} pool={pool} busy={busy} named={named} place={(b) => place.mutate(b)} off={(b) => off.mutate(b)} />
-            ),
-          )}
+      <div className="flex flex-col gap-5">
+        {categories.map((category) => (
+          <PickSlots
+            key={category}
+            pools={shownPools.filter((p) => p.category === category)}
+            busy={busy}
+            named={named}
+            place={(b) => place.mutate(b)}
+            off={(b) => off.mutate(b)}
+          />
+        ))}
+        {shownPools
+          .filter((pool) => pool.kind === "points")
+          .map((pool) => (
+            <Budget key={pool.category} pool={pool} busy={busy} named={named} place={(b) => place.mutate(b)} off={(b) => off.mutate(b)} />
+          ))}
       </div>
       {data.kept_off.length > 0 && (
         <p className="mt-3 text-xs text-mist">Kept without a pick: {data.kept_off.map((k) => named(shown(k.name, k.detail))).join(", ")}.</p>
@@ -62,69 +75,137 @@ export function NpcPicks({ character }: { character: CharacterOut }) {
   );
 }
 
-type Props = {
-  pool: PoolOut;
+type Actions = {
   busy: boolean;
   named: (name: string) => string;
   place: (body: Body) => void;
   off: (body: Body) => void;
 };
 
-function ByHand({ placed }: { placed?: Placed }) {
-  return placed?.by === "staff" ? <Badge tone="gold">by hand</Badge> : null;
+/**
+ * One category's picks in the wizard's slots. Choosing a trait in a slot places it
+ * there by hand; one picked at another rating moves, and one placed by hand in the
+ * slot goes where it was, if it can (horatio.npc_picks.pin). Clearing a slot takes
+ * the pick off its trait.
+ */
+function PickSlots({ pools, busy, named, place, off }: Actions & { pools: PoolOut[] }) {
+  const title = pools[0]!.category_name;
+  const category = pools[0]!.category;
+  // Where each pick sits, by rating, so placing one doesn't shuffle the rest.
+  const [seats, setSeats] = useState<Record<number, (string | null)[]>>({});
+  // What a move did that wasn't asked for, under the slot it was made in.
+  const [said, setSaid] = useState<{ rating: number; slot: number; text: string } | null>(null);
+  const where = new Map(pools.flatMap((pool) => pool.placed.map((p) => [key(p.name, p.detail), { pool, placed: p }] as const)));
+  const layout = Object.fromEntries(
+    pools.map((pool) => [pool.rating, seatPicks(seats[pool.rating] ?? [], pool.placed.map((p) => key(p.name, p.detail)), pool.allowed)]),
+  ) as Record<number, (string | null)[]>;
+  const one = oneOf(title);
+
+  const choose = (pool: PoolOut, slot: number, holder: string | null, value: string) => {
+    const chosen = pool.candidates.find((c) => key(c.name, c.detail) === value);
+    if (!chosen) return;
+    const from = where.get(value)?.pool.rating;
+    const current = holder ? where.get(holder)?.placed : undefined;
+    const next = { ...layout, [pool.rating]: layout[pool.rating]!.map((k, i) => (i === slot ? value : k)) };
+    // One placed by hand goes where the moved pick was, if it can take a pick there.
+    const swaps = !!current && current.by === "staff" && from !== undefined && pools.some((p) => p.rating === from && p.candidates.some((c) => key(c.name, c.detail) === holder));
+    if (from !== undefined) next[from] = (layout[from] ?? []).map((k) => (k === value ? (swaps ? holder : null) : k));
+    setSeats(next);
+    setSaid(
+      current?.by === "staff" && from !== undefined && !swaps
+        ? { rating: pool.rating, slot, text: `${named(shown(current.name, current.detail))} can't take a pick at ${from}, so it is fitted with the rest.` }
+        : null,
+    );
+    place({
+      category,
+      name: chosen.name,
+      detail: chosen.detail,
+      rating: pool.rating,
+      ...(current ? { replacing: { name: current.name, detail: current.detail } } : {}),
+    });
+  };
+  const takeOff = (placed: Placed) => {
+    setSaid(null);
+    off({ category, name: placed.name, detail: placed.detail });
+  };
+
+  /** What a slot in `pool` holding `holder` offers: the traits a pick there could go on. */
+  const options = (pool: PoolOut, holder: string | null): Choice[] =>
+    pool.candidates.flatMap((c): Choice[] => {
+      const k = key(c.name, c.detail);
+      const at = where.get(k)?.pool.rating;
+      // One in this row's other slots stays where it is.
+      if (k !== holder && at === pool.rating) return [];
+      return [
+        {
+          value: k,
+          name: c.name,
+          label: named(shown(c.name, c.detail)),
+          at: k !== holder ? at : undefined,
+          group: null,
+          current: k === holder,
+          disabled: false,
+          hint: (
+            <>
+              rated <Rating value={c.rating} of={c.rating} className="text-xs" />
+            </>
+          ),
+        },
+      ];
+    });
+
+  const widest = Math.max(1, ...pools.map((p) => p.rating));
+  return (
+    <SlotRows
+      title={title}
+      label={`${title} picks`}
+      heading={false}
+      widest={widest}
+      rows={pools
+        .filter((pool) => pool.kind === "picks")
+        .map((pool) => ({
+          rating: pool.rating,
+          slots: layout[pool.rating]!.map((k, i) => {
+            const placed = k ? where.get(k)?.placed : undefined;
+            const label = placed ? named(shown(placed.name, placed.detail)) : "";
+            if (i >= pool.allowed) {
+              return (
+                <ExtraPick key={`extra-${k}`} value={label} pick={k!} clearLabel={`Take ${placed!.name} off`} onClear={() => takeOff(placed!)}>
+                  No pick at {pool.rating} for it now.
+                </ExtraPick>
+              );
+            }
+            return (
+              <Slot
+                key={`slot-${i}`}
+                label={`${title} at ${pool.rating}${pool.allowed > 1 ? `, pick ${i + 1} of ${pool.allowed}` : ""}`}
+                placeholder={`Choose ${one}`}
+                value={label}
+                choices={options(pool, k)}
+                onChoose={(value) => choose(pool, i, k, value)}
+                onClear={placed ? () => takeOff(placed) : undefined}
+                clearLabel={placed ? `Take ${placed.name} off` : undefined}
+                pick={k}
+                disabled={busy}
+              >
+                {placed?.by === "staff" && (
+                  <span className="self-start">
+                    <ByHand placed={placed} />
+                  </span>
+                )}
+                {said?.rating === pool.rating && said.slot === i && <p className="text-xs text-mist">{said.text}</p>}
+              </Slot>
+            );
+          }),
+        }))}
+    />
+  );
 }
 
-/** Picks at one rating: a choice of trait for each. Ratings show as Settings has them; a choice's label keeps the number. */
-function Slots({ pool, busy, named, place, off }: Props) {
-  const label = `${pool.category_name} at ${pool.rating}`;
-  const pips = usePreferences().ratings === "pips";
-  // The picks placed, and one choice for those still to place, however many there are.
-  const unplaced = Math.max(0, pool.allowed - pool.placed.length);
-  const slots: (Placed | undefined)[] = [...pool.placed, ...(unplaced ? [undefined] : [])];
-  return (
-    <div>
-      {/* Not a heading: each choice carries it as its own label. */}
-      <p className="mb-1 text-xs tracking-wide text-mist uppercase">
-        {pool.category_name} at <Rating value={pool.rating} of={pool.rating} className="text-mist" />
-      </p>
-      <ul className="flex flex-col gap-1">
-        {slots.map((current, i) => (
-          <li key={i} className="flex items-center gap-2">
-            <Select
-              aria-label={`${label}, pick ${i + 1}`}
-              disabled={busy}
-              value={current ? key(current.name, current.detail) : ""}
-              onChange={(e) => {
-                const chosen = pool.candidates.find((c) => key(c.name, c.detail) === e.target.value);
-                if (chosen) {
-                  place({
-                    category: pool.category,
-                    name: chosen.name,
-                    detail: chosen.detail,
-                    rating: pool.rating,
-                    ...(current ? { replacing: { name: current.name, detail: current.detail } } : {}),
-                  });
-                } else if (current) off({ category: pool.category, name: current.name, detail: current.detail });
-              }}
-              className="h-8 min-w-0 flex-1 py-0 text-sm"
-            >
-              <option value="">{current ? "No pick (take it off)" : "Not placed"}</option>
-              {current && !pool.candidates.some((c) => key(c.name, c.detail) === key(current.name, current.detail)) && (
-                <option value={key(current.name, current.detail)}>{named(shown(current.name, current.detail))}</option>
-              )}
-              {pool.candidates.map((c) => (
-                <option key={key(c.name, c.detail)} value={key(c.name, c.detail)}>
-                  {named(shown(c.name, c.detail))} ({pips ? "●".repeat(c.rating) : c.rating})
-                </option>
-              ))}
-            </Select>
-            <ByHand placed={current} />
-            {!current && unplaced > 1 && <span className="shrink-0 text-xs text-mist">{unplaced} to place</span>}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+type Props = Actions & { pool: PoolOut };
+
+function ByHand({ placed }: { placed?: Placed }) {
+  return placed?.by === "staff" ? <Badge tone="gold">by hand</Badge> : null;
 }
 
 /** A budget of points (merits, flaws): the traits it pays for, and what else it could. */

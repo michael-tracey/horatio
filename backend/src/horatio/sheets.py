@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from fastapi import HTTPException, status
 from sqlalchemy import delete, event, func, inspect, select, true
-from sqlalchemy.orm import ORMExecuteState, Session
+from sqlalchemy.orm import ORMExecuteState, Session, aliased
 
 from horatio import audit, free_changes, notifications, repricing, xp_range
 from horatio.models import (
@@ -2833,24 +2833,49 @@ def withdraw(db: Session, player: User, approval: Approval) -> Approval:
     return approval
 
 
-def earned_and_spent(entries: Iterable[tuple[str, int]]) -> tuple[int, int, int]:
-    """XP earned, spent and lost from (kind, amount) pairs. A correction changes what
-    an award gave, and a cap what was earned before joining a troupe, so they count
-    toward earned whichever way they go; a reprice changes what a purchase cost,
-    and a debt line what is owed (horatio.xp_debt), so they count toward spent.
-    Creation XP lost on a first acceptance was never spent, so it is apart: the
-    balance is earned less spent less lost."""
+# XP entries that count toward earned, whichever way they go.
+EARNED_KINDS = ("award", "self_entered", "cap", "correction")
+
+
+def earned_and_spent(entries: Iterable[tuple[str, int, str | None]]) -> tuple[int, int, int]:
+    """XP earned, spent and lost from (kind, amount, kind corrected) triples, the last
+    the kind of the entry a correction names (None for any other entry).
+
+    Each entry counts by its kind, never by its sign, so a refund lowers spent
+    rather than raising earned (#548):
+
+    - earned: an award, self-entered XP, a cap (what was earned before joining a
+      troupe, taken away) and a correction to an award or self-entered XP;
+    - spent: a purchase (a refund, a dot lowered or a flaw taken, is spent going
+      down, so spent can be below 0), a settlement (what a troupe move pays or
+      refunds for a purchase), a fee, a reprice (what a purchase costs after a
+      Generation change), a debt line (horatio.xp_debt), and a correction to a
+      purchase (a diablerie taking back the XP a flaw gave);
+    - lost: creation XP lost on a first acceptance, never spent, so apart.
+
+    The balance is earned less spent less lost."""
     earned = spent = lost = 0
-    for kind, amount in entries:
+    for kind, amount, corrected in entries:
         if kind == "lost":
             lost -= amount
-        elif kind in ("reprice", "debt"):
-            spent -= amount
-        elif kind in ("correction", "cap") or amount > 0:
+        elif kind in EARNED_KINDS and corrected != "purchase":
             earned += amount
         else:
             spent -= amount
     return earned, spent, lost
+
+
+def xp_totals(db: Session, character: Character) -> tuple[int, int, int]:
+    """The character's XP earned, spent and lost (earned_and_spent)."""
+    corrected = aliased(XpEntry)
+    return earned_and_spent(
+        (kind, amount, corrects)
+        for kind, amount, corrects in db.execute(
+            select(XpEntry.kind, XpEntry.amount, corrected.kind)
+            .outerjoin(corrected, XpEntry.corrects_id == corrected.id)
+            .where(XpEntry.character_id == character.id)
+        )
+    )
 
 
 # XP entries a correction can put right: XP given, by staff or (in the vault) by the player.

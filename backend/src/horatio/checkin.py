@@ -286,15 +286,19 @@ def earned(
 ) -> dict[uuid.UUID, int]:
     """XP each character has been awarded, since a day or in all, corrections included.
     Starting XP and what joining a troupe gave are left out, as they were not earned in
-    play. A game XP chart's bands count it in all (horatio.game_xp)."""
+    play. A game XP chart's bands count it in all (horatio.game_xp). A correction to a
+    purchase takes back XP a flaw gave (a diablerie removing one), which was never
+    awarded, so it is left out, as in horatio.xp_range.given_xp."""
     ids = list(character_ids)
     if not ids:
         return {}
+    purchases = select(XpEntry.id).where(XpEntry.kind == "purchase")
     rows = db.execute(
         select(XpEntry.character_id, func.sum(XpEntry.amount))
         .where(
             XpEntry.character_id.in_(ids),
             XpEntry.kind.in_(("award", "correction")),
+            XpEntry.corrects_id.is_(None) | XpEntry.corrects_id.not_in(purchases),
             *([XpEntry.entered_on >= since] if since is not None else []),
             *(~XpEntry.reason.startswith(start, autoescape=True) for start in NOT_EARNED),
         )
