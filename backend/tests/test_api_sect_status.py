@@ -4,6 +4,7 @@ on sheets setting allows; the caps, bans, Disgraced, and negative status ending.
 
 import uuid
 from collections.abc import Callable
+from copy import copy
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
@@ -24,9 +25,10 @@ from horatio.models import (
     TraitDefinition,
     User,
 )
+from horatio.models import Troupe as TroupeRecord
 from horatio.renames import add_months
 from horatio.sheets import apply_grants
-from tests.api_helpers import Person, Troupe, new_character, sign_up
+from tests.api_helpers import Person, Troupe, backstory_optional, new_character, sign_up
 
 
 @pytest.fixture
@@ -394,7 +396,7 @@ def test_a_lesser_ban_caps_fleeting_status_at_3_unless_staff_exempt_it(troupe: T
     assert add(troupe.player, agnes, "Favored").status_code == 409
 
     path = f"/characters/{agnes}/status/bans"
-    exempt = {"ban": pillar["applies_to"], "mark": "exempt", "reason": "The Prince's word"}
+    exempt = {"ban": pillar["key"], "mark": "exempt", "reason": "The Prince's word"}
     assert troupe.player.client.put(path, json=exempt).status_code == 409
     assert troupe.storyteller.client.put(path, json={**exempt, "reason": ""}).status_code == 422
     marked = troupe.storyteller.client.put(path, json=exempt)
@@ -450,6 +452,188 @@ def test_a_neonate_accused_of_heresy_is_under_the_caitiffs_greater_ban(troupe: T
     heresy = next(b for b in found["bans"] if "Accused of Heresy" in b["applies_to"])
     assert (heresy["level"], heresy["page"], heresy["applies"]) == ("greater", "405", True)
     assert (found["fleeting_cap"], found["cap_why"]) == (1, ["a greater ban: 1"])
+
+
+# --- bans on clans (issue #553) -----------------------------------------------------------------
+
+
+def ban_on(found: dict[str, Any], key: str) -> dict[str, Any] | None:
+    return next((b for b in found["bans"] if b["key"] == key), None)
+
+
+def ban_clans(troupe: Troupe, key: str, clans: list[str]) -> Any:
+    return troupe.storyteller.client.put(
+        f"/troupes/{troupe.id}/status-ban-clans", json={"key": key, "clans": clans}
+    )
+
+
+def other_troupe(troupe: Troupe) -> Troupe:
+    """A second troupe with the same staff."""
+    made = troupe.custodian.client.post(
+        "/troupes", json={"name": "Court of Owls", "lead_handle": troupe.lead.handle}
+    )
+    assert made.status_code == 201, made.text
+    other = copy(troupe)
+    other.id = made.json()["id"]
+    backstory_optional(troupe.session, other.id)
+    added = troupe.lead.client.put(
+        f"/troupes/{other.id}/staff",
+        json={"handle": troupe.storyteller.handle, "role": "storyteller"},
+    )
+    assert added.status_code == 200, added.text
+    return other
+
+
+def pillar_applies(troupe: Troupe, character_id: str) -> bool:
+    pillar = ban_on(status(troupe.player, character_id), "pillar_clans")
+    assert pillar is not None
+    return pillar["applies"]
+
+
+def test_the_pillar_clans_are_volume_iis_by_default(troupe: Troupe) -> None:
+    """Volume II (pp. 16-17): the Brujah have left the Camarilla, the Assamite stay."""
+    brujah = member(troupe, "Bruno", clan="Brujah")
+    assamite = member(troupe, "Asha", clan="Assamite")
+    gangrel = member(troupe, "Gwen", clan="Gangrel")
+
+    found = status(troupe.player, brujah)
+
+    pillar = ban_on(found, "pillar_clans")
+    assert pillar is not None
+    assert pillar["applies_to"] == (
+        "Not Embraced into a pillar clan: Assamite, Malkavian, Nosferatu, Toreador, Tremere"
+        " or Ventrue."
+    )
+    assert (pillar["level"], pillar["page"], pillar["applies"]) == ("lesser", "403", True)
+    assert found["fleeting_cap"] == 3
+    assert pillar_applies(troupe, assamite) is False
+    assert pillar_applies(troupe, gangrel) is True
+
+
+def test_a_troupe_that_names_the_gangrel_a_pillar_clan_lifts_their_ban_there_only(
+    troupe: Troupe,
+) -> None:
+    gwen = member(troupe, "Gwen", clan="Gangrel")
+    other = other_troupe(troupe)
+    elsewhere = member(other, "Garth", clan="Gangrel")
+    clans = ["Assamite", "Gangrel", "Malkavian", "Nosferatu", "Toreador", "Tremere", "Ventrue"]
+
+    assert troupe.player.client.put(
+        f"/troupes/{troupe.id}/status-ban-clans", json={"key": "pillar_clans", "clans": clans}
+    ).status_code in (403, 404)
+    changed = ban_clans(troupe, "pillar_clans", clans)
+
+    assert changed.status_code == 200, changed.text
+    pillar = next(b for b in changed.json()["bans"] if b["key"] == "pillar_clans")
+    assert pillar["clans"] == clans
+    assert "Gangrel" in pillar["applies_to"]
+    assert "Gangrel" not in pillar["book_applies_to"]
+    assert pillar_applies(troupe, gwen) is False
+    assert status(troupe.player, gwen)["fleeting_cap"] == 5
+    assert pillar_applies(troupe, elsewhere) is True
+    [entry] = [
+        e.data
+        for e in troupe.session.scalars(
+            select(AuditEvent).where(AuditEvent.action == "house.status_ban_clans")
+        )
+    ]
+    assert entry == {
+        "sect": "Camarilla",
+        "ban": "Pillar clans",
+        "clans": "Assamite, Gangrel, Malkavian, Nosferatu, Toreador, Tremere, Ventrue",
+    }
+    # Back to the rule set's list, it goes by the rule set again.
+    book = pillar["book"]
+    assert ban_clans(troupe, "pillar_clans", book).status_code == 200
+    troupe.session.expire_all()
+    assert troupe.session.get_one(TroupeRecord, uuid.UUID(troupe.id)).status_ban_clans == {}
+    assert pillar_applies(troupe, gwen) is True
+
+
+def test_the_core_book_preset_keeps_the_brujah_a_pillar_clan(troupe: Troupe) -> None:
+    bruno = member(troupe, "Bruno", clan="Brujah")
+    # A bloodline follows its clan.
+    tiberius = member(troupe, "Tiberius", clan="Brujah: True Brujah")
+    assert pillar_applies(troupe, tiberius) is True
+    listed = troupe.storyteller.client.get(f"/troupes/{troupe.id}/status-ban-clans")
+    pillar = next(b for b in listed.json()["bans"] if b["key"] == "pillar_clans")
+    core = next(p for p in pillar["presets"] if p["name"] == "As the core book (2013)")
+    assert [p["name"] for p in pillar["presets"]] == ["As Volume II", "As the core book (2013)"]
+
+    assert ban_clans(troupe, "pillar_clans", core["clans"]).status_code == 200
+
+    assert pillar_applies(troupe, bruno) is False
+    assert pillar_applies(troupe, tiberius) is False
+    assert pillar_applies(troupe, member(troupe, "Gwen", clan="Gangrel")) is True
+
+
+def test_a_troupe_names_the_sabbats_antitribu_under_a_ban(troupe: Troupe) -> None:
+    tremere = member(troupe, "Tomas", sect="Sabbat", clan="Tremere")
+    telyav = member(troupe, "Tatiana", sect="Sabbat", clan="Tremere: Telyav")
+    toreador = member(troupe, "Tobias", sect="Sabbat", clan="Toreador")
+    ventrue = member(troupe, "Victor", sect="Sabbat", clan="Ventrue")
+
+    def applies(character_id: str, key: str) -> bool:
+        ban = ban_on(status(troupe.player, character_id), key)
+        return ban is not None and ban["applies"]
+
+    assert applies(tremere, "greater_antitribu") and applies(telyav, "greater_antitribu")
+    assert applies(toreador, "lesser_antitribu")
+    assert not applies(ventrue, "lesser_antitribu")
+
+    assert ban_clans(troupe, "lesser_antitribu", ["Assamite", "Ventrue"]).status_code == 200
+    # No clans: no such ban here.
+    assert ban_clans(troupe, "greater_antitribu", []).status_code == 200
+
+    assert applies(ventrue, "lesser_antitribu")
+    assert not applies(toreador, "lesser_antitribu")
+    assert ban_on(status(troupe.player, tremere), "greater_antitribu") is None
+    assert ban_on(status(troupe.player, telyav), "greater_antitribu") is None
+    lesser = ban_on(status(troupe.player, ventrue), "lesser_antitribu")
+    assert lesser is not None and lesser["applies_to"] == "Assamite or Ventrue antitribu."
+
+
+def test_a_troupe_names_the_clans_the_camarilla_holds_as_caitiff(troupe: Troupe) -> None:
+    caitiff = member(troupe, "Cass", clan="Caitiff")
+    ravnos = member(troupe, "Rafael", clan="Ravnos")
+    assert pillar_applies(troupe, caitiff) is True
+    known = ban_on(status(troupe.player, caitiff), "known_caitiff")
+    assert known is not None and known["applies"]
+
+    assert ban_clans(troupe, "known_caitiff", ["Caitiff", "Ravnos"]).status_code == 200
+
+    known = ban_on(status(troupe.player, ravnos), "known_caitiff")
+    assert known is not None
+    assert (known["applies_to"], known["applies"]) == ("A known Caitiff or Ravnos.", True)
+
+
+def test_a_troupe_names_only_clans_for_a_ban_on_clans(troupe: Troupe) -> None:
+    for key, clans in (
+        ("pillar_clans", ["Brujah: True Brujah"]),
+        ("pillar_clans", ["Kindred"]),
+        ("no_such_ban", ["Brujah"]),
+    ):
+        refused = ban_clans(troupe, key, clans)
+        assert refused.status_code == 422, (key, clans)
+    assert troupe.session.get_one(TroupeRecord, uuid.UUID(troupe.id)).status_ban_clans == {}
+
+
+def test_staff_marks_on_a_ban_on_clans_hold_when_the_troupe_changes_its_clans(
+    troupe: Troupe,
+) -> None:
+    bruno = member(troupe, "Bruno", clan="Brujah")
+    path = f"/characters/{bruno}/status/bans"
+    exempt = {"ban": "pillar_clans", "mark": "exempt", "reason": "A loyalist"}
+    assert troupe.storyteller.client.put(path, json=exempt).status_code == 200
+
+    assert ban_clans(troupe, "pillar_clans", ["Ventrue"]).status_code == 200
+
+    pillar = ban_on(status(troupe.player, bruno), "pillar_clans")
+    assert pillar is not None
+    assert (pillar["by_sheet"], pillar["marked"], pillar["applies"]) == (True, False, False)
+    assert pillar["reason"] == "A loyalist"
+    [marked] = logged(troupe.session, bruno, "status.ban_marked")
+    assert marked["ban"].startswith("Not Embraced into a pillar clan: Assamite")
 
 
 def test_an_emissary_to_the_camarilla_in_no_sect_holds_one_camarilla_fleeting_status(

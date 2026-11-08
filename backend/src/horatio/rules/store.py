@@ -74,7 +74,12 @@ from horatio.rules.model import (
 )
 from horatio.rules.pricing import tie
 from horatio.rules.splats import SPLATS
-from horatio.rules.status import status_rules_from_dict, status_rules_to_dict, titles_from
+from horatio.rules.status import (
+    status_rules_from_dict,
+    status_rules_to_dict,
+    titles_from,
+    troupe_bans,
+)
 
 RULES_CACHE = "horatio.troupe_rules"
 # A clan merit's catalogue type: its requirement names its clan.
@@ -950,7 +955,11 @@ def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None)
         version=rule_set.version,
         starting_xp=rule_set.starting_xp,
         titles=titles_from([*rule_set.titles, *rule_set.status_rules.get("titles", [])]),
-        status_rules=status_rules_from_dict(rule_set.status_rules),
+        # The clans the troupe names for its bans on clans (issue #553).
+        status_rules=troupe_bans(
+            status_rules_from_dict(rule_set.status_rules),
+            troupe.status_ban_clans if troupe is not None else {},
+        ),
         # The two on languages played by the troupe's chart (horatio.rules.languages).
         checks=applied(
             [check_from_dict(c) for c in rule_set.checks if c["key"] not in recategorised],

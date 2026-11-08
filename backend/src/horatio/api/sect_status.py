@@ -100,6 +100,8 @@ class SuppressionOut(BaseModel):
 
 
 class BanOut(BaseModel):
+    # What to mark it by.
+    key: str
     level: str
     applies_to: str
     page: str | None
@@ -196,7 +198,7 @@ class StatusResolveIn(BaseModel):
 
 
 class BanMarkIn(BaseModel):
-    # The ban, by who it applies to, as the rules word it.
+    # The ban, by its key (BanOut.key).
     ban: str
     # "applies", "exempt", or None to go back to what the sheet shows.
     mark: Literal["applies", "exempt"] | None
@@ -329,6 +331,7 @@ def status_out(db: DbSession, user: User, character: Character) -> StatusOut:
         unresolved=found.unresolved,
         bans=[
             BanOut(
+                key=b.key,
                 level=b.level,
                 applies_to=b.applies_to,
                 page=b.page,

@@ -158,8 +158,11 @@ age and a faction, and innate status from grants, so neither is held: a
 nothing gives, left for staff to resolve. Migration 0082 moved the sheets' fleeting
 and negative status here, from "(before Horatio)". **`status_ban_marks`**: staff
 saying a sect's status ban applies to a character (`applies` true) or that it is
-exempt (false), by `sect` and `ban` (who it applies to, as the rules word it), with
-a `reason` and `marked_by`. **`troupes.status_by`**: Status on sheets, `players`
+exempt (false), by `sect` and `ban` (who it applies to, as the rules word it; a
+ban on clans by its key, `pillar_clans`, since migration 0159), with a `reason` and
+`marked_by`. **`troupes.status_ban_clans`** (JSONB, issue #553): the clans each ban
+on clans names here, by the ban's key, over the rule set's; an empty list for no such
+ban. **`troupes.status_by`**: Status on sheets, `players`
 (the default: each keeps their own, naming the patron) or `staff`.
 **`status_suppressions`** (issue #253): staff stripping a character's fleeting
 status unspent for a while (`kind`: `game`, the rest of the game; `commander`, 2
