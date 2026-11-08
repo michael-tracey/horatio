@@ -20,7 +20,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, sect_status
+from horatio import audit, npc_picks, sect_status
 from horatio.creation import grant_starting_traits
 from horatio.models import (
     Character,
@@ -107,6 +107,8 @@ def create_npc(
         owner_troupe_id=troupe.id,
         home_troupe_id=troupe.id,
         creation_completed_at=None if wizard else datetime.now(UTC),
+        # Built without the wizard, its creation picks are fitted to its sheet (#527).
+        fits_picks=npc_form == "sheeted" and not wizard,
     )
     db.add(npc)
     db.flush()
@@ -255,10 +257,7 @@ def set_rating(
             character_id=npc.id, trait_definition_id=definition.id, detail=detail
         )
         db.add(trait)
-    trait.rating = rating
-    trait.free_rating = min(trait.free_rating or 0, rating)
-    if trait.creation_pick is not None and trait.creation_pick > trait.free_rating:
-        trait.creation_pick = None
+    npc_picks.set_straight(trait, rating)
     db.flush()
 
 
@@ -274,13 +273,18 @@ class TallyLine:
 
 def tally(db: Session, npc: Character) -> tuple[int, list[TallyLine]]:
     """What the NPC's sheet would cost in experience under its troupe's rules, trait
-    by trait. Starting traits and creation picks count as free, as for a PC."""
+    by trait. Starting traits and creation picks count as free, as for a PC: on an NPC
+    built without the wizard, the picks fitted to its sheet (horatio.npc_picks)."""
     rules = rules_for(db, npc)
     rows = sheet_rows(db, npc)
     sheet = [r.as_rules_trait() for r in rows]
     # Dots no XP buys but creation gives as points (a ghoul's 5 discipline dots,
     # MET: VtM core p. 296): free up to the points, by category.
     points = {r.category: r.points for r in rules.creation_rules() if r.points is not None}
+    # Less what creation picks already hold, so no dot counts twice.
+    for row in rows:
+        if row.category.key in points and row.trait.creation_pick:
+            points[row.category.key] -= row.trait.creation_pick
     lines: list[TallyLine] = []
     for row in rows:
         if not row.category.rated or not row.trait.rating:
@@ -290,6 +294,8 @@ def tally(db: Session, npc: Character) -> tuple[int, list[TallyLine]]:
         )
         try:
             line.cost = trait_cost(rules, sheet, row.as_rules_trait()).cost
+            if row.trait.creation_pick is not None:
+                line.note = "starting dots"
         except NotAllowed:
             left = points.get(row.category.key, 0)
             if row.trait.rating <= left:
@@ -362,6 +368,8 @@ def make_sheeted(db: Session, staff: User, npc: Character) -> Conversion:
     notes, rating = row.notes, row.rating
     npc.npc_form = "sheeted"
     npc.creation_completed_at = npc.creation_completed_at or datetime.now(UTC)
+    # Its ratings are set straight, so its creation picks are fitted to them (#527).
+    npc.fits_picks = True
     db.delete(row)
     db.flush()
     grant_starting_traits(db, rules, npc, skip=no_panels(kind))

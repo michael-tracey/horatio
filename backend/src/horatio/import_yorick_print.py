@@ -39,7 +39,7 @@ from fastapi import HTTPException
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, npcs, pictures, sheets
+from horatio import audit, npc_picks, npcs, pictures, sheets
 from horatio.models import Character, CharacterTrait, Troupe, TroupeMembership, User
 from horatio.rules.pricing import fixed_rating
 from horatio.rules.store import read_troupe_rules
@@ -149,11 +149,7 @@ def put(db: Session, npc: Character, trait: Trait) -> None:
     if rating is None:
         # Printed with no rating: a ritual is held at its level, a technique at 1.
         rating = sheets.held_at(db, npc, category.key, definition.name) or 1
-    held.rating = rating
-    held.free_rating = min(held.free_rating or 0, rating)
-    held.granted_rating = min(held.granted_rating or 0, rating)
-    if held.creation_pick is not None and held.creation_pick > held.free_rating:
-        held.creation_pick = None
+    npc_picks.set_straight(held, rating)
     held.note = trait.note
     db.flush()
 
@@ -169,9 +165,7 @@ def hold_fixed_values(db: Session, npc: Character, result: Result) -> None:
         if value is None or not row.trait.rating or row.trait.rating == value:
             continue
         result.revalued.append((row.definition.name, row.trait.rating, value))
-        row.trait.rating = value
-        row.trait.free_rating = min(row.trait.free_rating, value)
-        row.trait.granted_rating = min(row.trait.granted_rating, value)
+        npc_picks.set_straight(row.trait, value)
     db.flush()
 
 
@@ -360,7 +354,11 @@ class Importer:
                 self.db, self.staff, self.troupe, SPLAT, printed.name, wizard=False
             )
             npc.legacy_id = printed.legacy_id
+        # Yorick doesn't print which dots were creation picks: they are fitted to the
+        # sheet once it is in, around any staff placed by hand (#527).
+        npc.fits_picks = True
         self.db.flush()
+        npc_picks.unfit(self.db, npc)
         result.character_id = str(npc.id)
 
         converts_before = sheets.sheet_effects(self.db, npc).converts
@@ -378,6 +376,7 @@ class Importer:
         # What the sheet's merits and flaws give (Rugged's health levels), as when
         # staff set an NPC's ratings (horatio.sheets.checked).
         sheets.apply_grants(self.db, self.staff, npc, converts_before)
+        npc_picks.fit(self.db, npc)
 
         result.problems = list(
             dict.fromkeys(v.message for v in sheets.sheet_violations(self.db, npc))

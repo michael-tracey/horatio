@@ -23994,6 +23994,52 @@
         "title": "NotificationsOut",
         "type": "object"
       },
+      "NpcCandidateOut": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "detail",
+          "rating"
+        ],
+        "title": "NpcCandidateOut",
+        "type": "object"
+      },
+      "NpcKeptOffOut": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "detail"
+        ],
+        "title": "NpcKeptOffOut",
+        "type": "object"
+      },
       "NpcKindOut": {
         "properties": {
           "any_discipline": {
@@ -24344,6 +24390,209 @@
           "on_whos_who"
         ],
         "title": "NpcOut",
+        "type": "object"
+      },
+      "NpcPickIn": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "replacing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NpcPickNamed"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "NpcPickIn",
+        "type": "object"
+      },
+      "NpcPickNamed": {
+        "properties": {
+          "detail": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "NpcPickNamed",
+        "type": "object"
+      },
+      "NpcPickOff": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "NpcPickOff",
+        "type": "object"
+      },
+      "NpcPicksOut": {
+        "properties": {
+          "fitted": {
+            "title": "Fitted",
+            "type": "boolean"
+          },
+          "kept_off": {
+            "items": {
+              "$ref": "#/components/schemas/NpcKeptOffOut"
+            },
+            "title": "Kept Off",
+            "type": "array"
+          },
+          "pools": {
+            "items": {
+              "$ref": "#/components/schemas/NpcPoolOut"
+            },
+            "title": "Pools",
+            "type": "array"
+          }
+        },
+        "required": [
+          "fitted",
+          "pools",
+          "kept_off"
+        ],
+        "title": "NpcPicksOut",
+        "type": "object"
+      },
+      "NpcPlacedOut": {
+        "properties": {
+          "by": {
+            "enum": [
+              "fit",
+              "staff"
+            ],
+            "title": "By",
+            "type": "string"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pick": {
+            "title": "Pick",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "detail",
+          "pick",
+          "by"
+        ],
+        "title": "NpcPlacedOut",
+        "type": "object"
+      },
+      "NpcPoolOut": {
+        "properties": {
+          "allowed": {
+            "title": "Allowed",
+            "type": "integer"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/NpcCandidateOut"
+            },
+            "title": "Candidates",
+            "type": "array"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "category_name": {
+            "title": "Category Name",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "picks",
+              "points"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "placed": {
+            "items": {
+              "$ref": "#/components/schemas/NpcPlacedOut"
+            },
+            "title": "Placed",
+            "type": "array"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "category_name",
+          "kind",
+          "rating",
+          "allowed",
+          "placed",
+          "candidates"
+        ],
+        "title": "NpcPoolOut",
         "type": "object"
       },
       "NuminaOut": {
@@ -51332,6 +51581,200 @@
         "summary": "Nominations About",
         "tags": [
           "nominations"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/npc/picks": {
+      "get": {
+        "description": "The NPC's creation picks, and where each could go (horatio.npc_picks).",
+        "operationId": "read_picks_api_characters__character_id__npc_picks_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NpcPicksOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Picks",
+        "tags": [
+          "npcs"
+        ]
+      },
+      "put": {
+        "description": "Place a creation pick on a trait by hand; the rest are fitted around it.",
+        "operationId": "place_pick_api_characters__character_id__npc_picks_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NpcPickIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NpcPicksOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Place Pick",
+        "tags": [
+          "npcs"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/npc/picks/off": {
+      "post": {
+        "description": "Take the pick off a trait, and keep the fitting from giving it one.",
+        "operationId": "take_pick_off_api_characters__character_id__npc_picks_off_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NpcPickOff"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NpcPicksOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Take Pick Off",
+        "tags": [
+          "npcs"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/npc/picks/refit": {
+      "post": {
+        "description": "Forget the picks placed or taken off by hand, and fit them all again.",
+        "operationId": "refit_picks_api_characters__character_id__npc_picks_refit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NpcPicksOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refit Picks",
+        "tags": [
+          "npcs"
         ]
       }
     },
