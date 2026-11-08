@@ -681,6 +681,179 @@ test("a troupe's month, from new character to downtime results", async ({ browse
 });
 
 /**
+ * Discord channels (#531). The e2e server has no Discord, so the browser is shown a
+ * troupe whose server is connected (a fake Discord, through the Horatio API it
+ * answers): staff use the channel a character's name suggests, and delivering
+ * names the character left without one, who can be delivered to anyway.
+ */
+test("staff use the Discord channels names suggest, and delivering warns of a character with none (#531)", async ({ browser }) => {
+  const custodian = await person(browser, "dchan-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "dchan-lead");
+  const player = await person(browser, "dchan-player");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "GET" | "POST" | "PUT", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data: method === "GET" ? undefined : (data ?? {}) });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Discord Channels ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  const picks: Record<string, [string, number][]> = {
+    attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+    focus_physicals: [["Strength", 1]],
+    focus_mentals: [["Wits", 1]],
+    focus_socials: [["Charisma", 1]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+    backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  const ids: Record<string, string> = {};
+  for (const name of ["Léontine Marsh", "Cassius Thorne"]) {
+    const { id } = await send(player.page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(player.page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+    for (const [category, list] of Object.entries(picks))
+      await send(player.page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+    await send(player.page, "POST", `/api/characters/${id}/creation/complete`);
+    const asked = await send(player.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    ids[name] = id;
+  }
+  const now = Date.now();
+  const cycle = await send(lead.page, "POST", `/api/troupes/${troupe.id}/cycles`, {
+    name: "Channel month",
+    closes_at: new Date(now + 7 * 86400e3).toISOString(),
+    grace_ends_at: new Date(now + 9 * 86400e3).toISOString(),
+  });
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/open`);
+  for (const id of Object.values(ids)) {
+    const form = await send(player.page, "GET", `/api/characters/${id}/downtime`);
+    const question = form.questions.find((q: { prompt: string }) => q.prompt === "Downtime action");
+    await send(player.page, "PUT", `/api/characters/${id}/downtime/answers`, { answers: [{ question_id: question.id, slot: 1, body: "Watch the harbour." }] });
+    await send(player.page, "POST", `/api/characters/${id}/downtime/submit`);
+  }
+  await send(lead.page, "POST", `/api/cycles/${cycle.id}/close`, { add_to_ceiling: false });
+  const responses: { id: string }[] = await send(lead.page, "GET", `/api/cycles/${cycle.id}/responses`);
+  for (const r of responses) await send(lead.page, "PUT", `/api/responses/${r.id}`, { body: "The harbour is quiet." });
+
+  // The fake Discord: a connected server with four text channels, and what Horatio
+  // makes of it. Léontine's channel is named for her; Cassius has only a public one
+  // named for his first name.
+  const l = lead.page;
+  let saved: Record<string, unknown> = { guild_id: "111", guild_name: "Court of Ash", channels: {}, test_channel: null };
+  const channels = [
+    { id: "201", name: "leontine-marsh", category: "Players", private: true },
+    { id: "202", name: "cassius", category: null, private: false },
+    { id: "203", name: "general", category: null, private: false },
+    { id: "204", name: "st-test", category: null, private: true },
+  ];
+  const discordOn = (c: { kind: string; name?: string }) =>
+    c.kind === "discord" ? { ...c, unavailable: null, needs: [], enabled: true, mode: "alert", test_mode: false, settings: saved } : c;
+  await l.route(`**/api/troupes/${troupe.id}/connectors`, async (route) => {
+    const real = await (await route.fetch()).json();
+    await route.fulfill({ json: real.map(discordOn) });
+  });
+  await l.route(`**/api/troupes/${troupe.id}/connectors/discord`, async (route) => {
+    const body = route.request().postDataJSON();
+    const chosen = Object.fromEntries(Object.entries(body.settings.channels as Record<string, string>).filter(([, c]) => c));
+    saved = { ...saved, channels: chosen, test_channel: body.settings.test_channel };
+    await route.fulfill({ json: discordOn({ kind: "discord", name: "Discord" }) });
+  });
+  await l.route(`**/api/troupes/${troupe.id}/discord`, (route) =>
+    route.fulfill({
+      json: {
+        guild_id: "111",
+        guild_name: "Court of Ash",
+        channels,
+        characters: [
+          { id: ids["Cassius Thorne"], name: "Cassius Thorne" },
+          { id: ids["Léontine Marsh"], name: "Léontine Marsh" },
+        ],
+        suggestions: { [ids["Léontine Marsh"]!]: "201", [ids["Cassius Thorne"]!]: "202" },
+      },
+    }),
+  );
+  // Characters whose results went to Discord only in test mode, and whether it is still on.
+  let tried: string[] = [];
+  let testMode = false;
+  await l.route(`**/api/cycles/${cycle.id}/deliveries`, async (route) => {
+    const real = await (await route.fetch()).json();
+    const chosen = saved.channels as Record<string, string>;
+    real.testing = testMode ? ["discord"] : [];
+    real.participants = real.participants.map((p: { character_id: string }) => ({
+      ...p,
+      unreachable: chosen[p.character_id] ? [] : ["discord"],
+      test_only: tried.includes(p.character_id) ? ["discord"] : [],
+    }));
+    await route.fulfill({ json: real });
+  });
+  let sentOn = 0;
+  await l.route(`**/api/cycles/${cycle.id}/send-test-only`, async (route) => {
+    sentOn += 1;
+    await route.fulfill({ json: { delivered: 0, updated: 0, queued: 1 } });
+  });
+
+  // Nothing is chosen until staff use a suggestion.
+  await l.goto(`/troupes/${troupe.id}/connectors`);
+  await expect(l.getByText("Connected to Court of Ash.")).toBeVisible();
+  await expect(l.getByText("2 characters have no channel: Cassius Thorne, Léontine Marsh.", { exact: false })).toBeVisible();
+  await expect(l.getByText("Suggested: #leontine-marsh")).toBeVisible();
+  await expect(l.getByLabel("Discord channel for Léontine Marsh")).toHaveValue("");
+  await l.getByRole("button", { name: "Use the suggestions" }).click();
+  await expect(l.getByLabel("Discord channel for Léontine Marsh")).toHaveValue("201");
+  await expect(l.getByLabel("Discord channel for Cassius Thorne")).toHaveValue("202");
+  await expect(l.getByText("Not private")).toBeVisible();
+  await expect(l.getByRole("button", { name: "Use the suggestions" })).toHaveCount(0);
+  // Cassius's is a public channel: the lead takes it back, and it is offered again on its own.
+  await l.getByLabel("Discord channel for Cassius Thorne").selectOption("");
+  await expect(l.getByText("1 character has no channel: Cassius Thorne.", { exact: false })).toBeVisible();
+  await expect(l.getByRole("button", { name: "Use #cassius for Cassius Thorne" })).toBeVisible();
+  await l.getByLabel("Test channel", { exact: true }).selectOption("204");
+  await l.getByRole("button", { name: "Save" }).click();
+  await expect(l.getByText("Saved Discord")).toBeVisible();
+  expect(saved.channels).toEqual({ [ids["Léontine Marsh"]!]: "201" });
+
+  // Delivering names Cassius first, and goes ahead only when asked.
+  await l.goto(`/cycles/${cycle.id}/delivery`);
+  const deliverCard = l.locator("section").filter({ has: l.getByRole("heading", { name: "Deliver results" }) });
+  await expect(deliverCard.getByText(/ of 2 downtimes have every response written\.$/)).toBeVisible();
+  // Their feeding, if the troupe asks for it, is unanswered: those go too.
+  const partly = deliverCard.getByLabel("Also deliver the 2 partly written, with what's written so far");
+  if (await partly.isVisible()) await partly.check();
+  await deliverCard.getByRole("button", { name: "Deliver 2 downtimes" }).click();
+  const warning = l.getByRole("region", { name: "Deliver anyway?" });
+  await expect(warning.getByText("Some results won't go out on Discord")).toBeVisible();
+  await expect(warning.getByText("Cassius Thorne: no Discord channel")).toBeVisible();
+  await expect(warning.getByText(/Léontine/)).toHaveCount(0);
+  await expect(warning.getByRole("link", { name: "Choose their channels" })).toHaveAttribute("href", `/troupes/${troupe.id}/connectors`);
+  await warning.getByRole("button", { name: "Cancel" }).click();
+  await expect(warning).toHaveCount(0);
+  await deliverCard.getByRole("button", { name: "Deliver 2 downtimes" }).click();
+  await warning.getByRole("button", { name: "Deliver anyway" }).click();
+  await expect(l.getByText("Delivered 2 downtimes.")).toBeVisible();
+  await expect(warning).toHaveCount(0);
+
+  // Léontine's results went only to the test channel. They wait while test mode is on,
+  // and go to her channel only when the lead sends them.
+  tried = [ids["Léontine Marsh"]!];
+  testMode = true;
+  await l.reload();
+  const testOnly = deliverCard.getByRole("listitem").filter({ hasText: "Sent to the test channel only:" });
+  await expect(testOnly).toContainText("Léontine Marsh");
+  await expect(testOnly).not.toContainText("Cassius");
+  await expect(deliverCard.getByText(/^Test mode is on\./)).toBeVisible();
+  await expect(deliverCard.getByRole("button", { name: "Send to players' channels" })).toHaveCount(0);
+  testMode = false;
+  await l.reload();
+  await deliverCard.getByRole("button", { name: "Send to players' channels" }).click();
+  await expect(deliverCard.getByText("1 copy is on the way to players through the troupe's connectors.")).toBeVisible();
+  expect(sentOn).toBe(1);
+  // The page still polls; its fakes go quietly with it.
+  await l.unrouteAll({ behavior: "ignoreErrors" });
+});
+
+/**
  * Sharing out a cycle's responses (#376): they come by character, each folding
  * away; filtered by who has them; and several ticked are assigned in one go.
  */

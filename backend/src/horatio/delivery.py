@@ -15,6 +15,7 @@ by hand.
 import asyncio
 import logging
 import uuid
+from collections.abc import Collection, Sequence
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
@@ -133,6 +134,31 @@ def queue(
             db.add(row)
             queued += 1
     return queued
+
+
+def test_only(
+    db: Session, submission_ids: Collection[uuid.UUID], connectors: Sequence[TroupeConnector]
+) -> dict[uuid.UUID, list[str]]:
+    """For each submission, the connectors among these that have had its results
+    only in test mode: sent (or on their way) to the test channel or address, and
+    never for real. They wait there for storytellers to send them to players
+    (`send_test_only`); switching test mode off sends nothing by itself."""
+    kinds = {c.kind for c in connectors}
+    tried: dict[tuple[uuid.UUID, str], set[bool]] = {}
+    for submission_id, channel, test_mode in db.execute(
+        select(Delivery.submission_id, Delivery.channel, Delivery.test_mode).where(
+            Delivery.submission_id.in_(list(submission_ids)),
+            Delivery.channel.in_(kinds),
+            Delivery.status != "failed",
+        )
+    ):
+        assert submission_id is not None
+        tried.setdefault((submission_id, channel), set()).add(test_mode)
+    found: dict[uuid.UUID, list[str]] = {}
+    for (submission_id, channel), modes in sorted(tried.items(), key=lambda t: t[0][1]):
+        if modes == {True}:
+            found.setdefault(submission_id, []).append(channel)
+    return found
 
 
 def quest_link(character_id: uuid.UUID, quest_id: uuid.UUID) -> str:
