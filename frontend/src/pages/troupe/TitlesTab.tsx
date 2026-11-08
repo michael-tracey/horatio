@@ -104,7 +104,8 @@ export function TitlesTab({ troupeId }: { troupeId: string }) {
         <p className="mt-3 text-xs text-mist">
           Give titles to characters on the Characters tab; players choose their own on their character's Status & Titles tab, unless the troupe keeps titles to
           staff. A title of a sect goes only to characters of that sect, and a title means nothing outside this troupe. Of a character's titles, only the
-          active one gives status. What each status does is on the{" "}
+          active one gives status. Several characters may hold a title unless you switch on One holder at a time for it; then, while someone holds it,
+          players can't choose it, though staff can still give it. What each status does is on the{" "}
           <Link to={`/troupes/${troupeId}/status`} className="text-parchment underline hover:text-gold">
             Status tab
           </Link>
@@ -171,7 +172,7 @@ function TitleTable({ label, troupeId, titles, data, held = false }: { label: st
           <th className={`${WIDE} py-2 pr-3 font-normal`}>Sect</th>
           <th className={`${WIDE} py-2 pr-3 font-normal`}>Status it gives</th>
           <th className={`${WIDE} py-2 pr-3 font-normal`}>House rule</th>
-          <th className={`${WIDE} py-2 pr-3 font-normal`}>One at a time</th>
+          <th className={`${WIDE} py-2 pr-3 font-normal`}>One holder at a time</th>
           <th className="py-2 font-normal">
             <span className="sr-only">Actions</span>
           </th>
@@ -196,6 +197,7 @@ function TitleRow({ troupeId, title, data, held }: { troupeId: string; title: Ti
   const toast = useToast();
   const client = useQueryClient();
   const target = { params: { path: { troupe_id: troupeId, name: title.name } } };
+  const oneHolder = useAction((on: boolean) => unwrap(api.PUT("/api/troupes/{troupe_id}/titles/{name}/one-holder", { ...target, body: { on } })));
   const change = useAction(async (t: TitleForm) => {
     await unwrap(api.PUT("/api/troupes/{troupe_id}/titles/{name}", { ...target, body: { sect: t.sect, status: t.status, unique: t.unique } }));
     close();
@@ -242,19 +244,24 @@ function TitleRow({ troupeId, title, data, held }: { troupeId: string; title: Ti
               House rule
             </Badge>
           )}
-          {title.unique && <Badge className="lg:hidden">One at a time</Badge>}
         </span>
         {alias && <span className="block text-xs text-mist">{alias}</span>}
         {held && <span className="mt-0.5 block lg:hidden">{holders}</span>}
         <span className="mt-0.5 block text-xs text-mist lg:hidden">
           {sect} · {gives}
         </span>
+        <span className="mt-1 block lg:hidden">
+          <OneHolderSwitch title={title} pending={oneHolder.isPending} onChange={(on) => oneHolder.mutate(on)} worded />
+        </span>
+        <ErrorText error={oneHolder.error} />
       </td>
       {held && <td className={`${WIDE} py-2.5 pr-3 align-top`}>{holders}</td>}
       <td className={`${WIDE} py-2.5 pr-3 align-top whitespace-nowrap text-mist`}>{sect}</td>
       <td className={`${WIDE} py-2.5 pr-3 align-top text-xs text-mist`}>{gives}</td>
       <td className={`${WIDE} py-2.5 pr-3 align-top`}>{title.house && <Badge tone="gold">House rule</Badge>}</td>
-      <td className={`${WIDE} py-2.5 pr-3 align-top text-mist`}>{title.unique ? "Yes" : ""}</td>
+      <td className={`${WIDE} py-2.5 pr-3 align-top`}>
+        <OneHolderSwitch title={title} pending={oneHolder.isPending} onChange={(on) => oneHolder.mutate(on)} />
+      </td>
       <td className="w-px py-1 text-right align-top">
         <ActionMenu label={`Actions for ${title.name}`} variant="ghost">
           <MenuGroup label="Who holds it">
@@ -318,6 +325,24 @@ function TitleRow({ troupeId, title, data, held }: { troupeId: string; title: Ti
         </Dialog>
       </td>
     </tr>
+  );
+}
+
+/** The house rule One holder at a time for a title, the rule set's or the troupe's own:
+ * while someone holds it, players can't choose it. For a title with other names, it is
+ * for them all. `worded` says so beside the box, where there is no column heading. */
+function OneHolderSwitch({ title, pending, onChange, worded = false }: { title: TitleOut; pending: boolean; onChange: (on: boolean) => void; worded?: boolean }) {
+  return (
+    <label className="inline-flex items-center gap-1.5 text-xs text-mist">
+      <input
+        type="checkbox"
+        aria-label={worded ? undefined : `One holder at a time: ${title.name}`}
+        checked={title.unique}
+        disabled={pending}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      {worded && "One holder at a time"}
+    </label>
   );
 }
 
@@ -473,8 +498,8 @@ function TitleFields({
       </fieldset>
       <label className="flex items-center gap-1.5 text-sm">
         <input type="checkbox" checked={title.unique} onChange={(e) => setTitle({ ...title, unique: e.target.checked })} />
-        Only one character holds it at a time
-        <span className="text-xs text-mist">(players can't choose it while someone does)</span>
+        One holder at a time
+        <span className="text-xs text-mist">(players can't choose it while someone holds it)</span>
       </label>
       <div>
         <Button type="submit" disabled={(naming && !title.name.trim()) || pending}>

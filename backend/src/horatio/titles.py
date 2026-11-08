@@ -19,9 +19,14 @@ character who has since changed sect, is kept and shown to staff as out of sect.
 **Players choose their characters' titles** from those their home troupe offers
 of their sect, on the character's Status & Titles tab, unless the troupe's
 "Titles on sheets" setting (Troupe.titles_by) keeps titles to its running staff.
-Staff are told of each choice (horatio.notifications). A `unique` title (a Prince)
-is one no player can choose while another character in the troupe holds it, by
-any of its names (a Baron, or an Advocate); staff can still give it.
+Staff are told of each choice (horatio.notifications).
+
+**One holder at a time** is a house rule a troupe sets title by title, for the rule
+sets' titles and its own alike; it is off until set, as a game may run two domains,
+each with its Prince. A title so held (`unique`) is one no player can choose while
+another character in the troupe holds it, by any of its names (a Baron, or an
+Advocate); staff can still give it. The troupe keeps the rule sets' titles it holds
+so by office (Troupe.one_holder_titles), and its own in TroupeTitle.unique.
 
 **One title is active.** Of the titles a character holds in a troupe, at most one
 is active, and only it gives status (horatio.sect_status): a character carries the
@@ -32,7 +37,7 @@ the active title goes, none is active until one is chosen.
 
 import uuid
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Literal, get_args
 
 from sqlalchemy import delete, func, select, update
@@ -101,6 +106,11 @@ def title_data(db: Session, troupe_id: uuid.UUID) -> dict[str, TitleData]:
     Not narrowed to the troupe's allowed sects (`offered` is), so a title held from
     before is found here too."""
     found = rule_set_titles(db)
+    troupe = db.get(Troupe, troupe_id)
+    held_to_one = set(troupe.one_holder_titles) if troupe is not None else set()
+    for name, title in found.items():
+        if title.office in held_to_one:
+            found[name] = replace(title, unique=True)
     for title in house_titles(db, troupe_id):
         found[title.name] = house_title(title)
     return dict(sorted(found.items()))
@@ -279,6 +289,44 @@ def remove_title(db: Session, staff: User, troupe: Troupe, name: str) -> None:
     db.delete(found)
     db.flush()
     audit.record(db, staff, "title.removed_from_troupe", troupe_id=troupe.id, title=name)
+
+
+def offices(db: Session, names: Iterable[str]) -> list[str]:
+    """The rule sets' titles named, by office (Baron for an Advocate), for the troupe
+    to hold to one holder at a time; refused for a name that is not one of them."""
+    known = rule_set_titles(db)
+    unknown = sorted(n for n in names if n not in known)
+    if unknown:
+        raise unprocessable(f"Not a title in the rules: {', '.join(unknown)}.")
+    return sorted({known[n].office for n in names})
+
+
+def set_one_holder(db: Session, staff: User, troupe: Troupe, name: str, on: bool) -> None:
+    """Hold a title, of the rule sets' or the troupe's own, to one holder at a time
+    here, or not: a house rule. For one of the rule sets', it is for all its names."""
+    own = db.scalar(
+        select(TroupeTitle).where(TroupeTitle.troupe_id == troupe.id, TroupeTitle.name == name)
+    )
+    if own is not None:
+        if own.unique == on:
+            return
+        own.unique = on
+        office = name
+    else:
+        [office] = offices(db, [name])
+        held_to_one = set(troupe.one_holder_titles)
+        if (office in held_to_one) == on:
+            return
+        troupe.one_holder_titles = sorted(held_to_one | {office} if on else held_to_one - {office})
+    db.flush()
+    audit.record(
+        db,
+        staff,
+        "title.one_holder",
+        troupe_id=troupe.id,
+        title=office,
+        what="on" if on else "off",
+    )
 
 
 # --- the court's order ------------------------------------------------------------------------

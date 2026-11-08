@@ -75,8 +75,8 @@ class TitleOut(TitleWhatOut):
     page: str | None
     # Added by this troupe, which can change and remove it.
     house: bool
-    # Only one character holds it at a time: players cannot choose it while
-    # someone does.
+    # House rule, One holder at a time: players cannot choose it while someone
+    # holds it. For one of the rule sets', it is for all its names.
     unique: bool = False
     # The troupe gives it now: it has no sect, or one of the troupe's. One it
     # doesn't is listed only while someone holds it.
@@ -159,6 +159,11 @@ class TitleChange(BaseModel):
 
 class NewTitle(TitleChange):
     name: str = Field(min_length=1, max_length=100)
+
+
+class OneHolder(BaseModel):
+    # Only one character holds it at a time.
+    on: bool
 
 
 class HeldTitles(BaseModel):
@@ -290,6 +295,18 @@ def change_title(
     """Change the sect and status of a title the troupe added, for all who hold it."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_TITLES)
     titles.change_title(db, user, troupe, name, body.sect, body.status, body.unique)
+    db.commit()
+    return titles_out(db, troupe)
+
+
+@router.put("/titles/{name}/one-holder")
+def set_one_holder(
+    troupe_id: uuid.UUID, name: str, body: OneHolder, db: DbSession, user: CurrentUser
+) -> TitlesOut:
+    """Hold a title, of the rule sets' or the troupe's own, to one holder at a time, or
+    not: a house rule, off until set."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_TITLES)
+    titles.set_one_holder(db, user, troupe, name, body.on)
     db.commit()
     return titles_out(db, troupe)
 

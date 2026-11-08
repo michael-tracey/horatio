@@ -1,7 +1,7 @@
 """Status & Titles (#321): a player chooses their character's titles from their home
 troupe's titles of its sect, and staff are told; one title is active and gives
-status; a unique title someone holds is staff's to give; a troupe can keep titles
-to staff."""
+status; a title the troupe holds to one holder at a time (#551) is staff's to give
+while someone holds it; a troupe can keep titles to staff."""
 
 import uuid
 from collections.abc import Callable
@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from tests.api_helpers import Person, Troupe
 from tests.conftest import load_rules
 from tests.test_api_notifications import summaries
+from tests.test_api_renames import troupe_log
 from tests.test_api_sect_status import entitle, logged, member, status
 
 
@@ -146,10 +147,49 @@ def test_one_title_is_active_and_switching_changes_the_status(troupe: Troupe) ->
     assert give_up(troupe.player, vasquez, "Prince").status_code == 422
 
 
-def test_a_unique_title_someone_holds_is_staffs_to_give(troupe: Troupe) -> None:
+def one_holder(person: Person, troupe: Troupe, name: str, on: bool) -> dict[str, Any]:
+    """Switch the house rule One holder at a time for a title; the troupe's titles."""
+    response = person.client.put(f"/troupes/{troupe.id}/titles/{name}/one-holder", json={"on": on})
+    assert response.status_code == 200, response.text
+    return {t["name"]: t for t in response.json()["titles"]}
+
+
+def test_a_book_title_is_held_by_several_until_the_troupe_says_one(troupe: Troupe) -> None:
+    """A game may run two domains, each with its Prince (#551): no title is held to one
+    holder until the troupe switches it on."""
     varga = member(troupe, "Elena Varga")
     entitle(troupe, varga, "Prince")
     vasquez = member(troupe, "Lady Vasquez")
+
+    choices = {c["name"]: c for c in titles_of(troupe.player, vasquez)["choices"]}
+    assert (choices["Prince"]["unique"], choices["Prince"]["holders"]) == (False, ["Elena Varga"])
+    assert choices["Prince"]["open"]
+    assert take(troupe.player, vasquez, "Prince").status_code == 200
+
+    listed = {
+        t["name"]: t
+        for t in troupe.storyteller.client.get(f"/troupes/{troupe.id}/titles").json()["titles"]
+    }
+    assert [h["character_name"] for h in listed["Prince"]["holders"]] == [
+        "Elena Varga",
+        "Lady Vasquez",
+    ]
+    assert not any(t["unique"] for t in listed.values())
+
+
+def test_a_title_held_to_one_holder_is_staffs_to_give(troupe: Troupe) -> None:
+    varga = member(troupe, "Elena Varga")
+    entitle(troupe, varga, "Prince")
+    vasquez = member(troupe, "Lady Vasquez")
+    # Players can't set the house rule.
+    refused = troupe.player.client.put(
+        f"/troupes/{troupe.id}/titles/Prince/one-holder", json={"on": True}
+    )
+    assert refused.status_code == 403
+    assert one_holder(troupe.assistant, troupe, "Prince", True)["Prince"]["unique"]
+    assert troupe_log(troupe.lead, troupe.id)[0].endswith(
+        "switched One holder at a time on for the title Prince."
+    )
 
     choices = {c["name"]: c for c in titles_of(troupe.player, vasquez)["choices"]}
 
@@ -170,10 +210,21 @@ def test_a_unique_title_someone_holds_is_staffs_to_give(troupe: Troupe) -> None:
     assert not any("took the title Prince" in s for s in summaries(troupe.lead))
     assert logged(troupe.session, vasquez, "title.given")[0]["title"] == "Prince"
 
+    # Switched off, players choose it again.
+    assert not one_holder(troupe.storyteller, troupe, "Prince", False)["Prince"]["unique"]
+    assert troupe_log(troupe.lead, troupe.id)[0].endswith(
+        "switched One holder at a time off for the title Prince."
+    )
+    agnes = member(troupe, "Agnes")
+    assert take(troupe.player, agnes, "Prince").status_code == 200
 
-def test_a_unique_titles_other_names_are_one_office(troupe: Troupe) -> None:
+
+def test_a_title_held_to_one_holder_is_by_every_name(troupe: Troupe) -> None:
     """An Advocate is a Baron by its modern name (p. 472): it gives the same, and a
-    domain has one, whichever name it goes by."""
+    troupe that holds it to one holder holds it so whichever name it goes by."""
+    switched = one_holder(troupe.storyteller, troupe, "Advocate", True)
+    assert all(switched[n]["unique"] for n in ("Baron", "Advocate", "President", "Minister"))
+    assert troupe_log(troupe.lead, troupe.id)[0].endswith("for the title Baron.")
     nines = member(troupe, "Nines Rodriguez", sect="Anarch", clan="Brujah")
     assert take(troupe.player, nines, "Advocate").status_code == 200
     assert from_titles(troupe.player, nines) == {"Advocate": ["Authority", "Mandate"]}
@@ -258,6 +309,14 @@ def test_each_title_says_what_it_gives_or_why_not(troupe: Troupe) -> None:
     assert alliance["Capo"]["clan"] == "Giovanni"
 
 
+def test_only_titles_here_can_be_held_to_one_holder(troupe: Troupe) -> None:
+    refused = troupe.storyteller.client.put(
+        f"/troupes/{troupe.id}/titles/Grand Vizier/one-holder", json={"on": True}
+    )
+    assert refused.status_code == 422
+    assert refused.json()["detail"] == "Not a title in the rules: Grand Vizier."
+
+
 def test_a_troupes_own_title_can_be_unique(troupe: Troupe) -> None:
     made = troupe.assistant.client.post(
         f"/troupes/{troupe.id}/titles",
@@ -277,6 +336,12 @@ def test_a_troupes_own_title_can_be_unique(troupe: Troupe) -> None:
     taken = take(troupe.player, vasquez, "Master of Revels")
     assert taken.status_code == 200, taken.text
     assert "which gives no status" in summaries(troupe.storyteller)[0]
+    # The switch on the Titles tab sets the same house rule for the troupe's own title.
+    assert one_holder(troupe.storyteller, troupe, "Master of Revels", True)["Master of Revels"][
+        "unique"
+    ]
+    agnes = member(troupe, "Agnes")
+    assert take(troupe.player, agnes, "Master of Revels").status_code == 409
 
 
 def test_a_troupe_can_keep_titles_to_staff(troupe: Troupe) -> None:
@@ -405,6 +470,59 @@ def test_the_migration_keeps_the_highest_title_active(
                 text("delete from character_titles where character_id = :id"), {"id": character}
             )
             connection.execute(text("delete from characters where id = :id"), {"id": character})
+            connection.execute(text("delete from troupes where id = :id"), {"id": troupe})
+            connection.execute(text("delete from users where id = :id"), {"id": user})
+        load_rules(engine)
+
+
+def test_the_migration_holds_no_book_title_to_one_and_keeps_the_troupes_own(
+    engine: Engine, alembic_config: Config
+) -> None:
+    """#551: every troupe's book titles start with One holder at a time off; a title of
+    its own it held to one keeps it."""
+    before = ScriptDirectory.from_config(alembic_config).get_revision("0157").down_revision
+    assert isinstance(before, str)
+    command.downgrade(alembic_config, before)
+    user, troupe = uuid.uuid4(), uuid.uuid4()
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "insert into users (id, email, display_name, handle)"
+                    " values (:id, 'onehold@example.com', 'One Hold', 'onehold')"
+                ),
+                {"id": user},
+            )
+            connection.execute(
+                text(
+                    "insert into troupes (id, name, lead_user_id) values (:id, 'Two Courts', :lead)"
+                ),
+                {"id": troupe, "lead": user},
+            )
+            connection.execute(
+                text(
+                    'insert into troupe_titles (troupe_id, name, "unique")'
+                    " values (:troupe, 'Master of Revels', true)"
+                ),
+                {"troupe": troupe},
+            )
+
+        command.upgrade(alembic_config, "head")
+
+        with engine.connect() as connection:
+            held_to_one = connection.execute(
+                text("select one_holder_titles from troupes where id = :id"), {"id": troupe}
+            ).scalar_one()
+            unique = connection.execute(
+                text('select "unique" from troupe_titles where troupe_id = :id'), {"id": troupe}
+            ).scalar_one()
+        assert (held_to_one, unique) == ([], True)
+    finally:
+        command.upgrade(alembic_config, "head")
+        with engine.begin() as connection:
+            connection.execute(
+                text("delete from troupe_titles where troupe_id = :id"), {"id": troupe}
+            )
             connection.execute(text("delete from troupes where id = :id"), {"id": troupe})
             connection.execute(text("delete from users where id = :id"), {"id": user})
         load_rules(engine)
