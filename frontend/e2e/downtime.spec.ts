@@ -849,6 +849,8 @@ test("staff use the Discord channels names suggest, and delivering warns of a ch
   await deliverCard.getByRole("button", { name: "Send to players' channels" }).click();
   await expect(deliverCard.getByText("1 copy is on the way to players through the troupe's connectors.")).toBeVisible();
   expect(sentOn).toBe(1);
+  // The page still polls; its fakes go quietly with it.
+  await l.unrouteAll({ behavior: "ignoreErrors" });
 });
 
 /**
