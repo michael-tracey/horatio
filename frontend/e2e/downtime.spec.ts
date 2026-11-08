@@ -19,8 +19,9 @@ function pdfPages(pdf: Buffer): { count: number; size: string } {
  * results. Each person is a separate browser session.
  */
 test("a troupe's month, from new character to downtime results", async ({ browser }) => {
-  // The longest journey: the whole month, longer than the others, above all on a phone.
-  test.slow();
+  // The longest journey: the whole month, longer than the others, above all on a phone,
+  // with every creation pick chosen in its slot as a player would.
+  test.setTimeout(240_000);
   const custodian = await person(browser, "custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "lead");
