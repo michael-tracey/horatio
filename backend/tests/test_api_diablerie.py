@@ -402,6 +402,7 @@ def test_the_flaw_is_left_by_default_with_a_warning_in_the_plan(troupe: Troupe) 
 def test_the_flaw_and_its_xp_can_go(troupe: Troupe) -> None:
     character_id = lesser(troupe, "remove")
     xp = balance(troupe.player, character_id)
+    before = sheet(troupe.player, character_id)["xp"]
 
     found = plan(troupe.storyteller, character_id).json()
     assert (found["flaw"]["setting"], found["flaw"]["taken"]) == ("remove", 4)
@@ -409,6 +410,9 @@ def test_the_flaw_and_its_xp_can_go(troupe: Troupe) -> None:
 
     assert "Lesser Generation 1" not in traits(troupe.player, character_id)
     assert balance(troupe.player, character_id) == xp - 4
+    # The flaw's XP was spending going down, so taking it back is spending (#548).
+    after = sheet(troupe.player, character_id)["xp"]
+    assert (after["earned"], after["spent"]) == (before["earned"], before["spent"] + 4)
     corrections = [
         e
         for e in troupe.player.client.get(f"/characters/{character_id}/xp").json()

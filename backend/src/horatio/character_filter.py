@@ -34,10 +34,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from horatio import equipment, titles
-from horatio.models import Approval, Character, EquipmentItem, XpEntry
+from horatio.models import Approval, Character, EquipmentItem
 from horatio.rules.equipment import KINDS
 from horatio.rules.model import RuleSetData
-from horatio.sheets import earned_and_spent, sheet_rows
+from horatio.sheets import sheet_rows, xp_totals
 
 STATUSES = {
     "active": "Active",
@@ -117,13 +117,7 @@ def facts(db: Session, troupe_id: uuid.UUID, character: Character, *, items: boo
             continue
         key = (row.category.key, row.definition.name, row.trait.detail)
         traits[key] = row.trait.rating if row.trait.rating is not None else 1
-    entries = [
-        (kind, amount)
-        for kind, amount in db.execute(
-            select(XpEntry.kind, XpEntry.amount).where(XpEntry.character_id == character.id)
-        )
-    ]
-    earned, spent, lost = earned_and_spent(entries)
+    earned, spent, lost = xp_totals(db, character)
     return Facts(
         character_id=character.id,
         player_id=character.player_id if character.kind == "pc" else None,
