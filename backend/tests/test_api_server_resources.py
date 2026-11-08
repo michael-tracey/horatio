@@ -410,6 +410,8 @@ KRCG_FILES = {
     "disc/sup": ["aus", "cel"],
     "icon": ["blood1", "action"],
 }
+# Some of KRCG's icons have no SVG: the capacity drop is WebP and PNG only.
+KRCG_RASTER_ICONS = ["capacity"]
 
 
 def krcg(fake: Fake, *, large: str | None = None) -> None:
@@ -417,6 +419,8 @@ def krcg(fake: Fake, *, large: str | None = None) -> None:
     deprecated/; and the fonts."""
     for kind in vtes_symbols.KINDS:
         for group, names in KRCG_FILES.items():
+            if group == "icon" and kind != "svg":
+                names = [*names, *KRCG_RASTER_ICONS]
             folder_names = [f"{n}.{kind}" for n in names]
             if group == "clan":
                 folder_names = ["deprecated/", *folder_names]
@@ -449,8 +453,8 @@ def test_the_server_fetches_the_vtes_symbols_from_krcg(
     assert found["fetched"] is True and found["error"] is None
     assert found["address"] == KRCG
     assert found["counts"] == [
-        {"kind": kind, "clans": 4, "inferior": 4, "superior": 2, "icons": 2}
-        for kind in ("svg", "webp", "png")
+        {"kind": kind, "clans": 4, "inferior": 4, "superior": 2, "icons": icons}
+        for kind, icons in (("svg", 2), ("webp", 3), ("png", 3))
     ]
     assert found["fonts"] == list(vtes_symbols.FONTS)
     clans = {c["name"]: c["symbol"] for c in found["clans"]}
@@ -476,8 +480,11 @@ def test_the_server_fetches_the_vtes_symbols_from_krcg(
     kept = folder / "vtes"
     assert (kept / "svg" / "disc" / "inf" / "aus.svg").read_bytes() == svg()
     assert (kept / "fonts" / "ankha2.otf").is_file()
+    # The capacity drop the Jyhad card shows, which KRCG has in WebP and PNG only.
+    assert (kept / "webp" / "icon" / "capacity.webp").is_file()
+    assert "capacity" in json.loads((kept / "manifest.json").read_text())["files"]["webp/icon"]
     assert not [p for p in folder.iterdir() if p.name.startswith(".")]
-    assert f"custodian fetched the VTES symbols from {KRCG}: 36 symbols and 2 fonts." in messages(
+    assert f"custodian fetched the VTES symbols from {KRCG}: 38 symbols and 2 fonts." in messages(
         troupe.custodian
     )
 
@@ -496,6 +503,7 @@ def test_the_symbols_are_served_to_anyone_signed_in(
     assert "max-age" in shown.headers["cache-control"]
     assert player.get("/vtes-symbols/png/clan/brujah.png").headers["content-type"] == "image/png"
     assert player.get("/vtes-symbols/webp/icon/blood1.webp").status_code == 200
+    assert player.get("/vtes-symbols/webp/icon/capacity.webp").status_code == 200
     assert player.get("/vtes-symbols/fonts/vtes-clans.otf").status_code == 200
     assert client_for().get("/vtes-symbols/svg/clan/brujah.svg").status_code == 401
     for path in (

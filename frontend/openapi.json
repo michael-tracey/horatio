@@ -19100,6 +19100,17 @@
             ],
             "title": "Capacity"
           },
+          "capacity_symbol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity Symbol"
+          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -19164,6 +19175,17 @@
             ],
             "title": "Picture"
           },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
           "sect_line": {
             "anyOf": [
               {
@@ -19186,8 +19208,10 @@
           "name",
           "clan",
           "clan_symbol",
+          "sect",
           "sect_line",
           "capacity",
+          "capacity_symbol",
           "disciplines",
           "picture",
           "text",

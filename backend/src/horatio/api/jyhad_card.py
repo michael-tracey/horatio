@@ -33,9 +33,13 @@ class JyhadCardOut(BaseModel):
     clan: str | None
     # KRCG's clan symbol, if fetched.
     clan_symbol: str | None
+    # The sect, as the sheet has it ("Camarilla"), for the frame's colours.
+    sect: str | None
     # "Camarilla Prince of Asheville: 2 votes", or the sect alone; None for neither.
     sect_line: str | None
     capacity: int | None
+    # KRCG's capacity drop, if fetched; else the card draws one.
+    capacity_symbol: str | None
     disciplines: list[CardDisciplineOut]
     # The character's picture (add "/portrait.webp").
     picture: str | None
@@ -60,8 +64,10 @@ def read_card(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Jyha
         name=card.name,
         clan=card.clan,
         clan_symbol=card.clan_symbol,
+        sect=card.sect,
         sect_line=card.sect_line,
         capacity=card.capacity,
+        capacity_symbol=card.capacity_symbol,
         disciplines=[CardDisciplineOut(**vars(d)) for d in card.disciplines],
         picture=card.picture,
         text=card.text,
