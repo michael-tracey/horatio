@@ -655,7 +655,7 @@ test("in the cart, a second Retainer and a second Alternate Identity are each bo
   await expect(bocephus.getByLabel("Bocephus's pool: 8")).toBeVisible();
   await expect(rook.getByLabel("Rook's pool: 4")).toBeVisible();
   await expect(bocephus.getByRole("listitem").filter({ hasText: "Brawl" })).toContainText("13");
-  await expect(bocephus.getByText("4. Vanish From the Mind's Eye")).toBeVisible();
+  await expect(bocephus.getByRole("listitem").filter({ hasText: "Vanish From the Mind's Eye" }).getByLabel("4 dots")).toBeVisible();
   await expect(bocephus.getByText("Cloak the Gathering")).toHaveCount(0);
   await expect(rook.getByText("Blood")).toHaveCount(0);
   await p.getByRole("checkbox", { name: "Quick notes" }).uncheck();

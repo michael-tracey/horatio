@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import type { RetainerOut, RetainerTrackOut } from "../../api/types";
+import { Rating } from "../../components/ui";
 import { useDates } from "../../dates";
 import { backText, LOST_WORDS, retainerName, retainerSource } from "../character/retainers";
 import { HEALTH_NOTE, NO_WILLPOWER, SPECIALTY_BONUS, bloodNote } from "./retainerPools";
@@ -9,7 +10,8 @@ type Tap = (change: { tracker: string; amount: number; label: string }) => void;
 /**
  * Each Retainer as the NPC it is at a game (MET: VtM core p. 105): its test
  * pool, its specialties at the pool and 5 more, a ghoul's discipline and the
- * powers it reaches, and its health levels and Blood to tap. A Retainer staff
+ * powers it reaches, and its health levels and Blood to tap. Its dots show as
+ * Settings shows ratings; health and Blood, spent rather than rated, stay marks. A Retainer staff
  * linked to an NPC opens that NPC's own sheet too.
  */
 export function RetainerPools({ retainers, tracks, tap }: { retainers: RetainerOut[]; tracks: RetainerTrackOut[]; tap: Tap }) {
@@ -36,7 +38,7 @@ function RetainerBlock({ retainer: r, track, tap }: { retainer: RetainerOut; tra
           {name}
           <span className="text-sm text-mist">
             {" "}
-            · Retainer {r.dots}
+            · Retainer <Rating value={r.dots} className="text-mist" />
             {r.ghoul ? " · ghoul" : ""}
             {source ? ` · ${source}` : ""}
           </span>
@@ -75,14 +77,15 @@ function RetainerBlock({ retainer: r, track, tap }: { retainer: RetainerOut; tra
       {r.discipline && (
         <div className="mb-1 text-sm">
           <p>
-            {r.discipline} <span className="text-xs text-mist">to {r.dots}</span>
+            {r.discipline}{" "}
+            <span className="text-xs text-mist">
+              to <Rating value={r.dots} className="text-mist" />
+            </span>
           </p>
           <ol className="pl-3 text-xs text-mist">
             {r.powers.map((p) => (
               <li key={`${p.level}/${p.name}`}>
-                <span className="text-parchment">
-                  {p.level}. {p.name}
-                </span>{" "}
+                <Rating value={p.level} of={p.level} className="min-w-4 text-parchment" /> <span className="text-parchment">{p.name}</span>{" "}
                 {p.note}
               </li>
             ))}
