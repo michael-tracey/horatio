@@ -167,6 +167,8 @@ class XpSummary(BaseModel):
     # Below 0 while the character is in XP debt (horatio.xp_debt).
     balance: int
     earned: int
+    # Net of refunds (a dot lowered, a flaw taken), so below 0 when flaws gave more
+    # than has been spent (sheets.earned_and_spent).
     spent: int
     # Creation XP lost when a first home troupe accepted it: neither earned nor spent.
     lost: int = 0
@@ -529,13 +531,7 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
     for (_, name, detail), power in powers.items():
         merit = (power.source.category, power.source.name, power.source.detail)
         opening_merits.setdefault(merit, []).append(f"{name}: {detail}" if detail else name)
-    entries = [
-        (kind, amount)
-        for kind, amount in db.execute(
-            select(XpEntry.kind, XpEntry.amount).where(XpEntry.character_id == character.id)
-        )
-    ]
-    earned, spent, lost = sheets.earned_and_spent(entries)
+    earned, spent, lost = sheets.xp_totals(db, character)
     pending = sheets.pending_approvals(db, character)
     held = sheets.pending_purchases(db, character)
     held_from = {
