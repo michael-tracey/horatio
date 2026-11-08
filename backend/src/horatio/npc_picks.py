@@ -248,15 +248,23 @@ def pin(
     """Place a creation pick on a trait by hand: `rating` free dots of it, or for a
     budget of points (merits, flaws) the whole trait. `replacing` (a name and
     detail) is the trait whose place it takes in the list, which loses its pick
-    unless the fitting gives it another. Every refit keeps the pick."""
+    unless the fitting gives it another. Every refit keeps the pick.
+
+    A trait with a pick at another rating moves. The one it takes the place of, if
+    staff placed it, goes where the trait was when it can take a pick there (a
+    swap); a fitted one is fitted again with the rest."""
     ensure_fitted(npc)
-    unfit(db, npc)
-    if replacing is not None:
-        other = row_for(db, npc, category, *replacing)
-        if other.trait.pick_by == STAFF:
-            drop(other.trait)
     row = row_for(db, npc, category, name, detail)
     trait = row.trait
+    # Where the trait's pick was, before the fitting's picks are taken off.
+    was = trait.creation_pick
+    unfit(db, npc)
+    swapped: CharacterTrait | None = None
+    if replacing is not None:
+        other = row_for(db, npc, category, *replacing)
+        if other.trait.pick_by == STAFF and other.trait is not trait:
+            drop(other.trait)
+            swapped = other.trait
     if trait.creation_pick is not None:
         drop(trait)
     if trait.pick_by == OFF:
@@ -298,6 +306,8 @@ def pin(
         raise restriction_error(pool, name, fits)
     place(trait, pick, STAFF)
     db.flush()
+    if swapped is not None and was is not None and was != pick and pool.kind == "picks":
+        swap_into(db, npc, category, swapped, was)
     fit(db, npc)
     audit.record(
         db,
@@ -308,6 +318,29 @@ def pin(
         name=f"{name}: {detail}" if detail else name,
         pick=pick,
     )
+
+
+def swap_into(
+    db: Session, npc: Character, category: str, trait: CharacterTrait, rating: int
+) -> None:
+    """Place a pick at `rating` by hand on `trait`, the one a move took the place of,
+    if it can take one there: a swap. Otherwise the fitting places it with the rest."""
+    rows = sheet_rows(db, npc)
+    pool = pools_for(rules_for(db, npc).creation_rules(), rows).get((category, rating))
+    row = next((r for r in rows if r.trait is trait), None)
+    if (
+        pool is None
+        or pool.kind != "picks"
+        or pool.remaining < 1
+        or row is None
+        or (trait.rating or 0) < rating
+        or trait.free_rating
+        or trait.granted_rating
+        or not Fitting(db, npc)(pool, row.definition.name, trait.detail)
+    ):
+        return
+    place(trait, rating, STAFF)
+    db.flush()
 
 
 def take_off(
