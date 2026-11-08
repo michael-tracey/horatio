@@ -37,6 +37,7 @@ import { RemembrancesCard } from "../nominations/Remembrances";
 import { StatusTitlesTab } from "./StatusTitlesTab";
 import { TroupesTab } from "./TroupesTab";
 import { XpTab } from "./XpTab";
+import { useSevenTaps } from "../jyhad/taps";
 
 export function CharacterPage() {
   const { characterId = "" } = useParams();
@@ -375,13 +376,18 @@ function Identity({ character, lead }: { character: CharacterOut; lead: string }
   });
   const catalogue = useCatalogue(character);
   const named = useClanName();
+  // Tapping the clan's name seven times opens the character's Jyhad card (#537).
+  const taps = useSevenTaps(character.id);
   const choices = (sheet.data?.traits ?? []).filter((t) => t.rating === null);
   return (
     <span className="flex flex-wrap items-center gap-x-2">
       <span className="capitalize">{lead}</span>
       {choices.map((t) => (
         <span key={t.id}>
-          · <span className="text-parchment/90">{named(choiceName(t))}</span>
+          ·{" "}
+          <span className="text-parchment/90" onClick={t.category === "clan" ? taps : undefined}>
+            {named(choiceName(t))}
+          </span>
           <ChoiceInfo
             choice={t}
             shown={named(choiceName(t))}

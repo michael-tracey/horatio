@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { RosterEntry, TitlesOut } from "../../api/types";
 import { ActionMenu, MenuItem } from "../../components/ActionMenu";
+import { cardPath, hasCard } from "../jyhad/taps";
 import { Avatar } from "../../components/Avatar";
 import { useClanName } from "../../components/ClanNames";
 import { LinesVeilsNote } from "../../components/LinesVeils";
@@ -415,6 +416,10 @@ function RosterRow({
         <ActionMenu label={`Actions for ${name}`} variant="ghost" menuClassName="w-48">
           <MenuItem onSelect={() => setOpen("titles")}>Titles…</MenuItem>
           {entry.home && entry.kind === "pc" && <MenuItem onSelect={() => setOpen("xp")}>Award XP…</MenuItem>}
+          {/* Its Jyhad card (#537), in a new tab: for #539's shared ⋯ when that lands. */}
+          {hasCard(entry) && (
+            <MenuItem onSelect={() => window.open(cardPath(entry.character_id, troupeId), "_blank", "noopener")}>Show Jyhad card</MenuItem>
+          )}
         </ActionMenu>
         {/* The dialogs sit here, as nothing but cells may sit in a row (Dialog sets its own text-left). */}
         <Dialog title={`${name}'s titles`} open={open === "titles"} onClose={close}>

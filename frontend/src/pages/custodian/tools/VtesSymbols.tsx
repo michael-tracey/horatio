@@ -15,8 +15,8 @@ type Matched = components["schemas"]["Matched"];
 const KINDS: Record<string, string> = { svg: "SVG", webp: "WebP", png: "PNG" };
 
 /**
- * The symbols of Vampire: The Eternal Struggle from KRCG (#534), fetched for later:
- * nothing shows them yet. Wherever something does, it credits KRCG and gives
+ * The symbols of Vampire: The Eternal Struggle from KRCG (#534), which characters'
+ * Jyhad cards show (#537). Wherever something does, it credits KRCG and gives
  * Paradox's notice, as the Dark Pack Agreement asks.
  */
 export function VtesSymbols() {
@@ -47,8 +47,8 @@ export function VtesSymbols() {
         <a href="https://static.krcg.org/" target="_blank" rel="noreferrer" className="text-gold hover:underline">
           KRCG
         </a>
-        , free to use under the Dark Pack Agreement. They're for later (cards of characters in the style of VTES, symbols beside clans and disciplines, Discord
-        emoji): nothing shows them yet.{" "}
+        , free to use under the Dark Pack Agreement. Characters' Jyhad cards show them (a hidden card in the style of VTES), and without them fall back to
+        three-letter abbreviations.{" "}
         <Link to={manualLink("custodian", "vtes-symbols")} className="text-gold hover:underline">
           How it works
         </Link>
@@ -89,7 +89,7 @@ export function VtesSymbols() {
         onClose={() => setRemoving(false)}
         onRemove={() => remove.mutate(undefined, { onSuccess: () => setRemoving(false) })}
       >
-        The symbols and fonts come off the server now. Nothing shows them yet, so nothing else changes.
+        The symbols and fonts come off the server now. Jyhad cards show three-letter abbreviations in their place.
       </RemoveDialog>
     </Card>
   );

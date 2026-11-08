@@ -38,6 +38,7 @@ const TroupePage = lazy(() => import("./pages/troupe/TroupePage").then((m) => ({
 const TroupeBadgesPage = lazy(() => import("./pages/BadgePage").then((m) => ({ default: m.TroupeBadgesPage })));
 const StaffBadgesPage = lazy(() => import("./pages/BadgePage").then((m) => ({ default: m.StaffBadgesPage })));
 const CharacterBadgePage = lazy(() => import("./pages/BadgePage").then((m) => ({ default: m.CharacterBadgePage })));
+const JyhadCardPage = lazy(() => import("./pages/jyhad/JyhadCardPage").then((m) => ({ default: m.JyhadCardPage })));
 const TroupePrintPage = lazy(() => import("./pages/PrintPage").then((m) => ({ default: m.TroupePrintPage })));
 const WhosWhoPrintPage = lazy(() => import("./pages/WhosWhoPrintPage").then((m) => ({ default: m.WhosWhoPrintPage })));
 
@@ -91,6 +92,8 @@ function AppRoutes() {
         <Route path="/print/troupes/:troupeId/staff-badges" element={<StaffBadgesPage />} />
         <Route path="/print/troupes/:troupeId/whos-who" element={<ForTroupe><WhosWhoPrintPage /></ForTroupe>} />
         <Route path="/print/characters/:characterId/badge" element={<ForCharacter><CharacterBadgePage /></ForCharacter>} />
+        {/* Found by tapping the clan symbol seven times (#537): no link leads here for a player. */}
+        <Route path="/print/characters/:characterId/jyhad" element={<ForCharacter><JyhadCardPage /></ForCharacter>} />
         <Route path="/play/characters/:characterId" element={<ForCharacter><PlayPage /></ForCharacter>} />
         <Route path="/play/troupes/:troupeId/scenes" element={<ForTroupe><ScenesPage /></ForTroupe>} />
         <Route path="/play/troupes/:troupeId/scenes/:sceneId" element={<ForTroupe><ScenePage /></ForTroupe>} />

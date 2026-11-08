@@ -4494,6 +4494,41 @@
         "title": "CalendarLinks",
         "type": "object"
       },
+      "CardDisciplineOut": {
+        "properties": {
+          "abbreviation": {
+            "title": "Abbreviation",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "superior": {
+            "title": "Superior",
+            "type": "boolean"
+          },
+          "symbol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Symbol"
+          }
+        },
+        "required": [
+          "name",
+          "superior",
+          "symbol",
+          "abbreviation"
+        ],
+        "title": "CardDisciplineOut",
+        "type": "object"
+      },
       "CardIn": {
         "properties": {
           "descriptor": {
@@ -4523,6 +4558,26 @@
           "resonance"
         ],
         "title": "CardIn",
+        "type": "object"
+      },
+      "CardTextIn": {
+        "properties": {
+          "flavour": {
+            "maxLength": 120,
+            "title": "Flavour",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 300,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "flavour"
+        ],
+        "title": "CardTextIn",
         "type": "object"
       },
       "CarriedOut": {
@@ -19028,6 +19083,120 @@
         "type": "object"
       },
       "JsonValue": {},
+      "JyhadCardOut": {
+        "properties": {
+          "can_write": {
+            "title": "Can Write",
+            "type": "boolean"
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "clan_symbol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan Symbol"
+          },
+          "disciplines": {
+            "items": {
+              "$ref": "#/components/schemas/CardDisciplineOut"
+            },
+            "title": "Disciplines",
+            "type": "array"
+          },
+          "flavour": {
+            "title": "Flavour",
+            "type": "string"
+          },
+          "missing": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missing"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture"
+          },
+          "sect_line": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect Line"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "missing",
+          "name",
+          "clan",
+          "clan_symbol",
+          "sect_line",
+          "capacity",
+          "disciplines",
+          "picture",
+          "text",
+          "flavour",
+          "can_write"
+        ],
+        "title": "JyhadCardOut",
+        "type": "object"
+      },
       "KeptCard": {
         "description": "One character in the troupe's scenes, with what its card shows.",
         "properties": {
@@ -51746,6 +51915,103 @@
         "summary": "Finish Entry",
         "tags": [
           "influence history"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/jyhad-card": {
+      "get": {
+        "operationId": "read_card_api_characters__character_id__jyhad_card_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JyhadCardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Card",
+        "tags": [
+          "jyhad card"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/jyhad-card/text": {
+      "put": {
+        "description": "The card's text and italic flavour line: its player's to write, or staff's\nfor an NPC. Nothing is suggested; empty leaves the box empty.",
+        "operationId": "write_card_text_api_characters__character_id__jyhad_card_text_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CardTextIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JyhadCardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Write Card Text",
+        "tags": [
+          "jyhad card"
         ]
       }
     },
