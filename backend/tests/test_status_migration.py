@@ -117,13 +117,13 @@ def test_status_traits_move_to_held_status_or_go(engine: Engine, alembic_config:
 
 
 def test_marks_on_bans_on_clans_are_kept_by_key(engine: Engine, alembic_config: Config) -> None:
-    """Migration 0156 (issue #553): a staff mark on a ban on clans moves from the ban's
+    """Migration 0157 (issue #553): a staff mark on a ban on clans moves from the ban's
     words, which now name the troupe's clans, to its key; any other stays."""
     old_pillar = (
         "Not Embraced into a pillar clan (Assamite, Brujah, Malkavian, Nosferatu, Toreador,"
         " Tremere, Ventrue); the Gangrel are not one again yet."
     )
-    command.downgrade(alembic_config, "0155")
+    command.downgrade(alembic_config, "0156")
     user, character = uuid.uuid4(), uuid.uuid4()
 
     def marks() -> list[tuple[str, str]]:
@@ -166,13 +166,13 @@ def test_marks_on_bans_on_clans_are_kept_by_key(engine: Engine, alembic_config: 
                     {"character": character, "sect": sect, "ban": ban, "user": user},
                 )
 
-        command.upgrade(alembic_config, "0156")
+        command.upgrade(alembic_config, "0157")
         assert sorted(marks()) == [
             ("Camarilla", "Has committed diablerie."),
             ("Camarilla", "pillar_clans"),
             ("Sabbat", "greater_antitribu"),
         ]
-        command.downgrade(alembic_config, "0155")
+        command.downgrade(alembic_config, "0156")
         assert sorted(marks()) == [
             ("Camarilla", "Has committed diablerie."),
             ("Camarilla", old_pillar),

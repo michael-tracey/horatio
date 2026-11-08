@@ -2,8 +2,8 @@
 the Camarilla's pillar clans among them, and staff marks on those bans are kept by
 the ban's key, not its words, which now name the troupe's clans (issue #553)
 
-Revision ID: 0156
-Revises: 0155
+Revision ID: 0157
+Revises: 0156
 Create Date: 2026-11-08 18:00:00.000000
 """
 
@@ -13,8 +13,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects.postgresql import JSONB
 
-revision: str = "0156"
-down_revision: str | None = "0155"
+revision: str = "0157"
+down_revision: str | None = "0156"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
