@@ -6310,6 +6310,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tools/dark-pack": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dark Pack Status
+         * @description The Dark Pack resources on the server, and any fetch under way.
+         */
+        get: operations["dark_pack_status_api_tools_dark_pack_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove Dark Pack
+         * @description Take the Dark Pack resources off the server. The VTES symbols stay.
+         */
+        delete: operations["remove_dark_pack_api_tools_dark_pack_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tools/dark-pack/fetch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fetch Dark Pack
+         * @description Fetch Paradox's kit from the address and import it, in the background. What
+         *     was imported before stays until the new import is whole.
+         */
+        post: operations["fetch_dark_pack_api_tools_dark_pack_fetch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tools/dark-pack/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Dark Pack
+         * @description Put in place what `python -m horatio.dark_pack` wrote on another computer.
+         */
+        post: operations["upload_dark_pack_api_tools_dark_pack_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tools/npc-picks/{troupe_id}": {
         parameters: {
             query?: never;
@@ -6329,6 +6394,51 @@ export interface paths {
          *     what staff set by hand. Fitting again changes nothing.
          */
         post: operations["fit_npc_picks_api_tools_npc_picks__troupe_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tools/vtes-symbols": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Vtes Symbols Status
+         * @description The VTES symbols on the server, and any fetch under way.
+         */
+        get: operations["vtes_symbols_status_api_tools_vtes_symbols_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove Vtes Symbols
+         * @description Take the VTES symbols off the server.
+         */
+        delete: operations["remove_vtes_symbols_api_tools_vtes_symbols_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tools/vtes-symbols/fetch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fetch Vtes Symbols
+         * @description Fetch the symbols and fonts from the address (KRCG's), in the background,
+         *     replacing the last fetch once this one is whole.
+         */
+        post: operations["fetch_vtes_symbols_api_tools_vtes_symbols_fetch_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9766,6 +9876,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/vtes-symbols/fonts/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Font */
+        get: operations["font_api_vtes_symbols_fonts__name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vtes-symbols/{kind}/{path}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Symbol
+         * @description A symbol, as `/api/vtes-symbols/svg/disc/inf/aus.svg`.
+         */
+        get: operations["symbol_api_vtes_symbols__kind___path__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/yorick-imports": {
         parameters: {
             query?: never;
@@ -11532,6 +11679,19 @@ export interface components {
             /**
              * File
              * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
+             */
+            file: string;
+        };
+        /** Body_upload_dark_pack_api_tools_dark_pack_upload_post */
+        Body_upload_dark_pack_api_tools_dark_pack_upload_post: {
+            /**
+             * Accept Licence
+             * @default false
+             */
+            accept_licence: boolean;
+            /**
+             * File
+             * @description The Dark Pack folder an import wrote, zipped.
              */
             file: string;
         };
@@ -13445,6 +13605,38 @@ export interface components {
             clans: string[];
             /** Logo */
             logo: boolean;
+        };
+        /** DarkPackTool */
+        DarkPackTool: {
+            /** Address */
+            address: string | null;
+            /** Agreement */
+            agreement: string;
+            /** Clans */
+            clans: string[];
+            /** Configured */
+            configured: boolean;
+            /** Default Address */
+            default_address: string;
+            /** Error */
+            error: string | null;
+            /** Error At */
+            error_at: string | null;
+            /** How */
+            how: string | null;
+            /** Imported */
+            imported: boolean;
+            /** Imported At */
+            imported_at: string | null;
+            job: components["schemas"]["FetchJob"] | null;
+            /** Logo */
+            logo: boolean;
+            /** Missing */
+            missing: string[];
+            /** Sources */
+            sources: string[];
+            /** Writable */
+            writable: boolean;
         };
         /** DealIn */
         DealIn: {
@@ -15367,6 +15559,29 @@ export interface components {
              * @default false
              */
             territories: boolean;
+        };
+        /** FetchIn */
+        FetchIn: {
+            /** Accept Licence */
+            accept_licence: boolean;
+            /** Address */
+            address: string;
+        };
+        /** FetchJob */
+        FetchJob: {
+            /** By */
+            by: string;
+            /** Done */
+            done: number;
+            /** Stage */
+            stage: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Total */
+            total: number | null;
         };
         /** FieldOut */
         FieldOut: {
@@ -17589,6 +17804,13 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** LargeSymbol */
+        LargeSymbol: {
+            /** Path */
+            path: string;
+            /** Size */
+            size: number;
+        };
         /** LearnIn */
         LearnIn: {
             /**
@@ -18683,6 +18905,13 @@ export interface components {
             overwritable: boolean;
             /** Whose */
             whose: string;
+        };
+        /** Matched */
+        Matched: {
+            /** Name */
+            name: string;
+            /** Symbol */
+            symbol: string | null;
         };
         /** Me */
         Me: {
@@ -25427,6 +25656,19 @@ export interface components {
              */
             value: number;
         };
+        /** SymbolCount */
+        SymbolCount: {
+            /** Clans */
+            clans: number;
+            /** Icons */
+            icons: number;
+            /** Inferior */
+            inferior: number;
+            /** Kind */
+            kind: string;
+            /** Superior */
+            superior: number;
+        };
         /** SystemOut */
         SystemOut: {
             /** Built At */
@@ -27023,6 +27265,38 @@ export interface components {
             last_drank_at: string | null;
             /** Pool */
             pool: number;
+        };
+        /** VtesSymbolsTool */
+        VtesSymbolsTool: {
+            /** Address */
+            address: string | null;
+            /** Agreement */
+            agreement: string;
+            /** Clans */
+            clans: components["schemas"]["Matched"][];
+            /** Configured */
+            configured: boolean;
+            /** Counts */
+            counts: components["schemas"]["SymbolCount"][];
+            /** Default Address */
+            default_address: string;
+            /** Disciplines */
+            disciplines: components["schemas"]["Matched"][];
+            /** Error */
+            error: string | null;
+            /** Error At */
+            error_at: string | null;
+            /** Fetched */
+            fetched: boolean;
+            /** Fetched At */
+            fetched_at: string | null;
+            /** Fonts */
+            fonts: string[];
+            job: components["schemas"]["FetchJob"] | null;
+            /** Large Png */
+            large_png: components["schemas"]["LargeSymbol"][];
+            /** Writable */
+            writable: boolean;
         };
         /** WaitingLine */
         WaitingLine: {
@@ -40085,6 +40359,112 @@ export interface operations {
             };
         };
     };
+    dark_pack_status_api_tools_dark_pack_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DarkPackTool"];
+                };
+            };
+        };
+    };
+    remove_dark_pack_api_tools_dark_pack_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DarkPackTool"];
+                };
+            };
+        };
+    };
+    fetch_dark_pack_api_tools_dark_pack_fetch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FetchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DarkPackTool"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_dark_pack_api_tools_dark_pack_upload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_dark_pack_api_tools_dark_pack_upload_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DarkPackTool"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     preview_npc_picks_api_tools_npc_picks__troupe_id__get: {
         parameters: {
             query?: never;
@@ -40134,6 +40514,79 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NpcPicksFit"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    vtes_symbols_status_api_tools_vtes_symbols_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VtesSymbolsTool"];
+                };
+            };
+        };
+    };
+    remove_vtes_symbols_api_tools_vtes_symbols_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VtesSymbolsTool"];
+                };
+            };
+        };
+    };
+    fetch_vtes_symbols_api_tools_vtes_symbols_fetch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FetchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VtesSymbolsTool"];
                 };
             };
             /** @description Validation Error */
@@ -47523,6 +47976,65 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    font_api_vtes_symbols_fonts__name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    symbol_api_vtes_symbols__kind___path__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };

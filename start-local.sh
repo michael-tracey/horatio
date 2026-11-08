@@ -89,7 +89,8 @@ if [[ -z "${HORATIO_UPLOAD_DIR:-}" ]] && ! grep -qs '^HORATIO_UPLOAD_DIR=' .env;
   mkdir -p "$HORATIO_UPLOAD_DIR"
 fi
 
-# Paradox's Dark Pack resources, if imported into dark-pack/ (see its README).
+# Paradox's Dark Pack resources and the VTES symbols, imported into dark-pack/ by the
+# command or fetched in Custodian › Tools (see its README).
 if [[ -z "${HORATIO_DARK_PACK_DIR:-}" ]] && ! grep -qs '^HORATIO_DARK_PACK_DIR=' .env; then
   export HORATIO_DARK_PACK_DIR="$ROOT/dark-pack"
 fi
