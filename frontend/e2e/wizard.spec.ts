@@ -65,7 +65,8 @@ test("Stolen Potential takes away the focus in the attribute it names, and the c
   await expect(mental).toContainText("Because of Stolen Potential (Merits & flaws).");
   await expect(mental.getByRole("combobox")).toHaveCount(0);
   await expect.poll(pickedAt(p, "Social Focus", 1)).toEqual(["Charisma"]);
-  // The flaw is offered here too, taken.
+  // The flaw is offered here too, taken: its fold below the picks is open by itself (#545).
+  await expect(p.locator("details").filter({ hasText: "Optional: focuses from merits and flaws" })).toHaveAttribute("open", "");
   await expect(p.getByRole("region", { name: "From merits and flaws" }).getByRole("switch", { name: /^Stolen Potential/ })).toBeChecked();
 
   await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Review/ }).click();
@@ -121,6 +122,9 @@ test("Versatile asks for its extra focus on Focuses, and a pick on the focus it 
   const id = await creatingVampire(p, "Many Hands", "Brujah", [], ATTRIBUTES_AND_FOCUSES);
   await p.goto(`/characters/${id}/create/focuses`);
   const fromMerits = p.getByRole("region", { name: "From merits" });
+  // Folded below the picks until opened (#545).
+  await expect(fromMerits).toBeHidden();
+  await p.getByText("Optional: focuses from merits and flaws (costs merit points / gives flaw points)").click();
   const versatile = fromMerits.getByRole("switch", { name: /^Versatile/ });
   // It cannot be taken until it is told which focus.
   await expect(versatile).toBeDisabled();
@@ -149,12 +153,18 @@ test("Versatile asks for its extra focus on Focuses, and a pick on the focus it 
   await p.goto(`/characters/${id}/create/merits`);
   await expect(p.getByRole("checkbox", { name: /^Versatile/ })).toBeChecked();
   await expect(p.getByText("3 of 7 points")).toBeVisible();
+
+  // Back on Focuses, the fold is open by itself, as something in it is taken (#545).
+  await p.goto(`/characters/${id}/create/focuses`);
+  await expect(versatile).toBeVisible();
+  await expect(versatile).toBeChecked();
 });
 
 test("Extrasensory Perceptions, taken from Focuses, shows Perception as held there", async ({ browser }) => {
   const { page: p } = await person(browser, "wf-senses");
   const id = await creatingVampire(p, "Sharp Nose", "Nosferatu: Creeps", [], ATTRIBUTES_AND_FOCUSES);
   await p.goto(`/characters/${id}/create/focuses`);
+  await p.getByText("Optional: focuses from merits and flaws").click();
   const fromMerits = p.getByRole("region", { name: "From merits" });
   await fromMerits.getByRole("switch", { name: /^Extrasensory Perceptions/ }).click();
   await expect(fromMerits.getByRole("switch", { name: /^Extrasensory Perceptions/ })).toBeChecked();
@@ -171,6 +181,7 @@ test("a supplement's merit names its book, and a clan flaw says what it does (#3
   const { page: p } = await person(browser, "wf-book-pages");
   const id = await creatingVampire(p, "Old Tunnels", "Nosferatu: Creeps", [], ATTRIBUTES_AND_FOCUSES);
   await p.goto(`/characters/${id}/create/focuses`);
+  await p.getByText("Optional: focuses from merits and flaws").click();
   const senses = p.getByRole("region", { name: "From merits" }).locator("label").filter({ hasText: "Extrasensory Perceptions" });
   await expect(senses).toContainText("(1-point merit, Vol. 2, p. 49)");
 
@@ -190,6 +201,7 @@ test("Personal Cult frees a Herd pick, which goes elsewhere, and the character f
     disciplines: [["Obfuscate", 2], ["Presence", 1], ["Serpentis", 1]],
   });
   await p.goto(`/characters/${id}/create/backgrounds`);
+  await p.getByText("Optional: backgrounds from merits and flaws").click();
   const fromMerits = p.getByRole("region", { name: "From merits and flaws" });
   await fromMerits.getByLabel("Personal Cult: which?").selectOption("Herd");
   await fromMerits.getByRole("switch", { name: /^Personal Cult/ }).click();
@@ -234,6 +246,7 @@ test("Seasoned Traveler frees a pick on Survival, which goes to another skill", 
   const skills: [string, number][] = [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Survival", 1], ["Melee", 1]];
   const id = await creatingVampire(p, "Road Dog", "Gangrel", [], { ...ATTRIBUTES_AND_FOCUSES, skills });
   await p.goto(`/characters/${id}/create/skills`);
+  await p.getByText("Optional: skills from merits (costs merit points)").click();
   const fromMerits = p.getByRole("region", { name: "From merits" });
   await fromMerits.getByLabel("Seasoned Traveler: which?").selectOption("Survival");
   await fromMerits.getByRole("switch", { name: /^Seasoned Traveler/ }).click();
@@ -327,6 +340,7 @@ test("Lesser Generation on Backgrounds follows the Generation picked, and bars t
   const { page: p } = await person(browser, "wf-lesser");
   const id = await creatingVampire(p, "Hand Me Down", "Brujah", [], { backgrounds: [["Fame", 3], ["Resources", 1], ["Generation", 2]] });
   await p.goto(`/characters/${id}/create/backgrounds`);
+  await p.getByText("Optional: backgrounds from merits and flaws").click();
   const fromMerits = p.getByRole("region", { name: "From merits and flaws" });
   // What each one is, from the catalogue, and why one is refused for the Generation picked.
   await expect(fromMerits.getByRole("switch", { name: /^Lesser Generation 1/ })).toBeEnabled();
@@ -366,6 +380,7 @@ test("Thin Blooded on Backgrounds bars Generation above 1, and a Caitiff cannot 
   await expect((await generationAt(2)).getByRole("option")).not.toHaveAttribute("aria-disabled");
   await p.keyboard.press("Escape");
 
+  await p.getByText("Optional: backgrounds from merits and flaws").click();
   const fromMerits = p.getByRole("region", { name: "From merits and flaws" });
   await fromMerits.getByRole("switch", { name: /^Thin Blooded/ }).click();
   await expect(fromMerits.getByRole("switch", { name: /^Thin Blooded/ })).toBeChecked();
@@ -591,6 +606,28 @@ test("a new player picks the clan first and sees its disciplines and weakness, a
   await expect(left).toContainText("Attributes at 7: 1 left. Go to Attributes");
   await left.getByRole("link", { name: "Go to Attributes" }).first().click();
   await expect(p.getByRole("heading", { name: "Attributes", exact: true })).toBeVisible();
+});
+
+test("each pick step has its picks first, and the merits and flaws that change it folded below (#545)", async ({ browser }) => {
+  const { page: p } = await person(browser, "picks-first");
+  const id = await creatingVampire(p, "Picks On Top", "Brujah", [], { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]] });
+  const folds = [
+    ["focuses", "Optional: focuses from merits and flaws (costs merit points / gives flaw points)"],
+    ["skills", "Optional: skills from merits (costs merit points)"],
+    ["backgrounds", "Optional: backgrounds from merits and flaws (costs merit points / gives flaw points)"],
+    ["disciplines", "Optional: disciplines from merits and flaws (costs merit points / gives flaw points)"],
+  ];
+  for (const [step, fold] of folds) {
+    await p.goto(`/characters/${id}/create/${step}`);
+    const summary = p.getByText(fold!, { exact: true });
+    await expect(summary).toBeVisible();
+    // Nothing in it is taken, so it is folded, under the picks.
+    await expect(p.getByRole("region", { name: "From merits" })).toBeHidden();
+    const picks = p.locator("main fieldset").first();
+    await expect(picks).toBeVisible();
+    expect((await picks.boundingBox())!.y).toBeLessThan((await summary.boundingBox())!.y);
+    await p.screenshot(shots(`creation-${step}`));
+  }
 });
 
 test("each step keeps its picks as they are made, through the step list and a reload, and Finish creation asks first (#357)", async ({ browser }) => {
