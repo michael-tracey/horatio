@@ -56,10 +56,8 @@ sect status.
 
 A title's `aliases` are other names for the same office (a Templar is also called
 a Paladin): each is a title of its own, giving the same as the title it names
-(`alias_of`), ranked beside it, and a `unique` title's names are one office, held
-by one character between them. A `unique` title is held by only one character in a
-troupe at a time (a Prince, a Sheriff); any other may be held by several (a
-Primogen, an Archon).
+(`alias_of`), ranked beside it. Its names are one office: a troupe that holds the
+title to one holder at a time (horatio.titles) holds them all to one between them.
 
 The caps (p. 313): a character carries into a game the status of one abiding
 source (its titles and its social age are each a source), all its innate and
@@ -185,8 +183,9 @@ class TitleData:
     # Its place at court, highest first: the order the rules data describes the
     # titles in (horatio.whos_who). None for a title that is only a name.
     rank: int | None = None
-    # Only one character in a troupe holds it at a time (a Prince): a player cannot
-    # choose it while another character holds it (horatio.titles).
+    # Only one character in a troupe holds it at a time: never so in the rules data,
+    # but a troupe's house rule (horatio.titles.title_data). A player cannot choose it
+    # while another character holds it.
     unique: bool = False
     # A clan's title (a Tremere Lord): it has no sect, and gives no sect status.
     clan: str | None = None
@@ -367,7 +366,6 @@ def title_from_dict(raw: Mapping[str, Any]) -> TitleData:
         ),
         page=raw.get("page"),
         rank=raw.get("rank"),
-        unique=raw.get("unique", False),
         clan=raw.get("clan"),
         aliases=tuple(raw.get("aliases", [])),
         gives_none=raw.get("gives_none", ""),
