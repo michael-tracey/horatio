@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { closeContextsAfterEach, run, PASSWORD, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab } from "./support";
@@ -620,6 +621,76 @@ test("the custodian merges two accounts of one person: the characters and staff 
   await expect(
     lead.page.getByText(`The custodian merged @${twice.handle} into @${real.handle}, the same person, moving Hester Vane, its narrator role: Signed up with Google and with email`),
   ).toBeVisible();
+});
+
+/** Takes the fitted creation picks off an NPC, as an NPC built before #527 had none. */
+function asBuiltBeforeFitting(npcId: string) {
+  const script = [
+    "import uuid",
+    "from horatio import npc_picks",
+    "from horatio.db import get_sessionmaker",
+    "from horatio.models import Character",
+    "with get_sessionmaker()() as db, db.begin():",
+    `    npc_picks.unfit(db, db.get_one(Character, uuid.UUID("${npcId}")))`,
+  ].join("\n");
+  execFileSync("uv", ["run", "python", "-c", script], { cwd: "../backend", stdio: "ignore" });
+}
+
+test("the custodian previews fitting a troupe's NPC creation picks, then fits them", async ({ browser }) => {
+  const custodian = await person(browser, "fitpicks-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "fitpicks-lead");
+  const troupeName = `Court of Fitted Picks ${run}`;
+  const lucien = `Lucien Fitted ${run}`;
+  const stan = `Stan Stock ${run}`;
+  const c = custodian.page;
+  await c.reload();
+  const send = async (p: Page, method: "POST" | "PUT", url: string, data: object) => {
+    const response = await p.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const troupe = await send(c, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  // An NPC built quickly before its picks were fitted (#527), and a Stock NPC.
+  const npc = await send(lead.page, "POST", `/api/troupes/${troupe.id}/npcs`, { name: lucien, wizard: false });
+  for (const [category, name, rating] of [
+    ["attributes", "Physical", 5],
+    ["skills", "Brawl", 5],
+    ["disciplines", "Celerity", 2],
+  ]) {
+    await send(lead.page, "PUT", `/api/characters/${npc.id}/npc/ratings`, { category, name, rating });
+  }
+  asBuiltBeforeFitting(npc.id);
+  await send(lead.page, "POST", `/api/troupes/${troupe.id}/npcs`, { name: stan, npc_kind: "mortal", npc_form: "stock" });
+
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "Tools", exact: true }).click();
+  const tool = c.locator("section").filter({ has: c.getByRole("heading", { name: "Fit NPC creation picks" }) });
+  await tool.getByLabel("Troupe").selectOption({ label: troupeName });
+  await tool.getByRole("button", { name: "Preview" }).click();
+
+  // The preview: Lucien's every dot is priced as bought until his picks are fitted.
+  const preview = tool.getByRole("region", { name: "Preview" });
+  await expect(preview.getByText(`Of ${troupeName}'s 1 NPC built without the wizard, 1 would change. Nothing has changed yet.`)).toBeVisible();
+  const toFit = preview.getByRole("table", { name: "NPCs to fit" });
+  await expect(toFit.getByRole("row", { name: lucien })).toContainText("42 → 17");
+  await expect(toFit.getByRole("row", { name: /^Total/ })).toContainText("42 → 17");
+  await expect(preview.getByRole("listitem").filter({ hasText: stan })).toContainText("A Stock NPC: it has no sheet to fit picks to.");
+
+  await tool.getByRole("button", { name: "Fit 1 NPC" }).click();
+  await expect(tool.getByRole("status")).toHaveText(`Fitted. Of ${troupeName}'s 1 NPC built without the wizard, 1 changed.`);
+  const log = await (await c.request.get(`/api/troupes/${troupe.id}/log`)).json();
+  expect(log.map((e: { message: string }) => e.message)).toContain(
+    "fitpicks-cust fitted the creation picks of the troupe's NPCs built without the wizard: 1 of 1 changed.",
+  );
+
+  // Fitting again would change nothing.
+  await tool.getByRole("button", { name: "Preview" }).click();
+  await expect(preview.getByText(`Of ${troupeName}'s 1 NPC built without the wizard, 0 would change. Nothing has changed yet.`)).toBeVisible();
+  const again = preview.getByRole("row", { name: lucien });
+  await expect(again).toContainText("17 → 17");
+  await expect(again).toContainText("Fitted already");
+  await expect(tool.getByRole("button", { name: "Fit 0 NPCs" })).toBeDisabled();
 });
 
 test("the custodian imports a troupe's characters from Yorick, matching a line and overwriting an NPC of the same name", async ({ browser }) => {
