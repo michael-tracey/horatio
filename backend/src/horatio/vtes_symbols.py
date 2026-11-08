@@ -1,6 +1,6 @@
 """The symbols of *Vampire: The Eternal Struggle* (#534), fetched from KRCG
-(https://static.krcg.org/) for later use: mock VTES-style cards of characters, clan
-and discipline symbols elsewhere, and Discord emoji. Nothing shows them yet.
+(https://static.krcg.org/): characters' Jyhad cards show them (horatio.jyhad_card), and
+later perhaps clan and discipline symbols elsewhere, and Discord emoji.
 
 KRCG's symbols are free to use under the Dark Pack Agreement, so, like the Dark
 Pack's (horatio.dark_pack), Horatio never ships them: the custodian fetches them

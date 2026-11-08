@@ -38,6 +38,7 @@ const LABELS: Record<StaffAction, string> = {
   give: "Give to a player…",
   sheet: "Print sheet",
   badge: "Print badge",
+  jyhad: "Show Jyhad card",
 };
 
 /**
@@ -53,7 +54,8 @@ export function StaffActions({ troupeId, entry, staffing }: { troupeId: string; 
   const { doing, printing } = staffActions(entry, staffing);
   // Opened in a new tab, headed for this troupe, so the list stays as it was.
   const print = (path: string) => window.open(`/print/characters/${entry.character_id}${path}?troupe=${troupeId}`, "_blank", "noopener");
-  const choose = (action: StaffAction) => (action === "sheet" ? print("") : action === "badge" ? print("/badge") : setOpen(action));
+  const printed: Partial<Record<StaffAction, string>> = { sheet: "", badge: "/badge", jyhad: "/jyhad" };
+  const choose = (action: StaffAction) => (printed[action] !== undefined ? print(printed[action]) : setOpen(action));
   const items = (list: StaffAction[]) =>
     list.map((action) => (
       <MenuItem key={action} onSelect={() => choose(action)}>

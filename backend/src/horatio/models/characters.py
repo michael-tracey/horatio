@@ -62,6 +62,10 @@ class Character(Imported, Record):
     # What others can see or sense about the character that the rules data does not
     # cover, written by staff, for the character's game badge.
     visible_note: Mapped[str] = mapped_column(default="", server_default="")
+    # Its Jyhad card's text and italic flavour line (horatio.jyhad_card), written by
+    # its player, or staff for an NPC. Empty for none.
+    card_text: Mapped[str] = mapped_column(default="", server_default="")
+    card_flavour: Mapped[str] = mapped_column(default="", server_default="")
     # Its last downtime's answer was half Blood: its next Play View game starts
     # at half (horatio.feeding, horatio.play). Cleared when that game starts.
     half_blood_next_game: Mapped[bool] = mapped_column(default=False, server_default="false")

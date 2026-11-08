@@ -1823,6 +1823,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/jyhad-card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Card */
+        get: operations["read_card_api_characters__character_id__jyhad_card_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/jyhad-card/text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Write Card Text
+         * @description The card's text and italic flavour line: its player's to write, or staff's
+         *     for an NPC. Nothing is suggested; empty leaves the box empty.
+         */
+        put: operations["write_card_text_api_characters__character_id__jyhad_card_text_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/leaving": {
         parameters: {
             query?: never;
@@ -11984,6 +12022,17 @@ export interface components {
             personal: components["schemas"]["CalendarLink"] | null;
             troupe: components["schemas"]["CalendarLink"] | null;
         };
+        /** CardDisciplineOut */
+        CardDisciplineOut: {
+            /** Abbreviation */
+            abbreviation: string;
+            /** Name */
+            name: string;
+            /** Superior */
+            superior: boolean;
+            /** Symbol */
+            symbol: string | null;
+        };
         /** CardIn */
         CardIn: {
             /**
@@ -12001,6 +12050,13 @@ export interface components {
              * @enum {string}
              */
             resonance: "choleric" | "melancholic" | "phlegmatic" | "sanguine";
+        };
+        /** CardTextIn */
+        CardTextIn: {
+            /** Flavour */
+            flavour: string;
+            /** Text */
+            text: string;
         };
         /** CarriedOut */
         CarriedOut: {
@@ -17541,6 +17597,36 @@ export interface components {
             total: number;
         };
         JsonValue: unknown;
+        /** JyhadCardOut */
+        JyhadCardOut: {
+            /** Can Write */
+            can_write: boolean;
+            /** Capacity */
+            capacity: number | null;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Clan */
+            clan: string | null;
+            /** Clan Symbol */
+            clan_symbol: string | null;
+            /** Disciplines */
+            disciplines: components["schemas"]["CardDisciplineOut"][];
+            /** Flavour */
+            flavour: string;
+            /** Missing */
+            missing: string | null;
+            /** Name */
+            name: string;
+            /** Picture */
+            picture: string | null;
+            /** Sect Line */
+            sect_line: string | null;
+            /** Text */
+            text: string;
+        };
         /**
          * KeptCard
          * @description One character in the troupe's scenes, with what its card shows.
@@ -31745,6 +31831,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HistoryEntryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_card_api_characters__character_id__jyhad_card_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JyhadCardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_card_text_api_characters__character_id__jyhad_card_text_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardTextIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JyhadCardOut"];
                 };
             };
             /** @description Validation Error */

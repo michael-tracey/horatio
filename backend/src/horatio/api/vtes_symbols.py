@@ -1,5 +1,5 @@
 """The VTES symbols this server's custodian fetched from KRCG (horatio.vtes_symbols),
-for anyone signed in. Nothing shows them yet; wherever something does, it credits
+for anyone signed in. Characters' Jyhad cards show them; wherever something does, it credits
 KRCG and gives Paradox's notice."""
 
 from fastapi import APIRouter, HTTPException, status
