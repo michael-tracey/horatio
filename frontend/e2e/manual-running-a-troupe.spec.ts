@@ -249,7 +249,7 @@ test("screenshots for Running a troupe", async ({ browser }) => {
   await expect(l.getByText("2 of 3 submitted")).toBeVisible();
   await shot(l, "cycle", undefined, 900);
   await l.goto(`/cycles/${cycle.id}/responses`);
-  await expect(l.getByRole("region", { name: "Ezra Vale" })).toBeVisible();
+  await expect(l.getByRole("region", { name: "Ezra Vale", exact: true })).toBeVisible();
   await shot(l, "responses", undefined, 1100);
 
   // Game night: check-in open, two characters in.
@@ -272,4 +272,56 @@ test("screenshots for Running a troupe", async ({ browser }) => {
   const chart = card(l, "Game XP chart");
   await chart.getByRole("group", { name: "Start from a preset" }).getByRole("button").nth(1).click();
   await shot(l, "game-xp-chart", chart, 1300);
+
+  // Customise › Connectors with Discord connected. This server has no Discord, so the
+  // page is shown a connected one: Celestine has her channel, and Ezra's and Wren's
+  // names suggest theirs.
+  const discordSettings = { guild_id: "111", guild_name: "Court of Ashes", channels: { [celestine]: "201" }, test_channel: "205" };
+  await l.route(`**/api/troupes/${troupeId}/connectors`, async (route) => {
+    const real: { kind: string }[] = await (await route.fetch()).json();
+    const on = (c: { kind: string }) => (c.kind === "discord" ? { ...c, unavailable: null, needs: [], enabled: true, mode: "alert", test_mode: true, settings: discordSettings } : c);
+    await route.fulfill({ json: real.map(on) });
+  });
+  await l.route(`**/api/troupes/${troupeId}/discord`, (route) =>
+    route.fulfill({
+      json: {
+        guild_id: "111",
+        guild_name: "Court of Ashes",
+        channels: [
+          { id: "201", name: "celestine-marrow", category: "Downtimes", private: true },
+          { id: "202", name: "ezra-vale", category: "Downtimes", private: true },
+          { id: "203", name: "wren", category: "Downtimes", private: true },
+          { id: "204", name: "general", category: null, private: false },
+          { id: "205", name: "st-test", category: "Staff", private: true },
+        ],
+        characters: [
+          { id: celestine, name: "Celestine Marrow" },
+          { id: ezra, name: "Ezra Vale" },
+          { id: wren, name: "Wren Halloway" },
+        ],
+        suggestions: { [celestine]: "201", [ezra]: "202", [wren]: "203" },
+      },
+    }),
+  );
+  await l.goto(`${base}/connectors`);
+  await expect(l.getByText("Suggested: #ezra-vale")).toBeVisible();
+  await shot(l, "connectors-discord", card(l, "Discord"), 1300);
+
+  // Delivering with Discord on: Ezra has no channel yet.
+  for (const r of responses) await send(l, "PUT", `/api/responses/${r.id}`, { body: "The night passes quietly." });
+  await send(l, "POST", `/api/cycles/${cycle.id}/close`, { add_to_ceiling: false });
+  await l.route(`**/api/cycles/${cycle.id}/deliveries`, async (route) => {
+    const real = await (await route.fetch()).json();
+    real.channels = ["horatio", "discord"];
+    real.participants = real.participants.map((p: { character_id: string }) => ({ ...p, unreachable: p.character_id === celestine ? [] : ["discord"] }));
+    await route.fulfill({ json: real });
+  });
+  await l.goto(`/cycles/${cycle.id}/delivery`);
+  const deliverCard = card(l, "Deliver results");
+  await expect(deliverCard.getByText(/ of 2 downtimes have every response written\.$/)).toBeVisible();
+  const partly = deliverCard.getByLabel(/^Also deliver the \d partly written/);
+  if (await partly.isVisible()) await partly.check();
+  await deliverCard.getByRole("button", { name: /^Deliver \d downtimes?$/ }).click();
+  await expect(l.getByRole("region", { name: "Deliver anyway?" })).toBeVisible();
+  await shot(l, "deliver-warning", deliverCard, 900);
 });

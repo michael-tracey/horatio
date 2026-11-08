@@ -7085,7 +7085,8 @@ export interface paths {
         };
         /**
          * Discord Setup
-         * @description The connected server, its text channels, and the troupe's characters.
+         * @description The connected server, its text channels, and the troupe's characters, with
+         *     the channel each one's name suggests. One call to Discord.
          */
         get: operations["discord_setup_api_troupes__troupe_id__discord_get"];
         put?: never;
@@ -13925,6 +13926,10 @@ export interface components {
             guild_id: string | null;
             /** Guild Name */
             guild_name: string | null;
+            /** Suggestions */
+            suggestions: {
+                [key: string]: string;
+            };
         };
         /** DiscoveryBlockOut */
         DiscoveryBlockOut: {
@@ -20033,6 +20038,8 @@ export interface components {
             due: boolean;
             /** To Answer */
             to_answer: number;
+            /** Unreachable */
+            unreachable: string[];
         };
         /** ParticipantOut */
         ParticipantOut: {

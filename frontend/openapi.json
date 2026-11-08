@@ -10300,13 +10300,21 @@
               }
             ],
             "title": "Guild Name"
+          },
+          "suggestions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Suggestions",
+            "type": "object"
           }
         },
         "required": [
           "guild_id",
           "guild_name",
           "channels",
-          "characters"
+          "characters",
+          "suggestions"
         ],
         "title": "DiscordSetup",
         "type": "object"
@@ -25647,6 +25655,13 @@
           "to_answer": {
             "title": "To Answer",
             "type": "integer"
+          },
+          "unreachable": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unreachable",
+            "type": "array"
           }
         },
         "required": [
@@ -25657,7 +25672,8 @@
           "delivered",
           "changed",
           "due",
-          "deliveries"
+          "deliveries",
+          "unreachable"
         ],
         "title": "ParticipantDeliveries",
         "type": "object"
@@ -67121,7 +67137,7 @@
         ]
       },
       "get": {
-        "description": "The connected server, its text channels, and the troupe's characters.",
+        "description": "The connected server, its text channels, and the troupe's characters, with\nthe channel each one's name suggests. One call to Discord.",
         "operationId": "discord_setup_api_troupes__troupe_id__discord_get",
         "parameters": [
           {

@@ -42,6 +42,9 @@ class DiscordSetup(BaseModel):
     channels: list[ChannelOut]
     # The troupe's characters, to give each a channel.
     characters: list[CharacterRef]
+    # A channel for each character whose name it matches, by character id, for
+    # storytellers to use or not (horatio.connectors.discord.suggested_channels).
+    suggestions: dict[str, str]
 
 
 def discord_row(db: DbSession, troupe_id: uuid.UUID) -> TroupeConnector:
@@ -137,30 +140,33 @@ def discord_disconnect(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -
 
 @router.get("/troupes/{troupe_id}/discord")
 def discord_setup(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> DiscordSetup:
-    """The connected server, its text channels, and the troupe's characters."""
+    """The connected server, its text channels, and the troupe's characters, with
+    the channel each one's name suggests. One call to Discord."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.DELIVER_RESPONSES)
     row = connector_row(db, troupe.id, "discord")
     guild_id = row.settings.get("guild_id") if row else None
-    channels: list[ChannelOut] = []
+    found: list[discord.Channel] = []
     if guild_id and discord.configured():
         try:
-            channels = [ChannelOut(**c.__dict__) for c in discord.text_channels(guild_id)]
+            found = discord.text_channels(guild_id)
         except SendError as failure:
             raise HTTPException(status.HTTP_502_BAD_GATEWAY, failure.reason) from None
+    characters = [
+        CharacterRef(id=c.id, name=c.name)
+        for c in db.scalars(
+            select(Character)
+            .where(
+                Character.home_troupe_id == troupe.id,
+                Character.kind == "pc",
+                Character.status == "active",
+            )
+            .order_by(Character.name)
+        )
+    ]
     return DiscordSetup(
         guild_id=guild_id,
         guild_name=row.settings.get("guild_name") if row else None,
-        channels=channels,
-        characters=[
-            CharacterRef(id=c.id, name=c.name)
-            for c in db.scalars(
-                select(Character)
-                .where(
-                    Character.home_troupe_id == troupe.id,
-                    Character.kind == "pc",
-                    Character.status == "active",
-                )
-                .order_by(Character.name)
-            )
-        ],
+        channels=[ChannelOut(**c.__dict__) for c in found],
+        characters=characters,
+        suggestions=discord.suggested_channels([(c.id, c.name) for c in characters], found),
     )

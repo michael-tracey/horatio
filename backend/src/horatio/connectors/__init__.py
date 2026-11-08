@@ -10,7 +10,7 @@ first thing connectors carry; nothing here is specific to them.
 
 import uuid
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any, ClassVar
 
@@ -76,6 +76,14 @@ class Connector(ABC):
         """A troupe's new settings, tidied, given what is stored now (some settings
         only Horatio sets, such as a connected Discord server); raises ValueError
         when they cannot work."""
+
+    def unreachable(
+        self, settings: Mapping[str, Any], character_ids: Iterable[uuid.UUID]
+    ) -> set[uuid.UUID]:
+        """Of these characters, those it has nowhere to send to outside test mode
+        (a Discord connector with no channel chosen for them), to warn about before
+        delivering. None, unless the connector says otherwise."""
+        return set()
 
     @abstractmethod
     def target(self, settings: Mapping[str, Any], recipient: Recipient, test_mode: bool) -> str:
