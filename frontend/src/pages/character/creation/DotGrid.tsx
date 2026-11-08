@@ -7,7 +7,7 @@ import { Badge, Input, Select } from "../../../components/ui";
 import { applyFilter, filterChoices } from "../traitFilter";
 import { detailNeed } from "../fields";
 import { ChoiceSelect } from "../ChoiceSelect";
-import { canTap, canTapDots, clear, fieldProblems, keysOf, left, traitOf, nextCopy, spent, tap, tapDots, togglePoints, type Allowed, type Picks } from "./logic";
+import { canTapDots, clear, fieldProblems, keysOf, traitOf, nextCopy, spent, tapDots, togglePoints, type Picks } from "./logic";
 import { HouseWording } from "../../../components/TroupeChange";
 import { bookSummary } from "../../../houseWording";
 
@@ -34,16 +34,14 @@ export type RatingBar = { ratings: number[]; note: ReactNode };
 export type Held = { rating: number; text: string };
 
 /**
- * Every trait in a category, each with a row of dots. Tap a dot to set that
- * rating; tap it again, or Clear, to take it back. Only ratings with picks can
- * be tapped, and a rating with none left greys out (in a ranking, such as
- * attributes, tapping a taken rating swaps instead). With a `budget`, the dots
- * are shared out from it instead, as many on a trait as it likes.
+ * Every trait in a category, each with a row of dots, sharing out a budget of
+ * dots (a ghoul's 5 discipline dots), as many on a trait as it likes. Tap a dot
+ * to set that rating; tap it again, or Clear, to take it back. Picks at set
+ * ratings (a vampire's skills) are slots instead (Slots.tsx).
  */
 export function DotGrid({
   title,
   traits,
-  allowed,
   picks,
   onChange,
   tag,
@@ -64,7 +62,6 @@ export function DotGrid({
    * section claims go last, under "Other". */
   sections?: { order: string[]; of: (trait: TraitOut) => string | null };
   traits: TraitOut[];
-  allowed: Allowed;
   picks: Picks;
   onChange: (picks: Picks) => void;
   tag?: (trait: TraitOut) => string | null;
@@ -82,9 +79,8 @@ export function DotGrid({
   barredAt?: Record<string, RatingBar[]>;
   /** Traits merits give, held without a pick (a focus, Diva's Fame 2): shown filled, and no pick goes on them. */
   held?: Record<string, Held>;
-  /** Dots to share out in place of picks at each rating (a ghoul's 5 discipline dots),
-   * up to `max` on one trait; those left are saved for later. */
-  budget?: { dots: number; max: number };
+  /** The dots to share out, up to `max` on one trait; those left are saved for later. */
+  budget: { dots: number; max: number };
 }) {
   const [open, setOpen] = useState<Set<string>>(new Set());
   const toggle = (name: string) => {
@@ -92,12 +88,9 @@ export function DotGrid({
     if (!next.delete(name)) next.add(name);
     setOpen(next);
   };
-  const ratings = Object.keys(allowed)
-    .map(Number)
-    .sort((a, b) => b - a);
-  const maxDots = budget ? budget.max : Math.max(...ratings);
-  const pickableAt = (dot: number) => (budget ? dot <= budget.max : dot in allowed);
-  const tappable = (key: string, dot: number) => (budget ? canTapDots(picks, budget.dots, key, dot) : canTap(picks, allowed, key, dot));
+  const maxDots = budget.max;
+  const pickableAt = (dot: number) => dot <= budget.max;
+  const tappable = (key: string, dot: number) => canTapDots(picks, budget.dots, key, dot);
   const { query, setQuery, shown } = useFiltered(traits, picks);
   const named = useClanName();
   const groups: [string | null, TraitOut[]][] = sections
@@ -178,7 +171,7 @@ export function DotGrid({
                   disabled={!enabled}
                   onClick={() => {
                     if (!rating && need) setFocus(key);
-                    onChange(budget ? tapDots(picks, budget.dots, key, dot) : tap(picks, allowed, key, dot));
+                    onChange(tapDots(picks, budget.dots, key, dot));
                   }}
                   className={[
                     "grid h-8 w-7 place-items-center rounded text-lg leading-none pointer-coarse:h-10 pointer-coarse:w-10",
@@ -255,22 +248,7 @@ export function DotGrid({
     <section aria-label={title} className="flex flex-col gap-3">
       <div className={`flex flex-wrap items-center justify-between gap-2 ${STICKY}`}>
         {showTitle ? <h3 className="text-base text-gold">{title}</h3> : <span />}
-        {budget ? (
-          <DotsLeft title={title} budget={budget.dots} used={spent(picks)} />
-        ) : (
-          <ul className="flex flex-wrap gap-1.5" aria-label={`${title} picks left`}>
-            {ratings.map((r) => {
-              const n = left(picks, allowed, r);
-              return (
-                <li key={r}>
-                  <Badge tone={n > 0 ? "gold" : n < 0 ? "blood" : "mist"}>
-                    {n < 0 ? `${-n} too many at ${r}` : `${n} at ${r} left`}
-                  </Badge>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+        <DotsLeft title={title} budget={budget.dots} used={spent(picks)} />
       </div>
       {traits.length >= SEARCH_FROM && (
         <Input aria-label={`Search ${title}`} placeholder="Search…" value={query} onChange={(e) => setQuery(e.target.value)} />
