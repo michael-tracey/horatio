@@ -511,6 +511,17 @@ def game_xp_words(value: Any) -> str:
     )
 
 
+def ban_clans_words(value: Any) -> str:
+    """ "Pillar clans: Assamite, Gangrel; Lesser antitribu: none"."""
+    return (
+        "; ".join(
+            f"{key.replace('_', ' ').capitalize()}: {', '.join(clans) or 'none'}"
+            for key, clans in value.items()
+        )
+        or "The rule set's"
+    )
+
+
 def excluded_words(value: Any) -> str:
     return ", ".join(e["name"] for e in value) if value else "None"
 
@@ -598,6 +609,16 @@ SETTINGS: dict[str, Setting] = {
             "Golconda Seekers are Enlightened",
             bool,
             on_off,
+        ),
+        Setting(
+            "status_ban_clans",
+            "status_titles",
+            "The clans the status bans name",
+            dict[
+                Annotated[str, Field(max_length=100)],
+                Annotated[list[Annotated[str, Field(max_length=200)]], Field(max_length=100)],
+            ],
+            ban_clans_words,
         ),
         Setting("badge_titles", "at_game", "Titles on badges", bool, on_off),
         Setting(
@@ -2293,6 +2314,8 @@ def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, Setti
             )
         if touched("clan_rarity"):
             troupe_settings.set_clan_rarity(db, user, troupe, values["clan_rarity"])
+        if touched("status_ban_clans"):
+            troupe_settings.set_status_ban_clans(db, user, troupe, values["status_ban_clans"])
         if touched("default_bloodlines"):
             troupe_settings.set_default_bloodlines(db, user, troupe, values["default_bloodlines"])
         if touched("influence_lookback_days"):

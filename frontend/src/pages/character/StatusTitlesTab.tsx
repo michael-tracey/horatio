@@ -272,17 +272,17 @@ function Bans({ character }: { character: CharacterOut }) {
   const s = status.data;
   if (!s?.accepted) return null;
   const bans = s.bans.filter((b) => b.applies || s.staff);
-  const shown = bans.find((b) => b.applies_to === open) ?? null;
+  const shown = bans.find((b) => b.key === open) ?? null;
   return (
     <Card dense title="Status bans">
       {bans.length ? (
         <ul className="flex flex-col gap-1">
           {bans.map((b) => (
-            <li key={b.applies_to}>
+            <li key={b.key}>
               <button
                 type="button"
                 aria-label={`${banLevel(b.level)} ban: ${named(b.applies_to)}`}
-                onClick={() => setOpen(b.applies_to)}
+                onClick={() => setOpen(b.key)}
                 className="flex min-h-9 w-full items-center gap-2 rounded-md px-1.5 text-left hover:bg-night"
               >
                 <Badge tone={b.applies ? "blood" : "mist"}>{banLevel(b.level)}</Badge>
@@ -306,7 +306,7 @@ function Bans({ character }: { character: CharacterOut }) {
 function BanPanel({ character, status, ban }: { character: CharacterOut; status: StatusOut; ban: BanOut }) {
   const named = useClanName();
   const mark = useAction((body: { mark: "applies" | "exempt" | null; reason: string }) =>
-    unwrap(api.PUT("/api/characters/{character_id}/status/bans", { params: { path: { character_id: character.id } }, body: { ban: ban.applies_to, ...body } })),
+    unwrap(api.PUT("/api/characters/{character_id}/status/bans", { params: { path: { character_id: character.id } }, body: { ban: ban.key, ...body } })),
   );
   const why =
     ban.marked === false

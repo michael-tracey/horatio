@@ -40,6 +40,14 @@ bans: a lesser ban cuts a character's fleeting status to 3 and a greater ban to 
 (the caps below). A ban says who it applies to, in words, and, where the sheet can
 tell, `when` that holds, in the condition vocabulary of horatio.rules.checks.
 
+A ban on clans (issue #553) names them in `clans`, and a troupe can name its own
+(Troupe.status_ban_clans): the Camarilla's pillar clans, say, which the books move
+on from edition to edition. Its `when` is built from them (a clan or one of its
+bloodlines, or with `outside`, none of them), and its `applies_to` words them in
+place of `{clans}`. It has a `key`, which staff marks on it keep however the troupe
+words it, a `label` for the troupe's setting, and `presets`, lists to pick at once.
+A troupe that names no clans has no such ban.
+
 A title gives the abiding status named in `status` for as long as it is held; or
 one of `choose_one`, chosen at the start of each game (a Bishop's Blessed or
 Enforcer); and with `while_absent`, more status while the holder of another title
@@ -145,6 +153,15 @@ class StatusData:
 
 
 @dataclass(frozen=True)
+class BanPresetData:
+    """A list of clans a troupe can pick at once for a ban on clans: "As Volume II"."""
+
+    name: str
+    clans: tuple[str, ...]
+    page: str | None = None
+
+
+@dataclass(frozen=True)
 class StatusBanData:
     level: BanLevel
     # Who it applies to, in words.
@@ -152,6 +169,40 @@ class StatusBanData:
     # Where the sheet can tell (a clan, a Path): the condition, as in checks.
     when: Condition | None = None
     page: str | None = None
+    # A ban on clans: its key, its label in the troupe's setting, the clans, whether it
+    # applies to a character of none of them (`outside`), its wording with `{clans}`,
+    # and its presets. `clans` is None for any other ban.
+    key: str = ""
+    label: str = ""
+    clans: tuple[str, ...] | None = None
+    outside: bool = False
+    wording: str = ""
+    presets: tuple[BanPresetData, ...] = ()
+
+    @property
+    def mark_key(self) -> str:
+        """What a staff mark on it is kept under: its key, else its words."""
+        return self.key or self.applies_to
+
+
+def or_list(names: Sequence[str]) -> str:
+    """ "Assamite, Malkavian or Ventrue"."""
+    return names[0] if len(names) == 1 else f"{', '.join(names[:-1])} or {names[-1]}"
+
+
+def with_clans(ban: StatusBanData, clans: Sequence[str]) -> StatusBanData | None:
+    """A ban on clans as it names `clans`: its condition and its words. None for no
+    clans, where there is no such ban."""
+    if not clans:
+        return None
+    found = tuple(clans)
+    test: Condition = {"clan_family": list(found)}
+    return replace(
+        ban,
+        clans=found,
+        when={"not": test} if ban.outside else test,
+        applies_to=ban.wording.format(clans=or_list(found)),
+    )
 
 
 @dataclass(frozen=True)
@@ -293,6 +344,30 @@ class StatusRulesData:
 NO_STATUS_RULES = StatusRulesData()
 
 
+def troupe_bans(rules: StatusRulesData, clans: Mapping[str, Sequence[str]]) -> StatusRulesData:
+    """The status rules with the clans a troupe names for its bans on clans, by key,
+    in place of the rule set's."""
+    if not clans:
+        return rules
+    sects: dict[str, SectData] = {}
+    for name, sect in rules.sects.items():
+        bans: list[StatusBanData] = []
+        for ban in sect.bans:
+            if ban.clans is not None and ban.key in clans:
+                changed = with_clans(ban, clans[ban.key])
+                if changed is not None:
+                    bans.append(changed)
+            else:
+                bans.append(ban)
+        sects[name] = replace(sect, bans=tuple(bans))
+    return replace(rules, sects=sects)
+
+
+def clan_bans(rules: StatusRulesData) -> list[tuple[str, StatusBanData]]:
+    """The bans on clans, with their sects, as the rule set has them."""
+    return [(s.name, b) for s in rules.sects.values() for b in s.bans if b.clans is not None]
+
+
 # --- reading ---------------------------------------------------------------------------------
 
 
@@ -337,12 +412,30 @@ def statuses_of(traits: Mapping[tuple[str, str], Any]) -> dict[str, StatusData]:
 
 
 def ban_from_dict(raw: Mapping[str, Any]) -> StatusBanData:
-    return StatusBanData(
+    ban = StatusBanData(
         level=raw["level"],
         applies_to=raw.get("applies_to", ""),
         when=raw.get("when"),
         page=raw.get("page"),
+        key=raw.get("key", ""),
+        label=raw.get("label", ""),
+        outside=raw.get("outside", False),
+        presets=tuple(
+            BanPresetData(name=p["name"], clans=tuple(p["clans"]), page=p.get("page"))
+            for p in raw.get("presets", [])
+        ),
     )
+    if "clans" not in raw:
+        return ban
+    # As the rules file has it, its words say `{clans}`; as stored, they are filled in,
+    # with the template kept as `wording` and the condition built.
+    if "wording" not in raw and ban.when is not None:
+        raise ValueError(f"the ban {ban.key!r} names clans, so its condition is built from them")
+    ban = replace(ban, wording=raw.get("wording", ban.applies_to), when=None, clans=())
+    found = with_clans(ban, raw["clans"])
+    if found is None:
+        raise ValueError(f"the ban {ban.key!r} names no clans")
+    return found
 
 
 def sect_from_dict(raw: Mapping[str, Any]) -> SectData:
@@ -555,6 +648,25 @@ def status_rules_from_dict(raw: Mapping[str, Any]) -> StatusRulesData:
 # --- checking --------------------------------------------------------------------------------
 
 
+def check_clan_ban(ban: StatusBanData, clan_names: set[str], keys: set[str], where: str) -> None:
+    """Refuse a ban on clans with no key, label or `{clans}` in its words, a key used
+    twice, or a clan (in it or a preset) that is no clan of the rule set, or a
+    bloodline: a bloodline follows its clan."""
+    if not ban.key or not ban.label:
+        raise ValueError(f"{where}: a ban on clans needs a key and a label")
+    if ban.key in keys:
+        raise ValueError(f"{where}: the key is used twice")
+    keys.add(ban.key)
+    if "{clans}" not in ban.wording:
+        raise ValueError(f"{where}: its words need {{clans}}")
+    for clans in [ban.clans or (), *(p.clans for p in ban.presets)]:
+        for clan in clans:
+            if clan not in clan_names or ":" in clan:
+                raise ValueError(f"{where} names {clan!r}, which is not a clan")
+        if len(set(clans)) != len(clans):
+            raise ValueError(f"{where} names a clan twice")
+
+
 def check_status_rules(
     traits: Mapping[tuple[str, str], Any],
     rules: StatusRulesData,
@@ -608,6 +720,7 @@ def check_status_rules(
                 raise ValueError(f"{where} takes away {taken!r}, not a type of status it can")
 
     known_traits = set(traits)
+    keys: set[str] = set()
     for sect in rules.sects.values():
         where = f"sect {sect.name!r}"
         if sect.name not in sect_names:
@@ -622,6 +735,10 @@ def check_status_rules(
                 raise ValueError(f"{where} has a ban that says not who it applies to")
             if ban.when:
                 validate_condition(ban.when, known_traits)
+            if ban.clans is not None:
+                check_clan_ban(ban, clan_names, keys, f"{where}, ban {ban.key!r}")
+            elif ban.key or ban.label or ban.outside or ban.presets:
+                raise ValueError(f"{where}: only a ban on clans has a key, label or presets")
 
     def abiding(names: Iterable[str], sect: str | None, where: str) -> None:
         for name in names:

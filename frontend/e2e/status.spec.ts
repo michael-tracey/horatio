@@ -21,7 +21,8 @@ test("a player keeps their own sect status, naming its patron from the home trou
     return response.json();
   };
 
-  // Celestine, a Camarilla Brujah, built through the API and accepted home.
+  // Celestine, a Camarilla Brujah, built through the API and accepted home. The Brujah
+  // are no pillar clan in Volume II (#553), so she carries 3 fleeting status, not 5.
   const p = player.page;
   const { id } = await send(p, "POST", "/api/characters", { splat: "vampire", name: "Celestine" });
   await send(p, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
@@ -53,7 +54,7 @@ test("a player keeps their own sect status, naming its patron from the home trou
   await p.getByRole("link", { name: "Status & Titles", exact: true }).click();
   const card = p.locator("section").filter({ has: p.getByRole("heading", { name: "Status", exact: true }) });
   await expect(card.getByRole("listitem", { name: "Acknowledged" })).toContainText("by the Camarilla");
-  await expect(card.getByText("Fleeting: 0 of 5")).toBeVisible();
+  await expect(card.getByText("Fleeting: 0 of 3")).toBeVisible();
 
   // Celestine is given Loyal by the Prince, picked from the home troupe's characters.
   await card.getByRole("button", { name: "Add status" }).click();
@@ -68,13 +69,13 @@ test("a player keeps their own sect status, naming its patron from the home trou
   await p.screenshot(shots("status-add"));
   await form.getByRole("button", { name: "Add status" }).click();
   await expect(card.getByText("from Prince Aurelio (Prince at the time)")).toBeVisible();
-  await expect(card.getByText("Fleeting: 1 of 5")).toBeVisible();
+  await expect(card.getByText("Fleeting: 1 of 3")).toBeVisible();
   await expect(card.getByText("For keeping the Masquerade at the docks")).toBeVisible();
   await p.screenshot(shots("status-sheet"));
 
   // Taken off again, and both in the character's log.
   await card.getByRole("button", { name: "Remove Loyal" }).click();
-  await expect(card.getByText("Fleeting: 0 of 5")).toBeVisible();
+  await expect(card.getByText("Fleeting: 0 of 3")).toBeVisible();
   await characterTab(p, "Log");
   await expect(p.getByText("status-player gave Celestine the fleeting status Loyal, from Prince Aurelio (Prince at the time).")).toBeVisible();
   await expect(p.getByText("status-player removed Celestine's Loyal (from Prince Aurelio (Prince at the time)).")).toBeVisible();
@@ -91,7 +92,7 @@ test("a player keeps their own sect status, naming its patron from the home trou
 
   // Now Celestine's player cannot add status, and the API refuses them.
   await p.goto(`/characters/${id}/status`);
-  await expect(card.getByText("Fleeting: 0 of 5")).toBeVisible();
+  await expect(card.getByText("Fleeting: 0 of 3")).toBeVisible();
   await expect(card.getByRole("button", { name: "Add status" })).toHaveCount(0);
   const refused = await p.request.post(`/api/characters/${id}/status`, { headers, data: { name: "Loyal", patron_text: "The Prince" } });
   expect(refused.status()).toBe(409);
@@ -220,6 +221,60 @@ test("Enlightened: a Sabbat follower of an Accepted path holds it, and a Camaril
   await expect(rule).toContainText("Given here by the merits Golconda Seeker, Path of Caine, Path of Cathari");
   await expect(rule).toContainText("Path of Typhon-Set.");
   await expect(rule).toContainText("Vol. 2, p. 267");
+});
+
+test("a troupe names the Gangrel a pillar clan in Customise, and the Camarilla's lesser status ban on its Gangrel goes (#553)", async ({ browser }) => {
+  const custodian = await person(browser, "pillar-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "pillar-lead");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Pillars ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const l = lead.page;
+  const send = async (url: string, data: object, method: "POST" | "PUT" = "POST") => {
+    const response = await l.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  // Gunnar, a Camarilla Gangrel NPC: of no pillar clan as Volume II has them, a lesser ban.
+  const { id } = await send(`/api/troupes/${troupeId}/npcs`, { name: "Gunnar Wolfe", wizard: false });
+  for (const [category, name] of [["sect", "Camarilla"], ["clan", "Gangrel"]])
+    await send(`/api/characters/${id}/npc/ratings`, { category, name, rating: null, detail: "" }, "PUT");
+
+  const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Status", exact: true }) });
+  const bans = l.locator("section").filter({ has: l.getByRole("heading", { name: "Status bans" }) });
+  const pillarBan = bans.getByRole("button", { name: /Lesser ban: Not Embraced into a pillar clan/ });
+  await l.goto(`/characters/${id}/status`);
+  await expect(pillarBan).toContainText("applies");
+  await expect(card.getByText("Fleeting: 0 of 3")).toBeVisible();
+
+  // The lead ticks the Gangrel among the Camarilla's pillar clans, in the troupe's settings.
+  await l.goto(`/troupes/${troupeId}/settings`);
+  const setting = l.locator("section").filter({ has: l.getByRole("heading", { name: "Status bans on clans" }) });
+  const pillars = setting.getByRole("region", { name: "Camarilla: Pillar clans" });
+  await expect(pillars).toContainText("Not Embraced into a pillar clan: Banu Haqim, Malkavian, Nosferatu, Toreador, Tremere or Ventrue.");
+  await pillars.getByText("Change the clans").click();
+  await expect(pillars.getByLabel("Brujah", { exact: true })).not.toBeChecked();
+  await pillars.getByLabel("Gangrel", { exact: true }).click();
+  await expect(pillars.getByLabel("Gangrel", { exact: true })).toBeChecked();
+  await expect(pillars).toContainText("Not Embraced into a pillar clan: Banu Haqim, Gangrel, Malkavian, Nosferatu, Toreador, Tremere or Ventrue.");
+  await expect(pillars).toContainText("The book's: Not Embraced into a pillar clan: Banu Haqim, Malkavian");
+  await l.screenshot(shots("status-ban-clans-setting"));
+
+  await l.goto(`/characters/${id}/status`);
+  await expect(card.getByText("Fleeting: 0 of 5")).toBeVisible();
+  await expect(pillarBan).toContainText("does not apply");
+
+  // The core book's list, a preset, keeps the Gangrel out and the Brujah in.
+  await l.goto(`/troupes/${troupeId}/settings`);
+  await pillars.getByText("Change the clans").click();
+  await pillars.getByRole("button", { name: "As the core book (2013)" }).click();
+  await expect(pillars.getByLabel("Brujah", { exact: true })).toBeChecked();
+  await expect(pillars.getByLabel("Gangrel", { exact: true })).not.toBeChecked();
+  await l.goto(`/characters/${id}/status`);
+  await expect(pillarBan).toContainText("applies");
+  await expect(card.getByText("Fleeting: 0 of 3")).toBeVisible();
 });
 
 test("Status & Titles: a Camarilla player sees the status held with its sources, takes Harpy from the titles sidebar and gains its status, switches to Keeper of Elysium, and opens a status ban, on desktop and phone (#321, #339)", async ({ browser }) => {
