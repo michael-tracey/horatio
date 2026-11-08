@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import type { ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { ConnectorOut } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Loading, Notice, Select } from "../../components/ui";
 import { useToast } from "../../components/Toast";
 import { useAction } from "../../hooks";
+import { manualLink } from "../../manualLink";
 import { DiscordSettings } from "./DiscordSettings";
 import { EmailSettings } from "./EmailSettings";
 
@@ -106,6 +107,13 @@ function ConnectorCard({ troupeId, connector, canEdit }: { troupeId: string; con
               </li>
             ))}
           </ul>
+        )}
+        {connector.needs.length > 0 && (
+          <p className="mt-2 text-sm">
+            <Link to={manualLink("custodian", "setting-up-discord-and-email")} className="underline hover:text-parchment">
+              How to set up {connector.name}
+            </Link>
+          </p>
         )}
       </Card>
     );

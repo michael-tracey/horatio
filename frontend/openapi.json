@@ -9235,10 +9235,18 @@
             },
             "title": "Participants",
             "type": "array"
+          },
+          "testing": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Testing",
+            "type": "array"
           }
         },
         "required": [
           "channels",
+          "testing",
           "participants"
         ],
         "title": "DeliveryStatus",
@@ -10308,13 +10316,21 @@
               }
             ],
             "title": "Guild Name"
+          },
+          "suggestions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Suggestions",
+            "type": "object"
           }
         },
         "required": [
           "guild_id",
           "guild_name",
           "channels",
-          "characters"
+          "characters",
+          "suggestions"
         ],
         "title": "DiscordSetup",
         "type": "object"
@@ -25768,9 +25784,23 @@
             "title": "Due",
             "type": "boolean"
           },
+          "test_only": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Test Only",
+            "type": "array"
+          },
           "to_answer": {
             "title": "To Answer",
             "type": "integer"
+          },
+          "unreachable": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unreachable",
+            "type": "array"
           }
         },
         "required": [
@@ -25781,7 +25811,9 @@
           "delivered",
           "changed",
           "due",
-          "deliveries"
+          "deliveries",
+          "unreachable",
+          "test_only"
         ],
         "title": "ParticipantDeliveries",
         "type": "object"
@@ -58640,6 +58672,50 @@
         ]
       }
     },
+    "/api/cycles/{cycle_id}/send-test-only": {
+      "post": {
+        "description": "Send players the results the troupe's connectors have had only in test mode,\nnow they are out of it (horatio.responses.send_test_only).",
+        "operationId": "send_test_only_api_cycles__cycle_id__send_test_only_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Delivered"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send Test Only",
+        "tags": [
+          "responses"
+        ]
+      }
+    },
     "/api/dark-pack": {
       "get": {
         "operationId": "about_dark_pack_api_dark_pack_get",
@@ -67370,7 +67446,7 @@
         ]
       },
       "get": {
-        "description": "The connected server, its text channels, and the troupe's characters.",
+        "description": "The connected server, its text channels, and the troupe's characters, with\nthe channel each one's name suggests. One call to Discord.",
         "operationId": "discord_setup_api_troupes__troupe_id__discord_get",
         "parameters": [
           {

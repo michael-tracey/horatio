@@ -17,8 +17,10 @@ delivery worker.
 
 import json
 import time
+import unicodedata
 import uuid
-from collections.abc import Callable, Mapping, Sequence
+from collections import Counter
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlencode
@@ -255,6 +257,44 @@ def text_channels(guild_id: str) -> list[Channel]:
     ]
 
 
+def plain_name(name: str) -> str:
+    """A name as channel names are matched: no accents, case, spaces or punctuation,
+    so "Agnes Wren", "#agnes-wren" and "agnes_wren" are all "agneswren"."""
+    decomposed = unicodedata.normalize("NFKD", name)
+    return "".join(c for c in decomposed if c.isalnum()).casefold()
+
+
+def first_name(name: str) -> str:
+    words = name.split()
+    return plain_name(words[0]) if words else ""
+
+
+def suggested_channels(
+    characters: Sequence[tuple[uuid.UUID, str]], channels: Sequence[Channel]
+) -> dict[str, str]:
+    """A channel for each character that it can be told by name: its full name, or
+    its first name where no other character shares it. A private channel comes
+    before one everyone can see, then a full name before a first name, then
+    Discord's order. A channel that would suit two characters is suggested for
+    neither. Character id to channel id; storytellers choose whether to use them."""
+    firsts = Counter(first_name(name) for _, name in characters)
+    found: dict[str, str] = {}
+    for character_id, name in characters:
+        full, first = plain_name(name), first_name(name)
+        names = {full: 0} if full else {}
+        if first and firsts[first] == 1:
+            names.setdefault(first, 1)
+        matches = [
+            (not c.private, names[plain_name(c.name)], n, c.id)
+            for n, c in enumerate(channels)
+            if plain_name(c.name) in names
+        ]
+        if matches:
+            found[str(character_id)] = min(matches)[3]
+    claimed = Counter(found.values())
+    return {character: channel for character, channel in found.items() if claimed[channel] == 1}
+
+
 def exchange_code(code: str) -> tuple[str, str]:
     """The server a storyteller just added the bot to, as (id, name), from the
     invite's code. Raises SendError when Discord will not say."""
@@ -331,6 +371,12 @@ class DiscordConnector(Connector):
             "test_channel": test_channel,
             **({"post_channels": current["post_channels"]} if current.get("post_channels") else {}),
         }
+
+    def unreachable(
+        self, settings: Mapping[str, Any], character_ids: Iterable[uuid.UUID]
+    ) -> set[uuid.UUID]:
+        channels = (settings.get("channels") or {}) if settings.get("guild_id") else {}
+        return {c for c in character_ids if not channels.get(str(c))}
 
     def target(self, settings: Mapping[str, Any], recipient: Recipient, test_mode: bool) -> str:
         if not settings.get("guild_id"):

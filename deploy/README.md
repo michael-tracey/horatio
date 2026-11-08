@@ -44,6 +44,9 @@ host nginx :443 ── Let's Encrypt certificate, renewed by certbot's timer
    - Discord and SMTP: optional; each connector stays off until its settings are
      filled in. For Discord, also register
      `https://horatio.lotslarp.org/api/discord/callback` as an OAuth2 redirect.
+     Making the Discord app and bot, step by step, and which setting takes each
+     value, is in the custodian manual: [Setting up Discord and
+     email](../docs/manual/custodian.md#setting-up-discord-and-email).
 
 ## Deploying
 

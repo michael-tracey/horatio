@@ -396,6 +396,7 @@ MESSAGES: dict[str, str] = {
     "response.item_changed": "{actor} changed what {character}'s downtime response gives: {what}.",
     "response.item_removed": "{actor} took {what} off {character}'s downtime response.",
     "downtime.delivered": "{actor} delivered {count} downtime results.",
+    "downtime.sent_after_test": "{actor} sent players {count} results tried in test mode.",
     "connector.changed": "{actor} turned the {connector} connector {state}.",
     "connector.discord_connected": "{actor} connected the Discord server {server}.",
     "connector.discord_disconnected": "{actor} disconnected the Discord server {server}.",

@@ -578,7 +578,9 @@ def deliver_cycle(
         raise conflict("Close the cycle before delivering results.")
     connectors = delivery.enabled_connectors(db, troupe.id)
     done = Delivered()
-    for ready in readiness(db, cycle):
+    rows = readiness(db, cycle)
+    tested = delivery.test_only(db, [r.submission.id for r in rows], connectors)
+    for ready in rows:
         submission, character, last = ready.submission, ready.character, ready.last
         if ready.due and (ready.finished or partial):
             message = compose(db, cycle, character, submission)
@@ -613,15 +615,19 @@ def deliver_cycle(
             )
             done.delivered += 1
             done.updated += last is not None
+            going = connectors
         elif last is not None:
             # Nothing new; a connector switched on since still gets what was sent.
+            # One that had it only in test mode waits for send_test_only.
             message, revision = last.message, last.revision
+            waiting = tested.get(submission.id, [])
+            going = [c for c in connectors if c.test_mode or c.kind not in waiting]
         else:
             continue
         done.queued += delivery.queue(
             db,
             staff,
-            connectors,
+            going,
             cycle,
             character,
             submission,
@@ -642,6 +648,44 @@ def deliver_cycle(
         queued=done.queued,
     )
     return done
+
+
+def send_test_only(db: Session, staff: User, cycle: DowntimeCycle, troupe: Troupe) -> int:
+    """Send players the results their connectors have had only in test mode, now
+    those connectors are out of it: the results as last delivered, with no new
+    delivery in Horatio and no notification. Returns how many were queued."""
+    if cycle.status not in ("closed", "complete"):
+        raise conflict("Close the cycle before delivering results.")
+    connectors = [c for c in delivery.enabled_connectors(db, troupe.id) if not c.test_mode]
+    rows = readiness(db, cycle)
+    tested = delivery.test_only(db, [r.submission.id for r in rows], connectors)
+    queued = 0
+    for ready in rows:
+        waiting = tested.get(ready.submission.id, [])
+        if ready.last is None or not waiting:
+            continue
+        message = ready.last.message
+        queued += delivery.queue(
+            db,
+            staff,
+            [c for c in connectors if c.kind in waiting],
+            cycle,
+            ready.character,
+            ready.submission,
+            message,
+            as_update(message),
+            ready.last.revision,
+        )
+    if queued:
+        audit.record(
+            db,
+            staff,
+            "downtime.sent_after_test",
+            troupe_id=troupe.id,
+            cycle_id=cycle.id,
+            count=queued,
+        )
+    return queued
 
 
 def complete_cycle(db: Session, staff: User, cycle: DowntimeCycle) -> None:

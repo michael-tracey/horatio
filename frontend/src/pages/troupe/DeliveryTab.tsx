@@ -29,12 +29,12 @@ export function DeliveryTab({ cycle }: { cycle: CycleOut }) {
   });
   if (status.isPending) return <Loading />;
   if (status.error) return <ErrorText error={status.error} />;
-  const { channels, participants } = status.data;
+  const { channels, participants, testing } = status.data;
   const closed = cycle.status === "closed" || cycle.status === "complete";
 
   return (
     <div className="flex flex-col gap-6">
-      {closed ? <DeliverCard cycle={cycle} participants={participants} /> : <Notice>After closing, results go out from here.</Notice>}
+      {closed ? <DeliverCard cycle={cycle} participants={participants} testing={testing} /> : <Notice>After closing, results go out from here.</Notice>}
       <Card title="Delivery">
         <p className="mb-4 text-sm text-mist">
           Results always appear in Horatio. {channels.length > 1 ? "Each connector the troupe has on gets a copy." : "The troupe has no connectors on; "}
@@ -91,16 +91,32 @@ export function DeliveryTab({ cycle }: { cycle: CycleOut }) {
   );
 }
 
+/** What a connector lacks for a character it can't reach, by kind. */
+const NOWHERE: Record<string, string> = { discord: "no Discord channel" };
+
 /** Before delivering, what will go: the finished downtimes, and the partly
- * written ones only if asked. */
-function DeliverCard({ cycle, participants }: { cycle: CycleOut; participants: ParticipantDeliveries[] }) {
+ * written ones only if asked. Characters a connector can't reach (Discord, with
+ * no channel chosen) are named first, and can be delivered to anyway. Results a
+ * connector has had only in test mode wait here until staff send them to players,
+ * once it is out of test mode. */
+function DeliverCard({ cycle, participants, testing }: { cycle: CycleOut; participants: ParticipantDeliveries[]; testing: string[] }) {
   const [partial, setPartial] = useState(false);
+  const [warned, setWarned] = useState(false);
   const [done, setDone] = useState<{ delivered: number; updated: number; queued: number } | null>(null);
   const deliver = useAction(async () =>
     setDone(await unwrap(api.POST("/api/cycles/{cycle_id}/deliver", { params: { path: { cycle_id: cycle.id } }, body: { partial } }))),
   );
   const plan = deliveryPlan(participants);
   const going = plan.ready.length + (partial ? plan.partial.length : 0);
+  const unreachable = [...plan.ready, ...(partial ? plan.partial : [])].filter((p) => p.unreachable.length > 0);
+  const send = () => deliver.mutate(undefined, { onSuccess: () => setWarned(false) });
+  const [sentOn, setSentOn] = useState<number | null>(null);
+  const sendOn = useAction(async () =>
+    setSentOn((await unwrap(api.POST("/api/cycles/{cycle_id}/send-test-only", { params: { path: { cycle_id: cycle.id } } }))).queued),
+  );
+  const testOnly = participants.filter((p) => p.test_only.length > 0);
+  const ready = testOnly.filter((p) => p.test_only.some((kind) => !testing.includes(kind)));
+  const testTarget = testOnly.some((p) => p.test_only.includes("discord")) ? "the test channel" : "the test address";
   const names = (list: ParticipantDeliveries[], detail?: (p: ParticipantDeliveries) => string) =>
     list.map((p) => `${p.character_name}${detail ? ` (${detail(p)})` : ""}`).join(", ");
 
@@ -130,26 +146,82 @@ function DeliverCard({ cycle, participants }: { cycle: CycleOut; participants: P
             <span className="text-mist">Nothing written yet:</span> {names(plan.unwritten)}
           </li>
         )}
+        {testOnly.length > 0 && (
+          <li>
+            <span className="text-mist">Sent to {testTarget} only:</span> {names(testOnly)}
+          </li>
+        )}
       </ul>
+      {testOnly.length > 0 && (
+        <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+          {ready.length > 0 ? (
+            <Button variant="secondary" disabled={sendOn.isPending} onClick={() => sendOn.mutate(undefined)}>
+              Send to players' channels
+            </Button>
+          ) : (
+            <span className="text-mist">
+              Test mode is on.{" "}
+              <Link to={`/troupes/${cycle.troupe_id}/connectors`} className="underline hover:text-parchment">
+                Switch it off
+              </Link>{" "}
+              to send these to players.
+            </span>
+          )}
+        </div>
+      )}
+      {sentOn !== null && (
+        <Notice>
+          {sentOn === 0
+            ? "Nothing to send to players."
+            : `${sentOn} ${sentOn === 1 ? "copy is" : "copies are"} on the way to players through the troupe's connectors.`}
+        </Notice>
+      )}
       {plan.partial.length > 0 && (
         <label className="mt-3 flex items-center gap-2 text-sm">
           <input type="checkbox" checked={partial} onChange={(e) => setPartial(e.target.checked)} />
           Also deliver the {plan.partial.length} partly written, with what's written so far
         </label>
       )}
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <Button disabled={going === 0 || deliver.isPending} onClick={() => deliver.mutate(undefined)}>
-          {going === 0 ? "Nothing to deliver" : `Deliver ${going} downtime${going === 1 ? "" : "s"}`}
-        </Button>
-        {going > 0 && cycle.status === "complete" && <span className="text-xs text-mist">The cycle is complete; these are the last results.</span>}
-      </div>
+      {warned && unreachable.length > 0 ? (
+        <section aria-label="Deliver anyway?" className="mt-3 rounded-md border border-gold/60 p-3 text-sm">
+          <p className="font-medium">Some results won't go out on {[...new Set(unreachable.flatMap((p) => p.unreachable))].map(channelName).join(" or ")}</p>
+          <ul className="mt-1">
+            {unreachable.map((p) => (
+              <li key={p.character_id}>
+                {p.character_name}: {p.unreachable.map((kind) => NOWHERE[kind] ?? `nowhere to send on ${channelName(kind)}`).join(", ")}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-mist">
+            They still get their results in Horatio, and through any other connector the troupe has on.{" "}
+            <Link to={`/troupes/${cycle.troupe_id}/connectors`} className="underline hover:text-parchment">
+              Choose their channels
+            </Link>
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button disabled={deliver.isPending} onClick={send}>
+              Deliver anyway
+            </Button>
+            <Button variant="ghost" onClick={() => setWarned(false)}>
+              Cancel
+            </Button>
+          </div>
+        </section>
+      ) : (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <Button disabled={going === 0 || deliver.isPending} onClick={() => (unreachable.length > 0 ? setWarned(true) : send())}>
+            {going === 0 ? "Nothing to deliver" : `Deliver ${going} downtime${going === 1 ? "" : "s"}`}
+          </Button>
+          {going > 0 && cycle.status === "complete" && <span className="text-xs text-mist">The cycle is complete; these are the last results.</span>}
+        </div>
+      )}
       {done !== null && (
         <Notice>
           {deliveredText(done.delivered, done.updated)}
           {done.queued > 0 && ` ${done.queued} ${done.queued === 1 ? "copy is" : "copies are"} on the way through the troupe's connectors.`}
         </Notice>
       )}
-      <ErrorText error={deliver.error} />
+      <ErrorText error={deliver.error ?? sendOn.error} />
     </Card>
   );
 }
