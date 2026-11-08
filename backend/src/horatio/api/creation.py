@@ -95,6 +95,16 @@ class BudgetChange(BaseModel):
     because: list[TraitRefOut]
 
 
+class LostPicksOut(BaseModel):
+    """Picks at one rating that the rules would give but for a trait held, and the traits
+    that took them: Thin Blooded's starting discipline at 2."""
+
+    category: str
+    rating: int
+    picks: int
+    because: list[TraitRefOut]
+
+
 class ClanMeritOut(BaseModel):
     """A merit the clan needs, from the merit points: a bloodline or rarity merit."""
 
@@ -140,6 +150,8 @@ class CreationOut(BaseModel):
     # Paths whose Morality starts lower than Humanity's 5, for the merits bought now.
     path_starts: list[PathStart] = []
     budget_changes: list[BudgetChange] = []
+    # Picks a trait held takes away, by rating, for the wizard to show where they were.
+    lost_picks: list[LostPicksOut] = []
     # Traits in the categories that take picks which merits give, with no pick of their own.
     given: list[GivenOut] = []
     # What the sheet must have before the wizard moves on from a step.
@@ -229,7 +241,8 @@ def creation_out(db: DbSession, character: Character) -> CreationOut:
 
     placed = creation.pools_with_strays(db, character)
     rules = creation.rules_for(db, character)
-    choice = clan_choice(rules, [r.as_rules_trait() for r in creation.sheet_rows(db, character)])
+    rows = creation.sheet_rows(db, character)
+    choice = clan_choice(rules, [r.as_rules_trait() for r in rows])
     return CreationOut(
         shortfalls=[
             ShortfallOut(
@@ -259,6 +272,12 @@ def creation_out(db: DbSession, character: Character) -> CreationOut:
         budget_changes=[
             BudgetChange(category=category, because=refs(because))
             for category, because in creation.budget_changes(db, character).items()
+        ],
+        lost_picks=[
+            LostPicksOut(
+                category=p.category, rating=p.rating, picks=p.picks, because=refs(p.because)
+            )
+            for p in creation.lost_picks(rules.creation_rules(), rows)
         ],
         given=[
             GivenOut(

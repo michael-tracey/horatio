@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, shots, person, creatingVampire, tapMid, CAITIFF_THREE, ATTRIBUTES_AND_FOCUSES } from "./support";
+import { closeContextsAfterEach, shots, person, creatingVampire, tapMid, CAITIFF_THREE, ATTRIBUTES_AND_FOCUSES, choiceIn, choosePick, choosePicks, openSlot, pickedAt, slotsAt } from "./support";
 
 /** The creation wizard: merits and flaws, and what each step lets a character take. */
 
@@ -50,16 +50,21 @@ test("Stolen Potential takes away the focus in the attribute it names, and the c
   await settle.getByRole("link", { name: "Go to Focuses" }).click();
   await expect(p.getByRole("heading", { name: "Focuses", exact: true })).toBeVisible();
   await expect(p.getByRole("group", { name: "Changed by other steps" })).toContainText("Stolen Potential: no starting mental focus. Take Wits back.");
-  await expect(p.getByRole("button", { name: "Wits 1" })).toHaveAttribute("aria-pressed", "true");
+  // Wits is kept, marked, where no pick is left for it.
+  const mental = slotsAt(p, "Mental Focus", 1);
+  await expect(mental).toContainText("Wits");
+  await expect(mental).toContainText("Stolen Potential: no starting mental focus. Take Wits back.");
+  await expect(mental.getByRole("combobox")).toHaveCount(0);
   await tapMid(p, "Clear Wits");
   await p.getByRole("button", { name: "Save and continue" }).click();
   await expect(p.getByRole("heading", { name: "Skills", exact: true })).toBeVisible({ timeout: 15_000 });
 
   // Focuses offers no Mental focus now, and says why; the others are as they were.
   await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Focuses/ }).click();
-  await expect(p.getByText("Stolen Potential: no Mental focus (p. 265).")).toBeVisible();
-  await expect(p.getByRole("button", { name: "Wits 1" })).toHaveCount(0);
-  await expect(p.getByRole("button", { name: "Charisma 1" })).toHaveAttribute("aria-pressed", "true");
+  await expect(mental).toContainText("Taken away");
+  await expect(mental).toContainText("Because of Stolen Potential (Merits & flaws).");
+  await expect(mental.getByRole("combobox")).toHaveCount(0);
+  await expect.poll(pickedAt(p, "Social Focus", 1)).toEqual(["Charisma"]);
   // The flaw is offered here too, taken.
   await expect(p.getByRole("region", { name: "From merits and flaws" }).getByRole("switch", { name: /^Stolen Potential/ })).toBeChecked();
 
@@ -135,7 +140,10 @@ test("Versatile asks for its extra focus on Focuses, and a pick on the focus it 
   await expect(versatile).toBeChecked();
   await expect(p.getByText("Versatile gives you Perception free.")).toBeVisible();
   await expect(notices).toHaveCount(0);
-  await expect(p.getByRole("button", { name: "Perception 1" })).toBeDisabled();
+  const mental = await openSlot(p, "Mental Focus", 1);
+  await expect(mental.getByRole("option", { name: "Perception", exact: true })).toHaveCount(0);
+  await expect(mental.getByRole("option", { name: "Wits", exact: true })).toBeVisible();
+  await p.keyboard.press("Escape");
 
   // Merits shows it as taken, from the same points.
   await p.goto(`/characters/${id}/create/merits`);
@@ -152,8 +160,10 @@ test("Extrasensory Perceptions, taken from Focuses, shows Perception as held the
   await expect(fromMerits.getByRole("switch", { name: /^Extrasensory Perceptions/ })).toBeChecked();
   await expect(p.getByText("Extrasensory Perceptions gives you Perception free.")).toBeVisible();
   // The usual Mental pick is still Wits, and no pick goes on the given focus.
-  await expect(p.getByRole("button", { name: "Wits 1" })).toHaveAttribute("aria-pressed", "true");
-  await expect(p.getByRole("button", { name: "Perception 1" })).toBeDisabled();
+  await expect.poll(pickedAt(p, "Mental Focus", 1)).toEqual(["Wits"]);
+  const mental = await openSlot(p, "Mental Focus", 1);
+  await expect(mental.getByRole("option", { name: "Perception", exact: true })).toHaveCount(0);
+  await p.keyboard.press("Escape");
   await expect(p.getByRole("group", { name: "Changed by other steps" })).toHaveCount(0);
 });
 
@@ -188,8 +198,8 @@ test("Personal Cult frees a Herd pick, which goes elsewhere, and the character f
   // The pick on Herd is kept, marked on its row, the stepper and the notice, and linked.
   const message = "Personal Cult makes Herd free: your pick on Herd can go elsewhere.";
   await expect(p.getByRole("group", { name: "Changed by other steps" })).toContainText(message);
-  await expect(p.getByText(`${message} Clear it and place it on another.`)).toBeVisible();
-  await expect(p.getByRole("button", { name: "Herd 3" })).toHaveAttribute("aria-pressed", "true");
+  await expect(slotsAt(p, "Backgrounds", 3).getByText(`${message} Clear it and place it on another.`)).toBeVisible();
+  await expect.poll(pickedAt(p, "Backgrounds", 3)).toEqual(["Herd"]);
   await expect(p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Backgrounds \(needs a look\)/ })).toBeVisible();
 
   // Review lists it too.
@@ -199,12 +209,15 @@ test("Personal Cult frees a Herd pick, which goes elsewhere, and the character f
 
   // The pick goes to Fame, and Herd is shown as held free.
   await tapMid(p, "Clear Herd");
-  await tapMid(p, "Fame 3");
+  await choosePick(p, "Backgrounds", 3, "Fame");
   await p.getByRole("button", { name: "Save and continue" }).click();
   await expect(p.getByRole("heading", { name: "Disciplines", exact: true })).toBeVisible({ timeout: 15_000 });
   await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Backgrounds/ }).click();
   await expect(p.getByText("Personal Cult gives you Herd 5 free.")).toBeVisible();
-  await expect(p.getByRole("button", { name: "Herd 3" })).toBeDisabled();
+  // Held free, it is not offered for a pick.
+  const at3 = await openSlot(p, "Backgrounds", 3);
+  await expect(at3.getByRole("option", { name: "Herd", exact: true })).toHaveCount(0);
+  await p.keyboard.press("Escape");
   await expect(p.getByRole("navigation", { name: "Creation steps" }).getByText("(needs a look)")).toHaveCount(0);
 
   await p.goto(`/characters/${id}/create/review`);
@@ -229,7 +242,7 @@ test("Seasoned Traveler frees a pick on Survival, which goes to another skill", 
 
   // Moved to Medicine, it is held free at 3 and nothing is left to settle.
   await tapMid(p, "Clear Survival");
-  await tapMid(p, "Medicine 1");
+  await choosePick(p, "Skills", 1, "Medicine");
   await p.getByRole("button", { name: "Save and continue" }).click();
   await expect(p.getByRole("heading", { name: "Backgrounds", exact: true })).toBeVisible({ timeout: 15_000 });
   await p.goto(`/characters/${id}/create/skills`);
@@ -253,7 +266,7 @@ test("Archaic names the Computer pick it clashes with on Merits, and Computer na
 
   // Computer goes to Medicine, and Archaic can be taken.
   await tapMid(p, "Clear Computer");
-  await tapMid(p, "Medicine 1");
+  await choosePick(p, "Skills", 1, "Medicine");
   await p.getByRole("button", { name: "Save and continue" }).click();
   await expect(p.getByRole("heading", { name: "Backgrounds", exact: true })).toBeVisible({ timeout: 15_000 });
   await p.goto(`/characters/${id}/create/merits`);
@@ -262,12 +275,12 @@ test("Archaic names the Computer pick it clashes with on Merits, and Computer na
   await p.getByRole("button", { name: "Save and continue" }).click();
   await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
 
-  // Skills now says what bars Computer, and links to the flaw.
+  // Skills' choices now say what bars Computer, and link to the flaw.
   await p.goto(`/characters/${id}/create/skills`);
-  const computer = p.locator("li").filter({ has: p.getByRole("button", { name: "Computer 1" }) });
+  const computer = choiceIn(await openSlot(p, "Skills", 1), "Computer");
+  await expect(computer.getByRole("option")).toHaveAttribute("aria-disabled", "true");
   await expect(computer).toContainText("An Archaic character cannot have Computer, Drive, Science or Security.");
   await expect(computer).toContainText("Because of Archaic");
-  await expect(p.getByRole("button", { name: "Computer 1" })).toBeDisabled();
   await computer.getByRole("link", { name: "Merits & flaws" }).click();
   await expect(p.getByRole("heading", { name: "Merits & flaws", exact: true })).toBeVisible();
   await expect(p.getByRole("checkbox", { name: /^Archaic/ })).toBeChecked();
@@ -283,12 +296,15 @@ test("Childlike bars Physical 7 on Attributes, and Methuselah's Thirst bars Herd
   await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
 
   await p.goto(`/characters/${id}/create/attributes`);
-  const physical = p.locator("li").filter({ has: p.getByRole("button", { name: "Physical 7" }) });
-  await expect(physical).toContainText("Not at 7: A Childlike character's Physical attribute cannot go above 5.");
+  const at5 = await openSlot(p, "Attributes", 5);
+  await expect(at5.getByRole("option", { name: "Physical", exact: true })).not.toHaveAttribute("aria-disabled");
+  await p.keyboard.press("Escape");
+  const at7 = await openSlot(p, "Attributes", 7);
+  const physical = choiceIn(at7, "Physical");
+  await expect(physical.getByRole("option")).toHaveAttribute("aria-disabled", "true");
+  await expect(physical).toContainText("A Childlike character's Physical attribute cannot go above 5.");
   await expect(physical).toContainText("Because of Childlike");
-  await expect(p.getByRole("button", { name: "Physical 7" })).toBeDisabled();
-  await expect(p.getByRole("button", { name: "Physical 5" })).toBeEnabled();
-  await expect(p.getByRole("button", { name: "Mental 7" })).toBeEnabled();
+  await expect(at7.getByRole("option", { name: "Mental", exact: true })).not.toHaveAttribute("aria-disabled");
   await physical.getByRole("link", { name: "Merits & flaws" }).click();
   await expect(p.getByRole("checkbox", { name: /^Childlike/ })).toBeChecked();
 
@@ -299,10 +315,10 @@ test("Childlike bars Physical 7 on Attributes, and Methuselah's Thirst bars Herd
   await p.getByRole("button", { name: "Save and continue" }).click();
   await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
   await p.goto(`/characters/${id}/create/backgrounds`);
-  const herd = p.locator("li").filter({ has: p.getByRole("button", { name: "Herd 1" }) });
+  const herd = choiceIn(await openSlot(p, "Backgrounds", 1), "Herd");
+  await expect(herd.getByRole("option")).toHaveAttribute("aria-disabled", "true");
   await expect(herd).toContainText("A character with Methuselah's Thirst cannot benefit from Herd.");
   await expect(herd).toContainText("Because of Methuselah's Thirst");
-  await expect(p.getByRole("button", { name: "Herd 1" })).toBeDisabled();
   await herd.getByRole("link", { name: "Merits & flaws" }).click();
   await expect(p.getByRole("checkbox", { name: /^Methuselah's Thirst/ })).toBeChecked();
 });
@@ -324,30 +340,41 @@ test("Lesser Generation on Backgrounds follows the Generation picked, and bars t
   await fromMerits.getByRole("switch", { name: /^Lesser Generation 1/ }).click();
   await expect(fromMerits.getByRole("switch", { name: /^Lesser Generation 1/ })).toBeChecked();
   // An Ancilla can have it; a third dot of Generation is an elder's, which it cannot go with.
-  const generation = p.locator("li").filter({ has: p.getByRole("button", { name: "Generation 1" }) });
-  await expect(generation).toContainText("Not at 3: Lesser Generation 1 is only for Neonate or Ancilla characters.");
-  await expect(generation).toContainText("Because of Lesser Generation 1");
-  await expect(p.getByRole("button", { name: "Generation 3" })).toBeDisabled();
-  await expect(p.getByRole("button", { name: "Generation 2" })).toBeEnabled();
+  // (Taken back from 2, Generation is offered in the other slots.)
+  await tapMid(p, "Clear Generation");
+  const at3 = choiceIn(await openSlot(p, "Backgrounds", 3), "Generation");
+  await expect(at3.getByRole("option")).toHaveAttribute("aria-disabled", "true");
+  await expect(at3).toContainText("Lesser Generation 1 is only for Neonate or Ancilla characters.");
+  await expect(at3).toContainText("Because of Lesser Generation 1");
+  await p.keyboard.press("Escape");
+  await expect((await openSlot(p, "Backgrounds", 2)).getByRole("option", { name: "Generation", exact: true })).not.toHaveAttribute("aria-disabled");
 });
 
 test("Thin Blooded on Backgrounds bars Generation above 1, and a Caitiff cannot have 3", async ({ browser }) => {
   const { page: p } = await person(browser, "wf-thinbl");
-  const id = await creatingVampire(p, "Watery Blood", "Caitiff", ["Auspex", "Celerity", "Potence"], { backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]] });
+  // The pick at 1 left open, so Generation is offered at every rating.
+  const id = await creatingVampire(p, "Watery Blood", "Caitiff", ["Auspex", "Celerity", "Potence"], { backgrounds: [["Fame", 3], ["Resources", 2]] });
   await p.goto(`/characters/${id}/create/backgrounds`);
-  const generation = p.locator("li").filter({ has: p.getByRole("button", { name: "Generation 1" }) });
-  await expect(generation).toContainText("Not at 3: Caitiff cannot have more than 2 dots of Generation.");
-  await expect(generation).toContainText("Because of Caitiff (Concept)");
-  await expect(p.getByRole("button", { name: "Generation 2" })).toBeEnabled();
+  const generationAt = async (rating: number) => {
+    await p.keyboard.press("Escape");
+    return choiceIn(await openSlot(p, "Backgrounds", rating), "Generation");
+  };
+  const at3 = await generationAt(3);
+  await expect(at3.getByRole("option")).toHaveAttribute("aria-disabled", "true");
+  await expect(at3).toContainText("Caitiff cannot have more than 2 dots of Generation.");
+  await expect(at3).toContainText("Because of Caitiff (Concept)");
+  await expect((await generationAt(2)).getByRole("option")).not.toHaveAttribute("aria-disabled");
+  await p.keyboard.press("Escape");
 
   const fromMerits = p.getByRole("region", { name: "From merits and flaws" });
   await fromMerits.getByRole("switch", { name: /^Thin Blooded/ }).click();
   await expect(fromMerits.getByRole("switch", { name: /^Thin Blooded/ })).toBeChecked();
   await expect(fromMerits).toContainText("Neonate is of the 14th or 15th Generation and always Caitiff.");
-  await expect(generation).toContainText("Not at 2 or 3");
-  await expect(generation).toContainText("Because of Thin Blooded");
-  await expect(p.getByRole("button", { name: "Generation 2" })).toBeDisabled();
-  await expect(p.getByRole("button", { name: "Generation 1" })).toBeEnabled();
+  const at2 = await generationAt(2);
+  await expect(at2.getByRole("option")).toHaveAttribute("aria-disabled", "true");
+  await expect(at2).toContainText("Because of Thin Blooded");
+  await expect((await generationAt(1)).getByRole("option")).not.toHaveAttribute("aria-disabled");
+  await p.keyboard.press("Escape");
   // Lesser Generation cannot go with it.
   await expect(fromMerits.getByRole("switch", { name: /^Lesser Generation 1/ })).toBeDisabled();
   await expect(fromMerits).toContainText("Lesser Generation and Thin Blooded cannot be held together.");
@@ -380,7 +407,8 @@ test("a Ventrue takes Royalty in the wizard, is sent to Backgrounds, and places 
   await expect(p.getByText("Ventrue Royalty gives you Contacts 4 free.")).toBeVisible();
   await expect(p.getByText("Ventrue Royalty gives you Haven 3 free.")).toBeVisible();
   await expect(p.getByText("Ventrue Royalty gives you Herd 2 free.")).toBeVisible();
-  await expect(p.getByRole("button", { name: "Herd 1" })).toBeDisabled();
+  await expect((await openSlot(p, "Backgrounds", 1)).getByRole("option", { name: "Herd", exact: true })).toHaveCount(0);
+  await p.keyboard.press("Escape");
   await expect(p.getByRole("navigation", { name: "Creation steps" }).getByText("(needs a look)")).toHaveCount(0);
 
   // Merits shows the same choices, and they change freely until a troupe accepts the character.
@@ -585,20 +613,23 @@ test("each step keeps its picks as they are made, through the step list and a re
 
   // Taps not yet saved go with the player to another step, and are there on coming back.
   const steps = p.getByRole("navigation", { name: "Creation steps" });
-  await tapMid(p, "Brawl 4");
-  await tapMid(p, "Dodge 3");
+  await choosePick(p, "Skills", 4, "Brawl");
+  await choosePick(p, "Skills", 3, "Dodge");
   await steps.getByRole("link", { name: /Backgrounds/ }).click();
   await expect(p.getByRole("heading", { name: "Backgrounds", exact: true })).toBeVisible();
   await steps.getByRole("link", { name: /Skills/ }).click();
-  await expect(p.getByRole("button", { name: "Brawl 4", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(p.getByRole("button", { name: "Dodge 3", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(pickedAt(p, "Skills", 4)).toEqual(["Brawl"]);
+  await expect.poll(pickedAt(p, "Skills", 3)).toEqual(["Dodge", ""]);
 
-  // The step saves itself a moment after the last tap, and a reload keeps it all.
-  for (const dot of ["Athletics 3", "Awareness 2", "Empathy 2", "Firearms 2", "Investigation 1", "Leadership 1", "Medicine 1", "Melee 1"]) await tapMid(p, dot);
+  // The step saves itself a moment after the last choice, and a reload keeps it all.
+  await choosePicks(p, "Skills", [["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]]);
+  await expect(p.getByText("Every pick placed.")).toBeVisible();
   await expect(p.getByText(/^Saved \d/)).toBeVisible({ timeout: 15_000 });
   await p.screenshot(shots("creation-saved"));
   await p.reload();
-  for (const dot of ["Brawl 4", "Athletics 3", "Melee 1"]) await expect(p.getByRole("button", { name: dot, exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(pickedAt(p, "Skills", 4)).toEqual(["Brawl"]);
+  await expect.poll(pickedAt(p, "Skills", 3)).toEqual(["Athletics", "Dodge"]);
+  await expect.poll(pickedAt(p, "Skills", 1)).toContain("Melee");
 
   // Review sums her up before finishing (#372).
   await steps.getByRole("link", { name: /Review/ }).click();
@@ -626,24 +657,37 @@ test("each step keeps its picks as they are made, through the step list and a re
   await expect(p.getByRole("link", { name: "Continue creating" })).toHaveCount(0);
 });
 
-test("on a phone the rating dots are big enough to tap, and a locked step says why in words (#361)", async ({ browser }) => {
+test("on a phone the picks' slots and choices are big enough to tap, and a locked step says why in words (#361)", async ({ browser }) => {
   const { page: p } = await person(browser, "big-dots");
   // No Generation yet: the steps after Backgrounds are locked.
   const id = await creatingVampire(p, "Thumb Taps", "Brujah", []);
   await p.goto(`/characters/${id}/create/skills`);
   await expect(p.getByRole("heading", { name: "Skills", exact: true })).toBeVisible();
 
-  // At least 40px on a touch screen; the desktop keeps its compact rows.
-  const dot = (await p.getByRole("button", { name: "Brawl 1", exact: true }).boundingBox())!;
-  if (test.info().project.name === "phone") {
-    expect(dot.width).toBeGreaterThanOrEqual(40);
-    expect(dot.height).toBeGreaterThanOrEqual(40);
-  } else expect(dot.height).toBeLessThan(40);
-  // Clear stands apart from the last dot.
-  await tapMid(p, "Brawl 4");
-  const last = (await p.getByRole("button", { name: "Brawl 4", exact: true }).boundingBox())!;
+  // At least 40px tall, and on a touch screen, each choice in the list and Clear too.
+  const phone = test.info().project.name === "phone";
+  const slot = (await slotsAt(p, "Skills", 4).getByRole("combobox").boundingBox())!;
+  expect(slot.height).toBeGreaterThanOrEqual(40);
+  const option = (await (await openSlot(p, "Skills", 3)).getByRole("option", { name: "Dodge", exact: true }).boundingBox())!;
+  if (phone) expect(option.height).toBeGreaterThanOrEqual(40);
+  // The list stays on the screen, even from a slot at the right of a row.
+  const list = (await (await openSlot(p, "Skills", 1, 3)).boundingBox())!;
+  expect(list.x).toBeGreaterThanOrEqual(0);
+  expect(list.x + list.width).toBeLessThanOrEqual(p.viewportSize()!.width);
+  await p.screenshot(shots("creation-slot-open"));
+  await p.keyboard.press("Escape");
+  await choosePick(p, "Skills", 4, "Brawl");
   const clear = (await p.getByRole("button", { name: "Clear Brawl" }).boundingBox())!;
-  expect(clear.x - (last.x + last.width)).toBeGreaterThanOrEqual(test.info().project.name === "phone" ? 12 : 4);
+  if (phone) expect(Math.min(clear.width, clear.height)).toBeGreaterThanOrEqual(40);
+
+  // Each rating is labelled as the player shows ratings: a number, or pips.
+  await expect(slotsAt(p, "Skills", 4)).toContainText("4");
+  const pips = await p.request.patch("/api/preferences", { headers: { "X-Horatio": "1" }, data: { ratings: "pips" } });
+  expect(pips.status(), await pips.text()).toBeLessThan(300);
+  await p.reload();
+  await expect(slotsAt(p, "Skills", 4).getByRole("img", { name: "4 dots" })).toBeVisible();
+  await expect(slotsAt(p, "Skills", 1).getByRole("img", { name: "1 dots" })).toBeVisible();
+  await p.screenshot(shots("creation-slots-pips"));
 
   // The reason a step is locked is on the screen, not in a hover title, and read with the step.
   const steps = p.getByRole("navigation", { name: "Creation steps" });
@@ -664,26 +708,24 @@ test("Crafts, Performance and Science take a field in the wizard, kept through B
     await p.getByRole("button", { name: "Save and continue" }).click();
     await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   };
-  const tap = async (...dots: string[]) => {
-    for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
-  };
   await next("Attributes");
-  await tap("Physical 7", "Social 5", "Mental 3");
+  await choosePicks(p, "Attributes", [["Physical", 7], ["Social", 5], ["Mental", 3]]);
   await next("Focuses");
-  await tap("Strength 1", "Wits 1", "Charisma 1");
+  await choosePick(p, "Physical Focus", 1, "Strength");
+  await choosePick(p, "Mental Focus", 1, "Wits");
+  await choosePick(p, "Social Focus", 1, "Charisma");
   await next("Skills");
 
   // Choosing Performance asks for its field there and then.
-  await tap("Performance 3");
+  await choosePick(p, "Skills", 3, "Performance");
   await expect(p.getByLabel("Performance field")).toBeFocused();
   await expect(p.getByLabel("Performance field")).toHaveAttribute("placeholder", "Such as Singing");
   await p.getByLabel("Performance field").fill("Singing");
-  // A second field of the same skill has its own dots.
-  await p.getByRole("button", { name: "Add another field" }).click();
+  // The same skill can fill another slot, for another field.
+  await choosePick(p, "Skills", 1, "Performance");
   await expect(p.getByLabel("Performance #2 field")).toBeFocused();
   await p.getByLabel("Performance #2 field").fill("Dance");
-  await tap("Performance #2 1");
-  await tap("Brawl 4", "Science 3", "Awareness 2", "Empathy 2", "Firearms 2", "Investigation 1", "Leadership 1", "Medicine 1");
+  await choosePicks(p, "Skills", [["Brawl", 4], ["Science", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1]]);
   // Science has no field yet: the row says so, and the step will not move on.
   await expect(p.getByText("Science needs a field.")).toBeVisible();
   await p.getByRole("button", { name: "Save and continue" }).click();
@@ -701,11 +743,11 @@ test("Crafts, Performance and Science take a field in the wizard, kept through B
   await expect(p.getByLabel("Performance #2 field")).toHaveValue("Dance");
   await p.reload();
   await expect(p.getByLabel("Science field")).toHaveValue("Chemistry");
-  await expect(p.getByRole("button", { name: "Performance #2 1", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(pickedAt(p, "Skills", 1)).toContain("Performance");
   await next("Backgrounds");
-  await tap("Fame 3", "Herd 2", "Generation 1");
+  await choosePicks(p, "Backgrounds", [["Fame", 3], ["Herd", 2], ["Generation", 1]]);
   await next("Disciplines");
-  await tap("Celerity 2", "Potence 1", "Presence 1");
+  await choosePicks(p, "Disciplines", [["Celerity", 2], ["Potence", 1], ["Presence", 1]]);
   await next("Merits & flaws");
 
   // A pick placed without its field elsewhere (as on the Sheet tab) is given one on Review.

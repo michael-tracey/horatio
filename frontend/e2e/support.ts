@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { expect, test, type Browser, type BrowserContextOptions, type Page } from "@playwright/test";
+import { expect, test, type Browser, type BrowserContextOptions, type Locator, type Page } from "@playwright/test";
 
 /**
  * What the e2e specs share: signing people up, and building characters through the
@@ -114,6 +114,88 @@ export async function creatingVampire(p: Page, name: string, clan: string, inCla
   for (const [category, picks] of Object.entries(build))
     await send("PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([trait, rating]) => ({ name: trait, rating })) });
   return id as string;
+}
+
+/** The creation wizard's slots for the picks at one rating of a category ("Skills", "Physical Focus"). */
+export function slotsAt(p: Page, section: string, rating: number) {
+  return p.getByRole("group", { name: `${section} at ${rating}`, exact: true });
+}
+
+/** What the slots at one rating hold, for `expect.poll`: each slot's trait, or "" while empty. */
+export function pickedAt(p: Page, section: string, rating: number) {
+  return () =>
+    slotsAt(p, section, rating)
+      .getByRole("combobox")
+      .evaluateAll((boxes) => boxes.map((box) => (box as HTMLInputElement).value));
+}
+
+/** Opens a slot's list of traits (the `nth` at that rating), returning the list. */
+export async function openSlot(p: Page, section: string, rating: number, nth = 0) {
+  const slot = slotsAt(p, section, rating).getByRole("combobox").nth(nth);
+  await slot.scrollIntoViewIfNeeded();
+  await slot.click();
+  const list = p.locator(`[id="${await slot.getAttribute("aria-controls")}"]`);
+  await expect(list).toBeVisible();
+  return list;
+}
+
+/** One trait in an open slot's list, with why it can't be chosen (and links to where) beside it. */
+export function choiceIn(list: Locator, trait: string) {
+  return list.locator(`[data-choice="${trait}"]`);
+}
+
+/** Each slot's trait ("" while empty) and the id of its list, read in one go. */
+function slotStates(slots: Locator) {
+  return slots.evaluateAll((boxes) => boxes.map((box) => ({ value: (box as HTMLInputElement).value, list: box.getAttribute("aria-controls") ?? "" })));
+}
+
+/** Chooses `trait` in a slot at `rating`: the first empty one, or the `nth`, swapping or
+ * replacing what is there. Typing narrows the list, as a player would on a long one. */
+export async function choosePick(p: Page, section: string, rating: number, trait: string, nth?: number) {
+  const slots = slotsAt(p, section, rating).getByRole("combobox");
+  await expect(slots.first()).toBeVisible();
+  const states = await slotStates(slots);
+  const at = nth ?? states.findIndex((s) => !s.value);
+  if (at === -1) throw new Error(`No empty slot at ${rating} in ${section}`);
+  const slot = slots.nth(at);
+  await slot.fill(trait);
+  await p.locator(`[id="${states[at]!.list}"]`).getByRole("option", { name: trait, exact: true }).click();
+  await expect(slot).toHaveValue(trait);
+}
+
+/** Chooses each trait at its rating, as `choosePick` does. */
+export async function choosePicks(p: Page, section: string, picks: [string, number][]) {
+  for (const [trait, rating] of picks) await choosePick(p, section, rating, trait);
+}
+
+/** Chooses each "Trait N" (such as "Brawl 4") in an empty slot at N, in whichever of the
+ * step's categories offers it: a quick way through a whole step (Focuses has three). */
+export async function chooseDots(p: Page, ...dots: string[]) {
+  for (const dot of dots) {
+    const [, trait, rating] = dot.match(/^(.*) (\d+)$/)!;
+    const groups = p.getByRole("group", { name: new RegExp(` at ${rating}$`) });
+    await expect(groups.first()).toBeVisible();
+    let chosen = false;
+    for (const group of await groups.all()) {
+      const slots = group.getByRole("combobox");
+      const states = await slotStates(slots);
+      const at = states.findIndex((s) => !s.value);
+      if (at === -1) continue;
+      const slot = slots.nth(at);
+      await slot.fill(trait!);
+      const option = p.locator(`[id="${states[at]!.list}"]`).getByRole("option", { name: trait, exact: true });
+      // Another category's slots (Focuses: Physical, Social, Mental) may not offer it.
+      if (!(await option.count())) {
+        await p.keyboard.press("Escape");
+        continue;
+      }
+      await option.click();
+      await expect(slot).toHaveValue(trait!);
+      chosen = true;
+      break;
+    }
+    if (!chosen) throw new Error(`No empty slot offers ${dot}`);
+  }
 }
 
 /** Taps a button after bringing it to the middle of the screen, clear of the sticky counters on a phone. */

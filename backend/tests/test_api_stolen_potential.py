@@ -92,6 +92,14 @@ def test_with_mental_named_no_mental_focus_is_needed_to_finish(troupe: Troupe) -
         "category": "focus_mentals",
         "because": [{"category": "flaws", "name": "Stolen Potential"}],
     } in state["budget_changes"]
+    assert state["lost_picks"] == [
+        {
+            "category": "focus_mentals",
+            "rating": 1,
+            "picks": 1,
+            "because": [{"category": "flaws", "name": "Stolen Potential"}],
+        }
+    ]
     # One is refused, saying why.
     refused = pick(player, character_id, "focus_mentals", "Wits")
     assert refused.status_code == 422

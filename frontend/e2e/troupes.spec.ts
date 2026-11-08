@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab, builtVampire, ATTRIBUTES_AND_FOCUSES, PASSWORD, tapMid } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab, builtVampire, ATTRIBUTES_AND_FOCUSES, PASSWORD, tapMid, choosePick, chooseDots } from "./support";
 
 /** A troupe's setup: its rules, XP range, staff, profile and archiving, and asking for one. */
 
@@ -50,7 +50,7 @@ test("a troupe changes what new characters start with and their downtime actions
   await expect(p.getByLabel("Clan")).toHaveValue("Brujah");
   for (const heading of ["Attributes", "Focuses", "Skills", "Backgrounds", "Disciplines", "Merits & flaws"]) {
     // A vampire needs Generation before leaving Backgrounds.
-    if (heading === "Disciplines") await p.getByRole("button", { name: "Generation 1", exact: true }).click();
+    if (heading === "Disciplines") await choosePick(p, "Backgrounds", 1, "Generation");
     await p.getByRole("button", { name: "Save and continue" }).click();
     await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   }
@@ -765,9 +765,7 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
     await p.getByRole("button", { name: "Save and continue" }).click();
     await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   };
-  const tap = async (...dots: string[]) => {
-    for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
-  };
+  const tap = (...dots: string[]) => chooseDots(p, ...dots);
   await next("Attributes");
   await tap("Physical 7", "Social 5", "Mental 3");
   await next("Focuses");
