@@ -89,8 +89,8 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(p.getByText("4 picks left: four at 1")).toBeVisible();
   await choosePicks(p, "Skills", [["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]]);
   await expect(p.getByText("Every pick placed.")).toBeVisible();
-  // A skill picked is not offered in another slot (only attributes swap), and Clear frees it again.
-  await expect((await openSlot(p, "Skills", 3)).getByRole("option", { name: "Brawl", exact: true })).toHaveCount(0);
+  // A skill picked is offered in other slots as where it is, to move it, and Clear frees it again.
+  await expect((await openSlot(p, "Skills", 3)).getByRole("option", { name: "Brawl (at 4)", exact: true })).toBeVisible();
   await p.keyboard.press("Escape");
   await p.getByRole("button", { name: "Clear Brawl" }).click();
   await expect(p.getByText("1 pick left: one at 4")).toBeVisible();

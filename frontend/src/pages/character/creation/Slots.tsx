@@ -7,7 +7,7 @@ import { usePreferences } from "../../../hooks";
 import { HouseWording } from "../../../components/TroupeChange";
 import { bookSummary } from "../../../houseWording";
 import { detailNeed } from "../fields";
-import { choose, clear, fieldProblems, isRanking, picksLeft, seatPicks, traitOf, type Allowed, type Picks } from "./logic";
+import { choose, clear, fieldProblems, move, picksLeft, seatPicks, traitOf, type Allowed, type Picks } from "./logic";
 import type { Held, RatingBar } from "./DotGrid";
 
 /** Picks at one rating that a trait held took away, and why (Thin Blooded's discipline at 2). */
@@ -26,12 +26,14 @@ export function oneOf(title: string): string {
  * choice of the category's traits. "Skills: one at 4, two at 3, three at 2, four at
  * 1" is four rows of one, two, three and four slots.
  *
- * A slot offers only what it can take: a trait picked in another slot, or held
- * without a pick (a merit's free dots), is left out, and one the rules refuse is
- * there, greyed, saying why. In a ranking (attributes' 7 / 5 / 3, a focus) every
- * trait is offered, and choosing one placed in another slot swaps the two. Picks
- * the rules no longer give a slot for are kept, after the slots, marked to move;
- * a slot a trait held took away says what took it.
+ * A slot offers only what it can take: a trait held without a pick (a merit's free
+ * dots) is left out, and one the rules refuse is there, greyed, saying why. A trait
+ * picked at another rating is offered marked with where it is, "Brawl (at 3)", and
+ * choosing it moves it: the trait in the slot goes to the one it left when it fits
+ * there (a swap), or is taken off, saying so. A pick with dots bought on top can't
+ * move, and one that no longer meets its restriction (in-clan) isn't offered
+ * elsewhere. Picks the rules no longer give a slot for are kept, after the slots,
+ * marked to move; a slot a trait held took away says what took it.
  */
 export function SlotGrid({
   title,
@@ -49,6 +51,8 @@ export function SlotGrid({
   held = {},
   marks = {},
   lost = [],
+  bought = new Set(),
+  misfits = new Set(),
 }: {
   title: string;
   showTitle?: boolean;
@@ -73,12 +77,18 @@ export function SlotGrid({
   marks?: Record<string, string>;
   /** Picks a trait held took away, by rating. */
   lost?: Lost[];
+  /** Picks with dots bought on top, by key: they can't move until those are undone. */
+  bought?: Set<string>;
+  /** Traits whose picks no longer meet their restriction (in-clan): kept, but not offered in other slots. */
+  misfits?: Set<string>;
 }) {
   const named = useClanName();
   // Where each pick sits, by rating, so choosing one doesn't shuffle the rest.
   const [seats, setSeats] = useState<Record<number, (string | null)[]>>({});
   // The field box to focus when it appears: that of the pick just chosen.
   const [focus, setFocus] = useState<string | null>(null);
+  // What a move did that wasn't asked for (a pick taken off), under the slot it was made in.
+  const [said, setSaid] = useState<{ rating: number; slot: number; text: string } | null>(null);
   // Those marked to move go last, so a rating with too many keeps the ones that fit in its slots.
   const placedAt = (rating: number) =>
     Object.keys(picks)
@@ -86,42 +96,56 @@ export function SlotGrid({
       .sort((a, b) => Number(!!marks[traitOf(a)]) - Number(!!marks[traitOf(b)]));
   const ratings = [...new Set([...Object.keys(allowed).map(Number), ...Object.values(picks), ...lost.map((l) => l.rating)])].sort((a, b) => b - a);
   const layout = Object.fromEntries(ratings.map((r) => [r, seatPicks(seats[r] ?? [], placedAt(r), allowed[r] ?? 0)])) as Record<number, (string | null)[]>;
-  const ranking = isRanking(allowed);
   const byName = new Map(traits.map((t) => [t.name, t]));
   const needOf = (name: string) => detailNeed(byName.get(name));
   const problems = onDetail ? fieldProblems(picks, details, needOf) : {};
   const one = oneOf(title);
-  // Every row's slots start at one place: past the widest rating, as a number or pips.
-  const { ratings: shown } = usePreferences();
-  const widest = Math.max(1, ...Object.keys(allowed).map(Number), ...lost.map((l) => l.rating), ...Object.values(picks));
-  const labelWidth = shown === "pips" ? pipsWidth(widest) : 1.5;
-  const indent = { paddingLeft: `${labelWidth + 0.75}rem` };
+  // A pick by its trait, and its field when it has one: "Performance: Singing".
+  const pickName = (key: string) => named(details[key]?.trim() ? `${traitOf(key)}: ${details[key]!.trim()}` : traitOf(key));
+  const undoFirst = (key: string) => `Undo the dots bought for ${named(traitOf(key))} first.`;
+  // Where a trait the move displaces could go: allowed, and not barred at that rating.
+  const fitsAt = (name: string, rating: number) =>
+    !misfits.has(name) && !unavailable[name] && !(barredAt[name] ?? []).some((b) => b.ratings.includes(rating));
 
-  const place = (rating: number, slot: number, holder: string | null, name: string) => {
-    const fielded = !!(onDetail && needOf(name));
-    const chosen = choose(picks, allowed, rating, holder, name, fielded);
-    if (chosen.picks === picks) return;
-    const next = { ...layout, [rating]: layout[rating]!.map((k, i) => (i === slot ? chosen.key : k)) };
-    // A ranked trait chosen from another slot leaves that slot to the one it swapped with.
-    if (ranking && name in picks && picks[name] !== rating) next[picks[name]!] = (layout[picks[name]!] ?? []).map((k) => (k === name ? holder : k));
+  const place = (rating: number, slot: number, holder: string | null, value: string) => {
+    const [how, chosen] = [value.slice(0, value.indexOf(":")), value.slice(value.indexOf(":") + 1)];
+    const next = { ...layout };
+    let result: { picks: Picks; key: string | null };
+    if (how === "move") {
+      const from = picks[chosen]!;
+      const moved = move(picks, allowed, rating, holder, chosen, fitsAt);
+      if (moved.picks === picks) return;
+      // The slot the pick left takes the one it swapped with, or is left empty.
+      next[from] = (layout[from] ?? []).map((k) => (k === chosen ? (moved.holder === "swapped" ? holder : null) : k));
+      setSaid(
+        moved.holder === "off"
+          ? { rating, slot, text: `${pickName(holder!)} can't go at ${from}, so it is taken off, and the slot at ${from} is left empty.` }
+          : null,
+      );
+      result = moved;
+    } else {
+      const fielded = !!(onDetail && needOf(chosen));
+      result = choose(picks, allowed, rating, holder, chosen, fielded);
+      if (result.picks === picks) return;
+      if (fielded && result.key) setFocus(result.key);
+      setSaid(null);
+    }
+    next[rating] = next[rating]!.map((k, i) => (i === slot ? result.key : k));
     setSeats(next);
-    if (fielded && chosen.key) setFocus(chosen.key);
-    onChange(chosen.picks);
+    onChange(result.picks);
+  };
+  const takeBack = (key: string) => {
+    setSaid(null);
+    onChange(clear(picks, key));
   };
 
   /** What a slot at `rating` holding `holder` offers. */
   const options = (rating: number, holder: string | null): Choice[] =>
     traits.flatMap((t): Choice[] => {
       const mine = holder !== null && traitOf(holder) === t.name;
-      const elsewhere = Object.keys(picks).filter((k) => traitOf(k) === t.name && k !== holder);
-      if (!mine && held[t.name] && !elsewhere.length) return [];
+      const others = Object.keys(picks).filter((k) => traitOf(k) === t.name && k !== holder);
+      if (!mine && held[t.name] && !others.length) return [];
       const fielded = !!(onDetail && detailNeed(t));
-      let hint: string | undefined;
-      if (!mine && elsewhere.length) {
-        if (ranking) hint = `At ${picks[elsewhere[0]!]}: swaps`;
-        else if (fielded) hint = "Another field";
-        else return [];
-      }
       const bars = (barredAt[t.name] ?? []).filter((b) => b.ratings.includes(rating));
       const refused = mine ? undefined : unavailable[t.name];
       const note: ReactNode = refused ? (
@@ -132,61 +156,77 @@ export function SlotGrid({
       ) : !mine && bars.length ? (
         bars.map((b, i) => <span key={i}>{b.note}</span>)
       ) : undefined;
-      return [{ trait: t, label: named(t.name), group: sections ? (sections.of(t) ?? "Other") : null, current: mine, disabled: !!note, note, hint }];
+      const group = sections ? (sections.of(t) ?? "Other") : null;
+      // Each pick of it at another rating, to move here; not one in this row's other slots.
+      const moves = mine || misfits.has(t.name) ? [] : others.filter((k) => picks[k] !== rating);
+      const choices = moves.map(
+        (k): Choice => ({
+          value: `move:${k}`,
+          name: t.name,
+          trait: t,
+          label: pickName(k),
+          at: picks[k],
+          group,
+          current: false,
+          disabled: !!note || bought.has(k),
+          note: note ?? (bought.has(k) ? undoFirst(k) : undefined),
+        }),
+      );
+      // A new pick: of a trait not picked yet, or another field of one that is.
+      if (mine || !others.length || fielded) {
+        const hint = !mine && others.length ? "Another field" : undefined;
+        choices.push({ value: `pick:${t.name}`, name: t.name, trait: t, label: named(t.name), group, current: mine, disabled: !!note, note, hint });
+      }
+      return choices;
     });
 
   const left = picksLeft(picks, allowed);
   const toMove = ratings.some((r) => layout[r]!.length > (allowed[r] ?? 0));
   // Somewhere to move a pick to: not so for a category a trait held left with no picks (Stolen Potential's focus).
   const anywhere = Object.values(allowed).some((n) => n > 0);
-  const move = anywhere ? " Clear it and place it on another." : "";
+  const moveIt = anywhere ? " Clear it and place it on another." : "";
   const heldHere = Object.entries(held).filter(([name]) => !Object.keys(picks).some((k) => traitOf(k) === name));
+  const widest = Math.max(1, ...Object.keys(allowed).map(Number), ...lost.map((l) => l.rating), ...Object.values(picks));
 
   return (
-    <section aria-label={title} className="flex flex-col gap-3">
-      {showTitle && <h3 className="text-base text-gold">{title}</h3>}
-      {ratings.map((rating) => {
+    <SlotRows
+      title={title}
+      showTitle={showTitle}
+      widest={widest}
+      rows={ratings.map((rating) => {
         const slots = allowed[rating] ?? 0;
         const row = layout[rating]!;
         const extras = row.length - slots;
         const gone = lost.filter((l) => l.rating === rating);
         const ghosts = Math.max(0, gone.reduce((n, l) => n + l.picks, 0) - extras);
-        return (
-          <div key={rating} role="group" aria-label={`${title} at ${rating}`} className="flex items-start gap-3">
-            <span className="shrink-0 pt-3 text-right text-gold" style={{ width: `${labelWidth}rem` }}>
-              <Rating value={rating} of={rating} className={shown === "pips" ? "text-sm leading-none" : "font-display text-base leading-none"} />
-            </span>
-            <ul className="grid min-w-0 flex-1 grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-2">
+        return {
+          rating,
+          slots: (
+            <>
               {row.map((key, i) => {
                 const name = key === null ? null : traitOf(key);
                 const need = name ? needOf(name) : null;
                 const mark = name ? marks[name] : undefined;
-                const label = `${title} at ${rating}${slots > 1 ? `, pick ${i + 1} of ${slots}` : ""}`;
                 if (i >= slots) {
                   return (
-                    <li key={`extra-${key}`} className="col-span-full flex flex-col gap-1">
-                      <div className="flex min-h-10 max-w-xs items-center justify-between gap-2 rounded-md border border-blood bg-night py-1 pr-1 pl-3 text-sm text-parchment">
-                        <span className="min-w-0 truncate">{named(name!)}</span>
-                        <ClearButton pick={key!} onClear={() => onChange(clear(picks, key!))} />
-                      </div>
-                      <p className="text-xs text-blood-bright">
-                        {mark ? `${named(mark)}${move}` : `No pick at ${rating} for it now.${move}`}
-                      </p>
-                    </li>
+                    <ExtraPick key={`extra-${key}`} value={named(name!)} pick={key!} onClear={() => takeBack(key!)}>
+                      {mark ? `${named(mark)}${moveIt}` : `No pick at ${rating} for it now.${moveIt}`}
+                    </ExtraPick>
                   );
                 }
                 return (
-                  <li key={`slot-${i}`} className="flex min-w-0 flex-col gap-1">
-                    <TraitChoice
-                      label={label}
-                      placeholder={`Choose ${one}`}
-                      value={name ? named(name) : ""}
-                      marked={!!mark}
-                      choices={options(rating, key)}
-                      onChoose={(chosen) => place(rating, i, key, chosen)}
-                      onClear={key ? () => onChange(clear(picks, key)) : undefined}
-                      pick={key}
-                    />
+                  <Slot
+                    key={`slot-${i}`}
+                    label={`${title} at ${rating}${slots > 1 ? `, pick ${i + 1} of ${slots}` : ""}`}
+                    placeholder={`Choose ${one}`}
+                    value={name ? named(name) : ""}
+                    marked={!!mark}
+                    choices={options(rating, key)}
+                    locked={key && bought.has(key) ? undoFirst(key) : undefined}
+                    onChoose={(value) => place(rating, i, key, value)}
+                    onClear={key ? () => takeBack(key) : undefined}
+                    pick={key}
+                  >
                     {key && need && onDetail && (
                       <Input
                         aria-label={`${key} ${need.kind}`}
@@ -197,9 +237,10 @@ export function SlotGrid({
                         className="h-9 min-h-9 py-0 text-sm"
                       />
                     )}
-                    {mark && <p className="text-xs text-blood-bright">{`${named(mark)}${move}`}</p>}
+                    {mark && <p className="text-xs text-blood-bright">{`${named(mark)}${moveIt}`}</p>}
                     {key && problems[key] && <p className="text-xs text-blood-bright">{problems[key].message}</p>}
-                  </li>
+                    {said?.rating === rating && said.slot === i && <p className="text-xs text-mist">{said.text}</p>}
+                  </Slot>
                 );
               })}
               {Array.from({ length: ghosts }, (_, i) => (
@@ -208,25 +249,91 @@ export function SlotGrid({
                   {gone[0]?.why}
                 </li>
               ))}
-            </ul>
-          </div>
-        );
+            </>
+          ),
+        };
       })}
-      <p className="text-sm text-mist" style={indent} aria-live="polite">
-        {left ?? (anywhere && !toMove ? "Every pick placed." : null)}
-      </p>
-      {heldHere.length > 0 && (
-        <ul aria-label={`${title} held without a pick`} className="flex flex-col gap-1" style={indent}>
-          {heldHere.map(([name, gift]) => (
-            <li key={name} className="flex items-baseline gap-2 text-xs text-gold">
-              <span className="text-sm text-parchment">{named(name)}</span>
-              <Rating value={gift.rating} of={gift.rating} className="text-xs text-parchment" />
-              <span>{gift.text}</span>
-            </li>
-          ))}
-        </ul>
+      after={(indent) => (
+        <>
+          <p className="text-sm text-mist" style={indent} aria-live="polite">
+            {left ?? (anywhere && !toMove ? "Every pick placed." : null)}
+          </p>
+          {heldHere.length > 0 && (
+            <ul aria-label={`${title} held without a pick`} className="flex flex-col gap-1" style={indent}>
+              {heldHere.map(([name, gift]) => (
+                <li key={name} className="flex items-baseline gap-2 text-xs text-gold">
+                  <span className="text-sm text-parchment">{named(name)}</span>
+                  <Rating value={gift.rating} of={gift.rating} className="text-xs text-parchment" />
+                  <span>{gift.text}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
+    />
+  );
+}
+
+/**
+ * Rows of slots, one for each rating, the rating beside each as Settings shows
+ * ratings (a number or pips). Every row's slots start at one place, past the widest
+ * rating; `after` lines up under them. Each row's `slots` are its `Slot`s.
+ */
+export function SlotRows({
+  title,
+  showTitle = true,
+  label = title,
+  widest,
+  rows,
+  after,
+}: {
+  title: string;
+  showTitle?: boolean;
+  /** What the rows are called, for a screen reader, where the title alone would be ambiguous. */
+  label?: string;
+  widest: number;
+  rows: { rating: number; slots: ReactNode }[];
+  after?: (indent: CSSProperties) => ReactNode;
+}) {
+  const { ratings: shown } = usePreferences();
+  const labelWidth = shown === "pips" ? pipsWidth(widest) : 1.5;
+  return (
+    <section aria-label={label} className="flex flex-col gap-3">
+      {showTitle && <h3 className="text-base text-gold">{title}</h3>}
+      {rows.map(({ rating, slots }) => (
+        <div key={rating} role="group" aria-label={`${title} at ${rating}`} className="flex items-start gap-3">
+          <span className="shrink-0 pt-3 text-right text-gold" style={{ width: `${labelWidth}rem` }}>
+            <Rating value={rating} of={rating} className={shown === "pips" ? "text-sm leading-none" : "font-display text-base leading-none"} />
+          </span>
+          <ul className="grid min-w-0 flex-1 grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-2">{slots}</ul>
+        </div>
+      ))}
+      {after?.({ paddingLeft: `${labelWidth + 0.75}rem` })}
     </section>
+  );
+}
+
+/** One slot in a row: its choice, and what goes under it (a field, a note). */
+export function Slot({ children, ...choice }: Parameters<typeof TraitChoice>[0] & { children?: ReactNode }) {
+  return (
+    <li className="flex min-w-0 flex-col gap-1">
+      <TraitChoice {...choice} />
+      {children}
+    </li>
+  );
+}
+
+/** A pick beyond a row's slots (the rules give fewer now): kept, to be moved or cleared, and why. */
+export function ExtraPick({ value, pick, onClear, clearLabel, children }: { value: string; pick: string; onClear: () => void; clearLabel?: string; children: ReactNode }) {
+  return (
+    <li className="col-span-full flex flex-col gap-1">
+      <div className="flex min-h-10 max-w-xs items-center justify-between gap-2 rounded-md border border-blood bg-night py-1 pr-1 pl-3 text-sm text-parchment">
+        <span className="min-w-0 truncate">{value}</span>
+        <ClearButton label={clearLabel ?? `Clear ${pick}`} onClear={onClear} />
+      </div>
+      <p className="text-xs text-blood-bright">{children}</p>
+    </li>
   );
 }
 
@@ -236,16 +343,35 @@ function pipsWidth(n: number): number {
   return (n * 0.7 + (n - fives) * 0.12 + (fives - 1) * 0.35) * 0.875 + 0.05;
 }
 
-/** One trait a slot offers: greyed with `note` saying why when it can't be chosen. */
-type Choice = { trait: TraitOut; label: string; group: string | null; current: boolean; disabled: boolean; note?: ReactNode; hint?: string };
+/**
+ * One trait a slot offers: greyed with `note` saying why when it can't be chosen.
+ * `value` is what choosing it gives the slot's `onChoose`; `at` is the rating the
+ * trait is picked at elsewhere, shown as "Brawl (at 3)", for a choice that moves it.
+ */
+export type Choice = {
+  value: string;
+  /** The trait's name, which typing finds it by. */
+  name: string;
+  label: string;
+  group: string | null;
+  current: boolean;
+  disabled: boolean;
+  note?: ReactNode;
+  hint?: ReactNode;
+  at?: number;
+  /** The trait, for its description. */
+  trait?: TraitOut;
+};
 
-function ClearButton({ pick, onClear }: { pick: string; onClear: () => void }) {
+function ClearButton({ label, onClear, disabled }: { label: string; onClear: () => void; disabled?: boolean }) {
   return (
     <button
       type="button"
-      aria-label={`Clear ${pick}`}
+      aria-label={label}
+      title={label}
       onClick={onClear}
-      className="grid h-8 w-8 shrink-0 place-items-center rounded text-mist hover:bg-ash hover:text-parchment pointer-coarse:h-10 pointer-coarse:w-10"
+      disabled={disabled}
+      className="grid h-8 w-8 shrink-0 place-items-center rounded text-mist hover:bg-ash hover:text-parchment disabled:opacity-50 pointer-coarse:h-10 pointer-coarse:w-10"
     >
       <span aria-hidden>×</span>
     </button>
@@ -258,25 +384,33 @@ function ClearButton({ pick, onClear }: { pick: string; onClear: () => void }) {
  * each one's description opens from the list. The list fits the screen's width, so
  * it works on a phone.
  */
-function TraitChoice({
+export function TraitChoice({
   label,
   placeholder,
   value,
-  marked,
+  marked = false,
   choices,
   onChoose,
   onClear,
+  clearLabel,
   pick: held,
+  locked,
+  disabled = false,
 }: {
   label: string;
   placeholder: string;
   value: string;
-  marked: boolean;
+  marked?: boolean;
   choices: Choice[];
-  onChoose: (name: string) => void;
+  onChoose: (value: string) => void;
   onClear?: () => void;
+  /** What the clear button says; "Clear Brawl" unless told. */
+  clearLabel?: string;
   /** The pick in the slot (see logic's `copyKey`), which Clear takes back. */
   pick: string | null;
+  /** Why the pick in the slot can't change now: every other choice is greyed, saying so. */
+  locked?: string;
+  disabled?: boolean;
 }) {
   const named = useClanName();
   const listId = useId();
@@ -290,7 +424,8 @@ function TraitChoice({
   const [place, setPlace] = useState<CSSProperties>({});
   const closing = useRef<ReturnType<typeof setTimeout>>(undefined);
   const q = (typed ?? "").trim().toLowerCase();
-  const shown = choices.filter((c) => !q || withClanNames(c.trait.name).toLowerCase().includes(q) || c.label.toLowerCase().includes(q));
+  const offered = locked ? choices.map((c) => (c.current ? c : { ...c, disabled: true, note: undefined })) : choices;
+  const shown = offered.filter((c) => !q || withClanNames(c.name).toLowerCase().includes(q) || c.label.toLowerCase().includes(q));
   const pickable = shown.filter((c) => !c.disabled);
   const groups = [...new Set(shown.map((c) => c.group))];
 
@@ -307,7 +442,7 @@ function TraitChoice({
   const pick = (c: Choice) => {
     if (c.disabled) return;
     close();
-    if (!c.current) onChoose(c.trait.name);
+    if (!c.current) onChoose(c.value);
   };
 
   // As wide as the screen allows, and kept on it: a slot at the right of a row opens leftwards.
@@ -356,6 +491,7 @@ function TraitChoice({
         placeholder={placeholder}
         value={typed ?? value}
         title={value || undefined}
+        disabled={disabled}
         className={`text-sm ${held ? "pr-10" : "pr-8"} ${marked ? "border-blood" : value ? "" : "border-dashed"}`}
         onChange={(e) => {
           setTyped(e.target.value);
@@ -375,7 +511,7 @@ function TraitChoice({
       />
       <span className="absolute top-1/2 right-1 flex -translate-y-1/2 items-center">
         {onClear && held ? (
-          <ClearButton pick={held} onClear={onClear} />
+          <ClearButton label={clearLabel ?? `Clear ${held}`} onClear={onClear} disabled={disabled} />
         ) : (
           <span aria-hidden className="pointer-events-none px-1.5 text-xs text-mist">
             ▾
@@ -390,6 +526,7 @@ function TraitChoice({
           onMouseDown={(e) => e.preventDefault()}
           className="absolute z-20 mt-1 max-h-80 overflow-y-auto rounded-md border border-ash bg-dusk py-1 shadow-lg"
         >
+          {locked && <p className="border-b border-ash px-3 py-2 text-xs text-blood-bright">{locked}</p>}
           <ul id={listId} role="listbox" aria-label={label}>
             {groups.map((group) => (
               <li key={group ?? "all"} role="presentation">
@@ -399,16 +536,18 @@ function TraitChoice({
                     .filter((c) => c.group === group)
                     .map((c) => {
                       const index = pickable.indexOf(c);
-                      const described = !!(bookSummary(c.trait.description, c.trait.changed) || c.trait.changed);
-                      const opened = about === c.trait.name;
-                      const aboutId = `${listId}-about-${c.trait.name}`.replace(/\W+/g, "-");
-                      const noteId = `${listId}-why-${c.trait.name}`.replace(/\W+/g, "-");
+                      const trait = c.trait;
+                      const described = !!trait && !!(bookSummary(trait.description, trait.changed) || trait.changed);
+                      const opened = about === c.value;
+                      const aboutId = `${listId}-about-${c.value}`.replace(/\W+/g, "-");
+                      const noteId = `${listId}-why-${c.value}`.replace(/\W+/g, "-");
+                      const name = c.at === undefined ? c.label : `${c.label} (at ${c.at})`;
                       return (
-                        <li key={c.trait.name} role="presentation" data-choice={c.trait.name} className="flex flex-wrap items-start">
+                        <li key={c.value} role="presentation" data-choice={c.name} className="flex flex-wrap items-start">
                           <div
                             id={index >= 0 ? `${listId}-${index}` : undefined}
                             role="option"
-                            aria-label={c.label}
+                            aria-label={name}
                             aria-selected={c.current}
                             aria-disabled={c.disabled || undefined}
                             aria-describedby={c.note ? noteId : undefined}
@@ -421,6 +560,7 @@ function TraitChoice({
                               {c.label}
                               {c.current && <span className="sr-only"> (chosen)</span>}
                             </span>
+                            {c.at !== undefined && <span className={`ml-1 ${c.disabled ? "" : "text-mist"}`}>(at {c.at})</span>}
                             {c.hint && <span className="ml-2 text-xs text-mist">{c.hint}</span>}
                           </div>
                           {described && (
@@ -429,7 +569,7 @@ function TraitChoice({
                               aria-label={`About ${c.label}`}
                               aria-expanded={opened}
                               aria-controls={aboutId}
-                              onClick={() => setAbout(opened ? null : c.trait.name)}
+                              onClick={() => setAbout(opened ? null : c.value)}
                               className="mt-1 mr-1 grid h-8 w-8 place-items-center rounded text-mist hover:bg-ash hover:text-parchment pointer-coarse:h-10 pointer-coarse:w-10"
                             >
                               <svg viewBox="0 0 20 20" aria-hidden className={`h-4 w-4 transition-transform ${opened ? "rotate-90" : ""}`}>
@@ -443,10 +583,10 @@ function TraitChoice({
                               {c.note}
                             </p>
                           )}
-                          {opened && (
+                          {opened && trait && (
                             <div id={aboutId} className="basis-full px-3 pb-2 text-xs leading-relaxed text-mist">
-                              {bookSummary(c.trait.description, c.trait.changed) && <p>{named(c.trait.description!)}</p>}
-                              <HouseWording change={c.trait.changed} className="mt-1" />
+                              {bookSummary(trait.description, trait.changed) && <p>{named(trait.description!)}</p>}
+                              <HouseWording change={trait.changed} className="mt-1" />
                             </div>
                           )}
                         </li>

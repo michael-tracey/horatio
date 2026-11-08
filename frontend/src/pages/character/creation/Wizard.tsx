@@ -486,6 +486,13 @@ function StepView({
   const narrowed = (category: string, traits: TraitOut[]) =>
     category === "flaws" ? traits.map((t) => (t.name === INEPT ? { ...t, choices: ineptChoices(creation, details.flaws?.[INEPT]) } : t)) : traits;
   const nameOf = (category: string) => catalogue.categories.find((c) => c.key === category)?.name ?? category;
+  // Saved picks with dots bought on top, by key: they can't move until those are undone.
+  const boughtOn = (category: string) =>
+    new Set(
+      Object.keys(before[category] ?? {}).filter((key) =>
+        sheet.traits.some((t) => t.category === category && t.name === traitOf(key) && t.detail === (savedDetail[category]?.[key] ?? "") && (t.rating ?? 0) > t.free_rating),
+      ),
+    );
   // This step's notices, but for what it already holds the wizard to (its needs, below).
   const here = notices.filter((n) => n.on.includes(step.key) && !needs.some((need) => need.message === n.message));
   // Picks kept on traits they no longer fit, by category then trait: marked where they are.
@@ -603,6 +610,8 @@ function StepView({
               details={details[category] ?? {}}
               onDetail={(name, value) => setDetails({ ...details, [category]: { ...details[category], [name]: value } })}
               marks={strays[category]}
+              bought={boughtOn(category)}
+              misfits={new Set(pools.flatMap((p) => p.traits.filter((t) => !t.fits).map((t) => t.name)))}
               barredFor={withoutDot}
               held={givenIn(creation, category)}
               budget={budget && { dots: budget.allowed, max: Math.min(maxRating, budget.allowed) }}
@@ -1207,7 +1216,7 @@ function CheckedPicks({
   const unavailable = { ...Object.fromEntries(Object.entries(refusals).map(([name, r]) => [name, r.message])), ...barredFor };
   const why = (name: string) => (refusals[name] ? <Because characterId={characterId} refs={refusals[name].because} steps={steps} step={step} /> : null);
   if (budget) {
-    const { allowed: _, ...rest } = props;
+    const { allowed: _, bought: _b, misfits: _m, ...rest } = props;
     return <DotGrid {...rest} budget={budget} unavailable={unavailable} why={why} barredAt={bars} />;
   }
   const taken = lost.map((l) => ({ rating: l.rating, picks: l.picks, why: <Because characterId={characterId} refs={l.because} steps={steps} step={step} /> }));

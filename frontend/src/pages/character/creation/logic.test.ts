@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogueOut } from "../../../api/types";
 import { detailNeed, fieldSkills } from "../fields";
-import { canTapDots, choiceName, choose, clear, copyKey, fieldProblems, identityChoices, isRanking, keyed, keysOf, left, nextCopy, picksLeft, seatPicks, tapDots, togglePoints, traitOf } from "./logic";
+import { canTapDots, choiceName, choose, clear, move, copyKey, fieldProblems, identityChoices, isRanking, keyed, keysOf, left, nextCopy, picksLeft, seatPicks, tapDots, togglePoints, traitOf } from "./logic";
 
 const SKILLS = { 4: 1, 3: 2, 2: 3, 1: 4 };
 const ATTRIBUTES = { 7: 1, 5: 1, 3: 1 };
@@ -37,9 +37,8 @@ describe("choose", () => {
     expect(choose({ Brawl: 4, Dodge: 3 }, SKILLS, 4, "Brawl", "Melee").picks).toEqual({ Dodge: 3, Melee: 4 });
   });
 
-  it("does not offer a trait picked at another rating again, outside a ranking", () => {
-    const picks = { Brawl: 4 };
-    expect(choose(picks, SKILLS, 3, null, "Brawl").picks).toBe(picks);
+  it("moves a trait picked at another rating, outside a ranking too", () => {
+    expect(choose({ Brawl: 4 }, SKILLS, 3, null, "Brawl")).toEqual({ picks: { Brawl: 3 }, key: "Brawl", holder: null });
   });
 
   it("does nothing at a rating with no picks, or none left", () => {
@@ -72,6 +71,38 @@ describe("choose", () => {
 
   it("counts what is left", () => {
     expect(left({ Athletics: 3 }, SKILLS, 3)).toBe(1);
+  });
+});
+
+describe("move", () => {
+  it("moves a pick to an empty slot, leaving the one it left empty", () => {
+    expect(move({ Brawl: 3, Dodge: 3 }, SKILLS, 4, null, "Brawl")).toEqual({ picks: { Dodge: 3, Brawl: 4 }, key: "Brawl", holder: null });
+  });
+
+  it("swaps with the pick in the slot when it fits where the move left", () => {
+    expect(move({ Brawl: 3, Dodge: 4 }, SKILLS, 4, "Dodge", "Brawl")).toEqual({ picks: { Brawl: 4, Dodge: 3 }, key: "Brawl", holder: "swapped" });
+  });
+
+  it("takes the pick in the slot off when it can't go where the move left", () => {
+    const barredAt3 = (name: string, rating: number) => !(name === "Dodge" && rating === 3);
+    expect(move({ Brawl: 3, Dodge: 4 }, SKILLS, 4, "Dodge", "Brawl", barredAt3)).toEqual({ picks: { Brawl: 4 }, key: "Brawl", holder: "off" });
+  });
+
+  it("takes the pick in the slot off when the move came from beyond the slots", () => {
+    // Thin Blooded took the pick at 2 away; Celerity's is kept there until it moves.
+    expect(move({ Celerity: 2, Auspex: 1 }, { 1: 1 }, 1, "Auspex", "Celerity")).toEqual({ picks: { Celerity: 1 }, key: "Celerity", holder: "off" });
+  });
+
+  it("keeps a skill's field with it, as its key", () => {
+    const second = copyKey("Performance", 2);
+    expect(move({ Performance: 3, [second]: 1 }, SKILLS, 2, null, second).picks).toEqual({ Performance: 3, [second]: 2 });
+  });
+
+  it("does nothing at the rating it is at, or with no slot free", () => {
+    const picks = { Brawl: 3, Dodge: 4 };
+    expect(move(picks, SKILLS, 3, null, "Brawl").picks).toBe(picks);
+    expect(move(picks, SKILLS, 4, null, "Brawl").picks).toBe(picks);
+    expect(move(picks, SKILLS, 5, null, "Brawl").picks).toBe(picks);
   });
 });
 
