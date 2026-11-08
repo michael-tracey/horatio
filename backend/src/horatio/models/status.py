@@ -55,7 +55,8 @@ class StatusBanMark(Record):
         ForeignKey("characters.id", ondelete="CASCADE"), index=True
     )
     sect: Mapped[str]
-    # The ban, by who it applies to, as the rules word it.
+    # The ban: a ban on clans by its key ("pillar_clans"), which holds however the
+    # troupe names the clans; any other by who it applies to, as the rules word it.
     ban: Mapped[str]
     # True: it applies; False: the character is exempt.
     applies: Mapped[bool]

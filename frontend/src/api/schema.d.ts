@@ -9552,6 +9552,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/status-ban-clans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Clan Bans
+         * @description The clans each sect's status bans on clans name here: the Camarilla's pillar
+         *     clans, its known Caitiff, and the Sabbat's antitribu under a ban.
+         */
+        get: operations["read_clan_bans_api_troupes__troupe_id__status_ban_clans_get"];
+        /**
+         * Set Clan Bans
+         * @description Name the clans one status ban on clans names here. Bloodlines follow their clan;
+         *     none, and there is no such ban here. Staff marks on characters stay as they are.
+         */
+        put: operations["set_clan_bans_api_troupes__troupe_id__status_ban_clans_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/status-rules": {
         parameters: {
             query?: never;
@@ -11613,6 +11639,8 @@ export interface components {
             applies_to: string;
             /** By Sheet */
             by_sheet: boolean | null;
+            /** Key */
+            key: string;
             /** Level */
             level: string;
             /** Marked */
@@ -11621,6 +11649,15 @@ export interface components {
             page: string | null;
             /** Reason */
             reason: string;
+        };
+        /** BanPresetOut */
+        BanPresetOut: {
+            /** Clans */
+            clans: string[];
+            /** Name */
+            name: string;
+            /** Page */
+            page: string | null;
         };
         /**
          * Band
@@ -12958,6 +12995,49 @@ export interface components {
             signed_in: boolean;
             /** Troupe Name */
             troupe_name: string;
+        };
+        /** ClanBanIn */
+        ClanBanIn: {
+            /** Clans */
+            clans: string[];
+            /** Key */
+            key: string;
+        };
+        /**
+         * ClanBanOut
+         * @description A sect's status ban on clans (the Camarilla's pillar clans), as the troupe
+         *     names its clans (horatio.rules.status, issue #553).
+         */
+        ClanBanOut: {
+            /** Applies To */
+            applies_to: string | null;
+            /** Book */
+            book: string[];
+            /** Book Applies To */
+            book_applies_to: string;
+            /** Clans */
+            clans: string[];
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Level */
+            level: string;
+            /** Outside */
+            outside: boolean;
+            /** Page */
+            page: string | null;
+            /** Presets */
+            presets: components["schemas"]["BanPresetOut"][];
+            /** Sect */
+            sect: string;
+        };
+        /** ClanBansOut */
+        ClanBansOut: {
+            /** All Clans */
+            all_clans: string[];
+            /** Bans */
+            bans: components["schemas"]["ClanBanOut"][];
         };
         /**
          * ClanChoiceOut
@@ -47335,6 +47415,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_clan_bans_api_troupes__troupe_id__status_ban_clans_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClanBansOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_clan_bans_api_troupes__troupe_id__status_ban_clans_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClanBanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClanBansOut"];
                 };
             };
             /** @description Validation Error */

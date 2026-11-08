@@ -169,6 +169,13 @@ class Troupe(Imported, Record):
     default_bloodlines: Mapped[dict[str, str]] = mapped_column(
         JSONB, default=dict, server_default="{}"
     )
+    # House rule: the clans each of the sects' bans on clans names here, by the ban's
+    # key ("pillar_clans": ["Assamite", "Gangrel", ...]), over the rule set's. A ban it
+    # leaves out goes by the rule set; one it names no clans for is off here
+    # (horatio.rules.status, issue #553).
+    status_ban_clans: Mapped[dict[str, list[str]]] = mapped_column(
+        JSONB, default=dict, server_default="{}"
+    )
     # House options for Stock Locations (horatio.rules.locations) it has switched
     # off, by key: every other is on. And what going over a character's control
     # limit does: "refuse" it, or "note" it for staff (horatio.locations).

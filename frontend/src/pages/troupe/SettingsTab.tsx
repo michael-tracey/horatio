@@ -16,6 +16,7 @@ import { ItemExpirySetting } from "./ItemExpirySetting";
 import { NominationsSetting } from "../nominations/NominationsSetting";
 import { RemembrancesSetting } from "../nominations/RemembrancesSetting";
 import { ExperienceDefaults, StartingBlood } from "./StartingSection";
+import { StatusBanClans } from "./StatusBanClans";
 import { StatusAtCheckinSetting, StatusSetting, TitlesSetting } from "./StatusSetting";
 import { WhosWhoSetting } from "./WhosWhoSetting";
 import { XpRangeCard } from "./XpRange";
@@ -57,6 +58,7 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
         <StatusAtCheckinSetting troupe={troupe} canEdit={canEdit} />
         {troupe.whos_who && <WhosWhoSetting troupe={troupe} canEdit={canEdit} />}
         <GolcondaSetting troupeId={troupe.id} canEdit={canEdit} />
+        <StatusBanClans troupeId={troupe.id} canEdit={canEdit} />
       </Group>
       <Group title="At game">
         <BadgeSetting troupe={troupe} canEdit={canEdit} />

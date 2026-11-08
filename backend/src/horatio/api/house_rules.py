@@ -1225,6 +1225,99 @@ def set_default_bloodlines(
     return default_bloodlines_out(db, troupe)
 
 
+# --- Status bans on clans --------------------------------------------------------
+
+
+class BanPresetOut(BaseModel):
+    name: str
+    clans: list[str]
+    page: str | None
+
+
+class ClanBanOut(BaseModel):
+    """A sect's status ban on clans (the Camarilla's pillar clans), as the troupe
+    names its clans (horatio.rules.status, issue #553)."""
+
+    key: str
+    sect: str
+    label: str
+    level: str
+    # True: it bans a character of none of its clans (the pillar clans); False, one of
+    # them (Tremere antitribu). A bloodline goes with its clan.
+    outside: bool
+    page: str | None
+    # Its clans here, and the rule set's.
+    clans: list[str]
+    book: list[str]
+    # Who it applies to here, in words; None where the troupe names no clans, so
+    # there is no such ban here.
+    applies_to: str | None
+    book_applies_to: str
+    presets: list[BanPresetOut]
+
+
+class ClanBansOut(BaseModel):
+    # Every clan, without its bloodlines.
+    all_clans: list[str]
+    # The bans of the sects the troupe takes.
+    bans: list[ClanBanOut]
+
+
+class ClanBanIn(BaseModel):
+    key: str = Field(max_length=100)
+    # None for no such ban here; the rule set's clans to go by it again.
+    clans: list[str] = Field(max_length=100)
+
+
+def clan_bans_out(db: DbSession, troupe: Troupe) -> ClanBansOut:
+    rule_set = read_troupe_rules(db, "vampire", troupe.id).rule_set
+    here = {b.key: b for s in rule_set.status_rules.sects.values() for b in s.bans if b.key}
+    sects = set(troupe.allowed_sects)
+    return ClanBansOut(
+        all_clans=sorted(n for (c, n) in rule_set.traits if c == "clan" and ":" not in n),
+        bans=[
+            ClanBanOut(
+                key=book.key,
+                sect=sect,
+                label=book.label,
+                level=book.level,
+                outside=book.outside,
+                page=book.page,
+                clans=list(troupe.status_ban_clans.get(book.key, book.clans or ())),
+                book=list(book.clans or ()),
+                applies_to=here[book.key].applies_to if book.key in here else None,
+                book_applies_to=book.applies_to,
+                presets=[
+                    BanPresetOut(name=p.name, clans=list(p.clans), page=p.page)
+                    for p in book.presets
+                ],
+            )
+            for sect, book in troupe_settings.book_clan_bans(db).values()
+            if not sects or sect in sects
+        ],
+    )
+
+
+@router.get("/status-ban-clans")
+def read_clan_bans(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> ClanBansOut:
+    """The clans each sect's status bans on clans name here: the Camarilla's pillar
+    clans, its known Caitiff, and the Sabbat's antitribu under a ban."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
+    return clan_bans_out(db, troupe)
+
+
+@router.put("/status-ban-clans")
+def set_clan_bans(
+    troupe_id: uuid.UUID, body: ClanBanIn, db: DbSession, user: CurrentUser
+) -> ClanBansOut:
+    """Name the clans one status ban on clans names here. Bloodlines follow their clan;
+    none, and there is no such ban here. Staff marks on characters stay as they are."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    troupe_settings.set_status_ban_clans(db, user, troupe, {body.key: body.clans})
+    db.commit()
+    return clan_bans_out(db, troupe)
+
+
 # --- What players read ------------------------------------------------------------
 
 
@@ -1505,6 +1598,18 @@ def other_settings(db: DbSession, troupe: Troupe) -> list[HouseSettingOut]:
                     book_text=book_default_text(row, defaults.setting),
                 )
             )
+    if troupe.status_ban_clans:
+        for ban in clan_bans_out(db, troupe).bans:
+            if ban.key in troupe.status_ban_clans:
+                found.append(
+                    HouseSettingOut(
+                        name=f"{ban.label} ({ban.sect})",
+                        text=f"{ban.level.capitalize()} ban: {ban.applies_to}"
+                        if ban.applies_to
+                        else "No such ban",
+                        book_text=f"{ban.level.capitalize()} ban: {ban.book_applies_to}",
+                    )
+                )
     found.extend(
         HouseSettingOut(name=name, text=text, book_text=book)
         for name, text, book in game_xp.house_settings(troupe)

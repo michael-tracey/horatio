@@ -590,6 +590,7 @@ MESSAGES: dict[str, str] = {
     " Blooded: it {setting}.",
     "house.clan_rarity": "{actor} set how rare clans are here: {rarities}.",
     "house.default_bloodlines": "{actor} set the clans' default bloodlines here: {defaults}.",
+    "house.status_ban_clans": "{actor} set the clans of the {sect} status ban “{ban}”: {clans}.",
     "house.written_rule_added": "{actor} added the written rule {title} ({section}).",
     "house.written_rule_changed": "{actor} changed the written rule {title}.",
     "house.written_rule_moved": "{actor} moved the written rule {title} {direction}.",
