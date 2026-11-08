@@ -7,6 +7,7 @@ import { clanColour, initials } from "../components/avatar";
 import { useClanName } from "../components/ClanNames";
 import { usePreferences } from "../hooks";
 import { PAPERS, pageRule } from "../paper";
+import { useSevenTaps } from "./jyhad/taps";
 import { BADGE_SIZES, grid, nameSize, pages, perPageText, SQUEEZE, standing, type BadgeSize } from "./badgeLayout";
 
 /** White with Horatio's colours as accents, or black on white for a printer without colour. */
@@ -264,7 +265,7 @@ function Card({
 }
 
 /** The portrait (4:5) with the clan logo beside it; without a picture the logo,
- * larger; with neither, the initials. */
+ * larger; with neither, the initials. `onLogo` is for taps on the logo. */
 function Top({
   name,
   picture,
@@ -273,6 +274,7 @@ function Top({
   look,
   size,
   step,
+  onLogo,
 }: {
   name: string;
   picture: string | null;
@@ -281,6 +283,7 @@ function Top({
   look: Look;
   size: BadgeSize;
   step: number;
+  onLogo?: () => void;
 }) {
   const { inch } = scale(size, step);
   const frame = LOOKS[look].frame;
@@ -288,14 +291,14 @@ function Top({
     return (
       <div style={{ height: inch(2), gap: inch(0.1) }} className="flex shrink-0 items-start justify-center">
         <img src={`${picture}/portrait.jpg`} alt="" style={{ height: inch(2), width: inch(1.6) }} className={`border object-cover ${frame}`} />
-        {logo && <img src={`${logo}/600.webp`} alt={`${clan} logo`} style={{ height: inch(0.85), width: inch(0.85) }} className="object-contain" />}
+        {logo && <img src={`${logo}/600.webp`} alt={`${clan} logo`} onClick={onLogo} style={{ height: inch(0.85), width: inch(0.85) }} className="object-contain" />}
       </div>
     );
   }
   if (logo) {
     return (
       <div style={{ height: inch(2) }} className="flex shrink-0 justify-center">
-        <img src={`${logo}/600.webp`} alt={`${clan} logo`} style={{ height: inch(1.9), width: inch(1.9) }} className="object-contain" />
+        <img src={`${logo}/600.webp`} alt={`${clan} logo`} onClick={onLogo} style={{ height: inch(1.9), width: inch(1.9) }} className="object-contain" />
       </div>
     );
   }
@@ -341,9 +344,11 @@ function CharacterBadge({
   const anyStatus = badge.status.length + badge.negative.length > 0;
   const [card, step] = useSqueeze();
   const { inch, pt, name } = scale(size, step);
+  // Tapping the clan's symbol seven times opens the character's Jyhad card (#537).
+  const taps = useSevenTaps(badge.character_id);
   return (
     <Card look={look} label={`Badge for ${badge.name}`} troupe={troupe} size={size} step={step} card={card}>
-      <Top name={badge.name} picture={badge.picture} logo={badge.logo} clan={badge.clan} look={look} size={size} step={step} />
+      <Top name={badge.name} picture={badge.picture} logo={badge.logo} clan={badge.clan} look={look} size={size} step={step} onLogo={taps} />
       <h2 className="text-center font-display leading-tight tracking-wide uppercase" style={{ marginTop: inch(0.1), fontSize: name(badge.name) }}>
         {badge.name}
       </h2>

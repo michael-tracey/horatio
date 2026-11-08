@@ -308,7 +308,7 @@ If a fetch fails (the address has moved, or Dropbox refuses), the card says why,
 
 ### VTES symbols
 
-The **VTES symbols** card fetches the symbols of *Vampire: The Eternal Struggle* from [KRCG](https://static.krcg.org/): its clan symbols, its discipline symbols (inferior and superior), its game icons and its two fonts. They're for later, such as cards of characters in the style of VTES, symbols beside clans and disciplines, and Discord emoji, and nothing shows them yet. They're free to use under the Dark Pack Agreement too; wherever Horatio shows them, it will credit KRCG and give Paradox's notice.
+The **VTES symbols** card fetches the symbols of *Vampire: The Eternal Struggle* from [KRCG](https://static.krcg.org/): its clan symbols, its discipline symbols (inferior and superior), its game icons and its two fonts. Characters' Jyhad cards show them: a hidden, just-for-fun card of a vampire in the style of a VTES crypt card, which falls back to three-letter abbreviations without them. Later they may show beside clans and disciplines, and as Discord emoji. They're free to use under the Dark Pack Agreement too; wherever Horatio shows them, it credits KRCG and gives Paradox's notice.
 
 1. Check the **Address**, `https://static.krcg.org/` unless KRCG moves.
 2. Tick **I accept Paradox's Dark Pack Agreement for this server**.
