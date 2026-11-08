@@ -42,3 +42,17 @@ export function sortRows<T>(rows: T[], key: ((row: T) => string | number | null)
   });
   return keyed.map((k) => k.row);
 }
+
+/** Which characters the list shows: player characters (the default), NPCs, or
+ * everyone. Kept in the address as `?show=npcs` or `?show=everyone`. */
+export type Show = "pcs" | "npcs" | "everyone";
+
+/** The choice the address holds; anything else is player characters. */
+export function showOf(param: string | null): Show {
+  return param === "npcs" || param === "everyone" ? param : "pcs";
+}
+
+/** Whether the choice shows a character of this kind (pc or npc). */
+export function shows(show: Show, kind: string): boolean {
+  return show === "everyone" || (show === "npcs") === (kind === "npc");
+}

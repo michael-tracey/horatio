@@ -3,7 +3,7 @@
 import uuid
 from collections.abc import Mapping
 from dataclasses import replace
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -28,13 +28,16 @@ from horatio.models import (
     Approval,
     AuditEvent,
     Character,
+    NpcClaim,
     RuleSet,
+    StockNpc,
     TraitCategory,
     TroupeMembership,
     User,
 )
 from horatio.permissions import TroupeAction, allows, troupe_role
 from horatio.rules.model import RuleSetData
+from horatio.rules.npc_kinds import kind_name
 from horatio.rules.store import read_troupe_rules
 
 router = APIRouter(prefix="/troupes/{troupe_id}", tags=["roster"])
@@ -62,6 +65,16 @@ class RosterEntry(BaseModel):
     retired: bool
     # An NPC staff can give to a player as it stands (horatio.npc_gifts).
     givable: bool = False
+    # An NPC's kind (horatio.rules.npc_kinds) and the kind's name, its form (sheeted
+    # or stock) and a Stock NPC's rating; None for a PC, or for a sheeted NPC's rating.
+    npc_kind: str | None
+    npc_kind_name: str | None
+    npc_form: str | None
+    stock_rating: int | None
+    # Staff list the NPC on the troupe's Who's Who though it holds no title there.
+    on_whos_who: bool
+    # When the NPC's open claim link expires (horatio.npc_gifts), if it has one.
+    claim_expires_at: datetime | None
     titles: list[str]
     # Those of another sect than the character's, kept for staff to look at.
     out_of_sect_titles: list[str]
@@ -108,7 +121,8 @@ class LogEntry(BaseModel):
 
 @router.get("/characters")
 def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[RosterEntry]:
-    """Every character in the troupe now: those whose home it is first, then visitors."""
+    """Every character in the troupe now, its NPCs among them: those whose home it is
+    first, then visitors."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
     shows_lines_veils = allows(
         troupe_role(db, user, troupe), TroupeAction.VIEW_LINES_VEILS, is_custodian=user.is_custodian
@@ -136,6 +150,19 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             )
         )
     )
+    npc_ids = [c.id for _, c, _ in rows if c.kind == "npc"]
+    stock_ratings = {
+        row.character_id: row.rating
+        for row in db.scalars(select(StockNpc).where(StockNpc.character_id.in_(npc_ids)))
+    }
+    claims = {
+        row.character_id: row.expires_at
+        for row in db.scalars(
+            select(NpcClaim).where(
+                NpcClaim.character_id.in_(npc_ids), NpcClaim.expires_at > datetime.now(UTC)
+            )
+        )
+    }
     entries = [
         RosterEntry(
             character_id=c.id,
@@ -151,6 +178,12 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             creation_complete=c.creation_completed_at is not None,
             retired=c.status == "retired",
             givable=c.kind == "npc" and npc_gifts.npc_refusal(c) is None,
+            npc_kind=c.npc_kind if c.kind == "npc" else None,
+            npc_kind_name=kind_name(c.npc_kind, c.npc_custom_kind) if c.kind == "npc" else None,
+            npc_form=c.npc_form if c.kind == "npc" else None,
+            stock_rating=stock_ratings.get(c.id),
+            on_whos_who=c.kind == "npc" and c.on_whos_who,
+            claim_expires_at=claims.get(c.id),
             titles=held[c.id],
             out_of_sect_titles=[
                 t for t in held[c.id] if titles.out_of_sect(known.get(t), sects.get(c.id))

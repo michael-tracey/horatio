@@ -6896,7 +6896,8 @@ export interface paths {
         };
         /**
          * Roster
-         * @description Every character in the troupe now: those whose home it is first, then visitors.
+         * @description Every character in the troupe now, its NPCs among them: those whose home it is
+         *     first, then visitors.
          */
         get: operations["roster_api_troupes__troupe_id__characters_get"];
         put?: never;
@@ -23738,6 +23739,8 @@ export interface components {
             character_id: string;
             /** Character Name */
             character_name: string;
+            /** Claim Expires At */
+            claim_expires_at: string | null;
             /** Clan */
             clan: string | null;
             /** Creation Complete */
@@ -23759,6 +23762,14 @@ export interface components {
             /** Kind */
             kind: string;
             lines_veils: components["schemas"]["LinesVeils"] | null;
+            /** Npc Form */
+            npc_form: string | null;
+            /** Npc Kind */
+            npc_kind: string | null;
+            /** Npc Kind Name */
+            npc_kind_name: string | null;
+            /** On Whos Who */
+            on_whos_who: boolean;
             /** Out Of Sect Titles */
             out_of_sect_titles: string[];
             /** Picture */
@@ -23790,6 +23801,8 @@ export interface components {
             social_age: string;
             /** Splat */
             splat: string;
+            /** Stock Rating */
+            stock_rating: number | null;
             /** Titles */
             titles: string[];
             /** Waiting */

@@ -877,6 +877,7 @@ test("titles by sect: a Camarilla troupe gives Camarilla titles only to its own,
 
   // The picker offers each character the titles of its sect and of any sect.
   await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await p.locator("main").getByRole("radio", { name: "NPCs" }).click();
   const titlesFor = async (name: string) => {
     await p.getByRole("button", { name: `Actions for ${name}` }).click();
     await p.getByRole("menuitem", { name: "Titles…" }).click();

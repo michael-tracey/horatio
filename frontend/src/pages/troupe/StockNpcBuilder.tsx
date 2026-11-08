@@ -30,7 +30,7 @@ export function StockNpcBuilder({ troupeId }: { troupeId: string }) {
     queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: "vampire" }, query: { troupe_id: troupeId } } })),
     staleTime: 5 * 60_000,
   });
-  const back = <Link to={`/troupes/${troupeId}/npcs`} className="text-sm text-mist hover:text-gold">← NPCs</Link>;
+  const back = <Link to={`/troupes/${troupeId}/characters?show=npcs`} className="text-sm text-mist hover:text-gold">← NPCs</Link>;
   if (character.isPending || stock.isPending || kinds.isPending || catalogue.isPending) return <Loading />;
   const error = character.error ?? stock.error ?? kinds.error ?? catalogue.error;
   if (error || !character.data || !stock.data || !kinds.data || !catalogue.data) {

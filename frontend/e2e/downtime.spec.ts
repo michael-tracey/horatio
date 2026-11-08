@@ -265,13 +265,15 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(printed.getByText("Agnes", { exact: true }).first()).toBeVisible();
   await printed.close();
 
-  // The troupe page has Characters and Players groups: NPCs and At game sit under Characters,
+  // The troupe page has Characters and Players groups: At game sits under Characters, NPCs
+  // are on its Characters list rather than a tab of their own (#556),
   // and Players lists the player with their character, linking to their profile.
   const sections = lead.page.getByRole("navigation", { name: "Troupe sections" });
   await expect(sections.getByRole("link", { name: "Players", exact: true })).toBeVisible();
   await expect(sections.getByRole("link", { name: "People", exact: true })).toHaveCount(0);
   const characterTabs = lead.page.getByRole("navigation", { name: "Characters", exact: true });
-  for (const tab of ["NPCs", "At game", "Award XP", "Approvals"]) await expect(characterTabs.getByRole("link", { name: tab })).toBeVisible();
+  for (const tab of ["At game", "Award XP", "Approvals"]) await expect(characterTabs.getByRole("link", { name: tab })).toBeVisible();
+  await expect(characterTabs.getByRole("link", { name: "NPCs" })).toHaveCount(0);
   await sections.getByRole("link", { name: "Players", exact: true }).click();
   const playerRow = lead.page.getByRole("listitem").filter({ has: lead.page.getByRole("link", { name: /^player @/ }) }).first();
   await expect(playerRow.getByRole("link", { name: "Agnes", exact: true })).toBeVisible();

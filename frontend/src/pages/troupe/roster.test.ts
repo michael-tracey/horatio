@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageRank, clanText, nextSort, sortRows } from "./roster";
+import { ageRank, clanText, nextSort, showOf, shows, sortRows } from "./roster";
 
 describe("clanText", () => {
   it("names the clan, or says a vampire has none yet", () => {
@@ -50,5 +50,20 @@ describe("sorting", () => {
   it("sorts numbers as numbers", () => {
     const values = [{ v: 10 }, { v: 2 }, { v: 0 }];
     expect(sortRows(values, (r) => r.v, false).map((r) => r.v)).toEqual([0, 2, 10]);
+  });
+});
+
+describe("showing player characters, NPCs or everyone", () => {
+  it("opens on player characters, whatever else the address holds", () => {
+    expect(showOf(null)).toBe("pcs");
+    expect(showOf("npcs")).toBe("npcs");
+    expect(showOf("everyone")).toBe("everyone");
+    expect(showOf("ghosts")).toBe("pcs");
+  });
+
+  it("shows each kind of character where it belongs", () => {
+    expect([shows("pcs", "pc"), shows("pcs", "npc")]).toEqual([true, false]);
+    expect([shows("npcs", "pc"), shows("npcs", "npc")]).toEqual([false, true]);
+    expect([shows("everyone", "pc"), shows("everyone", "npc")]).toEqual([true, true]);
   });
 });

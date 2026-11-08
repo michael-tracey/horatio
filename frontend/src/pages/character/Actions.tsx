@@ -170,7 +170,7 @@ function DeleteCharacter({ character, onCancel }: { character: CharacterOut; onC
   const npc = character.kind === "npc";
   const remove = useAction(async () => {
     await unwrap(api.DELETE("/api/characters/{character_id}", { params: { path: { character_id: character.id } } }));
-    navigate(npc ? `/troupes/${character.owner_troupe_id}/npcs` : "/characters");
+    navigate(npc ? `/troupes/${character.owner_troupe_id}/characters?show=npcs` : "/characters");
   });
   return (
     <div className="flex flex-col gap-3">

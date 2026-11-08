@@ -15,7 +15,6 @@ import { LinesVeilsTab } from "./LinesVeilsTab";
 import { LocationsTab } from "./LocationsTab";
 import { LogTab } from "./LogTab";
 import { StockNpcBuilder } from "./StockNpcBuilder";
-import { NpcsTab } from "./NpcsTab";
 import { MyWork, WorkTab } from "./WorkTab";
 import { AgenciesTab } from "../news/AgenciesTab";
 import { PostsSection } from "../news/PostsSection";
@@ -108,7 +107,6 @@ export function TroupePage() {
             tabs: [
               ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals", count: counts.approvals }] : []),
               ...(can.running ? [{ to: `${base}/characters`, label: "Characters", count: counts.characters }] : []),
-              ...(can.running ? [{ to: `${base}/npcs`, label: "NPCs" }] : []),
               ...(can.running ? [{ to: `${base}/play`, label: "At game" }] : []),
               ...(can.running ? [{ to: `${base}/xp`, label: "Award XP" }] : []),
               ...(can.running ? [{ to: `${base}/titles`, label: "Titles" }] : []),
@@ -175,7 +173,8 @@ export function TroupePage() {
         {can.running && <Route path="play" element={<PlayTab troupeId={t.id} />} />}
         {can.running && <Route path="xp" element={<XpAwardsTab troupeId={t.id} />} />}
         {can.running && <Route path="games/:gameId" element={<GameNightPage troupeId={t.id} />} />}
-        {can.running && <Route path="npcs" element={<NpcsTab troupeId={t.id} canGive={can.storyteller && !t.archived} />} />}
+        {/* NPCs were a tab of their own until they joined the Characters list (#556). */}
+        <Route path="npcs" element={<Navigate to={`${base}/characters?show=npcs`} replace />} />
         {can.running && <Route path="npcs/:characterId" element={<StockNpcBuilder troupeId={t.id} />} />}
         {can.running && <Route path="titles" element={<TitlesTab troupeId={t.id} />} />}
         {can.running && <Route path="shared/*" element={<SharedBackgroundsTab troupeId={t.id} />} />}

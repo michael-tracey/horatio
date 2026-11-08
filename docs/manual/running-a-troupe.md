@@ -91,7 +91,7 @@ A troupe's page has its tabs in groups. Which ones you see depends on your role.
 | Group | Tabs |
 | --- | --- |
 | Troupe | About, Profile, News, Announcements, Who's Who, Nominations, House rules, Status, Staff, Log |
-| Characters | Approvals, Characters, NPCs, At game, Award XP, Titles |
+| Characters | Approvals, Characters, At game, Award XP, Titles |
 | World | Locations, Equipment, Shared backgrounds |
 | Players | Players, Lines and veils |
 | Downtimes | Cycles, My work, Fill tables, Influence log, Quests |
@@ -129,19 +129,27 @@ Narrators see the player's answer and the question, never the character's sheet.
 
 ![The Characters list with two characters ticked and the Print choices open.](images/running-a-troupe/characters.png)
 
-**Characters › Characters** lists every character in the troupe, those whose home it is first, for storytellers and assistant storytellers. It's a table: the character (with the titles it holds here), its player, its clan, its social age, whether it is **Home**, **Visiting** or an **NPC**, and its flags. Red flags show what needs you: **Asking to make this home**, **Backstory to read**, disciplines to approve, or **Player suspended**. Each player's lines and veils show under their character. On a phone, each character folds into a card, with the same details under its name.
+**Characters › Characters** lists the troupe's characters, those whose home it is first, for storytellers and assistant storytellers. Choose what it shows at the top:
+
+- **Player characters**, which it opens on;
+- **NPCs**, the troupe's own characters (see [NPCs](#npcs));
+- **Everyone**, both together.
+
+Your choice is kept in the page's address, so you can bookmark it or share it with other staff.
+
+With player characters, or everyone, it's a table: the character (with the titles it holds here), its player, its clan, its social age, whether it is **Home**, **Visiting** or an **NPC**, and its flags. Red flags show what needs you: **Asking to make this home**, **Backstory to read**, disciplines to approve, or **Player suspended**. Each player's lines and veils show under their character. On a phone, each character folds into a card, with the same details under its name.
 
 - A clan without a seat at court shows who represents it, under the clan.
 - An NPC that isn't a vampire, such as a mortal or a werewolf, shows its kind where a social age would be, and no clan. A ghoul shows its domitor's clan and **Ghoul**.
-- Choose a heading (Character, Player, Clan or Age) to sort by it; choose it again to reverse the order, and a third time to go back to home characters first.
+- Choose a heading (Character, Player, Clan or Age) to sort by it; choose it again to reverse the order, and a third time to go back to home characters first. Only the columns shown sort the list.
 
 ### Searching and filtering
 
-- Type a character's or player's name in the search box.
+- Type a character's or player's name in the search box. It searches whatever the list shows.
 - The list opens on active characters only: the button reads **Filter: active**, and the **Is active** chip shows. Remove the chip to see retired characters too. With more conditions, the button counts them all, such as **Filter (2)**.
 - Choose **Filter** to narrow the list by what the sheets hold. Each condition is one of: status (such as home here, visiting, still in creation, or has approvals waiting), a trait and its rating, a clan, sect or other choice, a title, a player, experience, how many of something, a character, or equipment. Choose whether characters must match all of them or any.
 - A condition that compares a number, such as a trait's rating or XP, adds a column with each character's number, so you can compare them; its heading sorts by it too.
-- Each condition shows as a chip you can remove with ×; **Show everyone** clears them. The filter is kept in the page's address, so you can bookmark or share it with other staff.
+- Each condition shows as a chip you can remove with ×; **Clear the filter** clears them. The filter is kept in the page's address, so you can bookmark or share it with other staff.
 - **Show their equipment** opens the Equipment tab on the items the characters shown hold.
 
 ### Printing sheets and badges
@@ -153,12 +161,20 @@ Tick characters, or **Select all shown**, then choose **Print…**:
 
 Printing opens in a new tab, so what you ticked stays.
 
-### Giving XP and titles from the list
+### Each character's actions
 
-Each character's **⋯**, at the end of its row, holds:
+Each character's **⋯**, at the end of its row, holds what you can do for it, player character or NPC alike. Only what applies to it shows:
 
-- **Titles…**: the titles it holds here, each with × to take it away, and the troupe's titles to give it another, or a new one you type.
+- **Play** (NPCs): opens its Play View at a game.
 - **Award XP…** (home player characters only): gives it XP, with a reason, in one go. To give a whole game's XP, use [Award XP](#awarding-a-games-xp) instead.
+- **Give equipment…** (characters whose home troupe this is, and NPCs): the Equipment tab's form, given to it.
+- **Status…** (the same): its status here.
+- **Titles…**: the titles it holds here, each with × to take it away, and the troupe's titles to give it another, or a new one you type.
+- **List on the Who's Who** or **Take off the Who's Who** (NPCs): for an NPC without a title (one with a title is listed anyway).
+- **Give to a player…** and **Claim link…** (NPCs, for storytellers): on a finished sheeted vampire or ghoul (see [Giving an NPC to a player](#giving-an-npc-to-a-player)).
+- **Print sheet**: its sheet, in a new tab. A Stock NPC has no sheet to print.
+- **Badge…**: shows what others can see of it, takes a note for its badge, and prints it.
+- **Show Jyhad card**: its card, for a vampire with a picture.
 
 ## Players and their lines and veils
 
@@ -168,22 +184,13 @@ Each character's **⋯**, at the end of its row, holds:
 
 ## NPCs
 
-**Characters › NPCs** lists the troupe's NPCs, for storytellers and assistant storytellers. NPCs belong to the troupe, need no approval and take no part in downtimes. Each row shows the NPC's kind, its form (sheeted or stock), a Stock NPC's rating, and whether it is listed on the Who's Who. On a phone these fold in under the name. Filter the list by kind and by form, or open an NPC by its name.
+NPCs belong to the troupe, need no approval and take no part in downtimes. Choose **NPCs** on the [Characters list](#the-characters-list) to see them; the old **NPCs** tab's address opens it there. Each row shows the NPC's kind, its form (sheeted or stock), a Stock NPC's rating, and whether it is listed on the Who's Who; choose a heading to sort by it. On a phone these fold in under the name. Filter the NPCs by kind and by form, or open an NPC by its name. The search, the filter, printing and each NPC's [**⋯**](#each-characters-actions) work as for player characters.
 
-The **⋯** at the end of each row holds:
-
-- **Play**, which opens its Play View at a game;
-- **List on the Who's Who** or **Take off the Who's Who**, for an NPC without a title (one with a title is listed anyway);
-- **Badge…**, which shows what others can see of it, takes a note for its badge, and prints it;
-- **Give to a player…** and **Claim link…**, for storytellers, on a finished sheeted vampire or ghoul (see [Giving an NPC to a player](#giving-an-npc-to-a-player)).
-
-**Game badges** prints badges for the NPCs ticked, or all of them.
-
-![The NPCs tab with the New NPC form.](images/running-a-troupe/npcs.png)
+![The Characters list showing NPCs, with the New NPC form open.](images/running-a-troupe/npcs.png)
 
 ### Making an NPC
 
-Under **New NPC**:
+With **NPCs** or **Everyone** shown, choose **New NPC**:
 
 1. Give it a **Name** and choose its **Kind** (a vampire, a ghoul, a mortal and others, or a custom kind you describe).
 2. Choose its **Form**:
@@ -204,12 +211,12 @@ Giving it makes it the player's character, at home in your troupe and already ac
 - its sheet as it stands becomes its accepted sheet, so later changes go through your approvals and [free changes](#free-changes) as any new character's do;
 - its XP balances: each trait's dots are bought at your troupe's prices, and an **Imported** award gives that much, so nothing is left unspent. A trait your costs don't price is kept as free dots;
 - XP the player had banked elsewhere goes in **Unspent XP to carry over**, as its own entry with your reason. Neither is checked against your [XP floor and ceiling](#xp-settings);
-- it leaves the NPCs list and shows on the Who's Who as a player's character. A Retainer linked to it is unlinked, with a line in its owner's log;
+- it leaves the NPCs and shows among the player characters, and on the Who's Who as a player's character. A Retainer linked to it is unlinked, with a line in its owner's log;
 - the player is told *"name is yours now"*, and it's in the troupe log.
 
 To give it to someone who has signed up:
 
-1. Choose **⋯ › Give to a player…** on its row of the NPCs list, or **⋯ › Give to a player…** on its own page.
+1. Choose **⋯ › Give to a player…** on its row of the Characters list, or **⋯ › Give to a player…** on its own page.
 2. Pick the **Player**, and fill in any **Unspent XP to carry over** and **Why**.
 3. Choose **Continue** to see what will happen, then **Give *name* to @handle**.
 
@@ -232,7 +239,7 @@ A character given to the wrong person is put right by the custodian [moving it t
 - **Court order of our titles** sets where the troupe's own titles come in the Who's Who's court, after the rule set's.
 - **Seats at court** chooses which clans have a seat. Until you choose, the clans whose Primogen is held here have one. Characters of other clans are listed under Other on the Who's Who, each with who represents them.
 
-You can also give a title from **Titles…** on a character's ⋯ on the [Characters list](#giving-xp-and-titles-from-the-list), or from the character's Status & Titles tab. Whether players choose their own titles, and keep their own status, is set under [Troupe settings](#customise-troupe-settings).
+You can also give a title from **Titles…** on a character's ⋯ on the [Characters list](#each-characters-actions), or from the character's Status & Titles tab. Whether players choose their own titles, and keep their own status, is set under [Troupe settings](#customise-troupe-settings).
 
 The **Status** tab in the Troupe group is a reference for everyone in the troupe: every status of the sects the troupe takes, what it does and where it comes from. There is nothing to set there.
 
@@ -1011,7 +1018,7 @@ There are three ways:
 
 - **A game's XP**, from its night after check-in (see [Awarding a game's XP](#awarding-a-games-xp)).
 - **Characters › Award XP**, for the whole troupe at once without check-in: set what **Everyone gets**, raise or lower it per character with the arrows (0 for someone who missed it), write the **Note everyone gets**, and choose **Award…**. Tick **Also add to floor and ceiling** to raise them by the amount everyone gets.
-- **Award XP…** on one character's ⋯ on the [Characters list](#giving-xp-and-titles-from-the-list).
+- **Award XP…** on one character's ⋯ on the [Characters list](#each-characters-actions).
 
 Completing a downtime gives the cycle's completion XP by itself, as the character submits.
 

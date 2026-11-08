@@ -686,7 +686,7 @@ test("staff find who holds what in the Characters filter, and items on the Equip
 
   // Camarilla characters holding a staking item: only Ilse, with her stake shown.
   const l = lead.page;
-  await l.goto(`/troupes/${troupe.id}/characters`);
+  await l.goto(`/troupes/${troupe.id}/characters?show=everyone`);
   await expect(l.getByText("4 of 4 characters")).toBeVisible();
   await l.getByRole("button", { name: "Filter" }).click();
   await l.getByRole("button", { name: "+ Condition", exact: true }).click();
@@ -718,7 +718,7 @@ test("staff find who holds what in the Characters filter, and items on the Equip
   await expect(found.getByRole("row", { name: "Flak Vest, held by Ilse" })).toBeVisible();
 
   // Those with no protective gear: Pell and Rhea, with what they do hold.
-  await l.goto(`/troupes/${troupe.id}/characters`);
+  await l.goto(`/troupes/${troupe.id}/characters?show=everyone`);
   await l.getByRole("button", { name: "Filter" }).click();
   await l.getByRole("button", { name: "+ Condition", exact: true }).click();
   const armour = l.getByRole("group", { name: "Condition" }).nth(1);
@@ -769,7 +769,7 @@ test("staff find who holds what in the Characters filter, and items on the Equip
   expect(csv[0]).toBe("Item,Held by,Player,Kind,Grade,Qualities,Special effects,Description,Status,Given by,Troupe,Given on,Staff note");
   expect(csv.slice(1).map((line) => line.split(",").slice(0, 3).join(","))).toEqual(["Wooden Stake,Ilse,seek-player", "Silver Dagger,Otto,NPC", "Wooden Stake,Pell,NPC"]);
 
-  // Find these characters opens the Characters list on their holders.
+  // Find these characters opens the Characters list on their holders, PCs and NPCs alike.
   await l.getByRole("link", { name: "Find these characters" }).click();
   await expect(l.getByText("3 of 4 characters")).toBeVisible();
   await expect(l.getByText("Character is Ilse, Otto or Pell")).toBeVisible();
