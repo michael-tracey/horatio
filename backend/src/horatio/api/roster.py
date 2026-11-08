@@ -521,6 +521,7 @@ MESSAGES: dict[str, str] = {
     "title.added": "{actor} added the title {title} to the troupe.",
     "title.changed": "{actor} changed the title {title}: now {what}.",
     "title.removed_from_troupe": "{actor} removed the title {title} from the troupe.",
+    "title.one_holder": "{actor} switched One holder at a time {what} for the title {title}.",
     "title.court_order": "{actor} set the court order of the troupe's own titles: {order}.",
     "troupe.seats": "{actor} gave seats at court to {clans}.",
     "character.represented_by": "{actor} set who represents {character} at court: {by}.",

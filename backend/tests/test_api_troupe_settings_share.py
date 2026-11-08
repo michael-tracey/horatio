@@ -199,6 +199,8 @@ def customise(troupe: Troupe) -> None:
     ok(client.put(f"{base}/quest-settings", json={"enabled": True, "requests_per_cycle": 2}))
     ok(client.put(f"{base}/retainer-rules", json={"growth": 2}))
     ok(client.put(f"{base}/location-limit", json={"strength": "note"}))
+    # A house rule on a book title (#551); the troupe's own titles aren't carried.
+    ok(client.put(f"{base}/titles/Advocate/one-holder", json={"on": True}))
     ok(
         client.put(
             f"{base}/free-changes",
@@ -315,6 +317,9 @@ def test_a_round_trip_gives_the_new_troupe_the_same_rules(troupe: Troupe) -> Non
     assert conditioned["house"]
     allowances = ok(troupe.storyteller.client.get(f"/troupes/{fresh}/allowances"))["rules"]
     assert any(r["trait"] == CHILD and r["house"] for r in allowances)
+    titles = ok(troupe.storyteller.client.get(f"/troupes/{fresh}/titles"))["titles"]
+    assert {t["name"] for t in titles if t["unique"]} >= {"Baron", "Advocate"}
+    assert not next(t for t in titles if t["name"] == "Prince")["unique"]
 
 
 def test_the_review_marks_new_changed_same_and_cant_import(troupe: Troupe) -> None:

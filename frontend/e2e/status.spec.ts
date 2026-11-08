@@ -289,8 +289,14 @@ test("Status & Titles: a Camarilla player sees the status held with its sources,
   if (p.viewportSize()!.width >= 1024) expect(titlesBox.x).toBeGreaterThanOrEqual(statusBox.x + statusBox.width);
   else expect(titlesBox.y).toBeGreaterThanOrEqual(statusBox.y + statusBox.height);
   expect(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  // The Prince is held, by one character at a time: not for the taking.
+  // The Prince is held, but several may hold a title (two domains, two Princes) until
+  // the troupe holds it to one holder at a time (#551).
   const princeRow = choices.getByRole("listitem", { name: "Prince", exact: true });
+  await expect(princeRow.getByText("Held by Mirela Stoica", { exact: true })).toBeVisible();
+  await expect(princeRow.getByRole("button", { name: "Take Prince" })).toBeVisible();
+  // Once the troupe does, it isn't for the taking.
+  await send(lead.page, "PUT", `/api/troupes/${troupeId}/titles/Prince/one-holder`, { on: true });
+  await p.reload();
   await expect(princeRow.getByText(/Held by Mirela Stoica: only one holds it at a time/)).toBeVisible();
   await expect(princeRow.getByRole("button", { name: "Take Prince" })).toHaveCount(0);
 
@@ -862,6 +868,12 @@ test("titles by sect: a Camarilla troupe gives Camarilla titles only to its own,
   await expect(p.getByRole("heading", { name: "Titles of any sect" })).toBeVisible();
   await expect(p.getByRole("heading", { name: "Sabbat titles" })).toHaveCount(0);
   await expect(p.getByRole("row", { name: "Prince", exact: true }).getByText("Gives Authority · Commander · Sovereign").filter({ visible: true })).toBeVisible();
+  // Several characters may hold any title until the troupe switches One holder at a time
+  // on for it, a book title or its own (#551).
+  const oneHolder = p.getByRole("row", { name: "Prince", exact: true }).getByRole("checkbox", { name: /^One holder at a time/ });
+  await expect(oneHolder).not.toBeChecked();
+  await oneHolder.click();
+  await expect(oneHolder).toBeChecked();
 
   // A house title of the Camarilla, giving Guardian.
   const adding = p.locator("section").filter({ has: p.getByRole("heading", { name: "Add a title" }) });
@@ -872,6 +884,7 @@ test("titles by sect: a Camarilla troupe gives Camarilla titles only to its own,
   const master = p.getByRole("row", { name: "Master of Elysium" });
   await expect(master.getByText("Gives Guardian").filter({ visible: true })).toBeVisible();
   await expect(master.getByText("House rule").filter({ visible: true })).toBeVisible();
+  await expect(master.getByRole("checkbox", { name: /^One holder at a time/ })).not.toBeChecked();
   // No one holds it yet, so it is among the vacant Camarilla titles.
   await expect(p.getByRole("table", { name: "Camarilla titles" }).getByRole("row", { name: "Master of Elysium" })).toBeVisible();
 

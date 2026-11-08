@@ -25247,6 +25247,19 @@
         "title": "OfferOut",
         "type": "object"
       },
+      "OneHolder": {
+        "properties": {
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "title": "OneHolder",
+        "type": "object"
+      },
       "OpenRequest": {
         "properties": {
           "summary": {
@@ -76845,6 +76858,69 @@
           }
         },
         "summary": "Change Title",
+        "tags": [
+          "titles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/titles/{name}/one-holder": {
+      "put": {
+        "description": "Hold a title, of the rule sets' or the troupe's own, to one holder at a time, or\nnot: a house rule, off until set.",
+        "operationId": "set_one_holder_api_troupes__troupe_id__titles__name__one_holder_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OneHolder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TitlesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set One Holder",
         "tags": [
           "titles"
         ]
