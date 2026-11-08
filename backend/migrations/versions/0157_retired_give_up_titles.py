@@ -1,8 +1,8 @@
 """retired give up titles: characters retired before retiring gave up titles give up
 the ones they still hold, with an entry in each troupe's log (issue #550)
 
-Revision ID: 0156
-Revises: 0155
+Revision ID: 0157
+Revises: 0156
 Create Date: 2026-11-08 18:00:00.000000
 """
 
@@ -10,8 +10,8 @@ from collections.abc import Sequence
 
 from alembic import op
 
-revision: str = "0156"
-down_revision: str | None = "0155"
+revision: str = "0157"
+down_revision: str | None = "0156"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
