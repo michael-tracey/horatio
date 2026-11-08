@@ -6,7 +6,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetOut, TraitOut } from "../../api/types";
 import { Badge, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
-import { useAction, useUnavailable } from "../../hooks";
+import { useAction, usePreferences, useUnavailable } from "../../hooks";
 import { PrintAndBadge } from "./Badge";
 import { DomitorCard } from "./Domitor";
 import { useHasDomitor } from "./splats";
@@ -35,8 +35,9 @@ const SECTIONS: { title: string; categories: string[]; split?: boolean; powers?:
 ];
 
 /**
- * The fast way to make an NPC: every trait is a row of dots, and tapping a dot
- * sets the rating there and then (tap the top dot again to lower it by one).
+ * The fast way to make an NPC: every trait is a row of dots, or of numbers as
+ * Settings shows ratings, and tapping one sets the rating there and then (tap
+ * the one held again to lower it by one).
  * Nothing is spent; the tally shows what the build would be worth in this
  * troupe.
  */
@@ -123,7 +124,7 @@ function Identity({ sheet, catalogue, withoutClan, onChange }: { sheet: SheetOut
   );
 }
 
-/** Attributes as dots, each with its focus beside it: one of three, chosen like a PC's. */
+/** Attributes, each with its focus beside it: one of three, chosen like a PC's. */
 function Attributes({ sheet, catalogue, onChange }: { sheet: SheetOut; catalogue: CatalogueOut; onChange: (c: Change) => void }) {
   const max = catalogue.categories.find((c) => c.key === "attributes")?.max_rating ?? 10;
   return (
@@ -345,6 +346,7 @@ function Row({
   mark?: string;
 }) {
   const named = useClanName();
+  const numbers = usePreferences().ratings === "numbers";
   if (trait.fixed_rating || power) {
     const on = rating > 0;
     const level = trait.fixed_rating ?? 1;
@@ -370,6 +372,17 @@ function Row({
   // Enough dots to reach the usual ratings in one tap: attributes run to 10.
   const usual = trait.category === "attributes" ? 10 : 5;
   const dots = Math.min(Math.max(usual, rating + 1), max);
+  // As numbers, each button is the rating it sets, the one held marked (Settings → Show ratings as).
+  const look = (dot: number) =>
+    numbers
+      ? dot === rating
+        ? "rounded bg-blood/25 font-semibold text-parchment"
+        : dot < rating
+          ? "text-blood-bright"
+          : "text-mist/60"
+      : dot <= rating
+        ? "text-blood-bright"
+        : "text-mist/60";
   return (
     <li className={`flex flex-wrap items-center justify-between gap-2 text-sm ${aside ? "py-1.5" : "py-0.5"}`}>
       <span className="flex flex-wrap items-center gap-3">
@@ -384,9 +397,9 @@ function Row({
             aria-label={`${trait.name} ${dot}`}
             aria-pressed={rating === dot}
             onClick={() => onChange({ category: trait.category, name: trait.name, rating: rating === dot ? dot - 1 : dot })}
-            className={`grid h-7 w-5 place-items-center text-base hover:bg-ash sm:w-6 ${dot <= rating ? "text-blood-bright" : "text-mist/60"}`}
+            className={`grid h-7 w-5 place-items-center hover:bg-ash sm:w-6 ${numbers ? "text-sm tabular-nums" : "text-base"} ${look(dot)}`}
           >
-            {dot <= rating ? "●" : "○"}
+            {numbers ? dot : dot <= rating ? "●" : "○"}
           </button>
         ))}
       </span>
