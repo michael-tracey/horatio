@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogueOut } from "../../../api/types";
 import { detailNeed, fieldSkills } from "../fields";
-import { canTap, canTapDots, choiceName, clear, copyKey, fieldProblems, identityChoices, isRanking, keyed, keysOf, left, nextCopy, tap, tapDots, togglePoints, traitOf } from "./logic";
+import { canTapDots, choiceName, choose, clear, copyKey, fieldProblems, identityChoices, isRanking, keyed, keysOf, left, nextCopy, picksLeft, seatPicks, tapDots, togglePoints, traitOf } from "./logic";
 
 const SKILLS = { 4: 1, 3: 2, 2: 3, 1: 4 };
 const ATTRIBUTES = { 7: 1, 5: 1, 3: 1 };
@@ -28,52 +28,76 @@ describe("tapDots", () => {
   });
 });
 
-describe("tap", () => {
-  it("sets a rating that has picks left", () => {
-    expect(tap({}, SKILLS, "Brawl", 4)).toEqual({ Brawl: 4 });
+describe("choose", () => {
+  it("places a trait in an empty slot", () => {
+    expect(choose({}, SKILLS, 4, null, "Brawl")).toEqual({ picks: { Brawl: 4 }, key: "Brawl" });
   });
 
-  it("clears a trait when its own rating is tapped again", () => {
-    expect(tap({ Brawl: 4 }, SKILLS, "Brawl", 4)).toEqual({});
+  it("puts a trait in place of the one in the slot", () => {
+    expect(choose({ Brawl: 4, Dodge: 3 }, SKILLS, 4, "Brawl", "Melee").picks).toEqual({ Dodge: 3, Melee: 4 });
   });
 
-  it("moves a trait to another rating", () => {
-    expect(tap({ Brawl: 4 }, SKILLS, "Brawl", 3)).toEqual({ Brawl: 3 });
-  });
-
-  it("does nothing at a rating with no picks", () => {
-    expect(tap({}, ATTRIBUTES, "Physical", 6)).toEqual({});
-  });
-
-  it("does nothing when a shared rating is used up", () => {
-    const picks = { Athletics: 3, Dodge: 3 };
-    expect(tap(picks, SKILLS, "Stealth", 3)).toBe(picks);
-    expect(canTap(picks, SKILLS, "Stealth", 3)).toBe(false);
-  });
-
-  it("swaps when a single-pick rating is taken", () => {
-    const picks = { Physical: 7, Mental: 3 };
-    expect(tap(picks, ATTRIBUTES, "Mental", 7)).toEqual({ Mental: 7, Physical: 3 });
-  });
-
-  it("takes a single pick from a trait that had none, clearing the old holder", () => {
-    expect(tap({ Physical: 7 }, ATTRIBUTES, "Social", 7)).toEqual({ Social: 7 });
-  });
-
-  it("does not swap a single pick that is not a ranking", () => {
-    // Skills have one 4 among many ratings: once used, it greys out like the rest.
+  it("does not offer a trait picked at another rating again, outside a ranking", () => {
     const picks = { Brawl: 4 };
-    expect(canTap(picks, SKILLS, "Dodge", 4)).toBe(false);
-    expect(tap(picks, SKILLS, "Dodge", 4)).toBe(picks);
-    expect(canTap(picks, SKILLS, "Brawl", 4)).toBe(true);
+    expect(choose(picks, SKILLS, 3, null, "Brawl").picks).toBe(picks);
   });
 
-  it("swaps a single focus, since one pick is a ranking", () => {
-    expect(tap({ Dexterity: 1 }, { 1: 1 }, "Strength", 1)).toEqual({ Strength: 1 });
+  it("does nothing at a rating with no picks, or none left", () => {
+    expect(choose({}, ATTRIBUTES, 6, null, "Physical").picks).toEqual({});
+    const full = { Athletics: 3, Dodge: 3 };
+    expect(choose(full, SKILLS, 3, null, "Stealth").picks).toBe(full);
+  });
+
+  it("swaps in a ranking when the trait is placed at another rating", () => {
+    expect(choose({ Physical: 7, Mental: 3 }, ATTRIBUTES, 7, "Physical", "Mental").picks).toEqual({ Mental: 7, Physical: 3 });
+  });
+
+  it("moves a ranked trait to an empty slot, leaving its old one empty", () => {
+    expect(choose({ Physical: 5 }, ATTRIBUTES, 7, null, "Physical").picks).toEqual({ Physical: 7 });
+  });
+
+  it("takes a ranked slot from its holder for a trait not yet placed", () => {
+    expect(choose({ Physical: 7 }, ATTRIBUTES, 7, "Physical", "Social").picks).toEqual({ Social: 7 });
+    expect(choose({ Dexterity: 1 }, { 1: 1 }, 1, "Dexterity", "Strength").picks).toEqual({ Strength: 1 });
+  });
+
+  it("gives a skill bought by field a key of its own the second time", () => {
+    expect(choose({ Performance: 3 }, SKILLS, 1, null, "Performance", true)).toEqual({ picks: { Performance: 3, [copyKey("Performance", 2)]: 1 }, key: copyKey("Performance", 2) });
+  });
+
+  it("keeps the slot as it is when its own trait is chosen again", () => {
+    const picks = { [copyKey("Performance", 2)]: 1 };
+    expect(choose(picks, SKILLS, 1, copyKey("Performance", 2), "Performance", true)).toEqual({ picks, key: copyKey("Performance", 2) });
   });
 
   it("counts what is left", () => {
     expect(left({ Athletics: 3 }, SKILLS, 3)).toBe(1);
+  });
+});
+
+describe("seatPicks", () => {
+  it("keeps each pick in the slot it was in", () => {
+    expect(seatPicks([null, "Dodge", null], ["Dodge", "Melee"], 3)).toEqual(["Melee", "Dodge", null]);
+  });
+
+  it("empties the slot of a pick taken back", () => {
+    expect(seatPicks(["Brawl", "Dodge"], ["Dodge"], 2)).toEqual([null, "Dodge"]);
+  });
+
+  it("puts picks beyond the slots after them", () => {
+    expect(seatPicks([], ["Celerity", "Auspex"], 1)).toEqual(["Celerity", "Auspex"]);
+    expect(seatPicks([], ["Celerity"], 0)).toEqual(["Celerity"]);
+  });
+});
+
+describe("picksLeft", () => {
+  it("says what is left, rating by rating", () => {
+    expect(picksLeft({ Brawl: 4, Dodge: 3, Athletics: 3, Melee: 1 }, SKILLS)).toBe("6 picks left: three at 2 and three at 1");
+    expect(picksLeft({ Physical: 7, Social: 5 }, ATTRIBUTES)).toBe("1 pick left: one at 3");
+  });
+
+  it("is nothing once every pick is placed", () => {
+    expect(picksLeft({ Physical: 7, Social: 5, Mental: 3 }, ATTRIBUTES)).toBeNull();
   });
 });
 
@@ -143,7 +167,7 @@ describe("more than one field of a skill", () => {
   });
 
   it("counts each field's pick against the ratings", () => {
-    const picks = tap({ Performance: 3 }, SKILLS, copyKey("Performance", 2), 3);
+    const { picks } = choose({ Performance: 3 }, SKILLS, 3, null, "Performance", true);
     expect(picks).toEqual({ Performance: 3, [copyKey("Performance", 2)]: 3 });
     expect(left(picks, SKILLS, 3)).toBe(0);
     expect(keysOf(picks, "Performance")).toEqual(["Performance", copyKey("Performance", 2)]);
