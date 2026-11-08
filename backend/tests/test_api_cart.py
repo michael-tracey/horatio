@@ -151,6 +151,18 @@ def test_a_discipline_may_be_lowered_before_the_technique_on_it_goes(
     assert "Fearful Blow" not in now
 
 
+def test_a_dot_lowered_in_the_cart_lowers_spent(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+    spend(troupe.player, character_id, rating("skills", "Brawl", 2))
+    spend(troupe.player, character_id, rating("skills", "Brawl", 1, from_rating=2))
+
+    response = spend(troupe.player, character_id, rating("skills", "Dodge", 1))
+
+    assert lines(response) == [(1, None)]
+    xp = sheet(troupe.player, character_id)["xp"]
+    assert (xp["balance"], xp["earned"], xp["spent"]) == (28, 30, 2)
+
+
 def test_a_cart_that_ends_with_a_check_broken_is_refused_on_its_line(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player, clan="Brujah")
 

@@ -67,6 +67,7 @@ import { InfluenceEffects } from "./InfluenceEffects";
 import { DomitorCard } from "./Domitor";
 import { EmbraceCard } from "./Embrace";
 import { useHasDomitor } from "./splats";
+import { xpTotal } from "./xpTotals";
 
 function useSheet(characterId: string) {
   return useQuery({
@@ -627,11 +628,14 @@ export function SheetTab({
             </div>
             <div>
               <dt className="text-xs text-mist">Earned</dt>
-              <dd className="text-lg">{s.xp.earned}</dd>
+              <dd className="text-lg">{xpTotal(s.xp.earned)}</dd>
             </div>
             <div>
               <dt className="text-xs text-mist">Spent</dt>
-              <dd className="text-lg">{s.xp.spent}</dd>
+              {/* Net of refunds and flaws taken, so it can be below 0. */}
+              <dd className="text-lg" title={s.xp.spent < 0 ? "Flaws and refunds have given back more XP than has been spent" : undefined}>
+                {xpTotal(s.xp.spent)}
+              </dd>
             </div>
           </dl>
           {s.xp.lost > 0 && (
