@@ -3344,6 +3344,10 @@
             ],
             "title": "By Sheet"
           },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
           "level": {
             "title": "Level",
             "type": "string"
@@ -3376,6 +3380,7 @@
           }
         },
         "required": [
+          "key",
           "level",
           "applies_to",
           "page",
@@ -3385,6 +3390,39 @@
           "applies"
         ],
         "title": "BanOut",
+        "type": "object"
+      },
+      "BanPresetOut": {
+        "properties": {
+          "clans": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          }
+        },
+        "required": [
+          "name",
+          "clans",
+          "page"
+        ],
+        "title": "BanPresetOut",
         "type": "object"
       },
       "Band": {
@@ -6969,6 +7007,140 @@
           "signed_in"
         ],
         "title": "ClaimOut",
+        "type": "object"
+      },
+      "ClanBanIn": {
+        "properties": {
+          "clans": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Clans",
+            "type": "array"
+          },
+          "key": {
+            "maxLength": 100,
+            "title": "Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "clans"
+        ],
+        "title": "ClanBanIn",
+        "type": "object"
+      },
+      "ClanBanOut": {
+        "description": "A sect's status ban on clans (the Camarilla's pillar clans), as the troupe\nnames its clans (horatio.rules.status, issue #553).",
+        "properties": {
+          "applies_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applies To"
+          },
+          "book": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Book",
+            "type": "array"
+          },
+          "book_applies_to": {
+            "title": "Book Applies To",
+            "type": "string"
+          },
+          "clans": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "string"
+          },
+          "outside": {
+            "title": "Outside",
+            "type": "boolean"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "presets": {
+            "items": {
+              "$ref": "#/components/schemas/BanPresetOut"
+            },
+            "title": "Presets",
+            "type": "array"
+          },
+          "sect": {
+            "title": "Sect",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "sect",
+          "label",
+          "level",
+          "outside",
+          "page",
+          "clans",
+          "book",
+          "applies_to",
+          "book_applies_to",
+          "presets"
+        ],
+        "title": "ClanBanOut",
+        "type": "object"
+      },
+      "ClanBansOut": {
+        "properties": {
+          "all_clans": {
+            "items": {
+              "type": "string"
+            },
+            "title": "All Clans",
+            "type": "array"
+          },
+          "bans": {
+            "items": {
+              "$ref": "#/components/schemas/ClanBanOut"
+            },
+            "title": "Bans",
+            "type": "array"
+          }
+        },
+        "required": [
+          "all_clans",
+          "bans"
+        ],
+        "title": "ClanBansOut",
         "type": "object"
       },
       "ClanChoiceOut": {
@@ -76002,6 +76174,102 @@
           }
         },
         "summary": "Set Starting Blood",
+        "tags": [
+          "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/status-ban-clans": {
+      "get": {
+        "description": "The clans each sect's status bans on clans name here: the Camarilla's pillar\nclans, its known Caitiff, and the Sabbat's antitribu under a ban.",
+        "operationId": "read_clan_bans_api_troupes__troupe_id__status_ban_clans_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanBansOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Clan Bans",
+        "tags": [
+          "house rules"
+        ]
+      },
+      "put": {
+        "description": "Name the clans one status ban on clans names here. Bloodlines follow their clan;\nnone, and there is no such ban here. Staff marks on characters stay as they are.",
+        "operationId": "set_clan_bans_api_troupes__troupe_id__status_ban_clans_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClanBanIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClanBansOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Clan Bans",
         "tags": [
           "house rules"
         ]

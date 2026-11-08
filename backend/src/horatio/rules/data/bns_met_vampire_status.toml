@@ -61,17 +61,34 @@ page = "404"
 # A ban says who it applies to; `when` is the condition (horatio.rules.checks) where
 # the sheet can tell, and the rest are for the troupe's staff to judge. A ban only
 # ever applies to a member of its sect.
+#
+# A ban on clans names them in `clans`, which a troupe can change (issue #553): it
+# has a `key`, a `label` for the troupe's setting, and its `applies_to` says
+# `{clans}` where the troupe's go. It applies to a character of one of the clans or
+# their bloodlines, or with `outside`, of none of them. `presets` are lists a troupe
+# can pick at once. A troupe that names no clans has no such ban.
 
 [[sects]]
 name = "Camarilla"
 accepted = "Acknowledged"
 page = "400"
 
+# The pillar clans are setting, not rules: the core book has seven, with the Assamite
+# risen in the Gangrel's place (pp. 26, 36-37). By 2018 the Brujah have left for the
+# Anarchs and the Assamite keep their seat, though with no Justicar yet (Vol. II,
+# "Settings Update: Modern Nights", pp. 16-17): Volume II's is the default.
 [[sects.bans]]
+key = "pillar_clans"
+label = "Pillar clans"
 level = "lesser"
-applies_to = "Not Embraced into a pillar clan (Assamite, Brujah, Malkavian, Nosferatu, Toreador, Tremere, Ventrue); the Gangrel are not one again yet."
-when = { not = { clan_family = ["Assamite", "Brujah", "Malkavian", "Nosferatu", "Toreador", "Tremere", "Ventrue"] } }
+applies_to = "Not Embraced into a pillar clan: {clans}."
+clans = ["Assamite", "Malkavian", "Nosferatu", "Toreador", "Tremere", "Ventrue"]
+outside = true
 page = "403"
+presets = [
+    { name = "As Volume II", clans = ["Assamite", "Malkavian", "Nosferatu", "Toreador", "Tremere", "Ventrue"], page = "Vol. II, pp. 16-17" },
+    { name = "As the core book (2013)", clans = ["Assamite", "Brujah", "Malkavian", "Nosferatu", "Toreador", "Tremere", "Ventrue"], page = "MET: VTM pp. 26, 403" },
+]
 
 [[sects.bans]]
 level = "lesser"
@@ -90,9 +107,11 @@ applies_to = "A member of the Sabbat within the past 10 years."
 page = "403"
 
 [[sects.bans]]
+key = "known_caitiff"
+label = "Known Caitiff"
 level = "greater"
-applies_to = "A known Caitiff."
-when = { clan = ["Caitiff"] }
+applies_to = "A known {clans}."
+clans = ["Caitiff"]
 page = "403"
 
 [[sects.bans]]
@@ -124,9 +143,11 @@ when = { on_path = false }
 page = "449"
 
 [[sects.bans]]
+key = "lesser_antitribu"
+label = "Antitribu, lesser ban"
 level = "lesser"
-applies_to = "Assamite or Toreador antitribu."
-when = { clan_family = ["Assamite", "Toreador"] }
+applies_to = "{clans} antitribu."
+clans = ["Assamite", "Toreador"]
 page = "449"
 
 [[sects.bans]]
@@ -140,9 +161,11 @@ applies_to = "No Vinculum above 2, or fewer than two Vinculums."
 page = "449"
 
 [[sects.bans]]
+key = "greater_antitribu"
+label = "Antitribu, greater ban"
 level = "greater"
-applies_to = "Tremere antitribu."
-when = { clan_family = ["Tremere"] }
+applies_to = "{clans} antitribu."
+clans = ["Tremere"]
 page = "449"
 
 [[sects]]

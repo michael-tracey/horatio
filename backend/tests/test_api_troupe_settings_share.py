@@ -96,6 +96,9 @@ def picks(document: dict[str, Any], section: str) -> list[dict[str, Any]]:
     return [{"section": section, "index": n} for n in range(len(document["sections"][section]))]
 
 
+PILLARS = ["Assamite", "Gangrel", "Malkavian", "Nosferatu", "Toreador", "Tremere", "Ventrue"]
+
+
 def customise(troupe: Troupe) -> None:
     """Give the troupe a little of everything Customise changes, through its editors."""
     client, base = troupe.storyteller.client, f"/troupes/{troupe.id}"
@@ -103,6 +106,8 @@ def customise(troupe: Troupe) -> None:
     ok(client.put(f"{base}/feeding", json={"feeding": "book", "resonance": True}))
     ok(client.put(f"{base}/diablerie-flaws", json={"setting": "remove"}))
     ok(client.put(f"{base}/clan-rarity", json={"rarities": {"Lasombra": "rare"}}))
+    # The Gangrel a pillar clan of the Camarilla again (#553).
+    ok(client.put(f"{base}/status-ban-clans", json={"key": "pillar_clans", "clans": PILLARS}))
     ok(client.put(f"{base}/checks/merits/Calm Heart/1", json={"strength": "note"}))
     ok(client.post(f"{base}/house-checks", json=IRON_WILL_FOR_VENTRUE), 201)
     ok(
@@ -315,6 +320,10 @@ def test_a_round_trip_gives_the_new_troupe_the_same_rules(troupe: Troupe) -> Non
     assert conditioned["house"]
     allowances = ok(troupe.storyteller.client.get(f"/troupes/{fresh}/allowances"))["rules"]
     assert any(r["trait"] == CHILD and r["house"] for r in allowances)
+    bans = ok(troupe.storyteller.client.get(f"/troupes/{fresh}/status-ban-clans"))["bans"]
+    pillar = next(b for b in bans if b["key"] == "pillar_clans")
+    assert pillar["clans"] == PILLARS
+    assert "Gangrel" in pillar["applies_to"]
 
 
 def test_the_review_marks_new_changed_same_and_cant_import(troupe: Troupe) -> None:

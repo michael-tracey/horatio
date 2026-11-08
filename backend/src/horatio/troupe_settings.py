@@ -1,7 +1,8 @@
 """The writes behind a few of a troupe's settings that check what they are given, or
-change characters as they go: who may join, Golconda, clan rarity and default
-bloodlines. Shared by their routes in Customise and by importing settings
-(horatio.troupe_settings_share), so both are checked alike."""
+change characters as they go: who may join, Golconda, clan rarity, default
+bloodlines and the clans the sects' status bans name. Shared by their routes in
+Customise and by importing settings (horatio.troupe_settings_share), so both are
+checked alike."""
 
 from collections.abc import Mapping, Sequence
 
@@ -11,6 +12,7 @@ from sqlalchemy.orm import Session
 from horatio import audit, clan_merits
 from horatio.models import Character, RuleSet, TraitCategory, TraitDefinition, Troupe, User
 from horatio.rules.splats import SPLATS, splat_order
+from horatio.rules.status import StatusBanData, clan_bans
 from horatio.rules.store import forget_rules, read_troupe_rules
 from horatio.sheets import apply_grants, playing_by, unprocessable
 
@@ -126,6 +128,53 @@ def set_default_bloodlines(
         )
         or "the book's",
     )
+
+
+def book_clan_bans(db: Session) -> dict[str, tuple[str, StatusBanData]]:
+    """The sects' bans on clans as the rule set has them, by key, with their sects."""
+    rules = read_troupe_rules(db, "vampire", None).rule_set.status_rules
+    return {ban.key: (sect, ban) for sect, ban in clan_bans(rules)}
+
+
+def set_status_ban_clans(
+    db: Session, user: User, troupe: Troupe, clans: Mapping[str, Sequence[str]]
+) -> None:
+    """Name the clans the sects' bans on clans name here, by the ban's key: the
+    Camarilla's pillar clans, say. A ban named with the rule set's clans goes by the
+    rule set again; one named with none is off here. Bloodlines follow their clan.
+    Each ban whose clans change goes in the troupe's log."""
+    book = book_clan_bans(db)
+    rule_set = read_troupe_rules(db, "vampire", troupe.id).rule_set
+    unknown = [k for k in clans if k not in book]
+    if unknown:
+        raise unprocessable(f"No status ban on clans: {', '.join(unknown)}.")
+    found = dict(troupe.status_ban_clans)
+    for key, names in clans.items():
+        not_clans = [c for c in names if ("clan", c) not in rule_set.traits or ":" in c]
+        if not_clans:
+            raise unprocessable(
+                f"Not a clan: {', '.join(not_clans)}. Name the clan; its bloodlines follow it."
+            )
+        chosen = sorted(set(names))
+        before = found.get(key, sorted(book[key][1].clans or ()))
+        if chosen == sorted(book[key][1].clans or ()):
+            found.pop(key, None)
+        else:
+            found[key] = chosen
+        if chosen != sorted(before):
+            sect, ban = book[key]
+            audit.record(
+                db,
+                user,
+                "house.status_ban_clans",
+                troupe_id=troupe.id,
+                sect=sect,
+                ban=ban.label,
+                clans=", ".join(chosen) or "none, so there is no such ban",
+            )
+    troupe.status_ban_clans = dict(sorted(found.items()))
+    db.flush()
+    forget_rules(db)
 
 
 def building_here(db: Session, troupe: Troupe) -> list[Character]:

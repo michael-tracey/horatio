@@ -25,7 +25,9 @@ from horatio.rules.status import (
     TitleData,
     WhileAbsentData,
     check_status_rules,
+    clan_bans,
     titles_from,
+    troupe_bans,
 )
 from horatio.rules.store import read_troupe_rules, sync_rule_set
 from horatio.social_age import AGES
@@ -232,6 +234,62 @@ def test_bans_the_sheet_can_tell() -> None:
     assert banned("Sabbat", sheet("Lasombra")) == {"lesser"}
     assert banned("Sabbat", sheet("Tremere: Telyav", "Path of Night")) == {"greater"}
     assert banned("Anarch", sheet("Brujah", "Path of Night")) == {"greater"}
+
+
+def test_the_bans_on_clans_default_to_volume_iis_pillar_clans() -> None:
+    """The pillar clans as Volume II has them in 2018 (pp. 16-17): the Brujah gone to
+    the Anarchs, the Assamite still in. The core book's seven (p. 403) are a preset."""
+    bans = {b.key: b for _, b in clan_bans(VAMPIRE.status_rules)}
+    assert sorted(bans) == [
+        "greater_antitribu",
+        "known_caitiff",
+        "lesser_antitribu",
+        "pillar_clans",
+    ]
+    pillar = bans["pillar_clans"]
+    vol_ii, core = pillar.presets
+    assert pillar.clans == vol_ii.clans
+    assert set(core.clans) - set(vol_ii.clans) == {"Brujah"}
+    assert "Gangrel" not in core.clans
+
+    def sheet(clan: str) -> list[SheetTrait]:
+        return [SheetTrait(category="clan", name=clan)]
+
+    assert banned("Camarilla", sheet("Brujah")) == {"lesser"}
+    assert banned("Camarilla", sheet("Brujah: True Brujah")) == {"lesser"}
+    assert banned("Camarilla", sheet("Assamite: Vizier")) == set()
+
+
+def test_a_troupes_clans_replace_the_rule_sets_in_a_ban_on_clans() -> None:
+    rules = troupe_bans(
+        VAMPIRE.status_rules, {"pillar_clans": ["Gangrel", "Ventrue"], "greater_antitribu": []}
+    )
+    pillar = next(b for b in rules.sects["Camarilla"].bans if b.key == "pillar_clans")
+
+    assert pillar.applies_to == "Not Embraced into a pillar clan: Gangrel or Ventrue."
+    assert pillar.when == {"not": {"clan_family": ["Gangrel", "Ventrue"]}}
+    assert pillar.mark_key == "pillar_clans"
+    assert all(b.key != "greater_antitribu" for b in rules.sects["Sabbat"].bans)
+    # The others are the rule set's.
+    assert rules.sects["Anarch"] == VAMPIRE.status_rules.sects["Anarch"]
+    assert troupe_bans(VAMPIRE.status_rules, {}) is VAMPIRE.status_rules
+
+
+def test_a_ban_on_clans_names_only_clans() -> None:
+    camarilla = VAMPIRE.status_rules.sects["Camarilla"]
+    pillar = next(b for b in camarilla.bans if b.key == "pillar_clans")
+    for wrong in (
+        replace(pillar, clans=("Brujah: True Brujah",)),
+        replace(pillar, clans=("Kindred",)),
+        replace(pillar, wording="Not Embraced into a pillar clan."),
+        replace(pillar, label=""),
+    ):
+        bans = tuple(wrong if b is pillar else b for b in camarilla.bans)
+        sects = {**VAMPIRE.status_rules.sects, "Camarilla": replace(camarilla, bans=bans)}
+        with pytest.raises(ValueError):
+            check_status_rules(
+                VAMPIRE.traits, replace(VAMPIRE.status_rules, sects=sects), VAMPIRE.titles
+            )
 
 
 def test_the_caps_are_the_books() -> None:

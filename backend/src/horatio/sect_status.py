@@ -228,6 +228,8 @@ class Ban:
     """One of the sect's status bans, and whether it applies to the character: as the
     sheet shows (None where it cannot tell), or as staff marked it."""
 
+    # What staff marks on it are kept under: a ban on clans' key, else its words.
+    key: str
     level: str
     applies_to: str
     page: str | None
@@ -540,9 +542,10 @@ def bans_of(
     subject = SheetTrait(category="sect", name=sect.name, rating=None)
     found: list[Ban] = []
     for ban in sect.bans:
-        mark = marks.get(ban.applies_to)
+        mark = marks.get(ban.mark_key)
         found.append(
             Ban(
+                key=ban.mark_key,
                 level=ban.level,
                 applies_to=ban.applies_to,
                 page=ban.page,
@@ -1243,12 +1246,14 @@ def mark_ban(
     db: Session, user: User, character: Character, ban: str, applies: bool | None, reason: str
 ) -> None:
     """Staff say a status ban of the character's sect applies to it, or that it is
-    exempt, with their reason; or (None) go back to what the sheet shows."""
+    exempt, with their reason; or (None) go back to what the sheet shows. `ban` is
+    its key (Ban.key)."""
     troupe = home_troupe(db, character)
     if not staff_in(db, user, character, troupe):
         raise conflict("Only staff mark a status ban.")
     found = standing(db, character)
-    if found.sect_data is None or not any(b.applies_to == ban for b in found.bans):
+    marked = next((b for b in found.bans if b.key == ban), None)
+    if found.sect_data is None or marked is None:
         raise unprocessable("That is not a status ban of the character's sect.")
     reason = reason.strip()
     if applies is not None and not reason:
@@ -1277,7 +1282,7 @@ def mark_ban(
         "status.ban_marked",
         troupe_id=troupe.id if troupe else None,
         character_id=character.id,
-        ban=ban,
+        ban=marked.applies_to,
         mark={True: "applies", False: "exempt", None: "as the sheet shows"}[applies],
         reason=reason,
     )
