@@ -2,7 +2,9 @@
 
 A troupe's titles are its rule sets' list plus any it added. Its storytellers
 and assistant storytellers give them to characters in the troupe; a title
-means nothing elsewhere, and goes when the character leaves.
+means nothing elsewhere, and goes when the character leaves. Retiring gives up
+every title the character holds (`give_up_on_retiring`), so a retired character
+holds none.
 
 On the troupe's Who's Who, the court is in rank order (`court_order`): the rule
 sets' titles as their data ranks them, then those that are only a name, then the
@@ -454,6 +456,8 @@ def set_titles(
         raise conflict("Titles are only for characters in this troupe.")
     before = set(held(db, troupe.id, character.id))
     after = set(names)
+    if character.status == "retired" and after - before:
+        raise conflict(f"{character.name} is retired, and a retired character holds no titles.")
     given = offered(db, troupe)
     unknown = after - before - set(given)
     if unknown:
@@ -766,6 +770,47 @@ def give_up(db: Session, user: User, character: Character, name: str) -> None:
     else:
         summary += ", which was not active"
     tell_staff(db, user, troupe, character, "title.given_up", summary)
+
+
+def and_list(names: Sequence[str]) -> str:
+    """Names in a sentence: "Prince", "Prince and Harpy", "Prince, Harpy and Whip"."""
+    return " and ".join([", ".join(names[:-1]), names[-1]]) if len(names) > 1 else "".join(names)
+
+
+def give_up_on_retiring(db: Session, user: User, character: Character) -> None:
+    """A retired character gives up every title it holds, in each troupe, as when
+    staff take them: its active title goes, and the status it gave. One entry in each
+    troupe's log, and the troupe's storytellers are told."""
+    by_troupe: dict[uuid.UUID, list[str]] = {}
+    active: dict[uuid.UUID, str] = {}
+    for row in db.scalars(
+        select(CharacterTitle).where(CharacterTitle.character_id == character.id)
+    ):
+        by_troupe.setdefault(row.troupe_id, []).append(row.name)
+        if row.active:
+            active[row.troupe_id] = row.name
+    for troupe_id, names in by_troupe.items():
+        troupe = db.get_one(Troupe, troupe_id)
+        order = court_order(db, troupe_id)
+        names.sort(key=lambda n: court_key(order, n))
+        drop_all(db, troupe_id, character.id)
+        audit.record(
+            db,
+            user,
+            "title.given_up",
+            troupe_id=troupe_id,
+            character_id=character.id,
+            kind="retiring",
+            titles=and_list(names),
+        )
+        if troupe.archived_at is not None:
+            continue
+        summary = f"{character.name} gave up {and_list(names)} on retiring"
+        if troupe_id in active:
+            change = change_words(None, title_data(db, troupe_id).get(active[troupe_id]))
+            summary += f": {change}" if change else ""
+        tell_staff(db, user, troupe, character, "title.given_up", summary)
+    db.flush()
 
 
 def drop_all(db: Session, troupe_id: uuid.UUID, character_id: uuid.UUID) -> None:
