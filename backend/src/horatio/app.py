@@ -92,6 +92,7 @@ from horatio.api import (
     troupes,
     unsubscribe,
     viewing,
+    vtes_symbols,
     waiting,
     whos_who,
     written_rules,
@@ -227,6 +228,7 @@ for module in (
     troupe_settings_share,
     yorick_imports,
     tools,
+    vtes_symbols,
 ):
     api.include_router(module.router)
 

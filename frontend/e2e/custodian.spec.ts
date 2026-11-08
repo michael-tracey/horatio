@@ -693,6 +693,106 @@ test("the custodian previews fitting a troupe's NPC creation picks, then fits th
   await expect(tool.getByRole("button", { name: "Fit 0 NPCs" })).toBeDisabled();
 });
 
+test("the custodian fetches the Dark Pack resources and the VTES symbols onto the server, then removes them", async ({ browser }) => {
+  const custodian = await person(browser, "fetchkit-cust");
+  makeCustodian(custodian.email);
+  const c = custodian.page;
+  await c.reload();
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "Tools", exact: true }).click();
+  const card = (title: string) => c.locator("section").filter({ has: c.getByRole("heading", { name: title, exact: true }) });
+  const darkPack = card("Dark Pack resources");
+  const vtes = card("VTES symbols");
+
+  // The e2e server has no Dark Pack folder, so there is nowhere to fetch to.
+  await expect(darkPack.getByText("This server has no Dark Pack folder")).toBeVisible();
+  await expect(vtes.getByText("This server has no Dark Pack folder")).toBeVisible();
+  await expect(darkPack.getByRole("button", { name: "Fetch and import" })).toHaveCount(0);
+
+  // The rest with the server's answers faked in the browser: tests never reach Paradox or KRCG.
+  const dropbox = "https://www.dropbox.com/scl/fo/kit?dl=1";
+  const job = (stage: string, done: number, total: number) => ({ stage, done, total, started_at: new Date().toISOString(), by: "fetchkit-cust" });
+  const common = { configured: true, writable: true, agreement: "https://www.paradoxinteractive.com/dark-pack-agreement", job: null, error: null, error_at: null };
+  const empty = { ...common, default_address: dropbox, imported: false, imported_at: null, how: null, address: null, sources: [], logo: false, clans: [], missing: [] };
+  const imported = {
+    ...empty,
+    imported: true,
+    imported_at: new Date().toISOString(),
+    how: "fetched",
+    address: dropbox,
+    sources: ["World of Darkness Community Assets.zip", "WoD-Logos-and-Symbols.zip"],
+    logo: true,
+    clans: ["Brujah", "Giovanni"],
+    missing: ["Lamia"],
+  };
+  const downloading = { ...empty, job: job("Downloading", 120 * 1024 * 1024, 432 * 1024 * 1024) };
+  let darkPackNow: object = empty;
+  // After the fetch starts, it's asked after twice while it downloads; then it's done.
+  let downloadingFor = 0;
+  const fetched: unknown[] = [];
+  await c.route("**/api/tools/dark-pack", async (route) => {
+    if (route.request().method() === "DELETE") darkPackNow = empty;
+    if (downloadingFor > 0 && --downloadingFor === 0) darkPackNow = imported;
+    await route.fulfill({ json: downloadingFor > 0 ? downloading : darkPackNow });
+  });
+  await c.route("**/api/tools/dark-pack/fetch", async (route) => {
+    fetched.push(route.request().postDataJSON());
+    downloadingFor = 3;
+    await route.fulfill({ status: 202, json: downloading });
+  });
+  const vtesEmpty = {
+    ...common,
+    default_address: "https://static.krcg.org/",
+    fetched: false,
+    fetched_at: null,
+    address: null,
+    counts: [],
+    fonts: [],
+    clans: [],
+    disciplines: [],
+    large_png: [],
+  };
+  let vtesNow: object = vtesEmpty;
+  await c.route("**/api/tools/vtes-symbols", (route) => route.fulfill({ json: vtesNow }));
+  await c.route("**/api/tools/vtes-symbols/fetch", async (route) => {
+    vtesNow = { ...vtesEmpty, error: "https://static.krcg.org/svg/clan/ answered 503 Service Unavailable.", error_at: new Date().toISOString() };
+    await route.fulfill({ status: 202, json: vtesNow });
+  });
+  await c.reload();
+
+  // The Dark Pack: the usual address, and nothing until the licence is accepted.
+  await expect(darkPack.getByText("Not on this server yet.")).toBeVisible();
+  await expect(darkPack.getByLabel("Address")).toHaveValue(dropbox);
+  const fetch = darkPack.getByRole("button", { name: "Fetch and import" });
+  await expect(fetch).toBeDisabled();
+  await darkPack.getByLabel("I accept Paradox's Dark Pack Agreement for this server").first().check();
+  await fetch.click();
+  await expect(darkPack.getByRole("status")).toContainText("Downloading: 120 MB of 432 MB… Started");
+  expect(fetched).toEqual([{ address: dropbox, accept_licence: true }]);
+  const status = darkPack.getByRole("region", { name: "On the server" });
+  await expect(status).toContainText(`Fetched`, { timeout: 10_000 });
+  await expect(status).toContainText(`from ${dropbox}, from World of Darkness Community Assets.zip and WoD-Logos-and-Symbols.zip.`);
+  await expect(status).toContainText("The Dark Pack logo is here.");
+  await expect(status).toContainText("Clan symbols (2): Brujah, Giovanni.");
+  await expect(status).toContainText("Not in the kit: Lamia.");
+
+  // Removing it asks first.
+  await darkPack.getByRole("button", { name: "Remove" }).click();
+  const confirm = c.getByRole("dialog", { name: "Remove the Dark Pack resources?" });
+  await confirm.getByRole("button", { name: "Keep them" }).click();
+  await expect(status).toBeVisible();
+  await darkPack.getByRole("button", { name: "Remove" }).click();
+  await confirm.getByRole("button", { name: "Remove them" }).click();
+  await expect(darkPack.getByText("Not on this server yet.")).toBeVisible();
+
+  // The VTES symbols: a fetch that fails says why, and that nothing was lost.
+  await expect(vtes.getByLabel("Address")).toHaveValue("https://static.krcg.org/");
+  await vtes.getByLabel("I accept Paradox's Dark Pack Agreement for this server").check();
+  await vtes.getByRole("button", { name: "Fetch", exact: true }).click();
+  await expect(vtes.getByRole("alert")).toContainText("failed: https://static.krcg.org/svg/clan/ answered 503 Service Unavailable.");
+  await expect(vtes.getByRole("alert")).toContainText("What was here before it is still here.");
+});
+
 test("the custodian imports a troupe's characters from Yorick, matching a line and overwriting an NPC of the same name", async ({ browser }) => {
   const custodian = await person(browser, "yorick-cust");
   makeCustodian(custodian.email);

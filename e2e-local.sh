@@ -68,7 +68,7 @@ cd "$ROOT/backend"
 UPLOADS="$ROOT/.local/e2e-uploads"
 rm -rf "$UPLOADS" && mkdir -p "$UPLOADS"
 HORATIO_COOKIE_SECURE=false HORATIO_FRONTEND_DIST="$ROOT/frontend/dist" HORATIO_UPLOAD_DIR="$UPLOADS" \
-  HORATIO_DISCORD_BOT_TOKEN= HORATIO_SMTP_HOST= \
+  HORATIO_DISCORD_BOT_TOKEN= HORATIO_SMTP_HOST= HORATIO_DARK_PACK_DIR= \
   setsid uv run uvicorn horatio.app:app --port "$PORT" --timeout-keep-alive 300 >"$LOG" 2>&1 < /dev/null &
 api=$!
 stop_api() {

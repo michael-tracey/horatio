@@ -134,7 +134,8 @@ Horatio is unofficial fan-made material under Paradox Interactive's
 [Dark Pack Agreement](https://www.paradoxinteractive.com/games/world-of-darkness/community/dark-pack-agreement):
 free, with the agreement's notices on its About page and every page's footer.
 Paradox's own art (the Dark Pack logo, clan symbols) is licensed to each server's
-operator and never committed. Put it in `dark-pack/`; see `dark-pack/README.md`.
+operator and never committed. The custodian fetches it onto the server in
+Custodian › Tools, or imports it into `dark-pack/`; see `dark-pack/README.md`.
 
 ## Logo and icons
 
