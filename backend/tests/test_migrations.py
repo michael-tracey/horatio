@@ -370,3 +370,93 @@ def test_the_angelic_visage_migration_keeps_charisma(
             ):
                 connection.execute(text(f"delete from {table} where {column} = :id"), {"id": value})
         load_rules(engine)
+
+
+def test_the_retired_titles_migration_gives_up_the_titles_retired_characters_hold(
+    engine: Engine, alembic_config: Config
+) -> None:
+    """Migration 0156 (#550): a character retired before retiring gave up titles gives
+    up those it still holds, with one entry in each troupe's log; one still playing
+    keeps its own."""
+    from horatio.api.roster import message
+
+    command.downgrade(alembic_config, "0155")
+    user, troupe = uuid.uuid4(), uuid.uuid4()
+    gone, playing = uuid.uuid4(), uuid.uuid4()
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "insert into users (id, email, display_name, handle)"
+                    " values (:id, 'gone@example.com', 'Gone', 'gone')"
+                ),
+                {"id": user},
+            )
+            connection.execute(
+                text("insert into troupes (id, name, lead_user_id) values (:id, 'Ashes', :lead)"),
+                {"id": troupe, "lead": user},
+            )
+            for character, name, state in (
+                (gone, "Ursula", "retired"),
+                (playing, "Vera", "active"),
+            ):
+                connection.execute(
+                    text(
+                        "insert into characters (id, player_id, splat, name, home_troupe_id,"
+                        " status) values (:id, :player, 'vampire', :name, :troupe, :status)"
+                    ),
+                    {
+                        "id": character,
+                        "player": user,
+                        "name": name,
+                        "troupe": troupe,
+                        "status": state,
+                    },
+                )
+            for character, name, active in (
+                (gone, "Prince", True),
+                (gone, "Harpy", False),
+                (gone, "Whip", False),
+                (playing, "Keeper of Elysium", True),
+            ):
+                connection.execute(
+                    text(
+                        "insert into character_titles (troupe_id, character_id, name, active)"
+                        " values (:troupe, :character, :name, :active)"
+                    ),
+                    {"troupe": troupe, "character": character, "name": name, "active": active},
+                )
+
+        command.upgrade(alembic_config, "head")
+
+        with engine.connect() as connection:
+            held = connection.execute(
+                text("select character_id, name from character_titles where troupe_id = :id"),
+                {"id": troupe},
+            ).all()
+            logged = connection.execute(
+                text(
+                    "select actor_id, character_id, action, data from audit_events"
+                    " where troupe_id = :id"
+                ),
+                {"id": troupe},
+            ).all()
+        assert held == [(playing, "Keeper of Elysium")]
+        assert len(logged) == 1
+        actor, character, action, data = logged[0]
+        assert (actor, character, action) == (None, gone, "title.given_up")
+        assert message(action, None, data["character_name"], data) == (
+            "Ursula, retired, gave up Harpy, Prince and Whip: a retired character holds no titles."
+        )
+    finally:
+        command.upgrade(alembic_config, "head")
+        with engine.begin() as connection:
+            for table, column, value in (
+                ("audit_events", "troupe_id", troupe),
+                ("character_titles", "troupe_id", troupe),
+                ("characters", "id", gone),
+                ("characters", "id", playing),
+                ("troupes", "id", troupe),
+                ("users", "id", user),
+            ):
+                connection.execute(text(f"delete from {table} where {column} = :id"), {"id": value})

@@ -16,7 +16,7 @@ from typing import Literal
 
 from sqlalchemy.orm import Session
 
-from horatio import audit
+from horatio import audit, titles
 from horatio.models import Character, User
 from horatio.renames import troupes_of
 
@@ -53,11 +53,12 @@ def retire(
     db: Session, user: User, character: Character, reason: Reason | None, note: str, listed: bool
 ) -> None:
     """Retire the character, for `reason`: listed on the Who's Who if `listed`, which
-    needs a reason."""
+    needs a reason. It gives up every title it holds, whatever the reason."""
     character.status = "retired"
     character.left_reason = reason
     character.left_listed = listed and reason is not None
     log(db, user, "character.retired", character, note)
+    titles.give_up_on_retiring(db, user, character)
 
 
 def change(

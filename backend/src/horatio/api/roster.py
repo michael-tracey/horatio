@@ -485,6 +485,9 @@ MESSAGES: dict[str, str] = {
     "title.chosen": "{actor} chose the title {title} for {character} ({what}).",
     "title.made_active": "{actor} made {title} {character}'s active title ({what}).",
     "title.given_up": "{actor} gave up {character}'s title {title} ({what}).",
+    "title.given_up.retiring": "{character} gave up {titles} on retiring.",
+    "title.given_up.retired": "{character}, retired, gave up {titles}: a retired character"
+    " holds no titles.",
     "title.added": "{actor} added the title {title} to the troupe.",
     "title.changed": "{actor} changed the title {title}: now {what}.",
     "title.removed_from_troupe": "{actor} removed the title {title} from the troupe.",
