@@ -700,6 +700,9 @@ test("a pick moves by choosing it in another slot, swapping with the one there w
 
   // Childlike bars Physical at 7: moving Mental from 7 onto it leaves the 7 empty, saying so.
   await p.goto(`/characters/${id}/create/attributes`);
+  const at7 = await openSlot(p, "Attributes", 7);
+  await expect(at7.getByRole("option", { name: "Physical (at 5)" })).toHaveAttribute("aria-disabled", "true");
+  await p.keyboard.press("Escape");
   await choosePick(p, "Attributes", 5, "Mental", 0);
   await expect.poll(pickedAt(p, "Attributes", 5)).toEqual(["Mental"]);
   await expect.poll(pickedAt(p, "Attributes", 7)).toEqual([""]);
