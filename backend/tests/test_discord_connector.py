@@ -5,6 +5,7 @@ The fake Discord speaks httpx, as the connector does; the test client's response
 are httpx2."""
 
 import json
+import uuid
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from email import policy
@@ -23,7 +24,7 @@ from horatio.config import get_settings
 from horatio.connectors import Message, SendError, discord
 from tests.api_helpers import Troupe
 from tests.test_api_responses import Scene
-from tests.test_delivery_connectors import START, agnes_on, deliver, scene  # noqa: F401
+from tests.test_delivery_connectors import START, agnes_on, deliver, scene, status  # noqa: F401
 
 GUILD = "111"
 OTHER_GUILD = "999"
@@ -345,6 +346,8 @@ def test_connecting_a_server_and_choosing_channels(
         ("st-test", None, False),
     ]
     assert [c["name"] for c in setup["characters"]] == ["Agnes"]
+    # Her name suggests her channel; nothing is chosen until a storyteller uses it.
+    assert setup["suggestions"] == {scene.agnes: AGNES_CHANNEL}
 
     chosen = set_up(scene, channels={scene.agnes: AGNES_CHANNEL}, test_channel=TEST_CHANNEL)
 
@@ -396,6 +399,97 @@ def test_disconnecting_forgets_the_server(
     )
     assert (listed["enabled"], listed["settings"]) == (False, {})
     assert troupe.storyteller.client.delete(f"/troupes/{troupe.id}/discord").status_code == 404
+
+
+# --- suggesting channels -----------------------------------------------------------------
+
+
+def channel(id: str, name: str, private: bool = True) -> discord.Channel:
+    return discord.Channel(id=id, name=name, category=None, private=private)
+
+
+def suggest(names: list[str], channels: list[discord.Channel]) -> dict[str, str]:
+    """Suggestions by character name, for reading."""
+    ids = {name: uuid.uuid4() for name in names}
+    found = discord.suggested_channels(list((i, n) for n, i in ids.items()), channels)
+    return {name: found[str(i)] for name, i in ids.items() if str(i) in found}
+
+
+def test_a_channel_matches_a_name_whatever_its_case_dashes_or_accents() -> None:
+    channels = [channel("1", "agnes-wren"), channel("2", "Zoë_Hart"), channel("3", "general")]
+
+    assert suggest(["Agnes Wren", "Zoe Hart", "Ezra Vale"], channels) == {
+        "Agnes Wren": "1",
+        "Zoe Hart": "2",
+    }
+    assert discord.plain_name("Zoë  Hart-Smith") == "zoehartsmith"
+
+
+def test_a_first_name_matches_only_when_no_one_else_has_it() -> None:
+    channels = [channel("1", "agnes"), channel("2", "ezra")]
+
+    assert suggest(["Agnes Wren", "Ezra Vale", "Ezra Pike"], channels) == {"Agnes Wren": "1"}
+
+
+def test_private_channels_come_first_then_the_full_name() -> None:
+    open_full = channel("1", "agnes-wren", private=False)
+    private_first = channel("2", "agnes")
+    private_full = channel("3", "agnes_wren")
+
+    assert suggest(["Agnes Wren"], [open_full, private_first]) == {"Agnes Wren": "2"}
+    assert suggest(["Agnes Wren"], [open_full, private_first, private_full]) == {"Agnes Wren": "3"}
+    # A channel everyone can see is still suggested when it is the only match.
+    assert suggest(["Agnes Wren"], [open_full]) == {"Agnes Wren": "1"}
+
+
+def test_a_channel_two_characters_could_have_goes_to_neither() -> None:
+    assert suggest(["Agnes Wren", "Agnes  Wren"], [channel("1", "agnes-wren")]) == {}
+
+
+def test_without_a_server_there_is_nothing_to_suggest(
+    scene: Scene,  # noqa: F811
+    fake_discord: FakeDiscord,
+) -> None:
+    troupe = scene.troupe
+    setup = troupe.storyteller.client.get(f"/troupes/{troupe.id}/discord").json()
+
+    assert (setup["channels"], setup["suggestions"]) == ([], {})
+
+
+# --- warning before delivering -------------------------------------------------------------
+
+
+def test_delivering_warns_of_characters_with_no_channel(
+    scene: Scene,  # noqa: F811
+    fake_discord: FakeDiscord,
+) -> None:
+    connect_server(scene)
+    # Discord off: nothing to warn about.
+    [agnes] = status(scene)["participants"]
+    assert agnes["unreachable"] == []
+
+    set_up(scene, test_channel=TEST_CHANNEL)
+    [agnes] = status(scene)["participants"]
+    assert agnes["unreachable"] == ["discord"]
+
+    set_up(scene, channels={scene.agnes: AGNES_CHANNEL}, test_channel=TEST_CHANNEL)
+    [agnes] = status(scene)["participants"]
+    assert agnes["unreachable"] == []
+
+
+def test_test_mode_needs_no_characters_channels(
+    scene: Scene,  # noqa: F811
+    fake_discord: FakeDiscord,
+) -> None:
+    troupe = scene.troupe
+    connect_server(scene)
+    troupe.storyteller.client.put(
+        f"/troupes/{troupe.id}/connectors/discord",
+        json={"enabled": True, "test_mode": True, "settings": {"test_channel": TEST_CHANNEL}},
+    )
+
+    [agnes] = status(scene)["participants"]
+    assert agnes["unreachable"] == []
 
 
 # --- delivering ----------------------------------------------------------------------------
