@@ -272,7 +272,7 @@ Everything since that backup is lost, so make a fresh backup with **Back up now*
 
 ## Tools
 
-**Custodian › Tools** holds upkeep that would otherwise need a command on the server. Each tool is a card that says what it does, shows what it would change, and changes nothing until you say so.
+**Custodian › Tools** holds upkeep that would otherwise need a command on the server. Each tool is a card that says what it does, shows what it would change, and changes nothing until you say so. The cards that fetch files from elsewhere say what the server has now.
 
 ### Fitting NPC creation picks
 
@@ -288,11 +288,39 @@ Some characters are left as they are, and the preview says why: NPCs built in th
 
 On the server, `python -m horatio.npc_picks` does the same for every troupe at once.
 
+### The Dark Pack resources
+
+The Dark Pack logo on the About page and the clans' symbols on badges come from Paradox's free Dark Pack kit. Horatio never ships them, as the [Dark Pack Agreement](https://www.paradoxinteractive.com/games/world-of-darkness/community/dark-pack-agreement)'s licence belongs to whoever runs the server. The **Dark Pack resources** card fetches them onto the server:
+
+1. Check the **Address**. It's filled with Paradox's download, the shared Dropbox folder behind **Download Free Content** on the agreement's page. Change it only if Paradox moves the kit; it must start `https://`.
+2. Tick **I accept Paradox's Dark Pack Agreement for this server**. The licence is yours to accept, as the server's custodian.
+3. Choose **Fetch and import**. The server downloads the kit, about 450 MB, and imports it in the background: the card shows how far it has got, and you can leave the page and come back. The import keeps only what Horatio uses, about a megabyte, and deletes the download.
+
+The card then says when they were imported and from where, whether the Dark Pack logo is there, and which clans have a symbol. The logo and symbols show at once, with no restart. **Fetch and import again** replaces them, for a newer kit.
+
+If a fetch fails (the address has moved, or Dropbox refuses), the card says why, and whatever was imported before stays. If it keeps failing, import the kit on your own computer instead and upload the result:
+
+1. Download the kit from the agreement's page.
+2. From Horatio's `backend` folder, run `uv run python -m horatio.dark_pack path/to/the-download.zip`. It takes Paradox's download as it comes, or the two zips inside it, and writes the `dark-pack` folder.
+3. Zip that folder, then under **Or upload an import made on your own computer**, tick the agreement and choose **Upload the zip**.
+
+**Remove** takes the logo and symbols off the server, once you've confirmed. Badges then show only the clan logos uploaded in [Clan logos](#uploading-a-clan-logo). Each fetch, upload and removal is in the audit log. [dark-pack/README.md](https://github.com/michael-tracey/horatio/blob/main/dark-pack/README.md) has the details for running Horatio on your own computer.
+
+### VTES symbols
+
+The **VTES symbols** card fetches the symbols of *Vampire: The Eternal Struggle* from [KRCG](https://static.krcg.org/): its clan symbols, its discipline symbols (inferior and superior), its game icons and its two fonts. They're for later, such as cards of characters in the style of VTES, symbols beside clans and disciplines, and Discord emoji, and nothing shows them yet. They're free to use under the Dark Pack Agreement too; wherever Horatio shows them, it will credit KRCG and give Paradox's notice.
+
+1. Check the **Address**, `https://static.krcg.org/` unless KRCG moves.
+2. Tick **I accept Paradox's Dark Pack Agreement for this server**.
+3. Choose **Fetch**. The server fetches a few hundred small files one at a time, with a pause between each to be polite, so it takes a few minutes.
+
+The card then says when they were fetched, how many there are of each kind (SVG, WebP and PNG), which fonts came, and which of Horatio's clans, bloodlines and disciplines have a symbol and which don't. It lists any PNG over 256 KB, the most Discord allows for an emoji. **Fetch again** replaces them all, keeping the last set if it fails; **Remove** takes them off the server, once you've confirmed.
+
 ## Clan logos and the Dark Pack import
 
 Game badges show a character's clan logo beside its picture, or in its place when it has none. The official clan symbols belong to the game's publisher, so Horatio ships none. There are two ways to give the clans logos:
 
-- **Import the Dark Pack resources.** Paradox's Dark Pack Agreement lets a free fan app like Horatio use its clan symbols and the Dark Pack logo, but the licence is personal to whoever runs the server. So each server's operator downloads and imports them.
+- **Fetch the Dark Pack resources.** Paradox's Dark Pack Agreement lets a free fan app like Horatio use its clan symbols and the Dark Pack logo, but the licence is personal to whoever runs the server. So each server fetches them itself, in **Custodian › Tools**.
 - **Upload your own** for any clan or bloodline, if your troupes have the right to use the images.
 
 An uploaded logo always wins over a Dark Pack symbol. A bloodline without its own logo uses its clan's; a clan without one shows only its name.
@@ -307,11 +335,7 @@ A clan using its Dark Pack symbol shows it on a light square marked **Dark Pack*
 
 ### Importing the Dark Pack resources
 
-1. Download the free assets from the [Dark Pack Agreement](https://www.paradoxinteractive.com/games/world-of-darkness/community/dark-pack-agreement) page: the **World of Darkness Community Assets** zip, and **WoD-Logos-and-Symbols** for the clans the newer kit lacks.
-2. From the `backend` folder, import them with `uv run python -m horatio.dark_pack "path/to/World of Darkness Community Assets.zip" path/to/WoD-Logos-and-Symbols.zip`. This reads the zips as they are and writes only what Horatio uses, about a megabyte, into the `dark-pack` folder.
-3. Restart Horatio. On a server deployed with `deploy/deploy.sh`, the next deploy copies the folder to the server.
-
-The files must never be committed to the repository. [dark-pack/README.md](https://github.com/michael-tracey/horatio/blob/main/dark-pack/README.md) has the details. Until the logo is imported, the About page reminds you, as the custodian, that the agreement asks for it.
+Fetch them in **Custodian › Tools**: see [The Dark Pack resources](#the-dark-pack-resources). The files must never be committed to the repository. Until the logo is on the server, the About page reminds you, as the custodian, that the agreement asks for it.
 
 ## Importing characters from Yorick
 

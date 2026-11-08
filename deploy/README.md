@@ -116,11 +116,20 @@ import makes a backup in the server's backup directory first, as **Back up now**
 ## Dark Pack resources
 
 The Dark Pack logo (About page) and the clans' symbols (game badges) come from
-Paradox's free Dark Pack kit, which Horatio never ships. Import the kit's zips into
-`dark-pack/` on the deploying machine, as `dark-pack/README.md` describes. Each
-`deploy.sh` then copies that folder to `/opt/docker-apps/horatio/dark-pack`, which
-the app container mounts read-only as `HORATIO_DARK_PACK_DIR`. Without it the app
-runs as before, minus the logo and symbols.
+Paradox's free Dark Pack kit, which Horatio never ships. The custodian fetches them
+on the server in **Custodian › Tools › Dark Pack resources**, which downloads the
+kit (about 450 MB) and keeps only what Horatio uses in
+`/opt/docker-apps/horatio/dark-pack`. The app container mounts that folder
+read-write as `HORATIO_DARK_PACK_DIR`; the playbook creates it, owned by the app's
+user, and never copies anything into it, so deploys leave it alone. A fetch needs
+about 1 GB free there while it runs: the download, and the two zips inside it.
+**Custodian › Tools › VTES symbols** keeps KRCG's VTES symbols in its `vtes/`
+folder. Without either the app runs as before, minus the logo and symbols.
+
+Before #534, `deploy.sh` copied the deploying machine's `dark-pack/` there on every
+deploy and the app mounted it read-only. What those deploys copied stays and keeps
+working, with nothing to import again; the first deploy after makes the folder the
+app's own, so the Tools tab can replace or remove it.
 
 ## Backups
 

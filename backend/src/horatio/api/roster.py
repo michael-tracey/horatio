@@ -684,6 +684,18 @@ MESSAGES: dict[str, str] = {
     "clan_logo.uploaded": "{actor} uploaded a logo for {clan}.",
     "clan_logo.removed": "{actor} removed the logo for {clan}.",
     "audit.exported": "{actor} exported {count} events from the audit log.",
+    "dark_pack.fetched": "{actor} fetched the Dark Pack resources from {address}: {clans} clan"
+    " symbols and {logo}.",
+    "dark_pack.fetch_failed": "{actor}'s fetch of the Dark Pack resources failed, so what was"
+    " here stays: {error}",
+    "dark_pack.uploaded": "{actor} uploaded Dark Pack resources imported elsewhere: {clans} clan"
+    " symbols and {logo}.",
+    "dark_pack.removed": "{actor} removed the Dark Pack resources from the server.",
+    "vtes_symbols.fetched": "{actor} fetched the VTES symbols from {address}: {symbols} symbols"
+    " and {fonts} fonts.",
+    "vtes_symbols.fetch_failed": "{actor}'s fetch of the VTES symbols failed, so what was here"
+    " stays: {error}",
+    "vtes_symbols.removed": "{actor} removed the VTES symbols from the server.",
     "yorick_import.uploaded": "{actor} uploaded a Print Characters page from Yorick for import"
     " ({characters} characters, {portraits} portraits).",
     "yorick_import.deleted": "{actor} deleted the Yorick page uploaded for import, and its report.",

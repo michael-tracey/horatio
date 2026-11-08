@@ -3673,6 +3673,26 @@
         "title": "Body_upload_banner_api_troupes__troupe_id__banner_post",
         "type": "object"
       },
+      "Body_upload_dark_pack_api_tools_dark_pack_upload_post": {
+        "properties": {
+          "accept_licence": {
+            "default": false,
+            "title": "Accept Licence",
+            "type": "boolean"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "The Dark Pack folder an import wrote, zipped.",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_dark_pack_api_tools_dark_pack_upload_post",
+        "type": "object"
+      },
       "Body_upload_logo_api_clan_logos_post": {
         "properties": {
           "clan": {
@@ -8804,6 +8824,141 @@
           "clans"
         ],
         "title": "DarkPackOut",
+        "type": "object"
+      },
+      "DarkPackTool": {
+        "properties": {
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "agreement": {
+            "title": "Agreement",
+            "type": "string"
+          },
+          "clans": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "configured": {
+            "title": "Configured",
+            "type": "boolean"
+          },
+          "default_address": {
+            "title": "Default Address",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "error_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error At"
+          },
+          "how": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "How"
+          },
+          "imported": {
+            "title": "Imported",
+            "type": "boolean"
+          },
+          "imported_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imported At"
+          },
+          "job": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FetchJob"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "logo": {
+            "title": "Logo",
+            "type": "boolean"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing",
+            "type": "array"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "writable": {
+            "title": "Writable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "configured",
+          "writable",
+          "default_address",
+          "agreement",
+          "imported",
+          "imported_at",
+          "how",
+          "address",
+          "sources",
+          "logo",
+          "clans",
+          "missing",
+          "job",
+          "error",
+          "error_at"
+        ],
+        "title": "DarkPackTool",
         "type": "object"
       },
       "DealIn": {
@@ -14030,6 +14185,65 @@
           "feeding"
         ],
         "title": "FeedingSettingIn",
+        "type": "object"
+      },
+      "FetchIn": {
+        "properties": {
+          "accept_licence": {
+            "title": "Accept Licence",
+            "type": "boolean"
+          },
+          "address": {
+            "title": "Address",
+            "type": "string"
+          }
+        },
+        "required": [
+          "address",
+          "accept_licence"
+        ],
+        "title": "FetchIn",
+        "type": "object"
+      },
+      "FetchJob": {
+        "properties": {
+          "by": {
+            "title": "By",
+            "type": "string"
+          },
+          "done": {
+            "title": "Done",
+            "type": "integer"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total"
+          }
+        },
+        "required": [
+          "stage",
+          "done",
+          "total",
+          "started_at",
+          "by"
+        ],
+        "title": "FetchJob",
         "type": "object"
       },
       "FieldOut": {
@@ -19387,6 +19601,24 @@
         "title": "LanguagesOut",
         "type": "object"
       },
+      "LargeSymbol": {
+        "properties": {
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "path",
+          "size"
+        ],
+        "title": "LargeSymbol",
+        "type": "object"
+      },
       "LearnIn": {
         "properties": {
           "id": {
@@ -22063,6 +22295,31 @@
           "overwritable"
         ],
         "title": "MatchOut",
+        "type": "object"
+      },
+      "Matched": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "symbol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Symbol"
+          }
+        },
+        "required": [
+          "name",
+          "symbol"
+        ],
+        "title": "Matched",
         "type": "object"
       },
       "Me": {
@@ -39475,6 +39732,39 @@
         "title": "SwitchedPart",
         "type": "object"
       },
+      "SymbolCount": {
+        "properties": {
+          "clans": {
+            "title": "Clans",
+            "type": "integer"
+          },
+          "icons": {
+            "title": "Icons",
+            "type": "integer"
+          },
+          "inferior": {
+            "title": "Inferior",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "superior": {
+            "title": "Superior",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "clans",
+          "inferior",
+          "superior",
+          "icons"
+        ],
+        "title": "SymbolCount",
+        "type": "object"
+      },
       "SystemOut": {
         "properties": {
           "built_at": {
@@ -43556,6 +43846,140 @@
           "days"
         ],
         "title": "VitaeOut",
+        "type": "object"
+      },
+      "VtesSymbolsTool": {
+        "properties": {
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "agreement": {
+            "title": "Agreement",
+            "type": "string"
+          },
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/Matched"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "configured": {
+            "title": "Configured",
+            "type": "boolean"
+          },
+          "counts": {
+            "items": {
+              "$ref": "#/components/schemas/SymbolCount"
+            },
+            "title": "Counts",
+            "type": "array"
+          },
+          "default_address": {
+            "title": "Default Address",
+            "type": "string"
+          },
+          "disciplines": {
+            "items": {
+              "$ref": "#/components/schemas/Matched"
+            },
+            "title": "Disciplines",
+            "type": "array"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "error_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error At"
+          },
+          "fetched": {
+            "title": "Fetched",
+            "type": "boolean"
+          },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At"
+          },
+          "fonts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Fonts",
+            "type": "array"
+          },
+          "job": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FetchJob"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "large_png": {
+            "items": {
+              "$ref": "#/components/schemas/LargeSymbol"
+            },
+            "title": "Large Png",
+            "type": "array"
+          },
+          "writable": {
+            "title": "Writable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "configured",
+          "writable",
+          "default_address",
+          "agreement",
+          "fetched",
+          "fetched_at",
+          "address",
+          "counts",
+          "fonts",
+          "clans",
+          "disciplines",
+          "large_png",
+          "job",
+          "error",
+          "error_at"
+        ],
+        "title": "VtesSymbolsTool",
         "type": "object"
       },
       "WaitingLine": {
@@ -64423,6 +64847,132 @@
         ]
       }
     },
+    "/api/tools/dark-pack": {
+      "delete": {
+        "description": "Take the Dark Pack resources off the server. The VTES symbols stay.",
+        "operationId": "remove_dark_pack_api_tools_dark_pack_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DarkPackTool"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Remove Dark Pack",
+        "tags": [
+          "custodian"
+        ]
+      },
+      "get": {
+        "description": "The Dark Pack resources on the server, and any fetch under way.",
+        "operationId": "dark_pack_status_api_tools_dark_pack_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DarkPackTool"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Dark Pack Status",
+        "tags": [
+          "custodian"
+        ]
+      }
+    },
+    "/api/tools/dark-pack/fetch": {
+      "post": {
+        "description": "Fetch Paradox's kit from the address and import it, in the background. What\nwas imported before stays until the new import is whole.",
+        "operationId": "fetch_dark_pack_api_tools_dark_pack_fetch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FetchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DarkPackTool"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Fetch Dark Pack",
+        "tags": [
+          "custodian"
+        ]
+      }
+    },
+    "/api/tools/dark-pack/upload": {
+      "post": {
+        "description": "Put in place what `python -m horatio.dark_pack` wrote on another computer.",
+        "operationId": "upload_dark_pack_api_tools_dark_pack_upload_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_dark_pack_api_tools_dark_pack_upload_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DarkPackTool"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Dark Pack",
+        "tags": [
+          "custodian"
+        ]
+      }
+    },
     "/api/tools/npc-picks/{troupe_id}": {
       "get": {
         "description": "What fitting the troupe's NPCs' creation picks would do. Changes nothing.",
@@ -64504,6 +65054,90 @@
           }
         },
         "summary": "Fit Npc Picks",
+        "tags": [
+          "custodian"
+        ]
+      }
+    },
+    "/api/tools/vtes-symbols": {
+      "delete": {
+        "description": "Take the VTES symbols off the server.",
+        "operationId": "remove_vtes_symbols_api_tools_vtes_symbols_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VtesSymbolsTool"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Remove Vtes Symbols",
+        "tags": [
+          "custodian"
+        ]
+      },
+      "get": {
+        "description": "The VTES symbols on the server, and any fetch under way.",
+        "operationId": "vtes_symbols_status_api_tools_vtes_symbols_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VtesSymbolsTool"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Vtes Symbols Status",
+        "tags": [
+          "custodian"
+        ]
+      }
+    },
+    "/api/tools/vtes-symbols/fetch": {
+      "post": {
+        "description": "Fetch the symbols and fonts from the address (KRCG's), in the background,\nreplacing the last fetch once this one is whole.",
+        "operationId": "fetch_vtes_symbols_api_tools_vtes_symbols_fetch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FetchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VtesSymbolsTool"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Fetch Vtes Symbols",
         "tags": [
           "custodian"
         ]
@@ -76468,6 +77102,86 @@
         "summary": "Stop Viewing",
         "tags": [
           "viewing"
+        ]
+      }
+    },
+    "/api/vtes-symbols/fonts/{name}": {
+      "get": {
+        "operationId": "font_api_vtes_symbols_fonts__name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Font",
+        "tags": [
+          "dark pack"
+        ]
+      }
+    },
+    "/api/vtes-symbols/{kind}/{path}": {
+      "get": {
+        "description": "A symbol, as `/api/vtes-symbols/svg/disc/inf/aus.svg`.",
+        "operationId": "symbol_api_vtes_symbols__kind___path__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "title": "Path",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Symbol",
+        "tags": [
+          "dark pack"
         ]
       }
     },
