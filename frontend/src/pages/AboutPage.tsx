@@ -76,8 +76,11 @@ export function AboutPage() {
         </div>
         {me.data?.is_custodian && darkPack.data && !darkPack.data.logo && (
           <p className="mt-4 rounded-md border border-gold/40 bg-gold/10 px-3 py-2 text-sm">
-            For the custodian: the Dark Pack logo isn't on this server yet. The agreement asks for it. Import the Dark Pack resources as{" "}
-            <code>dark-pack/README.md</code> describes, and it appears here, with the clan symbols for badges.
+            For the custodian: the Dark Pack logo isn't on this server yet. The agreement asks for it. Fetch the Dark Pack resources in{" "}
+            <Link to="/custodian/tools" className="text-gold hover:underline">
+              Custodian › Tools
+            </Link>
+            , and it appears here, with the clan symbols for badges.
           </p>
         )}
       </Card>
