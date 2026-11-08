@@ -1,5 +1,6 @@
 """A character's influence history (#135): its own entries in the influence logs
-of every troupe it has acted in, for its player and its home troupe's staff.
+of every troupe it has acted in, for its player, its home troupe's staff and the
+custodian.
 
 Only the character's own entries are ever here. An entry that merely mentions it
 in its purpose is someone else's, and stays out. Entries outlive membership
@@ -103,8 +104,13 @@ def plays(user: User, character: Character) -> bool:
 
 def can_see(db: Session, user: User, character: Character) -> bool:
     """A PC's player, and the storytellers and assistant storytellers of its home
-    troupe. An NPC's history is for its troupe's staff only."""
-    return plays(user, character) or keeps_log(db, user, home_troupe(db, character))
+    troupe. An NPC's history is for its troupe's staff only. The custodian sees
+    every character's, with a home troupe or none (#541)."""
+    return (
+        user.is_custodian
+        or plays(user, character)
+        or keeps_log(db, user, home_troupe(db, character))
+    )
 
 
 @dataclass
