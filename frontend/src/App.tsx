@@ -2,6 +2,7 @@ import { lazy } from "react";
 import { Navigate, Outlet, Route, Routes, useLocation, useParams } from "react-router";
 import { CharacterRouteClanNames as ForCharacter, TroupeRouteClanNames as ForTroupe } from "./components/ClanNames";
 import { Layout } from "./components/Layout";
+import { SunriseHost } from "./components/Sunrise";
 import { Loading } from "./components/ui";
 import { AboutPage } from "./pages/AboutPage";
 import { useMe } from "./hooks";
@@ -71,6 +72,7 @@ export function App() {
       <KeepQuestion />
       <UpdatePrompt />
       <AppRoutes />
+      <SunriseHost />
     </>
   );
 }

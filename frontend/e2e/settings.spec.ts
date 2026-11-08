@@ -228,6 +228,30 @@ test("large text makes the app bigger, but not printed sheets and badges", async
   await expect.poll(fontSize).toBe(normal);
 });
 
+test("light mode lets the sun rise, and the person at the screen goes to ash, signed out", async ({ browser }) => {
+  test.slow();
+  const { page } = await person(browser, "sun-at-dawn");
+  await page.goto("/account/settings");
+  const theme = page.getByRole("radiogroup", { name: "Theme" });
+  await expect(theme.getByRole("radio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
+  await theme.getByRole("radio", { name: "Light" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "The sun rises" })).toBeAttached();
+  const shot = (name: string) => ({ path: shots(name).path });
+  await page.waitForTimeout(2500);
+  await page.screenshot(shot("sunrise-night"));
+  await page.waitForTimeout(2500);
+  await page.screenshot(shot("sunrise-dawn"));
+  // Signed out as the screen goes white, and the ash blows away to the sign-in page.
+  await expect(page).toHaveURL(/\/sign-in/, { timeout: 15_000 });
+  await page.waitForTimeout(3600);
+  await page.screenshot(shot("sunrise-ash"));
+  await expect(page.getByRole("status").filter({ hasText: "The sun rises" })).not.toBeAttached({ timeout: 15_000 });
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  // Truly signed out: the account is behind sign-in again.
+  await page.goto("/account/settings");
+  await expect(page).toHaveURL(/\/sign-in/);
+});
+
 test("the Play View opens as the settings say", async ({ browser }) => {
   const { page } = await person(browser, "play-settings-player");
   // Headless browsers may refuse a wake lock, so this one is a stand-in that grants it.

@@ -186,7 +186,8 @@ export function useSignOut() {
   const [asking, setAsking] = useState(0);
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
-  const go = async () => {
+  /** Sign out at once, with no asking: the error if it failed, or null. */
+  const go = async (): Promise<unknown> => {
     setBusy(true);
     setError(null);
     try {
@@ -195,8 +196,11 @@ export function useSignOut() {
       if (id) await forget(client, id);
       setAsking(0);
       navigate("/sign-in");
+      return null;
     } catch (e) {
-      setError(isNoAnswer(e) ? new Error("Signing out needs a connection.") : e);
+      const said = isNoAnswer(e) ? new Error("Signing out needs a connection.") : e;
+      setError(said);
+      return said;
     } finally {
       setBusy(false);
     }
@@ -222,5 +226,5 @@ export function useSignOut() {
       </div>
     </Dialog>
   );
-  return { signOut, dialog, error: asking ? null : error };
+  return { signOut, now: go, dialog, error: asking ? null : error };
 }
