@@ -1,24 +1,46 @@
 #!/bin/bash
-# Written by Horatio's deploy/playbook.yml. Nightly: dump the horatio database and
-# pack up the uploaded pictures, upload both to gs://{{ backup_bucket }} (which
-# deletes copies after 30 days) and keep the last week here too. Restore: see
-# deploy/README.md.
+# Written by Horatio's deploy/playbook.yml. Nightly: dump the horatio database, pack
+# up the uploaded pictures and the Dark Pack folder, upload them to
+# gs://{{ backup_bucket }} (which deletes copies after 30 days) and keep the last week
+# here too. Restore: see deploy/README.md.
 set -euo pipefail
 dir={{ app_dir }}/backups
 at=$(date -u +%Y%m%dT%H%M%SZ)
 name="horatio-$at.sql.gz"
 pictures="horatio-uploads-$at.tar.gz"
+darkpack="horatio-dark-pack-$at.tar.gz"
+files=("$name" "$pictures")
 
 docker exec horatio-db pg_dump -U horatio --no-owner horatio | gzip > "$dir/$name"
 # Pictures are not in the database: characters' pictures and clan logos.
 tar -czf "$dir/$pictures" -C {{ app_dir }} uploads
+# The Dark Pack resources and the VTES symbols (dark-pack/vtes/), which the custodian
+# fetches in Custodian › Tools: a few MB that could be fetched again, kept all the
+# same. Not the folders a fetch, import or upload works in (horatio.dark_pack and
+# horatio.vtes_symbols), so a backup taken during a fetch holds only finished sets.
+# Skipped while there's nothing there; a failure here doesn't stop the rest.
+skip=()
+exclude=()
+for work in .fetch- .import- .upload- .old- .vtes-; do
+  skip+=(! -name "$work*")
+  exclude+=(--exclude="dark-pack/$work*")
+done
+if [ -n "$(find {{ app_dir }}/dark-pack -mindepth 1 -maxdepth 1 "${skip[@]}" -print -quit 2>/dev/null)" ]; then
+  if tar -czf "$dir/$darkpack" -C {{ app_dir }} "${exclude[@]}" dark-pack; then
+    files+=("$darkpack")
+  else
+    rm -f "$dir/$darkpack"
+    echo "$(date -u +%FT%TZ) couldn't pack up the Dark Pack folder; going on without it"
+  fi
+fi
 token=$(curl -sf -H "Metadata-Flavor: Google" \
   "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" \
   | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
-for file in "$name" "$pictures"; do
+for file in "${files[@]}"; do
   curl -sf -X POST --data-binary "@$dir/$file" \
     -H "Authorization: Bearer $token" -H "Content-Type: application/gzip" \
     "https://storage.googleapis.com/upload/storage/v1/b/{{ backup_bucket }}/o?uploadType=media&name=$file" >/dev/null
 done
-find "$dir" \( -name 'horatio-*.sql.gz' -o -name 'horatio-uploads-*.tar.gz' \) -mtime +7 -delete
-echo "$(date -u +%FT%TZ) backed up $name and $pictures"
+find "$dir" \( -name 'horatio-*.sql.gz' -o -name 'horatio-uploads-*.tar.gz' \
+  -o -name 'horatio-dark-pack-*.tar.gz' \) -mtime +7 -delete
+echo "$(date -u +%FT%TZ) backed up ${files[*]}"

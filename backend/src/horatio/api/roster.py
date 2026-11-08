@@ -13,6 +13,7 @@ from sqlalchemy import Select, select
 from horatio import (
     backstories,
     character_filter,
+    npc_gifts,
     pictures,
     social_age,
     suspensions,
@@ -53,8 +54,14 @@ class RosterEntry(BaseModel):
     # no new actions until it is lifted.
     player_suspended: bool = False
     kind: str  # pc | npc
+    # vampire, ghoul…: the rules its sheet is built by.
+    splat: str
+    # Its player (or staff, for an NPC) has finished building it.
+    creation_complete: bool
     # The player has retired the character.
     retired: bool
+    # An NPC staff can give to a player as it stands (horatio.npc_gifts).
+    givable: bool = False
     titles: list[str]
     # Those of another sect than the character's, kept for staff to look at.
     out_of_sect_titles: list[str]
@@ -140,7 +147,10 @@ def roster(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[Roste
             player_pronouns=player.pronouns if c.kind == "pc" else None,
             player_suspended=c.kind == "pc" and player.id in suspended,
             kind=c.kind,
+            splat=c.splat,
+            creation_complete=c.creation_completed_at is not None,
             retired=c.status == "retired",
+            givable=c.kind == "npc" and npc_gifts.npc_refusal(c) is None,
             titles=held[c.id],
             out_of_sect_titles=[
                 t for t in held[c.id] if titles.out_of_sect(known.get(t), sects.get(c.id))

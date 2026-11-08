@@ -895,6 +895,101 @@ test("storytellers filter the troupe's characters and print what they find", asy
   await printed.close();
 });
 
+test("staff award XP, give equipment and print from a character's ⋯ on the Characters list, and see only what they may do (#539)", async ({ browser }) => {
+  const custodian = await person(browser, "rowmenu-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "rowmenu-lead");
+  const assistant = await person(browser, "rowmenu-assist");
+  const narrator = await person(browser, "rowmenu-narr");
+  const player = await person(browser, "rowmenu-player");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupeName = `Vigil House ${run}`;
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/staff`, { handle: assistant.handle, role: "assistant_storyteller" });
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/staff`, { handle: narrator.handle, role: "narrator" });
+
+  // Odalys is the player's, at home in the troupe; Casimir is its NPC, built quickly, so it can be given to a player.
+  const odalys = await builtVampire(player.page, "Odalys", "Brujah", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Haven", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  const asked = await send(player.page, "POST", `/api/characters/${odalys}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+  await send(lead.page, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Casimir", wizard: false });
+
+  // The lead's ⋯ on Odalys: what staff do most, then the printouts.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}/characters`);
+  const actions = async (page: Page, name: string) => {
+    await page.getByRole("button", { name: `Actions for ${name}` }).click();
+    return page.getByRole("menu", { name: `Actions for ${name}` });
+  };
+  let menu = await actions(l, "Odalys");
+  await expect(menu.getByRole("menuitem")).toHaveText(["Award XP…", "Give equipment…", "Status…", "Titles…", "Print sheet", "Print badge"]);
+  await l.screenshot(shots("roster-staff-menu"));
+  await menu.getByRole("menuitem", { name: "Award XP…" }).click();
+  const award = l.getByRole("dialog", { name: "Award XP to Odalys" });
+  await award.getByLabel("XP for Odalys").fill("3");
+  await award.getByLabel("Reason for Odalys's XP").fill("Held the line at Elysium");
+  await award.getByRole("button", { name: "Award", exact: true }).click();
+  await expect(award).toBeHidden();
+  const xp: { amount: number; reason: string }[] = await (await l.request.get(`/api/characters/${odalys}/xp`)).json();
+  expect(xp.filter((e) => e.reason === "Held the line at Elysium").map((e) => e.amount)).toEqual([3]);
+
+  // Give equipment… opens the Equipment tab's form, given to Odalys.
+  menu = await actions(l, "Odalys");
+  await menu.getByRole("menuitem", { name: "Give equipment…" }).click();
+  const form = l.getByRole("dialog", { name: "Give Odalys equipment" }).getByRole("form", { name: "Give equipment" });
+  await form.getByLabel("Start from").selectOption({ label: "Silver Dagger" });
+  await form.getByRole("button", { name: "Give to Odalys" }).click();
+  await expect(l.getByText("Gave Odalys Silver Dagger.")).toBeVisible();
+  await expect(l.getByRole("dialog")).toHaveCount(0);
+
+  // Print sheet opens her sheet in a new tab, with the dagger on it.
+  menu = await actions(l, "Odalys");
+  const printTab = l.context().waitForEvent("page");
+  await menu.getByRole("menuitem", { name: "Print sheet" }).click();
+  const printed = await printTab;
+  await expect(printed.getByRole("list", { name: "Equipment" })).toContainText("Silver Dagger");
+  await printed.close();
+
+  // Status… is the Status & Titles tab's card: she has no sect, so holds none.
+  menu = await actions(l, "Odalys");
+  await menu.getByRole("menuitem", { name: "Status…" }).click();
+  const status = l.getByRole("dialog", { name: "Odalys's status" });
+  await expect(status.getByText("Odalys has no sect, so holds no status.")).toBeVisible();
+  await status.getByRole("button", { name: "Close" }).click();
+
+  // An NPC gets no XP, and only a storyteller can give it to a player.
+  menu = await actions(l, "Casimir");
+  await expect(menu.getByRole("menuitem")).toHaveText(["Give equipment…", "Status…", "Titles…", "Give to a player…", "Print sheet", "Print badge"]);
+  await menu.getByRole("menuitem", { name: "Give to a player…" }).click();
+  await expect(l.getByRole("dialog", { name: "Give Casimir to a player" }).getByLabel("Player")).toBeVisible();
+  await l.getByRole("dialog").getByRole("button", { name: "Close" }).click();
+  const a = assistant.page;
+  await a.goto(`/troupes/${troupe.id}/characters`);
+  menu = await actions(a, "Casimir");
+  await expect(menu.getByRole("menuitem")).toHaveText(["Give equipment…", "Status…", "Titles…", "Print sheet", "Print badge"]);
+
+  // A narrator never sees character sheets, so has no Characters list at all.
+  const n = narrator.page;
+  await n.goto(`/troupes/${troupe.id}`);
+  const sections = n.getByRole("navigation", { name: "Troupe sections" });
+  await expect(sections.getByRole("link", { name: "Downtimes", exact: true })).toBeVisible();
+  await expect(sections.getByRole("link", { name: "Characters", exact: true })).toHaveCount(0);
+  await n.goto(`/troupes/${troupe.id}/characters`);
+  await expect(n.getByRole("heading", { name: troupeName })).toBeVisible();
+  await expect(n.getByRole("button", { name: "Actions for Odalys" })).toHaveCount(0);
+});
+
 test("the troupe list says what each troupe is, whether it takes new players and where you play, and keeps the ask form shut", async ({ browser }) => {
   const custodian = await person(browser, "chooser-cust");
   makeCustodian(custodian.email);
