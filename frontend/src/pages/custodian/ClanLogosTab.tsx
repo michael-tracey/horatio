@@ -33,7 +33,7 @@ export function ClanLogosTab() {
         cannot come with Horatio.{" "}
         {logos.data.dark_pack
           ? "This server has Paradox's Dark Pack resources, so a clan you upload nothing for uses its Dark Pack symbol; an upload replaces it."
-          : "Import Paradox's Dark Pack resources (dark-pack/README.md) to use the clans' symbols under the Dark Pack Agreement, or upload images your troupes have the right to use."}{" "}
+          : "Fetch Paradox's Dark Pack resources in Tools to use the clans' symbols under the Dark Pack Agreement, or upload images your troupes have the right to use."}{" "}
         A bloodline without its own logo uses its clan's; a clan without one shows its name only. A PNG with a transparent background prints best.
       </p>
       <div className="mb-3 flex flex-wrap items-center gap-3">
