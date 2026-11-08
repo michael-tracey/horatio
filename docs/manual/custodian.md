@@ -401,6 +401,57 @@ Then choose **Search**, or **Clear** to start again. The search is kept in the p
 
 A troupe's running staff see their own troupe's part of this on its **Log** tab. Only you see the whole of it.
 
+## Setting up Discord and email
+
+Troupes can send downtime results, news and announcements to Discord, and results to players by email (see [Connectors](running-a-troupe.md#connectors-discord-and-email)). Neither works until you set it up for the whole server, once. Until then, a troupe's **Customise › Connectors** page says it isn't set up, and shows you, as the custodian, the settings it needs.
+
+Both are server settings: environment variables starting `HORATIO_`. On a server deployed with `deploy/deploy.sh` they go in `deploy/production.env`; on your own computer, in `backend/.env`. No troupe ever sees or stores them.
+
+`HORATIO_PUBLIC_URL` must be the site's address, such as `https://horatio.example.org`: Discord sends people back there, and links in messages point there.
+
+### Discord: the Horatio app and its bot
+
+The server has one Discord bot, which every troupe adds to its own Discord server. You make it once, in Discord's developer portal.
+
+1. Sign in to Discord's developer portal at [discord.com/developers/applications](https://discord.com/developers/applications) and create a new application. Its name is the bot's name in every troupe's server, so "Horatio" or your site's name works well. You can give it an icon under **General Information**.
+2. Open **Bot**. Choose **Reset Token** and copy the token it shows: Discord shows it only once. If you lose it, reset it again and change the setting.
+   - Leave **Public Bot** on (the default). Switched off, only you could add the bot to a server, and troupes couldn't add it to theirs.
+   - Leave the privileged intents off. Horatio needs none of them: the bot only sees channels and sends messages.
+3. Open **OAuth2**. Copy the client ID, and the client secret (you may have to reset it to see it; copy it straight away).
+4. Still under **OAuth2**, add a redirect: `https://<your site>/api/discord/callback`, for example `https://horatio.example.org/api/discord/callback`. It must start with `HORATIO_PUBLIC_URL` exactly, `https` and all. Save the change.
+
+You don't need to make an invite link in the portal: Horatio makes its own, asking only for the two permissions the bot uses.
+
+Then fill in the three settings. All three are needed:
+
+| Setting | Takes |
+|---|---|
+| `HORATIO_DISCORD_CLIENT_ID` | The client ID, from **OAuth2** |
+| `HORATIO_DISCORD_CLIENT_SECRET` | The client secret, from **OAuth2** |
+| `HORATIO_DISCORD_BOT_TOKEN` | The token, from **Bot** |
+
+The token and the secret are passwords: anyone who has them can post as your bot. Keep them out of the repository (`production.env` and `.env` aren't committed) and out of chat.
+
+### Email: an SMTP service
+
+Horatio sends email through one SMTP service, from one address of its own; replies to downtime results go to each troupe's storytellers. The same service sends password reset links and the links that confirm a new email address. Any mail provider that offers SMTP works.
+
+| Setting | Takes |
+|---|---|
+| `HORATIO_SMTP_HOST` | The SMTP server's name, such as `smtp.example.org`. Needed |
+| `HORATIO_SMTP_PORT` | Its port: 587 unless you set another |
+| `HORATIO_SMTP_USERNAME` | The account to sign in as, if the service needs one |
+| `HORATIO_SMTP_PASSWORD` | That account's password |
+| `HORATIO_SMTP_STARTTLS` | `true` (the default) to secure the connection on port 587 |
+| `HORATIO_SMTP_SSL` | `true` instead for a connection secure from the start, usually on port 465 (`HORATIO_SMTP_STARTTLS` then doesn't matter) |
+| `HORATIO_MAIL_FROM` | The address it sends from, such as `Horatio <horatio@example.org>`. Needed |
+
+Your mail provider may ask you to show you own the sending address's domain before it sends for it. Follow its instructions, or mail may land in spam.
+
+### Putting the settings live
+
+Horatio reads its settings when it starts, so redeploy after changing them: `deploy/deploy.sh --no-build` on the server (see [Updating the server](#updating-the-server)), or restart `./start-local.sh` on your own computer. Then open any troupe's **Customise › Connectors**: Discord and email no longer say they aren't set up, and the troupe's staff can [add the bot to their server](running-a-troupe.md#adding-the-horatio-bot).
+
 ## Updating the server
 
 How to deploy Horatio is in the repository, not here: see [deploy/README.md](https://github.com/michael-tracey/horatio/blob/main/deploy/README.md) for the server, and the [README](https://github.com/michael-tracey/horatio/blob/main/README.md) for running it on your own computer.

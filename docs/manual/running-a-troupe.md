@@ -637,12 +637,53 @@ Tick **Need an approved backstory before accepting a character** to make approva
 - Tick **Send downtime results through** Discord or email.
 - **What to send**: **An alert with a link** to the character's Results tab, or **The full results**.
 - **Test mode** sends everything to a test channel or test address instead of to players.
-- For **Discord**, add the Horatio bot to the troupe's server, then pick a private channel for each character and a **Test channel**.
-- For **email**, set where **Replies go to** and a **Test address**.
+- Choose **Save** when you're done.
 
-A connector the server isn't set up for says so; ask the custodian.
+A connector the server isn't set up for says so; ask the custodian, who sets it up as in [Setting up Discord and email](custodian.md#setting-up-discord-and-email).
 
 The Discord channels for the troupe's news and its announcements are chosen apart from these, under **Customise › News** (see [The news channel on Discord](#the-news-channel-on-discord) and [Announcements on Discord](#announcements-on-discord)).
+
+#### Adding the Horatio bot
+
+Discord results are posted by the Horatio bot, which the troupe adds to its own Discord server once. Two things are needed, by the same person: being a storyteller of the troupe in Horatio, and having the **Manage Server** permission on the troupe's Discord server (its owner has it, and often its admins). If no storyteller has it, a server admin can give one of you a role with it for long enough to add the bot.
+
+1. On **Customise › Connectors**, under Discord, choose **Add Horatio to your Discord**.
+2. Discord asks which server to add the bot to, and shows what it may do. Pick the troupe's server and accept.
+3. Discord sends you back to Connectors, which says the server is connected and names it.
+
+The bot may see channels and send messages in them; nothing else. Horatio doesn't read what people write there, the bot can't manage the server, it never mentions (pings) anyone, and it posts only where you choose. **Disconnect** makes Horatio forget the server and its channels; the bot stays in the server until someone there removes it.
+
+#### Making a channel for each character
+
+Each character's results go to a private text channel of its own, which you make in Discord; Horatio doesn't make channels. For each character:
+
+1. In the troupe's Discord server, make a text channel. Naming it after the character, such as `#agnes-wren`, lets Horatio suggest it (see below).
+2. Make it private, so everyone in the server is kept out of it.
+3. Let in the character's player, the staff (a staff role is easiest), and the Horatio bot (by its own role, named after the bot, or by name). The bot must be able to see the channel and send messages there.
+
+Make a **test channel** that only staff can see, with the bot let in, too. Putting the characters' channels in one category whose permissions they share saves setting each one up.
+
+#### Choosing each character's channel
+
+Back under Discord on **Customise › Connectors**:
+
+1. Choose the **Test channel**.
+2. Under **Each character's channel**, choose one for each of the troupe's characters. A channel everyone in the server can see is marked **Not private**: check it before results go there. Horatio can tell whether everyone is kept out, but not who else a role lets in.
+3. Choose **Save**.
+
+Where a channel's name matches a character's, Horatio suggests it: **Suggested: #agnes-wren**, with **Use** to take it. Case, spaces, dashes, underscores and accents don't matter, so `#agnes-wren`, `#Agnes_Wren` and `#agnès-wren` all match Agnes Wren. A channel named for the first name alone, such as `#agnes`, matches too, as long as no other character shares it; and a private channel is suggested before one everyone can see. **Use the suggestions** takes them all at once. Nothing is chosen until you use a suggestion and save.
+
+![Customise › Connectors: Discord connected, with the test channel, each character's channel, and a suggestion to use.](images/running-a-troupe/connectors-discord.png)
+
+The list above the characters names any with no channel yet. They still get their results in Horatio, and by email if it's on, but nothing on Discord until one is chosen. Delivering a cycle warns of them too (see [Delivering results](#delivering-results)).
+
+#### Trying it in test mode
+
+Before the first real delivery, tick **Send downtime results through Discord** and **Test mode**, and save. Delivered results then go to the test channel, each naming its character, and you can see how they look without any player seeing them on Discord. Test mode only changes where the Discord copy goes: players still get their results in Horatio as usual. When it looks right, untick **Test mode** and save. Results delivered from then on go to each character's channel. Switching test mode off sends nothing by itself: results that went only to the test channel wait on the cycle's **Delivery** tab, listed under **Deliver results** as **Sent to the test channel only**. Choose **Send to players' channels** there to send them to players as they were delivered. It sends only those copies: players don't get the results again in Horatio, or a new notification.
+
+#### Email
+
+For **email**, set where **Replies go to** (the storytellers' address) and a **Test address**. Each result goes to the player's account address, one email per character.
 
 ## Customise: share settings
 
@@ -845,6 +886,9 @@ The **Delivery** tab sends each submission's responses to its player.
 1. Under **Deliver results**, Horatio lists what is **Ready**, what is **Partly written**, what was delivered with nothing changed since, and what has **Nothing written yet**.
 2. Tick **Also deliver the partly written** to send those with what's written so far.
 3. Choose **Deliver** (it says how many downtimes go).
+4. If Discord is on, and not in test mode, and a character going has no Discord channel, Horatio says so first and names them. **Choose their channels** goes to [Connectors](#choosing-each-characters-channel); **Deliver anyway** sends the results now, and those characters get them in Horatio (and by email, if it's on) but not on Discord.
+
+![Delivering with Discord on: Horatio names a character with no Discord channel, with Deliver anyway and Cancel.](images/running-a-troupe/deliver-warning.png)
 
 Results always appear in Horatio, and on each connector the troupe has on. Equipment a response gives goes to the character as its results are delivered, and the results say **You received**. A response written or changed after delivery goes out with the next delivery, as an update, and the table marks it **Changed since delivery**; so does equipment added to a response already delivered. If something can't be given, such as a quality on an item the character no longer holds, Horatio stops the delivery and says which; change it or take it off the response, then deliver again. A connector copy that failed can be retried, or marked as sent if you sent it yourself.
 
