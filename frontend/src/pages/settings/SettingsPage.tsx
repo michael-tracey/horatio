@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation } from "react-router";
 import type { PlayerOut, Preferences } from "../../api/types";
+import { startSunrise } from "../../components/Sunrise";
 import { useToast } from "../../components/Toast";
 import { Card, ErrorText, Input } from "../../components/ui";
 import { deviceZone, useDates } from "../../dates";
 import { usePreferences, useSavingPreferences, useSetPreferences } from "../../hooks";
 import { AccountEmail } from "../AccountEmail";
+import { useOnline } from "../../offline/connection";
+import { tapsWaiting } from "../../offline/keep";
 import { saveAwake } from "../play/wakeLock";
 import { ViewedAs } from "../ViewedAs";
 import { EmailNotifications } from "./EmailNotifications";
@@ -55,6 +58,32 @@ export function Choice<K extends Key>({ name, label, choices }: { name: K; label
           {text}
         </button>
       ))}
+    </span>
+  );
+}
+
+/**
+ * Dark or light. Horatio is only ever dark: choosing light lets the sun rise on
+ * whoever is at the screen, who is signed out as they turn to ash (Sunrise).
+ */
+function Theme() {
+  const toast = useToast();
+  const online = useOnline();
+  const dawn = () => {
+    const waiting = tapsWaiting();
+    if (waiting) toast({ message: `Not yet: ${waiting === 1 ? "1 tap hasn't" : `${waiting} taps haven't`} been sent.` });
+    else if (!online) toast({ message: "Light mode needs a connection." });
+    else startSunrise();
+  };
+  const choice = "min-h-9 px-3 text-sm [&+&]:border-l [&+&]:border-ash";
+  return (
+    <span role="radiogroup" aria-label="Theme" className="inline-flex overflow-hidden rounded-md border border-ash">
+      <button type="button" role="radio" aria-checked="true" className={`${choice} bg-gold/20 text-gold`}>
+        Dark
+      </button>
+      <button type="button" role="radio" aria-checked="false" onClick={dawn} className={`${choice} text-mist hover:text-parchment`}>
+        Light
+      </button>
     </span>
   );
 }
@@ -282,6 +311,9 @@ export function SettingsPage({ player }: { player: PlayerOut }) {
         </Card>
 
         <Card title="Appearance">
+          <Setting label="Theme">
+            <Theme />
+          </Setting>
           <Setting label="Text size" hint="Everywhere but printed sheets and badges.">
             <Choice
               name="text_size"
