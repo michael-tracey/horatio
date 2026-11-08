@@ -268,7 +268,7 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
           {filter.items.length > 1 && <span className="text-xs text-mist">({filter.match === "all" ? "all of these" : "any of these"})</span>}
           {filter.items.length > 0 && (
             <button type="button" className="text-xs text-mist underline hover:text-parchment" onClick={() => setFilter({ match: "all", items: [] })}>
-              Clear the filter
+              Clear all
             </button>
           )}
         </div>

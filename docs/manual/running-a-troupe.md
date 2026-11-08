@@ -149,7 +149,7 @@ With player characters, or everyone, it's a table: the character (with the title
 - The list opens on active characters only: the button reads **Filter: active**, and the **Is active** chip shows. Remove the chip to see retired characters too. With more conditions, the button counts them all, such as **Filter (2)**.
 - Choose **Filter** to narrow the list by what the sheets hold. Each condition is one of: status (such as home here, visiting, still in creation, or has approvals waiting), a trait and its rating, a clan, sect or other choice, a title, a player, experience, how many of something, a character, or equipment. Choose whether characters must match all of them or any.
 - A condition that compares a number, such as a trait's rating or XP, adds a column with each character's number, so you can compare them; its heading sorts by it too.
-- Each condition shows as a chip you can remove with ×; **Clear the filter** clears them. The filter is kept in the page's address, so you can bookmark or share it with other staff.
+- Each condition shows as a chip you can remove with ×; **Clear all** clears them. The filter is kept in the page's address, so you can bookmark or share it with other staff.
 - **Show their equipment** opens the Equipment tab on the items the characters shown hold.
 
 ### Printing sheets and badges
