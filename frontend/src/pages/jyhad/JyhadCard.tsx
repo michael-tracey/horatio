@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import type { components } from "../../api/schema";
+import { frameSvg, svgUrl, symbolTints, tintedSymbol } from "./frame";
 import {
   ART,
+  CAPACITY,
+  CAPACITY_BASELINE,
+  CAPACITY_SIZE,
   CARD,
   CLAN,
   COLOURS,
@@ -9,20 +13,24 @@ import {
   DROP,
   DROP_PATH,
   DROP_VIEW,
+  FACES,
   FOOTER,
+  LOOKS,
   NAME,
+  NAME_TEXT,
   NOTICE,
   SERIF,
+  SYMBOL_SHARE,
   TEXT,
+  TEXT_PAD,
   UNOFFICIAL,
-  CAPACITY_BASELINE,
-  CAPACITY_SIZE,
   canvasMeasure,
   canvasNameMeasure,
   clanLetters,
   disciplineBox,
   layoutText,
-  nameSize,
+  lookOf,
+  nameFit,
   type Box,
   type Measure,
 } from "./layout";
@@ -42,7 +50,10 @@ function useMeasures(): { text: Measure; name: Measure } {
   const [fonts, setFonts] = useState(0);
   useEffect(() => {
     let live = true;
-    document.fonts?.load(`700 20px ${DISPLAY}`).then(() => live && setFonts((n) => n + 1), () => {});
+    Promise.all(FACES.map((f) => document.fonts?.load(f))).then(
+      () => live && setFonts((n) => n + 1),
+      () => {},
+    );
     return () => {
       live = false;
     };
@@ -54,59 +65,89 @@ function useMeasures(): { text: Measure; name: Measure } {
   }, [fonts]);
 }
 
+/** KRCG's symbols, tinted for the frame (as the image draws them): a data: URL each,
+ * undefined while loading, null if it couldn't be had (then its letters show). */
+function useSymbols(card: JyhadCardOut, clanTint: string, disciplineTint: string) {
+  const sources = useMemo(
+    () => [
+      [card.clan_symbol, clanTint],
+      ...card.disciplines.map((d) => [d.symbol, disciplineTint]),
+    ] as [string | null, string][],
+    [card.clan_symbol, card.disciplines, clanTint, disciplineTint],
+  );
+  const [found, setFound] = useState<(string | null | undefined)[]>([]);
+  useEffect(() => {
+    let live = true;
+    setFound(sources.map(([src]) => (src ? undefined : null)));
+    Promise.all(sources.map(([src, colour]) => (src ? tintedSymbol(src, colour) : null))).then((urls) => live && setFound(urls));
+    return () => {
+      live = false;
+    };
+  }, [sources]);
+  return { clan: found[0], disciplines: found.slice(1) };
+}
+
 /**
  * A character's Jyhad card, laid out as layout.ts says, at `--mm` to the millimetre
- * (set by the page: 1mm in print). `text` and `flavour` are as typed, so the card
+ * (set by the page: 1mm in print): the portrait, the frame over it (frame.ts), and
+ * the symbols and words over that. `text` and `flavour` are as typed, so the card
  * shows them before they're saved.
  */
 export function JyhadCard({ card, clanName, text, flavour }: { card: JyhadCardOut; clanName: string | null; text: string; flavour: string }) {
   const measure = useMeasures();
+  const look = lookOf(card.sect);
+  const palette = LOOKS[look];
+  const tints = symbolTints(look);
+  const symbols = useSymbols(card, tints.clan, tints.discipline);
   const laid = useMemo(() => layoutText(card.sect_line, text, flavour, measure.text), [card.sect_line, text, flavour, measure]);
-  const named = useMemo(() => nameSize(card.name, measure.name), [card.name, measure]);
+  const named = useMemo(() => nameFit(card.name, measure.name), [card.name, measure]);
+  const frame = useMemo(
+    () => svgUrl(frameSvg({ look, superior: card.disciplines.map((d) => d.superior), capacity: card.capacity !== null })),
+    [look, card.disciplines, card.capacity],
+  );
   return (
     <article
       aria-label={`Jyhad card of ${card.name}`}
+      data-look={look}
       className="relative shrink-0 overflow-hidden select-none"
-      style={{ ...exact, width: mm(CARD.width), height: mm(CARD.height), borderRadius: mm(CARD.radius), background: COLOURS.frame, color: COLOURS.ink }}
+      style={{ ...exact, width: mm(CARD.width), height: mm(CARD.height), borderRadius: mm(CARD.radius), background: COLOURS.edge, color: COLOURS.ink }}
     >
       {card.picture && (
-        <img
-          src={`${card.picture}/portrait.webp`}
-          alt=""
-          className="object-cover"
-          style={{ ...at(ART), objectPosition: "50% 30%", borderRadius: mm(1.5) }}
-        />
+        <img src={`${card.picture}/portrait.webp`} alt="" className="object-cover" style={{ ...at(ART), objectPosition: "50% 30%" }} />
       )}
-      <Plate box={CLAN} round label={clanName ? `Clan: ${clanName}` : undefined}>
-        {card.clan_symbol ? (
-          <img src={card.clan_symbol} alt="" style={{ width: "72%", height: "72%" }} className="object-contain" />
-        ) : (
-          <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: mm(2.6) }}>{clanLetters(clanName)}</span>
-        )}
-      </Plate>
+      <img src={frame} alt="" className="pointer-events-none absolute inset-0 h-full w-full" />
+      <Symbol box={CLAN} label={clanName ? `Clan: ${clanName}` : undefined} src={symbols.clan} share={SYMBOL_SHARE.clan}>
+        <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: mm(2.6), color: palette.name }}>{clanLetters(clanName)}</span>
+      </Symbol>
       <ul aria-label="Disciplines">
         {card.disciplines.map((d, i) => (
           <li key={d.name} aria-label={`${d.name}${d.superior ? ", superior" : ""}`}>
-            <Plate box={disciplineBox(i)} round={!d.superior} ring={d.superior ? COLOURS.gold : COLOURS.ink}>
-              {d.symbol ? (
-                <img src={d.symbol} alt="" style={{ width: "74%", height: "74%" }} className="object-contain" />
-              ) : (
-                <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: mm(d.superior ? 2.3 : 2.1) }}>
-                  {d.superior ? d.abbreviation.toUpperCase() : d.abbreviation}
-                </span>
-              )}
-            </Plate>
+            <Symbol box={disciplineBox(i)} src={symbols.disciplines[i]} share={d.superior ? SYMBOL_SHARE.superior : SYMBOL_SHARE.inferior}>
+              <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: mm(d.superior ? 2.3 : 2.4) }}>
+                {d.superior ? d.abbreviation.toUpperCase() : d.abbreviation}
+              </span>
+            </Symbol>
           </li>
         ))}
       </ul>
-      {/* The words, in an SVG of the card's millimetres: placed on their baselines,
-          as the canvas places them, so screen, print and image match. */}
+      {/* The words and the capacity, in an SVG of the card's millimetres: placed on
+          their baselines, as the canvas places them, so screen, print and image match. */}
       <svg viewBox={`0 0 ${CARD.width} ${CARD.height}`} className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden>
-        <rect x={NAME.x} y={NAME.y} width={NAME.w} height={NAME.h} rx={1} fill={COLOURS.plate} stroke={COLOURS.gold} strokeWidth={0.3} />
-        <text x={NAME.x + NAME.w / 2} y={NAME.y + NAME.h / 2 + named * 0.36} textAnchor="middle" fontFamily={DISPLAY} fontWeight={700} fontSize={named} fill={COLOURS.ink}>
+        <text
+          x={NAME_TEXT.x + NAME_TEXT.w / 2}
+          y={NAME.y + NAME.h / 2 + named.size * 0.36}
+          textAnchor="middle"
+          fontFamily={DISPLAY}
+          fontWeight={700}
+          fontSize={named.size}
+          {...(named.squeeze !== null && { textLength: named.squeeze, lengthAdjust: "spacingAndGlyphs" })}
+          fill={palette.name}
+        >
           {card.name}
         </text>
-        <rect x={TEXT.x} y={TEXT.y} width={TEXT.w} height={TEXT.h} rx={1} fill={COLOURS.parchment} />
+        {laid.rule !== null && (
+          <line x1={TEXT.x + TEXT_PAD} x2={TEXT.x + TEXT.w - TEXT_PAD} y1={laid.rule} y2={laid.rule} stroke={palette.trim} strokeWidth={0.15} />
+        )}
         {laid.lines.map((l, i) => (
           <text
             key={i}
@@ -123,8 +164,29 @@ export function JyhadCard({ card, clanName, text, flavour }: { card: JyhadCardOu
         ))}
         {card.capacity !== null && (
           <g>
-            <path d={DROP_PATH} transform={`translate(${DROP.x} ${DROP.y}) scale(${DROP.w / DROP_VIEW.w} ${DROP.h / DROP_VIEW.h})`} fill={COLOURS.blood} stroke={COLOURS.ink} strokeWidth={0.4} />
-            <text x={DROP.x + DROP.w / 2} y={DROP.y + DROP.h * CAPACITY_BASELINE} textAnchor="middle" fontFamily={DISPLAY} fontWeight={700} fontSize={CAPACITY_SIZE} fill="#ffffff">
+            {card.capacity_symbol ? (
+              <image href={card.capacity_symbol} x={CAPACITY.x} y={CAPACITY.y} width={CAPACITY.w} height={CAPACITY.h} />
+            ) : (
+              <path
+                d={DROP_PATH}
+                transform={`translate(${DROP.x} ${DROP.y}) scale(${DROP.w / DROP_VIEW.w} ${DROP.h / DROP_VIEW.h})`}
+                fill={COLOURS.blood}
+                stroke={palette.trim}
+                strokeWidth={0.4}
+              />
+            )}
+            <text
+              x={CAPACITY.x + CAPACITY.w / 2}
+              y={CAPACITY.y + CAPACITY.h * CAPACITY_BASELINE}
+              textAnchor="middle"
+              fontFamily={DISPLAY}
+              fontWeight={700}
+              fontSize={CAPACITY_SIZE}
+              fill="#ffffff"
+              stroke="#2a0008"
+              strokeWidth={0.35}
+              paintOrder="stroke"
+            >
               {card.capacity}
             </text>
           </g>
@@ -148,15 +210,16 @@ export function JyhadCard({ card, clanName, text, flavour }: { card: JyhadCardOu
   );
 }
 
-/** A parchment plate for a symbol: round, or square for a superior discipline. */
-function Plate({ box, round, ring = COLOURS.gold, label, children }: { box: Box; round?: boolean; ring?: string; label?: string; children: ReactNode }) {
+/** A symbol on its plate (the frame draws the plate): KRCG's, tinted, or its letters
+ * without it. Nothing while it loads. */
+function Symbol({ box, src, share, label, children }: { box: Box; src: string | null | undefined; share: number; label?: string; children: ReactNode }) {
   return (
-    <div
-      aria-label={label}
-      style={{ ...at(box), ...exact, background: COLOURS.parchment, borderRadius: round ? "50%" : mm(1.2), boxShadow: `0 0 0 ${mm(0.35)} ${ring}` }}
-      className="flex items-center justify-center overflow-hidden"
-    >
-      {children}
+    <div aria-label={label} style={{ ...at(box), ...exact }} className="flex items-center justify-center">
+      {src ? (
+        <img src={src} alt="" style={{ width: `${share * 100}%`, height: `${share * 100}%` }} className="object-contain" />
+      ) : src === null ? (
+        children
+      ) : null}
     </div>
   );
 }

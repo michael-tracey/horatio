@@ -1,6 +1,8 @@
+import { frameSvg, svgUrl, symbolTints, tintedSymbol } from "./frame";
 import type { JyhadCardOut } from "./JyhadCard";
 import {
   ART,
+  CAPACITY,
   CAPACITY_BASELINE,
   CAPACITY_SIZE,
   CARD,
@@ -10,19 +12,25 @@ import {
   DROP,
   DROP_PATH,
   DROP_VIEW,
+  FACES,
   FOOTER,
+  LOOKS,
   NAME,
+  NAME_TEXT,
   NOTICE,
   SERIF,
-  UNOFFICIAL,
+  SYMBOL_SHARE,
   TEXT,
+  TEXT_PAD,
+  UNOFFICIAL,
   canvasMeasure,
   canvasNameMeasure,
   clanLetters,
   disciplineBox,
   font,
   layoutText,
-  nameSize,
+  lookOf,
+  nameFit,
   type Box,
   type TextStyle,
 } from "./layout";
@@ -37,28 +45,6 @@ function loaded(src: string): Promise<HTMLImageElement | null> {
     img.onerror = () => resolve(null);
     img.src = src;
   });
-}
-
-/** An SVG symbol, given a size: KRCG's have only a viewBox, and some browsers won't
- * draw an SVG without one on a canvas. */
-async function symbol(src: string): Promise<HTMLImageElement | null> {
-  try {
-    const response = await fetch(src);
-    if (!response.ok) return null;
-    const svg = await response.text();
-    const sized = /<svg\b[^>]*\swidth=/.test(svg) ? svg : svg.replace(/<svg\b/, '<svg width="512" height="512"');
-    const url = URL.createObjectURL(new Blob([sized], { type: "image/svg+xml" }));
-    const img = await loaded(url);
-    URL.revokeObjectURL(url);
-    return img;
-  } catch {
-    return null;
-  }
-}
-
-function rounded(ctx: CanvasRenderingContext2D, b: Box, r: number) {
-  ctx.beginPath();
-  ctx.roundRect(b.x, b.y, b.w, b.h, r);
 }
 
 /** An image filling a box, cut to it, as CSS's object-fit: cover at `top` down. */
@@ -77,31 +63,36 @@ function contain(ctx: CanvasRenderingContext2D, img: HTMLImageElement, b: Box, s
   ctx.drawImage(img, b.x + (b.w - w * scale) / 2, b.y + (b.h - h * scale) / 2, w * scale, h * scale);
 }
 
-function plate(ctx: CanvasRenderingContext2D, b: Box, round: boolean, ring: string) {
-  ctx.beginPath();
-  if (round) ctx.arc(b.x + b.w / 2, b.y + b.h / 2, b.w / 2, 0, Math.PI * 2);
-  else ctx.roundRect(b.x, b.y, b.w, b.h, 1.2);
-  ctx.fillStyle = COLOURS.parchment;
-  ctx.fill();
-  ctx.lineWidth = 0.7;
-  ctx.strokeStyle = ring;
-  ctx.stroke();
-}
-
 /**
  * Text at `x`, `y` in mm, drawn at the image's own pixels rather than a tiny font
  * scaled up, which spaces its letters unevenly.
  */
-function write(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, style: TextStyle, family = SERIF) {
+function write(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  size: number,
+  style: TextStyle,
+  family = SERIF,
+  { outline, squeeze }: { outline?: { colour: string; width: number }; squeeze?: number | null } = {},
+) {
+  const most = squeeze ? squeeze * SCALE : undefined;
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.font = font(size * SCALE, style, family);
-  ctx.fillText(text, x * SCALE, y * SCALE);
+  if (outline) {
+    ctx.strokeStyle = outline.colour;
+    ctx.lineWidth = outline.width * SCALE;
+    ctx.lineJoin = "round";
+    ctx.strokeText(text, x * SCALE, y * SCALE, most);
+  }
+  ctx.fillText(text, x * SCALE, y * SCALE, most);
   ctx.restore();
 }
 
-function letters(ctx: CanvasRenderingContext2D, text: string, b: Box, size: number, family: string) {
-  ctx.fillStyle = COLOURS.ink;
+function letters(ctx: CanvasRenderingContext2D, text: string, b: Box, size: number, family: string, colour: string) {
+  ctx.fillStyle = colour;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   write(ctx, text, b.x + b.w / 2, b.y + b.h / 2, size, "bold", family);
@@ -110,80 +101,91 @@ function letters(ctx: CanvasRenderingContext2D, text: string, b: Box, size: numb
 }
 
 /**
- * The card as a PNG: the same layout as the card on screen (layout.ts), drawn on a
- * canvas, since an image of the page itself can't be taken in a browser.
+ * The card as a PNG: the same layout as the card on screen (layout.ts) and the same
+ * frame (frame.ts), drawn on a canvas, since an image of the page itself can't be
+ * taken in a browser.
  */
 export async function drawCard(card: JyhadCardOut, clanName: string | null, text: string, flavour: string): Promise<Blob> {
-  await document.fonts?.load(`700 20px ${DISPLAY}`).catch(() => undefined);
-  const [art, clan, ...disciplines] = await Promise.all([
+  await Promise.all(FACES.map((f) => document.fonts?.load(f).catch(() => undefined)));
+  const look = lookOf(card.sect);
+  const palette = LOOKS[look];
+  const tints = symbolTints(look);
+  const width = CARD.width * SCALE;
+  const height = CARD.height * SCALE;
+  const frameOf = { look, superior: card.disciplines.map((d) => d.superior), capacity: card.capacity !== null };
+  const tinted = (src: string | null, colour: string) => (src ? tintedSymbol(src, colour).then((url) => (url ? loaded(url) : null)) : null);
+  const [art, frame, drop, clan, ...disciplines] = await Promise.all([
     card.picture ? loaded(`${card.picture}/portrait.webp`) : null,
-    card.clan_symbol ? symbol(card.clan_symbol) : null,
-    ...card.disciplines.map((d) => (d.symbol ? symbol(d.symbol) : null)),
+    loaded(svgUrl(frameSvg(frameOf, { w: width, h: height }))),
+    card.capacity !== null && card.capacity_symbol ? loaded(card.capacity_symbol) : null,
+    tinted(card.clan_symbol, tints.clan),
+    ...card.disciplines.map((d) => tinted(d.symbol, tints.discipline)),
   ]);
   const canvas = document.createElement("canvas");
-  canvas.width = CARD.width * SCALE;
-  canvas.height = CARD.height * SCALE;
+  canvas.width = width;
+  canvas.height = height;
   const ctx = canvas.getContext("2d")!;
   ctx.scale(SCALE, SCALE);
 
-  rounded(ctx, { x: 0, y: 0, w: CARD.width, h: CARD.height }, CARD.radius);
-  ctx.fillStyle = COLOURS.frame;
+  // The portrait, then the frame over it, its window showing the portrait.
+  ctx.beginPath();
+  ctx.roundRect(0, 0, CARD.width, CARD.height, CARD.radius);
+  ctx.fillStyle = COLOURS.edge;
   ctx.fill();
-  if (art) {
+  if (art) cover(ctx, art, ART, 0.3);
+  if (frame) {
     ctx.save();
-    rounded(ctx, ART, 1.5);
-    ctx.clip();
-    cover(ctx, art, ART, 0.3);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(frame, 0, 0, width, height);
     ctx.restore();
   }
 
-  plate(ctx, CLAN, true, COLOURS.gold);
-  if (clan) contain(ctx, clan, CLAN, 0.72);
-  else letters(ctx, clanLetters(clanName), CLAN, 2.6, DISPLAY);
-
+  if (clan) contain(ctx, clan, CLAN, SYMBOL_SHARE.clan);
+  else letters(ctx, clanLetters(clanName), CLAN, 2.6, DISPLAY, palette.name);
   card.disciplines.forEach((d, i) => {
     const b = disciplineBox(i);
-    plate(ctx, b, !d.superior, d.superior ? COLOURS.gold : COLOURS.ink);
     const symbol = disciplines[i];
-    if (symbol) contain(ctx, symbol, b, 0.74);
-    else letters(ctx, d.superior ? d.abbreviation.toUpperCase() : d.abbreviation, b, d.superior ? 2.3 : 2.1, SERIF);
+    if (symbol) contain(ctx, symbol, b, d.superior ? SYMBOL_SHARE.superior : SYMBOL_SHARE.inferior);
+    else letters(ctx, d.superior ? d.abbreviation.toUpperCase() : d.abbreviation, b, d.superior ? 2.3 : 2.4, SERIF, COLOURS.ink);
   });
 
-  // The name on its plate.
-  rounded(ctx, NAME, 1);
-  ctx.fillStyle = COLOURS.plate;
-  ctx.fill();
-  ctx.lineWidth = 0.3;
-  ctx.strokeStyle = COLOURS.gold;
-  ctx.stroke();
-  const named = nameSize(card.name, canvasNameMeasure(ctx));
-  ctx.fillStyle = COLOURS.ink;
+  const named = nameFit(card.name, canvasNameMeasure(ctx));
+  ctx.fillStyle = palette.name;
   ctx.textAlign = "center";
-  write(ctx, card.name, NAME.x + NAME.w / 2, NAME.y + NAME.h / 2 + named * 0.36, named, "bold", DISPLAY);
+  write(ctx, card.name, NAME_TEXT.x + NAME_TEXT.w / 2, NAME.y + NAME.h / 2 + named.size * 0.36, named.size, "bold", DISPLAY, { squeeze: named.squeeze });
 
-  // The text box and its words.
-  rounded(ctx, TEXT, 1);
-  ctx.fillStyle = COLOURS.parchment;
-  ctx.fill();
   const laid = layoutText(card.sect_line, text, flavour, canvasMeasure(ctx));
+  if (laid.rule !== null) {
+    ctx.beginPath();
+    ctx.moveTo(TEXT.x + TEXT_PAD, laid.rule);
+    ctx.lineTo(TEXT.x + TEXT.w - TEXT_PAD, laid.rule);
+    ctx.lineWidth = 0.15;
+    ctx.strokeStyle = palette.trim;
+    ctx.stroke();
+  }
   ctx.textAlign = "left";
   ctx.fillStyle = COLOURS.ink;
   for (const line of laid.lines) write(ctx, line.text, line.x, line.y, laid.size, line.style);
 
   if (card.capacity !== null) {
-    ctx.save();
-    ctx.translate(DROP.x, DROP.y);
-    ctx.scale(DROP.w / DROP_VIEW.w, DROP.h / DROP_VIEW.h);
-    const drop = new Path2D(DROP_PATH);
-    ctx.fillStyle = COLOURS.blood;
-    ctx.fill(drop);
-    ctx.lineWidth = 0.4;
-    ctx.strokeStyle = COLOURS.ink;
-    ctx.stroke(drop);
-    ctx.restore();
+    if (drop) ctx.drawImage(drop, CAPACITY.x, CAPACITY.y, CAPACITY.w, CAPACITY.h);
+    else {
+      ctx.save();
+      ctx.translate(DROP.x, DROP.y);
+      ctx.scale(DROP.w / DROP_VIEW.w, DROP.h / DROP_VIEW.h);
+      const path = new Path2D(DROP_PATH);
+      ctx.fillStyle = COLOURS.blood;
+      ctx.fill(path);
+      ctx.lineWidth = 0.4;
+      ctx.strokeStyle = palette.trim;
+      ctx.stroke(path);
+      ctx.restore();
+    }
     ctx.fillStyle = "#ffffff";
     ctx.textAlign = "center";
-    write(ctx, String(card.capacity), DROP.x + DROP.w / 2, DROP.y + DROP.h * CAPACITY_BASELINE, CAPACITY_SIZE, "bold", DISPLAY);
+    write(ctx, String(card.capacity), CAPACITY.x + CAPACITY.w / 2, CAPACITY.y + CAPACITY.h * CAPACITY_BASELINE, CAPACITY_SIZE, "bold", DISPLAY, {
+      outline: { colour: "#2a0008", width: 0.35 },
+    });
   }
 
   ctx.fillStyle = COLOURS.footer;

@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { useClanName } from "../../components/ClanNames";
+import { usePreferences } from "../../hooks";
+import { pageRule } from "../../paper";
 import { downloadCard } from "./draw";
 import { JyhadCard } from "./JyhadCard";
 
@@ -14,10 +16,10 @@ const PARADOX =
   "Portions of the materials are the copyrights and trademarks of Paradox Interactive AB, and are used with permission. All rights reserved. For more information please visit worldofdarkness.com.";
 
 // The card at its real size in print, larger on screen, as wide as a phone allows.
+// The page is the reader's paper (#104), so nothing scales the card to fit.
 const SIZING = `
 .jyhad-card { --mm: clamp(3.78px, calc((100vw - 32px) / 63), 6px); }
 @media print { .jyhad-card { --mm: 1mm; } }
-@page { margin: 12mm; }
 `;
 
 /**
@@ -31,6 +33,7 @@ export function JyhadCardPage() {
   const [params] = useSearchParams();
   const troupeId = params.get("troupe");
   const named = useClanName();
+  const prefs = usePreferences();
   const client = useQueryClient();
   const key = ["jyhad-card", characterId];
   const card = useQuery({
@@ -57,7 +60,7 @@ export function JyhadCardPage() {
 
   return (
     <div className="jyhad-card min-h-screen bg-night px-4 py-6 text-parchment print:min-h-0 print:bg-white print:p-0">
-      <style>{SIZING}</style>
+      <style>{SIZING + pageRule(prefs.paper, "12mm")}</style>
       <div className="mx-auto flex max-w-xl flex-col items-center gap-5">
         <div className="flex w-full flex-wrap items-center justify-between gap-3 print:hidden">
           <Link to={back} className="text-sm text-mist underline hover:text-parchment">

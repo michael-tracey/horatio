@@ -200,6 +200,8 @@ def test_a_prince_s_card(troupe: Troupe) -> None:
     # No VTES symbols on the server: the card shows the three letters.
     assert card["clan_symbol"] is None
     assert all(d["symbol"] is None for d in card["disciplines"])
+    assert card["capacity_symbol"] is None
+    assert card["sect"] == "Camarilla"
     assert card["picture"].startswith(f"/api/characters/{varga}/pictures/")
     assert (card["text"], card["flavour"], card["can_write"]) == ("", "", True)
     # Staff see it; they don't write a player's card.
@@ -221,6 +223,8 @@ def test_symbols_show_once_fetched(troupe: Troupe, monkeypatch: pytest.MonkeyPat
                 ("disc/sup", ["pot"]),
             )
         }
+        # KRCG's capacity drop is WebP and PNG only.
+        | {f"{kind}/icon": ["capacity"] for kind in ("webp", "png")}
     }
     monkeypatch.setattr(vtes_symbols, "manifest", lambda: record)
 
@@ -231,6 +235,7 @@ def test_symbols_show_once_fetched(troupe: Troupe, monkeypatch: pytest.MonkeyPat
         "/api/vtes-symbols/svg/disc/sup/pot.svg",
         "/api/vtes-symbols/svg/disc/inf/pre.svg",
     ]
+    assert card["capacity_symbol"] == "/api/vtes-symbols/webp/icon/capacity.webp"
     # A neonate with 3 points (one superior): capacity 4's 3.0 is nearest.
     assert card["capacity"] == 4
 

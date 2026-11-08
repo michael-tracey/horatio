@@ -12,8 +12,10 @@ KRCG's folders can be listed, so the files are found from the listings, not from
 a list kept here: the clans, the disciplines (inferior and superior) and the game's
 icons, as SVG, WebP (for places that can't take SVG) and transparent PNG (for
 Discord emoji, which must be 256 KB or less), and the two fonts. Old clan symbols
-in `clan/deprecated/` are left out. That's a few hundred small files, fetched one
-at a time with a short pause between, to be polite. They are kept beside the Dark
+in `clan/deprecated/` are left out. A few icons are raster only: the capacity drop
+the Jyhad card shows is `webp/icon/capacity.webp` and `png/icon/capacity.png`.
+That's a few hundred small files, fetched one at a time with a short pause between,
+to be polite. They are kept beside the Dark
 Pack's:
 
     <dark pack folder>/vtes/
@@ -59,6 +61,8 @@ FETCH_TIME = 30 * 60
 # The most a Discord emoji may be.
 DISCORD_EMOJI = 256 * 1024
 FOLDER = "vtes"
+# KRCG's capacity drop, in icon/: WebP and PNG only.
+CAPACITY = "capacity"
 WORK = ".vtes-"
 
 # Horatio's clans and bloodlines (as MET: VTM names them) with a symbol at KRCG,

@@ -17704,6 +17704,8 @@ export interface components {
             can_write: boolean;
             /** Capacity */
             capacity: number | null;
+            /** Capacity Symbol */
+            capacity_symbol: string | null;
             /**
              * Character Id
              * Format: uuid
@@ -17723,6 +17725,8 @@ export interface components {
             name: string;
             /** Picture */
             picture: string | null;
+            /** Sect */
+            sect: string | null;
             /** Sect Line */
             sect_line: string | null;
             /** Text */

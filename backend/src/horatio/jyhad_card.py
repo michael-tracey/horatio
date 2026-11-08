@@ -2,7 +2,8 @@
 a *Vampire: The Eternal Struggle* crypt card, made from its portrait and sheet. It
 is hidden (its player finds it by tapping the clan symbol seven times; staff open
 it from the troupe's Characters list), it has no bearing on play, and it is never
-official: built in CSS, with no frame scan or card image, and marked unofficial.
+official: its frame is Horatio's own drawing (#560), with no frame scan or card
+image, and it is marked unofficial.
 
 **Capacity** (1-11 in VTES) comes from the Generation background and the
 disciplines. KRCG's card data (all 1,802 vampires) gives each capacity's average
@@ -184,8 +185,12 @@ class Card:
     name: str
     clan: str | None
     clan_symbol: str | None
+    # The sect, as the sheet has it: the frame is dark for the Camarilla, lighter else.
+    sect: str | None
     sect_line: str | None
     capacity: int | None
+    # KRCG's capacity drop, if fetched; else the card draws one.
+    capacity_symbol: str | None
     disciplines: list[CardDiscipline]
     # The 4:5 portrait (horatio.pictures); add "/portrait.webp".
     picture: str | None
@@ -195,6 +200,14 @@ class Card:
 
 def symbol_url(group: str, name: str | None, fetched: set[str]) -> str | None:
     return f"/api/vtes-symbols/svg/{group}/{name}.svg" if name and name in fetched else None
+
+
+def capacity_symbol_url(record: Mapping[str, object]) -> str | None:
+    """KRCG's capacity drop: in WebP (and PNG) only, as KRCG has no SVG of it."""
+    files = record.get("files")
+    icons = files.get("webp/icon", []) if isinstance(files, Mapping) else []
+    found = vtes_symbols.CAPACITY in icons
+    return f"/api/vtes-symbols/webp/icon/{vtes_symbols.CAPACITY}.webp" if found else None
 
 
 def abbreviation(discipline: str) -> str:
@@ -229,8 +242,10 @@ def card(db: Session, character: Character) -> Card:
         name=character.name,
         clan=age.clan,
         clan_symbol=None,
+        sect=None,
         sect_line=None,
         capacity=None,
+        capacity_symbol=None,
         disciplines=[],
         picture=None,
         text=character.card_text,
@@ -275,6 +290,7 @@ def card(db: Session, character: Character) -> Card:
     return replace(
         blank,
         clan_symbol=symbol_url("clan", krcg_clan, clans),
+        sect=sect,
         sect_line=title_line(
             sect, titles.held(db, troupe.id, character.id) if troupe else [], city_of(troupe)
         ),
@@ -286,6 +302,7 @@ def card(db: Session, character: Character) -> Card:
             lesser_generation=lesser,
             thin_blooded=thin,
         ),
+        capacity_symbol=capacity_symbol_url(record),
         disciplines=[
             CardDiscipline(
                 name=d.name,
