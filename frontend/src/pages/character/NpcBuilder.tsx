@@ -8,6 +8,7 @@ import type { CatalogueOut, CharacterOut, SheetOut, TraitOut } from "../../api/t
 import { Badge, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction, usePreferences, useUnavailable } from "../../hooks";
 import { PrintAndBadge } from "./Badge";
+import { NpcPicks } from "./NpcPicks";
 import { DomitorCard } from "./Domitor";
 import { useHasDomitor } from "./splats";
 import { CUSTOM_ARCHETYPE, identityChoices } from "./creation/logic";
@@ -78,7 +79,7 @@ export function NpcBuilder({ character }: { character: CharacterOut }) {
         <PrintAndBadge character={character} />
         <Card title="Worth">
           <p className="font-display text-3xl text-gold">{tally.data?.total ?? "…"} XP</p>
-          <p className="mt-1 text-xs text-mist">What this build would cost a player character here. Starting traits are free.</p>
+          <p className="mt-1 text-xs text-mist">What this build would cost a player character here. Starting traits and creation picks are free.</p>
           {tally.data?.lines.some((l) => l.cost === null) && (
             <ul className="mt-2 text-xs text-blood-bright">
               {tally.data.lines
@@ -91,6 +92,7 @@ export function NpcBuilder({ character }: { character: CharacterOut }) {
             </ul>
           )}
         </Card>
+        <NpcPicks character={character} />
       </aside>
     </div>
   );

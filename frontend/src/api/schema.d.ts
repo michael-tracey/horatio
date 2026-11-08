@@ -1976,6 +1976,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/npc/picks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Picks
+         * @description The NPC's creation picks, and where each could go (horatio.npc_picks).
+         */
+        get: operations["read_picks_api_characters__character_id__npc_picks_get"];
+        /**
+         * Place Pick
+         * @description Place a creation pick on a trait by hand; the rest are fitted around it.
+         */
+        put: operations["place_pick_api_characters__character_id__npc_picks_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/npc/picks/off": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take Pick Off
+         * @description Take the pick off a trait, and keep the fitting from giving it one.
+         */
+        post: operations["take_pick_off_api_characters__character_id__npc_picks_off_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/npc/picks/refit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refit Picks
+         * @description Forget the picks placed or taken off by hand, and fit them all again.
+         */
+        post: operations["refit_picks_api_characters__character_id__npc_picks_refit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/npc/ratings": {
         parameters: {
             query?: never;
@@ -19341,6 +19405,24 @@ export interface components {
             /** Items */
             items: components["schemas"]["NotificationOut"][];
         };
+        /** NpcCandidateOut */
+        NpcCandidateOut: {
+            /** Detail */
+            detail: string;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
+        };
+        /** NpcKeptOffOut */
+        NpcKeptOffOut: {
+            /** Category */
+            category: string;
+            /** Detail */
+            detail: string;
+            /** Name */
+            name: string;
+        };
         /** NpcKindOut */
         NpcKindOut: {
             /** Any Discipline */
@@ -19439,6 +19521,86 @@ export interface components {
             status: string;
             /** Stock Rating */
             stock_rating: number | null;
+        };
+        /** NpcPickIn */
+        NpcPickIn: {
+            /** Category */
+            category: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Name */
+            name: string;
+            /** Rating */
+            rating?: number | null;
+            replacing?: components["schemas"]["NpcPickNamed"] | null;
+        };
+        /** NpcPickNamed */
+        NpcPickNamed: {
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Name */
+            name: string;
+        };
+        /** NpcPickOff */
+        NpcPickOff: {
+            /** Category */
+            category: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Name */
+            name: string;
+        };
+        /** NpcPicksOut */
+        NpcPicksOut: {
+            /** Fitted */
+            fitted: boolean;
+            /** Kept Off */
+            kept_off: components["schemas"]["NpcKeptOffOut"][];
+            /** Pools */
+            pools: components["schemas"]["NpcPoolOut"][];
+        };
+        /** NpcPlacedOut */
+        NpcPlacedOut: {
+            /**
+             * By
+             * @enum {string}
+             */
+            by: "fit" | "staff";
+            /** Detail */
+            detail: string;
+            /** Name */
+            name: string;
+            /** Pick */
+            pick: number;
+        };
+        /** NpcPoolOut */
+        NpcPoolOut: {
+            /** Allowed */
+            allowed: number;
+            /** Candidates */
+            candidates: components["schemas"]["NpcCandidateOut"][];
+            /** Category */
+            category: string;
+            /** Category Name */
+            category_name: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "picks" | "points";
+            /** Placed */
+            placed: components["schemas"]["NpcPlacedOut"][];
+            /** Rating */
+            rating: number;
         };
         /** NuminaOut */
         NuminaOut: {
@@ -31441,6 +31603,138 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AboutYouOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_picks_api_characters__character_id__npc_picks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpcPicksOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    place_pick_api_characters__character_id__npc_picks_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NpcPickIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpcPicksOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    take_pick_off_api_characters__character_id__npc_picks_off_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NpcPickOff"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpcPicksOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refit_picks_api_characters__character_id__npc_picks_refit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpcPicksOut"];
                 };
             };
             /** @description Validation Error */

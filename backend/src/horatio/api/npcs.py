@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import npcs, sheets
+from horatio import npc_picks, npcs, sheets
 from horatio.api.characters import CharacterOut, character_out, characters_out
 from horatio.api.downtimes import staff_troupe
 from horatio.api.sheets import players_character
@@ -429,3 +429,139 @@ def tally(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Tally:
             for line in lines
         ],
     )
+
+
+class NpcPlacedOut(BaseModel):
+    name: str
+    detail: str
+    # The pick's rating, or the points it takes from a budget.
+    pick: int
+    # "fit": placed by the fitting; "staff": placed by hand, which a refit keeps.
+    by: Literal["fit", "staff"]
+
+
+class NpcCandidateOut(BaseModel):
+    name: str
+    detail: str
+    rating: int
+
+
+class NpcPoolOut(BaseModel):
+    category: str
+    category_name: str
+    kind: Literal["picks", "points"]
+    # The pick's rating; 0 for a budget of points.
+    rating: int
+    allowed: int
+    placed: list[NpcPlacedOut]
+    # The traits a pick here could go on.
+    candidates: list[NpcCandidateOut]
+
+
+class NpcKeptOffOut(BaseModel):
+    category: str
+    name: str
+    detail: str
+
+
+class NpcPicksOut(BaseModel):
+    # Whether its picks are fitted to its sheet, and staff may move them; false for
+    # an NPC built in the wizard, whose picks are as staff placed them there.
+    fitted: bool
+    pools: list[NpcPoolOut]
+    # The traits staff took a pick off, which the fitting leaves without one.
+    kept_off: list[NpcKeptOffOut]
+
+
+class NpcPickNamed(BaseModel):
+    name: str
+    detail: str = Field(default="", max_length=200)
+
+
+class NpcPickIn(BaseModel):
+    category: str
+    name: str
+    detail: str = Field(default="", max_length=200)
+    # The pick's rating; left out for a budget of points, which takes the whole trait.
+    rating: int | None = Field(default=None, ge=1)
+    # The trait whose place in the list it takes.
+    replacing: NpcPickNamed | None = None
+
+
+class NpcPickOff(BaseModel):
+    category: str
+    name: str
+    detail: str = Field(default="", max_length=200)
+
+
+def picks_out(db: DbSession, npc: Character) -> NpcPicksOut:
+    found = npc_picks.view(db, npc)
+    return NpcPicksOut(
+        fitted=found.fitted,
+        pools=[
+            NpcPoolOut(
+                category=p.category,
+                category_name=p.category_name,
+                kind="points" if p.kind == "points" else "picks",
+                rating=p.rating,
+                allowed=p.allowed,
+                placed=[
+                    NpcPlacedOut(
+                        name=x.name,
+                        detail=x.detail,
+                        pick=x.pick,
+                        by="fit" if x.by == "fit" else "staff",
+                    )
+                    for x in p.placed
+                ],
+                candidates=[NpcCandidateOut(**asdict(c)) for c in p.candidates],
+            )
+            for p in found.pools
+        ],
+        kept_off=[NpcKeptOffOut(category=c, name=n, detail=d) for c, n, d in found.kept_off],
+    )
+
+
+def sheeted_npc(db: DbSession, user: CurrentUser, character_id: uuid.UUID) -> Character:
+    npc = players_character(db, user, character_id)
+    if npc.kind != "npc" or npc.npc_form != "sheeted":
+        raise HTTPException(status.HTTP_409_CONFLICT, f"{npc.name} has no sheet of creation picks.")
+    return npc
+
+
+@router.get("/characters/{character_id}/npc/picks")
+def read_picks(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> NpcPicksOut:
+    """The NPC's creation picks, and where each could go (horatio.npc_picks)."""
+    return picks_out(db, sheeted_npc(db, user, character_id))
+
+
+@router.put("/characters/{character_id}/npc/picks")
+def place_pick(
+    character_id: uuid.UUID, body: NpcPickIn, db: DbSession, user: CurrentUser
+) -> NpcPicksOut:
+    """Place a creation pick on a trait by hand; the rest are fitted around it."""
+    npc = sheeted_npc(db, user, character_id)
+    replacing = (body.replacing.name, body.replacing.detail) if body.replacing else None
+    npc_picks.pin(db, user, npc, body.category, body.name, body.detail, body.rating, replacing)
+    db.commit()
+    return picks_out(db, npc)
+
+
+@router.post("/characters/{character_id}/npc/picks/off")
+def take_pick_off(
+    character_id: uuid.UUID, body: NpcPickOff, db: DbSession, user: CurrentUser
+) -> NpcPicksOut:
+    """Take the pick off a trait, and keep the fitting from giving it one."""
+    npc = sheeted_npc(db, user, character_id)
+    npc_picks.take_off(db, user, npc, body.category, body.name, body.detail)
+    db.commit()
+    return picks_out(db, npc)
+
+
+@router.post("/characters/{character_id}/npc/picks/refit")
+def refit_picks(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> NpcPicksOut:
+    """Forget the picks placed or taken off by hand, and fit them all again."""
+    npc = sheeted_npc(db, user, character_id)
+    npc_picks.refit(db, user, npc)
+    db.commit()
+    return picks_out(db, npc)

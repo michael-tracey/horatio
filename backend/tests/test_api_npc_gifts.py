@@ -33,7 +33,7 @@ def built(troupe: Troupe, name: str = "Lucien", **body: Any) -> str:
     npc_id: str = made(troupe, name=name, **body)["id"]
     for category, trait, rating in (
         ("attributes", "Physical", 5),
-        ("skills", "Brawl", 3),
+        ("skills", "Brawl", 5),
         ("disciplines", "Celerity", 2),
     ):
         response = troupe.storyteller.client.put(
@@ -120,7 +120,9 @@ def test_its_xp_balances_with_an_imported_award_for_what_the_sheet_cost(
     assert awards == [("Imported: what Lucien's sheet cost at Lords of the Night's prices", cost)]
     purchases = [e for e in entries if e["kind"] == "purchase"]
     assert sum(e["amount"] for e in purchases) == -cost
-    assert "Brawl 0 → 3, as an NPC" in [e["reason"] for e in purchases]
+    # Its creation picks were fitted to it (#527): the skill pick at 4 makes Brawl's
+    # first four dots free, as a player character's would be.
+    assert "Brawl 4 → 5, as an NPC" in [e["reason"] for e in purchases]
     # Nothing is left unspent.
     assert sum(e["amount"] for e in entries) == 0
 

@@ -79,17 +79,20 @@ def test_setting_npc_ratings_directly_keeps_a_running_tally(
 
     tally = rate(troupe.assistant, npc, "disciplines", "Celerity", 2).json()
 
-    # Physical 6 x 3, Brawl 1 + 2 + 3, in-clan Celerity 3 + 6; starting traits are free.
-    assert tally["total"] == 18 + 6 + 9
+    # Starting traits are free, and so are creation picks, fitted to the sheet as a
+    # player character's would be (#527): Physical takes the attribute pick at 5, so
+    # only its sixth dot is bought (3); Brawl the skill pick at 3; in-clan Celerity
+    # the discipline pick at 2.
+    assert tally["total"] == 3
     assert {(line["name"], line["cost"]) for line in tally["lines"]} >= {
-        ("Physical", 18),
-        ("Brawl", 6),
-        ("Celerity", 9),
+        ("Physical", 3),
+        ("Brawl", 0),
+        ("Celerity", 0),
         ("Willpower", 0),
     }
     assert session.scalars(select(XpEntry)).all() == []
     # Lowering and removing are just as direct.
-    assert rate(troupe.storyteller, npc, "skills", "Brawl", 0).json()["total"] == 18 + 9
+    assert rate(troupe.storyteller, npc, "skills", "Brawl", 0).json()["total"] == 3
 
 
 def test_an_npc_chooses_one_focus_per_attribute(troupe: Troupe) -> None:

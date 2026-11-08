@@ -455,6 +455,10 @@ MESSAGES: dict[str, str] = {
     " its name (its id there: {legacy_id}; label: {label}; printed lines left to staff:"
     " {unmatched}).",
     "npc.stock_changed": "{actor} changed the Stock NPC {character}.",
+    "npc.pick_placed": "{actor} placed a creation pick of {pick} on {name} for the NPC"
+    " {character}.",
+    "npc.pick_taken_off": "{actor} took the creation pick off {name} for the NPC {character}.",
+    "npc.picks_refitted": "{actor} fitted the NPC {character}'s creation picks again.",
     "npc.given": "{actor} gave the NPC {character} to @{to_handle}, at home here and accepted,"
     " with {xp} XP for its sheet{carried}.",
     "npc.claimed": "{actor} claimed the NPC {character} with a claim link, at home here and"
