@@ -47,6 +47,7 @@ from horatio.api import (
     influence_history,
     influence_log,
     influence_lookups,
+    jyhad_card,
     keywords,
     lines_veils,
     location_quests,
@@ -229,6 +230,7 @@ for module in (
     yorick_imports,
     tools,
     vtes_symbols,
+    jyhad_card,
 ):
     api.include_router(module.router)
 
