@@ -34550,9 +34550,18 @@
             ],
             "title": "Clan"
           },
+          "creation_complete": {
+            "title": "Creation Complete",
+            "type": "boolean"
+          },
           "disciplines_waiting": {
             "title": "Disciplines Waiting",
             "type": "integer"
+          },
+          "givable": {
+            "default": false,
+            "title": "Givable",
+            "type": "boolean"
           },
           "home": {
             "title": "Home",
@@ -34683,6 +34692,10 @@
             "title": "Social Age",
             "type": "string"
           },
+          "splat": {
+            "title": "Splat",
+            "type": "string"
+          },
           "titles": {
             "items": {
               "type": "string"
@@ -34704,6 +34717,8 @@
           "pronouns",
           "player_pronouns",
           "kind",
+          "splat",
+          "creation_complete",
           "retired",
           "titles",
           "out_of_sect_titles",

@@ -250,11 +250,11 @@ Making or downloading a backup goes in the audit log.
 
 If the tab says **Backups are not set up here**, the server has no backup directory: the `HORATIO_BACKUP_DIR` setting names it. That's normal on your own computer.
 
-Backups made here hold the database only. On the server, the nightly job also packs up uploaded pictures, such as portraits and clan logos, beside the nightly backup.
+Backups made here hold the database only. On the server, the nightly job also packs up the uploaded pictures (portraits and clan logos) and the Dark Pack resources and VTES symbols fetched in [Tools](#tools), beside the nightly backup.
 
 ### Restoring a backup
 
-There's no restore button: restoring replaces everything in the database, so it's done on the server. In short, you stop the app, recreate the database, load the backup into it, and start the app again; pictures are restored from the night's uploads archive beside it. The exact commands are in the "Backups" section of [deploy/README.md](https://github.com/michael-tracey/horatio/blob/main/deploy/README.md#backups).
+There's no restore button: restoring replaces everything in the database, so it's done on the server. In short, you stop the app, recreate the database, load the backup into it, and start the app again; pictures, the Dark Pack resources and the VTES symbols are restored from the night's archives beside it. The exact commands are in the "Backups" section of [deploy/README.md](https://github.com/michael-tracey/horatio/blob/main/deploy/README.md#backups).
 
 Everything since that backup is lost, so make a fresh backup with **Back up now** first if the app still works.
 

@@ -12,6 +12,9 @@ import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { capText, derivedLines, endingText, NO_RULES_YET, outsiderText, suppressedText, takenText, typeOrder } from "./status";
 
+/** What the status card needs of its character: the character page's, or a roster entry's. */
+export type StatusCharacter = Pick<CharacterOut, "id" | "name" | "kind" | "creation_complete">;
+
 export function useStatus(characterId: string) {
   return useQuery({
     queryKey: ["status", characterId],
@@ -132,7 +135,7 @@ function Line({
   );
 }
 
-function HeldRow({ character, status, held }: { character: CharacterOut; status: StatusOut; held: HeldOut }) {
+function HeldRow({ character, status, held }: { character: StatusCharacter; status: StatusOut; held: HeldOut }) {
   const dates = useDates();
   const remove = useAction((reason: string) =>
     unwrap(
@@ -171,7 +174,7 @@ function HeldRow({ character, status, held }: { character: CharacterOut; status:
   );
 }
 
-function Unresolved({ character, status, name }: { character: CharacterOut; status: StatusOut; name: string }) {
+function Unresolved({ character, status, name }: { character: StatusCharacter; status: StatusOut; name: string }) {
   const resolve = useAction((reason: string) =>
     unwrap(api.POST("/api/characters/{character_id}/status/resolve", { params: { path: { character_id: character.id } }, body: { name, reason } })),
   );
@@ -346,7 +349,7 @@ export function AddStatus({
   );
 }
 
-function SuppressedRow({ character, suppressed, staff }: { character: CharacterOut; suppressed: SuppressionOut; staff: boolean }) {
+function SuppressedRow({ character, suppressed, staff }: { character: StatusCharacter; suppressed: SuppressionOut; staff: boolean }) {
   const dates = useDates();
   const lift = useAction((reason: string) =>
     unwrap(
@@ -366,7 +369,7 @@ function SuppressedRow({ character, suppressed, staff }: { character: CharacterO
 }
 
 /** Staff strip the fleeting status unspent (MET: VTM p. 314), for the rest of the game or for defying a Commander. */
-function Suppress({ character, onDone }: { character: CharacterOut; onDone: () => void }) {
+function Suppress({ character, onDone }: { character: StatusCharacter; onDone: () => void }) {
   const [kind, setKind] = useState<"game" | "commander">("commander");
   const [reason, setReason] = useState("");
   const suppress = useAction(async () => {
@@ -409,7 +412,7 @@ function Suppress({ character, onDone }: { character: CharacterOut; onDone: () =
  * Why the character holds no sect status, and what would give it some. Said
  * once, here: the Titles card beside it doesn't repeat it.
  */
-function NoStatus({ character, sect }: { character: CharacterOut; sect: string | null }) {
+function NoStatus({ character, sect }: { character: StatusCharacter; sect: string | null }) {
   if (sect) return <EmptyState title={`The ${sect} has no status in Horatio yet.`} />;
   return (
     <EmptyState title={`${character.name} has no sect, so holds no status.`}>
@@ -431,7 +434,7 @@ function NoStatus({ character, sect }: { character: CharacterOut; sect: string |
  * Status on sheets setting. It is the main column of the character page's Status &
  * Titles tab, beside its titles.
  */
-export function StatusCard({ character }: { character: CharacterOut }) {
+export function StatusCard({ character }: { character: StatusCharacter }) {
   const status = useStatus(character.id);
   const [adding, setAdding] = useState(false);
   const [suppressing, setSuppressing] = useState(false);
