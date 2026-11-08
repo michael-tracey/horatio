@@ -90,7 +90,10 @@ GROUPS: dict[AuditGroup, tuple[str, tuple[str, ...]]] = {
         ("troupe.", "troupe_request.", "connector.", "location.", "post.", "agency."),
     ),
     AuditGroup.ACCOUNTS: ("Accounts", ("account.",)),
-    AuditGroup.SYSTEM: ("System", ("backup.", "clan_logo.", "audit.", "yorick_import.")),
+    AuditGroup.SYSTEM: (
+        "System",
+        ("backup.", "clan_logo.", "audit.", "yorick_import.", "dark_pack.", "vtes_symbols."),
+    ),
 }
 
 # A purchase's wording is put together from its numbers (roster.purchase_message);
