@@ -141,24 +141,34 @@ test("a quick NPC's creation picks are fitted, and staff move one by hand", asyn
   await p.goto(`/characters/${npcId}`);
 
   // Fitted for the most XP saved: Brawl 5 takes the pick at 4, Occult 3 the pick at 3;
-  // only Brawl's fifth dot is bought.
+  // only Brawl's fifth dot is bought. The picks show in the wizard's slots.
+  const card = p.getByRole("region", { name: "Skills picks" });
   await expect(p.getByRole("heading", { name: "Creation picks" })).toBeVisible();
-  await expect(p.getByLabel("Skills at 4, pick 1")).toHaveValue("Brawl");
-  await expect(p.getByLabel("Skills at 3, pick 1")).toHaveValue("Occult");
+  await expect(card.getByRole("combobox", { name: "Skills at 4", exact: true })).toHaveValue("Brawl");
+  await expect(card.getByRole("combobox", { name: "Skills at 3, pick 1 of 2" })).toHaveValue("Occult");
   await expect(p.getByText("5 XP", { exact: true })).toBeVisible();
   await expect(p.getByText("by hand", { exact: true })).toHaveCount(0);
 
-  // Its player had Occult at 2 in Yorick: placed by hand, it stays, and its third dot is bought.
-  await p.getByLabel("Skills at 2, pick 1").selectOption("Occult");
-  await expect(p.getByLabel("Skills at 2, pick 1")).toHaveValue("Occult");
-  await expect(p.getByLabel("Skills at 3, pick 1")).toHaveValue("");
-  await expect(p.getByText("by hand", { exact: true })).toBeVisible();
+  // Its player had Occult at 2 in Yorick: chosen there, it moves, placed by hand, and its third dot is bought.
+  const at2 = card.getByRole("combobox", { name: "Skills at 2, pick 1 of 3" });
+  await at2.click();
+  await p.screenshot(shots("npc-picks-open"));
+  await p.getByRole("listbox", { name: "Skills at 2, pick 1 of 3" }).getByRole("option", { name: "Occult (at 3)" }).click();
+  await expect(at2).toHaveValue("Occult");
+  await expect(card.getByRole("combobox", { name: "Skills at 3, pick 1 of 2" })).toHaveValue("");
+  await expect(card.getByText("by hand", { exact: true })).toBeVisible();
   await expect(p.getByText("8 XP", { exact: true })).toBeVisible();
   await p.screenshot(shots("npc-picks"));
 
-  // Fitting all again forgets it.
+  // Clearing a slot takes the pick off its trait, and the fitting leaves it alone.
+  await card.getByRole("button", { name: "Take Brawl off" }).click();
+  await expect(p.getByText("Kept without a pick: Brawl.")).toBeVisible();
+  await expect(card.getByRole("combobox", { name: "Skills at 4", exact: true })).toHaveValue("");
+
+  // Fitting all again forgets both.
   await p.getByRole("button", { name: "Fit all again" }).click();
-  await expect(p.getByLabel("Skills at 3, pick 1")).toHaveValue("Occult");
+  await expect(card.getByRole("combobox", { name: "Skills at 4", exact: true })).toHaveValue("Brawl");
+  await expect(card.getByRole("combobox", { name: "Skills at 3, pick 1 of 2" })).toHaveValue("Occult");
   await expect(p.getByText("by hand", { exact: true })).toHaveCount(0);
   await expect(p.getByText("5 XP", { exact: true })).toBeVisible();
 });

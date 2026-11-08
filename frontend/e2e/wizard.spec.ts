@@ -694,6 +694,59 @@ test("each step keeps its picks as they are made, through the step list and a re
   await expect(p.getByRole("link", { name: "Continue creating" })).toHaveCount(0);
 });
 
+test("a pick moves by choosing it in another slot, swapping with the one there when it fits, its field going with it", async ({ browser }) => {
+  const { page: p } = await person(browser, "wf-mover");
+  const id = await creatingVampire(p, "Moving Day", "Brujah", [], {
+    attributes: [["Physical", 5], ["Mental", 7], ["Social", 3]],
+    skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3]],
+    flaws: [["Childlike", 4]],
+  });
+  await p.goto(`/characters/${id}/create/skills`);
+  await expect(p.getByRole("heading", { name: "Skills", exact: true })).toBeVisible();
+
+  // A trait picked elsewhere is offered marked with where it is; choosing it moves it.
+  const at2 = await openSlot(p, "Skills", 2);
+  await expect(at2.getByRole("option", { name: "Brawl (at 4)", exact: true })).toBeVisible();
+  await expect(at2.getByRole("option", { name: "Dodge (at 3)", exact: true })).toBeVisible();
+  await p.keyboard.type("Br");
+  await p.screenshot(shots("creation-slot-move"));
+  await at2.getByRole("option", { name: "Brawl (at 4)", exact: true }).click();
+  await expect.poll(pickedAt(p, "Skills", 2)).toEqual(["Brawl", "", ""]);
+  await expect.poll(pickedAt(p, "Skills", 4)).toEqual([""]);
+
+  // Into a slot that holds one, the two swap.
+  await choosePick(p, "Skills", 4, "Dodge");
+  await choosePick(p, "Skills", 4, "Athletics", 0);
+  await expect.poll(pickedAt(p, "Skills", 4)).toEqual(["Athletics"]);
+  await expect.poll(pickedAt(p, "Skills", 3)).toEqual(["Dodge", ""]);
+
+  // Performance moves with its field.
+  await choosePick(p, "Skills", 1, "Performance");
+  await p.getByLabel("Performance field").fill("Singing");
+  const at3 = await openSlot(p, "Skills", 3, 1);
+  await p.keyboard.type("Perf");
+  await at3.getByRole("option", { name: "Performance: Singing (at 1)", exact: true }).click();
+  await expect.poll(pickedAt(p, "Skills", 3)).toEqual(["Dodge", "Performance"]);
+  await expect(slotsAt(p, "Skills", 3).getByLabel("Performance field")).toHaveValue("Singing");
+  await expect(p.getByText(/^Saved \d/)).toBeVisible({ timeout: 15_000 });
+  await p.reload();
+  await expect.poll(pickedAt(p, "Skills", 4)).toEqual(["Athletics"]);
+  await expect.poll(pickedAt(p, "Skills", 3)).toEqual(["Dodge", "Performance"]);
+  await expect(slotsAt(p, "Skills", 3).getByLabel("Performance field")).toHaveValue("Singing");
+  await expect.poll(pickedAt(p, "Skills", 2)).toEqual(["Brawl", "", ""]);
+
+  // Childlike bars Physical at 7: moving Mental from 7 onto it leaves the 7 empty, saying so.
+  await p.goto(`/characters/${id}/create/attributes`);
+  const at7 = await openSlot(p, "Attributes", 7);
+  await expect(at7.getByRole("option", { name: "Physical (at 5)" })).toHaveAttribute("aria-disabled", "true");
+  await p.keyboard.press("Escape");
+  await choosePick(p, "Attributes", 5, "Mental", 0);
+  await expect.poll(pickedAt(p, "Attributes", 5)).toEqual(["Mental"]);
+  await expect.poll(pickedAt(p, "Attributes", 7)).toEqual([""]);
+  await expect(slotsAt(p, "Attributes", 5).getByText("Physical can't go at 7, so it is taken off, and the slot at 7 is left empty.")).toBeVisible();
+  await p.screenshot(shots("creation-slot-move-off"));
+});
+
 test("on a phone the picks' slots and choices are big enough to tap, and a locked step says why in words (#361)", async ({ browser }) => {
   const { page: p } = await person(browser, "big-dots");
   // No Generation yet: the steps after Backgrounds are locked.
