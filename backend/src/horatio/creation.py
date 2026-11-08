@@ -185,6 +185,60 @@ def stray_pools(
     return list(strays.values())
 
 
+@dataclass
+class LostPicks:
+    """Picks at one rating that a trait held takes away: Thin Blooded's discipline at 2."""
+
+    category: str
+    rating: int
+    picks: int
+    # The traits held that took them, as (category, name).
+    because: list[tuple[str, str]]
+
+
+def picks_given(
+    rules: Sequence[CreationRuleData], sheet: Sequence[SheetTrait]
+) -> dict[tuple[str, int], int]:
+    """How many picks the rules give at each (category, rating), for this sheet. As in
+    `pools_for`, a later rule for the same rating stands in for an earlier one."""
+    given: dict[tuple[str, int], int] = {}
+    for rule in rules:
+        if rule.points is not None or rule.rating is None or rule.picks is None:
+            continue
+        if rule.when and not matches(rule.when, sheet, SheetTrait(category="", name="")):
+            continue
+        given[(rule.category, rule.rating)] = rule.picks
+    return given
+
+
+def lost_picks(rules: Sequence[CreationRuleData], rows: Sequence[SheetRow]) -> list[LostPicks]:
+    """The picks the rules would give but for a trait held, rating by rating: Thin
+    Blooded takes the discipline at 2 (p. 266), Inept one at 1 (p. 263), and Stolen
+    Potential the focus in its attribute (p. 265). Worked out by asking the rules again
+    without the traits their conditions name, so a troupe's own rules count too."""
+    sheet = [row.as_rules_trait() for row in rows]
+    named = {t for rule in rules if rule.when for t in held_in(sheet, rule.when)}
+    if not named:
+        return []
+    now = picks_given(rules, sheet)
+    usual = picks_given(rules, [t for t in sheet if (t.category, t.name) not in named])
+    lost: list[LostPicks] = []
+    for (category, rating), picks in usual.items():
+        fewer = picks - now.get((category, rating), 0)
+        if fewer <= 0:
+            continue
+        because = sorted(
+            {
+                trait
+                for rule in rules
+                if (rule.category, rule.rating) == (category, rating) and rule.when
+                for trait in held_in(sheet, rule.when)
+            }
+        )
+        lost.append(LostPicks(category, rating, fewer, because))
+    return sorted(lost, key=lambda p: (p.category, -p.rating))
+
+
 def budget_changes(db: Session, character: Character) -> dict[str, list[tuple[str, str]]]:
     """For each category, the traits the sheet holds that change what its creation rules
     give: Thin Blooded and Inept for the starting disciplines."""

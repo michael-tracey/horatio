@@ -1,5 +1,5 @@
 /**
- * The rules of tapping dots in the creation wizard, kept apart from the screen
+ * The rules of placing picks in the creation wizard, kept apart from the screen
  * so they can be tested. A category's picks are a map of trait name to the
  * rating picked; `allowed` maps each rating to how many picks it has.
  */
@@ -21,17 +21,10 @@ export function left(picks: Picks, allowed: Allowed, rating: number): number {
 /**
  * Whether the picks rank the traits: every rating has exactly one pick, as
  * attributes' 7 / 5 / 3 or a single focus. Only a ranking swaps; elsewhere
- * (skills' one 4, two 3s…) a used-up rating is simply used up.
+ * (skills' one 4, two 3s…) a trait already picked is not offered again.
  */
 export function isRanking(allowed: Allowed): boolean {
   return Object.values(allowed).every((n) => n === 1);
-}
-
-/** Whether tapping `rating` on `name` would do anything. */
-export function canTap(picks: Picks, allowed: Allowed, name: string, rating: number): boolean {
-  if (!(rating in allowed)) return false;
-  if (picks[name] === rating) return true;
-  return left(picks, allowed, rating) > 0 || isRanking(allowed);
 }
 
 /** Take `name`'s pick back, whatever its rating. */
@@ -43,28 +36,72 @@ export function clear(picks: Picks, name: string): Picks {
 }
 
 /**
- * Tap a dot. Tapping a trait's current rating clears it. Tapping a rating with
- * picks left sets it. In a ranking, tapping a rating another trait holds swaps
- * the two (so Physical 7 / Mental 3 becomes Mental 7 / Physical 3). Anything
- * else leaves the picks as they were.
+ * Choose `name` for a slot at `rating`, in place of `holder` (the pick in the slot
+ * now, if any). In a ranking, choosing a trait placed at another rating swaps the
+ * two (so Physical 7 / Mental 3 becomes Mental 7 / Physical 3). A skill bought once
+ * per field (`fielded`) can be chosen again, for another field, under a key of its
+ * own. Anything that does not fit leaves the picks as they were. Gives the picks,
+ * and the key now in the slot.
  */
-export function tap(picks: Picks, allowed: Allowed, name: string, rating: number): Picks {
-  if (!(rating in allowed)) return picks;
-  const next = { ...picks };
-  if (picks[name] === rating) return clear(picks, name);
-  if (left(picks, allowed, rating) > 0) {
-    next[name] = rating;
-    return next;
-  }
+export function choose(
+  picks: Picks,
+  allowed: Allowed,
+  rating: number,
+  holder: string | null,
+  name: string,
+  fielded = false,
+): { picks: Picks; key: string | null } {
+  const unchanged = { picks, key: holder };
+  if (!(rating in allowed)) return unchanged;
+  if (holder !== null && traitOf(holder) === name) return unchanged;
   if (isRanking(allowed)) {
-    const holder = Object.keys(picks).find((n) => picks[n] === rating)!;
+    const next = holder === null ? { ...picks } : clear(picks, holder);
     const mine = picks[name];
-    if (mine === undefined) delete next[holder];
-    else next[holder] = mine;
+    if (holder !== null && mine !== undefined) next[holder] = mine;
     next[name] = rating;
-    return next;
+    return { picks: next, key: name };
   }
-  return picks;
+  const next = holder === null ? { ...picks } : clear(picks, holder);
+  if (name in next && !fielded) return unchanged;
+  if (left(next, allowed, rating) <= 0) return unchanged;
+  const key = name in next ? nextCopy(Object.keys(next), name) : name;
+  next[key] = rating;
+  return { picks: next, key };
+}
+
+/**
+ * The picks at one rating laid out in its `slots`, each kept in the slot it was
+ * in (`seated`, the last layout) so choosing one doesn't shuffle the others. New
+ * picks take the first empty slots; picks beyond the slots (more than the rules give
+ * now) come after them, to be moved.
+ */
+export function seatPicks(seated: (string | null)[], keys: string[], slots: number): (string | null)[] {
+  const kept = seated.map((k) => (k !== null && keys.includes(k) ? k : null));
+  const out: (string | null)[] = kept.slice(0, slots);
+  while (out.length < slots) out.push(null);
+  const rest = [...kept.slice(slots).filter((k): k is string => k !== null), ...keys.filter((k) => !kept.includes(k))];
+  for (const key of rest) {
+    const free = out.indexOf(null);
+    if (free === -1) out.push(key);
+    else out[free] = key;
+  }
+  return out;
+}
+
+const NUMBERS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+
+/** What is left to place, in words: "3 picks left: one at 4 and two at 1", or null when nothing is. */
+export function picksLeft(picks: Picks, allowed: Allowed): string | null {
+  const open = Object.keys(allowed)
+    .map(Number)
+    .sort((a, b) => b - a)
+    .map((rating) => [rating, left(picks, allowed, rating)] as const)
+    .filter(([, n]) => n > 0);
+  if (!open.length) return null;
+  const total = open.reduce((sum, [, n]) => sum + n, 0);
+  const parts = open.map(([rating, n]) => `${NUMBERS[n] ?? n} at ${rating}`);
+  const words = parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}` : parts[0];
+  return `${total} ${total === 1 ? "pick" : "picks"} left: ${words}`;
 }
 
 /**

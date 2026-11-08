@@ -8239,6 +8239,14 @@
             "title": "Given",
             "type": "array"
           },
+          "lost_picks": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LostPicksOut"
+            },
+            "title": "Lost Picks",
+            "type": "array"
+          },
           "needs": {
             "items": {
               "$ref": "#/components/schemas/StepNeed"
@@ -22004,6 +22012,38 @@
           "refund"
         ],
         "title": "LossOut",
+        "type": "object"
+      },
+      "LostPicksOut": {
+        "description": "Picks at one rating that the rules would give but for a trait held, and the traits\nthat took them: Thin Blooded's starting discipline at 2.",
+        "properties": {
+          "because": {
+            "items": {
+              "$ref": "#/components/schemas/TraitRefOut"
+            },
+            "title": "Because",
+            "type": "array"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "picks": {
+            "title": "Picks",
+            "type": "integer"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "rating",
+          "picks",
+          "because"
+        ],
+        "title": "LostPicksOut",
         "type": "object"
       },
       "MadeClaimLink": {

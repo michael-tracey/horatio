@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab, choosePick, choosePicks, openSlot, pickedAt } from "./support";
 
 /** Downtime: a troupe's whole month, and feeding in a downtime. */
 
@@ -19,8 +19,9 @@ function pdfPages(pdf: Buffer): { count: number; size: string } {
  * results. Each person is a separate browser session.
  */
 test("a troupe's month, from new character to downtime results", async ({ browser }) => {
-  // The longest journey: the whole month, longer than the others, above all on a phone.
-  test.slow();
+  // The longest journey: the whole month, longer than the others, above all on a phone,
+  // with every creation pick chosen in its slot as a player would.
+  test.setTimeout(240_000);
   const custodian = await person(browser, "custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "lead");
@@ -75,42 +76,41 @@ test("a troupe's month, from new character to downtime results", async ({ browse
     await p.getByRole("button", { name: "Save and continue" }).click();
     await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   };
-  const tap = async (...dots: string[]) => {
-    for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
-  };
   await next("Attributes");
-  await tap("Physical 7", "Social 5", "Mental 3");
-  await tap("Mental 7"); // swaps with Physical
-  await expect(p.getByRole("button", { name: "Physical 3", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await choosePicks(p, "Attributes", [["Physical", 7], ["Social", 5], ["Mental", 3]]);
+  await choosePick(p, "Attributes", 7, "Mental", 0); // swaps with Physical
+  await expect.poll(pickedAt(p, "Attributes", 3)).toEqual(["Physical"]);
   await next("Focuses");
-  await tap("Strength 1", "Wits 1", "Charisma 1");
+  await choosePick(p, "Physical Focus", 1, "Strength");
+  await choosePick(p, "Mental Focus", 1, "Wits");
+  await choosePick(p, "Social Focus", 1, "Charisma");
   await next("Skills");
-  await tap("Brawl 4", "Dodge 3", "Athletics 3", "Awareness 2", "Empathy 2", "Firearms 2");
-  await tap("Investigation 1", "Leadership 1", "Medicine 1", "Melee 1");
-  await expect(p.getByRole("button", { name: "Stealth 3", exact: true })).toBeDisabled();
-  // The one 4 greys out once used (only attributes swap), and Clear frees it again.
-  await expect(p.getByRole("button", { name: "Stealth 4", exact: true })).toBeDisabled();
+  await choosePicks(p, "Skills", [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2]]);
+  await expect(p.getByText("4 picks left: four at 1")).toBeVisible();
+  await choosePicks(p, "Skills", [["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]]);
+  await expect(p.getByText("Every pick placed.")).toBeVisible();
+  // A skill picked is not offered in another slot (only attributes swap), and Clear frees it again.
+  await expect((await openSlot(p, "Skills", 3)).getByRole("option", { name: "Brawl", exact: true })).toHaveCount(0);
+  await p.keyboard.press("Escape");
   await p.getByRole("button", { name: "Clear Brawl" }).click();
-  await expect(p.getByRole("button", { name: "Stealth 4", exact: true })).toBeEnabled();
-  await tap("Brawl 4");
-  // At the foot of the list, what is left is still in view.
-  await p.getByRole("button", { name: "Save and continue" }).scrollIntoViewIfNeeded();
-  await expect(p.getByRole("list", { name: "Skills picks left" })).toBeInViewport();
+  await expect(p.getByText("1 pick left: one at 4")).toBeVisible();
+  await choosePick(p, "Skills", 4, "Brawl");
   await p.screenshot(shots("creation"));
   await next("Backgrounds");
-  // What each background is, a tap away.
-  await p.getByRole("button", { name: "About Generation" }).click();
+  // What each background is, a tap away in the list.
+  await (await openSlot(p, "Backgrounds", 3)).getByRole("button", { name: "About Generation" }).click();
   await expect(p.getByText(/Every vampire needs at least 1 dot/)).toBeVisible();
+  await p.keyboard.press("Escape");
   // A vampire cannot move on without Generation, nor skip ahead.
-  await tap("Fame 3", "Herd 2");
+  await choosePicks(p, "Backgrounds", [["Fame", 3], ["Herd", 2]]);
   await p.getByRole("button", { name: "Save and continue" }).click();
   await expect(p.getByText(/Before moving on: A vampire needs at least 1 dot of Generation/)).toBeVisible();
   await expect(p.getByRole("heading", { name: "Backgrounds", exact: true })).toBeVisible();
   await expect(p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Disciplines/ })).toHaveCount(0);
-  await tap("Generation 1");
+  await choosePick(p, "Backgrounds", 1, "Generation");
   await next("Disciplines");
   await expect(p.getByText("in-clan").first()).toBeVisible();
-  await tap("Celerity 2", "Potence 1", "Presence 1");
+  await choosePicks(p, "Disciplines", [["Celerity", 2], ["Potence", 1], ["Presence", 1]]);
   await next("Merits & flaws");
   // A quick pick shows the clan's merits. Only one clan merit of each value: ticking
   // Burning Wrath (2) greys out Iron Heart (2), with why; unticking frees it again.

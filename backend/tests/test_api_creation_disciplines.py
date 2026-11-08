@@ -74,6 +74,23 @@ def test_thin_blooded_taken_after_the_disciplines_keeps_the_dot_at_2_and_names_t
     assert finish(player, character_id).status_code == 200
 
 
+def lost(person: Person, character_id: str) -> list[tuple[str, int, int, list[str]]]:
+    """The picks traits held take away: (category, rating, picks, the traits' names)."""
+    return [
+        (p["category"], p["rating"], p["picks"], [b["name"] for b in p["because"]])
+        for p in creation(person, character_id)["lost_picks"]
+    ]
+
+
+def test_thin_blooded_says_it_took_the_pick_at_2(troupe: Troupe) -> None:
+    character_id = caitiff_build(troupe, thin_blooded=False)
+    assert lost(troupe.player, character_id) == []
+
+    assert pick(troupe.player, character_id, "flaws", "Thin Blooded", 2).status_code == 200
+
+    assert lost(troupe.player, character_id) == [("disciplines", 2, 1, ["Thin Blooded"])]
+
+
 # --- Inept ----------------------------------------------------------------------------
 
 
@@ -124,6 +141,17 @@ def test_inept_leaves_one_pick_at_1_fewer_and_the_build_finishes(troupe: Troupe)
     assert pick(player, character_id, "disciplines", "Potence", 1).status_code == 200
 
     assert finish(player, character_id).status_code == 200
+
+
+def test_inept_says_it_took_one_pick_at_1(troupe: Troupe) -> None:
+    character_id = creating(troupe)
+    inept = troupe.player.client.put(
+        f"/characters/{character_id}/creation/picks",
+        json={"category": "flaws", "name": "Inept", "rating": 3, "detail": "Presence"},
+    )
+    assert inept.status_code == 200, inept.text
+
+    assert lost(troupe.player, character_id) == [("disciplines", 1, 1, ["Inept"])]
 
 
 def test_inept_taken_after_the_disciplines_keeps_and_marks_the_dots(troupe: Troupe) -> None:

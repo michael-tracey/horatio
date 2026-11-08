@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab, openSlot, pickedAt, slotsAt } from "./support";
 
 /** Ghouls: building, playing and Embracing them. */
 
@@ -128,8 +128,12 @@ test("a player builds a ghoul in the wizard, bound to their own vampire, and lat
   for (const [category, picks] of Object.entries(build))
     await send(p, "PUT", `/api/characters/${ghoulId}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
   await p.goto(`/characters/${ghoulId}/create/backgrounds`);
-  await expect(p.getByRole("button", { name: "Fame 3", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(p.getByRole("button", { name: "About Generation" })).toHaveCount(0);
+  await expect.poll(pickedAt(p, "Backgrounds", 3)).toEqual(["Fame"]);
+  // A ghoul has no Generation to choose.
+  const backgrounds = await openSlot(p, "Backgrounds", 1);
+  await expect(backgrounds.getByRole("option", { name: "Allies", exact: true })).toBeVisible();
+  await expect(backgrounds.getByRole("option", { name: "Generation", exact: true })).toHaveCount(0);
+  await p.keyboard.press("Escape");
 
   // 5 dots, in-clan only, none higher than Lady Ysolde has; the rest saved for later.
   await p.getByRole("button", { name: "Save and continue" }).click();
@@ -212,8 +216,10 @@ test("a ghoul with Stolen Potential naming Mental takes no Mental focus, and fin
 
   // Focuses says why there is none, as a vampire's does.
   await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Focuses/ }).click();
-  await expect(p.getByText("Stolen Potential: no Mental focus (p. 265).")).toBeVisible();
-  await expect(p.getByRole("button", { name: "Wits 1" })).toHaveCount(0);
+  const mental = slotsAt(p, "Mental Focus", 1);
+  await expect(mental).toContainText("Taken away");
+  await expect(mental).toContainText("Because of Stolen Potential (Merits & flaws).");
+  await expect(mental.getByRole("combobox")).toHaveCount(0);
 
   await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Review/ }).click();
   await expect(p.getByRole("region", { name: "Still to settle" })).toHaveCount(0);
