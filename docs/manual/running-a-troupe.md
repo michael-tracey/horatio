@@ -225,9 +225,10 @@ A character given to the wrong person is put right by the custodian [moving it t
 
 ## Titles and status
 
-**Characters › Titles** lists the titles the troupe gives in tables: those held first, with who holds them, then the vacant ones by sect, folded away under **Show vacant**. Each row has the title, its sect, the status it gives, whether it is a **House rule** (a title the troupe added) and whether it is **One at a time** (only a single character can hold it at once). On a phone each row folds into a short card.
+**Characters › Titles** lists the titles the troupe gives in tables: those held first, with who holds them, then the vacant ones by sect, folded away under **Show vacant**. Each row has the title, its sect, the status it gives, whether it is a **House rule** (a title the troupe added), and its **One holder at a time** switch. On a phone each row folds into a short card, with the switch under it.
 
-- **Add a title** makes a title of the troupe's own: its name, its sect (or any sect), and the status it gives.
+- **One holder at a time** is a house rule you set title by title, for the book's titles and your own alike. It's off for every title until you switch it on, so several characters may hold a Prince, say, where your game runs two domains. Switched on, players can't choose the title while someone holds it, though staff can still give it. For a title with other names (a Baron is also an Advocate), it is for them all. Each change goes in the troupe's log.
+- **Add a title** makes a title of the troupe's own: its name, its sect (or any sect), the status it gives, and whether it is one holder at a time.
 - The **⋯** at the end of a row holds **Give…** (a vacant title, or one more than one character may hold), **Move to another holder…**, **Take from** each holder, and, for a title the troupe added, **Change…** and **Remove…**. Give and Move offer only characters of the title's sect. A change is for everyone who holds it, from their next game.
 - **Court order of our titles** sets where the troupe's own titles come in the Who's Who's court, after the rule set's.
 - **Seats at court** chooses which clans have a seat. Until you choose, the clans whose Primogen is held here have one. Characters of other clans are listed under Other on the Who's Who, each with who represents them.
@@ -426,7 +427,7 @@ NPCs are never limited by either.
 ### Status and titles settings
 
 - **Status on sheets**: **Players keep their own** (a player adds and removes fleeting and negative status on their own character, naming who gave it) or **Staff only**. Storytellers and assistant storytellers can always change status, with a reason for the character's log.
-- **Titles on sheets**: **Players choose their own** (from the troupe's titles of the character's sect; staff are told) or **Staff only**. A title only one character holds at a time is staff's to give while someone holds it.
+- **Titles on sheets**: **Players choose their own** (from the troupe's titles of the character's sect; staff are told) or **Staff only**. A title the troupe holds to [one holder at a time](#titles-and-status) is staff's to give while someone holds it.
 - **The night's status**: tick **Choose the night's status at check-in** so players choose their one source of abiding status as they check in, fixed for the game. Off, they choose it on the Play View as the game begins.
 - **Who's Who**: whether it also shows the negative status each character carries into a game here.
 - **Golconda and Enlightened**: a house option for a sect that recognises the pursuit of Golconda.
