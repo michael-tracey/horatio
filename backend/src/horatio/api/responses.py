@@ -907,6 +907,16 @@ def deliver(
     return Delivered(delivered=done.delivered, updated=done.updated, queued=done.queued)
 
 
+@router.post("/cycles/{cycle_id}/send-test-only")
+def send_test_only(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Delivered:
+    """Send players the results the troupe's connectors have had only in test mode,
+    now they are out of it (horatio.responses.send_test_only)."""
+    cycle, troupe = staff_cycle(db, user, cycle_id, TroupeAction.DELIVER_RESPONSES)
+    queued = responses.send_test_only(db, user, cycle, troupe)
+    db.commit()
+    return Delivered(delivered=0, queued=queued)
+
+
 @router.post("/cycles/{cycle_id}/complete")
 def complete(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Delivered:
     cycle, _ = staff_cycle(db, user, cycle_id)

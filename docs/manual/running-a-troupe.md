@@ -679,7 +679,7 @@ The list above the characters names any with no channel yet. They still get thei
 
 #### Trying it in test mode
 
-Before the first real delivery, tick **Send downtime results through Discord** and **Test mode**, and save. Delivered results then go to the test channel, each naming its character, and you can see how they look without any player seeing them on Discord. Test mode only changes where the Discord copy goes: players still get their results in Horatio as usual. When it looks right, untick **Test mode** and save. Results delivered from then on go to each character's channel; ones already sent to the test channel aren't sent again on their own.
+Before the first real delivery, tick **Send downtime results through Discord** and **Test mode**, and save. Delivered results then go to the test channel, each naming its character, and you can see how they look without any player seeing them on Discord. Test mode only changes where the Discord copy goes: players still get their results in Horatio as usual. When it looks right, untick **Test mode** and save. Results delivered from then on go to each character's channel. Switching test mode off sends nothing by itself: results that went only to the test channel wait on the cycle's **Delivery** tab, listed under **Deliver results** as **Sent to the test channel only**. Choose **Send to players' channels** there to send them to players as they were delivered. It sends only those copies: players don't get the results again in Horatio, or a new notification.
 
 #### Email
 

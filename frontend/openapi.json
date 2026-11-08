@@ -9227,10 +9227,18 @@
             },
             "title": "Participants",
             "type": "array"
+          },
+          "testing": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Testing",
+            "type": "array"
           }
         },
         "required": [
           "channels",
+          "testing",
           "participants"
         ],
         "title": "DeliveryStatus",
@@ -25652,6 +25660,13 @@
             "title": "Due",
             "type": "boolean"
           },
+          "test_only": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Test Only",
+            "type": "array"
+          },
           "to_answer": {
             "title": "To Answer",
             "type": "integer"
@@ -25673,7 +25688,8 @@
           "changed",
           "due",
           "deliveries",
-          "unreachable"
+          "unreachable",
+          "test_only"
         ],
         "title": "ParticipantDeliveries",
         "type": "object"
@@ -58488,6 +58504,50 @@
           }
         },
         "summary": "My Responses",
+        "tags": [
+          "responses"
+        ]
+      }
+    },
+    "/api/cycles/{cycle_id}/send-test-only": {
+      "post": {
+        "description": "Send players the results the troupe's connectors have had only in test mode,\nnow they are out of it (horatio.responses.send_test_only).",
+        "operationId": "send_test_only_api_cycles__cycle_id__send_test_only_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Delivered"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send Test Only",
         "tags": [
           "responses"
         ]

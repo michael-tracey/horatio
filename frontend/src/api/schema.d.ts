@@ -4234,6 +4234,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cycles/{cycle_id}/send-test-only": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Test Only
+         * @description Send players the results the troupe's connectors have had only in test mode,
+         *     now they are out of it (horatio.responses.send_test_only).
+         */
+        post: operations["send_test_only_api_cycles__cycle_id__send_test_only_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dark-pack": {
         parameters: {
             query?: never;
@@ -13554,6 +13575,8 @@ export interface components {
             channels: string[];
             /** Participants */
             participants: components["schemas"]["ParticipantDeliveries"][];
+            /** Testing */
+            testing: string[];
         };
         /**
          * Derangements
@@ -20036,6 +20059,8 @@ export interface components {
             };
             /** Due */
             due: boolean;
+            /** Test Only */
+            test_only: string[];
             /** To Answer */
             to_answer: number;
             /** Unreachable */
@@ -35975,6 +36000,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkItemOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_test_only_api_cycles__cycle_id__send_test_only_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Delivered"];
                 };
             };
             /** @description Validation Error */

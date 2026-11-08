@@ -152,11 +152,16 @@ class ParticipantDeliveries(BaseModel):
     # The connectors on, outside test mode, with nowhere to send this character's
     # results (Discord, with no channel chosen), to warn about before delivering.
     unreachable: list[str]
+    # The connectors on that have had its results only in test mode, waiting to be
+    # sent to its player (horatio.delivery.test_only).
+    test_only: list[str]
 
 
 class DeliveryStatus(BaseModel):
     # In-app first, then each of the troupe's connectors that is on.
     channels: list[str]
+    # Those of them in test mode.
+    testing: list[str]
     participants: list[ParticipantDeliveries]
 
 
@@ -185,6 +190,7 @@ def cycle_deliveries(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> D
     on = delivery.enabled_connectors(db, troupe.id)
     channels = ["horatio", *[c.kind for c in on]]
     channels += sorted({d.channel for d in deliveries} - set(channels))
+    tested = delivery.test_only(db, [r.submission.id for r in rows], on)
     unreachable: dict[uuid.UUID, list[str]] = {}
     for connector in on:
         if connector.test_mode:
@@ -196,6 +202,7 @@ def cycle_deliveries(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> D
             unreachable.setdefault(character_id, []).append(connector.kind)
     return DeliveryStatus(
         channels=channels,
+        testing=[c.kind for c in on if c.test_mode],
         participants=[
             ParticipantDeliveries(
                 character_id=r.character.id,
@@ -211,6 +218,7 @@ def cycle_deliveries(cycle_id: uuid.UUID, db: DbSession, user: CurrentUser) -> D
                     if (d := latest.get((r.submission.id, channel))) is not None
                 },
                 unreachable=unreachable.get(r.character.id, []),
+                test_only=tested.get(r.submission.id, []),
             )
             for r in rows
         ],

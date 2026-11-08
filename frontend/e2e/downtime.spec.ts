@@ -774,11 +774,24 @@ test("staff use the Discord channels names suggest, and delivering warns of a ch
       },
     }),
   );
+  // Characters whose results went to Discord only in test mode, and whether it is still on.
+  let tried: string[] = [];
+  let testMode = false;
   await l.route(`**/api/cycles/${cycle.id}/deliveries`, async (route) => {
     const real = await (await route.fetch()).json();
     const chosen = saved.channels as Record<string, string>;
-    real.participants = real.participants.map((p: { character_id: string }) => ({ ...p, unreachable: chosen[p.character_id] ? [] : ["discord"] }));
+    real.testing = testMode ? ["discord"] : [];
+    real.participants = real.participants.map((p: { character_id: string }) => ({
+      ...p,
+      unreachable: chosen[p.character_id] ? [] : ["discord"],
+      test_only: tried.includes(p.character_id) ? ["discord"] : [],
+    }));
     await route.fulfill({ json: real });
+  });
+  let sentOn = 0;
+  await l.route(`**/api/cycles/${cycle.id}/send-test-only`, async (route) => {
+    sentOn += 1;
+    await route.fulfill({ json: { delivered: 0, updated: 0, queued: 1 } });
   });
 
   // Nothing is chosen until staff use a suggestion.
@@ -820,6 +833,22 @@ test("staff use the Discord channels names suggest, and delivering warns of a ch
   await warning.getByRole("button", { name: "Deliver anyway" }).click();
   await expect(l.getByText("Delivered 2 downtimes.")).toBeVisible();
   await expect(warning).toHaveCount(0);
+
+  // Léontine's results went only to the test channel. They wait while test mode is on,
+  // and go to her channel only when the lead sends them.
+  tried = [ids["Léontine Marsh"]!];
+  testMode = true;
+  await l.reload();
+  const testOnly = deliverCard.getByRole("listitem").filter({ hasText: "Sent to the test channel only:" });
+  await expect(testOnly).toContainText("Léontine Marsh");
+  await expect(testOnly).not.toContainText("Cassius");
+  await expect(deliverCard.getByText(/^Test mode is on\./)).toBeVisible();
+  await expect(deliverCard.getByRole("button", { name: "Send to players' channels" })).toHaveCount(0);
+  testMode = false;
+  await l.reload();
+  await deliverCard.getByRole("button", { name: "Send to players' channels" }).click();
+  await expect(deliverCard.getByText("1 copy is on the way to players through the troupe's connectors.")).toBeVisible();
+  expect(sentOn).toBe(1);
 });
 
 /**
