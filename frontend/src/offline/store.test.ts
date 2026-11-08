@@ -70,6 +70,20 @@ describe("keeping a person's answers", () => {
     expect(opening.getQueryData(["me"])).toEqual({ id: ME });
   });
 
+  it("has the screens ask afresh for what it puts back, however recently it was kept (#528)", async () => {
+    const shelf = memoryShelf();
+    const before = signedIn();
+    before.setQueryData(["me"], { id: ME, preferences: { ratings: "pips" } });
+    await save(before, ME, shelf);
+    setKeeping(ME, "on");
+    setKeptFor(ME);
+    const opening = new QueryClient();
+    await restore(opening, shelf);
+    // Shown until the server answers, but never taken for its answer, though useMe waits a minute before asking again.
+    expect(opening.getQueryData(["me"])).toEqual({ id: ME, preferences: { ratings: "pips" } });
+    for (const key of [["me"], ["characters"]]) expect(opening.getQueryCache().find({ queryKey: key })!.isStaleByTime(60_000)).toBe(true);
+  });
+
   it("takes restored answers off screen once someone else is signed in, or no one", async () => {
     const shelf = memoryShelf();
     const before = signedIn();
