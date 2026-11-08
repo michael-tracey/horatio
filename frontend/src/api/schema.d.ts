@@ -19068,6 +19068,8 @@ export interface components {
         MembershipOut: {
             /** Home */
             home: boolean;
+            /** Titles */
+            titles: string[];
             /**
              * Troupe Id
              * Format: uuid

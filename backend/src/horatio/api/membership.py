@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from horatio import reconciliation, sheets, xp_range
+from horatio import reconciliation, sheets, titles, xp_range
 from horatio.api.sheets import ApprovalOut, approval_out, players_character
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Troupe, TroupeMembership
@@ -31,6 +31,8 @@ class MembershipOut(BaseModel):
     troupe_name: str
     # The home troupe holds the sheet; any other troupe is one the character visits.
     home: bool
+    # The titles it holds there, which retiring it gives up.
+    titles: list[str]
 
 
 class WithdrawnOut(BaseModel):
@@ -121,6 +123,7 @@ def memberships(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> li
             troupe_id=t.id,
             troupe_name=t.name,
             home=t.id == character.home_troupe_id,
+            titles=titles.held(db, t.id, character.id),
         )
         for t in rows
     ]
@@ -135,7 +138,7 @@ def join_troupe(
     troupe = running_troupe(db, body.troupe_id)
     reconciliation.join(db, user, character, troupe)
     db.commit()
-    return MembershipOut(troupe_id=troupe.id, troupe_name=troupe.name, home=False)
+    return MembershipOut(troupe_id=troupe.id, troupe_name=troupe.name, home=False, titles=[])
 
 
 @router.get("/troupes/{troupe_id}/leaving")

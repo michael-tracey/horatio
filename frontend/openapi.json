@@ -22657,6 +22657,13 @@
             "title": "Home",
             "type": "boolean"
           },
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
+          },
           "troupe_id": {
             "format": "uuid",
             "title": "Troupe Id",
@@ -22670,7 +22677,8 @@
         "required": [
           "troupe_id",
           "troupe_name",
-          "home"
+          "home",
+          "titles"
         ],
         "title": "MembershipOut",
         "type": "object"

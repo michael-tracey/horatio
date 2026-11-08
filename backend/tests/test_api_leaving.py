@@ -9,7 +9,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from tests.api_helpers import Person, Troupe
-from tests.test_api_sect_status import entitle, member
+from tests.test_api_renames import other_troupe, summaries, troupe_log, visit
+from tests.test_api_sect_status import entitle, member, status
 
 
 @pytest.fixture
@@ -74,6 +75,71 @@ def test_a_character_retired_off_field_is_no_longer_with_us(troupe: Troupe) -> N
     said = "player retired Lena: Off-field, listed under No longer with us. Gone to Chicago."
     assert said in log(troupe.player, lena)
     assert log(troupe.storyteller, lena).count(said) == 1
+
+
+@pytest.mark.parametrize("reason", ["final_death", "off_field", "inactive"])
+def test_retiring_gives_up_every_title_in_every_troupe(troupe: Troupe, reason: str) -> None:
+    ursula = member(troupe, "Ursula")
+    entitle(troupe, ursula, "Prince", "Harpy")
+    elsewhere = other_troupe(troupe)
+    visit(troupe.player, ursula, elsewhere)
+    given = troupe.stranger.client.put(
+        f"/troupes/{elsewhere}/characters/{ursula}/titles", json={"titles": ["Seneschal"]}
+    )
+    assert given.status_code == 200, given.text
+    # Its active title in each troupe gives it status.
+    assert {d["source"] for d in status(troupe.player, ursula)["derived"]} == {
+        "Prince",
+        "Seneschal",
+    }
+    # The retire dialog warns of them, by troupe.
+    troupes = troupe.player.client.get(f"/characters/{ursula}/troupes").json()
+    assert [(t["troupe_name"], t["titles"]) for t in troupes] == [
+        ("Elsewhere", ["Seneschal"]),
+        ("Lords of the Night", ["Harpy", "Prince"]),
+    ]
+
+    retire(troupe.player, ursula, reason=reason, listed=False)
+
+    troupes = troupe.player.client.get(f"/characters/{ursula}/troupes").json()
+    assert [t["titles"] for t in troupes] == [[], []]
+    # Its active title went, and the status it gave.
+    assert status(troupe.player, ursula)["derived"] == []
+    # One entry in each troupe's log, and each troupe's storytellers are told.
+    assert "Ursula (player) gave up Prince and Harpy on retiring." in troupe_log(
+        troupe.lead, troupe.id
+    )
+    assert "Ursula (player) gave up Seneschal on retiring." in troupe_log(
+        troupe.stranger, elsewhere
+    )
+    assert (
+        "Ursula gave up Prince and Harpy on retiring: −Authority, −Commander, −Sovereign"
+        in summaries(troupe.storyteller)
+    )
+    assert any(
+        s.startswith("Ursula gave up Seneschal on retiring") for s in summaries(troupe.stranger)
+    )
+    assert not [s for s in summaries(troupe.player) if "on retiring" in s]
+    # The titles leave the court: no one holds them, and staff can't give them back.
+    held = troupe.storyteller.client.get(f"/troupes/{troupe.id}/titles").json()["titles"]
+    assert [t["holders"] for t in held if t["name"] in ("Prince", "Harpy")] == [[], []]
+    again = troupe.storyteller.client.put(
+        f"/troupes/{troupe.id}/characters/{ursula}/titles", json={"titles": ["Prince"]}
+    )
+    assert again.status_code == 409
+
+
+def test_a_title_given_up_on_retiring_is_free_for_another(troupe: Troupe) -> None:
+    ursula = member(troupe, "Ursula")
+    vera = member(troupe, "Vera")
+    entitle(troupe, ursula, "Prince")
+
+    retire(troupe.player, ursula, reason="final_death", listed=True)
+
+    chosen = troupe.player.client.post(f"/characters/{vera}/titles", json={"name": "Prince"})
+    assert chosen.status_code < 300, chosen.text
+    court = whos_who(troupe.storyteller, troupe)
+    assert names(court, court["court"]) == ["Vera"]
 
 
 def test_an_unlisted_character_is_nowhere_on_the_whos_who(troupe: Troupe) -> None:

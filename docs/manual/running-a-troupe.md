@@ -800,7 +800,7 @@ Narrators and visiting troupes' staff never read backstories. The player's side 
 
 ### Characters leaving or retiring
 
-A player can leave the home troupe for none, from the character's Home troupe card; its titles there end and its requests waiting there are withdrawn. A player can also retire a character, with a reason: **Final Death**, **Off-field** or **Inactive**. Storytellers and assistant storytellers of its home troupe can change why a retired character left, and whether the Who's Who lists it under "No longer with us", from the **Retired** card on its page. *If your troupe uses this:* they can also open [Remembrances](#remembrances) for it there.
+A player can leave the home troupe for none, from the character's Home troupe card; its titles there end and its requests waiting there are withdrawn. A player can also retire a character, with a reason: **Final Death**, **Off-field** or **Inactive**. Retiring gives up every title it holds, in each troupe, and the status they gave; the retire dialog names them first, and its storytellers are told. Storytellers and assistant storytellers of its home troupe can change why a retired character left, and whether the Who's Who lists it under "No longer with us", from the **Retired** card on its page. *If your troupe uses this:* they can also open [Remembrances](#remembrances) for it there.
 
 ## Downtime cycles
 
