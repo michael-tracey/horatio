@@ -23373,8 +23373,15 @@ export interface components {
             character_name: string;
             /** Clan */
             clan: string | null;
+            /** Creation Complete */
+            creation_complete: boolean;
             /** Disciplines Waiting */
             disciplines_waiting: number;
+            /**
+             * Givable
+             * @default false
+             */
+            givable: boolean;
             /** Home */
             home: boolean;
             /**
@@ -23414,6 +23421,8 @@ export interface components {
             sect: string | null;
             /** Social Age */
             social_age: string;
+            /** Splat */
+            splat: string;
             /** Titles */
             titles: string[];
             /** Waiting */
