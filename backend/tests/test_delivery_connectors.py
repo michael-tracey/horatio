@@ -327,10 +327,48 @@ def test_test_mode_sends_to_the_test_target_only(
 
     assert [target for target, _ in fake.sent] == ["#st-test"]
     assert agnes_on(scene, "discord")["test_mode"] is True
-    # Out of test mode, delivering again sends it for real.
+
+
+def test_results_tried_in_test_mode_go_to_players_only_when_sent(
+    scene: Scene, fake: FakeConnector, session: Session
+) -> None:
+    troupe = scene.troupe
+    cycle = scene.cycle["id"]
+    connect(scene, test_mode=True)
+    deliver(scene)
+    send_due(session)
+    in_test = status(scene)
+    assert in_test["testing"] == ["discord"]
+    [agnes] = in_test["participants"]
+    assert agnes["test_only"] == ["discord"]
+    # In test mode there is nothing to send to players yet.
+    sent = troupe.assistant.client.post(f"/cycles/{cycle}/send-test-only")
+    assert sent.json() == {"delivered": 0, "updated": 0, "queued": 0}
+
+    # Switching test mode off sends nothing, and nor does delivering again.
     connect(scene, test_mode=False)
-    assert deliver(scene) == {"delivered": 0, "updated": 0, "queued": 1}
+    assert send_due(session) == 0
+    assert deliver(scene) == {"delivered": 0, "updated": 0, "queued": 0}
+    [agnes] = status(scene)["participants"]
+    assert agnes["test_only"] == ["discord"]
+    bells = len(troupe.player.client.get("/notifications").json()["items"])
+
+    # Sent on purpose, it goes to the player's channel: no new delivery in Horatio,
+    # and no new notification.
+    sent = troupe.assistant.client.post(f"/cycles/{cycle}/send-test-only")
+    assert sent.json() == {"delivered": 0, "updated": 0, "queued": 1}
     send_due(session)
     assert [target for target, _ in fake.sent] == ["#st-test", "#agnes"]
+    assert fake.sent[1][1].text == fake.sent[0][1].text
     rows = session.scalars(select(Delivery).where(Delivery.channel == "discord")).all()
-    assert sorted(r.test_mode for r in rows) == [False, True]
+    assert sorted((r.test_mode, r.revision) for r in rows) == [(False, 1), (True, 1)]
+    in_app = session.scalars(select(Delivery).where(Delivery.channel == "horatio")).all()
+    assert [r.revision for r in in_app] == [1]
+    assert len(troupe.player.client.get("/notifications").json()["items"]) == bells
+    [agnes] = status(scene)["participants"]
+    assert agnes["test_only"] == []
+    log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
+    assert "assistant sent players 1 results tried in test mode." in log
+    # Only once.
+    again = troupe.assistant.client.post(f"/cycles/{cycle}/send-test-only")
+    assert again.json()["queued"] == 0
