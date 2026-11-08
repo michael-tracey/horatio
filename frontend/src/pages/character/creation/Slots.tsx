@@ -284,12 +284,15 @@ export function SlotRows({
   title,
   showTitle = true,
   label = title,
+  heading = true,
   widest,
   rows,
   after,
 }: {
   title: string;
   showTitle?: boolean;
+  /** Whether the title is a heading: not where the page has headings by that name (an NPC's sheet has a Skills card). */
+  heading?: boolean;
   /** What the rows are called, for a screen reader, where the title alone would be ambiguous. */
   label?: string;
   widest: number;
@@ -300,7 +303,7 @@ export function SlotRows({
   const labelWidth = shown === "pips" ? pipsWidth(widest) : 1.5;
   return (
     <section aria-label={label} className="flex flex-col gap-3">
-      {showTitle && <h3 className="text-base text-gold">{title}</h3>}
+      {showTitle && (heading ? <h3 className="text-base text-gold">{title}</h3> : <p className="text-base text-gold">{title}</p>)}
       {rows.map(({ rating, slots }) => (
         <div key={rating} role="group" aria-label={`${title} at ${rating}`} className="flex items-start gap-3">
           <span className="shrink-0 pt-3 text-right text-gold" style={{ width: `${labelWidth}rem` }}>

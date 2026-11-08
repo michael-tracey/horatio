@@ -159,6 +159,7 @@ function PickSlots({ pools, busy, named, place, off }: Actions & { pools: PoolOu
     <SlotRows
       title={title}
       label={`${title} picks`}
+      heading={false}
       widest={widest}
       rows={pools
         .filter((pool) => pool.kind === "picks")
