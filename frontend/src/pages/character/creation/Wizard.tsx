@@ -11,7 +11,8 @@ import { useCart } from "../cart";
 import { FinishCreation } from "../CartPanel";
 import { rulesTroupe } from "../rules";
 import { quickPicks } from "../traitFilter";
-import { DotGrid, PointsList, type Held, type RatingBar } from "./DotGrid";
+import { DotGrid, PointsList, type RatingBar } from "./DotGrid";
+import { SlotGrid } from "./Slots";
 import { Because } from "./Because";
 import { FreeChoicesStep, withFreeChoices } from "./FreeChoicesStep";
 import { BACKGROUND_MERITS, FOCUS_MERITS, SKILL_MERITS, freedPicks, givenIn, takenAway, unchosenFree } from "./gifts";
@@ -49,21 +50,22 @@ const FROM_MERITS: Record<string, { category: string; name: string }[]> = {
 /** Wizard steps, in the order a player builds a character. Any category with
  * creation picks that no step names gets a step of its own before merits. */
 const ORDER: Step[] = [
-  { key: "attributes", title: "Attributes", categories: ["attributes"], intro: "Rank Physical, Social and Mental: tap 7, 5 or 3 for each. Tapping a taken rating swaps them." },
+  { key: "attributes", title: "Attributes", categories: ["attributes"], intro: "Rank Physical, Social and Mental: choose one at 7, one at 5 and one at 3. Choosing one already placed swaps the two." },
   { key: "focuses", title: "Focuses", categories: ["focus_physicals", "focus_mentals", "focus_socials"], intro: "Choose one focus for each attribute. Some merits give more; they show below." },
-  { key: "skills", title: "Skills", categories: ["skills"], intro: "Tap the dot for each skill's rating. The counters show what is left." },
+  { key: "skills", title: "Skills", categories: ["skills"], intro: "Choose a skill for each pick, at the rating beside it. What is left shows under them." },
   {
     key: "backgrounds",
     title: "Backgrounds",
     categories: ["backgrounds"],
-    intro: "What the character has in the world: allies, contacts, money, fame and the like. Tap the dot for each one's rating; the counters show the ratings left to place.",
+    intro: "What the character has in the world: allies, contacts, money, fame and the like. Choose one for each pick, at the rating beside it.",
   },
   { key: "disciplines", title: "Disciplines", categories: ["disciplines"] },
   { key: "merits", title: "Merits & flaws", categories: ["merits", "flaws"], intro: "Each comes from its own budget of points. Both are optional." },
 ];
 
 function buildSteps(creation: CreationOut, catalogue: CatalogueOut): Step[] {
-  const present = new Set(creation.pools.map((p) => p.category));
+  // A category a trait held leaves with no picks (Stolen Potential's focus) still shows, to say so.
+  const present = new Set([...creation.pools.map((p) => p.category), ...creation.lost_picks.map((p) => p.category)]);
   const known = new Set(ORDER.flatMap((s) => s.categories));
   // A category of specialisations is shown under the skill or background it is for, so a free one (Chosen of Cappadocius) lands there.
   const specialising = (s: Step) => catalogue.categories.filter((c) => c.specializes && s.categories.includes(c.specializes.category ?? "")).map((c) => c.key);
@@ -588,7 +590,7 @@ function StepView({
           }
           const maxRating = catalogue.categories.find((c) => c.key === category)?.max_rating ?? budget?.allowed ?? 0;
           return (
-            <CheckedDotGrid
+            <CheckedPicks
               key={category}
               characterId={character.id}
               category={category}
@@ -604,6 +606,7 @@ function StepView({
               barredFor={withoutDot}
               held={givenIn(creation, category)}
               budget={budget && { dots: budget.allowed, max: Math.min(maxRating, budget.allowed) }}
+              lost={creation.lost_picks.filter((p) => p.category === category)}
               steps={steps}
               step={step}
               sections={
@@ -1143,20 +1146,37 @@ function FreeTraitsToChoose({ character, sheet }: { character: CharacterOut; she
 /** Where a pick of some rating can clash, so the dots are checked at each rating (Childlike's Physical, Thin Blooded's Generation). */
 const CHECKED_BY_RATING = ["attributes", "skills", "backgrounds"];
 
-function CheckedDotGrid({
+type PicksProps = Omit<Parameters<typeof SlotGrid>[0], "unavailable" | "why" | "barredAt" | "lost">;
+
+/**
+ * A category's picks, as slots (Slots.tsx), or for a budget of dots (a ghoul's
+ * disciplines), as rows of dots, whose greying follows the picks as they change. A
+ * refusal names the traits it is because of, linking to their steps.
+ */
+function CheckedPicks({
   characterId,
   category,
   barredFor = {},
+  budget,
+  lost = [],
   steps,
   step,
   ...props
-}: { characterId: string; category: string; barredFor?: Record<string, string>; held?: Record<string, Held>; steps: Step[]; step: Step } & Parameters<typeof DotGrid>[0]) {
+}: PicksProps & {
+  characterId: string;
+  category: string;
+  barredFor?: Record<string, string>;
+  budget?: { dots: number; max: number };
+  lost?: CreationOut["lost_picks"];
+  steps: Step[];
+  step: Step;
+}) {
   // Dots from a budget (a ghoul's disciplines) are checked at each rating too, each
   // alone: against its domitor's, while the budget keeps the total.
-  const byRating = CHECKED_BY_RATING.includes(category) || !!props.budget;
-  const ratings = props.budget ? Array.from({ length: props.budget.max }, (_, i) => i + 1) : Object.keys(props.allowed).map(Number);
+  const byRating = CHECKED_BY_RATING.includes(category) || !!budget;
+  const ratings = budget ? Array.from({ length: budget.max }, (_, i) => i + 1) : Object.keys(props.allowed).map(Number);
   const named = useRefusals(characterId, category, !byRating).data ?? {};
-  const atRating = useRatingRefusals(characterId, category, byRating ? ratings : [], byRating, props.budget ? "empty" : undefined);
+  const atRating = useRatingRefusals(characterId, category, byRating ? ratings : [], byRating, budget ? "empty" : undefined);
   // Barred at every rating it can be picked at: barred outright. At some: those dots only.
   const refusals: typeof named = byRating ? {} : named;
   const bars: Record<string, RatingBar[]> = {};
@@ -1186,7 +1206,12 @@ function CheckedDotGrid({
   }
   const unavailable = { ...Object.fromEntries(Object.entries(refusals).map(([name, r]) => [name, r.message])), ...barredFor };
   const why = (name: string) => (refusals[name] ? <Because characterId={characterId} refs={refusals[name].because} steps={steps} step={step} /> : null);
-  return <DotGrid {...props} unavailable={unavailable} why={why} barredAt={bars} />;
+  if (budget) {
+    const { allowed: _, ...rest } = props;
+    return <DotGrid {...rest} budget={budget} unavailable={unavailable} why={why} barredAt={bars} />;
+  }
+  const taken = lost.map((l) => ({ rating: l.rating, picks: l.picks, why: <Because characterId={characterId} refs={l.because} steps={steps} step={step} /> }));
+  return <SlotGrid {...props} unavailable={unavailable} why={why} barredAt={bars} lost={taken} />;
 }
 
 /** Change which troupe's rules the character is built by, until a troupe accepts it. */

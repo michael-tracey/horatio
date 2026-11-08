@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, creatingVampire, tapMid, CAITIFF_THREE, ATTRIBUTES_AND_FOCUSES } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, creatingVampire, tapMid, CAITIFF_THREE, ATTRIBUTES_AND_FOCUSES, choiceIn, choosePick, choosePicks, openSlot, pickedAt, slotsAt } from "./support";
 
 /** The creation wizard's in-clan disciplines: Caitiff, Vestiges of Greatness and the merits that change them. */
 
@@ -59,9 +59,9 @@ test("a Caitiff takes Vestiges of Greatness on Merits, swaps Celerity for Dement
   await p.getByRole("link", { name: "Go to Disciplines" }).click();
   await expect(p.getByRole("heading", { name: "Disciplines", exact: true })).toBeVisible();
   await expect(p.getByText("Your starting dots in Celerity need moving: it is no longer in-clan. Clear it and place it on another.")).toBeVisible();
-  await expect(p.getByRole("button", { name: "Celerity 2" })).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(pickedAt(p, "Disciplines", 2)).toEqual(["Celerity"]);
   await p.getByRole("button", { name: "Clear Celerity" }).click();
-  await p.getByRole("button", { name: "Dementation 2" }).click();
+  await choosePick(p, "Disciplines", 2, "Dementation");
   await p.getByRole("button", { name: "Save and continue" }).click();
   await expect(p.getByRole("heading", { name: "Merits & flaws", exact: true })).toBeVisible({ timeout: 15_000 });
   await expect(p.getByRole("navigation", { name: "Creation steps" }).getByText("(needs a look)")).toHaveCount(0);
@@ -120,9 +120,7 @@ test("a Caitiff chooses three common disciplines on Concept, takes Vestiges of G
     await expect(p.getByRole("checkbox", { name })).toBeChecked();
   }
   await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Disciplines/ }).click();
-  await p.getByRole("button", { name: "Celerity 2" }).click();
-  await p.getByRole("button", { name: "Fortitude 1" }).click();
-  await p.getByRole("button", { name: "Obfuscate 1" }).click();
+  await choosePicks(p, "Disciplines", [["Celerity", 2], ["Fortitude", 1], ["Obfuscate", 1]]);
   await p.getByRole("button", { name: "Save and continue" }).click();
   await expect(p.getByRole("heading", { name: "Merits & flaws", exact: true })).toBeVisible({ timeout: 15_000 });
   await p.getByLabel("Search Merits").fill("Vestiges");
@@ -150,7 +148,7 @@ test("a Caitiff chooses three common disciplines on Concept, takes Vestiges of G
   await p.getByRole("link", { name: "Go to Disciplines" }).click();
   await expect(p.getByText("Your starting dot in Obfuscate needs moving: it is no longer in-clan. Clear it and place it on another.")).toBeVisible();
   await p.getByRole("button", { name: "Clear Obfuscate" }).click();
-  await p.getByRole("button", { name: "Protean 1" }).click();
+  await choosePick(p, "Disciplines", 1, "Protean");
   await p.getByRole("button", { name: "Save and continue" }).click();
   await expect(p.getByRole("heading", { name: "Merits & flaws", exact: true })).toBeVisible({ timeout: 15_000 });
   await p.getByRole("navigation", { name: "Creation steps" }).getByRole("link", { name: /Review/ }).click();
@@ -188,19 +186,18 @@ for (const forTroupe of [false, true]) {
       await p.getByRole("button", { name: "Save and continue" }).click();
       await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
     };
-    const tap = async (...dots: string[]) => {
-      for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
-    };
     await next("Attributes");
-    await tap("Mental 7", "Physical 5", "Social 3");
+    await choosePicks(p, "Attributes", [["Mental", 7], ["Physical", 5], ["Social", 3]]);
     await next("Focuses");
-    await tap("Perception 1", "Dexterity 1", "Charisma 1");
+    await choosePick(p, "Mental Focus", 1, "Perception");
+    await choosePick(p, "Physical Focus", 1, "Dexterity");
+    await choosePick(p, "Social Focus", 1, "Charisma");
     await next("Skills");
-    await tap("Drive 4", "Dodge 3", "Firearms 3", "Brawl 2", "Melee 2", "Survival 2", "Animal Ken 1", "Athletics 1", "Security 1", "Stealth 1");
+    await choosePicks(p, "Skills", [["Drive", 4], ["Dodge", 3], ["Firearms", 3], ["Brawl", 2], ["Melee", 2], ["Survival", 2], ["Animal Ken", 1], ["Athletics", 1], ["Security", 1], ["Stealth", 1]]);
     await next("Backgrounds");
-    await tap("Contacts 3", "Fame 2", "Generation 1");
+    await choosePicks(p, "Backgrounds", [["Contacts", 3], ["Fame", 2], ["Generation", 1]]);
     await next("Disciplines");
-    await tap("Celerity 2", "Fortitude 1", "Obfuscate 1");
+    await choosePicks(p, "Disciplines", [["Celerity", 2], ["Fortitude", 1], ["Obfuscate", 1]]);
     await next("Merits & flaws");
 
     // Taking the merit offers its choice under it at once: the uncommon ones, with swaps.
@@ -351,14 +348,20 @@ test("Thin Blooded taken after the Disciplines step shows the new budget there, 
   await expect(p.getByText("Starting disciplines are your in-clan ones: two at 1 (Thin Blooded changes the usual).")).toBeVisible();
   await expect(p.getByRole("group", { name: "Changed by other steps" })).toContainText("Thin Blooded: starting disciplines no longer have a pick at 2.");
   await expect(p.getByRole("region", { name: "From merits and flaws" }).getByRole("switch", { name: /^Thin Blooded/ })).toBeChecked();
-  await expect(p.getByRole("button", { name: "Celerity 2" })).toHaveAttribute("aria-pressed", "true");
-  await expect(p.getByText("0 at 1 left")).toBeVisible();
-  await expect(p.getByText("1 too many at 2")).toBeVisible();
+  // No slot at 2 now: Celerity's dot is kept after the slots, to be moved.
+  const at2 = slotsAt(p, "Disciplines", 2);
+  await expect(at2).toContainText("Celerity");
+  await expect(at2).toContainText("Thin Blooded: starting disciplines no longer have a pick at 2. Your dot in Celerity needs moving. Clear it and place it on another.");
+  await expect(at2.getByRole("combobox")).toHaveCount(0);
+  await expect.poll(pickedAt(p, "Disciplines", 1)).toEqual(["Auspex", "Potence"]);
+  await p.screenshot(shots("creation-taken-away"));
 
-  // Moving it: one dot in each of two. (Auspex goes, so Celerity can take the second dot.)
+  // Moving it: one dot in each of two. (Potence goes, so Celerity can take the second dot.)
   await tapMid(p, "Clear Celerity");
+  await expect(at2).toContainText("Taken away");
+  await expect(at2).toContainText("Because of Thin Blooded (Merits & flaws).");
   await tapMid(p, "Clear Potence");
-  await tapMid(p, "Celerity 1");
+  await choosePick(p, "Disciplines", 1, "Celerity");
   await p.getByRole("button", { name: "Save and continue" }).click();
   await expect(p.getByRole("heading", { name: "Merits & flaws", exact: true })).toBeVisible({ timeout: 15_000 });
   await expect(p.getByRole("navigation", { name: "Creation steps" }).getByText("(needs a look)")).toHaveCount(0);
@@ -386,9 +389,7 @@ test("an Angelis Ater chooses its third in-clan discipline on Disciplines, place
   await expect(p.getByText("In-clan now: Daimoinon, Dominate and Presence.")).toBeVisible();
   await expect(p.getByText("Baali: Angelis Ater: choose one more")).toHaveCount(0);
 
-  await p.getByRole("button", { name: "Daimoinon 2" }).click();
-  await p.getByRole("button", { name: "Dominate 1" }).click();
-  await p.getByRole("button", { name: "Presence 1" }).click();
+  await choosePicks(p, "Disciplines", [["Daimoinon", 2], ["Dominate", 1], ["Presence", 1]]);
   await p.getByRole("button", { name: "Save and continue" }).click();
   await expect(p.getByRole("heading", { name: "Merits & flaws", exact: true })).toBeVisible({ timeout: 15_000 });
 
@@ -424,10 +425,15 @@ test("Inept lets the player choose the discipline that loses its free dot, from 
   // One pick at 1 fewer, and the dot on Presence is kept, marked.
   await expect(p.getByText("Starting disciplines are your in-clan ones: one at 2 and one at 1 (Inept changes the usual).")).toBeVisible();
   await expect(p.getByText("Inept: Presence starts without a free dot, so your starting dot in it needs moving.").first()).toBeVisible();
-  await expect(p.getByRole("button", { name: "Presence 1" })).toHaveAttribute("aria-pressed", "true");
+  // Potence keeps the one slot at 1; Presence is kept after it, to be taken back.
+  const at1 = slotsAt(p, "Disciplines", 1);
+  await expect.poll(pickedAt(p, "Disciplines", 1)).toEqual(["Potence"]);
+  await expect(at1).toContainText("Presence");
   await expect(p.getByRole("button", { name: "Finish creation" })).toHaveCount(0);
 
   await tapMid(p, "Clear Presence");
+  await expect(at1).toContainText("Taken away");
+  await expect(at1).toContainText("Because of Inept (Merits & flaws).");
   await p.getByRole("button", { name: "Save and continue" }).click();
   await expect(p.getByRole("heading", { name: "Merits & flaws", exact: true })).toBeVisible({ timeout: 15_000 });
   // Merits shows it as taken, from the flaws budget.
@@ -497,9 +503,11 @@ test("a fourth in-clan discipline from a merit shows on Disciplines as taking no
   await p.goto(`/characters/${id}/create/disciplines`);
   // It is in-clan, so priced as such, and listed, but takes no starting pick.
   await expect(p.getByText("In-clan now: Auspex, Celerity, Potence and Presence.")).toBeVisible();
-  await expect(p.getByText("Additional Common Discipline: Auspex starts without a free dot.")).toBeVisible();
-  await expect(p.getByRole("button", { name: "Auspex 1" })).toBeDisabled();
-  await expect(p.getByRole("button", { name: "Celerity 2" })).toBeEnabled();
+  const at1 = await openSlot(p, "Disciplines", 1);
+  const auspex = choiceIn(at1, "Auspex");
+  await expect(auspex.getByRole("option")).toHaveAttribute("aria-disabled", "true");
+  await expect(auspex).toContainText("Additional Common Discipline: Auspex starts without a free dot.");
+  await expect(at1.getByRole("option", { name: "Celerity", exact: true })).not.toHaveAttribute("aria-disabled");
 });
 
 test("a Tremere takes Thaumaturgic Expertise from the Disciplines step, and the path it prices in-clan can take a starting dot", async ({ browser }) => {
@@ -507,11 +515,14 @@ test("a Tremere takes Thaumaturgic Expertise from the Disciplines step, and the 
   const id = await creatingVampire(p, "Second Path", "Tremere", []);
   await p.goto(`/characters/${id}/create/disciplines`);
   const fromMerits = p.getByRole("region", { name: "From merits and flaws" });
-  await expect(p.getByRole("button", { name: "Thaumaturgy: Path of Conjuring 1" })).toHaveCount(0);
+  await expect((await openSlot(p, "Disciplines", 1)).getByRole("option", { name: "Thaumaturgy: Path of Conjuring" })).toHaveCount(0);
+  await p.keyboard.press("Escape");
 
   await fromMerits.getByLabel("Thaumaturgic Expertise: which?").selectOption("Thaumaturgy: Path of Conjuring");
   await fromMerits.getByRole("switch", { name: /^Thaumaturgic Expertise/ }).click();
   await expect(fromMerits.getByRole("switch", { name: /^Thaumaturgic Expertise/ })).toBeChecked();
   await expect(p.getByText(/In-clan now: .*Thaumaturgy: Path of Conjuring/)).toBeVisible();
-  await expect(p.getByRole("button", { name: "Thaumaturgy: Path of Conjuring 1" })).toBeEnabled();
+  const conjuring = (await openSlot(p, "Disciplines", 1)).getByRole("option", { name: "Thaumaturgy: Path of Conjuring", exact: true });
+  await expect(conjuring).toBeVisible();
+  await expect(conjuring).not.toHaveAttribute("aria-disabled");
 });

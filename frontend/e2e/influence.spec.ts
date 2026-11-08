@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, undoInHeader, characterTab } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, undoInHeader, characterTab, chooseDots } from "./support";
 
 /** Influence: the troupe's log, Gossip, and attacks. */
 
@@ -36,9 +36,7 @@ test("storytellers log influence for PCs, NPCs and names only, and a player read
     await p.getByRole("button", { name: "Save and continue" }).click();
     await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   };
-  const tap = async (...dots: string[]) => {
-    for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
-  };
+  const tap = (...dots: string[]) => chooseDots(p, ...dots);
   await next("Attributes");
   await tap("Physical 7", "Social 5", "Mental 3");
   await next("Focuses");
@@ -206,9 +204,7 @@ test("influence spent at a game goes in the troupe's influence log, and comes of
     await p.getByRole("button", { name: "Save and continue" }).click();
     await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   };
-  const tap = async (...dots: string[]) => {
-    for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
-  };
+  const tap = (...dots: string[]) => chooseDots(p, ...dots);
   await next("Attributes");
   await tap("Physical 7", "Social 5", "Mental 3");
   await next("Focuses");
@@ -347,9 +343,7 @@ test("Gossip is filled from the influence log, and a discovery block hides an en
     await p.getByRole("button", { name: "Save and continue" }).click();
     await expect(p.getByRole("heading", { name: heading, exact: true })).toBeVisible({ timeout: 15_000 });
   };
-  const tap = async (...dots: string[]) => {
-    for (const dot of dots) await p.getByRole("button", { name: dot, exact: true }).click();
-  };
+  const tap = (...dots: string[]) => chooseDots(p, ...dots);
   await next("Attributes");
   await tap("Physical 7", "Social 5", "Mental 3");
   await next("Focuses");

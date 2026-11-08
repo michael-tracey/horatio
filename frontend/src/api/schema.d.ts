@@ -13064,6 +13064,11 @@ export interface components {
              * @default []
              */
             given: components["schemas"]["GivenOut"][];
+            /**
+             * Lost Picks
+             * @default []
+             */
+            lost_picks: components["schemas"]["LostPicksOut"][];
             /** Needs */
             needs: components["schemas"]["StepNeed"][];
             /**
@@ -18503,6 +18508,21 @@ export interface components {
             rating: number;
             /** Refund */
             refund: number;
+        };
+        /**
+         * LostPicksOut
+         * @description Picks at one rating that the rules would give but for a trait held, and the traits
+         *     that took them: Thin Blooded's starting discipline at 2.
+         */
+        LostPicksOut: {
+            /** Because */
+            because: components["schemas"]["TraitRefOut"][];
+            /** Category */
+            category: string;
+            /** Picks */
+            picks: number;
+            /** Rating */
+            rating: number;
         };
         /** MadeClaimLink */
         MadeClaimLink: {
