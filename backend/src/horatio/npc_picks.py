@@ -22,7 +22,7 @@ Once the NPC is given to a player, its picks are its own, as a wizard-built
 character's are.
 
 `python -m horatio.npc_picks` fits every NPC that needs it, once migration 0155 has
-marked the ones built so far.
+marked the ones built so far; Custodian › Tools fits one troupe's (horatio.troupe_fit).
 """
 
 import sys
