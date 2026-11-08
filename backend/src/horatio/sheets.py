@@ -1646,13 +1646,17 @@ def checked(
     # alters are made.
     converts_before = sheet_effects(db, character).converts if character.kind != "pc" else None
     savepoint = db.begin_nested()
+    from horatio import clan_merits, npc_picks  # import this module
+
     try:
+        # An NPC's fitted picks come off for the change and are fitted again after it,
+        # to the sheet it leaves (#527).
+        npc_picks.unfit(db, character)
         yield
         db.flush()
     except BaseException:
         savepoint.rollback()
         raise
-    from horatio import clan_merits  # imports this module
 
     # The merits a clan needs follow it while the character is built.
     overspent = clan_merits.sync(db, character)
@@ -1663,6 +1667,7 @@ def checked(
         apply_grants(db, user, character, converts_before)
     lower_on_taking(db, character, before)
     if character.kind != "pc":
+        npc_picks.fit(db, character)
         savepoint.commit()
         return
     refused = broken_since(db, user, character, before, checks=rules, excepting=excepting).refused

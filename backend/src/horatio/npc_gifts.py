@@ -41,7 +41,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, play
+from horatio import audit, npc_picks, play
 from horatio.auth.sessions import hash_token
 from horatio.config import get_settings
 from horatio.models import Character, NpcClaim, Retainer, Troupe, User, XpEntry
@@ -142,7 +142,13 @@ class Preview:
 
 def preview(db: Session, npc: Character, to_player: User | None) -> Preview:
     troupe = db.get_one(Troupe, npc.owner_troupe_id or npc.home_troupe_id)
-    found = priced(db, npc) if npc.kind == "npc" else []
+    found: list[Priced] = []
+    if npc.kind == "npc":
+        # Priced as giving would price it, with its picks fitted, but left as it was.
+        savepoint = db.begin_nested()
+        npc_picks.fit(db, npc)
+        found = priced(db, npc)
+        savepoint.rollback()
     linked = db.execute(
         select(Character.name, Retainer.name)
         .join(Character, Character.id == Retainer.character_id)
@@ -186,6 +192,8 @@ def give(
         raise conflict(why)
     troupe = db.get_one(Troupe, npc.owner_troupe_id)
     name = npc.name
+    # Fitted picks as the sheet now stands, so its creation dots are free (#527).
+    npc_picks.fit(db, npc)
 
     # The XP: each trait's paid dots bought at the troupe's prices, and one award
     # for the lot, so nothing is left unspent.
@@ -242,6 +250,8 @@ def give(
     npc.npc_form = None
     npc.npc_custom_kind = None
     npc.on_whos_who = False
+    # Its picks are its own now, as a wizard-built character's are.
+    npc.fits_picks = False
     npc.home_troupe_id = troupe.id
     npc.building_troupe_id = None
     db.execute(delete(NpcClaim).where(NpcClaim.character_id == npc.id))

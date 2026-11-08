@@ -36,17 +36,21 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   // A Prince must be Camarilla: a title of a sect goes only to its characters.
   await p.getByLabel("Sect", { exact: true }).selectOption("Camarilla");
   await expect(p.getByLabel("Sect", { exact: true })).toHaveValue("Camarilla");
-  await p.getByRole("button", { name: "Social 7", exact: true }).click(); // attributes: 3 a dot
-  await expect(p.getByText("21 XP")).toBeVisible();
+  // Creation picks are fitted to an NPC built quickly, so its creation dots are free as a
+  // player character's are (#527): Social takes the attribute pick at 7, and its eighth
+  // dot is bought (attributes: 3 a dot).
+  await p.getByRole("button", { name: "Social 8", exact: true }).click();
+  await expect(p.getByText("3 XP", { exact: true })).toBeVisible();
   // Each attribute's focus is chosen beside it, one of three; choosing again swaps it.
   await expect(p.getByRole("heading", { name: "Focuses" })).toHaveCount(0);
-  await p.getByLabel("Social focus").selectOption("Charisma");
-  await expect(p.getByLabel("Social focus")).toHaveValue("Charisma");
-  await p.getByLabel("Social focus").selectOption("Manipulation");
-  await expect(p.getByLabel("Social focus")).toHaveValue("Manipulation");
-  await expect(p.getByText("21 XP")).toBeVisible(); // focuses are free
-  await p.getByRole("button", { name: "Leadership 3", exact: true }).click(); // 1 + 2 + 3
-  await expect(p.getByText("27 XP")).toBeVisible();
+  await p.getByLabel("Social focus", { exact: true }).selectOption("Charisma");
+  await expect(p.getByLabel("Social focus", { exact: true })).toHaveValue("Charisma");
+  await p.getByLabel("Social focus", { exact: true }).selectOption("Manipulation");
+  await expect(p.getByLabel("Social focus", { exact: true })).toHaveValue("Manipulation");
+  await expect(p.getByText("3 XP", { exact: true })).toBeVisible(); // focuses are free
+  // The skill pick at 4, and the fifth dot bought: 5 at Generation 1's × 1.
+  await p.getByRole("button", { name: "Leadership 5", exact: true }).click();
+  await expect(p.getByText("8 XP", { exact: true })).toBeVisible();
   // Morality is one path at one rating: moving to a Path keeps the rating, free.
   await expect(p.getByLabel("Morality", { exact: true })).toHaveValue("Humanity");
   await p.getByRole("button", { name: "Humanity 4", exact: true }).click();
@@ -54,7 +58,7 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await p.getByLabel("Morality", { exact: true }).selectOption("Caine");
   await expect(p.getByRole("button", { name: "Caine 4", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(p.getByRole("button", { name: /^Humanity \d+$/ })).toHaveCount(0);
-  await expect(p.getByText("27 XP")).toBeVisible();
+  await expect(p.getByText("8 XP", { exact: true })).toBeVisible();
   await p.screenshot(shots("npc"));
 
   // Its badge, from the Build tab: the same dialog as a player character's, then printing.
@@ -126,6 +130,39 @@ test("storytellers build an NPC quickly and give it a title", async ({ browser }
   await expect(p.getByRole("tab", { name: "Tracker" })).toBeVisible();
 });
 
+test("a quick NPC's creation picks are fitted, and staff move one by hand", async ({ browser }) => {
+  const custodian = await person(browser, "picks-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "picks-lead");
+  const { npcId } = await troupeWithNpc(custodian.page, lead.handle, "Court of Picks", "Corvin Hale");
+  const p = lead.page;
+  const occult = await p.request.put(`/api/characters/${npcId}/npc/ratings`, { headers: { "X-Horatio": "1" }, data: { category: "skills", name: "Occult", rating: 3 } });
+  expect(occult.status(), await occult.text()).toBe(200);
+  await p.goto(`/characters/${npcId}`);
+
+  // Fitted for the most XP saved: Brawl 5 takes the pick at 4, Occult 3 the pick at 3;
+  // only Brawl's fifth dot is bought.
+  await expect(p.getByRole("heading", { name: "Creation picks" })).toBeVisible();
+  await expect(p.getByLabel("Skills at 4, pick 1")).toHaveValue("Brawl");
+  await expect(p.getByLabel("Skills at 3, pick 1")).toHaveValue("Occult");
+  await expect(p.getByText("5 XP", { exact: true })).toBeVisible();
+  await expect(p.getByText("by hand", { exact: true })).toHaveCount(0);
+
+  // Its player had Occult at 2 in Yorick: placed by hand, it stays, and its third dot is bought.
+  await p.getByLabel("Skills at 2, pick 1").selectOption("Occult");
+  await expect(p.getByLabel("Skills at 2, pick 1")).toHaveValue("Occult");
+  await expect(p.getByLabel("Skills at 3, pick 1")).toHaveValue("");
+  await expect(p.getByText("by hand", { exact: true })).toBeVisible();
+  await expect(p.getByText("8 XP", { exact: true })).toBeVisible();
+  await p.screenshot(shots("npc-picks"));
+
+  // Fitting all again forgets it.
+  await p.getByRole("button", { name: "Fit all again" }).click();
+  await expect(p.getByLabel("Skills at 3, pick 1")).toHaveValue("Occult");
+  await expect(p.getByText("by hand", { exact: true })).toHaveCount(0);
+  await expect(p.getByText("5 XP", { exact: true })).toBeVisible();
+});
+
 /** A troupe led by `lead`, made by the custodian, with a sheeted vampire NPC built in it. */
 async function troupeWithNpc(custodian: Page, lead: string, troupe: string, npc: string): Promise<{ troupeId: string; npcId: string }> {
   const headers = { "X-Horatio": "1" };
@@ -136,8 +173,9 @@ async function troupeWithNpc(custodian: Page, lead: string, troupe: string, npc:
   expect(built.status(), await built.text()).toBe(201);
   const npcId = (await built.json()).id;
   for (const [category, name, rating] of [
+    // Physical and Brawl take creation picks at 5 and 4 (#527); Brawl's fifth dot is bought.
     ["attributes", "Physical", 5],
-    ["skills", "Brawl", 3],
+    ["skills", "Brawl", 5],
   ] as const) {
     const rated = await custodian.request.put(`/api/characters/${npcId}/npc/ratings`, { headers, data: { category, name, rating } });
     expect(rated.status(), await rated.text()).toBe(200);

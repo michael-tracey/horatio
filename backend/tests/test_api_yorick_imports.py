@@ -371,6 +371,10 @@ def test_the_import_makes_sheeted_npcs_after_a_backup_and_deletes_the_page(
     assert str(agnes.owner_troupe_id) == troupe.id
     assert agnes.picture_id is not None
     assert sheets.xp_balance(session, agnes) == 0
+    # Yorick doesn't print which dots were creation picks, so they are fitted (#527).
+    assert agnes.fits_picks
+    fitted = [r.trait for r in sheets.sheet_rows(session, agnes) if r.trait.creation_pick]
+    assert fitted and {t.pick_by for t in fitted} == {"fit"}
     assert report(troupe)["summary"][0].startswith("3 characters read from the page: 3 made")
     event = session.scalars(
         select(AuditEvent).where(AuditEvent.action == "yorick_import.imported")
