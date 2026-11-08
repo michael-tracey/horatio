@@ -58,8 +58,9 @@ export function BadgeButton({ character }: { character: CharacterOut }) {
   );
 }
 
-/** What others see of the character, a note staff add to it, and printing the badge. */
-export function BadgeNote({ character, onDone }: { character: CharacterOut; onDone: () => void }) {
+/** What others see of the character, a note staff add to it, and printing the badge:
+ * headed for `troupeId` when given, as from its troupe's Characters list. */
+export function BadgeNote({ character, troupeId, onDone }: { character: Pick<CharacterOut, "id">; troupeId?: string; onDone: () => void }) {
   const path = { params: { path: { character_id: character.id } } };
   const note = useQuery({
     queryKey: ["visible-note", character.id],
@@ -103,7 +104,7 @@ export function BadgeNote({ character, onDone }: { character: CharacterOut; onDo
       </Field>
       <ErrorText error={save.error ?? note.error} />
       <div className="flex flex-wrap justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={() => window.open(`/print/characters/${character.id}/badge`, "_blank", "noopener")}>
+        <Button type="button" variant="ghost" onClick={() => window.open(`/print/characters/${character.id}/badge${troupeId ? `?troupe=${troupeId}` : ""}`, "_blank", "noopener")}>
           Print badge
         </Button>
         <Button type="submit" disabled={save.isPending || typed === null}>

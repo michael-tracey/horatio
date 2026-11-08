@@ -315,7 +315,7 @@ function Results({
             <Button variant="secondary" className="min-h-8" onClick={exportCsv}>
               Export CSV
             </Button>
-            <Link to={`/troupes/${troupeId}/characters?${new URLSearchParams({ filter: encode(charactersFilter(owners)) })}`} className="text-gold underline hover:text-parchment">
+            <Link to={`/troupes/${troupeId}/characters?${new URLSearchParams({ show: "everyone", filter: encode(charactersFilter(owners)) })}`} className="text-gold underline hover:text-parchment">
               Find these characters
             </Link>
           </>

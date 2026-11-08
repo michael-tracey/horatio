@@ -206,10 +206,12 @@ test("screenshots for Running a troupe", async ({ browser }) => {
   await l.getByRole("button", { name: /^Print…/ }).click();
   await shot(l, "characters", undefined, 900);
 
-  // NPCs, with the New NPC form.
-  await l.goto(`${base}/npcs`);
+  // The same list showing NPCs, with the New NPC form open.
+  await l.goto(`${base}/characters?show=npcs`);
   await expect(l.getByRole("row", { name: "Aurelia Vance" })).toBeVisible();
-  await shot(l, "npcs", undefined, 900);
+  await l.getByRole("button", { name: "New NPC" }).click();
+  await expect(l.getByRole("heading", { name: "New NPC" })).toBeVisible();
+  await shot(l, "npcs", undefined, 1100);
 
   // Rules › Checks, on the troupe's house rules.
   await l.goto(`${base}/rules`);

@@ -2,14 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { RosterEntry } from "../../api/types";
-import { ActionMenu, MenuGroup, MenuItem } from "../../components/ActionMenu";
+import { ActionMenu, MenuGroup, MenuItem, MenuLink } from "../../components/ActionMenu";
 import { Dialog } from "../../components/Dialog";
 import { useToast } from "../../components/Toast";
 import { Button, ErrorText, Input, Loading } from "../../components/ui";
 import { useAction, useMe } from "../../hooks";
+import { BadgeNote } from "../character/Badge";
 import { StatusCard } from "../character/StatusCard";
 import { EquipmentEditor } from "./EquipmentEditor";
-import { GiveToPlayer } from "./GiveNpc";
+import { ClaimLink, GiveToPlayer } from "./GiveNpc";
 import { abilities } from "./roles";
 import { staffActions, type StaffAction, type Staffing } from "./staffActions";
 import { titleGives, titleGroups, titleStatusWords } from "./titleGroups";
@@ -29,45 +30,69 @@ export function useStaffing(troupeId: string): Staffing {
   return { running: can.running, storyteller: can.storyteller, archived: troupe.data?.archived ?? false };
 }
 
-/** What each item is called in the menu. */
-const LABELS: Record<StaffAction, string> = {
+/** What each item is called in the menu; Who's Who listing says which way it goes. */
+const LABELS: Record<Exclude<StaffAction, "listing">, string> = {
+  play: "Play",
   xp: "Award XP…",
   equipment: "Give equipment…",
   status: "Status…",
   titles: "Titles…",
   give: "Give to a player…",
+  claim: "Claim link…",
   sheet: "Print sheet",
-  badge: "Print badge",
+  badge: "Badge…",
   jyhad: "Show Jyhad card",
 };
 
 /**
- * A character's ⋯ for the troupe's staff (#539): what they do most for one
- * character, each in a dialog with the character filled in, the same form as where
- * it lives, then its sheet and badge to print in a new tab. Only what the reader
- * may do here shows (staffActions); nothing that can't be undone is in it.
+ * A character's ⋯ for the troupe's staff (#539), PC or NPC (#556): what they do
+ * most for one character, each in a dialog with the character filled in, the same
+ * form as where it lives, then its sheet, badge and card to print. Only what the
+ * reader may do here shows (staffActions); nothing that can't be undone is in it.
  */
 export function StaffActions({ troupeId, entry, staffing }: { troupeId: string; entry: RosterEntry; staffing: Staffing }) {
   const [open, setOpen] = useState<StaffAction | null>(null);
   const close = () => setOpen(null);
+  const toast = useToast();
   const name = entry.character_name;
   const { doing, printing } = staffActions(entry, staffing);
+  const listed = entry.on_whos_who;
+  const list = useAction(async () => {
+    await unwrap(
+      api.PUT("/api/troupes/{troupe_id}/npcs/{character_id}/whos-who", {
+        params: { path: { troupe_id: troupeId, character_id: entry.character_id } },
+        body: { listed: !listed },
+      }),
+    );
+    toast({ message: listed ? `${name} is off the Who’s Who.` : `${name} is on the Who’s Who.` });
+  });
   // Opened in a new tab, headed for this troupe, so the list stays as it was.
   const print = (path: string) => window.open(`/print/characters/${entry.character_id}${path}?troupe=${troupeId}`, "_blank", "noopener");
-  const printed: Partial<Record<StaffAction, string>> = { sheet: "", badge: "/badge", jyhad: "/jyhad" };
+  const printed: Partial<Record<StaffAction, string>> = { sheet: "", jyhad: "/jyhad" };
   const choose = (action: StaffAction) => (printed[action] !== undefined ? print(printed[action]) : setOpen(action));
-  const items = (list: StaffAction[]) =>
-    list.map((action) => (
-      <MenuItem key={action} onSelect={() => choose(action)}>
-        {LABELS[action]}
-      </MenuItem>
-    ));
+  const items = (actions: StaffAction[]) =>
+    actions.map((action) =>
+      action === "play" ? (
+        <MenuLink key={action} to={`/play/characters/${entry.character_id}`}>
+          {LABELS.play}
+        </MenuLink>
+      ) : action === "listing" ? (
+        <MenuItem key={action} disabled={list.isPending} onSelect={() => list.mutate(undefined)}>
+          {listed ? "Take off the Who’s Who" : "List on the Who’s Who"}
+        </MenuItem>
+      ) : (
+        <MenuItem key={action} onSelect={() => choose(action)}>
+          {LABELS[action]}
+        </MenuItem>
+      ),
+    );
   return (
     <>
-      <ActionMenu label={`Actions for ${name}`} variant="ghost" menuClassName="w-48">
+      <ActionMenu label={`Actions for ${name}`} variant="ghost" menuClassName="w-56">
         <MenuGroup label="For this character">{items(doing)}</MenuGroup>
         <MenuGroup label="Print">{items(printing)}</MenuGroup>
       </ActionMenu>
+      <ErrorText error={list.error} />
       {/* Each fills a phone's screen. */}
       <Dialog title={`Award XP to ${name}`} open={open === "xp"} onClose={close} phoneFull>
         <AwardXp troupeId={troupeId} entry={entry} onDone={close} />
@@ -83,6 +108,12 @@ export function StaffActions({ troupeId, entry, staffing }: { troupeId: string; 
       </Dialog>
       <Dialog title={`Give ${name} to a player`} open={open === "give"} onClose={close} phoneFull>
         <GiveToPlayer npcId={entry.character_id} npcName={name} troupeId={troupeId} onDone={close} />
+      </Dialog>
+      <Dialog title={`Claim link for ${name}`} open={open === "claim"} onClose={close} phoneFull>
+        <ClaimLink npcId={entry.character_id} />
+      </Dialog>
+      <Dialog title={`${name}'s badge`} open={open === "badge"} onClose={close} phoneFull>
+        <BadgeNote character={{ id: entry.character_id }} troupeId={troupeId} onDone={close} />
       </Dialog>
     </>
   );

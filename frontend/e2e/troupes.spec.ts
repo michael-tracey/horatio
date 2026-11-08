@@ -847,7 +847,10 @@ test("storytellers filter the troupe's characters and print what they find", asy
     if (occult) expect((await rate("skills", "Occult", occult)).status()).toBe(200);
   }
 
+  // The list opens on player characters; Everyone shows the NPCs too, and stays in the URL.
   await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await expect(p.getByText("No player characters have joined this troupe yet.")).toBeVisible();
+  await p.locator("main").getByRole("radio", { name: "Everyone" }).click();
   await expect(p.getByText("3 of 3 characters")).toBeVisible();
   // Retired characters are hidden by default, and the Filter button says so rather than counting it.
   await expect(p.getByRole("button", { name: "Remove “Is active”" })).toBeVisible();
@@ -933,7 +936,7 @@ test("staff award XP, give equipment and print from a character's ⋯ on the Cha
     return page.getByRole("menu", { name: `Actions for ${name}` });
   };
   let menu = await actions(l, "Odalys");
-  await expect(menu.getByRole("menuitem")).toHaveText(["Award XP…", "Give equipment…", "Status…", "Titles…", "Print sheet", "Print badge"]);
+  await expect(menu.getByRole("menuitem")).toHaveText(["Award XP…", "Give equipment…", "Status…", "Titles…", "Print sheet", "Badge…"]);
   await l.screenshot(shots("roster-staff-menu"));
   await menu.getByRole("menuitem", { name: "Award XP…" }).click();
   const award = l.getByRole("dialog", { name: "Award XP to Odalys" });
@@ -968,16 +971,36 @@ test("staff award XP, give equipment and print from a character's ⋯ on the Cha
   await expect(status.getByText("Odalys has no sect, so holds no status.")).toBeVisible();
   await status.getByRole("button", { name: "Close" }).click();
 
-  // An NPC gets no XP, and only a storyteller can give it to a player.
+  // Badge… shows what her badge says, takes a note for it, and prints it.
+  menu = await actions(l, "Odalys");
+  await menu.getByRole("menuitem", { name: "Badge…" }).click();
+  const badge = l.getByRole("dialog", { name: "Odalys's badge" });
+  await expect(badge.getByLabel("Also shown on the badge")).toBeVisible();
+  await badge.getByRole("button", { name: "Close" }).click();
+
+  // Casimir shows among the NPCs, with the same ⋯ (#556): Play, no XP, its Who's Who
+  // listing, and only a storyteller can give it to a player or make a claim link.
+  await l.locator("main").getByRole("radio", { name: "NPCs" }).click();
+  await expect(l.getByRole("link", { name: "Odalys" })).toHaveCount(0);
   menu = await actions(l, "Casimir");
-  await expect(menu.getByRole("menuitem")).toHaveText(["Give equipment…", "Status…", "Titles…", "Give to a player…", "Print sheet", "Print badge"]);
+  await expect(menu.getByRole("menuitem")).toHaveText([
+    "Play",
+    "Give equipment…",
+    "Status…",
+    "Titles…",
+    "List on the Who’s Who",
+    "Give to a player…",
+    "Claim link…",
+    "Print sheet",
+    "Badge…",
+  ]);
   await menu.getByRole("menuitem", { name: "Give to a player…" }).click();
   await expect(l.getByRole("dialog", { name: "Give Casimir to a player" }).getByLabel("Player")).toBeVisible();
   await l.getByRole("dialog").getByRole("button", { name: "Close" }).click();
   const a = assistant.page;
-  await a.goto(`/troupes/${troupe.id}/characters`);
+  await a.goto(`/troupes/${troupe.id}/characters?show=npcs`);
   menu = await actions(a, "Casimir");
-  await expect(menu.getByRole("menuitem")).toHaveText(["Give equipment…", "Status…", "Titles…", "Print sheet", "Print badge"]);
+  await expect(menu.getByRole("menuitem")).toHaveText(["Play", "Give equipment…", "Status…", "Titles…", "List on the Who’s Who", "Print sheet", "Badge…"]);
 
   // A narrator never sees character sheets, so has no Characters list at all.
   const n = narrator.page;

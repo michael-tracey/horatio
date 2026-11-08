@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from horatio.models import NpcClaim, TroupeMembership, XpEntry
 from tests.api_helpers import Person, Troupe, sign_up
-from tests.test_api_npc_kinds import made
+from tests.test_api_npc_kinds import ANGEL, made
 from tests.test_api_renames import character_log, summaries, troupe_log
 from tests.test_api_retainers import MARTA, put, with_both
 
@@ -238,6 +238,38 @@ def test_the_roster_says_which_npcs_can_be_given(troupe: Troupe) -> None:
         ("Bites", "vampire", True, False),
         ("Lucien", "vampire", True, True),
         ("Unfinished", "vampire", False, False),
+    ]
+
+
+def test_the_roster_carries_what_the_npc_list_shows(troupe: Troupe) -> None:
+    """One list for PCs and NPCs (#556): each NPC's kind, form, Stock rating, listing
+    and open claim link come with the roster, without asking for the NPC list too."""
+    lucien = built(troupe, "Lucien")
+    made(troupe, name="Bites", npc_kind="werewolf", npc_form="stock", stock={"rating": 3})
+    made(troupe, name="Hollow", npc_kind="custom", custom_kind=ANGEL)
+    listed = troupe.lead.client.put(
+        f"/troupes/{troupe.id}/npcs/{lucien}/whos-who", json={"listed": True}
+    )
+    assert listed.status_code == 200, listed.text
+    make_link(troupe.lead, lucien)
+
+    roster = troupe.assistant.client.get(f"/troupes/{troupe.id}/characters").json()
+
+    assert [
+        (
+            r["character_name"],
+            r["npc_kind"],
+            r["npc_kind_name"],
+            r["npc_form"],
+            r["stock_rating"],
+            r["on_whos_who"],
+            r["claim_expires_at"] is not None,
+        )
+        for r in roster
+    ] == [
+        ("Bites", "werewolf", "Werewolf", "stock", 3, False, False),
+        ("Hollow", "custom", "Angel", "sheeted", None, False, False),
+        ("Lucien", "vampire", "Vampire", "sheeted", None, True, True),
     ]
 
 

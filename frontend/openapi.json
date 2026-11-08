@@ -34925,6 +34925,18 @@
             "title": "Character Name",
             "type": "string"
           },
+          "claim_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claim Expires At"
+          },
           "clan": {
             "anyOf": [
               {
@@ -34971,6 +34983,43 @@
                 "type": "null"
               }
             ]
+          },
+          "npc_form": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Form"
+          },
+          "npc_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Kind"
+          },
+          "npc_kind_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Kind Name"
+          },
+          "on_whos_who": {
+            "title": "On Whos Who",
+            "type": "boolean"
           },
           "out_of_sect_titles": {
             "items": {
@@ -35082,6 +35131,17 @@
             "title": "Splat",
             "type": "string"
           },
+          "stock_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stock Rating"
+          },
           "titles": {
             "items": {
               "type": "string"
@@ -35106,6 +35166,12 @@
           "splat",
           "creation_complete",
           "retired",
+          "npc_kind",
+          "npc_kind_name",
+          "npc_form",
+          "stock_rating",
+          "on_whos_who",
+          "claim_expires_at",
           "titles",
           "out_of_sect_titles",
           "sect",
@@ -67147,7 +67213,7 @@
     },
     "/api/troupes/{troupe_id}/characters": {
       "get": {
-        "description": "Every character in the troupe now: those whose home it is first, then visitors.",
+        "description": "Every character in the troupe now, its NPCs among them: those whose home it is\nfirst, then visitors.",
         "operationId": "roster_api_troupes__troupe_id__characters_get",
         "parameters": [
           {
