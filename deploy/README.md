@@ -127,7 +127,8 @@ read-write as `HORATIO_DARK_PACK_DIR`; the playbook creates it, owned by the app
 user, and never copies anything into it, so deploys leave it alone. A fetch needs
 about 1 GB free there while it runs: the download, and the two zips inside it.
 **Custodian › Tools › VTES symbols** keeps KRCG's VTES symbols in its `vtes/`
-folder. Without either the app runs as before, minus the logo and symbols.
+folder. Without either the app runs as before, minus the logo and symbols. The
+nightly backup packs up the folder too ([Backups](#backups)).
 
 Before #534, `deploy.sh` copied the deploying machine's `dark-pack/` there on every
 deploy and the app mounted it read-only. What those deploys copied stays and keeps
@@ -141,7 +142,11 @@ Every night at 03:17 (host time), `/opt/docker-apps/horatio/backup.sh`:
 - dumps the database
 - packs up the uploaded pictures (`/opt/docker-apps/horatio/uploads`, mounted in the
   app as `HORATIO_UPLOAD_DIR`) as `horatio-uploads-<time>.tar.gz`
-- uploads both to `gs://lotslarp-horatio-backups`, which deletes copies after 30 days
+- packs up the Dark Pack folder (`/opt/docker-apps/horatio/dark-pack`, with the VTES
+  symbols in `vtes/`) as `horatio-dark-pack-<time>.tar.gz`, a few MB. It leaves out
+  the folders a fetch works in, so one taken during a fetch holds only finished sets,
+  and is skipped while the folder is missing or empty
+- uploads them to `gs://lotslarp-horatio-backups`, which deletes copies after 30 days
 - keeps the last week in `/opt/docker-apps/horatio/backups`
 
 Its log is `/var/log/horatio-backup.log`.
@@ -168,5 +173,18 @@ Pictures are restored from the night's `horatio-uploads-<time>.tar.gz` beside it
 sudo tar -xzf horatio-uploads-YYYYMMDDTHHMMSSZ.tar.gz -C /opt/docker-apps/horatio
 sudo chown -R 10001 /opt/docker-apps/horatio/uploads
 ```
+
+The Dark Pack resources and VTES symbols from `horatio-dark-pack-<time>.tar.gz`, if
+there is one (they can also be fetched again in **Custodian › Tools**). Move the
+folder aside first, so nothing fetched since stays mixed in:
+
+```bash
+sudo mv /opt/docker-apps/horatio/dark-pack /opt/docker-apps/horatio/dark-pack.before
+sudo tar -xzf horatio-dark-pack-YYYYMMDDTHHMMSSZ.tar.gz -C /opt/docker-apps/horatio
+sudo chown -R 10001 /opt/docker-apps/horatio/dark-pack
+```
+
+The app needs no restart: **Custodian › Tools** reads the restored sets back. Remove
+`dark-pack.before` once they look right.
 
 A backup from the bucket: `gcloud storage cp gs://lotslarp-horatio-backups/<name> .`.
