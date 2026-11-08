@@ -375,12 +375,12 @@ def test_the_angelic_visage_migration_keeps_charisma(
 def test_the_retired_titles_migration_gives_up_the_titles_retired_characters_hold(
     engine: Engine, alembic_config: Config
 ) -> None:
-    """Migration 0157 (#550): a character retired before retiring gave up titles gives
+    """Migration 0158 (#550): a character retired before retiring gave up titles gives
     up those it still holds, with one entry in each troupe's log; one still playing
     keeps its own."""
     from horatio.api.roster import message
 
-    command.downgrade(alembic_config, "0156")
+    command.downgrade(alembic_config, "0157")
     user, troupe = uuid.uuid4(), uuid.uuid4()
     gone, playing = uuid.uuid4(), uuid.uuid4()
     try:
