@@ -150,7 +150,8 @@ function slotStates(slots: Locator) {
 }
 
 /** Chooses `trait` in a slot at `rating`: the first empty one, or the `nth`, swapping or
- * replacing what is there. Typing narrows the list, as a player would on a long one. */
+ * replacing what is there. A trait picked at another rating is offered as "Brawl (at 3)",
+ * and moves. Typing narrows the list, as a player would on a long one. */
 export async function choosePick(p: Page, section: string, rating: number, trait: string, nth?: number) {
   const slots = slotsAt(p, section, rating).getByRole("combobox");
   await expect(slots.first()).toBeVisible();
@@ -159,7 +160,9 @@ export async function choosePick(p: Page, section: string, rating: number, trait
   if (at === -1) throw new Error(`No empty slot at ${rating} in ${section}`);
   const slot = slots.nth(at);
   await slot.fill(trait);
-  await p.locator(`[id="${states[at]!.list}"]`).getByRole("option", { name: trait, exact: true }).click();
+  const escaped = trait.replace(/[.*+?^$()|[\]\\{}]/g, "\\$&");
+  const name = new RegExp(`^${escaped}( \\(at \\d+\\))?$`);
+  await p.locator(`[id="${states[at]!.list}"]`).getByRole("option", { name }).click();
   await expect(slot).toHaveValue(trait);
 }
 

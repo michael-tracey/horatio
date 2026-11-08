@@ -369,6 +369,10 @@ test("with free changes by games played, a new character drops a skill for its f
   // The sheet takes a while on a busy server.
   await expect(free).toContainText("Free changes: 3 games left", { timeout: 15_000 });
   await expect(free).toContainText("A game counts once the character checks in.");
+  // The Experience card's totals: the refund will lower Spent, not raise Earned (#548).
+  const total = (name: string) => p.locator("#experience > div").filter({ hasText: name }).locator("dd").first();
+  const earned = await total("Earned").innerText();
+  const spent = Number(await total("Spent").innerText());
   await tapMid(p, "Lower Stealth");
   await tapMid(p, "Lower Stealth");
   const cart = p.getByRole("list", { name: "Changes in the cart" });
@@ -392,6 +396,8 @@ test("with free changes by games played, a new character drops a skill for its f
   await p.reload();
   await expect(p.getByText("Stealth 2 → 0 (a free change, 3 XP back)")).toHaveCount(0);
   await expect(p.locator('li[data-trait="Stealth"]')).toHaveCount(0);
+  await expect(total("Spent")).toHaveText(String(spent - 3));
+  await expect(total("Earned")).toHaveText(earned);
   await characterTab(p, "Experience");
   await expect(p.getByText("Stealth 2 → 0, a free change")).toBeVisible();
 });

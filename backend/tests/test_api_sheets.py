@@ -177,6 +177,17 @@ def test_unapproved_purchases_can_be_undone_for_a_refund(troupe: Troupe) -> None
     assert response.json()["sheet"]["xp"]["balance"] == 30
 
 
+def test_a_refund_lowers_spent_rather_than_raising_earned(troupe: Troupe) -> None:
+    character_id = new_character(troupe, troupe.player)
+    buy(troupe.player, character_id, "skills", "Brawl", 3)
+    buy(troupe.player, character_id, "skills", "Brawl", 1)
+
+    response = buy(troupe.player, character_id, "skills", "Dodge", 1)
+
+    xp = response.json()["sheet"]["xp"]
+    assert (xp["balance"], xp["earned"], xp["spent"]) == (28, 30, 2)
+
+
 def test_purchases_use_the_home_troupes_house_rules(troupe: Troupe, session: Session) -> None:
     character_id = new_character(troupe, troupe.player)
     make_home_troupe_member(session, troupe, character_id)

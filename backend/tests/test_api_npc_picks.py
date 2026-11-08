@@ -171,6 +171,33 @@ def test_staff_move_a_pick_and_the_rest_fit_around_it(troupe: Troupe) -> None:
     assert response.json()["kept_off"] == []
 
 
+def test_a_pick_moved_by_hand_swaps_with_one_placed_by_hand(troupe: Troupe) -> None:
+    npc = make_npc(troupe)["id"]
+    rated(troupe.storyteller, npc, "skills", "Brawl", 4)
+    rated(troupe.storyteller, npc, "skills", "Occult", 4)
+    rated(troupe.storyteller, npc, "skills", "Stealth", 2)
+
+    def put(name: str, rating: int, replacing: str | None = None) -> dict[str, Any]:
+        body: dict[str, Any] = {"category": "skills", "name": name, "rating": rating}
+        if replacing:
+            body["replacing"] = {"name": replacing}
+        response = troupe.storyteller.client.put(f"/characters/{npc}/npc/picks", json=body)
+        assert response.status_code == 200, response.text
+        return placed(response.json(), "skills")
+
+    put("Occult", 4)
+    put("Brawl", 3)
+    # Brawl moves from 3 to 4, and Occult, placed there by hand, takes its pick at 3.
+    now = put("Brawl", 4, replacing="Occult")
+    assert now["Brawl"] == (4, "staff") and now["Occult"] == (3, "staff")
+
+    # Stealth 2 can't take the pick at 3 that Occult leaves: it's fitted with the rest.
+    put("Stealth", 2)
+    now = put("Occult", 2, replacing="Stealth")
+    assert now["Occult"] == (2, "staff")
+    assert now["Stealth"] == (2, "fit")
+
+
 def test_a_pick_by_hand_must_fit_where_it_goes(troupe: Troupe) -> None:
     npc = make_npc(troupe)["id"]
     rated(troupe.storyteller, npc, "clan", "Brujah", None)
