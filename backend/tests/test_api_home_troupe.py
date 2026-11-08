@@ -97,6 +97,7 @@ def test_joining_shares_the_sheet_with_the_troupes_staff(troupe: Troupe) -> None
             "troupe_id": troupe.id,
             "troupe_name": "Lords of the Night",
             "home": False,
+            "titles": [],
         }
     ]
 

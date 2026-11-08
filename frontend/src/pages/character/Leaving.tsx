@@ -16,6 +16,9 @@ const REASONS: { key: Reason; name: string; about: string }[] = [
   { key: "inactive", name: "Inactive", about: "Its player stopped playing it. It says nothing in game." },
 ];
 
+/** "Prince", "Prince and Harpy", "Prince, Harpy and Whip". */
+const andList = (names: string[]) => new Intl.ListFormat("en-GB", { type: "conjunction" }).format(names);
+
 type LeavingBody = { reason: Reason; note: string; listed: boolean };
 
 /** Listed under "No longer with us" unless the player only stopped playing it. */
@@ -111,6 +114,12 @@ export function RetireCharacter({ character, onDone }: { character: CharacterOut
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: homeId! } } })),
     enabled: !!homeId,
   });
+  // The titles it holds, in each troupe: retiring gives them all up (horatio.titles).
+  const troupes = useQuery({
+    queryKey: ["memberships", character.id],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/troupes", { params: { path: { character_id: character.id } } })),
+  });
+  const titled = (troupes.data ?? []).filter((t) => t.titles.length > 0);
   const me = useMe();
   const [remember, setRemember] = useState(false);
   const offered = !!home.data?.remembrances && !home.data.archived;
@@ -120,6 +129,12 @@ export function RetireCharacter({ character, onDone }: { character: CharacterOut
       <p className="text-sm">
         A retired character is hidden from everyday lists and out of all downtimes, but kept with its full history. Its sheet can no longer change.
       </p>
+      {titled.length > 0 && (
+        <p className="text-sm" role="note" aria-label="Titles given up">
+          {titled.map((t) => `${character.name} holds ${andList(t.titles)} in ${t.troupe_name}. `)}
+          Retiring gives {titled.flatMap((t) => t.titles).length > 1 ? "them" : "it"} up.
+        </p>
+      )}
       <LeavingForm
         character={character}
         initial={{ reason: null, listed: null }}
