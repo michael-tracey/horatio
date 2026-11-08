@@ -225,6 +225,22 @@ def test_a_stock_npc_or_one_of_another_kind_is_refused(troupe: Troupe, heir: Per
     assert give(troupe.lead, npc, troupe.player.handle).status_code == 409
 
 
+def test_the_roster_says_which_npcs_can_be_given(troupe: Troupe) -> None:
+    built(troupe, "Lucien")
+    made(troupe, name="Bites", npc_form="stock")
+    made(troupe, name="Unfinished", wizard=True)
+
+    roster = troupe.assistant.client.get(f"/troupes/{troupe.id}/characters").json()
+
+    assert [
+        (r["character_name"], r["splat"], r["creation_complete"], r["givable"]) for r in roster
+    ] == [
+        ("Bites", "vampire", True, False),
+        ("Lucien", "vampire", True, True),
+        ("Unfinished", "vampire", False, False),
+    ]
+
+
 def test_carried_xp_must_be_sensible(troupe: Troupe, heir: Person) -> None:
     npc = built(troupe)
 

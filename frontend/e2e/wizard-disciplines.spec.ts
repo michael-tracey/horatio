@@ -413,6 +413,8 @@ test("Inept lets the player choose the discipline that loses its free dot, from 
     disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
   });
   await p.goto(`/characters/${id}/create/disciplines`);
+  // Folded below the picks until opened (#545).
+  await p.getByText("Optional: disciplines from merits and flaws (costs merit points / gives flaw points)").click();
   const fromMerits = p.getByRole("region", { name: "From merits and flaws" });
   // Only the in-clan disciplines can be named.
   const choice = fromMerits.getByLabel("Inept: which?");
@@ -514,6 +516,7 @@ test("a Tremere takes Thaumaturgic Expertise from the Disciplines step, and the 
   const { page: p } = await person(browser, "expert-tremere");
   const id = await creatingVampire(p, "Second Path", "Tremere", []);
   await p.goto(`/characters/${id}/create/disciplines`);
+  await p.getByText("Optional: disciplines from merits and flaws").click();
   const fromMerits = p.getByRole("region", { name: "From merits and flaws" });
   await expect((await openSlot(p, "Disciplines", 1)).getByRole("option", { name: "Thaumaturgy: Path of Conjuring" })).toHaveCount(0);
   await p.keyboard.press("Escape");

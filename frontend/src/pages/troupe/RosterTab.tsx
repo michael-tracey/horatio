@@ -1,24 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { RosterEntry, TitlesOut } from "../../api/types";
-import { ActionMenu, MenuItem } from "../../components/ActionMenu";
-import { cardPath, hasCard } from "../jyhad/taps";
 import { Avatar } from "../../components/Avatar";
 import { useClanName } from "../../components/ClanNames";
 import { LinesVeilsNote } from "../../components/LinesVeils";
 import { AtHandle } from "../../components/PersonPicker";
-import { Dialog } from "../../components/Dialog";
 import { Pronouns } from "../../components/PronounsInput";
 import { Badge, Button, Card, Empty, ErrorText, Input, Loading } from "../../components/ui";
-import { useAction } from "../../hooks";
 import { useEquipmentRules } from "./EquipmentEditor";
 import { holdersLink } from "./equipmentSearch";
 import { FilterBuilder } from "./FilterBuilder";
-import { titleGives, titleGroups, titleStatusWords } from "./titleGroups";
 import { asksEquipment, columnLabel, columnOf, columns, decode, encode, filterLabel, ready, sentence, type Group, type Names } from "./filters";
 import { ageRank, clanText, nextSort, sortRows, type Sort } from "./roster";
+import { StaffActions, TitlePill, useStaffing } from "./StaffActions";
+import type { Staffing } from "./staffActions";
 
 /**
  * The troupe's characters, those whose home it is first, for its storytellers and
@@ -59,6 +56,7 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
   // Printing sheets and badges, folded behind one button so the list starts near the top on a phone.
   const [printing, setPrinting] = useState(false);
   const [sort, setSort] = useState<Sort>(null);
+  const staffing = useStaffing(troupeId);
   if (roster.isPending) return <Loading />;
   if (roster.error) return <ErrorText error={roster.error} />;
   if (!roster.data.length) return <Empty>No characters have joined this troupe yet.</Empty>;
@@ -256,6 +254,7 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
                 key={entry.character_id}
                 troupeId={troupeId}
                 entry={entry}
+                staffing={staffing}
                 selected={selected.has(entry.character_id)}
                 onSelect={() => toggle(entry.character_id)}
                 values={valueColumns.map((c) => [c.label, valueOf(entry, c.key)])}
@@ -295,11 +294,12 @@ function SortHeading({ label, by, sort, onSort, className = "" }: { label: strin
 }
 
 /** One row per character: who it is and who plays it, its clan and social age, how it
- * stands here, what needs staff, the numbers the filter compares, and its titles and
- * XP behind ⋯, each in a dialog. */
+ * stands here, what needs staff, the numbers the filter compares, and what staff do
+ * for it behind ⋯ (StaffActions). */
 function RosterRow({
   troupeId,
   entry,
+  staffing,
   selected,
   onSelect,
   values,
@@ -307,6 +307,7 @@ function RosterRow({
 }: {
   troupeId: string;
   entry: RosterEntry;
+  staffing: Staffing;
   selected: boolean;
   onSelect: () => void;
   /** The numbers the filter compares, such as ["Occult", 2]. */
@@ -315,8 +316,6 @@ function RosterRow({
   equipment: string[] | null;
 }) {
   const named = useClanName();
-  const [open, setOpen] = useState<"titles" | "xp" | null>(null);
-  const close = () => setOpen(null);
   const name = entry.character_name;
   const clan = clanText(named(entry.clan), entry.social_age);
   const here = entry.kind === "npc" ? <Badge>NPC</Badge> : entry.home ? <Badge tone="gold">Home</Badge> : <Badge>Visiting</Badge>;
@@ -413,21 +412,8 @@ function RosterRow({
         </td>
       )}
       <td className="w-px py-1.5 text-right align-top">
-        <ActionMenu label={`Actions for ${name}`} variant="ghost" menuClassName="w-48">
-          <MenuItem onSelect={() => setOpen("titles")}>Titles…</MenuItem>
-          {entry.home && entry.kind === "pc" && <MenuItem onSelect={() => setOpen("xp")}>Award XP…</MenuItem>}
-          {/* Its Jyhad card (#537), in a new tab: for #539's shared ⋯ when that lands. */}
-          {hasCard(entry) && (
-            <MenuItem onSelect={() => window.open(cardPath(entry.character_id, troupeId), "_blank", "noopener")}>Show Jyhad card</MenuItem>
-          )}
-        </ActionMenu>
-        {/* The dialogs sit here, as nothing but cells may sit in a row (Dialog sets its own text-left). */}
-        <Dialog title={`${name}'s titles`} open={open === "titles"} onClose={close}>
-          <Titles troupeId={troupeId} entry={entry} />
-        </Dialog>
-        <Dialog title={`Award XP to ${name}`} open={open === "xp"} onClose={close}>
-          <AwardXp troupeId={troupeId} entry={entry} onDone={close} />
-        </Dialog>
+        {/* Its dialogs sit here too, as nothing but cells may sit in a row (Dialog sets its own text-left). */}
+        <StaffActions troupeId={troupeId} entry={entry} staffing={staffing} />
       </td>
     </tr>
   );
@@ -455,199 +441,5 @@ function HeldTitles({ entry }: { entry: RosterEntry }) {
         </li>
       ))}
     </ul>
-  );
-}
-
-function TitlePill({ entry, title, children }: { entry: RosterEntry; title: string; children?: ReactNode }) {
-  const outOfSect = entry.out_of_sect_titles.includes(title);
-  const active = title === entry.active_title;
-  return (
-    <span
-      className={`inline-flex h-6 items-center gap-1 rounded-full border text-xs ${children ? "pr-1 pl-2.5" : "px-2.5"} ${
-        outOfSect ? "border-blood bg-blood/15 text-blood-bright" : "border-gold/50 bg-gold/10 text-gold"
-      }`}
-      title={
-        outOfSect
-          ? `Out of sect: ${entry.character_name} is ${entry.sect ?? "of no sect"}. Kept until taken.`
-          : active
-            ? "Active: the title that gives status"
-            : undefined
-      }
-    >
-      {active && <span aria-hidden="true">★</span>}
-      {title}
-      {active && <span className="sr-only"> (active)</span>}
-      {outOfSect && <span className="sr-only"> (out of sect)</span>}
-      {children}
-    </span>
-  );
-}
-
-/** Experience for a character whose home troupe this is, in its dialog: amount and
- * reason, as the XP history shows them. */
-function AwardXp({ troupeId, entry, onDone }: { troupeId: string; entry: RosterEntry; onDone: () => void }) {
-  // Starts at the troupe's usual XP for a session (Starting points).
-  const troupe = useQuery({
-    queryKey: ["troupe", troupeId],
-    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupeId } } })),
-  });
-  const sessionXp = troupe.data?.session_xp ?? 8;
-  const [amount, setAmount] = useState<number | null>(null);
-  const [reason, setReason] = useState("");
-  const award = useAction(async () => {
-    await unwrap(
-      api.POST("/api/characters/{character_id}/xp", {
-        params: { path: { character_id: entry.character_id } },
-        body: { amount: amount ?? sessionXp, reason },
-      }),
-    );
-    onDone();
-  });
-  return (
-    <form
-      className="flex flex-col gap-3"
-      onSubmit={(e) => {
-        e.preventDefault();
-        award.mutate(undefined);
-      }}
-    >
-      <div className="flex gap-2">
-        <Input
-          aria-label={`XP for ${entry.character_name}`}
-          type="number"
-          min={1}
-          required
-          value={amount ?? sessionXp}
-          onChange={(e) => setAmount(Number(e.target.value))}
-          className="w-20"
-        />
-        <Input
-          aria-label={`Reason for ${entry.character_name}'s XP`}
-          placeholder="Reason, such as a game"
-          required
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          className="min-w-0 flex-1"
-        />
-      </div>
-      <ErrorText error={award.error} />
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={onDone}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={award.isPending}>
-          Award
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-/** The character's titles here, in its dialog: each with × to take it away, and
- * the troupe's and the book's titles to give it another. */
-function Titles({ troupeId, entry }: { troupeId: string; entry: RosterEntry }) {
-  const save = useAction((names: string[]) =>
-    unwrap(
-      api.PUT("/api/troupes/{troupe_id}/characters/{character_id}/titles", {
-        params: { path: { troupe_id: troupeId, character_id: entry.character_id } },
-        body: { titles: names },
-      }),
-    ),
-  );
-  return (
-    <div className="flex flex-col gap-4">
-      <section>
-        <h3 className="mb-1 text-xs text-mist">Holds</h3>
-        {entry.titles.length ? (
-          <ul className="flex flex-wrap gap-1.5">
-            {entry.titles.map((t) => (
-              <li key={t}>
-                <TitlePill entry={entry} title={t}>
-                  <button
-                    type="button"
-                    aria-label={`Take the title ${t} from ${entry.character_name}`}
-                    className="grid h-4 w-4 place-items-center rounded-full leading-none opacity-70 hover:bg-blood hover:text-parchment hover:opacity-100 pointer-coarse:h-6 pointer-coarse:w-6"
-                    disabled={save.isPending}
-                    onClick={() => save.mutate(entry.titles.filter((x) => x !== t))}
-                  >
-                    ×
-                  </button>
-                </TitlePill>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-mist">No titles here yet.</p>
-        )}
-        <ErrorText error={save.error} />
-      </section>
-      <section>
-        <h3 className="mb-1 text-xs text-mist">Give a title</h3>
-        <GiveTitle troupeId={troupeId} entry={entry} onGive={(title) => save.mutate([...entry.titles, title])} />
-      </section>
-    </div>
-  );
-}
-
-/** Pick one of the troupe's or the book's titles that the character can hold (of
- * its sect, or of any sect), grouped by sect, or type a new one. */
-function GiveTitle({ troupeId, entry, onGive }: { troupeId: string; entry: RosterEntry; onGive: (title: string) => void }) {
-  const [typed, setTyped] = useState("");
-  const titles = useQuery({
-    queryKey: ["titles", troupeId],
-    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/titles", { params: { path: { troupe_id: troupeId } } })),
-    staleTime: 60_000,
-  });
-  const q = typed.trim().toLowerCase();
-  const open = (titles.data?.titles ?? []).filter((t) => t.offered && !entry.titles.includes(t.name) && (t.sect === null || t.sect === entry.sect));
-  const matching = open.filter((t) => t.name.toLowerCase().includes(q));
-  const choices = matching.map((t) => t.name);
-  const exact = choices.some((t) => t.toLowerCase() === q);
-  const give = (title: string) => {
-    onGive(title);
-    setTyped("");
-  };
-  return (
-    <form
-      className="flex flex-col gap-3"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (typed.trim()) give(choices.find((t) => t.toLowerCase() === q) ?? typed.trim());
-      }}
-    >
-      <Input autoFocus aria-label="Title" placeholder="Search or type a new title…" value={typed} onChange={(e) => setTyped(e.target.value)} />
-      <p className="text-xs text-mist">
-        {entry.sect
-          ? `${entry.character_name} is ${entry.sect}: ${entry.sect} titles and those of any sect.`
-          : `${entry.character_name} has no sect: only titles of any sect.`}
-      </p>
-      <div className="flex max-h-64 flex-col gap-2 overflow-y-auto">
-        {titleGroups(entry.sect ? [entry.sect] : [], matching).map(([sect, list]) => (
-          <section key={sect ?? ""}>
-            <h3 className="mb-1 text-xs text-mist">{sect ?? "Any sect"}</h3>
-            <ul className="flex flex-wrap gap-1.5">
-              {list.map((t) => (
-                <li key={t.name}>
-                  <button
-                    type="button"
-                    className="rounded-full border border-ash px-2.5 py-1 text-xs hover:border-gold hover:text-gold"
-                    title={titleGives(titleStatusWords(t), t)}
-                    onClick={() => give(t.name)}
-                  >
-                    {t.name}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
-        {titles.isPending && <p className="text-sm text-mist">Loading…</p>}
-      </div>
-      {q && !exact && (
-        <Button type="submit" variant="secondary">
-          Give the new title “{typed.trim()}”
-        </Button>
-      )}
-    </form>
   );
 }
