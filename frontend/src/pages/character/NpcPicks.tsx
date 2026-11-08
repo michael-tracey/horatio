@@ -82,7 +82,8 @@ function Slots({ pool, busy, named, place, off }: Props) {
   const slots: (Placed | undefined)[] = [...pool.placed, ...(unplaced ? [undefined] : [])];
   return (
     <div>
-      <h3 className="mb-1 font-sans text-xs tracking-wide text-mist uppercase">{label}</h3>
+      {/* Not a heading: each choice carries it as its own label. */}
+      <p className="mb-1 text-xs tracking-wide text-mist uppercase">{label}</p>
       <ul className="flex flex-col gap-1">
         {slots.map((current, i) => (
           <li key={i} className="flex items-center gap-2">
@@ -133,9 +134,9 @@ function Budget({ pool, busy, named, place, off }: Props) {
   const label = pool.category_name;
   return (
     <div>
-      <h3 className="mb-1 font-sans text-xs tracking-wide text-mist uppercase">
+      <p className="mb-1 text-xs tracking-wide text-mist uppercase">
         {label}: {used} of {pool.allowed} points
-      </h3>
+      </p>
       <ul className="flex flex-col gap-1">
         {pool.placed.map((p) => (
           <li key={key(p.name, p.detail)} className="flex items-center justify-between gap-2 text-sm">
