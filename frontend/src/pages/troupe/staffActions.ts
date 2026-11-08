@@ -5,8 +5,10 @@
  * allowed, only reachable from here.
  */
 
+import { hasCard } from "../jyhad/taps";
+
 /** The items, by what they open. */
-export type StaffAction = "xp" | "equipment" | "status" | "titles" | "give" | "sheet" | "badge";
+export type StaffAction = "xp" | "equipment" | "status" | "titles" | "give" | "sheet" | "badge" | "jyhad";
 
 /** What decides the items, from the character's roster entry. */
 export type ActionTarget = {
@@ -16,6 +18,9 @@ export type ActionTarget = {
   retired: boolean;
   /** An NPC that can be given to a player as it stands. */
   givable: boolean;
+  /** For its Jyhad card (#537): a vampire (one with a social age) with a picture. */
+  picture: string | null;
+  social_age: string;
 };
 
 /** Who is looking, in this troupe. An archived troupe is closed to all but the
@@ -43,6 +48,6 @@ export function staffActions(c: ActionTarget, who: Staffing): { doing: StaffActi
   if (home) doing.push("status");
   doing.push("titles");
   if (c.givable && who.storyteller && !who.archived) doing.push("give");
-  // The Jyhad card (#537) is to join the printouts, after the line.
-  return { doing, printing: ["sheet", "badge"] };
+  // Its Jyhad card (#537), for a character that can have one.
+  return { doing, printing: hasCard(c) ? ["sheet", "badge", "jyhad"] : ["sheet", "badge"] };
 }

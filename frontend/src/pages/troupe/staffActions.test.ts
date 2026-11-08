@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { staffActions, type ActionTarget, type Staffing } from "./staffActions";
 
-const pc: ActionTarget = { kind: "pc", home: true, retired: false, givable: false };
-const npc: ActionTarget = { kind: "npc", home: false, retired: false, givable: true };
+const pc: ActionTarget = { kind: "pc", home: true, retired: false, givable: false, picture: null, social_age: "Neonate" };
+const npc: ActionTarget = { kind: "npc", home: false, retired: false, givable: true, picture: null, social_age: "Elder" };
 const storyteller: Staffing = { running: true, storyteller: true, archived: false };
 const assistant: Staffing = { ...storyteller, storyteller: false };
 
@@ -27,6 +27,11 @@ describe("staffActions", () => {
 
   it("in an archived troupe, open only to the custodian, gives no NPC away", () => {
     expect(staffActions(npc, { ...storyteller, archived: true }).doing).toEqual(["equipment", "status", "titles"]);
+  });
+
+  it("shows the Jyhad card of a vampire with a picture, after the printouts (#537)", () => {
+    expect(staffActions({ ...pc, picture: "/p" }, storyteller).printing).toEqual(["sheet", "badge", "jyhad"]);
+    expect(staffActions({ ...npc, picture: "/p", social_age: "Ghoul" }, storyteller).printing).toEqual(["sheet", "badge"]);
   });
 
   it("offers nothing to anyone who doesn't run the troupe", () => {
