@@ -93,6 +93,11 @@ class Character(Imported, Record):
     # Staff list this NPC on its troupe's Who's Who though it holds no title there
     # (horatio.whos_who). Titled NPCs are listed anyway.
     on_whos_who: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # A sheeted NPC whose ratings were set straight (built quickly, made sheeted from
+    # Stock, or imported from Yorick) rather than picked in the wizard: its creation
+    # picks are fitted to its sheet (horatio.npc_picks), so its creation dots are free
+    # as a player character's would be (#527).
+    fits_picks: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Why a retired character left (horatio.leaving): final_death, off_field or
     # inactive; null while it is active, and for one retired before reasons were kept.
     left_reason: Mapped[str | None]
@@ -120,6 +125,11 @@ class CharacterTrait(Record):
         CheckConstraint(
             "creation_pick is null or creation_pick <= free_rating", name="pick_is_free"
         ),
+        CheckConstraint(
+            "pick_by is null or pick_by = 'off' and creation_pick is null"
+            " or pick_by in ('fit', 'staff') and creation_pick is not null",
+            name="pick_by",
+        ),
     )
 
     character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
@@ -135,6 +145,11 @@ class CharacterTrait(Record):
     # The creation pick placed on this trait: the pick's rating, or for a points
     # budget (merits, flaws) the points it used. Null for no pick.
     creation_pick: Mapped[int | None]
+    # On an NPC whose picks are fitted (Character.fits_picks), how its pick came to be:
+    # "fit", placed by the fitting; "staff", placed by hand, which a refit keeps; or
+    # "off", staff took the pick off this trait, so the fitting leaves it without one.
+    # Null for a trait the fitting has not touched, and on every other character.
+    pick_by: Mapped[str | None]
     # Which one, for traits a character can hold more than once: "Path of Blood".
     detail: Mapped[str] = mapped_column(default="", server_default="")
     note: Mapped[str] = mapped_column(default="", server_default="")
