@@ -35,12 +35,12 @@ class TitleChoiceOut(TitleWhatOut):
     sect: str | None
     status: list[str]
     page: str | None
-    # Only one character in the troupe holds it at a time.
+    # The troupe holds it to one holder at a time, a house rule (horatio.titles).
     unique: bool
     # The other characters in the troupe who hold it, by any of its names.
     holders: list[str]
-    # Whether the viewer can choose it now: not a unique title someone else holds,
-    # unless the viewer is staff.
+    # Whether the viewer can choose it now: not a title held to one holder that
+    # someone else holds, unless the viewer is staff.
     open: bool
 
 

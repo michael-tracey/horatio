@@ -235,9 +235,9 @@ page = "400"
 # (horatio.whos_who): the Camarilla's from the Inner Circle down to the Scourge
 # (pp. 371-380), then the Sabbat's (pp. 416-421) and the Anarchs' (pp. 473-474).
 #
-# A title marked `unique` is one a domain has only one of at a time (a Prince, a
-# Sheriff, a Baron): no player can choose it while another character holds it. The
-# rest may be held by several (a Primogen of each clan, Archons, a pack's Ductus).
+# Any title may be held by several characters in a troupe: a game may run two
+# domains, each with its Prince. A troupe holds a title to one holder at a time as a
+# house rule (horatio.titles).
 #
 [[titles]]
 name = "Inner Circle"
@@ -247,7 +247,6 @@ page = "371"
 
 [[titles]]
 name = "Imperator"
-unique = true
 sect = "Camarilla"
 status = ["Ascendant", "Authority", "Commander"]
 page = "371"
@@ -289,7 +288,6 @@ page = "374"
 
 [[titles]]
 name = "Prince"
-unique = true
 sect = "Camarilla"
 status = ["Authority", "Commander", "Sovereign"]
 page = "375"
@@ -302,7 +300,6 @@ page = "375"
 
 [[titles]]
 name = "Seneschal"
-unique = true
 sect = "Camarilla"
 status = ["Noble"]
 page = "376"
@@ -331,7 +328,6 @@ status = ["Noble"]
 [[titles]]
 name = "Harpy"
 aliases = ["Master Harpy"]
-unique = true
 sect = "Camarilla"
 status = ["Prominent", "Noble", "Guardian"]
 page = "379"
@@ -348,28 +344,24 @@ note = "At her own local gathering."
 
 [[titles]]
 name = "Keeper of Elysium"
-unique = true
 sect = "Camarilla"
 status = ["Enforcer", "Guardian"]
 page = "379"
 
 [[titles]]
 name = "Sheriff"
-unique = true
 sect = "Camarilla"
 status = ["Enforcer", "Privileged"]
 page = "380"
 
 [[titles]]
 name = "Scourge"
-unique = true
 sect = "Camarilla"
 status = ["Enforcer"]
 page = "380"
 
 [[titles]]
 name = "Regent"
-unique = true
 sect = "Sabbat"
 status = ["Authority", "Commander", "Ominous", "Sacrosanct"]
 page = "416"
@@ -382,7 +374,6 @@ page = "417"
 
 [[titles]]
 name = "Archbishop"
-unique = true
 sect = "Sabbat"
 status = ["Authority", "Glorious", "Ordained"]
 page = "419"
@@ -454,7 +445,6 @@ page = "424"
 
 [[titles]]
 name = "Grand Inquisitor"
-unique = true
 sect = "Sabbat"
 gives_none = "A rank of the Inquisition: the book gives it no status."
 page = "425"
@@ -481,7 +471,6 @@ page = "425"
 [[titles]]
 name = "Baron"
 aliases = ["Advocate", "President", "Minister"]
-unique = true
 sect = "Anarch"
 status = ["Authority", "Mandate"]
 page = "473"

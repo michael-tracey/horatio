@@ -430,7 +430,8 @@ def test_other_names_give_the_same() -> None:
     }
     # Emissary stays the Independent Alliance's title.
     assert titles["Emissary"].sect == INDEPENDENT_ALLIANCE
-    assert titles["Master Harpy"].unique and titles["President"].unique
+    # Held to one holder at a time only by a troupe's house rule (horatio.titles).
+    assert not any(t.unique for t in VAMPIRE.titles)
 
 
 def test_an_advocate_is_a_baron() -> None:
@@ -439,7 +440,7 @@ def test_an_advocate_is_a_baron() -> None:
 
     assert (advocate.alias_of, advocate.office, advocate.sect) == ("Baron", "Baron", "Anarch")
     assert advocate.status == titles["Baron"].status == ("Authority", "Mandate")
-    assert advocate.unique and advocate.rank == titles["Baron"].rank
+    assert advocate.rank == titles["Baron"].rank
     assert titles["Baron"].aliases == ("Advocate", "President", "Minister")
 
 

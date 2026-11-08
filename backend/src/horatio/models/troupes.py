@@ -108,6 +108,10 @@ class Troupe(Imported, Record):
     # Titles on sheets (horatio.titles): whether "players" choose their own
     # characters' titles from their sect's, or only its running "staff" give them.
     titles_by: Mapped[str] = mapped_column(default="players", server_default="players")
+    # House rule: the rule sets' titles, by office (Baron for an Advocate too), that
+    # only one character here holds at a time, so a player cannot choose one while
+    # someone does (horatio.titles). Its own titles say so in TroupeTitle.unique.
+    one_holder_titles: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
     # House rule: each character's source of abiding status is chosen as it checks in
     # to a game, and fixed for that game (horatio.play_status). Off: as the book has it.
     status_at_checkin: Mapped[bool] = mapped_column(default=False, server_default="false")
@@ -437,8 +441,8 @@ class TroupeTitle(Record):
     # Where it comes on the troupe's Who's Who, after the rule sets' titles
     # (horatio.whos_who): the troupe sets the order of its own.
     position: Mapped[int] = mapped_column(default=0, server_default="0")
-    # Only one character in the troupe holds it at a time: players cannot choose it
-    # while someone does (horatio.titles).
+    # House rule: only one character in the troupe holds it at a time, so players
+    # cannot choose it while someone does (horatio.titles).
     unique: Mapped[bool] = mapped_column(default=False, server_default="false")
 
 

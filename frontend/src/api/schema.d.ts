@@ -9700,6 +9700,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/titles/{name}/one-holder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set One Holder
+         * @description Hold a title, of the rule sets' or the troupe's own, to one holder at a time, or
+         *     not: a house rule, off until set.
+         */
+        put: operations["set_one_holder_api_troupes__troupe_id__titles__name__one_holder_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/waiting": {
         parameters: {
             query?: never;
@@ -20143,6 +20164,11 @@ export interface components {
             points: number;
             /** Summary */
             summary: string;
+        };
+        /** OneHolder */
+        OneHolder: {
+            /** On */
+            on: boolean;
         };
         /** OpenRequest */
         OpenRequest: {
@@ -47773,6 +47799,42 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TitlesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_one_holder_api_troupes__troupe_id__titles__name__one_holder_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OneHolder"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

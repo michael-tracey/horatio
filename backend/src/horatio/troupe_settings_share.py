@@ -61,6 +61,7 @@ from horatio import (
     retainer_upkeep,
     specializations,
     teaching,
+    titles,
     troupe_settings,
     written_rules,
 )
@@ -588,6 +589,13 @@ SETTINGS: dict[str, Setting] = {
             "Who chooses titles",
             Literal["players", "staff"],
             chosen({"players": "Players", "staff": "Staff only"}),
+        ),
+        Setting(
+            "one_holder_titles",
+            "status_titles",
+            "Titles held to one holder at a time",
+            Annotated[list[str], Field(max_length=200)],
+            listing,
         ),
         Setting(
             "status_at_checkin", "status_titles", "Abiding status chosen at check-in", bool, on_off
@@ -2287,6 +2295,9 @@ def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, Setti
                 setattr(troupe, key, values[key])
         if touched("game_xp"):
             game_xp.save(db, user, troupe, game_xp.GameXpSettings.model_validate(values["game_xp"]))
+        if touched("one_holder_titles"):
+            # The rule sets' titles only: the troupe's own aren't carried.
+            troupe.one_holder_titles = titles.offices(db, values["one_holder_titles"])
         if touched("golconda_enlightened"):
             troupe_settings.set_golconda(db, user, troupe, values["golconda_enlightened"])
         if touched("feeding", "feeding_resonance", "feeding_territories", "feeding_rack"):
