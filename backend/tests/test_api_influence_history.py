@@ -132,6 +132,22 @@ def test_entries_from_a_troupe_it_has_left_stay_labelled_with_that_troupe(scene:
     assert history(scene, scene.troupe.assistant).status_code == 404
 
 
+def test_the_custodian_sees_a_characters_history_with_no_home_troupe(scene: Scene) -> None:
+    scene.log(scene.responses[0], "To hear about the mayor")
+    troupe = scene.troupe
+    troupe.player.client.delete(f"/characters/{scene.agnes}/troupes/{troupe.id}")
+
+    seen = history(scene, troupe.custodian)
+
+    assert seen.status_code == 200, seen.text
+    assert [e["short_id"] for e in seen.json()["entries"]] == ["E1"]
+    # With no home troupe, there is nowhere to log it from here.
+    assert seen.json()["log_troupe_id"] is None
+    assert history(scene).status_code == 200
+    for person in (troupe.lead, troupe.storyteller, troupe.narrator, troupe.stranger):
+        assert history(scene, person).status_code == 404
+
+
 # --- what it shows ----------------------------------------------------------------------
 
 
