@@ -551,6 +551,8 @@ When you stop playing a character, retire it: open **⋯** beside its name and c
 - **Off-field**: alive, but away from the domain.
 - **Inactive**: you stopped playing it. It says nothing in game.
 
+Whatever the reason, retiring gives up every title the character holds, in each of its troupes, and the status they gave. The dialog names them first, such as "Ursula holds Prince in Lords of the Night. Retiring gives it up.", and the storytellers are told.
+
 Add a **Note** for the character's log if you like, and choose whether to list it under **No longer with us** on the Who's Who of its troupes, where their players and staff see its name, clan, social age, player and why it left. It's listed by default, except when Inactive. Then press **Retire** and the character's name.
 
 > **If your troupe uses this:** with Remembrances, tick **Ask the storytellers to open remembrances in the next downtime**, and the troupe is asked for memories of the character once they confirm. The retired character's page keeps a **Remembrances** card with what the troupe wrote, newest month first, without names.

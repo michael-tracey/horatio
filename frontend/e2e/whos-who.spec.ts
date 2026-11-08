@@ -5,7 +5,7 @@ import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOpt
 
 closeContextsAfterEach();
 
-test("why a character left: a player retires one Off-field and it is no longer with us; one unlisted is nowhere on the Who's Who", async ({ browser }) => {
+test("why a character left: a player retires one Off-field, giving up its title, and it is no longer with us; one unlisted is nowhere on the Who's Who", async ({ browser }) => {
   const custodian = await person(browser, "departed-cust");
   makeCustodian(custodian.email);
   const lead = await person(browser, "departed-lead");
@@ -47,6 +47,11 @@ test("why a character left: a player retires one Off-field and it is no longer w
   const hortense = await build(ana.page, "Hortense");
   await build(bea.page, "Bastien");
   await send(lead.page, "PUT", `/api/troupes/${troupeId}/characters/${celeste}/titles`, { titles: ["Harpy"] });
+  // Celeste sits at court, as the Harpy.
+  const b = bea.page;
+  await b.goto(`/troupes/${troupeId}/whos-who`);
+  const section = (name: string) => b.getByRole("region", { name, exact: true });
+  await expect(section("Court").getByRole("article", { name: "Celeste" })).toBeVisible();
 
   // Ana retires Celeste, Off-field, from the ⋯ menu. Listed is the default.
   const p = ana.page;
@@ -63,21 +68,27 @@ test("why a character left: a player retires one Off-field and it is no longer w
     return dialog;
   };
   const dialog = await retire(celeste, "Celeste", /^Off-field/, true, "Gone to Chicago.");
+  // Retiring gives up its titles, and the dialog says so first.
+  await expect(dialog.getByRole("note", { name: "Titles given up" })).toHaveText(`Celeste holds Harpy in Empty Chairs ${run}. Retiring gives it up.`);
   await p.screenshot(shots("retire"));
   await dialog.getByRole("button", { name: "Retire Celeste" }).click();
   await expect(p.getByText("Why Celeste left: Off-field.")).toBeVisible();
   await expect(p.getByText("Listed under “No longer with us” on the Who's Who.")).toBeVisible();
   await characterTab(p, "Log");
   await expect(p.getByText("retired Celeste: Off-field, listed under No longer with us. Gone to Chicago.")).toBeVisible();
+  await expect(p.getByText(/Celeste.* gave up Harpy on retiring\./)).toBeVisible();
+  const { titles } = await send(lead.page, "GET", `/api/troupes/${troupeId}/titles`);
+  expect(titles.find((t: { name: string }) => t.name === "Harpy").holders).toEqual([]);
   // Hortense is Inactive, unlisted by default, and Ana leaves it so.
-  await (await retire(hortense, "Hortense", /^Inactive/, false)).getByRole("button", { name: "Retire Hortense" }).click();
+  const quiet = await retire(hortense, "Hortense", /^Inactive/, false);
+  await expect(quiet.getByRole("note", { name: "Titles given up" })).toHaveCount(0);
+  await quiet.getByRole("button", { name: "Retire Hortense" }).click();
   await expect(p.getByText("Why Hortense left: Inactive.")).toBeVisible();
   await expect(p.getByText("Not on the Who's Who.")).toBeVisible();
 
-  // On Bea's Who's Who, Celeste is no longer with us, with why, and in no other view.
-  const b = bea.page;
+  // On Bea's Who's Who, Celeste is no longer with us, with why, and in no other view:
+  // the court is empty.
   await b.goto(`/troupes/${troupeId}/whos-who`);
-  const section = (name: string) => b.getByRole("region", { name, exact: true });
   const gone = section("No longer with us").getByRole("article", { name: "Celeste" });
   await expect(gone.getByText("Off-field")).toBeVisible();
   await expect(gone.getByRole("link", { name: "departed-ana" })).toBeVisible();
