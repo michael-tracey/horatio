@@ -14242,6 +14242,40 @@
         "title": "FinishIn",
         "type": "object"
       },
+      "FittedNpc": {
+        "properties": {
+          "changed": {
+            "title": "Changed",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "xp_after": {
+            "title": "Xp After",
+            "type": "integer"
+          },
+          "xp_now": {
+            "title": "Xp Now",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "xp_now",
+          "xp_after",
+          "changed"
+        ],
+        "title": "FittedNpc",
+        "type": "object"
+      },
       "FlawPlanOut": {
         "description": "A Lesser Generation or Thin Blooded flaw, and what the troupe's setting does.",
         "properties": {
@@ -24495,6 +24529,56 @@
           "name"
         ],
         "title": "NpcPickOff",
+        "type": "object"
+      },
+      "NpcPicksFit": {
+        "properties": {
+          "changed": {
+            "title": "Changed",
+            "type": "integer"
+          },
+          "fitted": {
+            "items": {
+              "$ref": "#/components/schemas/FittedNpc"
+            },
+            "title": "Fitted",
+            "type": "array"
+          },
+          "skipped": {
+            "items": {
+              "$ref": "#/components/schemas/SkippedNpc"
+            },
+            "title": "Skipped",
+            "type": "array"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          },
+          "xp_after": {
+            "title": "Xp After",
+            "type": "integer"
+          },
+          "xp_now": {
+            "title": "Xp Now",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "fitted",
+          "skipped",
+          "xp_now",
+          "xp_after",
+          "changed"
+        ],
+        "title": "NpcPicksFit",
         "type": "object"
       },
       "NpcPicksOut": {
@@ -37419,6 +37503,30 @@
           "pool"
         ],
         "title": "SkillPool",
+        "type": "object"
+      },
+      "SkippedNpc": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "why"
+        ],
+        "title": "SkippedNpc",
         "type": "object"
       },
       "Someone": {
@@ -64388,6 +64496,92 @@
         "summary": "Refuse Teaching",
         "tags": [
           "house rules"
+        ]
+      }
+    },
+    "/api/tools/npc-picks/{troupe_id}": {
+      "get": {
+        "description": "What fitting the troupe's NPCs' creation picks would do. Changes nothing.",
+        "operationId": "preview_npc_picks_api_tools_npc_picks__troupe_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NpcPicksFit"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Npc Picks",
+        "tags": [
+          "custodian"
+        ]
+      },
+      "post": {
+        "description": "Fit the creation picks of the troupe's NPCs built without the wizard, keeping\nwhat staff set by hand. Fitting again changes nothing.",
+        "operationId": "fit_npc_picks_api_tools_npc_picks__troupe_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NpcPicksFit"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Fit Npc Picks",
+        "tags": [
+          "custodian"
         ]
       }
     },

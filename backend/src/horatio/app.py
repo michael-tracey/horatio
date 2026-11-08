@@ -83,6 +83,7 @@ from horatio.api import (
     targets,
     teachers,
     titles,
+    tools,
     trait_exceptions,
     troupe_equipment,
     troupe_profiles,
@@ -225,6 +226,7 @@ for module in (
     keywords,
     troupe_settings_share,
     yorick_imports,
+    tools,
 ):
     api.include_router(module.router)
 

@@ -15,7 +15,7 @@ Only the custodian can:
 - look after anyone's account: view Horatio as them, reset their password, change their email, suspend them, merge two of their accounts, and move a character from one player to another;
 - see every account's email address;
 - make and download backups of the whole database;
-- see the System page, the clan logos and the whole audit log.
+- see the System page, the clan logos and the whole audit log, and use the Tools tab.
 
 The custodian can also do anything a lead storyteller can, in any troupe, even one they have no role in: open its Staff tab, approve its characters, award XP, and so on. Use that sparingly. A troupe's own staff are the ones who run it, and its players expect their storytellers, not the custodian, to judge their characters.
 
@@ -269,6 +269,24 @@ Everything since that backup is lost, so make a fresh backup with **Back up now*
 - **Running since**: when the app last started.
 - **Database**: the migration the database is on, marked **Up to date**, or **Behind** with the migration this build expects. Behind means the database needs migrating: see [Updating the server](#updating-the-server).
 - **PostgreSQL**: the database server's version.
+
+## Tools
+
+**Custodian › Tools** holds upkeep that would otherwise need a command on the server. Each tool is a card that says what it does, shows what it would change, and changes nothing until you say so.
+
+### Fitting NPC creation picks
+
+An NPC built without the wizard (built quickly, made sheeted from Stock, or imported from Yorick) has its creation picks fitted to its sheet, so its starting dots are free as a player character's are, and it isn't worth more XP than a player character with the same sheet. Every change to its sheet fits them again. NPCs no one has changed since that came in need fitting once:
+
+1. Under **Fit NPC creation picks**, choose a troupe. Archived troupes aren't offered.
+2. Choose **Preview**. It lists each NPC to fit, with what its sheet is worth in XP now → after fitting, and the total. Nothing changes yet.
+3. Choose **Fit**. The troupe's log and the audit log say who did it and how many NPCs changed.
+
+Picks staff placed or took off by hand on an NPC's **Creation picks** card are kept. Fitting again changes nothing, so it's safe to run twice.
+
+Some characters are left as they are, and the preview says why: NPCs built in the wizard, whose picks are the ones placed there; Stock NPCs, which have no sheet; and NPCs already given to players (see [Giving an NPC to a player](running-a-troupe.md#giving-an-npc-to-a-player)), whose picks and XP are their own now.
+
+On the server, `python -m horatio.npc_picks` does the same for every troupe at once.
 
 ## Clan logos and the Dark Pack import
 

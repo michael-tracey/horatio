@@ -6310,6 +6310,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tools/npc-picks/{troupe_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview Npc Picks
+         * @description What fitting the troupe's NPCs' creation picks would do. Changes nothing.
+         */
+        get: operations["preview_npc_picks_api_tools_npc_picks__troupe_id__get"];
+        put?: never;
+        /**
+         * Fit Npc Picks
+         * @description Fit the creation picks of the troupe's NPCs built without the wizard, keeping
+         *     what staff set by hand. Fitting again changes nothing.
+         */
+        post: operations["fit_npc_picks_api_tools_npc_picks__troupe_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupe-requests": {
         parameters: {
             query?: never;
@@ -15421,6 +15446,22 @@ export interface components {
              */
             specialization: string;
         };
+        /** FittedNpc */
+        FittedNpc: {
+            /** Changed */
+            changed: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Xp After */
+            xp_after: number;
+            /** Xp Now */
+            xp_now: number;
+        };
         /**
          * FlawPlanOut
          * @description A Lesser Generation or Thin Blooded flaw, and what the troupe's setting does.
@@ -19586,6 +19627,26 @@ export interface components {
             detail: string;
             /** Name */
             name: string;
+        };
+        /** NpcPicksFit */
+        NpcPicksFit: {
+            /** Changed */
+            changed: number;
+            /** Fitted */
+            fitted: components["schemas"]["FittedNpc"][];
+            /** Skipped */
+            skipped: components["schemas"]["SkippedNpc"][];
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+            /** Xp After */
+            xp_after: number;
+            /** Xp Now */
+            xp_now: number;
         };
         /** NpcPicksOut */
         NpcPicksOut: {
@@ -24561,6 +24622,18 @@ export interface components {
             name: string;
             /** Pool */
             pool: number;
+        };
+        /** SkippedNpc */
+        SkippedNpc: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Why */
+            why: string;
         };
         /**
          * Someone
@@ -39979,6 +40052,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["horatio__api__teachers__TeachingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_npc_picks_api_tools_npc_picks__troupe_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpcPicksFit"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fit_npc_picks_api_tools_npc_picks__troupe_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpcPicksFit"];
                 };
             };
             /** @description Validation Error */

@@ -460,6 +460,8 @@ MESSAGES: dict[str, str] = {
     " {character}.",
     "npc.pick_taken_off": "{actor} took the creation pick off {name} for the NPC {character}.",
     "npc.picks_refitted": "{actor} fitted the NPC {character}'s creation picks again.",
+    "npc.troupe_picks_fitted": "{actor} fitted the creation picks of the troupe's NPCs built"
+    " without the wizard: {changed} of {count} changed.",
     "npc.given": "{actor} gave the NPC {character} to @{to_handle}, at home here and accepted,"
     " with {xp} XP for its sheet{carried}.",
     "npc.claimed": "{actor} claimed the NPC {character} with a claim link, at home here and"
