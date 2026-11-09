@@ -1001,6 +1001,20 @@ def sheet_effects(db: Session, character: Character) -> Effects:
     return effects(rule_set.grants, sheet + held_status(db, character, rule_set, sheet), rule_set)
 
 
+def choices_to_make(db: Session, character: Character) -> list[SheetTrait]:
+    """The traits held whose own grant needs a choice the detail does not make:
+    Thaumaturgic Expertise held with no path. A player makes the choice as the trait
+    is taken; an NPC's staff can leave it till later (or an import can leave it out)."""
+    seen: set[tuple[str, str, str]] = set()
+    found: list[SheetTrait] = []
+    for trait, _ in sheet_effects(db, character).unchosen:
+        key = (trait.category, trait.name, trait.detail)
+        if key not in seen and (trait.rating is None or trait.rating > 0):
+            seen.add(key)
+            found.append(trait)
+    return found
+
+
 def held_status(
     db: Session, character: Character, rule_set: RuleSetData, sheet: Sequence[SheetTrait]
 ) -> list[SheetTrait]:
@@ -2564,6 +2578,22 @@ def set_detail(
     )
     if clash is not None:
         raise conflict(f"The character already has {name}: {detail}.")
+    rename_detail(db, player, character, definition, trait, detail)
+    return trait
+
+
+def rename_detail(
+    db: Session,
+    user: User,
+    character: Character,
+    definition: TraitDefinition,
+    trait: CharacterTrait,
+    detail: str,
+) -> None:
+    """Give a held trait another detail in place, so its rating, its free dots and its
+    creation pick stay with it; what is kept by the old name (a Retainer, an Alternate
+    Identity) follows."""
+    name = definition.name
     before = trait.detail
     trait.detail = detail
     if before and definition.properties.get("instance") == "Retainer":
@@ -2586,14 +2616,13 @@ def set_detail(
     db.flush()
     audit.record(
         db,
-        player,
+        user,
         "sheet.detail",
         character_id=character.id,
         name=name,
         detail=detail,
         before=before or "none",
     )
-    return trait
 
 
 def freeze_sheet(
