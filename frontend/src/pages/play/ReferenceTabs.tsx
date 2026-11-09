@@ -9,7 +9,7 @@ import { useDates } from "../../dates";
 import { pipsOf } from "../../ratings";
 import { IdentityNote } from "../character/Identities";
 import { RetainerLines } from "../character/Retainers";
-import { givingMerits } from "../character/retainers";
+import { placeRetainers } from "../character/retainers";
 import { equipmentModifiers } from "./equipped";
 import { bloodNote, breakdown, damageText, grouped, OTHER_TESTS, situations, switchedDamage, total, withAttribute, type Modifier } from "./pools";
 import { SwitchesDrawer } from "./SwitchesDrawer";
@@ -103,14 +103,10 @@ export function PowerList({ discipline }: { discipline: DisciplinePowers }) {
  * and sect are in the subheader instead.
  */
 export function SheetTab({ reference }: { reference: PlayReference }) {
-  // The Retainers listed once, under the last Retainer bought; with none bought, under
-  // the first merit that gives one.
   const named = useClanName();
   const dates = useDates();
-  const giving = givingMerits(reference.retainers);
-  const retainersUnder =
-    reference.traits.filter((t) => t.category === "backgrounds" && t.name === "Retainers").at(-1) ??
-    reference.traits.find((t) => t.category === "merits" && giving.includes(t.name));
+  // Each Retainer under its own row, as on the character's sheet.
+  const retainersUnder = placeRetainers(reference.traits, reference.retainers);
   const groups = new Map<string, Trait[]>();
   for (const t of reference.traits) {
     // The clan, archetype, sect and faction are in the subheader.
@@ -148,7 +144,7 @@ export function SheetTab({ reference }: { reference: PlayReference }) {
                   <TraitLine trait={t} reference={reference} />
                   {t.rating !== null && <Rating value={t.rating} of={pipsOf(t.category)} className="shrink-0 font-display text-base text-gold" />}
                 </div>
-                {t === retainersUnder && reference.retainers.length > 0 && <RetainerLines retainers={reference.retainers} />}
+                {retainersUnder.has(t) && <RetainerLines retainers={retainersUnder.get(t)!} />}
                 {t.category === "backgrounds" && t.name === "Alternate Identity" && <IdentityLine reference={reference} detail={t.detail} />}
               </li>
             ))}

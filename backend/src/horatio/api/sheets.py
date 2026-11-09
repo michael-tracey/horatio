@@ -651,6 +651,17 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
                 ],
             )
             for v in sheets.sheet_violations(db, character)
+        ]
+        # An NPC's staff choose a merit's choice when they like (horatio.npcs.set_detail),
+        # so one still to make is said here, beside the merit.
+        + [
+            ProblemOut(
+                category=t.category,
+                name=t.full_name,
+                strength="refuse",
+                message=f"Choose what {t.name} applies to.",
+            )
+            for t in (sheets.choices_to_make(db, character) if character.kind == "npc" else [])
         ],
         limits=[
             LimitOut(

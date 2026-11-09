@@ -386,6 +386,7 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
                   : sheet.troupe_name
                     ? `Visiting ${sheet.troupe_name}`
                     : "No home troupe yet"}
+              {sheet.building && ` · built to ${sheet.building.troupe_name ? `${sheet.building.troupe_name}'s house rules` : "the book's rules"}`}
             </p>
             {sheet.diablerie.length > 0 && <p className="text-[10px]">Diablerie: {sheet.diablerie.map((d) => dates.day(d)).join(", ")}</p>}
           </div>

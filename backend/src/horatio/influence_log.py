@@ -583,7 +583,9 @@ def character_entries(
     query = select(InfluenceEntry).where(InfluenceEntry.character_id == character_id)
     if troupe_id is not None:
         query = query.where(InfluenceEntry.troupe_id == troupe_id)
-    return list(db.scalars(query.order_by(InfluenceEntry.happened_at.desc())))
+    return list(
+        db.scalars(query.order_by(InfluenceEntry.happened_at.desc(), InfluenceEntry.id.desc()))
+    )
 
 
 def logged_characters(db: Session, troupe_id: uuid.UUID) -> list[Character]:

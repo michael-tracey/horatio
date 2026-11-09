@@ -665,6 +665,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/import/bundle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Bundle
+         * @description Import each character in the .zip (or files), or those in `only`, as new
+         *     characters of the player's in their vault, in one transaction.
+         */
+        post: operations["import_bundle_api_characters_import_bundle_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/import/bundle/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Review Bundle
+         * @description What importing each character in the .zip (or files) as a new character of the
+         *     player's would do, each as the single import's review says. Nothing is saved.
+         */
+        post: operations["review_bundle_api_characters_import_bundle_review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/import/review": {
         parameters: {
             query?: never;
@@ -2158,6 +2200,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/npc/detail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Detail
+         * @description Change the detail of one of an NPC's traits in place, and get the new tally.
+         */
+        put: operations["set_detail_api_characters__character_id__npc_detail_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/npc/picks": {
         parameters: {
             query?: never;
@@ -3094,6 +3156,31 @@ export interface paths {
         put: operations["save_retainers_api_characters__character_id__retainers_put"];
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Save Retainer
+         * @description Save one Retainer, leaving the others as they are: each is edited on the
+         *     sheet under its own row. Who may do what is as for the whole list.
+         */
+        patch: operations["save_retainer_api_characters__character_id__retainers_patch"];
+        trace?: never;
+    };
+    "/api/characters/{character_id}/retainers/{retainer_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Retainer
+         * @description Remove one Retainer from a merit, or listed before each was bought on its own.
+         */
+        delete: operations["remove_retainer_api_characters__character_id__retainers__retainer_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -7050,6 +7137,50 @@ export interface paths {
         get: operations["export_troupe_api_troupes__troupe_id__character_backups_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/character-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Troupe Import
+         * @description Import the troupe's export as the review showed, in one transaction. Refused
+         *     while a character with the name of one here waits for staff to choose.
+         */
+        post: operations["run_troupe_import_api_troupes__troupe_id__character_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/character-imports/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Review Troupe Import
+         * @description What importing the troupe's export (a .zip, or character files) would do with
+         *     each character, as staff have chosen so far: an NPC of the troupe, a player
+         *     character given to its player or held to give later, replacing or beside one here
+         *     of its name, or left out with why. Nothing is saved.
+         */
+        post: operations["review_troupe_import_api_troupes__troupe_id__character_imports_review_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -12346,6 +12477,57 @@ export interface components {
              */
             file: string;
         };
+        /** Body_import_bundle_api_characters_import_bundle_post */
+        Body_import_bundle_api_characters_import_bundle_post: {
+            /**
+             * Files
+             * @description A .zip exported from Horatio, or character files, or both.
+             */
+            files: string[];
+            /**
+             * Only
+             * @description A JSON list of the keys to import; all, without it.
+             */
+            only?: string | null;
+            /** Troupe Id */
+            troupe_id?: string | null;
+        };
+        /** Body_review_bundle_api_characters_import_bundle_review_post */
+        Body_review_bundle_api_characters_import_bundle_review_post: {
+            /**
+             * Files
+             * @description A .zip exported from Horatio, or character files, or both.
+             */
+            files: string[];
+            /** Troupe Id */
+            troupe_id?: string | null;
+        };
+        /** Body_review_troupe_import_api_troupes__troupe_id__character_imports_review_post */
+        Body_review_troupe_import_api_troupes__troupe_id__character_imports_review_post: {
+            /**
+             * Decisions
+             * @description A JSON object of what staff chose for each file, by its key: choice, player, carried_xp, carried_reason.
+             */
+            decisions?: string | null;
+            /**
+             * Files
+             * @description A .zip exported from Horatio, or character files, or both.
+             */
+            files: string[];
+        };
+        /** Body_run_troupe_import_api_troupes__troupe_id__character_imports_post */
+        Body_run_troupe_import_api_troupes__troupe_id__character_imports_post: {
+            /**
+             * Decisions
+             * @description A JSON object of what staff chose for each file, by its key: choice, player, carried_xp, carried_reason.
+             */
+            decisions?: string | null;
+            /**
+             * Files
+             * @description A .zip exported from Horatio, or character files, or both.
+             */
+            files: string[];
+        };
         /** Body_upload_banner_api_troupes__troupe_id__banner_post */
         Body_upload_banner_api_troupes__troupe_id__banner_post: {
             /**
@@ -12633,6 +12815,30 @@ export interface components {
             characters: number;
             /** Total */
             total: number;
+        };
+        /** BundleEntryOut */
+        BundleEntryOut: {
+            /** Character Id */
+            character_id: string | null;
+            /** Key */
+            key: string;
+            /** Kind */
+            kind: ("pc" | "npc") | null;
+            /** Name */
+            name: string | null;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "new" | "skipped" | "cannot";
+            /** Problem */
+            problem: string | null;
+            review: components["schemas"]["CharacterReviewOut"] | null;
+        };
+        /** BundleImportOut */
+        BundleImportOut: {
+            /** Entries */
+            entries: components["schemas"]["BundleEntryOut"][];
         };
         /** ByHandIn */
         ByHandIn: {
@@ -13249,6 +13455,8 @@ export interface components {
             assamite_name: "Banu Haqim" | "Assamite";
             /** Building Troupe Id */
             building_troupe_id: string | null;
+            /** Building Troupe Name */
+            building_troupe_name?: string | null;
             /** Clan */
             clan: string | null;
             /** Creation Complete */
@@ -14707,15 +14915,6 @@ export interface components {
             posts: components["schemas"]["PostOut"][];
             /** Writes */
             writes: boolean;
-        };
-        /** DetailChange */
-        DetailChange: {
-            /** Category */
-            category: string;
-            /** Detail */
-            detail: string;
-            /** Name */
-            name: string;
         };
         /** DiablerieAsk */
         DiablerieAsk: {
@@ -17371,6 +17570,18 @@ export interface components {
         HeldTitles: {
             /** Titles */
             titles: string[];
+        };
+        /** HereOut */
+        HereOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Name */
+            name: string;
+            /** Whose */
+            whose: string;
         };
         /** HistoryEntryOut */
         HistoryEntryOut: {
@@ -22632,6 +22843,11 @@ export interface components {
             /** Pool */
             pool?: number | null;
         };
+        /** PrintedBuilding */
+        PrintedBuilding: {
+            /** Troupe Name */
+            troupe_name: string | null;
+        };
         /** PrintedSheet */
         PrintedSheet: {
             /** Accepted At */
@@ -22639,6 +22855,7 @@ export interface components {
             /** Accepted By */
             accepted_by: string | null;
             blood: components["schemas"]["PrintedBlood"];
+            building?: components["schemas"]["PrintedBuilding"] | null;
             /** Character Name */
             character_name: string;
             /** Diablerie */
@@ -27600,6 +27817,41 @@ export interface components {
              */
             troupe_id: string;
         };
+        /** TroupeEntryOut */
+        TroupeEntryOut: {
+            /** Can Replace */
+            can_replace: boolean;
+            /** Carried Xp */
+            carried_xp: number;
+            /** Character Id */
+            character_id: string | null;
+            /** Choice */
+            choice: ("skip" | "replace" | "copy") | null;
+            duplicate: components["schemas"]["HereOut"] | null;
+            /** File Player */
+            file_player: string | null;
+            /** Key */
+            key: string;
+            /** Kind */
+            kind: ("pc" | "npc") | null;
+            /** Matched By */
+            matched_by: ("email" | "handle" | "chosen") | null;
+            /** Name */
+            name: string | null;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "new" | "given" | "held" | "replaced" | "skipped" | "undecided" | "cannot";
+            player: components["schemas"]["Someone"] | null;
+            /** Problem */
+            problem: string | null;
+            /** Retired */
+            retired: boolean;
+            review: components["schemas"]["CharacterReviewOut"] | null;
+            /** Unspent */
+            unspent: number;
+        };
         /** TroupeEquipmentOut */
         TroupeEquipmentOut: {
             /** Characters */
@@ -27612,6 +27864,15 @@ export interface components {
             not_shown: {
                 [key: string]: number;
             };
+        };
+        /** TroupeImportOut */
+        TroupeImportOut: {
+            /** Can Give */
+            can_give: boolean;
+            /** Entries */
+            entries: components["schemas"]["TroupeEntryOut"][];
+            /** Troupe */
+            troupe: string;
         };
         /** TroupeKeywordOut */
         TroupeKeywordOut: {
@@ -29016,6 +29277,20 @@ export interface components {
             /** Handle */
             handle: string;
         };
+        /** DetailChange */
+        horatio__api__npcs__DetailChange: {
+            /** Category */
+            category: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Name */
+            name: string;
+            /** To */
+            to: string;
+        };
         /** ResetIn */
         horatio__api__play__ResetIn: {
             /** Game Id */
@@ -29053,6 +29328,15 @@ export interface components {
             free: boolean;
             /** Reason */
             reason: string;
+        };
+        /** DetailChange */
+        horatio__api__specializations__DetailChange: {
+            /** Category */
+            category: string;
+            /** Detail */
+            detail: string;
+            /** Name */
+            name: string;
         };
         /** TeachingOut */
         horatio__api__teachers__TeachingOut: {
@@ -30287,6 +30571,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CharacterImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_bundle_api_characters_import_bundle_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_bundle_api_characters_import_bundle_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BundleImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_bundle_api_characters_import_bundle_review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_review_bundle_api_characters_import_bundle_review_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BundleImportOut"];
                 };
             };
             /** @description Validation Error */
@@ -33241,6 +33591,41 @@ export interface operations {
             };
         };
     };
+    set_detail_api_characters__character_id__npc_detail_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["horatio__api__npcs__DetailChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tally"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_picks_api_characters__character_id__npc_picks_get: {
         parameters: {
             query?: never;
@@ -35040,6 +35425,73 @@ export interface operations {
             };
         };
     };
+    save_retainer_api_characters__character_id__retainers_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetainerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetainersOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_retainer_api_characters__character_id__retainers__retainer_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                retainer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetainersOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     clear_neglect_api_characters__character_id__retainers__retainer_id__neglected_delete: {
         parameters: {
             query?: never;
@@ -35822,7 +36274,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["DetailChange"];
+                "application/json": components["schemas"]["horatio__api__specializations__DetailChange"];
             };
         };
         responses: {
@@ -42756,6 +43208,76 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_troupe_import_api_troupes__troupe_id__character_imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_run_troupe_import_api_troupes__troupe_id__character_imports_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_troupe_import_api_troupes__troupe_id__character_imports_review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_review_troupe_import_api_troupes__troupe_id__character_imports_review_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeImportOut"];
+                };
             };
             /** @description Validation Error */
             422: {

@@ -222,6 +222,104 @@ test("a quick NPC's Ventrue Royalty places its free backgrounds, and staff take 
   await expect(p.getByText("Kept without a merit's free dots: Haven.")).toHaveCount(0);
 });
 
+test("staff choose a quick NPC's Thaumaturgic Expertise path and a skill's field, keeping its picks", async ({ browser }) => {
+  const custodian = await person(browser, "paths-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "paths-lead");
+  const { npcId } = await troupeWithNpc(custodian.page, lead.handle, "Court of Paths", "Isadora Quill");
+  const p = lead.page;
+  const path = "Thaumaturgy: Path of Caelestikinesis";
+  // As a Yorick import leaves it (#570): the merit held with no path chosen, and Crafts with no field.
+  for (const [category, name, rating] of [
+    ["clan", "Tremere", null],
+    ["disciplines", "Thaumaturgy: Path of Blood", 3],
+    ["disciplines", path, 2],
+    ["merits", "Thaumaturgic Expertise", 1],
+    ["skills", "Crafts", 2],
+  ] as const) {
+    const rated = await p.request.put(`/api/characters/${npcId}/npc/ratings`, { headers: { "X-Horatio": "1" }, data: { category, name, rating } });
+    expect(rated.status(), await rated.text()).toBe(200);
+  }
+  await p.goto(`/characters/${npcId}`);
+  await expect(p.getByText("26 XP", { exact: true })).toBeVisible();
+
+  // Both are flagged where they're listed, each with the box to put it right in.
+  const expertise = p.getByRole("listitem").filter({ has: p.getByLabel("What Thaumaturgic Expertise applies to") });
+  await expect(expertise.getByText("Choose what it applies to:")).toBeVisible();
+  await expect(p.getByText("Crafts needs a field:")).toBeVisible();
+
+  // The NPC's own paths are listed first. Chosen, the path is priced in-clan: 6 XP, not 12.
+  await expertise.getByLabel("What Thaumaturgic Expertise applies to").selectOption(path);
+  await p.screenshot(shots("npc-detail"));
+  await expertise.getByRole("button", { name: "Set" }).click();
+  await expect(p.getByText("20 XP", { exact: true })).toBeVisible();
+  await expect(p.getByText("Choose what it applies to:")).toHaveCount(0);
+  await expect(p.getByText(`Thaumaturgic Expertise: ${path}`, { exact: true })).toBeVisible();
+
+  // Crafts takes its field in place, and keeps its rating and its creation pick.
+  await p.getByLabel("Crafts field", { exact: true }).fill("Illumination");
+  await p.getByLabel("Crafts field", { exact: true }).press("Enter");
+  await expect(p.getByRole("button", { name: "Crafts: Illumination 2", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(p.getByText("Crafts needs a field:")).toHaveCount(0);
+  await expect(p.getByText("20 XP", { exact: true })).toBeVisible();
+
+  // And it can be changed again later.
+  await p.getByRole("button", { name: "Change the detail of Crafts: Illumination" }).click();
+  await p.getByLabel("Crafts field", { exact: true }).fill("Painting");
+  await p.getByRole("button", { name: "Set", exact: true }).click();
+  await expect(p.getByRole("button", { name: "Crafts: Painting 2", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(p.getByText("20 XP", { exact: true })).toBeVisible();
+});
+
+test("staff choose what a quick NPC's Piece That Remains gives on its sheet, and change it in the builder (#577)", async ({ browser }) => {
+  const custodian = await person(browser, "given-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "given-lead");
+  const { npcId } = await troupeWithNpc(custodian.page, lead.handle, "Court of the Given", "Mercy Ashgrove");
+  const p = lead.page;
+  // As an import from before #577 left it: the merit held, with nothing given.
+  for (const [category, name, rating] of [
+    ["clan", "Caitiff", null],
+    ["backgrounds", "Resources", 5],
+    ["backgrounds", "Haven", 3],
+    ["backgrounds", "Allies", 2],
+    ["merits", "Piece That Remains", 2],
+  ] as const) {
+    const rated = await p.request.put(`/api/characters/${npcId}/npc/ratings`, { headers: { "X-Horatio": "1" }, data: { category, name, rating } });
+    expect(rated.status(), await rated.text()).toBe(200);
+  }
+  await p.goto(`/characters/${npcId}`);
+  await expect(p.getByText("19 XP", { exact: true })).toBeVisible();
+
+  // On the Sheet tab, staff choose the clan merit it gives.
+  await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
+  const piece = p.locator('[data-free-choices="Piece That Remains"]');
+  await expect(piece).toContainText("not chosen yet");
+  await piece.getByRole("button", { name: "Choose the free traits for Piece That Remains" }).click();
+  await piece.getByRole("combobox").selectOption("Ventrue Royalty");
+  await p.screenshot(shots("npc-given-merit"));
+  await piece.getByRole("button", { name: "Save" }).click();
+  await expect(piece.getByRole("button", { name: "Change the free traits for Piece That Remains" })).toBeVisible();
+  await expect(piece).toContainText("Ventrue Royalty");
+  // Royalty is held, free, and its own dots are placed with the creation picks.
+  await expect(p.locator('[data-free-choices="Ventrue Royalty"]')).toContainText("placed with the NPC's creation picks");
+
+  // Back in the builder, Royalty's 4, 3 and 2 are fitted onto the backgrounds: 19 XP falls to 10.
+  await p.locator("main").getByRole("link", { name: "Build", exact: true }).click();
+  await expect(p.getByText("10 XP", { exact: true })).toBeVisible();
+  const royalty = p.getByRole("region", { name: "Ventrue Royalty places" });
+  await expect(royalty.getByRole("combobox", { name: "Ventrue Royalty at 4", exact: true })).toHaveValue("Resources");
+
+  // Changed under the merit in the builder: Royalty goes, with its places, and the price with it.
+  const built = p.locator('[data-free-choices="Piece That Remains"]');
+  await built.getByRole("button", { name: "Change the free traits for Piece That Remains" }).click();
+  await built.getByRole("combobox").selectOption("Aura of Command");
+  await built.getByRole("button", { name: "Save" }).click();
+  await expect(built).toContainText("Aura of Command");
+  await expect(p.getByText("19 XP", { exact: true })).toBeVisible();
+  await expect(royalty).toHaveCount(0);
+});
+
 /** A troupe led by `lead`, made by the custodian, with a sheeted vampire NPC built in it. */
 async function troupeWithNpc(custodian: Page, lead: string, troupe: string, npc: string): Promise<{ troupeId: string; npcId: string }> {
   const headers = { "X-Horatio": "1" };
@@ -303,6 +401,34 @@ test("a storyteller exports the troupe's characters and NPCs as a .zip, with ema
   expect(zipped.subarray(0, 2).toString()).toBe("PK");
   const day = download.suggestedFilename().match(/(\d{4}-\d{2}-\d{2})\.zip$/)![1];
   for (const name of ["manifest.json", `npcs/ArchivistBel-${day}.horatio-character.json`, `sheets/ArchivistBel-${day}.html`]) expect(zipped.includes(name)).toBe(true);
+});
+
+test("a storyteller imports the troupe's export, choosing what to do with an NPC already here (#567)", async ({ browser }) => {
+  const custodian = await person(browser, "reimport-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "reimport-lead");
+  const { troupeId } = await troupeWithNpc(custodian.page, lead.handle, "Court of Returns", "Keeper Anselm");
+
+  const p = lead.page;
+  const zip = await p.request.get(`/api/troupes/${troupeId}/character-backups?which=npcs`);
+  expect(zip.status()).toBe(200);
+  await p.goto(`/troupes/${troupeId}/characters?show=npcs`);
+  await p.getByRole("button", { name: "More for the troupe's characters" }).click();
+  await p.getByRole("menuitem", { name: "Import characters and NPCs…" }).click();
+  await p.getByLabel("Files to import").setInputFiles({ name: "court.zip", mimeType: "application/zip", buffer: await zip.body() });
+
+  // It has the name of the NPC here, so it waits for a choice.
+  const anselm = p.getByRole("listitem", { name: "Keeper Anselm" });
+  await expect(anselm).toContainText("has this name: skip it, replace it or add a copy.");
+  await expect(p.getByRole("button", { name: "Import 0 characters" })).toBeDisabled();
+  await anselm.getByRole("radio", { name: "Add a copy" }).check();
+  await expect(anselm).toContainText("Comes in as a new NPC of the troupe.");
+  await p.getByRole("button", { name: "Import 1 character" }).click();
+  await expect(p.getByText("1 new NPC.", { exact: true })).toBeVisible();
+
+  await expect(p.getByRole("link", { name: "Keeper Anselm" })).toBeVisible();
+  await p.goto(`/troupes/${troupeId}/characters?show=npcs`);
+  await expect(p.getByRole("row", { name: /Keeper Anselm/ })).toHaveCount(2);
 });
 
 test("a storyteller sends a claim link, and a newcomer signs up through it and claims the NPC", async ({ browser }) => {

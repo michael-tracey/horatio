@@ -341,3 +341,7 @@ export type CharacterReviewOut = Schemas["CharacterReviewOut"];
 export type BackupPartOut = Schemas["BackupPartOut"];
 export type BackupItemOut = Schemas["BackupItemOut"];
 export type BackupXpOut = Schemas["BackupXpOut"];
+export type BundleImportOut = Schemas["BundleImportOut"];
+export type BundleEntryOut = Schemas["BundleEntryOut"];
+export type TroupeImportOut = Schemas["TroupeImportOut"];
+export type TroupeEntryOut = Schemas["TroupeEntryOut"];

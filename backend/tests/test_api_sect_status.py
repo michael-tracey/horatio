@@ -137,7 +137,7 @@ def logged(session: Session, character_id: str, action: str) -> list[dict[str, A
         for e in session.scalars(
             select(AuditEvent)
             .where(AuditEvent.character_id == uuid.UUID(character_id), AuditEvent.action == action)
-            .order_by(AuditEvent.created_at)
+            .order_by(AuditEvent.created_at, AuditEvent.id)
         )
     ]
 

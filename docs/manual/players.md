@@ -12,6 +12,7 @@ For signing up, your account, your settings and notifications, see [Getting star
 
 - **In creation**: you haven't finished building it.
 - **No home troupe yet**: it's finished, but no troupe has accepted it.
+- **Built to** a troupe's rules (or **Built to the book's rules**): with no home troupe yet, whose rules it's built to, as you chose under **Which troupe will you play in?** Left out while it waits for that same troupe. Once a troupe accepts it, it plays by its home troupe's rules.
 - **Waiting for** a troupe: you've asked that troupe to be its home, and its storytellers haven't decided.
 - **Home:** a troupe: it plays there.
 - **Downtime due**, with its day and time (or **Downtime overdue**): a downtime is waiting for you to submit.
@@ -97,6 +98,8 @@ On **Your characters**, **Export all** downloads every character you have, retir
 3. **Import** it. It joins no troupe until you [ask one](#joining-a-troupe) to make it home. The XP it earned comes as self-entered XP (as with [Add XP yourself](#xp-history-and-where-xp-comes-from)), which that troupe keeps or removes, and any difference in price is settled as you join.
 
 A file from a newer Horatio is refused: import it into a Horatio as new as the one that made it.
+
+**Import a character** takes the `.zip` from **Export all** too. Each character in it is reviewed as one file is; untick any you don't want, then **Import** brings in the rest, each as a new character of yours with its picture.
 
 ## Reading your sheet
 
@@ -206,6 +209,8 @@ A character with no home troupe has **Add XP yourself** on this tab, for a chara
 ## Your home troupe
 
 A character's [home troupe](glossary.md#home-troupe) holds its sheet: it accepts the character, awards its XP, approves its discipline dots and merit changes, prices its traits with its house rules, and runs its downtimes. A [visiting troupe](glossary.md#visiting-troupe) can see the sheet, but approves nothing and awards no XP. All of this is on the character's **Troupes** tab.
+
+Until a troupe accepts it, the character is built to the rules of the troupe you chose under **Which troupe will you play in?**, or to the book's. The **Troupes** tab and the **Troupes** card on the sheet say which: "Built to *the troupe*'s house rules. Not accepted there yet.", or "Built to the book's rules (no troupe chosen yet)." The troupe's name links to its house rules. A printed sheet says it in its header too.
 
 ### Joining a troupe
 
