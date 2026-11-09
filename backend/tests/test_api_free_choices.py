@@ -608,9 +608,7 @@ def test_a_merit_piece_that_remains_gives_has_its_own_free_choices(troupe: Troup
     (#577)."""
     character_id = new_character(troupe, troupe.player, clan="Caitiff")
     for background, dots in (("Resources", 4), ("Haven", 3), ("Allies", 2)):
-        assert (
-            take(troupe.player, character_id, "backgrounds", background, dots).status_code == 200
-        )
+        assert take(troupe.player, character_id, "backgrounds", background, dots).status_code == 200
     take(troupe.player, character_id, "merits", "Piece That Remains", 2)
     before = balance(troupe.player, character_id)
     grant = grant_key(troupe.player, character_id, "Piece That Remains")
