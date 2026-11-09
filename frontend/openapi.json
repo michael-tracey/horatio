@@ -7014,6 +7014,17 @@
             ],
             "title": "Building Troupe Id"
           },
+          "building_troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Building Troupe Name"
+          },
           "clan": {
             "anyOf": [
               {
@@ -31190,6 +31201,26 @@
         "title": "PrintedBlood",
         "type": "object"
       },
+      "PrintedBuilding": {
+        "properties": {
+          "troupe_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Name"
+          }
+        },
+        "required": [
+          "troupe_name"
+        ],
+        "title": "PrintedBuilding",
+        "type": "object"
+      },
       "PrintedSheet": {
         "properties": {
           "accepted_at": {
@@ -31217,6 +31248,16 @@
           },
           "blood": {
             "$ref": "#/components/schemas/PrintedBlood"
+          },
+          "building": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrintedBuilding"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "character_name": {
             "title": "Character Name",

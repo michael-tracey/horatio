@@ -65,6 +65,7 @@ import { PowerChoices } from "./PowerChoices";
 import { BackgroundChanges } from "./BackgroundChanges";
 import { InfluenceEffects } from "./InfluenceEffects";
 import { DomitorCard } from "./Domitor";
+import { BuiltTo } from "./BuiltTo";
 import { EmbraceCard } from "./Embrace";
 import { useHasDomitor } from "./splats";
 import { xpTotal } from "./xpTotals";
@@ -1083,6 +1084,7 @@ function TroupesCard({
           ))}
         </ul>
       )}
+      <BuiltTo character={character} className="mt-2 text-sm text-mist" />
       {sheet.home_troupe_id === null && sheet.troupes.length > 0 && mine && (
         <p className="mt-2 text-xs text-mist">
           Visiting only. To play here for downtimes and XP, ask for a home

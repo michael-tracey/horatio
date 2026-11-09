@@ -73,6 +73,12 @@ class PrintedBlood(BaseModel):
     pool: int | None = None
 
 
+class PrintedBuilding(BaseModel):
+    # The troupe whose house rules it is built to, until that troupe accepts it; None
+    # for the book's rules.
+    troupe_name: str | None
+
+
 class PrintedSheet(BaseModel):
     character_name: str
     player_name: str
@@ -87,6 +93,9 @@ class PrintedSheet(BaseModel):
     kind: str  # pc | npc
     # Whether `troupe_name` is the home troupe, and when and by whom it accepted the character.
     home: bool
+    # For a PC with no home troupe yet, whose rules it is built to (issue #569). None for
+    # a character with a home troupe, which plays by its home's rules.
+    building: PrintedBuilding | None = None
     accepted_at: datetime | None
     accepted_by: str | None
     # When the character committed diablerie (p. 306 asks for the date on the sheet).
@@ -130,6 +139,14 @@ def printed_status(db: Session, character: Character, troupe_id: uuid.UUID | Non
         return [c.name for c in sect_status.carried(db, character, troupe_id)]
     found = sect_status.standing(db, character)
     return [d.name for d in found.derived if d.kind == "merit"] + [h.name for h in found.held]
+
+
+def building(db: Session, character: Character) -> PrintedBuilding | None:
+    """Whose rules a PC with no home troupe is built to: a troupe's, or the book's."""
+    if character.kind != "pc" or character.home_troupe_id:
+        return None
+    troupe = character.building_troupe_id
+    return PrintedBuilding(troupe_name=db.get_one(Troupe, troupe).name if troupe else None)
 
 
 def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) -> PrintedSheet:
@@ -226,6 +243,7 @@ def print_sheet(db: Session, character: Character, troupe_id: uuid.UUID | None) 
         titles=titles.held(db, troupe, character.id) if troupe else [],
         kind=character.kind,
         home=troupe is not None and troupe == character.home_troupe_id,
+        building=building(db, character),
         accepted_at=version.approved_at if version else None,
         accepted_by=db.get_one(User, version.approved_by).display_name if version else None,
         diablerie=[d.committed_on for d in diablerie.recorded(db, character)],
