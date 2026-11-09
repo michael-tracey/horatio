@@ -559,6 +559,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/character-backups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Mine
+         * @description Every character the player has, retired ones too, in one .zip.
+         */
+        get: operations["export_mine_api_character_backups_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters": {
         parameters: {
             query?: never;
@@ -579,6 +599,51 @@ export interface paths {
          *     no building troupe, else of a splat it takes.
          */
         post: operations["create_character_api_characters_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Character
+         * @description Import the file as a new character of the player's, in their vault, built for
+         *     the troupe chosen: all its parts that can come in, as the review showed, in one
+         *     transaction. It isn't in any troupe yet; its player asks one to make it home.
+         */
+        post: operations["import_character_api_characters_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/import/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Review Import
+         * @description What importing the file as a new character would do, part by part: new, held
+         *     otherwise here (a merit at this troupe's value), left out with why, or shown only;
+         *     and its XP, as the file has it and at the prices it would play by here. Nothing is
+         *     saved.
+         */
+        post: operations["review_import_api_characters_import_review_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -828,6 +893,47 @@ export interface paths {
          * @description Whether the person may read the backstory, and where it stands, without its text.
          */
         get: operations["backstory_standing_api_characters__character_id__backstory_standing_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/backup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Character
+         * @description The character as a file, its picture in it, with the optional `sections` chosen.
+         *     Its player exports it, retired, killed or departed too.
+         */
+        get: operations["export_character_api_characters__character_id__backup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/backup/sheet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Sheet
+         * @description The character's printable sheet as one HTML file, readable without Horatio.
+         */
+        get: operations["export_sheet_api_characters__character_id__backup_sheet_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6887,6 +6993,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/character-backups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Troupe
+         * @description The troupe's own characters in one .zip: those at home here and its NPCs (not
+         *     visitors, whose home troupe holds them), all, player characters or NPCs only, or
+         *     those named in `characters`. Each player character names its player by handle,
+         *     and by email too with `emails`, which only storytellers may ask for.
+         */
+        get: operations["export_troupe_api_troupes__troupe_id__character_backups_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/characters": {
         parameters: {
             query?: never;
@@ -11556,6 +11685,136 @@ export interface components {
             /** Section */
             section: string;
         };
+        /** BackupAlternateIdentity */
+        BackupAlternateIdentity: {
+            /**
+             * Accepted By
+             * @default
+             */
+            accepted_by: string;
+            /** Name */
+            name: string;
+        };
+        /** BackupCrop */
+        BackupCrop: {
+            /** Size */
+            size: number;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
+        /** BackupEquipment */
+        BackupEquipment: {
+            /**
+             * Archaic
+             * @default false
+             */
+            archaic: boolean;
+            /**
+             * Crafted
+             * @default false
+             */
+            crafted: boolean;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Effects
+             * @default []
+             */
+            effects: {
+                [key: string]: string;
+            }[];
+            /**
+             * Grade
+             * @enum {string}
+             */
+            grade: "cheap" | "standard" | "special";
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /**
+             * Qualities
+             * @default []
+             */
+            qualities: {
+                [key: string]: string;
+            }[];
+            /** Special By */
+            special_by?: string | null;
+        };
+        /** BackupIdentity */
+        BackupIdentity: {
+            /**
+             * Card Flavour
+             * @default
+             */
+            card_flavour: string;
+            /**
+             * Card Text
+             * @default
+             */
+            card_text: string;
+            /**
+             * Domitor
+             * @default
+             */
+            domitor: string;
+            /**
+             * Kind
+             * @default pc
+             * @enum {string}
+             */
+            kind: "pc" | "npc";
+            /** Left Reason */
+            left_reason?: ("final_death" | "off_field" | "inactive") | null;
+            /** Name */
+            name: string;
+            /** Npc Custom Kind */
+            npc_custom_kind?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Npc Form */
+            npc_form?: ("sheeted" | "stock") | null;
+            /** Npc Kind */
+            npc_kind?: string | null;
+            /**
+             * Primary Paths
+             * @default {}
+             */
+            primary_paths: {
+                [key: string]: string;
+            };
+            /** Pronouns */
+            pronouns?: string | null;
+            /**
+             * Retired
+             * @default false
+             */
+            retired: boolean;
+            /** Splat */
+            splat: string;
+        };
+        /** BackupItemOut */
+        BackupItemOut: {
+            /** After */
+            after: string | null;
+            /** Before */
+            before: string | null;
+            /** Label */
+            label: string;
+            /** Reason */
+            reason: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "new" | "differs" | "cannot" | "info";
+        };
         /** BackupOut */
         BackupOut: {
             /**
@@ -11569,6 +11828,244 @@ export interface components {
             name: string;
             /** Size */
             size: number;
+        };
+        /** BackupPartOut */
+        BackupPartOut: {
+            /** Items */
+            items: components["schemas"]["BackupItemOut"][];
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "character" | "sheet" | "xp" | "retainers" | "equipment" | "titles" | "status";
+            /** Label */
+            label: string;
+        };
+        /**
+         * BackupPicture
+         * @description The character's picture, whole, and where its portrait sits in it: in the
+         *     file itself (`data`, base64), or beside it in a bulk export's pictures/.
+         */
+        BackupPicture: {
+            crop?: components["schemas"]["BackupCrop"] | null;
+            /** Data */
+            data?: string | null;
+            /** File */
+            file?: string | null;
+        };
+        /**
+         * BackupPlayer
+         * @description Whose character it is, in a troupe's bulk export: to match it on import.
+         */
+        BackupPlayer: {
+            /** Email */
+            email?: string | null;
+            /**
+             * Handle
+             * @default
+             */
+            handle: string;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+        };
+        /** BackupRetainer */
+        BackupRetainer: {
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Discipline
+             * @default
+             */
+            discipline: string;
+            /** Dots */
+            dots: number;
+            /**
+             * From Merit
+             * @default
+             */
+            from_merit: string;
+            /**
+             * Ghoul
+             * @default false
+             */
+            ghoul: boolean;
+            /** Lost */
+            lost?: ("released" | "killed") | null;
+            /** Lost On */
+            lost_on?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Specialties
+             * @default []
+             */
+            specialties: string[];
+        };
+        /** BackupStatus */
+        BackupStatus: {
+            /**
+             * Given On
+             * Format: date
+             */
+            given_on: string;
+            /** Name */
+            name: string;
+            /**
+             * Patron
+             * @default
+             */
+            patron: string;
+            /**
+             * Place
+             * @default
+             */
+            place: string;
+            /**
+             * Story
+             * @default
+             */
+            story: string;
+        };
+        /** BackupTitle */
+        BackupTitle: {
+            /**
+             * Active
+             * @default false
+             */
+            active: boolean;
+            /** Name */
+            name: string;
+            /** Troupe */
+            troupe: string;
+        };
+        /**
+         * BackupTrait
+         * @description One trait on the sheet, with where its dots came from.
+         */
+        BackupTrait: {
+            /** Category */
+            category: string;
+            /**
+             * Choices
+             * @default []
+             */
+            choices: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Creation Pick */
+            creation_pick?: number | null;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /**
+             * Free Rating
+             * @default 0
+             */
+            free_rating: number;
+            /**
+             * Granted Rating
+             * @default 0
+             */
+            granted_rating: number;
+            /**
+             * House
+             * @default false
+             */
+            house: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Paid
+             * @default 0
+             */
+            paid: number;
+            /** Pick By */
+            pick_by?: ("fit" | "staff" | "off") | null;
+            /**
+             * Power Choices
+             * @default {}
+             */
+            power_choices: {
+                [key: string]: {
+                    [key: string]: string;
+                };
+            };
+            /** Rating */
+            rating?: number | null;
+        };
+        /** BackupTraitRef */
+        BackupTraitRef: {
+            /** Category */
+            category: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Name */
+            name: string;
+        };
+        /**
+         * BackupXpLine
+         * @description One line of the XP history, as it was written.
+         */
+        BackupXpLine: {
+            /** Amount */
+            amount: number;
+            /** Corrects */
+            corrects?: number | null;
+            /** From Rating */
+            from_rating?: number | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "award" | "purchase" | "settlement" | "fee" | "correction" | "self_entered" | "cap" | "reprice" | "debt" | "lost";
+            /**
+             * On
+             * Format: date
+             */
+            on: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            /** To Rating */
+            to_rating?: number | null;
+            trait?: components["schemas"]["BackupTraitRef"] | null;
+        };
+        /** BackupXpOut */
+        BackupXpOut: {
+            /** Earned */
+            earned: number;
+            /** Lost */
+            lost: number;
+            /** Self Entered */
+            self_entered: number;
+            /** Sheet Here */
+            sheet_here: number;
+            /** Sheet There */
+            sheet_there: number;
+            /** Spent */
+            spent: number;
+            /** Unpriced */
+            unpriced: string[];
+            /** Unspent */
+            unspent: number;
         };
         /** BackupsOut */
         BackupsOut: {
@@ -12441,6 +12938,86 @@ export interface components {
             name: string;
         };
         /**
+         * CharacterDocument
+         * @description A character, as Export writes it and Import reads it.
+         */
+        CharacterDocument: {
+            /**
+             * Backstory
+             * @default
+             */
+            backstory: string;
+            character: components["schemas"]["BackupIdentity"];
+            /**
+             * Equipment
+             * @default []
+             */
+            equipment: components["schemas"]["BackupEquipment"][];
+            /** Exported On */
+            exported_on?: string | null;
+            /**
+             * Format
+             * @default horatio-character
+             * @constant
+             */
+            format: "horatio-character";
+            /**
+             * Horatio
+             * @default
+             */
+            horatio: string;
+            /**
+             * Identities
+             * @default []
+             */
+            identities: components["schemas"]["BackupAlternateIdentity"][];
+            picture?: components["schemas"]["BackupPicture"] | null;
+            player?: components["schemas"]["BackupPlayer"] | null;
+            /**
+             * Retainers
+             * @default []
+             */
+            retainers: components["schemas"]["BackupRetainer"][];
+            /** Rule Set */
+            rule_set?: number | null;
+            /**
+             * Sections
+             * @default []
+             */
+            sections: ("equipment" | "retainers" | "titles")[];
+            /**
+             * Status
+             * @default []
+             */
+            status: components["schemas"]["BackupStatus"][];
+            /**
+             * Titles
+             * @default []
+             */
+            titles: components["schemas"]["BackupTitle"][];
+            /**
+             * Traits
+             * @default []
+             */
+            traits: components["schemas"]["BackupTrait"][];
+            /**
+             * Troupe
+             * @default
+             */
+            troupe: string;
+            /**
+             * Version
+             * @default 1
+             * @constant
+             */
+            version: 1;
+            /**
+             * Xp
+             * @default []
+             */
+            xp: components["schemas"]["BackupXpLine"][];
+        };
+        /**
          * CharacterEffectOut
          * @description An effect on a character, for its sheet: what and until when, not who made it.
          */
@@ -12552,6 +13129,29 @@ export interface components {
             vessel?: components["schemas"]["FeedingCardOut"] | null;
             /** Working */
             working: string;
+        };
+        /** CharacterImportIn */
+        CharacterImportIn: {
+            /** Document */
+            document: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** File Name */
+            file_name?: string | null;
+            /** Troupe Id */
+            troupe_id?: string | null;
+        };
+        /** CharacterImportOut */
+        CharacterImportOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Left Out */
+            left_out: number;
+            /** Name */
+            name: string;
         };
         /**
          * CharacterListOut
@@ -12737,6 +13337,26 @@ export interface components {
              * @enum {string}
              */
             state: "none" | "asked" | "open";
+        };
+        /** CharacterReviewOut */
+        CharacterReviewOut: {
+            /** Exported On */
+            exported_on: string | null;
+            /** From Troupe */
+            from_troupe: string;
+            /** Horatio */
+            horatio: string;
+            /** Name */
+            name: string;
+            /** Parts */
+            parts: components["schemas"]["BackupPartOut"][];
+            /** Splat */
+            splat: string;
+            /** Troupe */
+            troupe: string | null;
+            /** Warnings */
+            warnings: string[];
+            xp: components["schemas"]["BackupXpOut"] | null;
         };
         /** CharacterTitlesOut */
         CharacterTitlesOut: {
@@ -29407,6 +30027,35 @@ export interface operations {
             };
         };
     };
+    export_mine_api_character_backups_get: {
+        parameters: {
+            query?: {
+                sections?: ("equipment" | "retainers" | "titles")[] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     my_characters_api_characters_get: {
         parameters: {
             query?: never;
@@ -29447,6 +30096,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CharacterOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_character_api_characters_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterImportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_import_api_characters_import_review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterImportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterReviewOut"];
                 };
             };
             /** @description Validation Error */
@@ -29976,6 +30691,68 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["BackstoryStandingOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_character_api_characters__character_id__backup_get: {
+        parameters: {
+            query?: {
+                sections?: ("equipment" | "retainers" | "titles")[] | null;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterDocument"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_sheet_api_characters__character_id__backup_sheet_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -41787,6 +42564,40 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["BookTraitOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_troupe_api_troupes__troupe_id__character_backups_get: {
+        parameters: {
+            query?: {
+                which?: "all" | "pcs" | "npcs";
+                characters?: string[] | null;
+                sections?: ("equipment" | "retainers" | "titles")[] | null;
+                emails?: boolean;
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
