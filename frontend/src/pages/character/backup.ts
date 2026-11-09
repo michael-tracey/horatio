@@ -12,19 +12,25 @@ export type Section = (typeof SECTIONS)[number]["key"];
 /** The most a character's file may be, as the server takes it: its picture is in it. */
 export const MAX_BYTES = 16 * 1024 * 1024;
 
-/** A name fit for a file, as the server makes it: "Agnes de Vries" is "agnes-de-vries". */
-export function slug(name: string): string {
-  const found = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60)
-    .replace(/-+$/g, "");
-  return found || "character";
+/**
+ * A character's name as a backup's file name has it, as the server makes it: accents
+ * folded to their plain letter, then spaces, other letters and anything unsafe in a
+ * file name dropped, case kept. "Agnes de Vries" is "AgnesdeVries"; a name with
+ * nothing left is "character".
+ */
+export function namePart(name: string): string {
+  const folded = name.normalize("NFKD").replace(/[^\x00-\x7f]/g, "");
+  return folded.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 60) || "character";
 }
 
-/** The file one character is exported as: "agnes.horatio-character.json". */
-export const backupFileName = (name: string) => `${slug(name)}.horatio-character.json`;
+/** The day as YYYY-MM-DD, where you are. */
+const day = (on: Date) => [on.getFullYear(), on.getMonth() + 1, on.getDate()].map((n) => String(n).padStart(2, "0")).join("-");
+
+/** A backup's files are named for the character and the day: "AgnesdeVries-2026-11-09". */
+export const fileStem = (name: string, on: Date) => `${namePart(name)}-${day(on)}`;
+
+/** The file one character is exported as: "AgnesdeVries-2026-11-09.horatio-character.json". */
+export const backupFileName = (name: string, on: Date) => `${fileStem(name, on)}.horatio-character.json`;
 
 /** The query string for the sections chosen: "?sections=equipment&sections=titles", or "". */
 export function sectionsQuery(chosen: ReadonlySet<Section>, extra: Record<string, string> = {}): string {

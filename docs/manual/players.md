@@ -86,7 +86,7 @@ Open the link to see the character's name and portrait. If you have no account y
 
 ### Backing up a character
 
-A character's **⋯** has **Export (backup)…**. It downloads the character as a file, `<name>.horatio-character.json`: its sheet with the free dots from creation, its XP history, backstory and picture. Tick **Also include** for its equipment, Retainers and Alternate Identities, or titles and status. **Printable sheet (.html)** downloads the printable sheet as a page any browser opens, without Horatio. Retired characters can be exported too. Staff notes are never in the file.
+A character's **⋯** has **Export (backup)…**. It downloads the character as a file named for it and the day, such as `AgnesdeVries-2026-11-09.horatio-character.json` for Agnes de Vries (accents become plain letters; spaces and other letters are left out). It holds its sheet with the free dots from creation, its XP history, backstory and picture. Tick **Also include** for its equipment, Retainers and Alternate Identities, or titles and status. **Printable sheet (.html)** downloads the printable sheet as a page any browser opens, without Horatio. Retired characters can be exported too. Staff notes are never in the file.
 
 On **Your characters**, **Export all** downloads every character you have, retired ones too, in one `.zip`.
 

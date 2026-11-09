@@ -91,7 +91,8 @@ def export_sheet(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> R
         if path is not None:
             picture = "data:image/webp;base64," + base64.b64encode(path.read_bytes()).decode()
     page = sheet_html(print_sheet(db, character, None), picture, date.today().isoformat())
-    return attachment(page, "text/html; charset=utf-8", backup.slug(character.name) + ".html")
+    name = backup.file_stem(character.name, date.today()) + ".html"
+    return attachment(page, "text/html; charset=utf-8", name)
 
 
 # --- several at once ----------------------------------------------------------------------
@@ -124,11 +125,13 @@ class Manifest(BaseModel):
 
 
 def unique(name: str, used: set[str]) -> str:
+    """`name`, or with -2, -3… if the zip has it already: ignoring case, as some
+    computers unzip "Agnes" and "agnes" to one file."""
     found, n = name, 1
-    while found in used:
+    while found.casefold() in used:
         n += 1
         found = f"{name}-{n}"
-    used.add(found)
+    used.add(found.casefold())
     return found
 
 
@@ -147,7 +150,7 @@ def zipped(
     buffer = BytesIO()
     with ZipFile(buffer, "w", ZIP_DEFLATED) as archive:
         for character, player in characters:
-            name = unique(backup.slug(character.name), used)
+            name = unique(backup.file_stem(character.name, today), used)
             folder = "npcs" if character.kind == "npc" else "characters"
             document = backup.export(
                 db,

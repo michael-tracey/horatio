@@ -37,11 +37,11 @@ test("a player exports a character as a backup and imports it again as a new cha
   await p.getByRole("menuitem", { name: "Export (backup)…" }).click();
   const dialog = p.getByRole("dialog", { name: "Export Odile Varga" });
   const [sheet] = await Promise.all([p.waitForEvent("download"), dialog.getByRole("link", { name: "Printable sheet (.html)" }).click()]);
-  expect(sheet.suggestedFilename()).toBe("odile-varga.html");
+  expect(sheet.suggestedFilename()).toMatch(/^OdileVarga-\d{4}-\d{2}-\d{2}\.html$/);
   expect(readFileSync(await sheet.path(), "utf8")).toContain("<h1>Odile Varga</h1>");
   await dialog.getByRole("checkbox", { name: "Equipment" }).check();
   const [download] = await Promise.all([p.waitForEvent("download"), dialog.getByRole("button", { name: "Download backup" }).click()]);
-  expect(download.suggestedFilename()).toBe("odile-varga.horatio-character.json");
+  expect(download.suggestedFilename()).toMatch(/^OdileVarga-\d{4}-\d{2}-\d{2}\.horatio-character\.json$/);
   await expect(dialog).toBeHidden();
   const file = await download.path();
   const document = JSON.parse(readFileSync(file, "utf8"));

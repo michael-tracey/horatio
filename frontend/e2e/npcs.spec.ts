@@ -263,7 +263,8 @@ test("a storyteller exports the troupe's characters and NPCs as a .zip, with ema
   const zipped = readFileSync(await download.path());
   // A zip names its files in the clear.
   expect(zipped.subarray(0, 2).toString()).toBe("PK");
-  for (const name of ["manifest.json", "npcs/archivist-bel.horatio-character.json", "sheets/archivist-bel.html"]) expect(zipped.includes(name)).toBe(true);
+  const day = download.suggestedFilename().match(/(\d{4}-\d{2}-\d{2})\.zip$/)![1];
+  for (const name of ["manifest.json", `npcs/ArchivistBel-${day}.horatio-character.json`, `sheets/ArchivistBel-${day}.html`]) expect(zipped.includes(name)).toBe(true);
 });
 
 test("a storyteller sends a claim link, and a newcomer signs up through it and claims the NPC", async ({ browser }) => {

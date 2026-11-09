@@ -14,6 +14,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from horatio.character_backup import file_stem, name_part
 from horatio.models import BackstoryFeedback, Diablerie
 from horatio.rules.model import CostRuleData
 from horatio.rules.store import add_house_rule
@@ -99,6 +100,30 @@ def xp(person: Person, character_id: str) -> list[dict[str, Any]]:
 
 def items(found: dict[str, Any], status: str) -> list[str]:
     return [i["label"] for p in found["parts"] for i in p["items"] if i["status"] == status]
+
+
+# --- file names ---------------------------------------------------------------------------
+
+
+def test_a_backup_is_named_for_the_character_and_the_day() -> None:
+    assert file_stem("Agnes de Vries", date(2026, 11, 9)) == "AgnesdeVries-2026-11-09"
+
+
+@pytest.mark.parametrize(
+    ("name", "part"),
+    [
+        ("Agnes de Vries", "AgnesdeVries"),
+        ("Zoë Brontë-Ågren", "ZoeBronte-Agren"),
+        ("Ślęża Łódź", "Slezaodz"),
+        ("Ναταλία", "character"),
+        ("伊藤 光", "character"),
+        ('O\'Brien, "Red" / Jr.?', "OBrienRedJr"),
+        ("con:sole*<>|", "console"),
+        ("   ", "character"),
+    ],
+)
+def test_a_names_file_part_folds_accents_and_drops_the_rest(name: str, part: str) -> None:
+    assert name_part(name) == part
 
 
 # --- exporting ----------------------------------------------------------------------------
@@ -210,7 +235,7 @@ def test_the_printable_sheet_is_an_html_file(troupe: Troupe) -> None:
     response = troupe.player.client.get(f"/characters/{agnes}/backup/sheet")
 
     assert response.headers["content-type"].startswith("text/html")
-    assert 'filename="agnes.html"' in response.headers["content-disposition"]
+    assert f'filename="Agnes-{date.today()}.html"' in response.headers["content-disposition"]
     assert "<h1>Agnes</h1>" in response.text
     assert "Celerity" in response.text
 
@@ -226,12 +251,13 @@ def test_export_all_is_a_zip_of_the_players_characters(troupe: Troupe) -> None:
     with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
         names = sorted(archive.namelist())
         manifest = json.loads(archive.read("manifest.json"))
+    on = date.today()
     assert names == [
-        "characters/agnes-2.horatio-character.json",
-        "characters/agnes.horatio-character.json",
+        f"characters/Agnes-{on}-2.horatio-character.json",
+        f"characters/Agnes-{on}.horatio-character.json",
         "manifest.json",
-        "sheets/agnes-2.html",
-        "sheets/agnes.html",
+        f"sheets/Agnes-{on}-2.html",
+        f"sheets/Agnes-{on}.html",
     ]
     assert manifest["format"] == "horatio-character-backup"
     assert [c["name"] for c in manifest["characters"]] == ["Agnes", "Agnes"]
@@ -252,8 +278,8 @@ def test_a_troupe_exports_its_own_characters_and_npcs(troupe: Troupe) -> None:
 
     with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
         manifest = json.loads(archive.read("manifest.json"))
-        agnes = json.loads(archive.read("characters/agnes.horatio-character.json"))
-        lucien = json.loads(archive.read("npcs/lucien.horatio-character.json"))
+        agnes = json.loads(archive.read(f"characters/Agnes-{date.today()}.horatio-character.json"))
+        lucien = json.loads(archive.read(f"npcs/Lucien-{date.today()}.horatio-character.json"))
     assert manifest["troupe"] == "Lords of the Night"
     assert [(c["name"], c["kind"]) for c in manifest["characters"]] == [
         ("Lucien", "npc"),
@@ -273,7 +299,7 @@ def test_a_troupe_exports_its_own_characters_and_npcs(troupe: Troupe) -> None:
     assert troupe.assistant.client.get(path, params={"emails": True}).status_code == 403
     with_emails = troupe.storyteller.client.get(path, params={"emails": True})
     with zipfile.ZipFile(io.BytesIO(with_emails.content)) as archive:
-        agnes = json.loads(archive.read("characters/agnes.horatio-character.json"))
+        agnes = json.loads(archive.read(f"characters/Agnes-{date.today()}.horatio-character.json"))
     assert agnes["player"]["email"] == troupe.player.email
 
     assert troupe.narrator.client.get(path).status_code == 403
@@ -455,9 +481,9 @@ def test_its_picture_comes_with_it(
     assert picture["crop"] == pytest.approx(document["picture"]["crop"], abs=0.01)
     everything = troupe.player.client.get("/character-backups")
     with zipfile.ZipFile(io.BytesIO(everything.content)) as archive:
-        assert "pictures/agnes.webp" in archive.namelist()
-        inside = json.loads(archive.read("characters/agnes.horatio-character.json"))
-    assert inside["picture"]["file"] == "pictures/agnes.webp"
+        assert f"pictures/Agnes-{date.today()}.webp" in archive.namelist()
+        inside = json.loads(archive.read(f"characters/Agnes-{date.today()}.horatio-character.json"))
+    assert inside["picture"]["file"] == f"pictures/Agnes-{date.today()}.webp"
     assert inside["picture"]["data"] is None
 
 

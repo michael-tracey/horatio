@@ -163,7 +163,7 @@ Printing opens in a new tab, so what you ticked stays.
 
 ### Exporting characters and NPCs
 
-The **⋯** beside **Print…** has **Export characters and NPCs…**. It downloads a `.zip` of the troupe's own characters, those at home here and its NPCs (never visitors): every one, the player characters or the NPCs only, or those you ticked. Each is a file Horatio can import, with its picture and its printable sheet as a page any browser opens, and a `manifest.json` saying what is in it. Tick **Also include** for equipment, Retainers and Alternate Identities, or titles and status.
+The **⋯** beside **Print…** has **Export characters and NPCs…**. It downloads a `.zip` of the troupe's own characters, those at home here and its NPCs (never visitors): every one, the player characters or the NPCs only, or those you ticked. Each is a file Horatio can import, named for the character and the day as a single export is, with its picture and its printable sheet as a page any browser opens, and a `manifest.json` saying what is in it. Tick **Also include** for equipment, Retainers and Alternate Identities, or titles and status.
 
 Each player character names its player by handle. Storytellers and the lead can tick **Include players' emails** too, to match characters to their players on another server; leave it off unless you need it. Staff notes are never in the file.
 

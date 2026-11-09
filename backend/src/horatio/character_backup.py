@@ -42,6 +42,7 @@ status are shown, not imported: a home troupe's storytellers give those.
 import base64
 import binascii
 import re
+import unicodedata
 import uuid
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
@@ -373,8 +374,18 @@ def slug(name: str) -> str:
     return found[:60].strip("-") or "character"
 
 
-def file_name(character: Character) -> str:
-    return slug(character.name) + SUFFIX
+def name_part(name: str) -> str:
+    """A character's name as a file name has it: accents folded to their plain letter,
+    then spaces, other letters and anything unsafe in a file name dropped, case kept.
+    "Agnes de Vries" is "AgnesdeVries"; a name with nothing left is "character"."""
+    folded = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    return re.sub(r"[^A-Za-z0-9_-]", "", folded)[:60] or "character"
+
+
+def file_stem(name: str, on: date) -> str:
+    """A backup's files are named for the character and the day it was exported:
+    "AgnesdeVries-2026-11-09", then ".horatio-character.json" or ".html"."""
+    return f"{name_part(name)}-{on.isoformat()}"
 
 
 # A backstory's marks around the sections a set of the troupe's questions built: they

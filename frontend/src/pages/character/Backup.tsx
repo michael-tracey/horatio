@@ -53,7 +53,7 @@ export function ExportBackup({ character, onDone }: { character: CharacterOut; o
       const found = await unwrap(
         api.GET("/api/characters/{character_id}/backup", { params: { path: { character_id: character.id }, query: { sections: [...chosen] } } }),
       );
-      save(new Blob([JSON.stringify(found, null, 2)], { type: "application/json" }), backupFileName(character.name));
+      save(new Blob([JSON.stringify(found, null, 2)], { type: "application/json" }), backupFileName(character.name, new Date()));
     },
   });
   return (
@@ -76,7 +76,7 @@ export function ExportBackup({ character, onDone }: { character: CharacterOut; o
           {download.isPending ? "Exporting…" : "Download backup"}
         </Button>
       </div>
-      <p className="text-right text-xs text-mist">{backupFileName(character.name)}</p>
+      <p className="text-right text-xs text-mist">{backupFileName(character.name, new Date())}</p>
     </div>
   );
 }
