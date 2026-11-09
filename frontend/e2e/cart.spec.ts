@@ -150,6 +150,14 @@ test("a Ventrue takes Royalty from the sheet, places 4, 3 and 2 free dots, chang
   await expect(p.getByText("28", { exact: true })).toBeVisible();
   await p.screenshot(shots("royalty-placed"));
 
+  // A dot bought above the free ones stays bought (#575): Herd's fourth costs 4 XP.
+  await p.getByRole("button", { name: "Raise Herd" }).click();
+  await expect(cart.getByRole("listitem").filter({ hasText: "Herd 3 → 4" })).toContainText("4 XP");
+  await p.getByRole("button", { name: "Spend XP" }).click();
+  await expect(trait("Herd").getByLabel("4 dots", { exact: true })).toBeVisible();
+  await expect(trait("Herd")).toContainText("+3 from Ventrue Royalty");
+  await expect(p.getByText("24", { exact: true })).toBeVisible();
+
   // Until a troupe accepts her, the choices change freely: Haven in place of Resources.
   await p.getByRole("button", { name: "Change the free traits for Ventrue Royalty" }).click();
   await p.getByLabel("4 dots in").selectOption("Haven");

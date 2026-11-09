@@ -159,6 +159,15 @@ def test_royalty_places_4_3_and_2_as_free_dots(troupe: Troupe) -> None:
     raised = take(troupe.player, character_id, "backgrounds", "Resources", 5)
     assert raised.status_code == 200, raised.text
     assert raised.json()["cost"] == 5
+    # The bought dot stays bought: Resources is 5, the first 4 still given (#575).
+    assert given(troupe.player, character_id, "backgrounds")["Resources"] == (
+        5,
+        4,
+        ["Ventrue Royalty"],
+    )
+    assert balance(troupe.player, character_id) == before - 5
+    history = troupe.player.client.get(f"/characters/{character_id}/xp").json()
+    assert not any(e["reason"].startswith("Resources: dots now free") for e in history)
 
 
 def test_dots_already_bought_are_refunded_and_a_later_choice_gives_them_back(
