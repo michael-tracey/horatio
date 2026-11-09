@@ -174,7 +174,7 @@ def test_storytellers_add_change_and_remove_rules_in_the_log(troupe: Troupe) -> 
         for e in troupe.session.scalars(
             select(AuditEvent)
             .where(AuditEvent.troupe_id == uuid.UUID(troupe.id))
-            .order_by(AuditEvent.created_at)
+            .order_by(AuditEvent.created_at, AuditEvent.id)
         )
         if e.action.startswith("house.teacher")
     ]

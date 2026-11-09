@@ -62,7 +62,9 @@ def send(session: Session, at: datetime = START) -> int:
 
 
 def waiting(session: Session) -> list[EmailNotice]:
-    return list(session.scalars(select(EmailNotice).order_by(EmailNotice.created_at)))
+    return list(
+        session.scalars(select(EmailNotice).order_by(EmailNotice.created_at, EmailNotice.id))
+    )
 
 
 def unsubscribe_token(message: EmailMessage) -> str:

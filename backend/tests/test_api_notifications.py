@@ -1,12 +1,16 @@
 """The bell: tasks waiting on staff, and messages for players."""
 
+import uuid
 from collections.abc import Callable
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
+from horatio import notifications
+from horatio.models import Notification
 from tests.api_helpers import Person, Troupe, new_character
 from tests.test_api_responses import Scene
 
@@ -130,6 +134,26 @@ def test_players_hear_when_downtime_results_arrive(troupe: Troupe) -> None:
     after = bell(troupe.player)
     assert after["count"] == 0
     assert [i["read"] for i in after["items"]] == [True]
+
+
+def test_messages_left_at_one_moment_keep_the_order_they_were_left(troupe: Troupe) -> None:
+    """Messages left in one transaction share a time (#584): the newest still comes
+    first, however Postgres happens to read the rows back."""
+    player = uuid.UUID(troupe.player.id)
+    for summary in ("First", "Second", "Third"):
+        notifications.notify(troupe.session, [player], "test", summary, "/", email=False)
+    # Marked read and unread again, the first sits after the others on disk, so by
+    # time alone it would come back first of the three, not last.
+    first = troupe.session.scalars(
+        select(Notification.id).where(
+            Notification.user_id == player, Notification.summary == "First"
+        )
+    ).one()
+    moved = update(Notification).where(Notification.id == first)
+    troupe.session.execute(moved.values(read_at=func.now()))
+    troupe.session.execute(moved.values(read_at=None))
+
+    assert summaries(troupe.player) == ["Third", "Second", "First"]
 
 
 def test_people_only_mark_their_own_messages_read(troupe: Troupe) -> None:
