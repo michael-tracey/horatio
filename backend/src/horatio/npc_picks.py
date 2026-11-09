@@ -34,10 +34,12 @@ much, the place goes there). Staff move or take off a place as they do a pick.
 Given to a player, the places become the merit's own choices
 (`CharacterTrait.choices`).
 
-The other free_choices grants are not fitted, and what they give is priced as
-bought: Chosen of Cappadocius's specialisations cost nothing anyway, and a merit
-that Auspicious, Old Habits, Piece That Remains or Shadows of the Past gives would
-have to be told apart from the merits the creation points buy.
+The other free_choices grants are not fitted. What Auspicious, Old Habits, Piece
+That Remains or Shadows of the Past gives is chosen, by staff or the Yorick import,
+as a player chooses it (horatio.free_choices, #577): given free, it never takes the
+merit points, and its own grants apply (Ventrue Royalty given by Piece That Remains
+has its places fitted here). Chosen of Cappadocius's specialisations cost nothing
+anyway.
 
 `python -m horatio.npc_picks` fits every NPC that needs it, once migration 0155 has
 marked the ones built so far; Custodian › Tools fits one troupe's (horatio.troupe_fit).

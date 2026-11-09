@@ -42,6 +42,8 @@ from sqlalchemy.orm import Session
 
 from horatio import audit, npc_picks, npcs, pictures, sheets
 from horatio.models import Character, CharacterTrait, Troupe, TroupeMembership, User
+from horatio.rules.grants import check_picks
+from horatio.rules.model import FreeChoice
 from horatio.rules.pricing import fixed_rating
 from horatio.rules.store import read_troupe_rules
 from horatio.specializations import troupe_options
@@ -168,6 +170,52 @@ def hold_fixed_values(db: Session, npc: Character, result: Result) -> None:
         result.revalued.append((row.definition.name, row.trait.rating, value))
         npc_picks.set_straight(row.trait, value)
     db.flush()
+
+
+def give_choices(db: Session, npc: Character, traits: Sequence[Trait], result: Result) -> None:
+    """The merits a merit that gives some names ("Piece That Remains (2, (Ventrue
+    Royalty))"), as its choices, as a player's would be (#577): given free, and with
+    their own grants. One the merit's grant won't give is refused, with why. A merit
+    printed without any keeps what staff chose for it."""
+    rule_set = sheets.rules_for(db, npc).rule_set
+    for trait in traits:
+        grant = next(
+            (
+                g
+                for g in rule_set.grants
+                if g.kind == "free_choices"
+                and (g.source["category"], g.source["name"]) == (trait.category, trait.name)
+                and g.target["category"] == "merits"
+            ),
+            None,
+        )
+        held = next(
+            (
+                r
+                for r in sheets.sheet_rows(db, npc)
+                if r.key == (trait.category, trait.name, trait.detail)
+            ),
+            None,
+        )
+        if not trait.gives or grant is None or held is None:
+            continue
+        # One held as bought (imported before #577) is given now instead.
+        given = {("merits", name, detail) for name, detail in trait.gives}
+        for row in sheets.sheet_rows(db, npc):
+            if row.key in given and not row.trait.granted_rating:
+                db.delete(row.trait)
+        db.flush()
+        sheet = [r.as_rules_trait() for r in sheets.sheet_rows(db, npc)]
+        picks = [FreeChoice(grant.key, name, detail, 0) for name, detail in trait.gives]
+        message = check_picks(grant, picks, rule_set, sheet)
+        if message is not None:
+            result.refused.append((trait.source, message))
+            continue
+        held.trait.choices = [
+            *(c for c in held.trait.choices if c.get("grant") != grant.key),
+            *({"grant": p.grant, "name": p.name, "detail": p.detail, "amount": 0} for p in picks),
+        ]
+        db.flush()
 
 
 def name_primary_paths(db: Session, npc: Character) -> None:
@@ -373,6 +421,7 @@ class Importer:
                 continue
             savepoint.commit()
         hold_fixed_values(self.db, npc, result)
+        give_choices(self.db, npc, result.mapped.traits, result)
         name_primary_paths(self.db, npc)
         # What the sheet's merits and flaws give (Rugged's health levels), as when
         # staff set an NPC's ratings (horatio.sheets.checked).

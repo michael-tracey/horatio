@@ -857,13 +857,16 @@ test("the custodian imports a troupe's characters from Yorick, matching a line a
   const troupeId: string = (await created.json()).id;
   const agnes = `Agnes Wren ${run}`;
   const thaddeus = `Thaddeus Ashby ${run}`;
+  const mystery = `Mystery Woman ${run}`;
   // The made-up page from the backend's tests, its names and Yorick ids made this run's own.
   const page = readFileSync("../backend/tests/fixtures/yorick_print.html", "utf8")
     .replaceAll("aGnEsWr3n1", `aGnEsWr3n1${run}`)
     .replaceAll("Th4ddAshby", `Th4ddAshby${run}`)
     .replaceAll("Agnes Wren", agnes)
     .replaceAll("Thaddeus Ashby", thaddeus)
-    .replaceAll("Mystery Woman", `Mystery Woman ${run}`)
+    .replaceAll("Mystery Woman", mystery)
+    // Mystery Woman's Auspicious gives her Rugged (#577): her merits are the only empty ones.
+    .replace("Merits</h4> <h4", "Merits</h4> Auspicious (1, Rugged)<br> <h4")
     // Thaddeus's notes name Potence in-clan, through Additional Common Discipline: the
     // first empty notes are his.
     .replace("Talisman (2)<br>", "Talisman (2)<br> Additional Common Discipline (4)<br>")
@@ -920,4 +923,11 @@ test("the custodian imports a troupe's characters from Yorick, matching a line a
   await lead.page.getByRole("link", { name: thaddeus }).click();
   await expect(lead.page.getByRole("checkbox", { name: "Potence", exact: true })).toBeChecked();
   await expect(lead.page.getByRole("checkbox", { name: "Protean", exact: true })).toHaveCount(0);
+
+  // Mystery Woman's Auspicious gives her Rugged, as a player's choice would.
+  await lead.page.goto(`/troupes/${troupeId}/npcs`);
+  await lead.page.getByRole("link", { name: mystery }).click();
+  await lead.page.waitForURL(/\/characters\/[^/]+$/);
+  await lead.page.goto(`${lead.page.url()}/sheet`);
+  await expect(lead.page.locator('[data-free-choices="Auspicious"]')).toContainText("Rugged");
 });

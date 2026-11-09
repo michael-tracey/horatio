@@ -304,6 +304,7 @@ def printed_with(
     merits: list[str] | None = None,
     in_clan: list[str] | None = None,
     name: str = "Wren Hollis",
+    backgrounds: list[str] | None = None,
 ) -> PrintedCharacter:
     """A made-up printed vampire: its clan, its disciplines and merits as printed, and
     what its notes' "In clan:" line names."""
@@ -318,6 +319,7 @@ def printed_with(
         morality=None,
         skills=[],
         sections={
+            "Backgrounds": [read_line(b) for b in backgrounds or []],
             "Disciplines": [read_line(d) for d in disciplines],
             "Merits": [read_line(m, points=True) for m in merits or []],
         },
@@ -443,6 +445,49 @@ def test_an_in_clan_name_that_matches_nothing_is_kept_aside() -> None:
     assert [t.name for t in mapped.traits if t.category == "extra_in_clan_disciplines"] == [
         "Celerity"
     ]
+
+
+# --- merits that give merits (#577) ----------------------------------------------------
+
+
+def gifts(printed: PrintedCharacter) -> dict[str, list[tuple[str, str]]]:
+    """What each merit that gives merits is mapped to give."""
+    return {t.name: t.gives for t in mapper().character(printed).traits if t.gives}
+
+
+def test_the_merit_a_merit_gives_is_read_from_its_detail() -> None:
+    printed = printed_with(
+        "Caitiff",
+        [],
+        [
+            "Piece That Remains (2, (Angelic Visage: Appearance))",
+            "Auspicious (1, Rugged)",
+            "Rugged (3)",
+        ],
+    )
+
+    assert gifts(printed) == {
+        "Piece That Remains": [("Angelic Visage", "Appearance")],
+        "Auspicious": [("Rugged", "")],
+    }
+    merits = {t.name: t.note for t in mapper().character(printed).traits if t.category == "merits"}
+    # Not kept as a note, and Rugged's own line is the one Auspicious gives.
+    assert merits == {"Piece That Remains": "", "Auspicious": ""}
+
+
+def test_a_merit_given_that_matches_nothing_is_kept_aside() -> None:
+    printed = printed_with("Caitiff", [], ["Piece That Remains (2, (Butning Wrath))"])
+
+    mapped = mapper().character(printed)
+
+    assert [t.name for t in mapped.traits if t.category == "merits"] == ["Piece That Remains"]
+    (unmatched,) = mapped.unmatched
+    assert (unmatched.reason, unmatched.table, unmatched.category, unmatched.key) == (
+        "no such merit: Butning Wrath",
+        "names",
+        "merits",
+        "Butning Wrath",
+    )
 
 
 def test_a_troupes_own_list_of_areas_is_all_that_matches(tmp_path: Path) -> None:
@@ -621,3 +666,97 @@ def test_an_imported_expertise_without_its_path_prices_the_path_in_clan(
         for v in sheets.sheet_violations(session, tremere)
         if "Thaumaturgic Training" in v.message
     ]
+
+
+def test_an_imported_merit_given_is_free_and_gives_what_it_gives(
+    troupe: Troupe, session: Session
+) -> None:
+    remnant = import_one(
+        session,
+        troupe,
+        printed_with(
+            "Caitiff",
+            [],
+            ["Piece That Remains (2, (Ventrue Royalty))"],
+            backgrounds=["Resources x5", "Haven x3", "Allies x2"],
+        ),
+    )
+
+    rows = {r.definition.name: r.trait for r in sheets.sheet_rows(session, remnant)}
+    assert [c["name"] for c in rows["Piece That Remains"].choices] == ["Ventrue Royalty"]
+    royalty = rows["Ventrue Royalty"]
+    assert (royalty.rating, royalty.free_rating, royalty.granted_rating) == (2, 2, 2)
+    # Ventrue Royalty's own grant places its 4, 3 and 2.
+    assert {n: rows[n].grant_place for n in ("Resources", "Haven", "Allies")} == {
+        "Resources": 4,
+        "Haven": 3,
+        "Allies": 2,
+    }
+    tally = {line.name: line.cost for line in npcs.tally(session, remnant)[1]}
+    assert tally["Ventrue Royalty"] == 0
+    assert (tally["Haven"], tally["Allies"]) == (0, 0)
+
+
+def test_an_imported_merit_given_that_its_merit_cant_give_is_refused(
+    troupe: Troupe, session: Session
+) -> None:
+    lords = session.get_one(TroupeRecord, uuid.UUID(troupe.id))
+    lead = session.get_one(User, lords.lead_user_id)
+    importer = import_yorick_print.Importer(
+        session,
+        lords,
+        lead,
+        Mapper(table(), import_yorick_print.catalogue_for(session, lords)),
+        Path("."),
+        pictures_root=None,
+    )
+    # Auspicious copies a General merit; Ventrue Royalty is a clan merit.
+    (result,) = importer.run(
+        [printed_with("Caitiff", [], ["Auspicious (1, Ventrue Royalty)"], name="Lark")]
+    )
+
+    assert result.refused == [
+        (
+            "Merits: Auspicious (1, Ventrue Royalty)",
+            "Ventrue Royalty is not one of the traits Auspicious can give.",
+        )
+    ]
+    npc = session.get_one(Character, uuid.UUID(result.character_id or ""))
+    merits = [
+        r.definition.name for r in sheets.sheet_rows(session, npc) if r.category.key == "merits"
+    ]
+    assert merits == ["Auspicious"]
+
+
+def test_importing_again_gives_a_merit_held_as_bought_before(
+    troupe: Troupe, session: Session
+) -> None:
+    """An NPC imported before #577 holds the merit given as bought: importing it again
+    gives it instead."""
+    lords = session.get_one(TroupeRecord, uuid.UUID(troupe.id))
+    lead = session.get_one(User, lords.lead_user_id)
+
+    def run(merits: list[str]) -> import_yorick_print.Result:
+        importer = import_yorick_print.Importer(
+            session,
+            lords,
+            lead,
+            Mapper(table(), import_yorick_print.catalogue_for(session, lords)),
+            Path("."),
+            pictures_root=None,
+        )
+        (result,) = importer.run([printed_with("Caitiff", [], merits)])
+        return result
+
+    first = run(["Auspicious (1)", "Rugged (3)"])
+    npc = session.get_one(Character, uuid.UUID(first.character_id or ""))
+    rugged = next(r.trait for r in sheets.sheet_rows(session, npc) if r.definition.name == "Rugged")
+    assert rugged.granted_rating == 0
+
+    again = run(["Auspicious (1, Rugged)", "Rugged (3)"])
+
+    assert again.outcome == "updated" and not again.refused
+    rows = {r.definition.name: r.trait for r in sheets.sheet_rows(session, npc)}
+    assert [c["name"] for c in rows["Auspicious"].choices] == ["Rugged"]
+    assert (rows["Rugged"].rating, rows["Rugged"].granted_rating) == (3, 3)
+    assert {line.name: line.cost for line in npcs.tally(session, npc)[1]}["Rugged"] == 0

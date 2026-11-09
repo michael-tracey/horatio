@@ -1205,7 +1205,8 @@ def grant_once(
                 rules, [], SheetTrait(key[0], key[1], free + bought, free, key[2])
             ).cost
             definition, _ = find_definition(db, character, key[0], key[1])
-            if refund:
+            # An NPC's dots are set straight, never bought: nothing to refund.
+            if refund and character.kind == "pc":
                 db.add(
                     XpEntry(
                         character_id=character.id,
