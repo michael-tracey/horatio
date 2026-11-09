@@ -3234,6 +3234,11 @@
             "title": "Domitor",
             "type": "string"
           },
+          "fits_picks": {
+            "default": false,
+            "title": "Fits Picks",
+            "type": "boolean"
+          },
           "kind": {
             "default": "pc",
             "enum": [
@@ -3305,6 +3310,11 @@
               }
             ],
             "title": "Npc Kind"
+          },
+          "on_whos_who": {
+            "default": false,
+            "title": "On Whos Who",
+            "type": "boolean"
           },
           "primary_paths": {
             "additionalProperties": {
@@ -3661,6 +3671,35 @@
           "given_on"
         ],
         "title": "BackupStatus",
+        "type": "object"
+      },
+      "BackupStock": {
+        "additionalProperties": false,
+        "description": "What a Stock NPC has in place of a sheet: its rating and specializations.",
+        "properties": {
+          "rating": {
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          },
+          "specializations": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "maxItems": 100,
+            "title": "Specializations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rating"
+        ],
+        "title": "BackupStock",
         "type": "object"
       },
       "BackupTitle": {
@@ -6438,6 +6477,16 @@
             "maxItems": 500,
             "title": "Status",
             "type": "array"
+          },
+          "stock": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BackupStock"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "titles": {
             "default": [],

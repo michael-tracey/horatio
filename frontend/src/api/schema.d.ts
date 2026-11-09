@@ -11765,6 +11765,11 @@ export interface components {
              */
             domitor: string;
             /**
+             * Fits Picks
+             * @default false
+             */
+            fits_picks: boolean;
+            /**
              * Kind
              * @default pc
              * @enum {string}
@@ -11782,6 +11787,11 @@ export interface components {
             npc_form?: ("sheeted" | "stock") | null;
             /** Npc Kind */
             npc_kind?: string | null;
+            /**
+             * On Whos Who
+             * @default false
+             */
+            on_whos_who: boolean;
             /**
              * Primary Paths
              * @default {}
@@ -11931,6 +11941,21 @@ export interface components {
              * @default
              */
             story: string;
+        };
+        /**
+         * BackupStock
+         * @description What a Stock NPC has in place of a sheet: its rating and specializations.
+         */
+        BackupStock: {
+            /** Rating */
+            rating: number;
+            /**
+             * Specializations
+             * @default []
+             */
+            specializations: {
+                [key: string]: string;
+            }[];
         };
         /** BackupTitle */
         BackupTitle: {
@@ -12990,6 +13015,7 @@ export interface components {
              * @default []
              */
             status: components["schemas"]["BackupStatus"][];
+            stock?: components["schemas"]["BackupStock"] | null;
             /**
              * Titles
              * @default []
