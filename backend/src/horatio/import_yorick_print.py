@@ -6,10 +6,11 @@ itself, and its report.
 Each printed character (horatio.yorick_print) is matched to Horatio's names
 (horatio.yorick_names, with the table in yorick_names.toml and the troupe's own over
 it) and made a sheeted NPC of the troupe, its traits set straight from the printout
-as staff set an NPC's. Rule checks do not stop it: what the sheet breaks is flagged
-on it as on any sheet, and listed in the report. Its portrait is attached, where the
-list shows one. It keeps its Yorick id as its `legacy_id` (or, with none, a stable
-hash of its printed name), and the log says it was imported.
+as staff set an NPC's, with the extra in-clan disciplines its notes or merits name
+(#565). Rule checks do not stop it: what the sheet breaks is flagged on it as on any
+sheet, and listed in the report. Its portrait is attached, where the list shows one.
+It keeps its Yorick id as its `legacy_id` (or, with none, a stable hash of its
+printed name), and the log says it was imported.
 
 **Importing it again** updates the characters it made before, matched on
 `legacy_id`, rather than making them twice: their name and every trait the printout
@@ -543,7 +544,11 @@ def character_report(result: Result) -> list[str]:
     lines.append(f"XP at the troupe's prices: {result.xp}")
     lines.append(f"Portrait: {result.portrait}")
     if printed.extended_text:
-        lines.append("Its extended print text is not imported (see characters.json).")
+        lines.append(
+            "Its extended print text is not imported"
+            + (", but for its In clan line" if printed.in_clan else "")
+            + " (see characters.json)."
+        )
     return lines
 
 

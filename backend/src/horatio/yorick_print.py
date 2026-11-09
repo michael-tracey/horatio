@@ -1,7 +1,7 @@
 """Reading a troupe's characters from Yorick's Print Characters page (issue #482).
 
 The page is Yorick's "Print Troupe Characters", saved from the browser as HTML with
-its `_files/` folder. It holds two things this reads:
+its `_files/` folder. It holds three things this reads:
 
 - the troupe's character list: each character's Yorick id (`backendid`), the name
   it is listed under, and its portrait thumbnail, if it has one;
@@ -9,7 +9,10 @@ its `_files/` folder. It holds two things this reads:
   antecedence, sect, faction and title; Physical, Social and Mental with their
   focuses; Morality; skills; and under headings, its backgrounds, disciplines,
   merits, flaws and the rest, one line each ("Haven x3", "Custom x1: Social Media",
-  "Thaumaturgical Expertise (1, Path of Conjuring)").
+  "Thaumaturgical Expertise (1, Path of Conjuring)");
+- the disciplines it is in-clan for, where the player wrote them in the notes printed
+  with the sheet, as "In clan: Animalism, Auspex, Presence" (#565). Yorick prints
+  its extra in-clan disciplines nowhere else.
 
 Blood, Willpower and health levels are printed too, but Horatio works them out from
 the rest of the sheet, so they are not read. Nothing here knows Horatio's names for
@@ -32,6 +35,8 @@ SHEET_CLASS = "force-printing-page-break"
 NO_PORTRAIT = "head_skull"
 # A label Yorick's players put before a name: "[On hold] Agnes", "[NPC] Old Tom".
 LABEL = re.compile(r"^\s*\[(?P<label>[^\]]*)\]\s*")
+# A line of the printed notes naming the character's in-clan disciplines.
+IN_CLAN = re.compile(r"^\s*in[\s-]*clan(?:\s+disciplines)?\s*:\s*(?P<names>.+)$", re.IGNORECASE)
 
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "wbr"}
 
@@ -216,6 +221,9 @@ class PrintedCharacter:
     sections: dict[str, list[Line]]
     # What the player added to print with the sheet (notes, stat lines), as text.
     extended_text: str = ""
+    # The in-clan disciplines its notes name, as written ("Animalism", "Thaumaturgy:
+    # Path of Corruption"), the clan's own among them.
+    in_clan: list[str] = field(default_factory=list[str])
 
 
 def legacy_hash(name: str, occurrence: int = 1) -> str:
@@ -326,6 +334,16 @@ def extended_text_of(sheet: Node) -> str:
     return "\n".join(line for _, line in lines_of(node)) if node is not None else ""
 
 
+def in_clan_of(extended_text: str) -> list[str]:
+    """The disciplines an "In clan: A, B and C" line of the notes names, if one does."""
+    for line in extended_text.splitlines():
+        found = IN_CLAN.match(line)
+        if found is not None:
+            names = re.split(r",|;|/|\band\b|&", found["names"], flags=re.IGNORECASE)
+            return [n.strip(" .") for n in names if n.strip(" .")]
+    return []
+
+
 def read_page(text: str) -> list[PrintedCharacter]:
     """Every character printed on the page, in the page's order."""
     root = parse_html(text)
@@ -352,6 +370,7 @@ def read_page(text: str) -> list[PrintedCharacter]:
             # Not in the list, or more than one character printed under the name: which
             # id and portrait is whose can't be told.
             legacy_id, portrait = legacy_hash(printed, seen[printed]), None
+        extended_text = extended_text_of(sheet)
         found.append(
             PrintedCharacter(
                 legacy_id=legacy_id,
@@ -364,7 +383,8 @@ def read_page(text: str) -> list[PrintedCharacter]:
                 morality=morality_of(sheet),
                 skills=skills_of(sheet),
                 sections=sections_of(sheet),
-                extended_text=extended_text_of(sheet),
+                extended_text=extended_text,
+                in_clan=in_clan_of(extended_text),
             )
         )
     return found
