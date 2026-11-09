@@ -11074,31 +11074,6 @@
         "title": "Desk",
         "type": "object"
       },
-      "DetailChange": {
-        "properties": {
-          "category": {
-            "title": "Category",
-            "type": "string"
-          },
-          "detail": {
-            "maxLength": 200,
-            "minLength": 1,
-            "title": "Detail",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          }
-        },
-        "required": [
-          "category",
-          "name",
-          "detail"
-        ],
-        "title": "DetailChange",
-        "type": "object"
-      },
       "DiablerieAsk": {
         "properties": {
           "committed_on": {
@@ -47909,6 +47884,36 @@
         "title": "GiveIn",
         "type": "object"
       },
+      "horatio__api__npcs__DetailChange": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "to": {
+            "maxLength": 200,
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "to"
+        ],
+        "title": "DetailChange",
+        "type": "object"
+      },
       "horatio__api__play__ResetIn": {
         "properties": {
           "game_id": {
@@ -47987,6 +47992,31 @@
           "reason"
         ],
         "title": "AppliedOut",
+        "type": "object"
+      },
+      "horatio__api__specializations__DetailChange": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "detail"
+        ],
+        "title": "DetailChange",
         "type": "object"
       },
       "horatio__api__teachers__TeachingOut": {
@@ -54478,6 +54508,60 @@
         ]
       }
     },
+    "/api/characters/{character_id}/npc/detail": {
+      "put": {
+        "description": "Change the detail of one of an NPC's traits in place, and get the new tally.",
+        "operationId": "set_detail_api_characters__character_id__npc_detail_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/horatio__api__npcs__DetailChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tally"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Detail",
+        "tags": [
+          "npcs"
+        ]
+      }
+    },
     "/api/characters/{character_id}/npc/picks": {
       "get": {
         "description": "The NPC's creation picks, and where each could go (horatio.npc_picks).",
@@ -58612,7 +58696,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DetailChange"
+                "$ref": "#/components/schemas/horatio__api__specializations__DetailChange"
               }
             }
           },

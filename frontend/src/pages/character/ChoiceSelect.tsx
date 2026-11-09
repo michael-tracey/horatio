@@ -18,6 +18,12 @@ export function choiceDetail(choice: string, field: string): string {
   return field.trim() ? `${choice}: ${field}` : choice;
 }
 
+/** The choices split into those preferred (on the sheet already) and the rest, each in its order. */
+export function preferredFirst(choices: string[], preferred: string[]): { first: string[]; rest: string[] } {
+  const wanted = new Set(preferred);
+  return { first: choices.filter((c) => wanted.has(c)), rest: choices.filter((c) => !wanted.has(c)) };
+}
+
 /**
  * The choice a trait asks for in its detail (Personal Cult: which background), and for a
  * choice of skill bought once per field (Crafts, Performance), the field with it: a free
@@ -32,6 +38,7 @@ export function ChoiceSelect({
   placeholder = "Choose…",
   className,
   required,
+  preferred = [],
 }: {
   choices: string[];
   value: string;
@@ -41,15 +48,31 @@ export function ChoiceSelect({
   placeholder?: string;
   className?: string;
   required?: boolean;
+  /** Choices to list first, under their own heading: those on the sheet already. */
+  preferred?: string[];
 }) {
   const { choice, field } = choiceParts(value, choices);
+  const { first, rest } = preferredFirst(choices, preferred);
   return (
     <span className="flex min-w-0 flex-wrap items-center gap-2">
       <Select aria-label={label} required={required} className={className} value={choice} onChange={(e) => onChange(choiceDetail(e.target.value, fields.has(e.target.value) ? field : ""))}>
         <option value="">{placeholder}</option>
-        {choices.map((c) => (
-          <option key={c}>{c}</option>
-        ))}
+        {first.length > 0 ? (
+          <>
+            <optgroup label="On the sheet">
+              {first.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Others">
+              {rest.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </optgroup>
+          </>
+        ) : (
+          choices.map((c) => <option key={c}>{c}</option>)
+        )}
       </Select>
       {fields.has(choice) && (
         <Input

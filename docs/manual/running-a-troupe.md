@@ -204,6 +204,13 @@ With **NPCs** or **Everyone** shown, choose **New NPC**:
    - **Stock**: no sheet, only a rating and a few specialisations, as the book's Stock NPCs have.
 3. Choose **Quick build**, **Use step-by-step creation** or **Make Stock NPC**.
 
+In the quick build, a trait the NPC holds can carry a detail, as a player's can:
+- **A merit that applies to something:** a merit like Thaumaturgic Expertise needs its choice, here which path it makes in-clan. Until that's made, it shows **Choose what it applies to** under the merit, and the NPC's sheet lists it under **Against the rules**. Choose from its list (the NPC's own paths come first) and choose **Set**.
+- **A field or a name:** a skill taken once per field, such as Crafts, needs its field, and a Retainer needs its name. Each is asked for in the same way.
+- **Any other detail:** **Detail** beside a skill, background, merit or flaw adds one, and **Change** alters one already there.
+- **What stays:** a changed detail keeps the trait's rating and its creation pick.
+- **More than one:** where a trait can be held more than once, such as Crafts in a second field or another Retainer, use **Add another field** or **Add another Retainer**.
+
 ### Stock NPCs
 
 A Stock NPC's page shows its **Stat block** worked out from its kind and rating, and a rules card for its kind. Change its name, kind or rating, add up to as many **Specialisations** as its rating, and keep **Notes**; each change saves as you make it. **Make this a full sheet…** turns it into a sheeted NPC. That cannot be undone.

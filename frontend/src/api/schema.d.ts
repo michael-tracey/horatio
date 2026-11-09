@@ -2158,6 +2158,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/npc/detail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Detail
+         * @description Change the detail of one of an NPC's traits in place, and get the new tally.
+         */
+        put: operations["set_detail_api_characters__character_id__npc_detail_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/npc/picks": {
         parameters: {
             query?: never;
@@ -14709,15 +14729,6 @@ export interface components {
             posts: components["schemas"]["PostOut"][];
             /** Writes */
             writes: boolean;
-        };
-        /** DetailChange */
-        DetailChange: {
-            /** Category */
-            category: string;
-            /** Detail */
-            detail: string;
-            /** Name */
-            name: string;
         };
         /** DiablerieAsk */
         DiablerieAsk: {
@@ -29018,6 +29029,20 @@ export interface components {
             /** Handle */
             handle: string;
         };
+        /** DetailChange */
+        horatio__api__npcs__DetailChange: {
+            /** Category */
+            category: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Name */
+            name: string;
+            /** To */
+            to: string;
+        };
         /** ResetIn */
         horatio__api__play__ResetIn: {
             /** Game Id */
@@ -29055,6 +29080,15 @@ export interface components {
             free: boolean;
             /** Reason */
             reason: string;
+        };
+        /** DetailChange */
+        horatio__api__specializations__DetailChange: {
+            /** Category */
+            category: string;
+            /** Detail */
+            detail: string;
+            /** Name */
+            name: string;
         };
         /** TeachingOut */
         horatio__api__teachers__TeachingOut: {
@@ -33243,6 +33277,41 @@ export interface operations {
             };
         };
     };
+    set_detail_api_characters__character_id__npc_detail_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["horatio__api__npcs__DetailChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tally"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_picks_api_characters__character_id__npc_picks_get: {
         parameters: {
             query?: never;
@@ -35824,7 +35893,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["DetailChange"];
+                "application/json": components["schemas"]["horatio__api__specializations__DetailChange"];
             };
         };
         responses: {

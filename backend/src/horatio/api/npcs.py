@@ -408,6 +408,26 @@ def set_rating(character_id: uuid.UUID, body: Rating, db: DbSession, user: Curre
     return tally(character_id, db, user)
 
 
+class DetailChange(BaseModel):
+    category: str
+    name: str
+    # The detail the NPC holds the trait with now ("" for none), and the one it takes.
+    detail: str = Field(default="", max_length=200)
+    to: str = Field(max_length=200)
+
+
+@router.put("/characters/{character_id}/npc/detail")
+def set_detail(
+    character_id: uuid.UUID, body: DetailChange, db: DbSession, user: CurrentUser
+) -> Tally:
+    """Change the detail of one of an NPC's traits in place, and get the new tally."""
+    npc = players_character(db, user, character_id)
+    with sheets.checked(db, npc, user):
+        npcs.set_detail(db, user, npc, body.category, body.name, body.detail, body.to.strip())
+    db.commit()
+    return tally(character_id, db, user)
+
+
 @router.get("/characters/{character_id}/npc/tally")
 def tally(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Tally:
     """What the NPC's sheet would be worth in experience under its troupe's rules."""

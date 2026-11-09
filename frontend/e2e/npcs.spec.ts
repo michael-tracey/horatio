@@ -222,6 +222,55 @@ test("a quick NPC's Ventrue Royalty places its free backgrounds, and staff take 
   await expect(p.getByText("Kept without a merit's free dots: Haven.")).toHaveCount(0);
 });
 
+test("staff choose a quick NPC's Thaumaturgic Expertise path and a skill's field, keeping its picks", async ({ browser }) => {
+  const custodian = await person(browser, "paths-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "paths-lead");
+  const { npcId } = await troupeWithNpc(custodian.page, lead.handle, "Court of Paths", "Isadora Quill");
+  const p = lead.page;
+  const path = "Thaumaturgy: Path of Caelestikinesis";
+  // As a Yorick import leaves it (#570): the merit held with no path chosen, and Crafts with no field.
+  for (const [category, name, rating] of [
+    ["clan", "Tremere", null],
+    ["disciplines", "Thaumaturgy: Path of Blood", 3],
+    ["disciplines", path, 2],
+    ["merits", "Thaumaturgic Expertise", 1],
+    ["skills", "Crafts", 2],
+  ] as const) {
+    const rated = await p.request.put(`/api/characters/${npcId}/npc/ratings`, { headers: { "X-Horatio": "1" }, data: { category, name, rating } });
+    expect(rated.status(), await rated.text()).toBe(200);
+  }
+  await p.goto(`/characters/${npcId}`);
+  await expect(p.getByText("26 XP", { exact: true })).toBeVisible();
+
+  // Both are flagged where they're listed, each with the box to put it right in.
+  const expertise = p.getByRole("listitem").filter({ has: p.getByLabel("What Thaumaturgic Expertise applies to") });
+  await expect(expertise.getByText("Choose what it applies to:")).toBeVisible();
+  await expect(p.getByText("Crafts needs a field:")).toBeVisible();
+
+  // The NPC's own paths are listed first. Chosen, the path is priced in-clan: 6 XP, not 12.
+  await expertise.getByLabel("What Thaumaturgic Expertise applies to").selectOption(path);
+  await p.screenshot(shots("npc-detail"));
+  await expertise.getByRole("button", { name: "Set" }).click();
+  await expect(p.getByText("20 XP", { exact: true })).toBeVisible();
+  await expect(p.getByText("Choose what it applies to:")).toHaveCount(0);
+  await expect(p.getByText(`Thaumaturgic Expertise: ${path}`, { exact: true })).toBeVisible();
+
+  // Crafts takes its field in place, and keeps its rating and its creation pick.
+  await p.getByLabel("Crafts field", { exact: true }).fill("Illumination");
+  await p.getByLabel("Crafts field", { exact: true }).press("Enter");
+  await expect(p.getByRole("button", { name: "Crafts: Illumination 2", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(p.getByText("Crafts needs a field:")).toHaveCount(0);
+  await expect(p.getByText("20 XP", { exact: true })).toBeVisible();
+
+  // And it can be changed again later.
+  await p.getByRole("button", { name: "Change the detail of Crafts: Illumination" }).click();
+  await p.getByLabel("Crafts field", { exact: true }).fill("Painting");
+  await p.getByRole("button", { name: "Set", exact: true }).click();
+  await expect(p.getByRole("button", { name: "Crafts: Painting 2", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(p.getByText("20 XP", { exact: true })).toBeVisible();
+});
+
 /** A troupe led by `lead`, made by the custodian, with a sheeted vampire NPC built in it. */
 async function troupeWithNpc(custodian: Page, lead: string, troupe: string, npc: string): Promise<{ troupeId: string; npcId: string }> {
   const headers = { "X-Horatio": "1" };
