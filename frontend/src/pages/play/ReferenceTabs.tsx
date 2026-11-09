@@ -3,7 +3,7 @@ import type { DisciplinePowers, PlayItem, PlayReference, PowerSwitch, TestPool }
 import { changedText } from "../../backgroundChanges";
 import { useClanName } from "../../components/ClanNames";
 import { HouseMark } from "../../components/HouseMark";
-import { TraitInfo } from "../../components/TraitInfo";
+import { PageRef, pageLabel, TraitInfo } from "../../components/TraitInfo";
 import { Rating } from "../../components/ui";
 import { useDates } from "../../dates";
 import { pipsOf } from "../../ratings";
@@ -356,7 +356,17 @@ export function PoolsTab({
                   </p>
                   {using && o.cost && <UseButtons costed={o} view={using.view} use={using.use} />}
                 </div>
-                {o.note && <p className="text-mist">{o.note}</p>}
+                {o.note && (
+                  <p className="text-mist">
+                    {named(o.note)}
+                    {pageLabel(o.page) && (
+                      <span className="whitespace-nowrap text-xs">
+                        {" "}
+                        (<PageRef page={o.page} />)
+                      </span>
+                    )}
+                  </p>
+                )}
               </li>
             ))}
           </ul>

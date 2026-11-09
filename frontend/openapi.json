@@ -27279,6 +27279,17 @@
             ],
             "title": "Note"
           },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
           "switches": {
             "default": [],
             "items": {

@@ -794,354 +794,530 @@ name = "Sail Boats"
 [[traits]]
 category = "elder_disciplines"
 name = "Animalism: Crimson Fury"
+description = "Always on: anyone who bites you or drinks your Blood flees in a fear frenzy Willpower can't stop; a diablerist dies within three nights."
+page_reference = "212"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Animalism: Intimidate the Beast"
+description = "2 Blood, standard action, Animalism test on someone focused on you: for 10 minutes they take 2 damage nothing reduces whenever they face, address or attack you."
+page_reference = "212-213"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Animalism: Master of the Hunt"
+description = "1 Blood, simple action: up to your Animal Ken dots of vampire allies (or Stock NPCs of level 3 or less) get Drawing Out the Beast's benefits for an hour while they can see you."
+page_reference = "Vol. 2, p. 193"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Animalism: Quell the Herd"
+description = "+1 Blood on Quell the Beast: test up to your Animal Ken dots of targets in sight, each separately."
+page_reference = "Vol. 2, p. 193"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Auspex: Clairvoyance"
+description = "1 Blood, standard action: sense a familiar person, place or object far away for 5 minutes per Investigation dot; a test against the supernatural."
+page_reference = "213"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Auspex: Fog of War"
+description = "Blood and a simple action: 10 minutes per Blood of a top-down view of the battle, with enemies seen through walls; once a turn, someone can retest with your Willpower."
+page_reference = "Vol. 2, p. 195"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Auspex: Psychic Assault"
+description = "1 Blood, standard action, Auspex test: 4 damage (5 on an exceptional success) that armour and Fortitude can't reduce; you can try again after failing."
+page_reference = "213"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Auspex: Psychic Drain"
+description = "1 Blood, standard action, Auspex test: the target loses 2 Willpower, which you can spend this turn (not on defence)."
+page_reference = "Vol. 2, p. 196"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Celerity: Nimble Departure"
+description = "2 Blood for the turn: Dodge gains your number of Celerity powers, and a fair escape you can keep, but only challenges to get away."
+page_reference = "Vol. 2, p. 198"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Celerity: Projectile"
+description = "1 Blood per thrown or firearms attack: +3 to the attack and 1 more damage, even without the rest of Celerity."
+page_reference = "214"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Celerity: Quickness"
+description = "Always on: each time you activate Celerity, an extra round of actions (simple and standard) in the third Celerity round."
+page_reference = "214"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Celerity: Zephyr"
+description = "1 Blood: double your movement and run on walls, ceilings and water; it ends after a round without moving."
+page_reference = "Vol. 2, p. 199"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Chimerstry: Army of Apparitions"
+description = "1 Blood, standard action: 3 Apparitions for each Subterfuge dot (at least 3), changed together or one by one."
+page_reference = "214"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Chimerstry: Horrid Blade of the Demons"
+description = "2 Blood, standard action: for an hour, a level 5 magical melee weapon only you can wield, with two qualities and 5 points of Cantrips."
+page_reference = "Vol. 2, pp. 201-202"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Chimerstry: Shared Nightmare"
+description = "Always on: Horrid Reality's Apparitions can attack up to five characters at once, each tested separately."
+page_reference = "214"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Chimerstry: Truth's Essence"
+description = "1 Blood, standard action, Chimerstry test: dispel illusions and Obfuscate on a person or a small area (not elder or luminary ones)."
+page_reference = "Vol. 2, pp. 202-203"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Daimoinon: Bring Forth the Plague"
+description = "2 Blood, standard action: for 5 minutes your touch, grapples and Brawl blows infect people with a virility 20 plague."
+page_reference = "Vol. 2, pp. 204-205"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Daimoinon: Infernal Compact"
+description = "3 Blood and a five-turn ritual: a willing target who sacrifices something dear gets the Infernal Power merit free, until one of you dies."
+page_reference = "214-215"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Daimoinon: Walking Atrocity"
+description = "Always on: a free bonus attribute dot for each Morality dot below 5, and another each time Morality drops."
+page_reference = "Vol. 2, p. 205"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Dementation: Deny"
+description = "3 Blood, simple action: for an hour an object (up to car size) can't block, touch or hurt you; up to three objects, paying for each."
+page_reference = "215"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Dementation: La Llorona's Lament"
+description = "1 Blood, simple action: a prohibition; whoever in sight breaks it gains Despair (-3 initiative each, and at 3 they weep away their actions). Kept up with Blood."
+page_reference = "Vol. 2, p. 207"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Dementation: Lingering Malaise"
+description = "Always on: victims of your Voice of Madness sit at 2 Derangement traits, and a psychotic break resets them to 2."
+page_reference = "215"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Dementation: Restructure"
+description = "2 Blood, 3 standard actions (a test if unwilling): change a target's Archetype and focuses for the night, or strip them for an hour."
+page_reference = "Vol. 2, p. 208"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Dominate: Chain of Command"
+description = "1 Blood, standard action: a messenger carries your Mesmerism to a named recipient, for up to 30 days."
+page_reference = "Vol. 2, p. 210"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Dominate: Fealty"
+description = "1 Blood, standard action, on a freely sworn oath: lasting familiarity, constant Gaze and Focus, and free Mental and Social retests on your vassal."
+page_reference = "Vol. 2, pp. 210-211"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Dominate: Mass Manipulation"
+description = "Always on: your Dominate powers can take as many more targets as your current Willpower, all focused on you."
+page_reference = "215-216"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Dominate: Tyrant's Gaze"
+description = "1 Blood, standard action, Dominate test on someone focused on you: one of their powers is locked away for an hour."
+page_reference = "216"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Fortitude: King of the Mountain"
+description = "Always on: you can't be knocked back, knocked down or disarmed, and a melee or unarmed attacker who misses you staggers 2 steps back."
+page_reference = "Vol. 2, p. 213"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Fortitude: Personal Armor"
+description = "2 Blood, simple action: for an hour, weapons that hit you break (so no staking), and Brawl attackers take half the damage they deal."
+page_reference = "216"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Fortitude: Repair the Undead Flesh"
+description = "2 Blood, no action: heal 1 aggravated damage."
+page_reference = "216"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Fortitude: Resilient Mind"
+description = "1 Blood, simple action: 30 minutes free of derangements and psychological flaws, with Willpower back on retests against attacks on your sanity."
+page_reference = "Vol. 2, p. 213"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Melpominee: Persistent Echo"
+description = "Leave a Phantom Speaker, Madrigal or Death of the Drum waiting for a trigger, for nights equal to your Singing dots."
+page_reference = "217"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Melpominee: Reverberation"
+description = "1 Blood, simple action, out of turn: someone (or you) who just failed with a voice power gets a free retest."
+page_reference = "Vol. 2, p. 215"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Melpominee: Shattering Crescendo"
+description = "Always on: Death of the Drum does 1 more damage to one target, or hits up to three."
+page_reference = "217"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Melpominee: Sound Wave"
+description = "+1 Blood on Death of the Drum: you may test Social + Subterfuge against Physical + Willpower, and a win pushes them 3 steps."
+page_reference = "Vol. 2, p. 216"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Mytherceria: Fiddlesticks"
+description = "3 Blood, standard action, Mytherceria test on someone focused on you: one of their skills drops to 1 for 30 minutes."
+page_reference = "Vol. 2, p. 217"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Mytherceria: Promises Like Steel"
+description = "1-3 Blood, standard action, Mytherceria test: up to 3 points of flaws curse someone who doesn't keep a promise in time (a month, a week or a night)."
+page_reference = "Vol. 2, pp. 217-218"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Mytherceria: Steal the Mind"
+description = "2 Blood, standard action, Mytherceria test: for 5 minutes you gain +3 Mental and the target loses 3."
+page_reference = "217"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Obeah: Rayzeel's Grace"
+description = "2 Blood, standard action: Grace points (one per Obeah power) to heal anyone in sight for 5 minutes."
+page_reference = "Vol. 2, p. 219"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Obeah: Revocation of Caine's Grace"
+description = "3 Blood, standard action, Obeah test: for 10 minutes the target loses their highest power in two of the eight common disciplines."
+page_reference = "Vol. 2, p. 220"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Obeah: Unburden the Bestial Soul"
+description = "3 Blood and a minute's touch: a willing target loses all Beast traits and can't gain any that night."
+page_reference = "217-218"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Obfuscate: Cache"
+description = "Always on: Cloak the Gathering and Conceal last until dawn, however far the target goes."
+page_reference = "218"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Obfuscate: Mental Maze"
+description = "1 Blood, standard action, Obfuscate test on up to your Stealth dots of targets: lost in the area for 10 minutes, with no fair escape."
+page_reference = "Vol. 2, pp. 221-222"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Obfuscate: Phantom Hunter"
+description = "3 Blood, any time: for an everyman round, attacking or speaking doesn't end your Unseen Presence."
+page_reference = "218"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Obfuscate: Soul Mask"
+description = "Always on: your mind can't be read; 1 Blood and a simple action repaint your aura."
+page_reference = "Vol. 2, p. 221"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Obtenebration: Shadow Twin"
+description = "Your shadow becomes a servant that acts on your thoughts: half your attributes, all your skills, and Obtenebration 1-2 once an hour."
+page_reference = "219"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Obtenebration: Shadowstep"
+description = "1 Blood, standard action: step into a natural shadow and out of another up to 50 steps away (3 Blood with a passenger)."
+page_reference = "218-219"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Obtenebration: Shadowy Betrayal"
+description = "1 Blood, standard action, Social + Occult against Social + Willpower: the target's shadow hits her for 2, and again for each simple action you spend, three at most."
+page_reference = "Vol. 2, p. 224"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Obtenebration: Tenebrous Ally"
+description = "2 Blood while asleep, torpid or out of your body: for an hour your shadow runs your body, played by the Storyteller."
+page_reference = "Vol. 2, p. 225"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Potence: Earth Shock"
+description = "2 Blood: a Brawl attack on everyone within 2 steps, helped only by Potence; normal damage, and those hurt are knocked down."
+page_reference = "Vol. 2, pp. 227-228"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Potence: Flick"
+description = "1 Blood, standard action, per attack: a Brawl attack at anyone you can see, +3; only Potence adds to it, and its damage is always normal."
+page_reference = "220"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Potence: Force"
+description = "Always on: a Brawl hit does 4 damage (6 on an exceptional success), counting Puissance and Intensity, and kills a mortal."
+page_reference = "219-220"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Potence: Relentless Fury"
+description = "Free, on a Brawl or Melee hit: 3 damage (4 on an exceptional success) that armour and Fortitude can't reduce, instead of other elder Potence."
+page_reference = "Vol. 2, p. 228"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Presence: Capricious Visage"
+description = "+1 Blood on Dread Gaze or Entrancement: test as many targets in sight as your Leadership dots."
+page_reference = "Vol. 2, p. 230"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Presence: Comrades in Arms"
+description = "1 Blood, simple action, in combat: exceptional successes between you and your comrades Inspire (a Willpower back on the next retest)."
+page_reference = "Vol. 2, p. 230"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Presence: Love"
+description = "3 Blood, standard action, Presence test: a stage three blood bond to you for an hour, halved each time again that night."
+page_reference = "220"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Presence: Paralyzing Glance"
+description = "2 Blood, standard action, Presence test: the target is frozen with terror while you spend a simple action each round."
+page_reference = "220"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Protean: Earth Control"
+description = "Always on: while Earth Melded you can move and fight underground."
+page_reference = "221"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Protean: Flesh of Marble"
+description = "1 Blood, simple action: two Protective Gear qualities on your skin for 15 minutes; a minor transformation."
+page_reference = "Vol. 2, p. 232"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Protean: Shape Mastery"
+description = "3 Blood, standard action, Social + Survival against Social + Willpower: force someone out of a major transformation for an hour."
+page_reference = "221"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Protean: Shattered Fog"
+description = "2 Blood, reflexive: turn to mist for an instant and take no damage from a non-fire Physical attack."
+page_reference = "Vol. 2, p. 233"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Quietus: Baal's Bloody Talons"
+description = "With Baal's Caress: +2 to Melee and 1 more aggravated damage."
+page_reference = "221"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Quietus: Blood Sweat"
+description = "1 Blood, standard action, Quietus test: the target loses 2 Blood a turn for three turns (and a mortal takes damage)."
+page_reference = "221"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Quietus: Purification"
+description = "1 Blood, standard action, laying on hands: clear someone else of harmful mind effects and mundane poisons."
+page_reference = "Vol. 2, p. 235"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Quietus: Revelations of Blood Essence"
+description = "Simple action on tasting blood: 90 days' familiarity, a feeding vision, or +5 to track; share diablerie with two more."
+page_reference = "Vol. 2, pp. 235-236"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Serpentis: Divine Image"
+description = "3 Blood, standard action: a benevolent or malevolent major transformation for 10 minutes, +2 to some Social pools."
+page_reference = "222"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Serpentis: Dust Devil"
+description = "1 Blood, simple action: for 10 minutes your Brawl and Melee attacks are Blinding Attacks, at full damage and with no Willpower."
+page_reference = "Vol. 2, p. 238"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Serpentis: Seed of Corruption"
+description = "2 Blood, three turns' talk, Serpentis test: the target gains Beast traits tonight for resisting vice."
+page_reference = "221-222"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Serpentis: Spewing Venom"
+description = "Free, once a turn, after winning as defender: use a Social power on that foe without an action."
+page_reference = "Vol. 2, pp. 238-239"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Spiritus: Killer Instincts"
+description = "1 Blood, simple action: for an hour your Physical attacks on your quarry are Accurate (+2) and Brutal, and a hit marks it."
+page_reference = "Vol. 2, p. 84"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Spiritus: Primal Strength"
+description = "Always on: your Beast Spirit gains 3 Healthy levels, 5 Gnosis, another discipline and perhaps an elder power."
+page_reference = "Vol. 2, p. 84"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Temporis: Kiss of Lachesis"
+description = "2 Blood, standard action (a Temporis test against people): age or rejuvenate someone or something by up to 100 years."
+page_reference = "222-223"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Temporis: Stitch in Time"
+description = "2 Blood, any time: undo a challenge you just lost that would hurt, move or grapple you."
+page_reference = "Vol. 2, p. 241"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Temporis: Temporal Anomaly"
+description = "1 Blood, simple action: for 10 minutes, aggravated hand and melee strikes that ignore Celerity's Dodge, or Temporis bolts."
+page_reference = "Vol. 2, pp. 240-241"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Thanatosis: Corrupt the Flesh"
+description = "3 Blood, standard action, Thanatosis test: mortals die; the supernatural take -3 Physical and lose their Physical focus for an hour."
+page_reference = "223"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Thanatosis: One Foot in the Grave"
+description = "When you feed a retainer your Blood, make it a ghoul-zombie (+1 NPC rating)."
+page_reference = "Vol. 2, p. 242"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Thanatosis: Rigor Mortis"
+description = "2 Blood, standard action, Thanatosis test: the target takes 1 damage nothing reduces for each step, up to 6."
+page_reference = "Vol. 2, p. 243"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Valeren: Fiery Agony"
+description = "1 Blood, simple action: Burning Touch at range on anyone in sight you touched within the hour."
+page_reference = "223"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Valeren: Perfect Stance"
+description = "Simple action and 1 Blood each: up to 3 combat maneuvers or equipment qualities don't work on you."
+page_reference = "Vol. 2, p. 245"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Valeren: Rampart of Faith"
+description = "1 Blood, no action, defending with Willpower: add your Morality minus your Beast traits to that pool."
+page_reference = "Vol. 2, p. 244"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Vicissitude: Acid Blood"
+description = "Always on: your Blood burns those who drink it (3 aggravated a Blood); in Blood Form, 1 Blood a turn burns those touching you."
+page_reference = "223-224"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Vicissitude: Breath of the Dragon"
+description = "2 Blood, standard action: breathe fire, Physical + Athletics against up to 3 targets, for 4 fire damage (5 on an exceptional success)."
+page_reference = "223"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Vicissitude: Cocoon"
+description = "3 Blood, 3 standard actions: a cocoon that heals 1 damage a minute and gives back Willpower."
+page_reference = "Vol. 2, p. 246"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Vicissitude: Virtuoso Del Corpo"
+description = "New Bonecraft options: Bauble, Chiropteran Marauder, Kraken's Kiss, Living Weapon, Simplified, Skin Trap and Skittering Legs."
+page_reference = "Vol. 2, pp. 246-248"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Visceratika: Bulwark"
+description = "1 Blood, simple action, grappling someone: Physical attacks on them hit you instead."
+page_reference = "224"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Visceratika: Cataclysmic Upheaval"
+description = "2 Blood, standard action: everyone within 10 steps but some allies is tested; those who lose take 3 damage nothing reduces and can be dragged."
+page_reference = "Vol. 2, p. 250"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Visceratika: Furnace of Steel"
+description = "1 Blood, standard action: warp a metal or stone object in sight, with no test."
+page_reference = "224"
 
 [[traits]]
 category = "elder_disciplines"
 name = "Visceratika: Meteor"
+description = "Always on: Dive Bomb and Plummet cost no Willpower, and Dive Bomb does 1 more damage; 1 Blood gives stone wings for a turn."
+page_reference = "Vol. 2, pp. 250-251"
 
 [[traits]]
 category = "extra_in_clan_disciplines"
@@ -2696,154 +2872,230 @@ name = "Wraiths"
 [[traits]]
 category = "luminary_disciplines"
 name = "Animalism: Embrace the Beast"
+description = "3 Blood, simple action: a rage frenzy you control, with Drawing Out the Beast's benefits; Mental and Social powers that don't hurt can't touch you, and you can't use them."
+page_reference = "Vol. 2, p. 194"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Animalism: Supreme Resolve"
+description = "Always on: Willpower retests against you cost 1 more, and in frenzy you get a free retest each round."
+page_reference = "Vol. 2, p. 194"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Auspex: Collective Cognizance"
+description = "Always on: no Gaze and Focus needed on anyone in sight; your failures go unnoticed, and you can make another seem to use your power."
+page_reference = "Vol. 2, p. 197"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Auspex: Mirror Reflexes"
+description = "3 Blood, any time: for the fight, a Willpower back on each Physical retest against foes you chose."
+page_reference = "Vol. 2, p. 197"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Celerity: Between the Ticks"
+description = "2 Blood for the turn: no attacks, but assist defender for up to your Athletics dots of allies each round, with exceptional successes."
+page_reference = "Vol. 2, p. 199"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Celerity: Momentum Swing"
+description = "Always on with any Celerity power: throw melee attackers 6 steps, and deflect projectiles at someone else (Physical + Dodge test)."
+page_reference = "Vol. 2, p. 200"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Chimerstry: Passion Play"
+description = "3 Blood, 3 turns: a solid illusory place until dawn, where your Chimerstry 1-4 work without a test."
+page_reference = "Vol. 2, p. 203"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Daimoinon: Revelry of the Great Beast"
+description = "1 Blood, simple action: 15 minutes of a gluttony, fear or rage aura; anyone attacking you tests for frenzy first."
+page_reference = "Vol. 2, p. 206"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Dementation: Fractaline Epiphany"
+description = "Always on: failing a Mental or Social challenge doesn't make the target immune to you."
+page_reference = "Vol. 2, p. 209"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Dementation: Wave of Insanity"
+description = "+4 Blood on Total Insanity: two more targets, for 10 minutes."
+page_reference = "Vol. 2, p. 209"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Dominate: Empowering the Puppet King"
+description = "Lend your Mesmerism, unseen, to an order someone else gives."
+page_reference = "Vol. 2, p. 212"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Dominate: Mob Rule"
+description = "3 Blood, standard action: for an hour, willing allies following your order resist distraction and share a pool of Willpower."
+page_reference = "Vol. 2, p. 212"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Fortitude: Indestructible"
+description = "Half your Blood, any time: undo all the damage you have taken this turn."
+page_reference = "Vol. 2, p. 214"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Fortitude: Insurmountable"
+description = "Always on: an exceptional success against your Physical or Social defence counts as a normal one."
+page_reference = "Vol. 2, p. 214"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Melpominee: Choir of the Damned"
+description = "2 Blood, simple action: two ghostly singers use your Melpominee for free, and together you can bring down walls."
+page_reference = "Vol. 2, p. 216"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Mytherceria: The Grandest Trick"
+description = "5 Blood: mortal from the next sunrise to sunset."
+page_reference = "Vol. 2, p. 218"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Obeah: Healer's Eminence"
+description = "3 Blood, standard action: aggravated damage to you and nearby allies is normal instead, and their healing goes further."
+page_reference = "Vol. 2, p. 220"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Obfuscate: Create Name"
+description = "Downtime actions: a 5-dot Alternate Identity, for you or someone else."
+page_reference = "Vol. 2, pp. 222-223"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Obfuscate: Rampart of the Mind"
+description = "Always on: a Mental or Social power on you needs an extra challenge first (Mental + Willpower or Investigation against your Mental + Stealth)."
+page_reference = "Vol. 2, p. 223"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Obtenebration: Oblivion Orb"
+description = "+2 Blood on Shroud of Night: 2 aggravated a turn nothing reduces to everyone else inside."
+page_reference = "Vol. 2, p. 226"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Obtenebration: The Darkness Within"
+description = "3 Blood, standard action, Social + Occult against Physical + Dodge: tendrils grapple your targets, giving Beast traits and draining Blood."
+page_reference = "Vol. 2, p. 226"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Potence: Juggernaut"
+description = "3 Blood: charge in a straight line, with a free unarmed attack on each person in your way."
+page_reference = "Vol. 2, p. 229"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Potence: Strength of the Titans"
+description = "3 Blood: for 10 minutes every Brawl or Melee hit is exceptional, and you can wield something as big as a car."
+page_reference = "Vol. 2, p. 229"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Presence: Cooperation"
+description = "+3 Blood on Majesty: those under it must cooperate, or spend Willpower each turn they don't."
+page_reference = "Vol. 2, p. 231"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Presence: Scourge of Arikel"
+description = "1 Blood, simple action: for 10 minutes, anyone in sight who loses a Social challenge to you can take 3 aggravated."
+page_reference = "Vol. 2, p. 231"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Protean: Ghost Body"
+description = "3 Blood, standard action: an hour incorporeal, out of Physical challenges and able to walk through walls."
+page_reference = "Vol. 2, p. 233"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Protean: Mythic Form"
+description = "+2 Blood on Shape of the Beast: a mythic form with two qualities (Agile, Avian, Breath Attack, Defensive Spikes, Poisonous, Slick, Tough, Vicious)."
+page_reference = "Vol. 2, p. 234"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Quietus: Awaken the Heartsblood"
+description = "Draw up to 2 more Blood a turn from the Heartsblood, beyond your limit; the first time each night brings a compulsion."
+page_reference = "Vol. 2, p. 236"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Quietus: Erosion"
+description = "+1 Blood on Scorpion's Touch: -2 to the target's Physical attribute, which stacks."
+page_reference = "Vol. 2, p. 237"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Serpentis: Heart Thief"
+description = "2 Blood after a Brawl hit on someone Incapacitated: tear out their heart."
+page_reference = "Vol. 2, p. 239"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Serpentis: Mantle of Sutekh"
+description = "1 Blood, standard action: for 5 minutes, make anyone in sight pay 1 more fuel, which comes to you as Blood; give Blood to allies."
+page_reference = "Vol. 2, pp. 239-240"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Spiritus: Become the Hunted"
+description = "3 Blood, standard action, Spiritus test on up to 3: they can't communicate or be helped until they leave the area (15 minutes)."
+page_reference = "Vol. 2, p. 85"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Temporis: Outside the Hourglass"
+description = "Always on: Clotho's Gift gives one more round of actions, and one more Mental or Social action in it."
+page_reference = "Vol. 2, p. 241"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Thanatosis: Fallowed Ground"
+description = "3 Blood, simple action: no healing within 5 steps of you, and Thanatosis on anyone there without a Grapple."
+page_reference = "Vol. 2, p. 243"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Valeren: Warrior's Eminence"
+description = "3 Blood, standard action: damage you and nearby allies do is aggravated, and healing costs 1 more."
+page_reference = "Vol. 2, p. 245"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Vicissitude: Azhi Dahaka"
+description = "Always on: every attribute focus; once a night, move bonus attribute dots and change Archetype."
+page_reference = "Vol. 2, p. 249"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Vicissitude: Ravenous Conglomeration"
+description = "Always on: two major transformations at once; 4 Blood and a simple action start any number of them."
+page_reference = "Vol. 2, p. 249"
 
 [[traits]]
 category = "luminary_disciplines"
 name = "Visceratika: Rockheart"
+description = "Always on: you can't be staked, 1 Blood wins a frenzy test, and you can resist Mental and Social with Physical + Survival."
+page_reference = "Vol. 2, p. 251"
 
 [[traits]]
 category = "merits"

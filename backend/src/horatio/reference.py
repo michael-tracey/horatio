@@ -187,6 +187,8 @@ class OtherPower(BaseModel):
     category_name: str
     name: str
     note: str | None
+    # Where the note is from: "214", "Vol. 2, p. 198" (issue #587).
+    page: str | None = None
     # What using it costs and the switches it turns on, from its [[others]] entry,
     # as for a numbered power (issue #588).
     cost: Cost | None = None
@@ -1105,6 +1107,7 @@ def other_powers(sheet: Sheet, rule_set: RuleSetData) -> list[OtherPower]:
                 category_name=category_name,
                 name=name,
                 note=trait.description if trait else None,
+                page=trait.page_reference if trait else None,
                 cost=cost(entry, sheet),
                 switches=[a["key"] for a in actives(entry)],
             )

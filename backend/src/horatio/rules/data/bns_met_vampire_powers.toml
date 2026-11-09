@@ -50,7 +50,9 @@
 # [[others]]: techniques, elder and luminary powers and merits with `pools`,
 #   `damage`, `active` or `cost`, by `category` and `name`; `needs = { discipline,
 #   level }` when it works only with a power of a discipline. Merits show no Use
-#   button.
+#   button. What an elder or luminary power does, and its page, are its trait's
+#   `description` and `page_reference` in bns_met_vampire_traits.toml (issue #587),
+#   whether it has an entry here or not.
 # [[attacks]]: what a successful attack of each type does by default, and what an
 #   exceptional success adds (`exceptional`), with the book `page`. `skill` is the
 #   skill the attack pool is made on (attack:<skill>); `kind` names the type.
@@ -1980,6 +1982,363 @@ name = "Quietus: Baal's Bloody Talons"
 pools = [{ pool = "attack:Melee", amount = 2, when = "Baal's Caress" }]
 damage = [{ attacks = ["Melee"], amount = 1, when = "Baal's Caress", note = "1 more aggravated damage with Baal's Bloody Talons", page = 221 }]
 
+# Core p. 213: 1 Blood, standard action: watch a familiar person, place or thing from afar.
+[[others]]
+category = "elder_disciplines"
+name = "Auspex: Clairvoyance"
+cost = { blood = 1 }
+active = { key = "Clairvoyance", page = 213, notes = ["Five minutes for each Investigation dot; you still sense your own surroundings.", "Only Auspex 1-5 work through it, not elder powers or techniques."] }
+
+# Vol. 2 p. 195: Blood and a simple action: a battle map in your head, ten minutes a Blood.
+[[others]]
+category = "elder_disciplines"
+name = "Auspex: Fog of War"
+active = { key = "Fog of War", page = 195, book = "Vol. 2", notes = ["Ten minutes for each Blood spent: enemy numbers and places, even through walls, once a fight is near.", "Once a turn, let someone in a challenge you can see retest with your Willpower."] }
+
+# Vol. 2 p. 199: 1 Blood: double speed, and run up walls, across ceilings and over water.
+[[others]]
+category = "elder_disciplines"
+name = "Celerity: Zephyr"
+cost = { blood = 1 }
+active = { key = "Zephyr", page = 199, book = "Vol. 2", notes = ["Twice your usual steps, before other speed bonuses; you can cross gaps if you stop on something solid.", "You can use the Elude and Strafe aerial combat maneuvers.", "Ends after a round you didn't move in, or don't end upright on a solid surface; off a wall or ceiling, you fall."] }
+
+# Vol. 2 pp. 201-202: 2 Blood, standard action: a magical melee weapon for an hour.
+[[others]]
+category = "elder_disciplines"
+name = "Chimerstry: Horrid Blade of the Demons"
+cost = { blood = 2 }
+active = { key = "Horrid Blade of the Demons", page = 201, book = "Vol. 2", notes = ["A level 5 magical melee weapon only you can wield: two weapon qualities and up to 5 points of Cantrips. It can't be disbelieved.", "An hour, then 2 Blood for each hour more; if you're disarmed it vanishes unless you spend 1 Blood to have it back in hand.", "No Horrid Reality or Quietus on it; its damage doesn't fade."] }
+
+# Vol. 2 pp. 204-205: 2 Blood, standard action: for five minutes your touch spreads a plague.
+[[others]]
+category = "elder_disciplines"
+name = "Daimoinon: Bring Forth the Plague"
+cost = { blood = 2 }
+active = { key = "Bring Forth the Plague", page = 204, book = "Vol. 2", notes = ["Five minutes: anyone you touch for three seconds, grapple, hit with Brawl or who hits you with Brawl must resist a virility 20 toxin at the end of that turn, and again every turn while fighting you.", "Add one quality when you start it: Infectious, Parasitic, Resistant, Metabolic or Contagious."] }
+
+# Core p. 215: 3 Blood, simple action: an object stops existing for you for an hour.
+[[others]]
+category = "elder_disciplines"
+name = "Dementation: Deny"
+cost = { blood = 3 }
+active = { key = "Deny", page = 215, notes = ["An hour (or a simple action to end it): one inanimate object up to car size can't block, touch or harm you; up to three, at 3 Blood and a simple action each.", "Only things you're holding pass through it with you; bullets you fire still hit it."] }
+
+# Vol. 2 p. 207: 1 Blood, simple action: a prohibition that brings Despair on those who break it.
+[[others]]
+category = "elder_disciplines"
+name = "Dementation: La Llorona's Lament"
+cost = { blood = 1 }
+active = { key = "La Llorona's Lament", page = 207, book = "Vol. 2", notes = ["Anyone in sight who spends an action breaking your prohibition gains a Despair: -3 initiative for each; at 3 they lose their next two actions weeping (and 3 Blood).", "Out of combat, 1 Blood every five minutes; in combat, 1 Blood and a simple action each turn. You can change the prohibition on your action for free."] }
+
+# Core p. 216: 2 Blood, simple action: for an hour, weapons break on you and Brawl hits rebound.
+[[others]]
+category = "elder_disciplines"
+name = "Fortitude: Personal Armor"
+cost = { blood = 2 }
+active = { key = "Personal Armor", page = 216, notes = ["Melee weapons and other objects that hit you break after doing their damage, so you can't be staked (wooden projectiles shatter too).", "Whoever hits you with Brawl takes half the damage they deal you, rounded up, before your Fortitude reduces it."] }
+
+# Vol. 2 p. 213: 1 Blood, simple action: 30 minutes free of derangements.
+[[others]]
+category = "elder_disciplines"
+name = "Fortitude: Resilient Mind"
+cost = { blood = 1 }
+active = { key = "Resilient Mind", page = 213, book = "Vol. 2", notes = ["Derangements, animal quirks and psychological flaws don't affect you.", "Spend Willpower to retest a power that attacks your sanity and you get the point back."] }
+
+# Vol. 2 p. 219: 2 Blood, standard action: Grace points to heal others from afar.
+[[others]]
+category = "elder_disciplines"
+name = "Obeah: Rayzeel's Grace"
+cost = { blood = 2 }
+active = { key = "Rayzeel's Grace", page = 219, book = "Vol. 2", notes = ["Grace equal to your Obeah powers (elder and luminary powers and techniques too); it fades after five minutes, or when you use this again.", "Simple action, even in Celerity rounds: each Grace heals 1 normal damage, or turns 1 aggravated to normal, for anyone in sight."] }
+
+# Core p. 218: 3 Blood: for one everyman round, acting doesn't end your Unseen Presence.
+[[others]]
+category = "elder_disciplines"
+name = "Obfuscate: Phantom Hunter"
+cost = { blood = 3 }
+active = { key = "Phantom Hunter", page = 218, notes = ["Use it any time, even before your initiative. Attack, speak or be attacked and stay hidden until the round ends; if you're still interacting then, you're seen.", "Whoever you attack glimpses you and can strike back on their initiative."] }
+
+# Core p. 220: 1 Blood per attack: a Brawl attack at range, +3.
+[[others]]
+category = "elder_disciplines"
+name = "Potence: Flick"
+cost = { blood = 1 }
+active = { key = "Flick", page = 220, notes = ["1 Blood for each Flick, even in Celerity rounds: a Brawl attack at anyone you can see, with a gesture; no weapons.", "Only Potence powers add to it, and its damage is always normal, never aggravated."] }
+pools = [{ pool = "attack:Brawl", amount = 3, when = "Flick" }]
+
+# Core pp. 219-220: a Brawl hit does 4 (6 on an exceptional success), counting
+# Puissance and Intensity, so 1 more than Potence gives.
+[[others]]
+category = "elder_disciplines"
+name = "Potence: Force"
+damage = [{ attacks = ["Brawl"], amount = 1, page = 219 }]
+
+# Vol. 2 p. 228: per hit, instead of other damage, 3 that armour and Fortitude can't reduce.
+[[others]]
+category = "elder_disciplines"
+name = "Potence: Relentless Fury"
+active = { key = "Relentless Fury", page = 228, book = "Vol. 2", notes = ["Chosen on a Brawl or Melee hit, instead of other elder Potence: 3 damage, 4 on an exceptional success, that armour and Fortitude can't reduce. Nothing adds to it (ignore the damage shown), but Feral Claws and the like can make it aggravated.", "Not with a combat maneuver."] }
+
+# Vol. 2 p. 230: 1 Blood, simple action, in combat: exceptional successes inspire your comrades.
+[[others]]
+category = "elder_disciplines"
+name = "Presence: Comrades in Arms"
+cost = { blood = 1 }
+active = { key = "Comrades in Arms", page = 230, book = "Vol. 2", notes = ["For the fight: your exceptional successes Inspire your comrades (up to your Leadership dots), and theirs Inspire you.", "Inspired: your next Willpower retest gives the point back. Converted exceptional successes (Strength of the Titans and the like) don't count."] }
+
+# Vol. 2 p. 232: 1 Blood, simple action: armoured skin for 15 minutes; a minor transformation.
+[[others]]
+category = "elder_disciplines"
+name = "Protean: Flesh of Marble"
+cost = { blood = 1 }
+active = { key = "Flesh of Marble", page = 232, book = "Vol. 2", notes = ["Pick two Protective Gear qualities (core p. 519) each time; Armor Piercing doesn't get through them.", "A minor transformation: it goes with a form. A Masquerade breach if mortals see it."] }
+
+# Vol. 2 p. 238: 1 Blood, simple action: a sandstorm that makes your blows blinding.
+[[others]]
+category = "elder_disciplines"
+name = "Serpentis: Dust Devil"
+cost = { blood = 1 }
+active = { key = "Dust Devil", page = 238, book = "Vol. 2", notes = ["Ten minutes: your Brawl and Melee attacks (and Thaumaturgy attacks resisted with Physical) are Blinding Attacks, at full damage and with no Willpower to spend.", "Simple action: blow it away; that round, anyone 3 or more steps off can't watch you vanish with Unseen Presence."] }
+
+# Vol. 2 p. 84: 1 Blood, simple action: an hour hunting one target, your attacks Accurate (+2) and Brutal.
+[[others]]
+category = "elder_disciplines"
+name = "Spiritus: Killer Instincts"
+cost = { blood = 1 }
+active = { key = "Killer Instincts", page = 84, book = "Vol. 2", notes = ["The +2 shows on every attack while it's on, but the book gives it only against the one target you hunt: your Physical attacks on them are Accurate (the +2) and Brutal, and your unarmed ones can also be Harrying or Encumbering.", "Hit them and they're marked: they can't hide from you, and you get +3 to track them until the next sunset or sunrise."] }
+pools = [{ pool = "attack", amount = 2, when = "Killer Instincts" }]
+
+# Vol. 2 pp. 240-241: 1 Blood, simple action: for ten minutes, aggravated blows or bolts.
+[[others]]
+category = "elder_disciplines"
+name = "Temporis: Temporal Anomaly"
+cost = { blood = 1 }
+active = { key = "Temporal Anomaly", page = 240, book = "Vol. 2", notes = ["Chronoton Strike: your hand or melee attacks do aggravated damage and ignore Celerity's bonus to the target's Dodge.", "Chronoton Bolt: a Temporis test at someone in sight for 2 aggravated, 3 if they used Celerity or Temporis this turn (1 more on an exceptional success)."] }
+damage = [{ attacks = ["Brawl", "Melee"], type = "aggravated", when = "Temporal Anomaly", note = "Aggravated with Chronoton Strike", page = 240, book = "Vol. 2" }]
+
+# Vol. 2 p. 245: a simple action and 1 Blood per choice: combat maneuvers or qualities that fail on you.
+[[others]]
+category = "elder_disciplines"
+name = "Valeren: Perfect Stance"
+active = { key = "Perfect Stance", page = 245, book = "Vol. 2", notes = ["Up to 3 combat maneuvers or equipment qualities, 1 Blood each, don't work against you (supernatural ones need Occult 3 or the right Lore).", "Lasts until you use it again to change them; anyone with Brawl, Melee or Athletics can see which mundane ones."] }
+
+# Core p. 223: 2 Blood per breath: a Physical + Athletics fire attack, 4 aggravated.
+[[others]]
+category = "elder_disciplines"
+name = "Vicissitude: Breath of the Dragon"
+cost = { blood = 2 }
+active = { key = "Breath of the Dragon", page = 223, notes = ["2 Blood for each breath, even in Celerity rounds: up to three targets within three steps of one another and six of you, each tested separately.", "4 fire damage, 5 on an exceptional success; fire is aggravated to vampires."] }
+damage = [{ attacks = ["Athletics"], amount = 3, type = "aggravated", when = "Breath of the Dragon", note = "4 fire damage with Breath of the Dragon", page = 223 }]
+
+# Vol. 2 p. 246: 3 Blood, three standard actions: a healing cocoon.
+[[others]]
+category = "elder_disciplines"
+name = "Vicissitude: Cocoon"
+cost = { blood = 3 }
+active = { key = "Cocoon", page = 246, book = "Vol. 2", notes = ["Each minute inside turns 1 aggravated damage to normal (or heals 1 normal); each 30 minutes gives back 1 Willpower. Clairvoyance and the like can't see you.", "It has one health level for each Vicissitude power you have; you sense anyone within 3 steps. Coming out resets others' familiarity with you."] }
+
+# Core p. 224: 1 Blood, simple action, holding someone in a Grapple: shelter them.
+[[others]]
+category = "elder_disciplines"
+name = "Visceratika: Bulwark"
+cost = { blood = 1 }
+active = { key = "Bulwark", page = 224, notes = ["Physical attacks on the one you hold hit you instead; they can't make Physical attacks, only Mental and Social ones without touch or gestures.", "Ends if they escape or you let go, or once you're on the Incapacitated track."] }
+
+# Vol. 2 p. 250: always on; switch it on for a Dive Bomb, which does 1 more damage.
+[[others]]
+category = "elder_disciplines"
+name = "Visceratika: Meteor"
+active = { key = "Dive Bomb", name = "Meteor: Dive Bomb", page = 250, book = "Vol. 2", notes = ["Dive Bomb and Plummet cost no Willpower; Plummet keeps its full pool and works on the Stamina-focused.", "No flight needed for a Dive Bomb if you're 6 steps above your target; 1 Blood gives you stone wings for a turn's aerial maneuvers."] }
+damage = [{ attacks = ["Brawl", "Melee"], amount = 1, when = "Dive Bomb", note = "1 more damage on a Dive Bomb", page = 250, book = "Vol. 2" }]
+
+# Elder powers with a plain cost and nothing to switch on: Use only spends it
+# (issue #587). What each does, with its page, is its description in the trait
+# catalogue, as for every elder and luminary power.
+[[others]]
+category = "elder_disciplines"
+name = "Animalism: Intimidate the Beast"
+cost = { blood = 2 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Animalism: Master of the Hunt"
+cost = { blood = 1 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Auspex: Psychic Assault"
+cost = { blood = 1 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Auspex: Psychic Drain"
+cost = { blood = 1 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Chimerstry: Army of Apparitions"
+cost = { blood = 1 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Chimerstry: Truth's Essence"
+cost = { blood = 1 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Daimoinon: Infernal Compact"
+cost = { blood = 3 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Dementation: Restructure"
+cost = { blood = 2 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Dominate: Chain of Command"
+cost = { blood = 1 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Dominate: Fealty"
+cost = { blood = 1 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Dominate: Tyrant's Gaze"
+cost = { blood = 1 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Fortitude: Repair the Undead Flesh"
+cost = { blood = 2 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Melpominee: Reverberation"
+cost = { blood = 1 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Mytherceria: Fiddlesticks"
+cost = { blood = 3 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Obeah: Revocation of Caine's Grace"
+cost = { blood = 3 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Obeah: Unburden the Bestial Soul"
+cost = { blood = 3 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Obfuscate: Mental Maze"
+cost = { blood = 1 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Obfuscate: Soul Mask"
+cost = { blood = 1 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Obtenebration: Shadowstep"
+cost = { blood = 1 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Obtenebration: Shadowy Betrayal"
+cost = { blood = 1 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Obtenebration: Tenebrous Ally"
+cost = { blood = 2 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Potence: Earth Shock"
+cost = { blood = 2 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Presence: Love"
+cost = { blood = 3 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Presence: Paralyzing Glance"
+cost = { blood = 2 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Protean: Shape Mastery"
+cost = { blood = 3 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Protean: Shattered Fog"
+cost = { blood = 2 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Quietus: Blood Sweat"
+cost = { blood = 1 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Quietus: Purification"
+cost = { blood = 1 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Serpentis: Seed of Corruption"
+cost = { blood = 2 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Temporis: Kiss of Lachesis"
+cost = { blood = 2 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Temporis: Stitch in Time"
+cost = { blood = 2 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Thanatosis: Corrupt the Flesh"
+cost = { blood = 3 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Thanatosis: Rigor Mortis"
+cost = { blood = 2 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Valeren: Fiery Agony"
+cost = { blood = 1 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Valeren: Rampart of Faith"
+cost = { blood = 1 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Visceratika: Cataclysmic Upheaval"
+cost = { blood = 2 }
+
+[[others]]
+category = "elder_disciplines"
+name = "Visceratika: Furnace of Steel"
+cost = { blood = 1 }
+
 # Vol. 2 p. 245: all the damage you and your allies do is aggravated.
 [[others]]
 category = "luminary_disciplines"
@@ -1987,6 +2346,163 @@ name = "Valeren: Warrior's Eminence"
 cost = { blood = 3 }
 active = { key = "Warrior's Eminence", page = 245, book = "Vol. 2", notes = ["Your allies in sight (up to your Medicine dots) do aggravated damage too.", "Healing costs 1 more Blood, for everyone."] }
 damage = [{ attacks = ["Brawl", "Melee", "Athletics", "Firearms"], type = "aggravated", when = "Warrior's Eminence", note = "Aggravated with Warrior's Eminence", page = 245, book = "Vol. 2" }]
+
+# Vol. 2 p. 194: 3 Blood, simple action: a rage frenzy you steer; +1 to Physical
+# attacks and -2 to Physical defences (core p. 301), +3 with Drawing Out the
+# Beast's Manipulation focus (core p. 117).
+[[others]]
+category = "luminary_disciplines"
+name = "Animalism: Embrace the Beast"
+cost = { blood = 3 }
+active = { key = "Embrace the Beast", page = 194, book = "Vol. 2", notes = ["You know friend from foe. Hostile Mental and Social powers that don't do damage can't touch you, but you can't start Mental or Social powers.", "Lasts until every threat is down or gone, or you end it; end it before putting a threat down with your own hands and take 3 aggravated damage nothing reduces.", "The +1 to attacks and -2 to Physical defences are a rage frenzy's (core p. 301); with the Manipulation focus the attacks get +3, as Drawing Out the Beast gives (core p. 117)."] }
+pools = [
+  { pool = "attack", amount = 1, when = "Embrace the Beast" },
+  { pool = "attack", amount = 2, when = "Embrace the Beast", focus = "Manipulation" },
+  { pool = "dodge", amount = -2, when = "Embrace the Beast" },
+  { pool = "defense:Physical", amount = -2, when = "Embrace the Beast" },
+]
+
+# Vol. 2 p. 197: 3 Blood, any time: Willpower back on Physical retests against chosen foes.
+[[others]]
+category = "luminary_disciplines"
+name = "Auspex: Mirror Reflexes"
+cost = { blood = 3 }
+active = { key = "Mirror Reflexes", page = 197, book = "Vol. 2", notes = ["For the fight, against up to your Awareness dots of foes picked when you start it: each Willpower retest in a Physical challenge with them gives 1 Willpower back.", "You needn't keep them in sight after."] }
+
+# Vol. 2 p. 199: 2 Blood for the turn: defend your allies instead of attacking.
+[[others]]
+category = "luminary_disciplines"
+name = "Celerity: Between the Ticks"
+cost = { blood = 2 }
+active = { key = "Between the Ticks", page = 199, book = "Vol. 2", notes = ["No offensive Physical actions this turn.", "Each round, assist defender for up to your Athletics dots of allies within six steps, with no action, and you can score exceptional successes doing it."] }
+
+# Vol. 2 p. 206: 1 Blood, simple action: a 15-minute aura of gluttony, fear or rage.
+[[others]]
+category = "luminary_disciplines"
+name = "Daimoinon: Revelry of the Great Beast"
+cost = { blood = 1 }
+active = { key = "Revelry of the Great Beast", page = 206, book = "Vol. 2", notes = ["Pick gluttony, fear or rage: mortals in sight give in to it, and anyone who frenzies frenzies that way. True Faith is immune.", "Anyone who starts a challenge against you tests for frenzy first (a vampire also gains a Beast trait for the fight); one who frenzies can't attack you."] }
+
+# Vol. 2 p. 216: 2 Blood, simple action: two ghostly singers who share your songs.
+[[others]]
+category = "luminary_disciplines"
+name = "Melpominee: Choir of the Damned"
+cost = { blood = 2 }
+active = { key = "Choir of the Damned", page = 216, book = "Vol. 2", notes = ["Two intangible singers follow you and use your Melpominee 1-5 and Sound Wave for free, on your initiative.", "2 Blood and three uninterrupted turns of song together break something up to car size within 100 feet; six turns bring down a floor or ceiling."] }
+
+# Vol. 2 p. 220: 3 Blood, standard action: an aura that turns aggravated damage to normal.
+[[others]]
+category = "luminary_disciplines"
+name = "Obeah: Healer's Eminence"
+cost = { blood = 3 }
+active = { key = "Healer's Eminence", page = 220, book = "Vol. 2", notes = ["Aggravated damage to you and up to your Medicine dots of allies in sight is normal instead; it beats anything that makes damage aggravated, but Warrior's Eminence.", "The first healing each turn for each ally in sight heals 1 more. Warrior's Eminence on the other side cancels both."] }
+
+# Vol. 2 p. 229: 3 Blood: for ten minutes every Brawl or Melee hit is exceptional.
+[[others]]
+category = "luminary_disciplines"
+name = "Potence: Strength of the Titans"
+cost = { blood = 3 }
+active = { key = "Strength of the Titans", page = 229, book = "Vol. 2", notes = ["Every Brawl or Melee hit counts as an exceptional success; against something that stops that, test for one as usual.", "Simple action: tear loose something up to car size as a weapon, Deadly and Reach; with Force it breaks only after the damage."] }
+
+# Vol. 2 p. 231: 1 Blood, simple action: for ten minutes, losing a Social challenge to you hurts.
+[[others]]
+category = "luminary_disciplines"
+name = "Presence: Scourge of Arikel"
+cost = { blood = 1 }
+active = { key = "Scourge of Arikel", page = 231, book = "Vol. 2", notes = ["Anyone in sight who loses a Social challenge to you, either side, takes 3 aggravated damage if you want; not if they relent.", "It isn't an attack, so it doesn't break Majesty and the like."] }
+
+# Vol. 2 p. 233: 3 Blood, standard action: an hour incorporeal.
+[[others]]
+category = "luminary_disciplines"
+name = "Protean: Ghost Body"
+cost = { blood = 3 }
+active = { key = "Ghost Body", form = true, page = 233, book = "Vol. 2", notes = ["No Physical challenges either way; Mental and Social still work on you, and so does mind damage like Psychic Assault.", "Pass through walls and floors and ignore gravity at walking speed, but touch nothing. 2 Blood for each hour more."] }
+
+# Vol. 2 p. 234: 2 more Blood with Shape of the Beast; pick two qualities each
+# time, on top of the form's own bonuses. A major transformation.
+[[others]]
+category = "luminary_disciplines"
+name = "Protean: Mythic Form"
+active = [
+  { key = "Mythic Form", page = 234, book = "Vol. 2", notes = ["Switch on your two qualities too. Brawl attacks only, unless you have Breath Attack; not with Shape of the Beast's Wrath.", "Avian: fly at your normal speed. Defensive Spikes: whoever hits you with Brawl takes 3 normal damage. Poisonous: your Brawl hits cripple mortals and give the supernatural -2 Physical for an hour. Slick: a simple action escapes a Grapple."] },
+  { key = "Mythic Form: Agile", name = "Mythic Form: Agile", page = 234, book = "Vol. 2" },
+  { key = "Mythic Form: Breath Attack", name = "Mythic Form: Breath Attack", page = 234, book = "Vol. 2", notes = ["Once a turn, a thrown attack of fire, acid or the like: 2 aggravated, 3 on an exceptional success, at up to three targets within a step of one another."] },
+  { key = "Mythic Form: Tough", name = "Mythic Form: Tough", page = 234, book = "Vol. 2", health = [{ level = "Healthy", boxes = 4 }] },
+  { key = "Mythic Form: Vicious", name = "Mythic Form: Vicious", page = 234, book = "Vol. 2" },
+]
+pools = [
+  { pool = "dodge", amount = 3, when = "Mythic Form: Agile" },
+  { pool = "attack:Brawl", amount = 3, when = "Mythic Form: Vicious" },
+]
+damage = [{ attacks = ["Athletics"], amount = 1, type = "aggravated", when = "Mythic Form: Breath Attack", note = "2 aggravated with your breath", page = 234, book = "Vol. 2" }]
+
+# Vol. 2 p. 236: up to 2 more Blood a turn, drawn from the Heartsblood.
+[[others]]
+category = "luminary_disciplines"
+name = "Quietus: Awaken the Heartsblood"
+active = { key = "Awaken the Heartsblood", page = 236, book = "Vol. 2", blood = { per_turn = 2 }, notes = ["The extra Blood isn't from your pool: spend it, don't store it or feed it to anyone.", "The first time each night, a compulsion to keep (and preach) the Laws of Haqim for the rest of it."] }
+
+# Vol. 2 pp. 239-240: 1 Blood, standard action: for five minutes, tithe others' Blood.
+[[others]]
+category = "luminary_disciplines"
+name = "Serpentis: Mantle of Sutekh"
+cost = { blood = 1 }
+active = { key = "Mantle of Sutekh", page = 239, book = "Vol. 2", notes = ["Anyone in sight who spends fuel can be made to spend 1 more, which comes to you as Blood, even past your pool until it ends.", "Simple action, even in Celerity rounds: give up to 5 Blood to a willing supernatural ally in sight within 30 steps."] }
+
+# Vol. 2 p. 243: 3 Blood, simple action: no healing near you, and Thanatosis without a Grapple.
+[[others]]
+category = "luminary_disciplines"
+name = "Thanatosis: Fallowed Ground"
+cost = { blood = 3 }
+active = { key = "Fallowed Ground", page = 243, book = "Vol. 2", notes = ["No healing or regeneration within five steps of you, from any source (you're immune to your own); damage reduction like Fortitude still works.", "Anyone in it is in reach of your Thanatosis powers without a Grapple: 1 Blood, a standard action and a Thanatosis test, for one power's effect."] }
+
+# Luminary powers with a plain cost and nothing to switch on: Use only spends it
+# (issue #587). What each does, with its page, is its description in the trait
+# catalogue, as for every elder and luminary power.
+[[others]]
+category = "luminary_disciplines"
+name = "Chimerstry: Passion Play"
+cost = { blood = 3 }
+
+[[others]]
+category = "luminary_disciplines"
+name = "Dominate: Mob Rule"
+cost = { blood = 3 }
+
+[[others]]
+category = "luminary_disciplines"
+name = "Mytherceria: The Grandest Trick"
+cost = { blood = 5 }
+
+[[others]]
+category = "luminary_disciplines"
+name = "Obtenebration: The Darkness Within"
+cost = { blood = 3 }
+
+[[others]]
+category = "luminary_disciplines"
+name = "Potence: Juggernaut"
+cost = { blood = 3 }
+
+[[others]]
+category = "luminary_disciplines"
+name = "Serpentis: Heart Thief"
+cost = { blood = 2 }
+
+[[others]]
+category = "luminary_disciplines"
+name = "Spiritus: Become the Hunted"
+cost = { blood = 3 }
+
+[[others]]
+category = "luminary_disciplines"
+name = "Vicissitude: Ravenous Conglomeration"
+cost = { blood = 4 }
+
+[[others]]
+category = "luminary_disciplines"
+name = "Visceratika: Rockheart"
+cost = { blood = 1 }
 
 # Vol. 2 Issue 1 p. 62: +5 to Dodge for the turn, ending if you move.
 [[others]]

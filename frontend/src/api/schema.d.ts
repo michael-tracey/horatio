@@ -21173,6 +21173,8 @@ export interface components {
             name: string;
             /** Note */
             note: string | null;
+            /** Page */
+            page?: string | null;
             /**
              * Switches
              * @default []

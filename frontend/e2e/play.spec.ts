@@ -408,6 +408,8 @@ test("Use on an elder power: Projectile spends 1 Blood on each attack, and switc
   await p.getByRole("tab", { name: "Pools" }).click();
   const firearms = p.getByRole("listitem").filter({ hasText: /^Firearms attack/ });
   await expect(firearms.getByText("9", { exact: true })).toBeVisible();
+  // What it does, with its page (#587).
+  await expect(p.getByRole("listitem").filter({ hasText: /^Celerity: Projectile/ })).toContainText("1 Blood per thrown or firearms attack: +3 to the attack and 1 more damage, even without the rest of Celerity. (MET: VTM p. 214)");
 
   // The first Use spends the Blood and switches Projectile on: +3 to the attack.
   const use = p.getByRole("button", { name: "Use Celerity: Projectile, 1 Blood" });
