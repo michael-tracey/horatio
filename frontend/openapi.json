@@ -43117,6 +43117,11 @@
             "title": "Assamite Name",
             "type": "string"
           },
+          "backstory_required": {
+            "default": false,
+            "title": "Backstory Required",
+            "type": "boolean"
+          },
           "badge_pronouns": {
             "title": "Badge Pronouns",
             "type": "boolean"

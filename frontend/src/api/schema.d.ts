@@ -26973,6 +26973,11 @@ export interface components {
              * @enum {string}
              */
             assamite_name: "Banu Haqim" | "Assamite";
+            /**
+             * Backstory Required
+             * @default false
+             */
+            backstory_required: boolean;
             /** Badge Pronouns */
             badge_pronouns: boolean;
             /** Badge Status */
