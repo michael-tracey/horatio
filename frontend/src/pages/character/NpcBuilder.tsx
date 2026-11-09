@@ -10,6 +10,7 @@ import { useAction, usePreferences, useUnavailable } from "../../hooks";
 import { PrintAndBadge } from "./Badge";
 import { NpcPicks } from "./NpcPicks";
 import { DomitorCard } from "./Domitor";
+import { FreeChoicesRow } from "./FreeChoices";
 import { ChoiceSelect } from "./ChoiceSelect";
 import { detailNeed, fieldSkills } from "./fields";
 import { useHasDomitor } from "./splats";
@@ -339,6 +340,7 @@ function Section({
                 {groups.get(heading)!.map((t) => (
                   <Held
                     key={`${t.category}/${t.name}`}
+                    character={character}
                     trait={t}
                     held={held.get(`${t.category}/${t.name}`) ?? []}
                     max={catalogue.categories.find((c) => c.key === t.category)?.max_rating ?? 5}
@@ -467,9 +469,11 @@ function Row({
  * A trait of a section, once for each detail the NPC holds it with, or once unheld.
  * A held one's detail can be changed in place, keeping its rating and creation pick
  * (#570). One its rules need (Thaumaturgic Expertise's path, a skill's field, a
- * Retainer's name) is flagged until it is given.
+ * Retainer's name) is flagged until it is given. One that gives merits or dots
+ * (Piece That Remains, Ventrue Royalty) has what it gives chosen under it (#577).
  */
 function Held({
+  character,
   trait,
   held,
   max,
@@ -481,6 +485,7 @@ function Held({
   catalogue,
   busy,
 }: {
+  character: CharacterOut;
   trait: TraitOut;
   held: { detail: string; rating: number }[];
   max: number;
@@ -504,6 +509,7 @@ function Held({
       {rows.map((h) => {
         const missing = asks && h.rating > 0 && !h.detail;
         const open = detailed && h.rating > 0 && (missing || editing === h.detail);
+        const onSheet = h.rating > 0 ? sheet.traits.find((t) => t.category === trait.category && t.name === trait.name && t.detail === h.detail) : undefined;
         return (
           <Row
             key={h.detail}
@@ -544,6 +550,7 @@ function Held({
                 onCancel={missing ? undefined : () => setEditing(null)}
               />
             )}
+            {!!onSheet?.free_choices?.length && <FreeChoicesRow character={character} trait={onSheet} editable={character.status !== "retired"} />}
           </Row>
         );
       })}

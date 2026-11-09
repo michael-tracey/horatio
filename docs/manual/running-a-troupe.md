@@ -222,6 +222,7 @@ In the quick build, a trait the NPC holds can carry a detail, as a player's can:
 - **Any other detail:** **Detail** beside a skill, background, merit or flaw adds one, and **Change** alters one already there.
 - **What stays:** a changed detail keeps the trait's rating and its creation pick.
 - **More than one:** where a trait can be held more than once, such as Crafts in a second field or another Retainer, use **Add another field** or **Add another Retainer**.
+- **A merit that gives another:** Piece That Remains, Auspicious, Old Habits and Shadows of the Past show what they give under the merit, in the quick build and on the NPC's **Sheet** tab. **Choose** (or **Change**) picks it from what the merit can give. The merit given is free, its own grants apply (Ventrue Royalty's 4, 3 and 2 are fitted onto the NPC's backgrounds), and the NPC's worth follows. Ventrue Royalty's own dots aren't chosen this way: they're placed on the **Creation picks** card.
 
 ### Stock NPCs
 
