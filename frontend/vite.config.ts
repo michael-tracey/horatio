@@ -1,5 +1,8 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { runnerImport, type Plugin } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig } from "vitest/config";
 
@@ -7,10 +10,31 @@ import { defineConfig } from "vitest/config";
 // relies on (ADR 0005). The API is on :8000 unless HORATIO_API_PORT says otherwise.
 const apiPort = process.env.HORATIO_API_PORT ?? "8000";
 
+/** index.html's loading screen (#568), drawn by the app's own loaders so it shows
+ * before the app arrives: src/loaders/indexHtml.tsx, loaded through Vite for its JSX. */
+function loadingScreen(): Plugin {
+  let root = process.cwd();
+  return {
+    name: "horatio-loading-screen",
+    configResolved(config) {
+      root = config.root;
+    },
+    async transformIndexHtml(html) {
+      const { module } = await runnerImport<typeof import("./src/loaders/indexHtml")>(join(root, "src/loaders/indexHtml.tsx"), {
+        configFile: false,
+        root,
+        logLevel: "error",
+      });
+      return module.withLoadingScreen(html, readFileSync(join(root, "src/loaders/loaders.css"), "utf8"));
+    },
+  };
+}
+
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    loadingScreen(),
     // The service worker keeps the app itself (its page, scripts, styles, fonts and
     // icons) so it opens with no signal (#502). It never answers the API: a
     // player's own characters are kept by the app (src/offline), and nothing that

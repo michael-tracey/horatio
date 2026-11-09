@@ -5,7 +5,7 @@ import { api, unwrap } from "../../api/client";
 import type { ExpendableOut, GameOut, InfluenceDetailsIn, InfluenceStandingOut, PlayView } from "../../api/types";
 import { LinesVeilsNote } from "../../components/LinesVeils";
 import { useToast } from "../../components/Toast";
-import { Button, ErrorText, Input, Loading, Select } from "../../components/ui";
+import { Button, ErrorText, Input, Loader, Loading, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction, usePreferences } from "../../hooks";
 import { offered, reachNote, TYPE_NAMES } from "../../influence";
@@ -135,7 +135,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
     else tap({ kind: "change", tracker: change.tracker, amount: change.amount, damage: change.damage ?? null });
   };
   const lookup = (show: (r: NonNullable<typeof reference>) => ReactNode) =>
-    reference ? show(reference) : referenceError ? <ErrorText error={referenceError} /> : <p className="py-8 text-center text-mist">Loading…</p>;
+    reference ? show(reference) : referenceError ? <ErrorText error={referenceError} /> : <Loader />;
 
   return (
     <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} name={shown.character_name} tabs={tabs}>
@@ -1169,7 +1169,7 @@ function PastGame({ characterId, game }: { characterId: string; game: GameOut })
           {taps}, {notes} {open ? "▴" : "▾"}
         </span>
       </button>
-      {open && (log.data ? <LogEntries log={log.data.log} /> : <p className="text-sm text-mist">Loading…</p>)}
+      {open && (log.data ? <LogEntries log={log.data.log} /> : <Loader compact />)}
     </li>
   );
 }

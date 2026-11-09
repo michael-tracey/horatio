@@ -15,6 +15,7 @@ Only the custodian can:
 - look after anyone's account: view Horatio as them, reset their password, change their email, suspend them, merge two of their accounts, and move a character from one player to another;
 - see every account's email address;
 - make and download backups of the whole database;
+- choose the loading animation everyone sees;
 - see the System page, the clan logos and the whole audit log, and use the Tools tab.
 
 The custodian can also do anything a lead storyteller can, in any troupe, even one they have no role in: open its Staff tab, approve its characters, award XP, and so on. Use that sparingly. A troupe's own staff are the ones who run it, and its players expect their storytellers, not the custodian, to judge their characters.
@@ -257,6 +258,25 @@ Backups made here hold the database only. On the server, the nightly job also pa
 There's no restore button: restoring replaces everything in the database, so it's done on the server. In short, you stop the app, recreate the database, load the backup into it, and start the app again; pictures, the Dark Pack resources and the VTES symbols are restored from the night's archives beside it. The exact commands are in the "Backups" section of [deploy/README.md](https://github.com/michael-tracey/horatio/blob/main/deploy/README.md#backups).
 
 Everything since that backup is lost, so make a fresh backup with **Back up now** first if the app still works.
+
+## Settings
+
+**Custodian › Settings** holds what's the same for everyone on the server.
+
+![The Settings tab](images/custodian/settings.png)
+
+### The loading animation
+
+While Horatio waits, it shows a loading animation: full screen under the logo as the app opens, signed in or not, and small in a page while it waits for an answer. Choose one of four:
+
+- **Blood drip**, the one until you choose: a drop gathers, falls and ripples in a small pool.
+- **Rising blood**: a chalice fills with blood, then drains.
+- **Candle**: a flame flickers as red wax runs down the candle.
+- **Heartbeat**: two beats and a pause. Full screen, the logo pulses with them.
+
+Each is shown moving, with the small one that sits beside a line of text, such as a search's count. **Full screen** shows it as the app opens: choose **Close**, or anywhere, to leave. Choosing one changes it for everyone at once, and goes in the audit log. On a device set to reduce motion, each stands still and fades gently instead.
+
+The very first screen shows before the app has asked the server anything, so it shows the animation last seen on that device. Someone who hasn't opened Horatio since you changed it sees the old one once.
 
 ## The System page
 

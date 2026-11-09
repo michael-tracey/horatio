@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { TroupeOut } from "../../api/types";
-import { Card, ErrorText } from "../../components/ui";
+import { Card, ErrorText, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { BadgeSetting } from "./BadgeSetting";
 import { ClanNamesSetting } from "./ClanNamesSetting";
@@ -168,6 +168,7 @@ function SplatsCard({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }
           <legend className="mb-2 text-sm text-mist">
             Which splats may player characters be? Tick at least one: new characters built for the troupe, and those joining it, must be one of these. NPCs are not limited.
           </legend>
+          {splats.isPending && <Loading compact />}
           {(splats.data ?? []).map(({ splat, label }) => (
             <label key={splat} className="flex items-center gap-2 text-sm">
               <input

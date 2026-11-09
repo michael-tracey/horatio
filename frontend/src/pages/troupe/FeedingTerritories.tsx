@@ -4,7 +4,7 @@ import { api, unwrap } from "../../api/client";
 import type { TerritoryOut } from "../../api/types";
 import { EmptyState } from "../../components/EmptyState";
 import { useToast } from "../../components/Toast";
-import { Button, Card, ErrorText, Field, Input, Select } from "../../components/ui";
+import { Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 
 type Size = TerritoryOut["size"];
@@ -66,6 +66,7 @@ export function FeedingTerritories({ troupeId, canManage }: { troupeId: string; 
         Areas where only the characters the domain's Authority names may feed. Everyone in the troupe can see them, as the domain knows them. Feeding in one stands in for a feeding
         action, or with the Rack, it has cards of its own; feeding in another's is poaching.
       </p>
+      {list.isPending && <Loading />}
       {list.data?.length === 0 && editing === null && <EmptyState title="No feeding territories yet.">{canManage && "Add one as the Authority proclaims it."}</EmptyState>}
       <ul className="flex flex-col divide-y divide-ash text-sm">
         {(list.data ?? []).map((t) => (
@@ -123,7 +124,7 @@ export function FeedingTerritories({ troupeId, canManage }: { troupeId: string; 
           </div>
           <fieldset className="flex flex-col gap-1 text-sm">
             <legend className="mb-1 text-mist">Characters who may feed there</legend>
-            {roster.isPending && <span className="text-mist">Loading…</span>}
+            {roster.isPending && <Loading compact />}
             <div className="grid gap-1 sm:grid-cols-2">
               {home.map((c) => (
                 <label key={c.character_id} className="flex items-center gap-2">

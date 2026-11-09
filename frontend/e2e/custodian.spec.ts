@@ -636,6 +636,56 @@ function asBuiltBeforeFitting(npcId: string) {
   execFileSync("uv", ["run", "python", "-c", script], { cwd: "../backend", stdio: "ignore" });
 }
 
+test("the custodian chooses the loading animation, which shows as Horatio next opens, before it has loaded", async ({ browser }) => {
+  const custodian = await person(browser, "loadanim-cust");
+  makeCustodian(custodian.email);
+  const c = custodian.page;
+  await c.reload();
+  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "Settings", exact: true }).click();
+
+  // Each of the four, moving as it would, with the blood drip until another is chosen.
+  const choices = c.getByRole("radiogroup", { name: "Loading animation" });
+  await expect(choices.getByRole("radio")).toHaveText([/^Blood drip/, /^Rising blood/, /^Candle/, /^Heartbeat/]);
+  await expect(choices.locator(".loader-block")).toHaveCount(4);
+  // The other projects' run of this test may have chosen another already: only this run's choice is checked.
+  const motif = test.info().project.name === "phone" ? "Heartbeat" : "Candle";
+  const key = motif === "Candle" ? "candle" : "heartbeat";
+
+  // Full screen, as Horatio opens.
+  await c.getByRole("button", { name: `Preview ${motif.toLowerCase()} full screen` }).click();
+  const preview = c.getByRole("dialog", { name: `${motif}, full screen` });
+  await expect(preview.locator(`.splash[data-motif="${key}"] .loader-full.loader-${key}`)).toBeVisible();
+  await c.screenshot(shots(`loading-${key}-full`));
+  await preview.getByRole("button", { name: "Close" }).click();
+  await expect(preview).toBeHidden();
+
+  await choices.getByRole("radio", { name: motif }).click();
+  await expect(c.getByText(`Horatio now shows the ${motif.toLowerCase()} while it loads.`)).toBeVisible();
+  await expect(choices.getByRole("radio", { name: motif })).toHaveAttribute("aria-checked", "true");
+  await c.screenshot(shots("loading-animation"));
+
+  // Opening Horatio again, the screen before the app arrives shows it: kept on this device.
+  await c.route("**/assets/**", (route) => route.abort());
+  await c.goto("/characters");
+  const splash = c.locator("#root > .splash");
+  await expect(splash).toHaveAttribute("data-motif", key);
+  await expect(splash.locator(`.loader-${key}`)).toBeVisible();
+  await expect(splash.locator(".loader-drip")).toBeHidden();
+  await expect(c.getByRole("status", { name: "Loading" })).toBeVisible();
+  await c.unroute("**/assets/**");
+
+  // Anyone may ask which it is, signed in or not.
+  const signedOut = await (await browser.newContext()).newPage();
+  const appearance = await signedOut.request.get("/api/appearance");
+  expect(appearance.status()).toBe(200);
+  expect(Object.keys((await appearance.json()).loading_animation)).toContain("default");
+
+  // Back to the blood drip, as the other tests expect.
+  const reset = await c.request.put("/api/appearance/loading-animation", { headers: { "X-Horatio": "1" }, data: { loading_animation: { default: "drip" } } });
+  expect(reset.status(), await reset.text()).toBe(200);
+});
+
 test("the custodian previews fitting a troupe's NPC creation picks, then fits them", async ({ browser }) => {
   const custodian = await person(browser, "fitpicks-cust");
   makeCustodian(custodian.email);

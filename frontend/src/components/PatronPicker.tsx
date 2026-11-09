@@ -45,6 +45,7 @@ export function PatronPicker({
         picked={patronId}
         onPick={(choice) => onChange(choice?.id ?? null, patronText)}
         none="No one matches. Say who in the other field."
+        loading={patrons.isPending}
       />
       <div className="flex flex-col gap-1 text-sm">
         <label htmlFor={textId} className="text-mist">
