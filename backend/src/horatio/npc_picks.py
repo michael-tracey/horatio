@@ -21,21 +21,42 @@ refits (horatio.sheets.checked), so the free dots always follow the sheet as it 
 Once the NPC is given to a player, its picks are its own, as a wizard-built
 character's are.
 
+Some merits give free dots that a player places in the wizard (#566), but such an
+NPC holds the merit with nothing placed. So the fitting places them too, where a
+merit it holds lets it: Ventrue Royalty's 4, 3 and 2 (a `free_choices` grant's
+places), each on a different one of its backgrounds rated at least the place, and
+a Path merit's conversion (`convert`), which makes the Path's dots free up to the
+Humanity a character starts with, as converting it from Humanity would have kept
+them. A trait takes a pick or a place, never both: the places are fitted together
+with the creation picks of their category, for the most saved in all, which is
+never less than fitting either first (where a place and a pick would save as
+much, the place goes there). Staff move or take off a place as they do a pick.
+Given to a player, the places become the merit's own choices
+(`CharacterTrait.choices`).
+
+The other free_choices grants are not fitted, and what they give is priced as
+bought: Chosen of Cappadocius's specialisations cost nothing anyway, and a merit
+that Auspicious, Old Habits, Piece That Remains or Shadows of the Past gives would
+have to be told apart from the merits the creation points buy.
+
 `python -m horatio.npc_picks` fits every NPC that needs it, once migration 0155 has
 marked the ones built so far; Custodian › Tools fits one troupe's (horatio.troupe_fit).
 """
 
 import sys
-from collections.abc import Mapping, Sequence
+from collections import Counter
+from collections.abc import Hashable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from functools import cache
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from horatio import audit, clan_merits
 from horatio.creation import Fitting, Pool, no_picks, pools_for, restriction_error, stray_pools
 from horatio.models import Character, CharacterTrait, User
+from horatio.rules.checks import matches
+from horatio.rules.grants import GrantData, choices, chosen_target, holds_source, options
 from horatio.rules.model import SheetTrait, TroupeRules
 from horatio.rules.pricing import PricingError, trait_cost
 from horatio.sheets import SheetRow, conflict, find_definition, rules_for, sheet_rows, unprocessable
@@ -49,6 +70,8 @@ OFF = "off"
 PER_XP = 1000
 # The merits a clan needs come out of the merit points first, as in the wizard.
 CLAN_FIRST = 10**6
+# A creation pick's slot in best_picks, beside a merit's places (keyed by its grant).
+PICK = ""
 
 
 def fitted(npc: Character) -> bool:
@@ -62,9 +85,20 @@ def drop(trait: CharacterTrait) -> None:
     trait.pick_by = None
 
 
+def drop_place(trait: CharacterTrait) -> None:
+    """Take a merit's place off the trait, and the free dots it gave."""
+    trait.free_rating = max(0, trait.free_rating - (trait.grant_place or 0))
+    trait.grant_place = None
+    trait.place_grant = None
+    trait.place_by = None
+
+
 def set_straight(trait: CharacterTrait, rating: int) -> None:
     """Set an NPC's trait straight to `rating`, as staff or an import do. A pick
-    the trait no longer reaches goes; free dots never pass the rating."""
+    or a merit's place the trait no longer reaches goes; free dots never pass the
+    rating."""
+    if trait.grant_place is not None and rating < trait.grant_place:
+        drop_place(trait)
     if trait.creation_pick is not None and rating < trait.creation_pick:
         if trait.pick_by is not None:
             drop(trait)
@@ -77,13 +111,17 @@ def set_straight(trait: CharacterTrait, rating: int) -> None:
 
 
 def unfit(db: Session, npc: Character) -> None:
-    """Take off every pick the fitting placed, leaving what staff set."""
+    """Take off every pick and place the fitting placed, leaving what staff set."""
     for trait in db.scalars(
         select(CharacterTrait).where(
-            CharacterTrait.character_id == npc.id, CharacterTrait.pick_by == FIT
+            CharacterTrait.character_id == npc.id,
+            or_(CharacterTrait.pick_by == FIT, CharacterTrait.place_by == FIT),
         )
     ):
-        drop(trait)
+        if trait.pick_by == FIT:
+            drop(trait)
+        if trait.place_by == FIT:
+            drop_place(trait)
     db.flush()
 
 
@@ -100,32 +138,169 @@ def open_to_fit(row: SheetRow) -> bool:
     """A trait the fitting may give a pick: rated, with no pick and no free dots of
     its own (a starting trait's, or what a merit gives), and not one staff took a
     pick off."""
+    return unfree(row) and row.trait.pick_by != OFF
+
+
+def open_to_place(row: SheetRow) -> bool:
+    """A trait the fitting may give a merit's place, as `open_to_fit` a pick."""
+    return unfree(row) and row.trait.place_by != OFF
+
+
+def unfree(row: SheetRow) -> bool:
     t = row.trait
     return (
         row.category.rated
         and bool(t.rating)
         and t.creation_pick is None
-        and t.pick_by != OFF
         and t.free_rating == 0
         and t.granted_rating == 0
     )
 
 
-def best_picks(
-    slots: Mapping[int, int], options: Sequence[Sequence[tuple[int, int]]]
-) -> list[int | None]:
-    """The picks to give each candidate, as many as `slots` holds at each rating, for
-    the most weight in all: `options[i]` is what candidate i could take, as (rating,
-    weight). Exact, by going through the candidates with the picks still left: a
-    category has few picks, so few ways to have some left."""
-    ratings = sorted(slots)
+@dataclass(frozen=True)
+class Giving:
+    """A grant of a merit the NPC holds whose free dots the fitting places: a
+    free_choices grant's places (Ventrue Royalty's 4, 3 and 2 on its backgrounds),
+    or a Path merit's conversion."""
+
+    grant: GrantData
+    # The merit that holds it.
+    merit: str
+    category: str
+    # The traits it may go on: those it offers, or the Path it converts to.
+    names: frozenset[str]
+    # The places, each used once on a different trait; for a conversion, one: the
+    # free dots it gives the Path at most, the starting Humanity's.
+    amounts: tuple[int, ...]
+
+    @property
+    def key(self) -> str:
+        return self.grant.key
+
+    @property
+    def converts(self) -> bool:
+        return self.grant.kind == "convert"
+
+    def left(self, rows: Sequence[SheetRow]) -> Counter[int]:
+        """The places staff have not set by hand."""
+        return Counter(self.amounts) - Counter(
+            r.trait.grant_place or 0
+            for r in rows
+            if r.trait.place_by == STAFF and r.trait.place_grant == self.key
+        )
+
+    def takes(self, row: SheetRow) -> bool:
+        return row.category.key == self.category and row.definition.name in self.names
+
+    def could_take(self, row: SheetRow, amount: int) -> bool:
+        """Whether a place of `amount` could go on the trait, by hand: one it may
+        go on, rated as high, with no free dots but its own place's."""
+        t = row.trait
+        own = (t.grant_place or 0) if t.place_grant == self.key else 0
+        return (
+            self.takes(row)
+            and bool(t.rating)
+            and (self.converts or (t.rating or 0) >= amount)
+            and t.creation_pick is None
+            and t.free_rating - own == 0
+            and t.granted_rating == 0
+        )
+
+    def amount_for(self, row: SheetRow, amount: int) -> int:
+        """The free dots a place of `amount` gives the trait: a conversion keeps
+        what it can of the Path's rating."""
+        return min(row.trait.rating or 0, amount) if self.converts else amount
+
+
+def givings(rules: TroupeRules, rows: Sequence[SheetRow]) -> dict[str, Giving]:
+    """The grants of merits on the sheet that the fitting places, by key. A merit
+    with choices of its own (made in the wizard) keeps them."""
+    rule_set = rules.rule_set
+    sheet = [r.as_rules_trait() for r in rows]
+    by_name: dict[tuple[str, str], list[SheetRow]] = {}
+    for row in rows:
+        by_name.setdefault((row.category.key, row.definition.name), []).append(row)
+    found: dict[str, Giving] = {}
+    for grant in rule_set.grants:
+        places = (grant.picks or {}).get("places") if grant.kind == "free_choices" else None
+        if places is None and grant.kind != "convert":
+            continue
+        for row in by_name.get((grant.source["category"], grant.source["name"]), ()):
+            trait = row.as_rules_trait()
+            if grant.key in found or not holds_source(trait, grant.source):
+                continue
+            if grant.when is not None and not matches(grant.when, sheet, trait):
+                continue
+            if places is not None:
+                if any(c.grant == grant.key for c in trait.choices):
+                    continue
+                names = frozenset(o.name for o in options(grant, rule_set, sheet))
+                amounts = tuple(sorted(places, reverse=True))
+            else:
+                assert grant.convert_from is not None
+                origin = (grant.convert_from["category"], grant.convert_from["name"])
+                start = next(
+                    (s.rating for s in rules.starting_traits() if (s.category, s.name) == origin),
+                    None,
+                )
+                if not start:
+                    continue
+                if "choose" in grant.target:
+                    chosen = chosen_target(grant, trait.detail, rule_set)
+                    names = frozenset(
+                        [chosen[1]] if chosen is not None else choices(grant, rule_set)
+                    )
+                else:
+                    names = frozenset([grant.target["name"]])
+                amounts = (start,)
+            found[grant.key] = Giving(
+                grant, row.definition.name, grant.categories[0], names, amounts
+            )
+    return found
+
+
+def place_on(trait: CharacterTrait, amount: int, grant: str, by: str) -> None:
+    trait.grant_place = amount
+    trait.place_grant = grant
+    trait.free_rating = amount
+    trait.place_by = by
+
+
+def let_go(rows: Sequence[SheetRow], giving: Mapping[str, Giving]) -> None:
+    """Take off the places staff set that the sheet no longer allows: the merit
+    gone, the trait below the place, or more by hand than the merit gives."""
+    seen: Counter[tuple[str, int]] = Counter()
+    for row in rows:
+        t = row.trait
+        if t.place_by != STAFF or t.grant_place is None or t.place_grant is None:
+            continue
+        found = giving.get(t.place_grant)
+        seen[(t.place_grant, t.grant_place)] += 1
+        if (
+            found is None
+            or not found.takes(row)
+            or (t.rating or 0) < t.grant_place
+            or seen[(t.place_grant, t.grant_place)] > Counter(found.amounts)[t.grant_place]
+        ):
+            drop_place(t)
+
+
+def best_picks[K: Hashable](
+    slots: Mapping[K, int], options: Sequence[Sequence[tuple[K, int]]]
+) -> list[K | None]:
+    """The picks to give each candidate, as many as `slots` holds of each kind (a
+    rating, or a merit's place), for the most weight in all: `options[i]` is what
+    candidate i could take, as (kind, weight). Exact, by going through the
+    candidates with the picks still left: a category has few picks, so few ways to
+    have some left."""
+    ratings = list(slots)
 
     @cache
-    def go(i: int, left: tuple[int, ...]) -> tuple[int, tuple[int | None, ...]]:
+    def go(i: int, left: tuple[int, ...]) -> tuple[int, tuple[K | None, ...]]:
         if i == len(options):
             return 0, ()
         weight, rest = go(i + 1, left)
-        best: tuple[int, tuple[int | None, ...]] = (weight, (None, *rest))
+        best: tuple[int, tuple[K | None, ...]] = (weight, (None, *rest))
         for rating, gain in options[i]:
             j = ratings.index(rating)
             if not left[j]:
@@ -163,24 +338,46 @@ def place(trait: CharacterTrait, pick: int, by: str) -> None:
 
 
 def fit(db: Session, npc: Character) -> None:
-    """Fit the NPC's creation picks to its sheet, around those staff set."""
+    """Fit the NPC's creation picks, and the places its merits give, to its sheet,
+    around those staff set."""
     if not fitted(npc):
         return
     unfit(db, npc)
     rules = rules_for(db, npc)
     rows = sheet_rows(db, npc)
+    giving = givings(rules, rows)
+    let_go(rows, giving)
+    for found in giving.values():
+        if found.converts:
+            for row in rows:
+                if found.takes(row) and open_to_place(row):
+                    place_on(row.trait, found.amount_for(row, found.amounts[0]), found.key, FIT)
+    places = [g for g in giving.values() if not g.converts]
     sheet = [r.as_rules_trait() for r in rows]
     pools = pools_for(rules.creation_rules(), rows)
     fits = Fitting(db, npc)
-    candidates = sorted(
-        (r for r in rows if open_to_fit(r)), key=lambda r: (r.definition.name, r.trait.detail)
-    )
+    ordered = sorted(rows, key=lambda r: (r.definition.name, r.trait.detail))
 
-    for category in dict.fromkeys(p.category for p in pools.values()):
-        here = [r for r in candidates if r.category.key == category]
+    def saved(row: SheetRow, slot: tuple[str, int]) -> int:
+        """What a pick or place saves, weighted: the XP first, then placing it at
+        all; and of two that save as much, the merit's place, as the merit's
+        places are where its traits are and the picks go anywhere."""
+        free = slot[1]
+        weight = (cost(rules, sheet, row, 0) - cost(rules, sheet, row, free)) * PER_XP + 1
+        return weight if slot[0] == PICK else weight + 1
+
+    categories = [*(p.category for p in pools.values()), *(g.category for g in places)]
+    for category in dict.fromkeys(categories):
+        here = [r for r in ordered if r.category.key == category]
+        slots: dict[tuple[str, int], int] = {}
         points = pools.get((category, 0))
         if points is not None and points.kind == "points":
             clan = clan_merits.held(db, npc).names if category == "merits" else set()
+            fitting = [
+                r
+                for r in here
+                if open_to_fit(r) and fits(points, r.definition.name, r.trait.detail)
+            ]
             items = [
                 (
                     r.trait.rating or 0,
@@ -188,33 +385,57 @@ def fit(db: Session, npc: Character) -> None:
                     + cost(rules, sheet, r, 0)
                     + (CLAN_FIRST if r.definition.name in clan else 0),
                 )
-                for r in here
-                if fits(points, r.definition.name, r.trait.detail)
+                for r in fitting
             ]
-            fitting = [r for r in here if fits(points, r.definition.name, r.trait.detail)]
             for row, take in zip(fitting, best_budget(points.remaining, items), strict=True):
                 if take:
                     place(row.trait, row.trait.rating or 0, FIT)
-            continue
-        slots = {
-            p.rating: p.remaining
-            for p in pools.values()
-            if p.category == category and p.kind == "picks" and p.remaining > 0
-        }
+        else:
+            slots = {
+                (PICK, p.rating): p.remaining
+                for p in pools.values()
+                if p.category == category and p.kind == "picks" and p.remaining > 0
+            }
+        # Each of a merit's places goes on a different trait: of two by one name
+        # (Allies twice), only the higher rated can take one.
+        open_for: dict[str, dict[str, SheetRow]] = {}
+        for found in places:
+            if found.category != category:
+                continue
+            for amount, count in found.left(rows).items():
+                if count > 0:
+                    slots[(found.key, amount)] = count
+            taken = {r.definition.name for r in here if r.trait.place_grant == found.key}
+            first: dict[str, SheetRow] = {}
+            for row in sorted(here, key=lambda r: -(r.trait.rating or 0)):
+                name = row.definition.name
+                if found.takes(row) and open_to_place(row) and name not in taken:
+                    first.setdefault(name, row)
+            open_for[found.key] = first
         if not slots:
             continue
         options = [
             [
-                (rating, (cost(rules, sheet, r, 0) - cost(rules, sheet, r, rating)) * PER_XP + 1)
-                for rating in slots
-                if (r.trait.rating or 0) >= rating
-                and fits(pools[(category, rating)], r.definition.name, r.trait.detail)
+                (slot, saved(r, slot))
+                for slot in slots
+                if (r.trait.rating or 0) >= slot[1]
+                and (
+                    open_to_fit(r)
+                    and fits(pools[(category, slot[1])], r.definition.name, r.trait.detail)
+                    if slot[0] == PICK
+                    else open_for[slot[0]].get(r.definition.name) is r
+                )
             ]
             for r in here
         ]
-        for row, pick in zip(here, best_picks(slots, options), strict=True):
-            if pick is not None:
-                place(row.trait, pick, FIT)
+        for row, chosen in zip(here, best_picks(slots, options), strict=True):
+            if chosen is None:
+                continue
+            kind, rating = chosen
+            if kind == PICK:
+                place(row.trait, rating, FIT)
+            else:
+                place_on(row.trait, rating, kind, FIT)
     db.flush()
 
 
@@ -366,14 +587,141 @@ def take_off(
     )
 
 
+def pin_place(
+    db: Session,
+    staff: User,
+    npc: Character,
+    grant: str,
+    category: str,
+    name: str,
+    detail: str,
+    amount: int | None,
+    replacing: tuple[str, str] | None = None,
+) -> None:
+    """Place one of a merit's places on a trait by hand, as `pin` a pick: the
+    place of `amount` its grant gives, which every refit keeps. A trait with a
+    place moves, and one placed by hand whose place it takes goes where the trait
+    was, if it can. A Path merit's conversion has no places to choose: placing it
+    puts it back on the Path, fitted."""
+    ensure_fitted(npc)
+    row = row_for(db, npc, category, name, detail)
+    trait = row.trait
+    was = trait.grant_place if trait.place_grant == grant else None
+    unfit(db, npc)
+    rules = rules_for(db, npc)
+    found = givings(rules, sheet_rows(db, npc)).get(grant)
+    if found is None:
+        raise unprocessable(f"{npc.name} holds no merit that places those free dots.")
+    if not found.takes(row):
+        raise unprocessable(f"{found.merit} gives no free dots to {name}.")
+    swapped: CharacterTrait | None = None
+    if replacing is not None:
+        other = row_for(db, npc, category, *replacing)
+        if (
+            other.trait.place_by == STAFF
+            and other.trait.place_grant == grant
+            and other.trait is not trait
+        ):
+            drop_place(other.trait)
+            swapped = other.trait
+    if trait.grant_place is not None:
+        drop_place(trait)
+    if trait.place_by == OFF:
+        trait.place_by = None
+    db.flush()
+    if found.converts:
+        fit(db, npc)
+        audit.record(
+            db,
+            staff,
+            "npc.place_placed",
+            troupe_id=npc.owner_troupe_id,
+            character_id=npc.id,
+            name=f"{name}: {detail}" if detail else name,
+            merit=found.merit,
+        )
+        return
+    rows = sheet_rows(db, npc)
+    if amount is None or amount not in found.amounts:
+        raise unprocessable(
+            f"{found.merit} places {', '.join(map(str, found.amounts))}: say which."
+        )
+    if found.left(rows)[amount] < 1:
+        raise conflict(
+            f"{found.merit}'s place of {amount} is set by hand on another trait: take it off first."
+        )
+    if any(
+        r.trait.place_grant == grant and r.definition.name == name and r.trait is not trait
+        for r in rows
+    ):
+        raise unprocessable(f"{found.merit} places dots on {name} once.")
+    held = trait.rating or 0
+    if held < amount:
+        raise unprocessable(f"{name} is rated {held}, below a place of {amount}.")
+    if trait.creation_pick is not None or trait.free_rating or trait.granted_rating:
+        raise unprocessable(f"{name}'s dots are free already, so it takes no place.")
+    place_on(trait, amount, grant, STAFF)
+    db.flush()
+    if swapped is not None and was is not None and was != amount:
+        rows = sheet_rows(db, npc)
+        back = next((r for r in rows if r.trait is swapped), None)
+        if (
+            back is not None
+            and found.left(rows)[was] > 0
+            and (swapped.rating or 0) >= was
+            and not (swapped.creation_pick is not None or swapped.free_rating)
+            and not swapped.granted_rating
+        ):
+            place_on(swapped, was, grant, STAFF)
+            db.flush()
+    fit(db, npc)
+    audit.record(
+        db,
+        staff,
+        "npc.place_placed",
+        troupe_id=npc.owner_troupe_id,
+        character_id=npc.id,
+        name=f"{name}: {detail}" if detail else name,
+        merit=found.merit,
+        place=amount,
+    )
+
+
+def take_place_off(
+    db: Session, staff: User, npc: Character, category: str, name: str, detail: str
+) -> None:
+    """Take a merit's place off a trait, and keep the fitting from giving it one;
+    the place goes where else it fits best."""
+    ensure_fitted(npc)
+    unfit(db, npc)
+    trait = row_for(db, npc, category, name, detail).trait
+    if trait.grant_place is not None:
+        drop_place(trait)
+    trait.place_by = OFF
+    db.flush()
+    fit(db, npc)
+    audit.record(
+        db,
+        staff,
+        "npc.place_taken_off",
+        troupe_id=npc.owner_troupe_id,
+        character_id=npc.id,
+        name=f"{name}: {detail}" if detail else name,
+    )
+
+
 def refit(db: Session, staff: User, npc: Character) -> None:
-    """Forget what staff set, and fit every pick again."""
+    """Forget what staff set, and fit every pick and place again."""
     ensure_fitted(npc)
     for trait in db.scalars(select(CharacterTrait).where(CharacterTrait.character_id == npc.id)):
         if trait.pick_by == STAFF:
             drop(trait)
         elif trait.pick_by == OFF:
             trait.pick_by = None
+        if trait.place_by == STAFF:
+            drop_place(trait)
+        elif trait.place_by == OFF:
+            trait.place_by = None
     db.flush()
     fit(db, npc)
     audit.record(
@@ -408,18 +756,31 @@ class PoolView:
     placed: list[Placed]
     # The traits a pick here could go on instead.
     candidates: list[Candidate]
+    # For a merit's places: the grant's key and the merit that holds it.
+    grant: str | None = None
+    merit: str | None = None
+
+
+@dataclass(frozen=True)
+class KeptOff:
+    category: str
+    name: str
+    detail: str
+    # What was taken off it: a creation pick, or a merit's place.
+    kind: str  # pick | place
 
 
 @dataclass(frozen=True)
 class Picks:
     fitted: bool
     pools: list[PoolView]
-    # Traits staff took a pick off, which the fitting leaves alone, as (category, name, detail).
-    kept_off: list[tuple[str, str, str]]
+    # Traits staff took a pick or a place off, which the fitting leaves alone.
+    kept_off: list[KeptOff]
 
 
 def view(db: Session, npc: Character) -> Picks:
-    """The NPC's creation picks, pool by pool, and where else each could go."""
+    """The NPC's creation picks, pool by pool, and where else each could go; then
+    the places its merits give, a pool for each amount."""
     if npc.kind != "npc" or npc.npc_form != "sheeted":
         return Picks(False, [], [])
     rules = rules_for(db, npc)
@@ -428,6 +789,7 @@ def view(db: Session, npc: Character) -> Picks:
     every = [*placed.values(), *stray_pools(rules.creation_rules(), rows, placed)]
     fits = Fitting(db, npc)
     order = list(rules.rule_set.categories)
+    ordered = sorted(rows, key=lambda r: (r.definition.name, r.trait.detail))
 
     def could_take(pool: Pool, row: SheetRow) -> bool:
         t = row.trait
@@ -442,10 +804,13 @@ def view(db: Session, npc: Character) -> Picks:
             and fits(pool, row.definition.name, t.detail)
         )
 
+    def category_name(key: str) -> str:
+        return rules.rule_set.categories[key].name
+
     pools = [
         PoolView(
             category=pool.category,
-            category_name=rules.rule_set.categories[pool.category].name,
+            category_name=category_name(pool.category),
             kind=pool.kind,
             rating=pool.rating,
             allowed=pool.allowed,
@@ -460,7 +825,7 @@ def view(db: Session, npc: Character) -> Picks:
             ],
             candidates=[
                 Candidate(r.definition.name, r.trait.detail, r.trait.rating or 0)
-                for r in sorted(rows, key=lambda r: (r.definition.name, r.trait.detail))
+                for r in ordered
                 if could_take(pool, r)
             ],
         )
@@ -472,10 +837,90 @@ def view(db: Session, npc: Character) -> Picks:
             ),
         )
     ]
+    for found in givings(rules, rows).values():
+        here = [r for r in ordered if found.takes(r)]
+        if found.converts:
+            # A pool for the Path on the sheet, at what converting gives it.
+            amounts = {found.amount_for(r, found.amounts[0]): 1 for r in here if r.trait.rating}
+        else:
+            amounts = Counter(found.amounts)
+        for amount, allowed in amounts.items():
+            pools.append(
+                PoolView(
+                    category=found.category,
+                    category_name=category_name(found.category),
+                    kind="picks",
+                    rating=amount,
+                    allowed=allowed,
+                    placed=[
+                        Placed(
+                            r.definition.name,
+                            r.trait.detail,
+                            r.trait.grant_place or 0,
+                            r.trait.place_by or STAFF,
+                        )
+                        for r in here
+                        if r.trait.place_grant == found.key
+                        and (found.converts or r.trait.grant_place == amount)
+                    ],
+                    candidates=[
+                        Candidate(r.definition.name, r.trait.detail, r.trait.rating or 0)
+                        for r in here
+                        if found.could_take(r, amount)
+                    ],
+                    grant=found.key,
+                    merit=found.merit,
+                )
+            )
     kept_off = [
-        (r.category.key, r.definition.name, r.trait.detail) for r in rows if r.trait.pick_by == OFF
+        KeptOff(r.category.key, r.definition.name, r.trait.detail, kind)
+        for r in rows
+        for kind, by in (("pick", r.trait.pick_by), ("place", r.trait.place_by))
+        if by == OFF
     ]
     return Picks(fitted(npc), pools, kept_off)
+
+
+def hand_over_places(db: Session, npc: Character) -> None:
+    """Make the places the NPC's merits give its own, as a player's choices are,
+    for it is given to a player: each merit's choices (`CharacterTrait.choices`),
+    the biggest place first, with the dots they place left free on their traits.
+    A Path keeps its free dots, as converting it would have."""
+    rows = sheet_rows(db, npc)
+    for found in givings(rules_for(db, npc), rows).values():
+        if found.converts:
+            continue
+        chosen = sorted(
+            (r for r in rows if r.trait.place_grant == found.key and r.trait.grant_place),
+            key=lambda r: -(r.trait.grant_place or 0),
+        )
+        merit = next(
+            (r for r in rows if (r.category.key, r.definition.name) == source_of(found.grant)),
+            None,
+        )
+        if merit is None or not chosen:
+            continue
+        merit.trait.choices = [
+            *merit.trait.choices,
+            *(
+                {
+                    "grant": found.key,
+                    "name": r.definition.name,
+                    "detail": r.trait.detail,
+                    "amount": r.trait.grant_place,
+                }
+                for r in chosen
+            ),
+        ]
+    for row in rows:
+        row.trait.grant_place = None
+        row.trait.place_grant = None
+        row.trait.place_by = None
+    db.flush()
+
+
+def source_of(grant: GrantData) -> tuple[str, str]:
+    return (grant.source["category"], grant.source["name"])
 
 
 def fit_all(db: Session) -> int:

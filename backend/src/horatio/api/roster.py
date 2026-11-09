@@ -502,6 +502,8 @@ MESSAGES: dict[str, str] = {
     "npc.pick_placed": "{actor} placed a creation pick of {pick} on {name} for the NPC"
     " {character}.",
     "npc.pick_taken_off": "{actor} took the creation pick off {name} for the NPC {character}.",
+    "npc.place_placed": "{actor} placed {merit}'s free dots on {name} for the NPC {character}.",
+    "npc.place_taken_off": "{actor} took a merit's free dots off {name} for the NPC {character}.",
     "npc.picks_refitted": "{actor} fitted the NPC {character}'s creation picks again.",
     "npc.troupe_picks_fitted": "{actor} fitted the creation picks of the troupe's NPCs built"
     " without the wizard: {changed} of {count} changed.",

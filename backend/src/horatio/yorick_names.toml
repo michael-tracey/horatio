@@ -34,6 +34,15 @@ split_on_commas = [
   "influence_underworld_specializations",
 ]
 
+# Merits whose detail names the discipline they make in-clan (MET: VTM pp. 242, 246,
+# 248). The import puts it under Extra In-Clan Disciplines as well.
+in_clan_details = [
+  "Additional Common Discipline",
+  "Additional Uncommon Discipline",
+  "Pliable Blood",
+  "Vestiges of Greatness",
+]
+
 # The printout's headings, and the category each one's lines are in.
 [headings]
 "Backgrounds" = "backgrounds"

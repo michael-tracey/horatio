@@ -2066,7 +2066,8 @@ export interface paths {
         get: operations["read_picks_api_characters__character_id__npc_picks_get"];
         /**
          * Place Pick
-         * @description Place a creation pick on a trait by hand; the rest are fitted around it.
+         * @description Place a creation pick, or a merit's place, on a trait by hand; the rest are
+         *     fitted around it.
          */
         put: operations["place_pick_api_characters__character_id__npc_picks_put"];
         post?: never;
@@ -2087,7 +2088,8 @@ export interface paths {
         put?: never;
         /**
          * Take Pick Off
-         * @description Take the pick off a trait, and keep the fitting from giving it one.
+         * @description Take the pick, or a merit's place, off a trait, and keep the fitting from
+         *     giving it one.
          */
         post: operations["take_pick_off_api_characters__character_id__npc_picks_off_post"];
         delete?: never;
@@ -2107,7 +2109,7 @@ export interface paths {
         put?: never;
         /**
          * Refit Picks
-         * @description Forget the picks placed or taken off by hand, and fit them all again.
+         * @description Forget the picks and places set or taken off by hand, and fit them all again.
          */
         post: operations["refit_picks_api_characters__character_id__npc_picks_refit_post"];
         delete?: never;
@@ -19984,6 +19986,11 @@ export interface components {
             category: string;
             /** Detail */
             detail: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "pick" | "place";
             /** Name */
             name: string;
         };
@@ -20095,6 +20102,8 @@ export interface components {
              * @default
              */
             detail: string;
+            /** Grant */
+            grant?: string | null;
             /** Name */
             name: string;
             /** Rating */
@@ -20120,6 +20129,8 @@ export interface components {
              * @default
              */
             detail: string;
+            /** Grant */
+            grant?: string | null;
             /** Name */
             name: string;
         };
@@ -20176,11 +20187,15 @@ export interface components {
             category: string;
             /** Category Name */
             category_name: string;
+            /** Grant */
+            grant: string | null;
             /**
              * Kind
              * @enum {string}
              */
             kind: "picks" | "points";
+            /** Merit */
+            merit: string | null;
             /** Placed */
             placed: components["schemas"]["NpcPlacedOut"][];
             /** Rating */
