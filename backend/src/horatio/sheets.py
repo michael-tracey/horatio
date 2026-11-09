@@ -1110,6 +1110,36 @@ def restart_path(
 GRANT_DEPTH = 4
 
 
+@dataclass(frozen=True)
+class Regranted:
+    """A trait held under the grants the sheet now holds (regrant)."""
+
+    rating: int
+    free_rating: int
+    granted_rating: int
+    # Dots bought that the free range now reaches, so are refunded.
+    made_free: int
+
+
+def regrant(
+    rating: int, free_rating: int, granted_was: int, added: int, free_up_to: int
+) -> Regranted:
+    """A trait's dots once its grants give `added` dots and make it free up to
+    `free_up_to`, where they gave `granted_was` before. Free dots are a trait's
+    first, and the dots bought sit above them: those the free range now reaches
+    are made free, and the rest stay bought, so a dot bought above what a grant
+    gives (Resources 5 over Ventrue Royalty's 4) is kept (#575)."""
+    base_free = free_rating - granted_was
+    granted = added + max(0, free_up_to - base_free)
+    made_free = max(0, min(rating, free_up_to) - free_rating)
+    return Regranted(
+        rating=max(0, rating - granted_was + granted - made_free),
+        free_rating=max(0, base_free + granted),
+        granted_rating=granted,
+        made_free=made_free,
+    )
+
+
 def apply_grants(
     db: Session,
     user: User,
@@ -1166,17 +1196,13 @@ def grant_once(
             db.add(trait)
         else:
             trait = row.trait
-        old = trait.granted_rating
-        base_rating = (trait.rating or 0) - old
-        base_free = trait.free_rating - old
-        granted = added + max(0, free_up_to - base_free)
+        now = regrant(trait.rating or 0, trait.free_rating, trait.granted_rating, added, free_up_to)
         # Dots the player bought inside the newly free range are refunded.
-        bought = max(0, min(base_rating, free_up_to) - base_free)
+        bought = now.made_free
         if bought:
+            free = trait.free_rating
             refund = trait_cost(
-                rules,
-                [],
-                SheetTrait(key[0], key[1], base_free + bought, base_free, key[2]),
+                rules, [], SheetTrait(key[0], key[1], free + bought, free, key[2])
             ).cost
             definition, _ = find_definition(db, character, key[0], key[1])
             if refund:
@@ -1189,18 +1215,17 @@ def grant_once(
                         entered_by=user.id,
                         trait_definition_id=definition.id,
                         detail=key[2] or None,
-                        from_rating=base_free + bought,
-                        to_rating=base_free,
+                        from_rating=free + bought,
+                        to_rating=free,
                         cost_basis={"grant": found.sources.get(key, [])},
                     )
                 )
-            base_rating -= bought
-        if granted == old and not bought:
+        if now.granted_rating == trait.granted_rating and not bought:
             continue
         changed = True
-        trait.rating = max(0, base_rating + granted)
-        trait.free_rating = max(0, base_free + granted)
-        trait.granted_rating = granted
+        trait.rating = now.rating
+        trait.free_rating = now.free_rating
+        trait.granted_rating = now.granted_rating
         if trait.rating == 0 and trait.free_rating == 0 and trait.creation_pick is None:
             db.delete(trait)
     db.flush()

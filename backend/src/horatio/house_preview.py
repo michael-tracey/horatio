@@ -196,21 +196,24 @@ def granted(
     )
     for key in keys:
         trait = held[key][1] if key in held else SheetTrait(key[0], key[1], 0, 0, key[2])
-        base_rating = (trait.rating or 0) - trait.granted_rating
-        base_free = trait.free_rating - trait.granted_rating
         free_up_to = found.free_up_to.get(key, 0)
         # A merit is given whole, at its value.
         whole = fixed_rating(rules, sheet, key[0], key[1]) if free_up_to else None
         free_up_to = whole if whole is not None else free_up_to
-        given = found.added.get(key, 0) + max(0, free_up_to - base_free)
-        bought = max(0, min(base_rating, free_up_to) - base_free)
+        now = sheets.regrant(
+            trait.rating or 0,
+            trait.free_rating,
+            trait.granted_rating,
+            found.added.get(key, 0),
+            free_up_to,
+        )
         held[key] = (
-            bought,
+            now.made_free,
             replace(
                 trait,
-                rating=max(0, base_rating - bought + given),
-                free_rating=max(0, base_free + given),
-                granted_rating=given,
+                rating=now.rating,
+                free_rating=now.free_rating,
+                granted_rating=now.granted_rating,
             ),
         )
     return held
