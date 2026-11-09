@@ -29,6 +29,7 @@ import { PlayTab } from "./PlayTab";
 import { ProfileTab } from "./ProfileTab";
 import { abilities, roleLabel } from "./roles";
 import { RosterTab } from "./RosterTab";
+import { TroupeImportPage } from "./TroupeImport";
 import { RulesTab } from "./RulesTab";
 import { SettingsTab } from "./SettingsTab";
 import { SetupTab } from "./SetupTab";
@@ -168,6 +169,7 @@ export function TroupePage() {
           <Route path="nominations" element={<NominationsTab troupeId={t.id} canStar={can.running} nominations={!!t.player_nominations} remembrances={!!t.remembrances} />} />
         )}
         {can.running && <Route path="characters" element={<RosterTab troupeId={t.id} canEmail={can.storyteller} />} />}
+        {can.running && !t.archived && <Route path="characters/import" element={<TroupeImportPage troupeId={t.id} />} />}
         {can.running && <Route path="players" element={<PlayersTab troupeId={t.id} />} />}
         {can.staff && <Route path="lines-veils" element={<LinesVeilsTab troupeId={t.id} />} />}
         {can.running && <Route path="play" element={<PlayTab troupeId={t.id} />} />}

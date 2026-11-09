@@ -167,6 +167,18 @@ The **⋯** beside **Print…** has **Export characters and NPCs…**. It downlo
 
 Each player character names its player by handle. Storytellers and the lead can tick **Include players' emails** too, to match characters to their players on another server; leave it off unless you need it. Staff notes are never in the file.
 
+### Importing characters and NPCs
+
+The same **⋯** has **Import characters and NPCs…**, for a troupe's export from this Horatio or another (a `.zip`), or character files. **Choose files…**, then review what happens to each before anything is saved:
+
+- **An NPC** comes in as one of the troupe's, its sheet as the file has it, free dots too. One whose creation picks were fitted, or that has none, has them fitted again at this troupe's prices.
+- **A player character** goes to its player, found by the email in the file (if it was exported with emails) or else by its handle. Check each match: under **Give to**, type another handle, or clear it to hold the character as an NPC and [give it](#giving-an-npc-to-a-player) later. Given, it is at home here and accepted, its sheet bought at this troupe's prices, as giving an NPC does. Its XP history isn't carried over: under **Unspent XP to carry over**, award what you choose of the unspent XP the file shows. Only the lead and storytellers give characters to players; for an assistant storyteller, every player character is held.
+- **One with the name of a character here** (an NPC of the troupe, or one of its player's) waits for you to choose: **Skip it**, **Replace it** (an NPC only: the NPC stays, with its sheet, Retainers, backstory and picture as the file has them) or **Add a copy**. A player's character here is never replaced.
+- **A retired character** comes in retired.
+- **What can't come in** says why: a file that isn't a Horatio character, one from a newer Horatio, or a trait this troupe's rules don't have. The rest still come in.
+
+Equipment, titles and status in the files are shown, not imported: give them here as usual. **Import** brings everything in at once, and lists each character with a link to it.
+
 ### Each character's actions
 
 Each character's **⋯**, at the end of its row, holds what you can do for it, player character or NPC alike. Only what applies to it shows:

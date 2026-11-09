@@ -1,13 +1,13 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { BackupXpOut, CharacterOut } from "../../api/types";
+import type { BackupXpOut, BundleEntryOut, CharacterOut, CharacterReviewOut } from "../../api/types";
 import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, ErrorText, Loading, Notice, PageTitle } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { BuildFor } from "./BuildFor";
-import { MAX_BYTES, SECTIONS, STATUS, backupFileName, countsText, reviewCounts, sectionsQuery, type Section } from "./backup";
+import { MAX_BYTES, SECTIONS, STATUS, backupFileName, countsText, isZip, reviewCounts, sectionsQuery, type Section } from "./backup";
 
 /** Ticks for the optional sections of a backup. */
 export function SectionTicks({ chosen, onChange }: { chosen: ReadonlySet<Section>; onChange: (next: Set<Section>) => void }) {
@@ -136,7 +136,11 @@ export function TroupeExport({ troupeId, selected, canEmail }: { troupeId: strin
 
 // --- importing ------------------------------------------------------------------------------
 
-type Loaded = { document: Record<string, unknown>; fileName: string };
+// A character file, read; or a .zip of several, sent as it is.
+type Loaded = { document: Record<string, unknown>; fileName: string; zip?: undefined } | { zip: File; fileName: string; document?: undefined };
+
+/** A multipart form, sent as it is, with the browser's own boundary. */
+export const asForm = { bodySerializer: (body: unknown) => body as FormData };
 
 /**
  * Import a character (#567), from Your characters: choose a file exported from Horatio
@@ -149,7 +153,7 @@ export function ImportCharacterPage() {
   const [troupeId, setTroupeId] = useState<string | null>(null);
   return (
     <>
-      <PageTitle subtitle="Bring in a character exported from Horatio: a backup of yours, or one from another Horatio.">Import a character</PageTitle>
+      <PageTitle subtitle="Bring in characters exported from Horatio: a backup of yours, the .zip of all of them, or one from another Horatio.">Import a character</PageTitle>
       <div className="flex max-w-3xl flex-col gap-6">
         <Card>
           <div className="flex flex-col gap-4">
@@ -157,7 +161,8 @@ export function ImportCharacterPage() {
             <BuildFor value={troupeId} onChange={setTroupeId} />
           </div>
         </Card>
-        {loaded && <Review key={`${loaded.fileName}:${troupeId ?? ""}`} loaded={loaded} troupeId={troupeId} />}
+        {loaded?.zip && <BundleReview key={`${loaded.fileName}:${troupeId ?? ""}`} zip={loaded.zip} troupeId={troupeId} />}
+        {loaded?.document && <Review key={`${loaded.fileName}:${troupeId ?? ""}`} document={loaded.document} fileName={loaded.fileName} troupeId={troupeId} />}
       </div>
     </>
   );
@@ -168,11 +173,12 @@ function ChooseFile({ loaded, onLoad }: { loaded: Loaded | null; onLoad: (found:
   const [problem, setProblem] = useState<string | null>(null);
   const read = async (file: File) => {
     setProblem(null);
+    if (isZip(file)) return onLoad({ zip: file, fileName: file.name });
     if (file.size > MAX_BYTES) return setProblem("That file is too large to be a Horatio character.");
     try {
       onLoad({ document: JSON.parse(await file.text()) as Record<string, unknown>, fileName: file.name });
     } catch {
-      setProblem("That file isn't a Horatio character: choose a .horatio-character.json file exported from Horatio.");
+      setProblem("That file isn't a Horatio character: choose a .horatio-character.json file, or a .zip, exported from Horatio.");
     }
   };
   return (
@@ -180,7 +186,7 @@ function ChooseFile({ loaded, onLoad }: { loaded: Loaded | null; onLoad: (found:
       <input
         ref={input}
         type="file"
-        accept=".json,application/json"
+        accept=".json,application/json,.zip,application/zip"
         aria-label="Character file"
         className="sr-only"
         onChange={(e) => {
@@ -200,10 +206,10 @@ function ChooseFile({ loaded, onLoad }: { loaded: Loaded | null; onLoad: (found:
   );
 }
 
-function Review({ loaded, troupeId }: { loaded: Loaded; troupeId: string | null }) {
+function Review({ document, fileName, troupeId }: { document: Record<string, unknown>; fileName: string; troupeId: string | null }) {
   const navigate = useNavigate();
   const toast = useToast();
-  const body = { document: loaded.document as Record<string, never>, troupe_id: troupeId, file_name: loaded.fileName };
+  const body = { document: document as Record<string, never>, troupe_id: troupeId, file_name: fileName };
   const check = useMutation({ mutationFn: () => unwrap(api.POST("/api/characters/import/review", { body })) });
   const apply = useAction(() => unwrap(api.POST("/api/characters/import", { body })), [["characters"]]);
   const started = useRef(false);
@@ -230,29 +236,7 @@ function Review({ loaded, troupeId }: { loaded: Loaded; troupeId: string | null 
           <Notice key={w}>{w}</Notice>
         ))}
         {review.xp && <XpFigures xp={review.xp} troupe={review.troupe} from={review.from_troupe} />}
-        <div role="group" aria-label="What comes in" className="flex flex-col gap-3">
-          {review.parts.map((part) => (
-            <section key={part.key} className="rounded-lg border border-ash p-3">
-              <h3 className="text-gold">{part.label}</h3>
-              <ul className="divide-y divide-ash">
-                {part.items.map((item, i) => (
-                  <li key={i} className="flex flex-col gap-1 py-2 text-sm">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <span className="min-w-0 break-words text-parchment">{item.label}</span>
-                      <Badge tone={STATUS[item.status].tone}>{STATUS[item.status].label}</Badge>
-                    </div>
-                    {item.status === "differs" && (
-                      <p className="text-xs text-mist">
-                        In the file: {item.before}; here: <span className="text-parchment">{item.after}</span>
-                      </p>
-                    )}
-                    {item.reason && <p className={`text-xs ${item.status === "cannot" ? "text-blood-bright" : "text-mist"}`}>{item.reason}</p>}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
+        <ReviewParts review={review} />
         <div className="flex flex-col gap-2 border-t border-ash pt-4">
           <p className="text-sm" role="status">
             {countsText(counts)}.
@@ -279,6 +263,144 @@ function Review({ loaded, troupeId }: { loaded: Loaded; troupeId: string | null 
         </div>
       </div>
     </Card>
+  );
+}
+
+/** Each part of a character's review: what comes in, what is held otherwise here,
+ * what is left out and why, and what is shown only. */
+export function ReviewParts({ review }: { review: CharacterReviewOut }) {
+  return (
+    <div role="group" aria-label="What comes in" className="flex flex-col gap-3">
+      {review.parts.map((part) => (
+        <section key={part.key} className="rounded-lg border border-ash p-3">
+          <h3 className="text-gold">{part.label}</h3>
+          <ul className="divide-y divide-ash">
+            {part.items.map((item, i) => (
+              <li key={i} className="flex flex-col gap-1 py-2 text-sm">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <span className="min-w-0 break-words text-parchment">{item.label}</span>
+                  <Badge tone={STATUS[item.status].tone}>{STATUS[item.status].label}</Badge>
+                </div>
+                {item.status === "differs" && item.before && (
+                  <p className="text-xs text-mist">
+                    In the file: {item.before}; here: <span className="text-parchment">{item.after}</span>
+                  </p>
+                )}
+                {item.reason && <p className={`text-xs ${item.status === "cannot" ? "text-blood-bright" : "text-mist"}`}>{item.reason}</p>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Importing a .zip of characters, from Import a character: each comes in as the single
+ * import brings one in, a new character of yours with its picture. Tick those to bring.
+ */
+function BundleReview({ zip, troupeId }: { zip: File; troupeId: string | null }) {
+  const navigate = useNavigate();
+  const toast = useToast();
+  const form = (only?: string[]) => {
+    const body = new FormData();
+    body.append("files", zip);
+    if (troupeId) body.append("troupe_id", troupeId);
+    if (only) body.append("only", JSON.stringify(only));
+    return body;
+  };
+  const check = useQuery({
+    queryKey: ["bundle-review", zip.name, zip.size, zip.lastModified, troupeId],
+    queryFn: () => unwrap(api.POST("/api/characters/import/bundle/review", { body: form() as never, ...asForm })),
+    retry: false,
+    staleTime: Infinity,
+  });
+  const [left, setLeft] = useState<Set<string>>(new Set());
+  const apply = useAction((only: string[]) => unwrap(api.POST("/api/characters/import/bundle", { body: form(only) as never, ...asForm })), [["characters"]]);
+
+  if (check.error) return <ErrorText error={check.error} />;
+  if (!check.data) return <Loading label="Reading the .zip…" />;
+  const entries = check.data.entries;
+  const chosen = entries.filter((e) => e.outcome === "new" && !left.has(e.key)).map((e) => e.key);
+  return (
+    <Card title={`Review ${zip.name}`}>
+      <div className="flex flex-col gap-4">
+        <p className="text-sm text-mist">Each comes in as a new character of yours, as importing it on its own would, and joins no troupe until you ask one to make it home.</p>
+        <ul className="flex flex-col gap-3" aria-label="Characters in the .zip">
+          {entries.map((entry) => (
+            <BundleEntry
+              key={entry.key}
+              entry={entry}
+              ticked={!left.has(entry.key)}
+              onTick={(on) => {
+                const next = new Set(left);
+                if (on) next.delete(entry.key);
+                else next.add(entry.key);
+                setLeft(next);
+              }}
+            />
+          ))}
+        </ul>
+        <div className="flex flex-col gap-2 border-t border-ash pt-4">
+          <ErrorText error={apply.error} />
+          <div>
+            <Button
+              disabled={apply.isPending || chosen.length === 0}
+              onClick={() =>
+                apply.mutate(chosen, {
+                  onSuccess: (done) => {
+                    const made = done.entries.filter((e) => e.character_id).length;
+                    toast({ message: `Imported ${made} ${made === 1 ? "character" : "characters"}` });
+                    navigate("/characters");
+                  },
+                })
+              }
+            >
+              {apply.isPending ? "Importing…" : `Import ${chosen.length} ${chosen.length === 1 ? "character" : "characters"}`}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function BundleEntry({ entry, ticked, onTick }: { entry: BundleEntryOut; ticked: boolean; onTick: (on: boolean) => void }) {
+  const name = entry.name ?? entry.key;
+  const counts = entry.review ? reviewCounts(entry.review) : null;
+  return (
+    <li className="rounded-lg border border-ash p-3 text-sm">
+      {entry.outcome === "cannot" ? (
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <span className="min-w-0 break-words text-parchment">{name}</span>
+            <Badge tone="blood">Can't import</Badge>
+          </div>
+          <p className="text-xs text-blood-bright">{entry.problem}</p>
+        </div>
+      ) : (
+        <label className="flex items-start gap-2">
+          <input type="checkbox" className="mt-1" checked={ticked} onChange={(e) => onTick(e.target.checked)} />
+          <span className="flex min-w-0 flex-col gap-1">
+            <span className="break-words text-parchment">{name}</span>
+            {counts && <span className="text-xs text-mist">{countsText(counts)}</span>}
+          </span>
+        </label>
+      )}
+      {entry.review && (
+        <details className="mt-2">
+          <summary className="cursor-pointer text-xs text-mist hover:text-parchment">What comes in</summary>
+          <div className="mt-2 flex flex-col gap-3">
+            {entry.review.warnings.map((w) => (
+              <Notice key={w}>{w}</Notice>
+            ))}
+            {entry.review.xp && <XpFigures xp={entry.review.xp} troupe={entry.review.troupe} from={entry.review.from_troupe} />}
+            <ReviewParts review={entry.review} />
+          </div>
+        </details>
+      )}
+    </li>
   );
 }
 

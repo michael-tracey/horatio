@@ -1075,9 +1075,14 @@ def import_retainers(db: Session, user: User, found: Imported, document: Charact
         found.items.append(Reviewed("retainers", label, "new"))
 
 
-def shown_only(found: Imported, document: CharacterDocument) -> None:
-    """What a home troupe's storytellers give, shown and never imported."""
-    given = "Its home troupe's storytellers give equipment: ask them for it."
+def shown_only(found: Imported, document: CharacterDocument, *, staff: bool = False) -> None:
+    """What a home troupe's storytellers give, shown and never imported. For `staff`
+    importing their troupe's own, it says where to give it."""
+    given = (
+        "Give it from the troupe's equipment."
+        if staff
+        else "Its home troupe's storytellers give equipment: ask them for it."
+    )
     for item in document.equipment:
         found.items.append(Reviewed("equipment", item.name, "info", reason=given))
     for identity in document.identities:

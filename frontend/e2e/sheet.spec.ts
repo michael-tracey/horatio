@@ -67,6 +67,17 @@ test("a player exports a character as a backup and imports it again as a new cha
   // It earned its XP elsewhere: self-entered, for the troupe it joins to keep or remove.
   await p.goto("/characters");
   await expect(p.getByRole("link", { name: /Odile Varga/ })).toHaveCount(2);
+
+  // Export all is a .zip of every one; importing it brings in those still ticked.
+  const [all] = await Promise.all([p.waitForEvent("download"), p.getByRole("link", { name: "Export all" }).click()]);
+  await p.getByRole("link", { name: "Import a character" }).click();
+  await p.getByLabel("Character file").setInputFiles({ name: all.suggestedFilename(), mimeType: "application/zip", buffer: readFileSync(await all.path()) });
+  const inZip = p.getByRole("list", { name: "Characters in the .zip" }).getByRole("listitem");
+  await expect(inZip).toHaveCount(2);
+  await inZip.nth(1).getByRole("checkbox").uncheck();
+  await p.getByRole("button", { name: "Import 1 character" }).click();
+  await expect(p).toHaveURL(/\/characters$/);
+  await expect(p.getByRole("link", { name: /Odile Varga/ })).toHaveCount(3);
 });
 
 test("merits and flaws on the sheet: Tainted Embrace caps fleeting status at 4 and says why, Slow Reactions lowers initiative, and Ardent Companion lists its Retainer (#314)", async ({ browser }) => {

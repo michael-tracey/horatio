@@ -4677,6 +4677,138 @@
         "title": "Body_add_table_api_yorick_imports__troupe_id__names_file_post",
         "type": "object"
       },
+      "Body_import_bundle_api_characters_import_bundle_post": {
+        "properties": {
+          "files": {
+            "description": "A .zip exported from Horatio, or character files, or both.",
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "only": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A JSON list of the keys to import; all, without it.",
+            "title": "Only"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "title": "Body_import_bundle_api_characters_import_bundle_post",
+        "type": "object"
+      },
+      "Body_review_bundle_api_characters_import_bundle_review_post": {
+        "properties": {
+          "files": {
+            "description": "A .zip exported from Horatio, or character files, or both.",
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "title": "Body_review_bundle_api_characters_import_bundle_review_post",
+        "type": "object"
+      },
+      "Body_review_troupe_import_api_troupes__troupe_id__character_imports_review_post": {
+        "properties": {
+          "decisions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A JSON object of what staff chose for each file, by its key: choice, player, carried_xp, carried_reason.",
+            "title": "Decisions"
+          },
+          "files": {
+            "description": "A .zip exported from Horatio, or character files, or both.",
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "title": "Body_review_troupe_import_api_troupes__troupe_id__character_imports_review_post",
+        "type": "object"
+      },
+      "Body_run_troupe_import_api_troupes__troupe_id__character_imports_post": {
+        "properties": {
+          "decisions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A JSON object of what staff chose for each file, by its key: choice, player, carried_xp, carried_reason.",
+            "title": "Decisions"
+          },
+          "files": {
+            "description": "A .zip exported from Horatio, or character files, or both.",
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "title": "Body_run_troupe_import_api_troupes__troupe_id__character_imports_post",
+        "type": "object"
+      },
       "Body_upload_banner_api_troupes__troupe_id__banner_post": {
         "properties": {
           "file": {
@@ -5429,6 +5561,109 @@
           "total"
         ],
         "title": "BulkAwarded",
+        "type": "object"
+      },
+      "BundleEntryOut": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "pc",
+                  "npc"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "outcome": {
+            "enum": [
+              "new",
+              "skipped",
+              "cannot"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CharacterReviewOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "kind",
+          "outcome",
+          "problem",
+          "review",
+          "character_id"
+        ],
+        "title": "BundleEntryOut",
+        "type": "object"
+      },
+      "BundleImportOut": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/BundleEntryOut"
+            },
+            "title": "Entries",
+            "type": "array"
+          }
+        },
+        "required": [
+          "entries"
+        ],
+        "title": "BundleImportOut",
         "type": "object"
       },
       "ByHandIn": {
@@ -17973,6 +18208,30 @@
           "titles"
         ],
         "title": "HeldTitles",
+        "type": "object"
+      },
+      "HereOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "whose": {
+            "title": "Whose",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "whose"
+        ],
+        "title": "HereOut",
         "type": "object"
       },
       "HistoryEntryOut": {
@@ -44247,6 +44506,185 @@
         "title": "TroupeChoice",
         "type": "object"
       },
+      "TroupeEntryOut": {
+        "properties": {
+          "can_replace": {
+            "title": "Can Replace",
+            "type": "boolean"
+          },
+          "carried_xp": {
+            "title": "Carried Xp",
+            "type": "integer"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "choice": {
+            "anyOf": [
+              {
+                "enum": [
+                  "skip",
+                  "replace",
+                  "copy"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Choice"
+          },
+          "duplicate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HereOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file_player": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Player"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "pc",
+                  "npc"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "matched_by": {
+            "anyOf": [
+              {
+                "enum": [
+                  "email",
+                  "handle",
+                  "chosen"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched By"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "outcome": {
+            "enum": [
+              "new",
+              "given",
+              "held",
+              "replaced",
+              "skipped",
+              "undecided",
+              "cannot"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "player": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Someone"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CharacterReviewOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unspent": {
+            "title": "Unspent",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "kind",
+          "outcome",
+          "problem",
+          "file_player",
+          "player",
+          "matched_by",
+          "duplicate",
+          "can_replace",
+          "choice",
+          "unspent",
+          "carried_xp",
+          "retired",
+          "review",
+          "character_id"
+        ],
+        "title": "TroupeEntryOut",
+        "type": "object"
+      },
       "TroupeEquipmentOut": {
         "properties": {
           "characters": {
@@ -44285,6 +44723,32 @@
           "not_shown"
         ],
         "title": "TroupeEquipmentOut",
+        "type": "object"
+      },
+      "TroupeImportOut": {
+        "properties": {
+          "can_give": {
+            "title": "Can Give",
+            "type": "boolean"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/TroupeEntryOut"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "troupe": {
+            "title": "Troupe",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe",
+          "can_give",
+          "entries"
+        ],
+        "title": "TroupeImportOut",
         "type": "object"
       },
       "TroupeKeywordOut": {
@@ -49929,6 +50393,90 @@
           }
         },
         "summary": "Import Character",
+        "tags": [
+          "character backup"
+        ]
+      }
+    },
+    "/api/characters/import/bundle": {
+      "post": {
+        "description": "Import each character in the .zip (or files), or those in `only`, as new\ncharacters of the player's in their vault, in one transaction.",
+        "operationId": "import_bundle_api_characters_import_bundle_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_bundle_api_characters_import_bundle_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BundleImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Bundle",
+        "tags": [
+          "character backup"
+        ]
+      }
+    },
+    "/api/characters/import/bundle/review": {
+      "post": {
+        "description": "What importing each character in the .zip (or files) as a new character of the\nplayer's would do, each as the single import's review says. Nothing is saved.",
+        "operationId": "review_bundle_api_characters_import_bundle_review_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_review_bundle_api_characters_import_bundle_review_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BundleImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Review Bundle",
         "tags": [
           "character backup"
         ]
@@ -69122,6 +69670,114 @@
           }
         },
         "summary": "Export Troupe",
+        "tags": [
+          "character backup"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/character-imports": {
+      "post": {
+        "description": "Import the troupe's export as the review showed, in one transaction. Refused\nwhile a character with the name of one here waits for staff to choose.",
+        "operationId": "run_troupe_import_api_troupes__troupe_id__character_imports_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_run_troupe_import_api_troupes__troupe_id__character_imports_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run Troupe Import",
+        "tags": [
+          "character backup"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/character-imports/review": {
+      "post": {
+        "description": "What importing the troupe's export (a .zip, or character files) would do with\neach character, as staff have chosen so far: an NPC of the troupe, a player\ncharacter given to its player or held to give later, replacing or beside one here\nof its name, or left out with why. Nothing is saved.",
+        "operationId": "review_troupe_import_api_troupes__troupe_id__character_imports_review_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_review_troupe_import_api_troupes__troupe_id__character_imports_review_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Review Troupe Import",
         "tags": [
           "character backup"
         ]

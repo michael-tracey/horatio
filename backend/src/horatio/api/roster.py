@@ -500,6 +500,10 @@ MESSAGES: dict[str, str] = {
     "npc.imported_over": "{actor} imported {character} from Yorick over the NPC already under"
     " its name (its id there: {legacy_id}; label: {label}; printed lines left to staff:"
     " {unmatched}).",
+    "npc.imported_from_backup": "{actor} imported {character} as an NPC from a backup file"
+    " {whence}; parts left out: {left_out}; XP unspent in the file: {unspent}.",
+    "npc.replaced_from_backup": "{actor} replaced the NPC {character}'s sheet from a backup"
+    " file {whence}; parts left out: {left_out}; XP unspent in the file: {unspent}.",
     "npc.stock_changed": "{actor} changed the Stock NPC {character}.",
     "npc.pick_placed": "{actor} placed a creation pick of {pick} on {name} for the NPC"
     " {character}.",
