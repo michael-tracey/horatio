@@ -629,10 +629,10 @@ test("in the cart, a second Retainer and a second Alternate Identity are each bo
   await p.goto(`/characters/${id}`);
   const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
   const cart = p.getByRole("list", { name: "Changes in the cart" });
-  // A second Retainer is named as it goes in, and priced from its own first dot: 1 + 2 at Generation 1.
-  await part("Backgrounds").getByRole("button", { name: "Add" }).click();
-  await p.getByLabel("Search Backgrounds").fill("Retainers");
-  await p.getByRole("button", { name: "Retainers" }).first().click();
+  // A second Retainer is bought from under Bocephus's row, where the sheet says what the dots are (#586).
+  // It is named as it goes in, and priced from its own first dot: 1 + 2 at Generation 1.
+  await expect(part("Backgrounds").getByText("Each Retainer is bought on its own; its dots are how capable it is.")).toBeVisible();
+  await part("Backgrounds").getByRole("button", { name: "Buy another Retainer" }).click();
   await expect(p.getByText("Each Retainer is bought on its own, with its own dots, up to 5.")).toBeVisible();
   await p.getByPlaceholder("Such as Bocephus").fill("Rook");
   await p.getByLabel("Rating").fill("2");
@@ -655,16 +655,17 @@ test("in the cart, a second Retainer and a second Alternate Identity are each bo
   const backgrounds = part("Backgrounds");
   for (const name of ["Retainers: Bocephus", "Retainers: Rook", "Alternate Identity: Dr. Ellen Marsh, coroner", "Alternate Identity: Father Kell"])
     await expect(backgrounds.getByRole("button", { name: `Raise ${name}`, exact: true })).toBeVisible();
-  await expect(p.getByLabel("Retainers list").getByRole("listitem")).toHaveCount(2);
+  // Each is listed under its own row.
+  for (const name of ["Bocephus", "Rook"]) await expect(p.getByLabel(`Retainer: ${name}`, { exact: true }).getByRole("listitem")).toHaveCount(1);
 
   // Bocephus is a ghoul, with three skills and Obfuscate as his specialties (p. 105).
-  const list = p.getByLabel("Retainers list");
-  await list.getByRole("button", { name: "Edit Retainers" }).click();
+  const list = p.getByLabel("Retainer: Bocephus", { exact: true });
+  await list.getByRole("button", { name: "Edit Bocephus" }).click();
   await list.getByLabel("Bocephus is a ghoul").check();
   for (const skill of ["Brawl", "Stealth", "Dodge"]) await list.getByLabel("Add a specialty for Bocephus").selectOption(skill);
   await list.getByLabel("Discipline for Bocephus").selectOption("Obfuscate");
   await expect(list.getByText("Specialties 4 of 4:")).toBeVisible();
-  await list.getByRole("button", { name: "Save Retainers" }).click();
+  await list.getByRole("button", { name: "Save Retainer" }).click();
   await expect(list.getByText("Brawl, Stealth, Dodge, Obfuscate")).toBeVisible();
   // Father Kell is Accepted by the Sabbat; each identity says what its rating stands up to.
   await p.getByRole("button", { name: "Accepted by a sect or group?" }).last().click();

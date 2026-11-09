@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { choiceDetail, choiceParts } from "./ChoiceSelect";
+import { choiceDetail, choiceParts, preferredFirst } from "./ChoiceSelect";
 
 const ARTIST = ["Crafts", "Performance"];
 
@@ -26,5 +26,16 @@ describe("choiceDetail", () => {
     expect(choiceDetail("Performance", "Singing")).toBe("Performance: Singing");
     expect(choiceDetail("Performance", "  ")).toBe("Performance");
     expect(choiceDetail("Herd", "")).toBe("Herd");
+  });
+});
+
+describe("preferredFirst", () => {
+  it("lists the choices on the sheet first, for Thaumaturgic Expertise's own paths (#570)", () => {
+    const paths = ["Thaumaturgy: Green Path", "Thaumaturgy: Lure of Flames", "Thaumaturgy: Path of Blood"];
+    expect(preferredFirst(paths, ["Brawl", "Thaumaturgy: Path of Blood"])).toEqual({
+      first: ["Thaumaturgy: Path of Blood"],
+      rest: ["Thaumaturgy: Green Path", "Thaumaturgy: Lure of Flames"],
+    });
+    expect(preferredFirst(paths, [])).toEqual({ first: [], rest: paths });
   });
 });

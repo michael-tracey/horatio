@@ -88,6 +88,9 @@ class CharacterListOut(CharacterOut):
 
     home_troupe_name: str | None
     asking_troupe_name: str | None
+    # With no home troupe yet, the troupe whose house rules it is built to (issue #569);
+    # None for the book's rules, or once it has a home troupe.
+    building_troupe_name: str | None = None
     # When the downtime it has yet to submit is due; None for none.
     downtime_due: datetime | None
     # When each cycle's results last reached the player, newest first; the page judges
@@ -240,7 +243,9 @@ def my_characters(db: DbSession, user: CurrentUser) -> list[CharacterListOut]:
             .order_by(Character.name)
         ),
     )
-    troupe_ids = {t for c in found for t in (c.home_troupe_id, c.asking_troupe_id) if t}
+    troupe_ids = {
+        t for c in found for t in (c.home_troupe_id, c.asking_troupe_id, c.building_troupe_id) if t
+    }
     names = {
         troupe_id: name
         for troupe_id, name in db.execute(
@@ -256,6 +261,11 @@ def my_characters(db: DbSession, user: CurrentUser) -> list[CharacterListOut]:
                 **c.model_dump(),
                 home_troupe_name=names.get(c.home_troupe_id) if c.home_troupe_id else None,
                 asking_troupe_name=names.get(c.asking_troupe_id) if c.asking_troupe_id else None,
+                building_troupe_name=(
+                    names.get(c.building_troupe_id)
+                    if c.building_troupe_id and not c.home_troupe_id
+                    else None
+                ),
                 downtime_due=due.due,
                 delivered=list(due.delivered),
             )

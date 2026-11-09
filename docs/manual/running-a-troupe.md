@@ -167,6 +167,18 @@ The **⋯** beside **Print…** has **Export characters and NPCs…**. It downlo
 
 Each player character names its player by handle. Storytellers and the lead can tick **Include players' emails** too, to match characters to their players on another server; leave it off unless you need it. Staff notes are never in the file.
 
+### Importing characters and NPCs
+
+The same **⋯** has **Import characters and NPCs…**, for a troupe's export from this Horatio or another (a `.zip`), or character files. **Choose files…**, then review what happens to each before anything is saved:
+
+- **An NPC** comes in as one of the troupe's, its sheet as the file has it, free dots too. One whose creation picks were fitted, or that has none, has them fitted again at this troupe's prices.
+- **A player character** goes to its player, found by the email in the file (if it was exported with emails) or else by its handle. Check each match: under **Give to**, type another handle, or clear it to hold the character as an NPC and [give it](#giving-an-npc-to-a-player) later. Given, it is at home here and accepted, its sheet bought at this troupe's prices, as giving an NPC does. Its XP history isn't carried over: under **Unspent XP to carry over**, award what you choose of the unspent XP the file shows. Only the lead and storytellers give characters to players; for an assistant storyteller, every player character is held.
+- **One with the name of a character here** (an NPC of the troupe, or one of its player's) waits for you to choose: **Skip it**, **Replace it** (an NPC only: the NPC stays, with its sheet, Retainers, backstory and picture as the file has them) or **Add a copy**. A player's character here is never replaced.
+- **A retired character** comes in retired.
+- **What can't come in** says why: a file that isn't a Horatio character, one from a newer Horatio, or a trait this troupe's rules don't have. The rest still come in.
+
+Equipment, titles and status in the files are shown, not imported: give them here as usual. **Import** brings everything in at once, and lists each character with a link to it.
+
 ### Each character's actions
 
 Each character's **⋯**, at the end of its row, holds what you can do for it, player character or NPC alike. Only what applies to it shows:
@@ -203,6 +215,14 @@ With **NPCs** or **Everyone** shown, choose **New NPC**:
    - **Sheeted**: a full sheet. **Quick build** sets ratings directly, with a running tally of what the NPC is worth; **Use step-by-step creation** builds it as a player would.
    - **Stock**: no sheet, only a rating and a few specialisations, as the book's Stock NPCs have.
 3. Choose **Quick build**, **Use step-by-step creation** or **Make Stock NPC**.
+
+In the quick build, a trait the NPC holds can carry a detail, as a player's can:
+- **A merit that applies to something:** a merit like Thaumaturgic Expertise needs its choice, here which path it makes in-clan. Until that's made, it shows **Choose what it applies to** under the merit, and the NPC's sheet lists it under **Against the rules**. Choose from its list (the NPC's own paths come first) and choose **Set**.
+- **A field or a name:** a skill taken once per field, such as Crafts, needs its field, and a Retainer needs its name. Each is asked for in the same way.
+- **Any other detail:** **Detail** beside a skill, background, merit or flaw adds one, and **Change** alters one already there.
+- **What stays:** a changed detail keeps the trait's rating and its creation pick.
+- **More than one:** where a trait can be held more than once, such as Crafts in a second field or another Retainer, use **Add another field** or **Add another Retainer**.
+- **A merit that gives another:** Piece That Remains, Auspicious, Old Habits and Shadows of the Past show what they give under the merit, in the quick build and on the NPC's **Sheet** tab. **Choose** (or **Change**) picks it from what the merit can give. The merit given is free, its own grants apply (Ventrue Royalty's 4, 3 and 2 are fitted onto the NPC's backgrounds), and the NPC's worth follows. Ventrue Royalty's own dots aren't chosen this way: they're placed on the **Creation picks** card.
 
 ### Stock NPCs
 

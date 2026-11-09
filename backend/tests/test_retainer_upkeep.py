@@ -92,7 +92,7 @@ def actions(session: Session, troupe: Troupe) -> list[str]:
         session.scalars(
             select(AuditEvent.action)
             .where(AuditEvent.troupe_id == uuid.UUID(troupe.id))
-            .order_by(AuditEvent.created_at)
+            .order_by(AuditEvent.created_at, AuditEvent.id)
         )
     )
 

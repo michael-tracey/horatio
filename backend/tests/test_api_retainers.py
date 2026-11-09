@@ -254,6 +254,121 @@ def test_one_listed_before_stays_until_removed(troupe: Troupe, session: Session)
     assert put(troupe.player, character_id, [MARTA, PIKE]).json()["retainers"][2:] == []
 
 
+def patch(person: Person, character_id: str, row: dict[str, Any]) -> Any:
+    return person.client.patch(f"/characters/{character_id}/retainers", json=row)
+
+
+def actions(troupe: Troupe, character_id: str) -> list[str]:
+    log = troupe.player.client.get(f"/characters/{character_id}/log").json()
+    return [e["action"] for e in log]
+
+
+def test_each_retainer_is_saved_on_its_own_leaving_the_others(troupe: Troupe) -> None:
+    character_id = with_both(troupe)
+    put(troupe.player, character_id, [MARTA, PIKE])
+
+    saved = patch(troupe.player, character_id, {**PIKE, "description": "Sly", "dots": 4})
+
+    assert saved.status_code == 200, saved.text
+    assert [(r["name"], r["dots"], r["description"]) for r in saved.json()["retainers"]] == [
+        ("Marta, the driver", 3, "Drives."),
+        ("Pike", 1, "Sly"),
+    ]
+    # Found by its id too, renamed or not.
+    pike = saved.json()["retainers"][1]
+    lost = patch(troupe.player, character_id, {**pike, "lost": "killed"}).json()["retainers"]
+    assert (lost[0]["lost"], lost[1]["lost"], lost[1]["description"]) == (None, "killed", "Sly")
+    assert actions(troupe, character_id).count("retainer.changed") == 1
+
+
+def test_one_saved_on_its_own_keeps_nothing_for_the_others(troupe: Troupe) -> None:
+    character_id = with_both(troupe)
+
+    patch(troupe.player, character_id, MARTA)
+    # Sent again without its id, as by a page from before it was kept: the same one.
+    body = patch(troupe.player, character_id, {**MARTA, "description": "Drives fast."}).json()
+
+    assert [(r["name"], r["id"] is None) for r in body["retainers"]] == [
+        ("Marta, the driver", False),
+        ("Pike", True),
+    ]
+    assert body["retainers"][0]["description"] == "Drives fast."
+    assert actions(troupe, character_id).count("retainer.added") == 1
+    # Still only one bought on the sheet can be kept.
+    refused = patch(troupe.player, character_id, {"name": "Rook", "dots": 2})
+    assert refused.status_code == 409
+    missing = patch(troupe.player, character_id, {**MARTA, "id": str(uuid.uuid4())})
+    assert missing.status_code == 404
+
+
+def test_one_saved_on_its_own_is_not_held_up_by_another(troupe: Troupe, session: Session) -> None:
+    character_id = with_both(troupe)
+    # Listed before, with more specialties than its dots allow now.
+    session.add(
+        Retainer(
+            character_id=uuid.UUID(character_id),
+            name="Rook",
+            dots=1,
+            specialties=["Brawl", "Dodge"],
+            position=5,
+        )
+    )
+    session.flush()
+
+    saved = patch(troupe.player, character_id, MARTA)
+
+    assert saved.status_code == 200, saved.text
+    rook = saved.json()["retainers"][2]
+    assert (rook["name"], rook["specialties"]) == ("Rook", ["Brawl", "Dodge"])
+    # Its own save is checked.
+    assert patch(troupe.player, character_id, rook).status_code == 422
+    patch(troupe.player, character_id, PIKE)
+    clash = patch(troupe.player, character_id, {**rook, "name": "Pike", "specialties": []})
+    assert clash.status_code == 422
+    assert clash.json()["detail"] == "Give each Retainer its own name."
+
+
+def test_a_link_stays_when_another_retainer_is_saved(troupe: Troupe) -> None:
+    character_id = with_both(troupe)
+    npc_id = make_npc(troupe)
+    marta = patch(troupe.player, character_id, MARTA).json()["retainers"][0]
+
+    linked = patch(troupe.storyteller, character_id, {**marta, "npc_id": npc_id})
+    assert linked.json()["retainers"][0]["npc_id"] == npc_id
+    # The player saves Pike, and Marta's link stays; staff save Pike, and it stays too.
+    patch(troupe.player, character_id, PIKE)
+    body = patch(troupe.storyteller, character_id, {**PIKE, "description": "x"}).json()
+
+    assert body["retainers"][0]["npc_id"] == npc_id
+    assert body["retainers"][1]["description"] == "x"
+
+
+def test_a_retainer_from_a_merit_is_added_and_removed_on_its_own(troupe: Troupe) -> None:
+    character_id = with_both(troupe)
+    put(troupe.player, character_id, [MARTA, PIKE])
+    hound = {"name": "Second hound", "dots": 3, "from_merit": "Master of the Hounds"}
+    assert patch(troupe.player, character_id, hound).status_code == 409
+    give_merit(troupe, character_id, "Master of the Hounds", 2)
+
+    added = patch(troupe.player, character_id, hound).json()["retainers"]
+    assert [(r["name"], r["description"]) for r in added] == [
+        ("Marta, the driver", "Drives."),
+        ("Pike", ""),
+        ("Second hound", ""),
+    ]
+    removed = troupe.player.client.delete(f"/characters/{character_id}/retainers/{added[2]['id']}")
+
+    assert removed.status_code == 200, removed.text
+    assert [r["name"] for r in removed.json()["retainers"]] == ["Marta, the driver", "Pike"]
+    assert actions(troupe, character_id).count("retainer.removed") == 1
+    gone = troupe.player.client.delete(f"/characters/{character_id}/retainers/{added[2]['id']}")
+    assert gone.status_code == 404
+    stranger = troupe.stranger.client.delete(
+        f"/characters/{character_id}/retainers/{added[0]['id']}"
+    )
+    assert stranger.status_code == 404
+
+
 def give_merit(troupe: Troupe, character_id: str, name: str, rating: int) -> None:
     gave = troupe.storyteller.client.post(
         f"/characters/{character_id}/give",

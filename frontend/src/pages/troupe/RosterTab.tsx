@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { RosterEntry, TitlesOut } from "../../api/types";
 import { ActionMenu, MenuItem } from "../../components/ActionMenu";
@@ -35,6 +35,7 @@ const SHOW_NAMES: Record<Show, [string, string]> = {
  * narrowed by a filter on their sheets (kept in the URL), ticked and printed. With
  * NPCs shown come their kind, form and Stock rating, and the way to make another. Its ⋯
  * exports them as a backup (#567); storytellers (`canEmail`) may add players' emails.
+ * It also imports a troupe's export (TroupeImportPage).
  */
 export function RosterTab({ troupeId, canEmail = false }: { troupeId: string; canEmail?: boolean }) {
   const path = { params: { path: { troupe_id: troupeId } } };
@@ -79,6 +80,7 @@ export function RosterTab({ troupeId, canEmail = false }: { troupeId: string; ca
   const [exporting, setExporting] = useState(false);
   const [sort, setSort] = useState<Sort>(null);
   const staffing = useStaffing(troupeId);
+  const navigate = useNavigate();
   if (roster.isPending) return <Loading />;
   if (roster.error) return <ErrorText error={roster.error} />;
 
@@ -177,6 +179,7 @@ export function RosterTab({ troupeId, canEmail = false }: { troupeId: string; ca
           </Button>
           <ActionMenu label="More for the troupe's characters">
             <MenuItem onSelect={() => setExporting(true)}>Export characters and NPCs…</MenuItem>
+            <MenuItem onSelect={() => navigate(`/troupes/${troupeId}/characters/import`)}>Import characters and NPCs…</MenuItem>
           </ActionMenu>
           <Dialog title="Export characters and NPCs" open={exporting} onClose={() => setExporting(false)}>
             {exporting && <TroupeExport troupeId={troupeId} selected={ticked.filter((e) => e.home || e.kind === "npc").map((e) => e.character_id)} canEmail={canEmail} />}

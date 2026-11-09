@@ -16,6 +16,51 @@ export function givingMerits(retainers: Pick<RetainerOut, "given" | "from_merit"
   return [...new Set(retainers.filter((r) => r.given).map((r) => r.from_merit))];
 }
 
+/** A row of the sheet a Retainer can be listed under. */
+type Row = { category: string; name: string; detail: string };
+
+/** A row of the Retainers background: one Retainer bought, by its name. */
+export const isRetainersRow = (t: Row) => t.category === "backgrounds" && t.name === "Retainers";
+
+/**
+ * Which Retainers are listed under which row of the sheet, each edited there on its
+ * own: one bought, under its own Retainers row (by name); one from a merit, under that
+ * merit. Any other (listed before each was bought on its own, or from a merit no longer
+ * held) goes under the Retainers row held without a name, from the same time, or the
+ * first Retainers row, or else the first merit with one.
+ */
+export function placeRetainers<T extends Row, R extends Pick<RetainerOut, "bought" | "name" | "from_merit">>(rows: T[], retainers: R[]): Map<T, R[]> {
+  const under = new Map<T, R[]>();
+  const put = (row: T, r: R) => under.set(row, [...(under.get(row) ?? []), r]);
+  const bought = rows.filter(isRetainersRow);
+  const merits = rows.filter((t) => t.category === "merits");
+  const taken = new Set<T>();
+  const left: R[] = [];
+  for (const r of retainers) {
+    const row = r.bought ? bought.find((t) => t.detail === r.name && !taken.has(t)) : r.from_merit ? merits.find((t) => t.name === r.from_merit) : undefined;
+    if (!row) {
+      left.push(r);
+      continue;
+    }
+    if (r.bought) taken.add(row);
+    put(row, r);
+  }
+  const home = bought.find((t) => !t.detail) ?? bought[0] ?? merits.find((t) => under.has(t));
+  if (home) for (const r of left) put(home, r);
+  return under;
+}
+
+/** What a row's Retainers are called on the sheet: "Retainer: Bocephus", "Retainers from Ardent Companion". */
+export function sectionLabel(t: Row): string {
+  if (!isRetainersRow(t)) return `Retainers from ${t.name}`;
+  return t.detail ? `Retainer: ${t.detail}` : "Retainer not yet named";
+}
+
+/** Whether a merit speaks of Retainers, so one can be added by hand under it (Master of the Hounds' second hound). */
+export function addsRetainers(description: string | null | undefined): boolean {
+  return /\bretainers?\b/i.test(description ?? "");
+}
+
 /** Where a Retainer's dots come from, when not from buying it on the sheet. */
 export function retainerSource(r: Pick<RetainerOut, "bought" | "from_merit">): string | null {
   if (r.from_merit) return `from ${r.from_merit}`;

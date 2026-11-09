@@ -40,6 +40,7 @@ from horatio.sheets import (
     ensure_offered,
     find_definition,
     held_at,
+    rename_detail,
     replace_choice,
     rules_for,
     sheet_rows,
@@ -259,6 +260,51 @@ def set_rating(
         db.add(trait)
     npc_picks.set_straight(trait, rating)
     db.flush()
+
+
+def set_detail(
+    db: Session,
+    staff: User,
+    npc: Character,
+    category_key: str,
+    name: str,
+    detail: str,
+    to: str,
+) -> None:
+    """Change the detail of a trait the NPC holds: a merit's choice (Thaumaturgic
+    Expertise's path), a skill's field or a background's name. The trait keeps its
+    rating, its creation pick and any pick staff placed by hand, and its grants follow
+    the new detail (horatio.sheets.checked)."""
+    if npc.kind != "npc":
+        raise conflict("Only an NPC's details can be set directly.")
+    if npc.npc_form == "stock":
+        raise conflict("A Stock NPC has no sheet: change its rating and specialisations instead.")
+    definition, _ = find_definition(db, npc, category_key, name)
+    trait = db.scalar(
+        select(CharacterTrait).where(
+            CharacterTrait.character_id == npc.id,
+            CharacterTrait.trait_definition_id == definition.id,
+            CharacterTrait.detail == detail,
+        )
+    )
+    if trait is None:
+        raise conflict(f"The NPC does not have {shown(definition.name, detail)}.")
+    if to == detail:
+        return
+    clash = db.scalar(
+        select(CharacterTrait.id).where(
+            CharacterTrait.character_id == npc.id,
+            CharacterTrait.trait_definition_id == definition.id,
+            CharacterTrait.detail == to,
+        )
+    )
+    if clash is not None:
+        raise conflict(f"The NPC already has {shown(definition.name, to)}.")
+    rename_detail(db, staff, npc, definition, trait, to)
+
+
+def shown(name: str, detail: str) -> str:
+    return f"{name}: {detail}" if detail else name
 
 
 @dataclass
