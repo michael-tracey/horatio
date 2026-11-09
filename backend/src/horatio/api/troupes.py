@@ -108,6 +108,9 @@ class TroupeOut(BaseModel):
     quest_requests_per_cycle: int
     # Its staff can give items that expire (horatio.item_expiry).
     items_expire: bool = False
+    # A character's backstory must be approved here before it is accepted
+    # (horatio.backstories).
+    backstory_required: bool = False
     # Player Nominations (horatio.nominations): whether the troupe uses them, and
     # whether the caller reads its published ones (its staff and its players).
     player_nominations: bool = False
@@ -348,6 +351,7 @@ def one_out(
         quests_enabled=troupe.quests_enabled,
         quest_requests_per_cycle=troupe.quest_requests_per_cycle,
         items_expire=troupe.items_expire,
+        backstory_required=troupe.backstory_required,
         player_nominations=troupe.player_nominations,
         nominations=reads_nominations,
         remembrances=troupe.remembrances,

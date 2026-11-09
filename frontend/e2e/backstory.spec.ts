@@ -270,6 +270,47 @@ test("a version submitted on another device while the player writes never loses 
   expect(await stored(p, id)).toMatchObject({ version: 3, text: "Born in 1890.\n\nShe fled to Chicago. Then Paris.", draft: null });
 });
 
+test("asking a troupe that needs a backstory with none written sends the player to write it first, and once written the request goes (#563)", async ({ browser }) => {
+  const custodian = await person(browser, "nostory-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "nostory-lead");
+  const player = await person(browser, "nostory-player");
+  const troupeName = `Lords of the Night ${run}`;
+  // A new troupe needs an approved backstory to accept a character.
+  await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle });
+  const p = player.page;
+  const id = await builtVampire(p, "Ottavia", "Brujah", BRUJAH_NEONATE);
+
+  // With nothing written, the form says so, and its button goes to the Backstory tab rather than asking.
+  await p.goto(`/characters/${id}/troupes`);
+  await p.getByLabel("Troupe", { exact: true }).selectOption({ label: troupeName });
+  const home = p.locator("section").filter({ has: p.getByRole("heading", { name: "Home troupe" }) });
+  await expect(home.getByText(`${troupeName} needs a backstory to accept Ottavia.`)).toBeVisible();
+  await expect(home.getByRole("button", { name: "Write the backstory first" })).toBeVisible();
+  await expect(home.getByRole("button", { name: "Ask to join as home troupe" })).toHaveCount(0);
+  await p.screenshot(shots("home-troupe-backstory-needed"));
+  await home.getByRole("button", { name: "Write the backstory first" }).click();
+  await expect(p).toHaveURL(new RegExp(`/characters/${id}/backstory$`));
+  await expect(p.getByRole("button", { name: "Write the backstory", exact: true })).toBeVisible();
+  // Nothing was asked.
+  const sheet = await (await p.request.get(`/api/characters/${id}/sheet`)).json();
+  expect(sheet.pending_approvals.filter((a: { kind: string }) => a.kind === "home_troupe_change")).toEqual([]);
+
+  // Once written, the request goes with it, for the troupe to read and approve.
+  await p.getByRole("button", { name: "Write the backstory", exact: true }).click();
+  await p.getByRole("button", { name: "Markdown", exact: true }).click();
+  await p.getByLabel("Your backstory, in Markdown").fill("Embraced on the Grand Canal, 1797.");
+  await p.getByRole("button", { name: "Submit the backstory", exact: true }).click();
+  await expect(p.getByText(/^Last changed /)).toBeVisible();
+  await characterTab(p, "Troupes");
+  await p.getByLabel("Troupe", { exact: true }).selectOption({ label: troupeName });
+  await expect(home.getByText(`Ottavia's backstory goes with the request, for ${troupeName}'s storytellers to read and approve.`)).toBeVisible();
+  await expect(home.getByText(`${troupeName} needs a backstory`)).toHaveCount(0);
+  await p.screenshot(shots("home-troupe-backstory-goes"));
+  await home.getByRole("button", { name: "Ask to join as home troupe" }).click();
+  await expect(p.getByText(`Waiting for ${troupeName}'s storytellers to accept this character.`)).toBeVisible();
+});
+
 test("staff read a joining character's backstory, send it back on one section, and approve it once revised before accepting the character", async ({ browser }) => {
   const custodian = await person(browser, "tale-custodian");
   makeCustodian(custodian.email);

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
-import { Link, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { CharacterOut, DifferenceOut, XpStandingOut } from "../../api/types";
 import { EmptyState } from "../../components/EmptyState";
@@ -8,6 +8,8 @@ import { InfoButton } from "../../components/InfoButton";
 import { Button, Card, ErrorText, Field, Loading, Notice, Select, Textarea } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { describeDifference, settlementLabel } from "../../settlements";
+import { useBackstoryStanding } from "./BackstoryTab";
+import { homeBackstory } from "./homeBackstory";
 import { LeaveHome } from "./LeaveHome";
 
 
@@ -174,7 +176,7 @@ function HomeTroupe({
   unbanked,
 }: {
   character: CharacterOut;
-  troupes: { id: string; name: string }[];
+  troupes: { id: string; name: string; backstory_required: boolean }[];
   currentHome: string | null;
   /** The home troupe its player may leave for none, if any. */
   home: { id: string; name: string } | null;
@@ -195,6 +197,9 @@ function HomeTroupe({
   const [note, setNote] = useState("");
   const [standing, setStanding] = useState<XpStandingOut | null>(null);
   const [topUp, setTopUp] = useState(true);
+  const navigate = useNavigate();
+  const backstoryStanding = useBackstoryStanding(character.id);
+  const backstory = homeBackstory(character, troupes.find((t) => t.id === troupeId), backstoryStanding.data);
   const key = (d: DifferenceOut) => `${d.difference === "creation_differs"}/${d.category}/${d.name}/${d.detail}`;
 
   const preview = useAction(async (troupe_id: string) => {
@@ -267,6 +272,11 @@ function HomeTroupe({
         </Select>
       </Field>
       {troupeId && <HouseRulesLink troupeId={troupeId} name={troupes.find((t) => t.id === troupeId)?.name ?? "the troupe"} />}
+      {backstory && backstory.need !== "goes" && (
+        <div className="mt-3">
+          <Notice>{backstory.words}</Notice>
+        </div>
+      )}
       <ErrorText error={preview.error} />
       {differences && (
         <div className="mt-4 flex flex-col gap-3">
@@ -298,9 +308,14 @@ function HomeTroupe({
           <Field label="A note for the storytellers">
             <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
           </Field>
-          <Button onClick={() => request.mutate(undefined)} disabled={request.isPending}>
-            Ask to join as home troupe
-          </Button>
+          {backstory?.need === "goes" && <p className="text-sm text-mist">{backstory.words}</p>}
+          {backstory?.need === "write" ? (
+            <Button onClick={() => navigate(`/characters/${character.id}/backstory`)}>Write the backstory first</Button>
+          ) : (
+            <Button onClick={() => request.mutate(undefined)} disabled={request.isPending}>
+              Ask to join as home troupe
+            </Button>
+          )}
           <ErrorText error={request.error} />
         </div>
       )}
