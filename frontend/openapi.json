@@ -3101,6 +3101,343 @@
         "title": "BackstoryThreadEntryOut",
         "type": "object"
       },
+      "BackupAlternateIdentity": {
+        "additionalProperties": false,
+        "properties": {
+          "accepted_by": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Accepted By",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "BackupAlternateIdentity",
+        "type": "object"
+      },
+      "BackupCrop": {
+        "additionalProperties": false,
+        "properties": {
+          "size": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 1.0,
+            "title": "Size",
+            "type": "number"
+          },
+          "x": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "size"
+        ],
+        "title": "BackupCrop",
+        "type": "object"
+      },
+      "BackupEquipment": {
+        "additionalProperties": false,
+        "properties": {
+          "archaic": {
+            "default": false,
+            "title": "Archaic",
+            "type": "boolean"
+          },
+          "crafted": {
+            "default": false,
+            "title": "Crafted",
+            "type": "boolean"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 10000,
+            "title": "Description",
+            "type": "string"
+          },
+          "effects": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "maxItems": 50,
+            "title": "Effects",
+            "type": "array"
+          },
+          "grade": {
+            "enum": [
+              "cheap",
+              "standard",
+              "special"
+            ],
+            "title": "Grade",
+            "type": "string"
+          },
+          "kind": {
+            "maxLength": 50,
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "qualities": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "maxItems": 50,
+            "title": "Qualities",
+            "type": "array"
+          },
+          "special_by": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Special By"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "grade"
+        ],
+        "title": "BackupEquipment",
+        "type": "object"
+      },
+      "BackupIdentity": {
+        "additionalProperties": false,
+        "properties": {
+          "card_flavour": {
+            "default": "",
+            "maxLength": 10000,
+            "title": "Card Flavour",
+            "type": "string"
+          },
+          "card_text": {
+            "default": "",
+            "maxLength": 10000,
+            "title": "Card Text",
+            "type": "string"
+          },
+          "domitor": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Domitor",
+            "type": "string"
+          },
+          "fits_picks": {
+            "default": false,
+            "title": "Fits Picks",
+            "type": "boolean"
+          },
+          "kind": {
+            "default": "pc",
+            "enum": [
+              "pc",
+              "npc"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "left_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "final_death",
+                  "off_field",
+                  "inactive"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left Reason"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "npc_custom_kind": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Custom Kind"
+          },
+          "npc_form": {
+            "anyOf": [
+              {
+                "enum": [
+                  "sheeted",
+                  "stock"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Form"
+          },
+          "npc_kind": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Npc Kind"
+          },
+          "on_whos_who": {
+            "default": false,
+            "title": "On Whos Who",
+            "type": "boolean"
+          },
+          "primary_paths": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "maxProperties": 20,
+            "title": "Primary Paths",
+            "type": "object"
+          },
+          "pronouns": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronouns"
+          },
+          "retired": {
+            "default": false,
+            "title": "Retired",
+            "type": "boolean"
+          },
+          "splat": {
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Splat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "splat"
+        ],
+        "title": "BackupIdentity",
+        "type": "object"
+      },
+      "BackupItemOut": {
+        "properties": {
+          "after": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "status": {
+            "enum": [
+              "new",
+              "differs",
+              "cannot",
+              "info"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "status",
+          "reason",
+          "before",
+          "after"
+        ],
+        "title": "BackupItemOut",
+        "type": "object"
+      },
       "BackupOut": {
         "properties": {
           "made_at": {
@@ -3128,6 +3465,628 @@
           "manual"
         ],
         "title": "BackupOut",
+        "type": "object"
+      },
+      "BackupPartOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BackupItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "key": {
+            "enum": [
+              "character",
+              "sheet",
+              "xp",
+              "retainers",
+              "equipment",
+              "titles",
+              "status"
+            ],
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "items"
+        ],
+        "title": "BackupPartOut",
+        "type": "object"
+      },
+      "BackupPicture": {
+        "additionalProperties": false,
+        "description": "The character's picture, whole, and where its portrait sits in it: in the\nfile itself (`data`, base64), or beside it in a bulk export's pictures/.",
+        "properties": {
+          "crop": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BackupCrop"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "data": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data"
+          },
+          "file": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          }
+        },
+        "title": "BackupPicture",
+        "type": "object"
+      },
+      "BackupPlayer": {
+        "additionalProperties": false,
+        "description": "Whose character it is, in a troupe's bulk export: to match it on import.",
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "handle": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Handle",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "title": "BackupPlayer",
+        "type": "object"
+      },
+      "BackupRetainer": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "default": "",
+            "maxLength": 10000,
+            "title": "Description",
+            "type": "string"
+          },
+          "discipline": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Discipline",
+            "type": "string"
+          },
+          "dots": {
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Dots",
+            "type": "integer"
+          },
+          "from_merit": {
+            "default": "",
+            "maxLength": 200,
+            "title": "From Merit",
+            "type": "string"
+          },
+          "ghoul": {
+            "default": false,
+            "title": "Ghoul",
+            "type": "boolean"
+          },
+          "lost": {
+            "anyOf": [
+              {
+                "enum": [
+                  "released",
+                  "killed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lost"
+          },
+          "lost_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lost On"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "specialties": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "Specialties",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "dots"
+        ],
+        "title": "BackupRetainer",
+        "type": "object"
+      },
+      "BackupStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "given_on": {
+            "format": "date",
+            "title": "Given On",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "patron": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Patron",
+            "type": "string"
+          },
+          "place": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Place",
+            "type": "string"
+          },
+          "story": {
+            "default": "",
+            "maxLength": 10000,
+            "title": "Story",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "given_on"
+        ],
+        "title": "BackupStatus",
+        "type": "object"
+      },
+      "BackupStock": {
+        "additionalProperties": false,
+        "description": "What a Stock NPC has in place of a sheet: its rating and specializations.",
+        "properties": {
+          "rating": {
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          },
+          "specializations": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "maxItems": 100,
+            "title": "Specializations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rating"
+        ],
+        "title": "BackupStock",
+        "type": "object"
+      },
+      "BackupTitle": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "default": false,
+            "title": "Active",
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "troupe": {
+            "maxLength": 200,
+            "title": "Troupe",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe",
+          "name"
+        ],
+        "title": "BackupTitle",
+        "type": "object"
+      },
+      "BackupTrait": {
+        "additionalProperties": false,
+        "description": "One trait on the sheet, with where its dots came from.",
+        "properties": {
+          "category": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "choices": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "maxItems": 50,
+            "title": "Choices",
+            "type": "array"
+          },
+          "creation_pick": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creation Pick"
+          },
+          "detail": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "free_rating": {
+            "default": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Free Rating",
+            "type": "integer"
+          },
+          "grant_place": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant Place"
+          },
+          "granted_rating": {
+            "default": 0,
+            "maximum": 100.0,
+            "minimum": -100.0,
+            "title": "Granted Rating",
+            "type": "integer"
+          },
+          "house": {
+            "default": false,
+            "title": "House",
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 10000,
+            "title": "Note",
+            "type": "string"
+          },
+          "paid": {
+            "default": 0,
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "Paid",
+            "type": "integer"
+          },
+          "pick_by": {
+            "anyOf": [
+              {
+                "enum": [
+                  "fit",
+                  "staff",
+                  "off"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pick By"
+          },
+          "place_by": {
+            "anyOf": [
+              {
+                "enum": [
+                  "fit",
+                  "staff",
+                  "off"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Place By"
+          },
+          "place_grant": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Place Grant"
+          },
+          "power_choices": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "default": {},
+            "maxProperties": 100,
+            "title": "Power Choices",
+            "type": "object"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "BackupTrait",
+        "type": "object"
+      },
+      "BackupTraitRef": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Detail",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name"
+        ],
+        "title": "BackupTraitRef",
+        "type": "object"
+      },
+      "BackupXpLine": {
+        "additionalProperties": false,
+        "description": "One line of the XP history, as it was written.",
+        "properties": {
+          "amount": {
+            "maximum": 100000.0,
+            "minimum": -100000.0,
+            "title": "Amount",
+            "type": "integer"
+          },
+          "corrects": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrects"
+          },
+          "from_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Rating"
+          },
+          "kind": {
+            "enum": [
+              "award",
+              "purchase",
+              "settlement",
+              "fee",
+              "correction",
+              "self_entered",
+              "cap",
+              "reprice",
+              "debt",
+              "lost"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "on": {
+            "format": "date",
+            "title": "On",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          },
+          "to_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Rating"
+          },
+          "trait": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BackupTraitRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "amount",
+          "on"
+        ],
+        "title": "BackupXpLine",
+        "type": "object"
+      },
+      "BackupXpOut": {
+        "properties": {
+          "earned": {
+            "title": "Earned",
+            "type": "integer"
+          },
+          "lost": {
+            "title": "Lost",
+            "type": "integer"
+          },
+          "self_entered": {
+            "title": "Self Entered",
+            "type": "integer"
+          },
+          "sheet_here": {
+            "title": "Sheet Here",
+            "type": "integer"
+          },
+          "sheet_there": {
+            "title": "Sheet There",
+            "type": "integer"
+          },
+          "spent": {
+            "title": "Spent",
+            "type": "integer"
+          },
+          "unpriced": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unpriced",
+            "type": "array"
+          },
+          "unspent": {
+            "title": "Unspent",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "earned",
+          "spent",
+          "lost",
+          "unspent",
+          "sheet_there",
+          "sheet_here",
+          "unpriced",
+          "self_entered"
+        ],
+        "title": "BackupXpOut",
         "type": "object"
       },
       "BackupsOut": {
@@ -5465,6 +6424,179 @@
         "title": "CharacterChoice",
         "type": "object"
       },
+      "CharacterDocument": {
+        "additionalProperties": false,
+        "description": "A character, as Export writes it and Import reads it.",
+        "properties": {
+          "backstory": {
+            "default": "",
+            "maxLength": 500000,
+            "title": "Backstory",
+            "type": "string"
+          },
+          "character": {
+            "$ref": "#/components/schemas/BackupIdentity"
+          },
+          "equipment": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BackupEquipment"
+            },
+            "maxItems": 500,
+            "title": "Equipment",
+            "type": "array"
+          },
+          "exported_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exported On"
+          },
+          "format": {
+            "const": "horatio-character",
+            "default": "horatio-character",
+            "title": "Format",
+            "type": "string"
+          },
+          "horatio": {
+            "default": "",
+            "maxLength": 50,
+            "title": "Horatio",
+            "type": "string"
+          },
+          "identities": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BackupAlternateIdentity"
+            },
+            "maxItems": 50,
+            "title": "Identities",
+            "type": "array"
+          },
+          "picture": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BackupPicture"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "player": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BackupPlayer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "retainers": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BackupRetainer"
+            },
+            "maxItems": 30,
+            "title": "Retainers",
+            "type": "array"
+          },
+          "rule_set": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Set"
+          },
+          "sections": {
+            "default": [],
+            "items": {
+              "enum": [
+                "equipment",
+                "retainers",
+                "titles"
+              ],
+              "type": "string"
+            },
+            "title": "Sections",
+            "type": "array"
+          },
+          "status": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BackupStatus"
+            },
+            "maxItems": 500,
+            "title": "Status",
+            "type": "array"
+          },
+          "stock": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BackupStock"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "titles": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BackupTitle"
+            },
+            "maxItems": 100,
+            "title": "Titles",
+            "type": "array"
+          },
+          "traits": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BackupTrait"
+            },
+            "maxItems": 1000,
+            "title": "Traits",
+            "type": "array"
+          },
+          "troupe": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Troupe",
+            "type": "string"
+          },
+          "version": {
+            "const": 1,
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          },
+          "xp": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BackupXpLine"
+            },
+            "maxItems": 20000,
+            "title": "Xp",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character"
+        ],
+        "title": "CharacterDocument",
+        "type": "object"
+      },
       "CharacterEffectOut": {
         "description": "An effect on a character, for its sheet: what and until when, not who made it.",
         "properties": {
@@ -5769,6 +6901,70 @@
           "delivered"
         ],
         "title": "CharacterFeedingOut",
+        "type": "object"
+      },
+      "CharacterImportIn": {
+        "properties": {
+          "document": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Document",
+            "type": "object"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
+          }
+        },
+        "required": [
+          "document"
+        ],
+        "title": "CharacterImportIn",
+        "type": "object"
+      },
+      "CharacterImportOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "left_out": {
+            "title": "Left Out",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "left_out"
+        ],
+        "title": "CharacterImportOut",
         "type": "object"
       },
       "CharacterListOut": {
@@ -6429,6 +7625,86 @@
           "months"
         ],
         "title": "CharacterRemembrancesOut",
+        "type": "object"
+      },
+      "CharacterReviewOut": {
+        "properties": {
+          "exported_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exported On"
+          },
+          "from_troupe": {
+            "title": "From Troupe",
+            "type": "string"
+          },
+          "horatio": {
+            "title": "Horatio",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/BackupPartOut"
+            },
+            "title": "Parts",
+            "type": "array"
+          },
+          "splat": {
+            "title": "Splat",
+            "type": "string"
+          },
+          "troupe": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          },
+          "xp": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BackupXpOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "splat",
+          "from_troupe",
+          "exported_on",
+          "horatio",
+          "troupe",
+          "parts",
+          "xp",
+          "warnings"
+        ],
+        "title": "CharacterReviewOut",
         "type": "object"
       },
       "CharacterTitlesOut": {
@@ -48458,6 +49734,57 @@
         ]
       }
     },
+    "/api/character-backups": {
+      "get": {
+        "description": "Every character the player has, retired ones too, in one .zip.",
+        "operationId": "export_mine_api_character_backups_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "sections",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "equipment",
+                      "retainers",
+                      "titles"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sections"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Mine",
+        "tags": [
+          "character backup"
+        ]
+      }
+    },
     "/api/characters": {
       "get": {
         "description": "The player's characters, each with its troupes' names and its downtime, in a few\nqueries for the whole list.",
@@ -48521,6 +49848,90 @@
         "summary": "Create Character",
         "tags": [
           "characters"
+        ]
+      }
+    },
+    "/api/characters/import": {
+      "post": {
+        "description": "Import the file as a new character of the player's, in their vault, built for\nthe troupe chosen: all its parts that can come in, as the review showed, in one\ntransaction. It isn't in any troupe yet; its player asks one to make it home.",
+        "operationId": "import_character_api_characters_import_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CharacterImportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Character",
+        "tags": [
+          "character backup"
+        ]
+      }
+    },
+    "/api/characters/import/review": {
+      "post": {
+        "description": "What importing the file as a new character would do, part by part: new, held\notherwise here (a merit at this troupe's value), left out with why, or shown only;\nand its XP, as the file has it and at the prices it would play by here. Nothing is\nsaved.",
+        "operationId": "review_import_api_characters_import_review_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CharacterImportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterReviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Review Import",
+        "tags": [
+          "character backup"
         ]
       }
     },
@@ -49314,6 +50725,111 @@
         "summary": "Backstory Standing",
         "tags": [
           "backstories"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/backup": {
+      "get": {
+        "description": "The character as a file, its picture in it, with the optional `sections` chosen.\nIts player exports it, retired, killed or departed too.",
+        "operationId": "export_character_api_characters__character_id__backup_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sections",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "equipment",
+                      "retainers",
+                      "titles"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sections"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterDocument"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Character",
+        "tags": [
+          "character backup"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/backup/sheet": {
+      "get": {
+        "description": "The character's printable sheet as one HTML file, readable without Horatio.",
+        "operationId": "export_sheet_api_characters__character_id__backup_sheet_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Sheet",
+        "tags": [
+          "character backup"
         ]
       }
     },
@@ -67461,6 +68977,112 @@
         "summary": "Change Book Trait",
         "tags": [
           "book traits"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/character-backups": {
+      "get": {
+        "description": "The troupe's own characters in one .zip: those at home here and its NPCs (not\nvisitors, whose home troupe holds them), all, player characters or NPCs only, or\nthose named in `characters`. Each player character names its player by handle,\nand by email too with `emails`, which only storytellers may ask for.",
+        "operationId": "export_troupe_api_troupes__troupe_id__character_backups_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "which",
+            "required": false,
+            "schema": {
+              "default": "all",
+              "enum": [
+                "all",
+                "pcs",
+                "npcs"
+              ],
+              "title": "Which",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "characters",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Characters"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sections",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "equipment",
+                      "retainers",
+                      "titles"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sections"
+            }
+          },
+          {
+            "in": "query",
+            "name": "emails",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Emails",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Troupe",
+        "tags": [
+          "character backup"
         ]
       }
     },

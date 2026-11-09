@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { closeContextsAfterEach, run, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab } from "./support";
 
@@ -18,6 +19,54 @@ test("a character in no troupe can be deleted from the vault", async ({ browser 
   await expect(page.getByRole("heading", { name: "Your characters" })).toBeVisible();
   // With none left, they are welcomed as a new player is.
   await expect(page.getByRole("heading", { name: "Welcome to Horatio" })).toBeVisible();
+});
+
+test("a player exports a character as a backup and imports it again as a new character, reviewed first (#567)", async ({ browser }) => {
+  const { page: p } = await person(browser, "backup-player");
+  const build: Record<string, [string, number][]> = {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  // Celerity's third dot is bought with XP; its first two are a creation pick.
+  const id = await builtVampire(p, "Odile Varga", "Brujah", build, [["disciplines", "Celerity", 3]]);
+
+  // Export (backup) waits behind the ⋯ menu, with the printable sheet beside it.
+  await p.goto(`/characters/${id}`);
+  await p.getByRole("button", { name: "More for Odile Varga" }).click();
+  await p.getByRole("menuitem", { name: "Export (backup)…" }).click();
+  const dialog = p.getByRole("dialog", { name: "Export Odile Varga" });
+  const [sheet] = await Promise.all([p.waitForEvent("download"), dialog.getByRole("link", { name: "Printable sheet (.html)" }).click()]);
+  expect(sheet.suggestedFilename()).toMatch(/^OdileVarga-\d{4}-\d{2}-\d{2}\.html$/);
+  expect(readFileSync(await sheet.path(), "utf8")).toContain("<h1>Odile Varga</h1>");
+  await dialog.getByRole("checkbox", { name: "Equipment" }).check();
+  const [download] = await Promise.all([p.waitForEvent("download"), dialog.getByRole("button", { name: "Download backup" }).click()]);
+  expect(download.suggestedFilename()).toMatch(/^OdileVarga-\d{4}-\d{2}-\d{2}\.horatio-character\.json$/);
+  await expect(dialog).toBeHidden();
+  const file = await download.path();
+  const document = JSON.parse(readFileSync(file, "utf8"));
+  expect([document.format, document.character.name, document.sections]).toEqual(["horatio-character", "Odile Varga", ["equipment"]]);
+
+  // Your characters › Import a character: the review, then a new character.
+  await p.goto("/characters");
+  await p.getByRole("link", { name: "Import a character" }).click();
+  await p.getByLabel("Character file").setInputFiles(file);
+  await expect(p.getByRole("heading", { name: "Review Odile Varga" })).toBeVisible();
+  const comes = p.getByRole("group", { name: "What comes in" });
+  await expect(comes.getByRole("listitem").filter({ hasText: "Disciplines: Celerity" })).toContainText("New");
+  const xp = p.getByRole("region", { name: "XP" });
+  await expect(xp).toContainText("Earned, in the file");
+  await expect(xp).toContainText("The sheet costs at the book's prices");
+  await expect(p.getByText(/^\d+ new\.$/)).toBeVisible();
+  await p.screenshot(shots("import-character"));
+  await p.getByRole("button", { name: "Import Odile Varga" }).click();
+  await expect(p).toHaveURL(/\/characters\/[0-9a-f-]{36}$/);
+  expect(p.url()).not.toContain(id);
+  await expect(p.getByRole("heading", { name: "Odile Varga" })).toBeVisible();
+
+  // It earned its XP elsewhere: self-entered, for the troupe it joins to keep or remove.
+  await p.goto("/characters");
+  await expect(p.getByRole("link", { name: /Odile Varga/ })).toHaveCount(2);
 });
 
 test("merits and flaws on the sheet: Tainted Embrace caps fleeting status at 4 and says why, Slow Reactions lowers initiative, and Ardent Companion lists its Retainer (#314)", async ({ browser }) => {

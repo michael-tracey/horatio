@@ -55,7 +55,26 @@ export function CharactersPage() {
       <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
         <div className="flex min-w-0 flex-col gap-6">
           {troupesFirst && yourTroupes}
-          <Card title={troupesFirst ? "Your characters" : undefined}>
+          <Card
+            title={troupesFirst ? "Your characters" : undefined}
+            actions={
+              <span className="ml-auto flex flex-wrap gap-2">
+                <Link to="/characters/import" className="inline-flex min-h-8 items-center rounded-md border border-ash px-3 text-sm text-parchment hover:border-mist">
+                  Import a character
+                </Link>
+                {!!characters.data?.length && (
+                  <a
+                    href="/api/character-backups"
+                    download
+                    className="inline-flex min-h-8 items-center rounded-md border border-ash px-3 text-sm text-parchment hover:border-mist"
+                    title="Every character of yours, retired ones too, in one .zip"
+                  >
+                    Export all
+                  </a>
+                )}
+              </span>
+            }
+          >
             {characters.isPending ? (
               <Loading />
             ) : characters.data?.length ? (
