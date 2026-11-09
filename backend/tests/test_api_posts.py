@@ -96,7 +96,7 @@ def bell(session: Session, person: Person) -> list[str]:
         session.scalars(
             select(Notification.summary)
             .where(Notification.user_id == uuid.UUID(person.id))
-            .order_by(Notification.created_at)
+            .order_by(Notification.created_at, Notification.id)
         )
     )
 

@@ -324,7 +324,7 @@ def applied(db: Session, item: WorkItem) -> list[Applied]:
         select(OwedAction, Character.name)
         .join(Character, OwedAction.character_id == Character.id)
         .where(OwedAction.response_id == response_id)
-        .order_by(OwedAction.created_at)
+        .order_by(OwedAction.created_at, OwedAction.id)
     ):
         kind = debt.source or ""
         found.append(
@@ -336,7 +336,7 @@ def applied(db: Session, item: WorkItem) -> list[Applied]:
             (BackgroundChange.response_id == response_id)
             | (BackgroundChange.halved_by_response_id == response_id)
         )
-        .order_by(BackgroundChange.created_at)
+        .order_by(BackgroundChange.created_at, BackgroundChange.id)
     ):
         name = item.character.name
         if change.response_id != response_id:

@@ -333,13 +333,13 @@ def messages(db: Session, user: User) -> list[Item]:
     rows = list(
         db.execute(
             query.where(Notification.user_id == user.id, Notification.read_at.is_(None)).order_by(
-                Notification.created_at.desc()
+                Notification.created_at.desc(), Notification.id.desc()
             )
         )
     ) + list(
         db.execute(
             query.where(Notification.user_id == user.id, Notification.read_at.is_not(None))
-            .order_by(Notification.created_at.desc())
+            .order_by(Notification.created_at.desc(), Notification.id.desc())
             .limit(READ_MESSAGES_SHOWN)
         )
     )

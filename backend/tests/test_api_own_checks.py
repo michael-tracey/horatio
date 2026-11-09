@@ -283,7 +283,7 @@ def test_storytellers_add_change_and_remove_and_the_log_says_so(troupe: Troupe) 
         .where(
             AuditEvent.troupe_id == uuid.UUID(troupe.id), AuditEvent.action.like("house.check_%")
         )
-        .order_by(AuditEvent.created_at)
+        .order_by(AuditEvent.created_at, AuditEvent.id)
     ).all()
     # One request after another can share a timestamp under the test database, so the
     # order rows come back in is not the order they were written.

@@ -12,9 +12,10 @@ from alembic import command
 from alembic.config import Config
 from alembic.script import ScriptDirectory
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine, text
+from sqlalchemy import Engine, select, text, update
 from sqlalchemy.orm import Session
 
+from horatio.models import AuditEvent
 from tests.api_helpers import Person, Troupe
 from tests.conftest import load_rules
 from tests.test_api_notifications import summaries
@@ -145,6 +146,31 @@ def test_one_title_is_active_and_switching_changes_the_status(troupe: Troupe) ->
     ]
     assert switch(troupe.player, vasquez, "Prince").status_code == 422
     assert give_up(troupe.player, vasquez, "Prince").status_code == 422
+
+
+def test_lines_logged_at_one_moment_keep_the_order_they_were_written(troupe: Troupe) -> None:
+    """A test is one transaction, so every line in it has the same time (#584): they
+    still come back in the order they were written, however Postgres stores them."""
+    vasquez = member(troupe, "Lady Vasquez")
+    assert take(troupe.player, vasquez, "Harpy").status_code == 200
+    assert take(troupe.player, vasquez, "Keeper of Elysium").status_code == 200
+    assert switch(troupe.player, vasquez, "Keeper of Elysium").status_code == 200
+    assert switch(troupe.player, vasquez, "Harpy").status_code == 200
+    # Rewritten twice, the first line sits after the second on disk, so by time alone
+    # it would come back second.
+    first = troupe.session.scalars(
+        select(AuditEvent.id)
+        .where(AuditEvent.action == "title.made_active")
+        .where(AuditEvent.data["what"].astext == "in place of Harpy")
+    ).one()
+    moved = update(AuditEvent).where(AuditEvent.id == first)
+    troupe.session.execute(moved.values(character_id=None))
+    troupe.session.execute(moved.values(character_id=uuid.UUID(vasquez)))
+
+    assert [e["what"] for e in logged(troupe.session, vasquez, "title.made_active")] == [
+        "in place of Harpy",
+        "in place of Keeper of Elysium",
+    ]
 
 
 def one_holder(person: Person, troupe: Troupe, name: str, on: bool) -> dict[str, Any]:
