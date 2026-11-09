@@ -9,7 +9,7 @@ import { seatPicks } from "./creation/logic";
 import { ExtraPick, Slot, SlotRows, oneOf, type Choice } from "./creation/Slots";
 
 type Placed = PoolOut["placed"][number];
-type Body = { category: string; name: string; detail: string; rating?: number; replacing?: { name: string; detail: string } };
+type Body = { category: string; name: string; detail: string; rating?: number; replacing?: { name: string; detail: string }; grant?: string };
 
 const key = (name: string, detail: string) => (detail ? `${name}\u0000${detail}` : name);
 const shown = (name: string, detail: string) => (detail ? `${name}: ${detail}` : name);
@@ -19,7 +19,9 @@ const shown = (name: string, detail: string) => (detail ? `${name}: ${detail}` :
  * creation dots are free as a player character's are (#527). Staff put the fitting
  * right where the player picked otherwise: a pick placed by hand stays, one taken off
  * a trait stays off, and the rest are fitted around them. The picks show in the
- * wizard's slots, a row for each rating.
+ * wizard's slots, a row for each rating. The free dots a merit it holds places are
+ * fitted with them (#566): Ventrue Royalty's 4, 3 and 2, and the Path a Path merit
+ * converts from Humanity, each in slots of its own.
  */
 export function NpcPicks({ character }: { character: CharacterOut }) {
   const path = { params: { path: { character_id: character.id } } };
@@ -34,7 +36,10 @@ export function NpcPicks({ character }: { character: CharacterOut }) {
   const busy = place.isPending || off.isPending || refit.isPending;
   const shownPools = data.pools.filter((pool) => pool.allowed > 0 || pool.placed.length > 0);
   // Each category's picks together, a row for each rating, in the order the API gives.
-  const categories = [...new Set(shownPools.filter((p) => p.kind === "picks").map((p) => p.category))];
+  const categories = [...new Set(shownPools.filter((p) => p.kind === "picks" && !p.grant).map((p) => p.category))];
+  // Then each merit's places together.
+  const grants = [...new Set(shownPools.flatMap((p) => (p.grant ? [p.grant] : [])))];
+  const keptOff = (kind: "pick" | "place") => data.kept_off.filter((k) => k.kind === kind).map((k) => named(shown(k.name, k.detail)));
 
   return (
     <Card
@@ -48,13 +53,13 @@ export function NpcPicks({ character }: { character: CharacterOut }) {
       }
     >
       <p className="mb-3 text-xs text-mist">
-        Fitted to the sheet so its creation dots are free, as a player character&apos;s are. Where its player picked otherwise, set the pick here: picks set by hand stay put, and the rest fit around them. An empty slot is a pick the fitting found no trait for.
+        Fitted to the sheet so its creation dots are free, as a player character&apos;s are, and so are the free dots its merits place. Where its player picked otherwise, set the pick here: picks set by hand stay put, and the rest fit around them. An empty slot is a pick the fitting found no trait for.
       </p>
       <div className="flex flex-col gap-5">
         {categories.map((category) => (
           <PickSlots
             key={category}
-            pools={shownPools.filter((p) => p.category === category)}
+            pools={shownPools.filter((p) => p.category === category && !p.grant)}
             busy={busy}
             named={named}
             place={(b) => place.mutate(b)}
@@ -66,10 +71,19 @@ export function NpcPicks({ character }: { character: CharacterOut }) {
           .map((pool) => (
             <Budget key={pool.category} pool={pool} busy={busy} named={named} place={(b) => place.mutate(b)} off={(b) => off.mutate(b)} />
           ))}
+        {grants.map((grant) => (
+          <PickSlots
+            key={grant}
+            pools={shownPools.filter((p) => p.grant === grant)}
+            busy={busy}
+            named={named}
+            place={(b) => place.mutate(b)}
+            off={(b) => off.mutate(b)}
+          />
+        ))}
       </div>
-      {data.kept_off.length > 0 && (
-        <p className="mt-3 text-xs text-mist">Kept without a pick: {data.kept_off.map((k) => named(shown(k.name, k.detail))).join(", ")}.</p>
-      )}
+      {keptOff("pick").length > 0 && <p className="mt-3 text-xs text-mist">Kept without a pick: {keptOff("pick").join(", ")}.</p>}
+      {keptOff("place").length > 0 && <p className="mt-3 text-xs text-mist">Kept without a merit&apos;s free dots: {keptOff("place").join(", ")}.</p>}
       <ErrorText error={place.error ?? off.error ?? refit.error} />
     </Card>
   );
@@ -83,14 +97,16 @@ type Actions = {
 };
 
 /**
- * One category's picks in the wizard's slots. Choosing a trait in a slot places it
- * there by hand; one picked at another rating moves, and one placed by hand in the
- * slot goes where it was, if it can (horatio.npc_picks.pin). Clearing a slot takes
- * the pick off its trait.
+ * One category's picks in the wizard's slots, or one merit's places. Choosing a
+ * trait in a slot places it there by hand; one picked at another rating moves, and
+ * one placed by hand in the slot goes where it was, if it can
+ * (horatio.npc_picks.pin). Clearing a slot takes the pick off its trait.
  */
 function PickSlots({ pools, busy, named, place, off }: Actions & { pools: PoolOut[] }) {
-  const title = pools[0]!.category_name;
-  const category = pools[0]!.category;
+  const { category, category_name: categoryName, grant, merit } = pools[0]!;
+  const title = merit ?? categoryName;
+  const what = grant ? "place" : "pick";
+  const mine = grant ? { grant } : {};
   // Where each pick sits, by rating, so placing one doesn't shuffle the rest.
   const [seats, setSeats] = useState<Record<number, (string | null)[]>>({});
   // What a move did that wasn't asked for, under the slot it was made in.
@@ -99,7 +115,7 @@ function PickSlots({ pools, busy, named, place, off }: Actions & { pools: PoolOu
   const layout = Object.fromEntries(
     pools.map((pool) => [pool.rating, seatPicks(seats[pool.rating] ?? [], pool.placed.map((p) => key(p.name, p.detail)), pool.allowed)]),
   ) as Record<number, (string | null)[]>;
-  const one = oneOf(title);
+  const one = oneOf(categoryName);
 
   const choose = (pool: PoolOut, slot: number, holder: string | null, value: string) => {
     const chosen = pool.candidates.find((c) => key(c.name, c.detail) === value);
@@ -113,7 +129,7 @@ function PickSlots({ pools, busy, named, place, off }: Actions & { pools: PoolOu
     setSeats(next);
     setSaid(
       current?.by === "staff" && from !== undefined && !swaps
-        ? { rating: pool.rating, slot, text: `${named(shown(current.name, current.detail))} can't take a pick at ${from}, so it is fitted with the rest.` }
+        ? { rating: pool.rating, slot, text: `${named(shown(current.name, current.detail))} can't take a ${what} at ${from}, so it is fitted with the rest.` }
         : null,
     );
     place({
@@ -122,11 +138,12 @@ function PickSlots({ pools, busy, named, place, off }: Actions & { pools: PoolOu
       detail: chosen.detail,
       rating: pool.rating,
       ...(current ? { replacing: { name: current.name, detail: current.detail } } : {}),
+      ...mine,
     });
   };
   const takeOff = (placed: Placed) => {
     setSaid(null);
-    off({ category, name: placed.name, detail: placed.detail });
+    off({ category, name: placed.name, detail: placed.detail, ...mine });
   };
 
   /** What a slot in `pool` holding `holder` offers: the traits a pick there could go on. */
@@ -158,7 +175,7 @@ function PickSlots({ pools, busy, named, place, off }: Actions & { pools: PoolOu
   return (
     <SlotRows
       title={title}
-      label={`${title} picks`}
+      label={`${title} ${what}s`}
       heading={false}
       widest={widest}
       rows={pools
@@ -171,7 +188,7 @@ function PickSlots({ pools, busy, named, place, off }: Actions & { pools: PoolOu
             if (i >= pool.allowed) {
               return (
                 <ExtraPick key={`extra-${k}`} value={label} pick={k!} clearLabel={`Take ${placed!.name} off`} onClear={() => takeOff(placed!)}>
-                  No pick at {pool.rating} for it now.
+                  No {what} at {pool.rating} for it now.
                 </ExtraPick>
               );
             }

@@ -144,7 +144,9 @@ def test_fitting_keeps_the_picks_staff_placed_and_took_off(troupe: Troupe) -> No
     after = picks(troupe.storyteller, npc)
     assert placed(after, "skills") == placed(kept, "skills")
     assert placed(after, "skills")["Occult"] == (4, "staff")
-    assert after["kept_off"] == [{"category": "skills", "name": "Brawl", "detail": ""}]
+    assert after["kept_off"] == [
+        {"category": "skills", "name": "Brawl", "detail": "", "kind": "pick"}
+    ]
 
 
 def test_npcs_given_to_players_are_left_as_they_are(troupe: Troupe) -> None:

@@ -24747,6 +24747,14 @@
             "title": "Detail",
             "type": "string"
           },
+          "kind": {
+            "enum": [
+              "pick",
+              "place"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -24755,7 +24763,8 @@
         "required": [
           "category",
           "name",
-          "detail"
+          "detail",
+          "kind"
         ],
         "title": "NpcKeptOffOut",
         "type": "object"
@@ -25124,6 +25133,18 @@
             "title": "Detail",
             "type": "string"
           },
+          "grant": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -25188,6 +25209,18 @@
             "maxLength": 200,
             "title": "Detail",
             "type": "string"
+          },
+          "grant": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant"
           },
           "name": {
             "title": "Name",
@@ -25333,6 +25366,17 @@
             "title": "Category Name",
             "type": "string"
           },
+          "grant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant"
+          },
           "kind": {
             "enum": [
               "picks",
@@ -25340,6 +25384,17 @@
             ],
             "title": "Kind",
             "type": "string"
+          },
+          "merit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merit"
           },
           "placed": {
             "items": {
@@ -25360,7 +25415,9 @@
           "rating",
           "allowed",
           "placed",
-          "candidates"
+          "candidates",
+          "grant",
+          "merit"
         ],
         "title": "NpcPoolOut",
         "type": "object"
@@ -52801,7 +52858,7 @@
         ]
       },
       "put": {
-        "description": "Place a creation pick on a trait by hand; the rest are fitted around it.",
+        "description": "Place a creation pick, or a merit's place, on a trait by hand; the rest are\nfitted around it.",
         "operationId": "place_pick_api_characters__character_id__npc_picks_put",
         "parameters": [
           {
@@ -52855,7 +52912,7 @@
     },
     "/api/characters/{character_id}/npc/picks/off": {
       "post": {
-        "description": "Take the pick off a trait, and keep the fitting from giving it one.",
+        "description": "Take the pick, or a merit's place, off a trait, and keep the fitting from\ngiving it one.",
         "operationId": "take_pick_off_api_characters__character_id__npc_picks_off_post",
         "parameters": [
           {
@@ -52909,7 +52966,7 @@
     },
     "/api/characters/{character_id}/npc/picks/refit": {
       "post": {
-        "description": "Forget the picks placed or taken off by hand, and fit them all again.",
+        "description": "Forget the picks and places set or taken off by hand, and fit them all again.",
         "operationId": "refit_picks_api_characters__character_id__npc_picks_refit_post",
         "parameters": [
           {

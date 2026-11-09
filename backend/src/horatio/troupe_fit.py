@@ -49,9 +49,10 @@ class TroupeFit:
         return sum(f.changed for f in self.fitted)
 
 
-def picks_of(db: Session, npc: Character) -> set[tuple[uuid.UUID, int | None, int, str | None]]:
+def picks_of(db: Session, npc: Character) -> set[tuple[object, ...]]:
+    """Its picks, and the places its merits give (horatio.npc_picks)."""
     return {
-        (t.id, t.creation_pick, t.free_rating, t.pick_by)
+        (t.id, t.creation_pick, t.free_rating, t.pick_by, t.grant_place, t.place_by)
         for t in db.scalars(select(CharacterTrait).where(CharacterTrait.character_id == npc.id))
     }
 

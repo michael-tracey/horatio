@@ -134,6 +134,14 @@ class CharacterTrait(Record):
             " or pick_by in ('fit', 'staff') and creation_pick is not null",
             name="pick_by",
         ),
+        CheckConstraint("grant_place is null or grant_place <= free_rating", name="place_is_free"),
+        CheckConstraint(
+            "place_by is null and grant_place is null and place_grant is null"
+            " or place_by = 'off' and grant_place is null and place_grant is null"
+            " or place_by in ('fit', 'staff') and grant_place is not null"
+            " and place_grant is not null",
+            name="place_by",
+        ),
     )
 
     character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
@@ -154,6 +162,14 @@ class CharacterTrait(Record):
     # "off", staff took the pick off this trait, so the fitting leaves it without one.
     # Null for a trait the fitting has not touched, and on every other character.
     pick_by: Mapped[str | None]
+    # On such an NPC, the free dots a merit it holds gives this trait (horatio.npc_picks):
+    # one of Ventrue Royalty's places, or the dots a Path merit converts from Humanity.
+    # The grant's key, and who placed it as `pick_by` says: "fit", "staff" or "off",
+    # staff took the place off this trait. Null on every other character, whose
+    # merits keep their choices themselves (`choices`).
+    grant_place: Mapped[int | None]
+    place_grant: Mapped[str | None]
+    place_by: Mapped[str | None]
     # Which one, for traits a character can hold more than once: "Path of Blood".
     detail: Mapped[str] = mapped_column(default="", server_default="")
     note: Mapped[str] = mapped_column(default="", server_default="")
