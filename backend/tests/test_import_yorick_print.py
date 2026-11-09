@@ -12,9 +12,9 @@ from fastapi.testclient import TestClient
 from PIL import Image
 from sqlalchemy.orm import Session
 
-from horatio import import_yorick_print
+from horatio import import_yorick_print, npcs, sheets
+from horatio.models import Character, User
 from horatio.models import Troupe as TroupeRecord
-from horatio.models import User
 from horatio.rules.files import DATA_DIR, load_rule_set
 from horatio.specializations import set_troupe_options
 from horatio.yorick_names import (
@@ -29,6 +29,7 @@ from horatio.yorick_print import (
     CannotRead,
     Line,
     PrintedCharacter,
+    in_clan_of,
     read_file,
     read_line,
     read_page,
@@ -294,6 +295,156 @@ def test_paths_written_several_ways(written: str, path: str | None) -> None:
     assert mapper().path(written) == path
 
 
+# --- extra in-clan disciplines (#565) ------------------------------------------------
+
+
+def printed_with(
+    clan: str,
+    disciplines: list[str],
+    merits: list[str] | None = None,
+    in_clan: list[str] | None = None,
+    name: str = "Wren Hollis",
+) -> PrintedCharacter:
+    """A made-up printed vampire: its clan, its disciplines and merits as printed, and
+    what its notes' "In clan:" line names."""
+    return PrintedCharacter(
+        legacy_id=f"print-{name}",
+        printed_name=name,
+        name=name,
+        label="",
+        portrait=None,
+        identity={"Clan": clan},
+        attributes={},
+        morality=None,
+        skills=[],
+        sections={
+            "Disciplines": [read_line(d) for d in disciplines],
+            "Merits": [read_line(m, points=True) for m in merits or []],
+        },
+        in_clan=in_clan or [],
+    )
+
+
+def extras(printed: PrintedCharacter) -> dict[str, str]:
+    """Each extra in-clan discipline the printed character is mapped to, with where."""
+    return {
+        t.name: t.source
+        for t in mapper().character(printed).traits
+        if t.category == "extra_in_clan_disciplines"
+    }
+
+
+@pytest.mark.parametrize(
+    ("notes", "names"),
+    [
+        ("In clan: Animalism, Auspex, Presence", ["Animalism", "Auspex", "Presence"]),
+        ("Dodge: 7\nin-clan: Celerity; Potence and Presence.", ["Celerity", "Potence", "Presence"]),
+        ("In Clan Disciplines: Thaumaturgy: Green Path", ["Thaumaturgy: Green Path"]),
+        ("Keeps a diary.", []),
+        ("Out of clan: Dominate", []),
+    ],
+)  # fmt: skip
+def test_the_notes_in_clan_line_is_read(notes: str, names: list[str]) -> None:
+    assert in_clan_of(notes) == names
+
+
+def test_the_in_clan_line_is_read_from_the_printed_notes() -> None:
+    noted = FIXTURE.read_text().replace(
+        "Keeps her notes in Latin.", "Keeps her notes in Latin.<br>In clan: Auspex, Obfuscate"
+    )
+    agnes = read_page(noted)[0]
+    assert agnes.in_clan == ["Auspex", "Obfuscate"]
+    assert read_file(FIXTURE)[0].in_clan == []
+
+
+def test_a_caitiffs_in_clan_disciplines_are_extras() -> None:
+    caitiff = printed_with(
+        "Caitiff",
+        ["Auspex x1", "Obfuscate x4", "Vicissitude x1"],
+        ["Vestiges of Greatness (3, Vicissitude)"],
+        ["Auspex", "Obfuscate"],
+    )
+
+    # A Caitiff has no clan disciplines: each the line names is an extra, and so is the
+    # uncommon one Vestiges of Greatness names.
+    assert extras(caitiff) == {
+        "Auspex": "In clan: Auspex, Obfuscate",
+        "Obfuscate": "In clan: Auspex, Obfuscate",
+        "Vicissitude": "Merits: Vestiges of Greatness (3, Vicissitude)",
+    }
+
+
+def test_a_clans_own_disciplines_on_the_line_are_not_extras() -> None:
+    brujah = printed_with(
+        "Brujah",
+        ["Celerity x2", "Potence x1", "Thaumaturgy x4: Path of Corruption"],
+        in_clan=["Celerity", "Potence", "Presence", "Thaumaturgy: Path of Corruption"],
+    )
+    assert extras(brujah) == {
+        "Thaumaturgy: Path of Corruption": (
+            "In clan: Celerity, Potence, Presence, Thaumaturgy: Path of Corruption"
+        )
+    }
+
+    # "Thaumaturgy" alone is the Tremere's own path; a Brujah's is the one it holds.
+    tremere = printed_with("Tremere", ["Thaumaturgy x3: Path of Blood"], in_clan=["Thaumaturgy"])
+    assert extras(tremere) == {}
+    brujah.in_clan = ["Thaumaturgy"]
+    assert list(extras(brujah)) == ["Thaumaturgy: Path of Corruption"]
+
+
+def test_a_path_its_merit_prices_in_clan_is_left_to_the_merit() -> None:
+    tremere = printed_with(
+        "Tremere",
+        ["Thaumaturgy x3: Path of Blood", "Thaumaturgy x2: Path of Conjuring"],
+        ["Thaumaturgical Expertise (1, Path of Conjuring)"],
+        ["Auspex", "Dominate", "Thaumaturgy", "Path of Conjuring"],
+    )
+    assert extras(tremere) == {}
+
+
+def test_an_expertise_printed_without_its_path_takes_the_one_the_line_names() -> None:
+    tremere = printed_with(
+        "Tremere",
+        [
+            "Thaumaturgy x3: Path of Blood",
+            "Thaumaturgy x2: Path of Caelestikinesis",
+            "Thaumaturgy x1: Path of Conjuring",
+        ],
+        ["Thaumaturgical Expertise (1)"],
+        [
+            "Auspex",
+            "Dominate",
+            "Thaumaturgy: Path of Blood",
+            "Thaumaturgy: Path of Caelestikinesis",
+            "Thaumaturgy: Path of Conjuring",
+        ],
+    )
+    found = traits(tremere)
+
+    # The merit makes the first path in-clan; with none left for the second, it is an
+    # extra in-clan discipline.
+    assert found["Merits: Thaumaturgical Expertise (1)"] == (
+        "merits: Thaumaturgic Expertise [Thaumaturgy: Path of Caelestikinesis] 1"
+    )
+    assert list(extras(tremere)) == ["Thaumaturgy: Path of Conjuring"]
+
+
+def test_an_in_clan_name_that_matches_nothing_is_kept_aside() -> None:
+    caitiff = printed_with(
+        "Caitiff", ["Celerity x1"], in_clan=["Celerity", "Fast Talk", "Necromancy"]
+    )
+    mapped = mapper().character(caitiff)
+
+    assert [(u.source, u.reason) for u in mapped.unmatched] == [
+        ("In clan: Fast Talk", "no such discipline"),
+        ("In clan: Necromancy", "which path of Necromancy?"),
+    ]
+    assert [t.name for t in mapped.traits if t.category == "extra_in_clan_disciplines"] == [
+        "Celerity"
+    ]
+
+
 def test_a_troupes_own_list_of_areas_is_all_that_matches(tmp_path: Path) -> None:
     listed = Catalogue(
         **{
@@ -368,3 +519,105 @@ def test_a_troupes_lists_come_from_its_settings(troupe: Troupe, session: Session
     assert catalogue.lists == {"influence_elite_specializations": ["The Docks"]}
     assert ("merits", "Thaumaturgic Expertise") in catalogue.path_detailed
     assert ("merits", "Angelic Visage") in catalogue.detailed
+
+
+# --- importing extra in-clan disciplines (#565) ---------------------------------------
+
+
+def import_one(session: Session, troupe: Troupe, printed: PrintedCharacter) -> Character:
+    lords = session.get_one(TroupeRecord, uuid.UUID(troupe.id))
+    lead = session.get_one(User, lords.lead_user_id)
+    importer = import_yorick_print.Importer(
+        session,
+        lords,
+        lead,
+        Mapper(table(), import_yorick_print.catalogue_for(session, lords)),
+        Path("."),
+        pictures_root=None,
+    )
+    (result,) = importer.run([printed])
+    assert result.outcome == "made", result.skipped_because
+    return session.get_one(Character, uuid.UUID(result.character_id or ""))
+
+
+def costs(session: Session, npc: Character) -> dict[str, int | None]:
+    """What each discipline costs on the NPC's tally."""
+    return {
+        line.name: line.cost
+        for line in npcs.tally(session, npc)[1]
+        if line.category == "disciplines"
+    }
+
+
+def test_an_imported_caitiffs_extras_are_priced_in_clan_and_take_picks(
+    troupe: Troupe, session: Session
+) -> None:
+    disciplines = ["Auspex x1", "Obfuscate x4", "Vicissitude x1"]
+    without = import_one(session, troupe, printed_with("Caitiff", disciplines, name="Lark"))
+    caitiff = import_one(
+        session,
+        troupe,
+        printed_with("Caitiff", disciplines, in_clan=["Auspex", "Obfuscate", "Vicissitude"]),
+    )
+
+    rows = sheets.sheet_rows(session, caitiff)
+    assert sorted(
+        r.definition.name for r in rows if r.category.key == "extra_in_clan_disciplines"
+    ) == ["Auspex", "Obfuscate", "Vicissitude"]
+    # The fitting can put the discipline picks on them now, as they are in-clan.
+    picked = {
+        r.definition.name: r.trait.creation_pick
+        for r in rows
+        if r.category.key == "disciplines" and r.trait.creation_pick
+    }
+    assert picked == {"Auspex": 1, "Obfuscate": 2, "Vicissitude": 1}
+    # Out-of-clan, with no picks: 4 + 40 + 4. In-clan, Obfuscate's third and fourth
+    # dots at 3 a dot times the new rating, and the rest free.
+    assert costs(session, without) == {"Auspex": 4, "Obfuscate": 40, "Vicissitude": 4}
+    assert costs(session, caitiff) == {"Auspex": 0, "Obfuscate": 21, "Vicissitude": 0}
+
+
+def test_an_imported_path_beyond_the_clans_is_priced_in_clan(
+    troupe: Troupe, session: Session
+) -> None:
+    disciplines = ["Celerity x1", "Thaumaturgy x4: Path of Corruption"]
+    out = import_one(session, troupe, printed_with("Brujah", disciplines, name="Lark"))
+    extra = import_one(
+        session,
+        troupe,
+        printed_with("Brujah", disciplines, in_clan=["Thaumaturgy: Path of Corruption"]),
+    )
+
+    path = "Thaumaturgy: Path of Corruption"
+    # Out-of-clan, 4 + 8 + 12 + 16; in-clan, it takes the pick at 2 and costs 9 + 12.
+    assert costs(session, out)[path] == 40
+    assert costs(session, extra)[path] == 21
+
+
+def test_an_imported_expertise_without_its_path_prices_the_path_in_clan(
+    troupe: Troupe, session: Session
+) -> None:
+    tremere = import_one(
+        session,
+        troupe,
+        printed_with(
+            "Tremere",
+            ["Thaumaturgy x3: Path of Blood", "Thaumaturgy x2: Path of Caelestikinesis"],
+            ["Thaumaturgical Expertise (1)"],
+            ["Thaumaturgy: Path of Caelestikinesis"],
+        ),
+    )
+
+    rows = sheets.sheet_rows(session, tremere)
+    assert [(r.definition.name, r.trait.detail) for r in rows if r.category.key == "merits"] == [
+        ("Thaumaturgic Expertise", "Thaumaturgy: Path of Caelestikinesis")
+    ]
+    assert not [r for r in rows if r.category.key == "extra_in_clan_disciplines"]
+    # In-clan, the path's second dot costs 6; without the merit's path, 12 and a check
+    # that it needs Thaumaturgic Training.
+    assert costs(session, tremere)["Thaumaturgy: Path of Caelestikinesis"] == 6
+    assert not [
+        v.message
+        for v in sheets.sheet_violations(session, tremere)
+        if "Thaumaturgic Training" in v.message
+    ]

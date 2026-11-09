@@ -73,6 +73,32 @@ def test_a_quick_npc_has_its_picks_fitted_for_the_most_saved(troupe: Troupe) -> 
     assert cost_of(tally, "Dodge") == cost_of(tally, "Celerity") == 0
 
 
+def test_staff_add_an_extra_in_clan_discipline_and_the_npc_refits(troupe: Troupe) -> None:
+    """As for an NPC imported from Yorick without its extras (#565): one added by hand
+    makes the discipline in-clan, so it takes a pick, and taking it off undoes that."""
+    npc = make_npc(troupe)["id"]
+    rated(troupe.storyteller, npc, "clan", "Caitiff", None)
+
+    def obfuscate(tally: dict[str, Any]) -> int:
+        return next(
+            line["cost"]
+            for line in tally["lines"]
+            if (line["category"], line["name"]) == ("disciplines", "Obfuscate")
+        )
+
+    tally = rated(troupe.storyteller, npc, "disciplines", "Obfuscate", 4)
+    assert obfuscate(tally) == 40
+    assert placed(picks(troupe.storyteller, npc), "disciplines") == {}
+
+    tally = rated(troupe.storyteller, npc, "extra_in_clan_disciplines", "Obfuscate", 1)
+    assert placed(picks(troupe.storyteller, npc), "disciplines") == {"Obfuscate": (2, "fit")}
+    assert obfuscate(tally) == 21
+
+    tally = rated(troupe.storyteller, npc, "extra_in_clan_disciplines", "Obfuscate", 0)
+    assert placed(picks(troupe.storyteller, npc), "disciplines") == {}
+    assert obfuscate(tally) == 40
+
+
 def test_the_fitting_prices_at_the_npcs_generation_and_house_rules(troupe: Troupe) -> None:
     """Skills cost × 1 at Generation 1 and × 2 above it in the book; a troupe can price a
     generation's skills as it likes (as one prices Generation 2's at × 1)."""

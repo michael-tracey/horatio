@@ -13,6 +13,12 @@ the troupe's house merits and flaws), a detail where the trait is held once for 
 of several (Retainers, Crafts, a Derangement, a path's Thaumaturgic Expertise), a
 rating, and a note for anything else the line said. A line that matches nothing is
 kept aside, with why, for the report.
+
+Yorick prints no extra in-clan disciplines, only what a player wrote in the sheet's
+notes (horatio.yorick_print). So a discipline an "In clan:" line names beyond the
+clan's own, or that a merit such as Additional Common Discipline names in its detail,
+is put under Extra In-Clan Disciplines (#565); the sheet's checks say if the rules
+don't allow it.
 """
 
 import ast
@@ -34,6 +40,7 @@ SPELLING_MIGRATIONS = ("0106", "0122")
 SPELLING_LISTS = ("RENAMES", "MERGES")
 
 CUSTOM = "Custom"
+EXTRA_IN_CLAN = "extra_in_clan_disciplines"
 FOCUSES = {
     "Physical": "focus_physicals",
     "Social": "focus_socials",
@@ -65,6 +72,8 @@ class Table:
     # Merits and flaws whose detail names a path, besides those the rules say.
     path_details: dict[str, list[str]]
     detail_names: dict[str, set[str]]
+    # Merits whose detail names the discipline they make in-clan.
+    in_clan_details: set[str]
     custom: set[str]
     split: set[str]
 
@@ -126,6 +135,7 @@ def read_table(
         paths={plain(k): v for k, v in raw.get("paths", {}).items()},
         path_details={k: list(v) for k, v in raw.get("path_details", {}).items()},
         detail_names={k: set(v) for k, v in raw.get("detail_names", {}).items()},
+        in_clan_details=set(raw.get("in_clan_details", [])),
         custom=set(raw.get("custom_allowed", [])),
         split=set(raw.get("split_on_commas", [])),
     )
@@ -162,6 +172,9 @@ class Catalogue:
     path_detailed: Mapping[tuple[str, str], tuple[str, ...]] = field(default_factory=dict)
     # The troupe's own lists of a kind of specialisation (horatio.specializations).
     lists: Mapping[str, Sequence[str]] = field(default_factory=dict)
+    # Each clan's own in-clan disciplines, with those it leaves its player to choose
+    # from.
+    clans: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
 
     def find(self, category: str, name: str) -> str | None:
         """The catalogue's name for `name`, ignoring case and spacing."""
@@ -183,6 +196,11 @@ def catalogue_of(
         names.setdefault(category, set()).add(name)
         if trait.properties.get("requires_specialization") or trait.properties.get("instance"):
             detailed.add((category, name))
+    clans = {
+        name: (*trait.properties.get("in_clan", []), *trait.properties.get("choices", []))
+        for (category, name), trait in rule_set.traits.items()
+        if category == "clan"
+    }
     path_detailed: dict[tuple[str, str], tuple[str, ...]] = {}
     for grant in rule_set.grants:
         source = (grant.source.get("category", ""), grant.source.get("name", ""))
@@ -197,6 +215,7 @@ def catalogue_of(
         detailed=frozenset(detailed),
         path_detailed=path_detailed,
         lists=dict(lists or {}),
+        clans=clans,
     )
 
 
@@ -315,6 +334,7 @@ class Mapper:
                     self.specialization(heading, category, line, mapped)
                 else:
                     self.trait(heading, category, line, mapped)
+        self.in_clan(printed, mapped)
         mapped.traits = combined(mapped.traits)
         return mapped
 
@@ -480,6 +500,75 @@ class Mapper:
         # A line with no rating (a technique, a ritual) is held at its value, or 1.
         rating = abs(line.rating) if line.rating is not None else None
         mapped.traits.append(Trait(category, found, detail, rating, note, source))
+
+    def in_clan(self, printed: PrintedCharacter, mapped: Mapped) -> None:
+        """The disciplines in-clan beyond the clan's own, as Extra In-Clan Disciplines:
+        those the notes' "In clan:" line names, and the one a merit that adds an
+        in-clan discipline names in its detail ("Vestiges of Greatness (3,
+        Vicissitude)"). A path the line names goes first to a Thaumaturgic or
+        Necromantic Expertise printed without its path."""
+        clan = next((t.name for t in mapped.traits if t.category == "clan"), "")
+        own = set(self.catalogue.clans.get(clan, ()))
+        # Paths a merit prices in-clan itself (Thaumaturgic Expertise, Necromantic
+        # Insight): the merit says so already.
+        by_merit = {
+            t.detail for t in mapped.traits if (t.category, t.name) in self.catalogue.path_detailed
+        }
+        held = [t.name for t in mapped.traits if t.category == "disciplines"]
+        extras = self.catalogue.names.get(EXTRA_IN_CLAN, frozenset())
+        source = f"In clan: {', '.join(printed.in_clan)}"
+        found: list[tuple[str, str]] = []
+        for written in printed.in_clan:
+            # "Thaumaturgy" alone: the clan's own path of it, or else the one path of it
+            # the character holds.
+            base = next(
+                (b for b in ("Thaumaturgy", "Necromancy") if plain(b) == plain(written)), ""
+            )
+            if base and any(n.startswith(f"{base}: ") for n in own):
+                continue
+            name = self.lookup(EXTRA_IN_CLAN, written)
+            if name is None and base:
+                paths = [n for n in held if n.startswith(f"{base}: ") and n in extras]
+                name = paths[0] if len(paths) == 1 else None
+            elif name is None:
+                path = self.path(written)
+                name = path if path in extras else None
+            reason = f"which path of {base}?" if base else "no such discipline"
+            if name is None:
+                mapped.unmatched.append(
+                    Unmatched("In clan", written, reason, "names", EXTRA_IN_CLAN, written)
+                )
+            else:
+                found.append((name, source))
+        for t in mapped.traits:
+            if t.category == "merits" and t.name in self.table.in_clan_details and t.note:
+                name = self.lookup(EXTRA_IN_CLAN, t.note)
+                if name is not None:
+                    found.append((name, t.source))
+        for name, where in found:
+            if name in own or name in by_merit or self.give_path(name, mapped):
+                continue
+            by_merit.add(name)
+            mapped.traits.append(Trait(EXTRA_IN_CLAN, name, rating=1, source=where))
+
+    def give_path(self, path: str, mapped: Mapped) -> bool:
+        """Name `path` in the detail of a merit that prices a path in-clan but was
+        printed without one ("Thaumaturgical Expertise (1)"), if the character holds
+        such a merit for the path's discipline: that is what makes it in-clan."""
+        discipline = path.split(":")[0]
+        blank = next(
+            (
+                t
+                for t in mapped.traits
+                if not t.detail
+                and discipline in self.catalogue.path_detailed.get((t.category, t.name), ())
+            ),
+            None,
+        )
+        if blank is None or ":" not in path:
+            return False
+        blank.detail = path
+        return True
 
     def specialization(self, heading: str, category: str, line: Line, mapped: Mapped) -> None:
         """A Haven quality, an Influence's area, a Contact, a Lore, a Language..."""

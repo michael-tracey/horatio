@@ -813,7 +813,11 @@ test("the custodian imports a troupe's characters from Yorick, matching a line a
     .replaceAll("Th4ddAshby", `Th4ddAshby${run}`)
     .replaceAll("Agnes Wren", agnes)
     .replaceAll("Thaddeus Ashby", thaddeus)
-    .replaceAll("Mystery Woman", `Mystery Woman ${run}`);
+    .replaceAll("Mystery Woman", `Mystery Woman ${run}`)
+    // Thaddeus's notes name Potence in-clan, through Additional Common Discipline: the
+    // first empty notes are his.
+    .replace("Talisman (2)<br>", "Talisman (2)<br> Additional Common Discipline (4)<br>")
+    .replace('<div class="ui-block-a"></div></div>', '<div class="ui-block-a">In clan: Celerity, Obfuscate, Protean, Potence</div></div>');
   // The lead has made Agnes already, by hand.
   const npc = await lead.page.request.post(`/api/troupes/${troupeId}/npcs`, { headers: { "X-Horatio": "1" }, data: { name: agnes, wizard: false } });
   expect(npc.status(), await npc.text()).toBe(201);
@@ -861,4 +865,9 @@ test("the custodian imports a troupe's characters from Yorick, matching a line a
   await lead.page.goto(`/troupes/${troupeId}/npcs`);
   await expect(lead.page.getByRole("link", { name: thaddeus })).toBeVisible();
   await expect(lead.page.getByRole("link", { name: agnes })).toHaveCount(1);
+
+  // Potence is in-clan for Thaddeus beyond his bloodline's own three.
+  await lead.page.getByRole("link", { name: thaddeus }).click();
+  await expect(lead.page.getByRole("checkbox", { name: "Potence", exact: true })).toBeChecked();
+  await expect(lead.page.getByRole("checkbox", { name: "Protean", exact: true })).toHaveCount(0);
 });
