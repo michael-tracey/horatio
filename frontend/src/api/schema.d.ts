@@ -12617,6 +12617,8 @@ export interface components {
             assamite_name: "Banu Haqim" | "Assamite";
             /** Building Troupe Id */
             building_troupe_id: string | null;
+            /** Building Troupe Name */
+            building_troupe_name?: string | null;
             /** Clan */
             clan: string | null;
             /** Creation Complete */
@@ -21974,6 +21976,11 @@ export interface components {
             /** Pool */
             pool?: number | null;
         };
+        /** PrintedBuilding */
+        PrintedBuilding: {
+            /** Troupe Name */
+            troupe_name: string | null;
+        };
         /** PrintedSheet */
         PrintedSheet: {
             /** Accepted At */
@@ -21981,6 +21988,7 @@ export interface components {
             /** Accepted By */
             accepted_by: string | null;
             blood: components["schemas"]["PrintedBlood"];
+            building?: components["schemas"]["PrintedBuilding"] | null;
             /** Character Name */
             character_name: string;
             /** Diablerie */

@@ -311,6 +311,29 @@ def test_a_character_says_which_troupe_it_is_waiting_on(troupe: Troupe) -> None:
     assert asking() == [None]
 
 
+def test_a_character_says_whose_rules_it_is_built_to_until_accepted(troupe: Troupe) -> None:
+    """Issue #569: with no home troupe, the list and the printed sheet say whose rules
+    it is built to, the troupe's it is built for or the book's; once a home troupe
+    accepts it, its home's."""
+    character_id = new_character(troupe, troupe.player)
+
+    def built_to() -> tuple[str | None, dict[str, Any] | None]:
+        [listed] = troupe.player.client.get("/characters").json()
+        printed = troupe.player.client.get(f"/characters/{character_id}/print").json()
+        return listed["building_troupe_name"], printed["building"]
+
+    assert built_to() == (None, {"troupe_name": None})
+    chosen = troupe.player.client.put(
+        f"/characters/{character_id}/building-troupe", json={"troupe_id": troupe.id}
+    )
+    assert chosen.status_code == 200, chosen.text
+    assert built_to() == ("Lords of the Night", {"troupe_name": "Lords of the Night"})
+
+    request_home(troupe.player, character_id, troupe.id)
+    troupe.lead.client.post(f"/approvals/{queue(troupe.lead, troupe.id)[0]['id']}/approve", json={})
+    assert built_to() == (None, None)
+
+
 def test_only_the_new_troupes_running_staff_decide(troupe: Troupe) -> None:
     character_id = new_character(troupe, troupe.player)
     other = sign_up(troupe.client_for, "other-lead")

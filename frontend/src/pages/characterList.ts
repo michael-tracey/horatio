@@ -16,11 +16,22 @@ export type Note = { label: string; tone: Tone };
  */
 export function standing(c: CharacterListOut): Note[] {
   if (c.status === "retired") return [{ label: "Retired", tone: "mist" }];
-  if (!c.creation_complete) return [{ label: "In creation", tone: "gold" }];
+  if (!c.creation_complete) return [{ label: "In creation", tone: "gold" }, ...builtTo(c)];
   const notes: Note[] = [];
   if (c.home_troupe_name) notes.push({ label: `Home: ${c.home_troupe_name}`, tone: "mist" });
   if (c.asking_troupe_name) notes.push({ label: `Waiting for ${c.asking_troupe_name}`, tone: "mist" });
-  return notes.length ? notes : [{ label: "No home troupe yet", tone: "gold" }];
+  return [...(notes.length ? notes : [{ label: "No home troupe yet", tone: "gold" as const }]), ...builtTo(c)];
+}
+
+/**
+ * Whose rules a character with no home troupe is built to (issue #569): the troupe it
+ * is built for, or the book's. Nothing when it is asking that troupe already, which
+ * "Waiting for" says.
+ */
+function builtTo(c: CharacterListOut): Note[] {
+  if (c.home_troupe_id || (c.building_troupe_id && c.building_troupe_id === c.asking_troupe_id)) return [];
+  const label = c.building_troupe_name ? `Built to ${c.building_troupe_name}'s rules` : "Built to the book's rules";
+  return [{ label, tone: "mist" }];
 }
 
 /**
