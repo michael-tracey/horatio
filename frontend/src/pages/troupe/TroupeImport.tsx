@@ -209,7 +209,7 @@ function EntryCard({ entry, canGive, decision, onDecide }: { entry: TroupeEntryO
             ] as const
           ).map(([choice, label]) => (
             <label key={choice} className="flex items-center gap-2 text-sm">
-              <input type="radio" name={`choice-${entry.key}`} checked={entry.choice === choice} onChange={() => onDecide({ choice })} />
+              <input type="radio" name={`choice-${entry.key}`} checked={(decision.choice ?? entry.choice) === choice} onChange={() => onDecide({ choice })} />
               {label}
             </label>
           ))}

@@ -328,7 +328,8 @@ test("a storyteller imports the troupe's export, choosing what to do with an NPC
   await p.getByRole("button", { name: "Import 1 character" }).click();
   await expect(p.getByText("1 new NPC.", { exact: true })).toBeVisible();
 
-  await p.getByRole("link", { name: "Back to the characters" }).click();
+  await expect(p.getByRole("link", { name: "Keeper Anselm" })).toBeVisible();
+  await p.goto(`/troupes/${troupeId}/characters?show=npcs`);
   await expect(p.getByRole("row", { name: /Keeper Anselm/ })).toHaveCount(2);
 });
 
