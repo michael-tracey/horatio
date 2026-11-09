@@ -5,16 +5,24 @@ import { HouseMark } from "../../components/HouseMark";
 import { useMemo, useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetOut, TraitOut } from "../../api/types";
-import { Badge, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
+import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction, usePreferences, useUnavailable } from "../../hooks";
 import { PrintAndBadge } from "./Badge";
 import { NpcPicks } from "./NpcPicks";
 import { DomitorCard } from "./Domitor";
+import { FreeChoicesRow } from "./FreeChoices";
+import { ChoiceSelect } from "./ChoiceSelect";
+import { detailNeed, fieldSkills } from "./fields";
 import { useHasDomitor } from "./splats";
 import { CUSTOM_ARCHETYPE, identityChoices } from "./creation/logic";
 import { MORALITY, heldMorality, moralityLabel, moralityOptions, moveMorality, willpowerAndHealth } from "./morality";
 
-type Change = { category: string; name: string; rating: number | null };
+type Change = { category: string; name: string; detail?: string; rating: number | null };
+/** A held trait's detail changed in place: a merit's choice, a skill's field (#570). */
+type Rename = { category: string; name: string; detail: string; to: string };
+
+/** Categories whose traits may carry a detail in staff's own words, as a player's may. */
+const DETAILED = new Set(["skills", "backgrounds", "merits", "flaws"]);
 
 /** Each attribute, in sheet order, with the category its focus is chosen from (MET: VTM p. 90). */
 const ATTRIBUTES: [string, string][] = [
@@ -57,7 +65,8 @@ export function NpcBuilder({ character }: { character: CharacterOut }) {
   const panels = kinds.data?.find((k) => k.key === character.npc_kind)?.panels;
   // A ghoul NPC takes its clan from its domitor, which staff set here instead.
   const hasDomitor = useHasDomitor(character.splat);
-  const set = useAction((body: Change) => unwrap(api.PUT("/api/characters/{character_id}/npc/ratings", { ...path, body: { ...body, detail: "" } })));
+  const set = useAction((body: Change) => unwrap(api.PUT("/api/characters/{character_id}/npc/ratings", { ...path, body: { ...body, detail: body.detail ?? "" } })));
+  const rename = useAction((body: Rename) => unwrap(api.PUT("/api/characters/{character_id}/npc/detail", { ...path, body })));
 
   if (sheet.isPending || catalogue.isPending) return <Loading />;
   if (!sheet.data || !catalogue.data) return <ErrorText error={sheet.error ?? catalogue.error} />;
@@ -69,10 +78,20 @@ export function NpcBuilder({ character }: { character: CharacterOut }) {
         <Identity sheet={sheet.data} catalogue={catalogue.data} withoutClan={!!hasDomitor} onChange={(c) => set.mutate(c)} />
         <Attributes sheet={sheet.data} catalogue={catalogue.data} onChange={(c) => set.mutate(c)} />
         {SECTIONS.map((section) => (
-          <Section key={section.title} {...section} noGeneration={panels?.generation === false} character={character} sheet={sheet.data} catalogue={catalogue.data} onChange={(c) => set.mutate(c)} />
+          <Section
+            key={section.title}
+            {...section}
+            noGeneration={panels?.generation === false}
+            character={character}
+            sheet={sheet.data}
+            catalogue={catalogue.data}
+            onChange={(c) => set.mutate(c)}
+            onRename={(r) => rename.mutate(r)}
+            busy={set.isPending || rename.isPending}
+          />
         ))}
         {panels?.morality !== false && <Morality sheet={sheet.data} catalogue={catalogue.data} onChange={(c) => set.mutate(c)} />}
-        <ErrorText error={set.error} />
+        <ErrorText error={set.error ?? rename.error} />
       </div>
       <aside className="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start">
         {/* Only the troupe's staff see an NPC, and they all print its badge. */}
@@ -243,6 +262,8 @@ function Section({
   sheet,
   catalogue,
   onChange,
+  onRename,
+  busy,
 }: {
   character: CharacterOut;
   /** Leave the Generation background out: the NPC's kind has none. */
@@ -255,6 +276,8 @@ function Section({
   sheet: SheetOut;
   catalogue: CatalogueOut;
   onChange: (c: Change) => void;
+  onRename: (r: Rename) => void;
+  busy: boolean;
 }) {
   const [query, setQuery] = useState("");
   // Why each power not held is out of reach (worked out only while searching, as it is slow), and
@@ -271,7 +294,17 @@ function Section({
     for (const p of sheet.problems) if (categories.includes(p.category)) found.set(`${p.category}/${p.name}`, p.message);
     return found;
   }, [powers, categories, refusedFirst.data, refusedSecond.data, sheet.problems]);
-  const ratings = useMemo(() => new Map(sheet.traits.map((t) => [`${t.category}/${t.name}`, t.rating ?? 0])), [sheet]);
+  // Each trait held, once for each detail it is held with (Crafts: Painting and Crafts: Pottery).
+  const held = useMemo(() => {
+    const found = new Map<string, { detail: string; rating: number }[]>();
+    for (const t of sheet.traits) {
+      if (!t.rating) continue;
+      const key = `${t.category}/${t.name}`;
+      found.set(key, [...(found.get(key) ?? []), { detail: t.detail, rating: t.rating }]);
+    }
+    return found;
+  }, [sheet]);
+  const ratings = useMemo(() => new Map([...held].map(([key, all]) => [key, Math.max(...all.map((h) => h.rating))])), [held]);
   const present = categories.filter((c) => catalogue.categories.some((k) => k.key === c));
   if (!present.length) return null;
   // An archived house merit is not taken anew; one held stays listed.
@@ -305,14 +338,19 @@ function Section({
               {(groups.size > 1 || split) && <h3 className="mb-1 font-sans text-xs tracking-wide text-mist uppercase">{heading}</h3>}
               <ul>
                 {groups.get(heading)!.map((t) => (
-                  <Row
+                  <Held
                     key={`${t.category}/${t.name}`}
+                    character={character}
                     trait={t}
-                    rating={ratings.get(`${t.category}/${t.name}`) ?? 0}
+                    held={held.get(`${t.category}/${t.name}`) ?? []}
                     max={catalogue.categories.find((c) => c.key === t.category)?.max_rating ?? 5}
                     onChange={onChange}
+                    onRename={onRename}
                     power={powers}
                     mark={marks.get(`${t.category}/${t.name}`)}
+                    sheet={sheet}
+                    catalogue={catalogue}
+                    busy={busy}
                   />
                 ))}
               </ul>
@@ -327,16 +365,21 @@ function Section({
 function Row({
   trait,
   label,
+  detail = "",
   rating,
   max,
   onChange,
   aside,
   power,
   mark,
+  nameAside,
+  children,
 }: {
   trait: TraitOut;
   /** Shown in place of the trait's name, such as Morality before its picker. */
   label?: string;
+  /** The detail the trait is held with, which a change of its rating keeps. */
+  detail?: string;
   rating: number;
   max: number;
   onChange: (c: Change) => void;
@@ -346,8 +389,13 @@ function Row({
   power?: boolean;
   /** Why this one is out of order for the NPC; it is allowed all the same. */
   mark?: string;
+  /** Shown just after the name, such as the button that changes its detail. */
+  nameAside?: ReactNode;
+  /** Shown under the row, such as the box its detail is set in. */
+  children?: ReactNode;
 }) {
   const named = useClanName();
+  const shown = detail ? `${trait.name}: ${detail}` : trait.name;
   const numbers = usePreferences().ratings === "numbers";
   if (trait.fixed_rating || power) {
     const on = rating > 0;
@@ -355,11 +403,14 @@ function Row({
     return (
       <li className="py-1 text-sm">
         <div className="flex items-center justify-between gap-2">
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={on} onChange={() => onChange({ category: trait.category, name: trait.name, rating: on ? 0 : level })} />
-            <span className={on ? "text-parchment" : "text-mist"}>{named(trait.name)}</span>
-            {trait.house && <HouseMark label={trait.house.label} short />}
-          </label>
+          <span className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={on} onChange={() => onChange({ category: trait.category, name: trait.name, detail, rating: on ? 0 : level })} />
+              <span className={on ? "text-parchment" : "text-mist"}>{named(shown)}</span>
+              {trait.house && <HouseMark label={trait.house.label} short />}
+            </label>
+            {nameAside}
+          </span>
           {trait.fixed_rating && <Badge>{trait.fixed_rating}</Badge>}
         </div>
         {mark && (
@@ -368,6 +419,7 @@ function Row({
             {named(mark)}
           </p>
         )}
+        {children}
       </li>
     );
   }
@@ -386,25 +438,219 @@ function Row({
         ? "text-blood-bright"
         : "text-mist/60";
   return (
-    <li className={`flex flex-wrap items-center justify-between gap-2 text-sm ${aside ? "py-1.5" : "py-0.5"}`}>
-      <span className="flex flex-wrap items-center gap-3">
-        <span className={`${aside ? "w-16" : ""} ${rating ? "text-parchment" : "text-mist"}`}>{label ?? named(trait.name)}</span>
-        {aside}
-      </span>
-      <span className="flex">
-        {Array.from({ length: dots }, (_, i) => i + 1).map((dot) => (
-          <button
-            key={dot}
-            type="button"
-            aria-label={`${trait.name} ${dot}`}
-            aria-pressed={rating === dot}
-            onClick={() => onChange({ category: trait.category, name: trait.name, rating: rating === dot ? dot - 1 : dot })}
-            className={`grid h-7 w-5 place-items-center hover:bg-ash sm:w-6 ${numbers ? "text-sm tabular-nums" : "text-base"} ${look(dot)}`}
-          >
-            {numbers ? dot : dot <= rating ? "●" : "○"}
-          </button>
-        ))}
-      </span>
+    <li className={`text-sm ${aside ? "py-1.5" : "py-0.5"}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="flex flex-wrap items-center gap-3">
+          <span className={`${aside ? "w-16" : ""} ${rating ? "text-parchment" : "text-mist"}`}>{label ?? named(shown)}</span>
+          {aside}
+          {nameAside}
+        </span>
+        <span className="flex">
+          {Array.from({ length: dots }, (_, i) => i + 1).map((dot) => (
+            <button
+              key={dot}
+              type="button"
+              aria-label={`${shown} ${dot}`}
+              aria-pressed={rating === dot}
+              onClick={() => onChange({ category: trait.category, name: trait.name, detail, rating: rating === dot ? dot - 1 : dot })}
+              className={`grid h-7 w-5 place-items-center hover:bg-ash sm:w-6 ${numbers ? "text-sm tabular-nums" : "text-base"} ${look(dot)}`}
+            >
+              {numbers ? dot : dot <= rating ? "●" : "○"}
+            </button>
+          ))}
+        </span>
+      </div>
+      {children}
     </li>
+  );
+}
+
+/**
+ * A trait of a section, once for each detail the NPC holds it with, or once unheld.
+ * A held one's detail can be changed in place, keeping its rating and creation pick
+ * (#570). One its rules need (Thaumaturgic Expertise's path, a skill's field, a
+ * Retainer's name) is flagged until it is given. One that gives merits or dots
+ * (Piece That Remains, Ventrue Royalty) has what it gives chosen under it (#577).
+ */
+function Held({
+  character,
+  trait,
+  held,
+  max,
+  onChange,
+  onRename,
+  power,
+  mark,
+  sheet,
+  catalogue,
+  busy,
+}: {
+  character: CharacterOut;
+  trait: TraitOut;
+  held: { detail: string; rating: number }[];
+  max: number;
+  onChange: (c: Change) => void;
+  onRename: (r: Rename) => void;
+  power?: boolean;
+  mark?: string;
+  sheet: SheetOut;
+  catalogue: CatalogueOut;
+  busy: boolean;
+}) {
+  const [editing, setEditing] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const asks = !!trait.choices || !!detailNeed(trait);
+  const detailed = asks || (!power && DETAILED.has(trait.category));
+  const rows = held.length ? held : [{ detail: "", rating: 0 }];
+  // Another of a trait held once for each field or name (Crafts, Retainers), once each held has its own.
+  const another = !!detailNeed(trait) && held.length > 0 && held.every((h) => h.detail);
+  return (
+    <>
+      {rows.map((h) => {
+        const missing = asks && h.rating > 0 && !h.detail;
+        const open = detailed && h.rating > 0 && (missing || editing === h.detail);
+        const onSheet = h.rating > 0 ? sheet.traits.find((t) => t.category === trait.category && t.name === trait.name && t.detail === h.detail) : undefined;
+        return (
+          <Row
+            key={h.detail}
+            trait={trait}
+            detail={h.detail}
+            rating={h.rating}
+            max={max}
+            onChange={onChange}
+            power={power}
+            mark={mark}
+            nameAside={
+              detailed &&
+              h.rating > 0 &&
+              !open && (
+                <button
+                  type="button"
+                  className="text-xs text-mist underline hover:text-parchment"
+                  aria-label={h.detail ? `Change the detail of ${trait.name}: ${h.detail}` : `Add a detail to ${trait.name}`}
+                  onClick={() => setEditing(h.detail)}
+                >
+                  {h.detail ? "Change" : "Detail"}
+                </button>
+              )
+            }
+          >
+            {open && (
+              <DetailEditor
+                trait={trait}
+                initial={h.detail}
+                missing={missing}
+                sheet={sheet}
+                catalogue={catalogue}
+                busy={busy}
+                onSave={(to) => {
+                  onRename({ category: trait.category, name: trait.name, detail: h.detail, to });
+                  setEditing(null);
+                }}
+                onCancel={missing ? undefined : () => setEditing(null)}
+              />
+            )}
+            {!!onSheet?.free_choices?.length && <FreeChoicesRow character={character} trait={onSheet} editable={character.status !== "retired"} />}
+          </Row>
+        );
+      })}
+      {another &&
+        (adding ? (
+          <li>
+            <DetailEditor
+              trait={trait}
+              initial=""
+              missing={false}
+              sheet={sheet}
+              catalogue={catalogue}
+              busy={busy}
+              saveLabel="Add"
+              onSave={(to) => {
+                onChange({ category: trait.category, name: trait.name, detail: to, rating: trait.fixed_rating ?? 1 });
+                setAdding(false);
+              }}
+              onCancel={() => setAdding(false)}
+            />
+          </li>
+        ) : (
+          <li className="mb-1 ml-3 text-xs">
+            <button type="button" className="text-mist underline hover:text-parchment" onClick={() => setAdding(true)}>
+              {detailNeed(trait)?.another}
+            </button>
+          </li>
+        ))}
+    </>
+  );
+}
+
+/** The box a held trait's detail is set in: one of its choices, or staff's own words. */
+function DetailEditor({
+  trait,
+  initial,
+  missing,
+  sheet,
+  catalogue,
+  busy,
+  saveLabel = "Set",
+  onSave,
+  onCancel,
+}: {
+  trait: TraitOut;
+  initial: string;
+  /** Its rules need one and none is given yet: flagged until it is. */
+  missing: boolean;
+  sheet: SheetOut;
+  catalogue: CatalogueOut;
+  busy: boolean;
+  saveLabel?: string;
+  onSave: (to: string) => void;
+  onCancel?: () => void;
+}) {
+  const named = useClanName();
+  const [draft, setDraft] = useState(initial);
+  const need = detailNeed(trait);
+  const choices = trait.choices;
+  const to = draft.trim();
+  // One its rules need can't be emptied; one in staff's own words can.
+  const ready = to !== initial && (to !== "" || (!choices && !need));
+  const label = choices ? (missing ? "Choose what it applies to" : "Applies to") : need ? (missing ? need.missing : need.label) : "Detail";
+  // The NPC's own traits first: for Thaumaturgic Expertise, the paths it holds.
+  const own = sheet.traits.filter((t) => (t.rating ?? 0) > 0).map((t) => t.name);
+  return (
+    <div className={`mt-0.5 mb-1 ml-3 flex flex-wrap items-center gap-1.5 border-l pl-3 text-xs ${missing ? "border-blood/60" : "border-ash"}`}>
+      <span className={missing ? "text-blood-bright" : "text-mist"}>{label}:</span>
+      {choices ? (
+        <ChoiceSelect
+          label={`What ${trait.name} applies to`}
+          choices={choices}
+          preferred={own}
+          fields={fieldSkills(catalogue)}
+          value={draft}
+          onChange={setDraft}
+          className="min-h-8 max-w-full py-1 text-xs"
+        />
+      ) : (
+        <Input
+          aria-label={`${named(trait.name)} ${need ? need.label.toLowerCase() : "detail"}`}
+          value={draft}
+          maxLength={200}
+          placeholder={need?.placeholder ?? "A specialisation, subject or name"}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && ready) onSave(to);
+            if (e.key === "Escape") onCancel?.();
+          }}
+          className="min-h-8 w-40 py-1 text-xs"
+        />
+      )}
+      <Button variant="secondary" className="min-h-8 px-2 py-1 text-xs" disabled={!ready || busy} onClick={() => onSave(to)}>
+        {saveLabel}
+      </Button>
+      {onCancel && (
+        <Button variant="secondary" className="min-h-8 px-2 py-1 text-xs" onClick={onCancel}>
+          Cancel
+        </Button>
+      )}
+    </div>
   );
 }

@@ -9,6 +9,7 @@ import { Button, Card, ErrorText, Field, Loading, Notice, Select, Textarea } fro
 import { useAction } from "../../hooks";
 import { describeDifference, settlementLabel } from "../../settlements";
 import { useBackstoryStanding } from "./BackstoryTab";
+import { BuiltTo } from "./BuiltTo";
 import { homeBackstory } from "./homeBackstory";
 import { LeaveHome } from "./LeaveHome";
 
@@ -59,7 +60,10 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
     character.home_troupe_id && homeName ? (
       <HomeNow troupeId={character.home_troupe_id} name={homeName} />
     ) : (
-      <p className="mb-2 text-lg text-parchment">No home troupe yet</p>
+      <>
+        <p className="mb-1 text-lg text-parchment">No home troupe yet</p>
+        <BuiltTo character={character} className="mb-2 text-sm text-mist" />
+      </>
     );
 
   return (

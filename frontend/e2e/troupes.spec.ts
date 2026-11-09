@@ -1408,7 +1408,9 @@ test("a player brings a character they have to a troupe from its page, and is to
   await expect(p.getByRole("link", { name: `Build a new character for ${troupeName}` })).toHaveCount(0);
 });
 
-test("the characters list and each Troupes tab say where a character stands: in creation, waiting, at home, or with no home yet (#368)", async ({ browser }) => {
+test("the characters list and each Troupes tab say where a character stands: in creation, waiting, at home, or with no home yet, and whose rules it is built to (#368, #569)", async ({ browser }) => {
+  // Five characters, a downtime cycle and a dozen pages.
+  test.slow();
   const custodian = await person(browser, "whereami-cust");
   makeCustodian(custodian.email);
   const lead = await person(browser, "whereami-lead");
@@ -1449,6 +1451,8 @@ test("the characters list and each Troupes tab say where a character stands: in 
   const asker = await make("Asking Aldous", true);
   const settled = await make("Settled Seraphine", true);
   const loner = await make("Lone Lucan", true);
+  // Built to the book's rules: no troupe chosen.
+  const bookish = (await send(p, "POST", "/api/characters", { splat: "vampire", name: "Bookish Bede" })).id as string;
   await send(p, "POST", `/api/characters/${asker}/home-troupe`, { troupe_id: away.id });
   const asked = await send(p, "POST", `/api/characters/${settled}/home-troupe`, { troupe_id: home.id });
   await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
@@ -1468,6 +1472,12 @@ test("the characters list and each Troupes tab say where a character stands: in 
   await expect(row("Settled Seraphine")).toContainText(`Home: ${hearths}`);
   await expect(row("Settled Seraphine").getByText(/^Downtime due \w{3} .+, \d{1,2}:\d{2} [ap]m$/)).toBeVisible();
   await expect(row("Lone Lucan")).toContainText("No home troupe yet");
+  // With no home troupe yet, whose rules each is built to (#569).
+  await expect(row("Lone Lucan")).toContainText(`Built to ${hearths}'s rules`);
+  await expect(row("Halfway Hester")).toContainText(`Built to ${hearths}'s rules`);
+  await expect(row("Asking Aldous")).toContainText(`Built to ${hearths}'s rules`);
+  await expect(row("Bookish Bede")).toContainText("Built to the book's rules");
+  await expect(row("Settled Seraphine")).not.toContainText("Built to");
   await expect(p.getByText("Active", { exact: true })).toHaveCount(0);
   await p.screenshot(shots("characters-standing"));
 
@@ -1508,7 +1518,20 @@ test("the characters list and each Troupes tab say where a character stands: in 
 
   await p.goto(`/characters/${loner}/troupes`);
   await expect(homeCard).toContainText("No home troupe yet");
+  await expect(homeCard).toContainText(`Built to ${hearths}'s house rules. Not accepted there yet.`);
+  await expect(homeCard.getByRole("link", { name: `${hearths}'s house rules` })).toHaveAttribute("href", `/troupes/${home.id}/house-rules`);
   await expect(homeCard.getByRole("combobox", { name: "Troupe", exact: true })).toBeVisible();
+  // The sheet's Troupes card says it too.
+  await p.goto(`/characters/${loner}`);
+  const troupesCard = p.locator("main section").filter({ has: p.getByRole("heading", { name: "Troupes", exact: true }) });
+  await expect(troupesCard).toContainText("In your vault, in no troupe.");
+  await expect(troupesCard).toContainText(`Built to ${hearths}'s house rules. Not accepted there yet.`);
+  await p.goto(`/characters/${settled}`);
+  await expect(troupesCard).toContainText(hearths);
+  await expect(troupesCard).not.toContainText("Built to");
+
+  await p.goto(`/characters/${bookish}/troupes`);
+  await expect(homeCard).toContainText("Built to the book's rules (no troupe chosen yet).");
 
   await p.goto(`/characters/${halfway}/troupes`);
   await expect(homeCard).toContainText("No home troupe yet");

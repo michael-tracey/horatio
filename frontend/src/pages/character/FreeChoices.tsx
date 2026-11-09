@@ -159,7 +159,8 @@ function Budget({ offer, picks, onChange }: Part) {
 
 /**
  * Under a merit on the sheet: the free traits its player chose, and until a home
- * troupe accepts the character, a way to choose or change them.
+ * troupe accepts the character, a way to choose or change them. On an NPC its
+ * staff choose them at any time (#577), unless its creation picks place them.
  */
 export function FreeChoicesRow({ character, trait, editable }: { character: CharacterOut; trait: SheetTraitOut; editable: boolean }) {
   const offers = trait.free_choices ?? [];
@@ -177,10 +178,12 @@ export function FreeChoicesRow({ character, trait, editable }: { character: Char
   const locked = offers.find((o) => o.locked)?.locked ?? null;
   const open = editable && !locked;
   const done = offers.every((o) => o.complete);
+  // An NPC's fitted creation picks place the merit's dots (Ventrue Royalty's): nothing to choose here.
+  const placedElsewhere = character.kind === "npc" && !!locked;
 
   return (
     <div className="mb-1 ml-3 border-l border-ash pl-3 text-xs" data-free-choices={trait.name}>
-      {offers.map((o) => (
+      {offers.filter((o) => !placedElsewhere || o.picks.length > 0).map((o) => (
         <p key={o.grant} className="flex flex-wrap items-center gap-1.5">
           <span className={o.picks.length === 0 ? "text-gold" : "text-mist"}>{o.category_name.replace(/^./, (c) => c.toUpperCase())} given free:</span>
           {o.picks.length === 0 && <span className="text-gold">not chosen yet</span>}
@@ -201,7 +204,7 @@ export function FreeChoicesRow({ character, trait, editable }: { character: Char
           {done ? "Change" : "Choose"}
         </Button>
       )}
-      {locked && saved.length > 0 && <p className="text-mist">{locked}</p>}
+      {locked && (saved.length > 0 || placedElsewhere) && <p className="text-mist">{locked}</p>}
       {draft !== null && (
         <form
           className="mt-1.5 flex flex-col gap-2 rounded border border-ash bg-night/50 p-2"

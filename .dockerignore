@@ -1,6 +1,7 @@
 # Only what the Dockerfile copies. Never the rulebook PDFs (sources/).
 *
 !Dockerfile
+!deploy/pgdg-ACCC4CF8.asc
 !backend/pyproject.toml
 !backend/uv.lock
 !backend/alembic.ini

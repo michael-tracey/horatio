@@ -65,6 +65,7 @@ import { PowerChoices } from "./PowerChoices";
 import { BackgroundChanges } from "./BackgroundChanges";
 import { InfluenceEffects } from "./InfluenceEffects";
 import { DomitorCard } from "./Domitor";
+import { BuiltTo } from "./BuiltTo";
 import { EmbraceCard } from "./Embrace";
 import { useHasDomitor } from "./splats";
 import { xpTotal } from "./xpTotals";
@@ -550,7 +551,8 @@ export function SheetTab({
                                   key={`${t.id}/free`}
                                   character={character}
                                   trait={t}
-                                  editable={mine && !locked && s.status !== "retired"}
+                                  // Only an NPC's running staff see it, and they choose for it (#577).
+                                  editable={(character.kind === "npc" || (mine && !locked)) && s.status !== "retired"}
                                 />
                               ),
                               !inCart(t) && (retainersUnder.has(t) || addsRetainerTo(t)) && (
@@ -1109,6 +1111,7 @@ function TroupesCard({
           ))}
         </ul>
       )}
+      <BuiltTo character={character} className="mt-2 text-sm text-mist" />
       {sheet.home_troupe_id === null && sheet.troupes.length > 0 && mine && (
         <p className="mt-2 text-xs text-mist">
           Visiting only. To play here for downtimes and XP, ask for a home
