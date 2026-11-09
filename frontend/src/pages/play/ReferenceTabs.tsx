@@ -308,7 +308,7 @@ export function PoolsTab({
   items?: PlayItem[];
   equipped?: string[];
   tap: (what: Parameters<typeof makeTap>[0]) => void;
-  /** A "Use" button on each power with a plain cost. */
+  /** A "Use" button on each power with a plain cost: disciplines, their powers, and elder powers. */
   using?: Using;
 }) {
   const modifiers = useModifiers(characterId);
@@ -354,7 +354,12 @@ export function PoolsTab({
           <ul className="flex flex-col gap-1.5 text-sm">
             {reference.other_powers.map((o) => (
               <li key={`${o.category_name}/${o.name}`}>
-                <strong className="font-semibold">{named(o.name)}</strong> <span className="text-xs text-mist">{o.category_name}</span>
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <p>
+                    <strong className="font-semibold">{named(o.name)}</strong> <span className="text-xs text-mist">{o.category_name}</span>
+                  </p>
+                  {using && o.cost && <UseButtons costed={o} view={using.view} use={using.use} />}
+                </div>
                 {o.note && <p className="text-mist">{o.note}</p>}
               </li>
             ))}

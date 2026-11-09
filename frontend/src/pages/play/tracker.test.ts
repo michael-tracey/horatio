@@ -353,6 +353,47 @@ describe("a power's Use (#370)", () => {
   });
 });
 
+describe("an elder power's Use (#588)", () => {
+  const projectile = {
+    key: "Projectile",
+    name: "Celerity: Projectile",
+    origin: "Celerity: Projectile",
+    form: false,
+    combines: [],
+    page: "p. 214",
+    changes: ["+3 Firearms", "+3 Athletics"],
+    notes: [],
+    health: [],
+    attributes: [],
+    focuses: [],
+    blood_per_turn: 0,
+    blood_half: false,
+    on: false,
+  };
+  const blood = { tracker: "blood" as const, amount: 1 };
+  const made = (whats: ReturnType<typeof usingTaps>, from: number) => whats.map((w, i) => makeTap(w, "g1", at(from + i)));
+
+  it("spends 1 Blood on every use, and turns Projectile on only the first time", () => {
+    const v = view({ powers: [projectile] });
+    const first = made(usingTaps(v, blood, "Celerity: Projectile", "Projectile"), 1);
+    expect(first.map((t) => [t.tracker, t.amount])).toEqual([
+      ["blood", -1],
+      ["power:Projectile", 1],
+    ]);
+    expect(tapsToast(withPending(v, []), first)).toBe("Spent 1 Blood · 9/10 · Celerity: Projectile switched on");
+
+    // The next attack: Projectile is on, and Use spends again without switching it off.
+    const on = withPending(v, first);
+    expect(on.powers[0]!.on).toBe(true);
+    const second = made(usingTaps(on, blood, "Celerity: Projectile", "Projectile"), 3);
+    expect(second.map((t) => [t.tracker, t.amount])).toEqual([["blood", -1]]);
+    expect(tapsToast(on, second)).toBe("Spent 1 Blood on Celerity: Projectile · 8/10");
+    const after = withPending(v, [...first, ...second]);
+    expect(after.blood.value).toBe(8);
+    expect(after.powers[0]!.on).toBe(true);
+  });
+});
+
 describe("the queue on the device", () => {
   function memory(): Storage {
     const data = new Map<string, string>();

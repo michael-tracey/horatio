@@ -40,14 +40,17 @@
 # `choices` (on a power): what the player chooses when buying it, kept on the
 #   discipline's trait and fixed afterwards: [{ key, label, default?, options? }].
 #   `choice = { key = value }` on an entry makes it hold only for that choice.
-# `cost` (on a discipline or power): what using it costs, for its Use button on
-#   the Play View (issue #370): { blood = n } or { willpower = n }, with
-#   `unless_focus` for a focus that makes it free. Leave it out where the `note`
-#   starts with the cost ("1 Blood, standard action: …"), which is read instead;
-#   a power whose cost comes later in its note gets no Use button.
+# `cost` (on a discipline, power or [[others]] entry): what using it costs, for
+#   its Use button on the Play View (issues #370 and #588): { blood = n } or
+#   { willpower = n }, with `unless_focus` for a focus that makes it free. Leave it
+#   out where the `note` starts with the cost ("1 Blood, standard action: …"),
+#   which is read instead; a power whose cost comes later in its note gets no Use
+#   button. Use spends it on every press, and turns the switch on if it is off, so
+#   a cost paid each time (Projectile's 1 Blood an attack) is spent again.
 # [[others]]: techniques, elder and luminary powers and merits with `pools`,
-#   `damage` or `active`, by `category` and `name`; `needs = { discipline, level }`
-#   when it works only with a power of a discipline.
+#   `damage`, `active` or `cost`, by `category` and `name`; `needs = { discipline,
+#   level }` when it works only with a power of a discipline. Merits show no Use
+#   button.
 # [[attacks]]: what a successful attack of each type does by default, and what an
 #   exceptional success adds (`exceptional`), with the book `page`. `skill` is the
 #   skill the attack pool is made on (attack:<skill>); `kind` names the type.
@@ -1943,19 +1946,31 @@ focus = { Perception = "Choose to make them defend with Physical + Willpower." }
 [[others]]
 category = "elder_disciplines"
 name = "Celerity: Nimble Departure"
+cost = { blood = 2 }
 active = { key = "Nimble Departure", page = 198, book = "Vol. 2", notes = ["2 Blood for the turn: only challenges to get away; a fair escape you can keep."] }
 pools = [{ pool = "dodge", amount = "powers:Celerity", when = "Nimble Departure" }]
+
+# Core p. 214: 1 Blood per ranged attack: +3 to the attack and 1 more damage.
+[[others]]
+category = "elder_disciplines"
+name = "Celerity: Projectile"
+cost = { blood = 1 }
+active = { key = "Projectile", page = 214, notes = ["1 Blood for each thrown or firearms attack it boosts, even in Celerity rounds; you needn't activate the rest of Celerity. It counts toward that turn's Celerity Blood.", "Something thrown that wouldn't hurt (a coin) does firearms damage, 2 or 3 on an exceptional success, without the +3 or the extra damage."] }
+pools = [{ pool = "attack:Firearms", amount = 3, when = "Projectile" }, { pool = "attack:Athletics", amount = 3, when = "Projectile" }]
+damage = [{ attacks = ["Firearms", "Athletics"], amount = 1, when = "Projectile", note = "1 more damage with Projectile", page = 214 }]
 
 # Core p. 217: +3 Mental for five minutes, taken from the victim.
 [[others]]
 category = "elder_disciplines"
 name = "Mytherceria: Steal the Mind"
+cost = { blood = 2 }
 active = { key = "Steal the Mind", page = 217, attributes = [{ attribute = "Mental", amount = 3 }], notes = ["Five minutes; less against a Stock NPC with a lower rating."] }
 
 # Core p. 222: a major transformation; its +2 is to some Social pools only.
 [[others]]
 category = "elder_disciplines"
 name = "Serpentis: Divine Image"
+cost = { blood = 3 }
 active = { key = "Divine Image", form = true, page = 222, notes = ["+2 to Social pools for mundane challenges, and to Social powers that rely on attraction (benevolent) or fear (malevolent).", "Ten minutes; you can use weapons."] }
 
 # Core p. 221: with Baal's Caress, +2 to Melee and 1 more aggravated damage.
@@ -1969,6 +1984,7 @@ damage = [{ attacks = ["Melee"], amount = 1, when = "Baal's Caress", note = "1 m
 [[others]]
 category = "luminary_disciplines"
 name = "Valeren: Warrior's Eminence"
+cost = { blood = 3 }
 active = { key = "Warrior's Eminence", page = 245, book = "Vol. 2", notes = ["Your allies in sight (up to your Medicine dots) do aggravated damage too.", "Healing costs 1 more Blood, for everyone."] }
 damage = [{ attacks = ["Brawl", "Melee", "Athletics", "Firearms"], type = "aggravated", when = "Warrior's Eminence", note = "Aggravated with Warrior's Eminence", page = 245, book = "Vol. 2" }]
 
@@ -1976,6 +1992,7 @@ damage = [{ attacks = ["Brawl", "Melee", "Athletics", "Firearms"], type = "aggra
 [[others]]
 category = "techniques"
 name = "Bullet Time"
+cost = { blood = 1 }
 active = { key = "Bullet Time", page = 62, book = "Vol. 2 Issue 1", notes = ["Ends if you spend an action moving."] }
 pools = [{ pool = "dodge", amount = 5, when = "Bullet Time" }]
 
