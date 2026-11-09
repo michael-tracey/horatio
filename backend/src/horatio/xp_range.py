@@ -324,9 +324,10 @@ def plan(found: Review, decision: Decision) -> Plan:
 
 
 def remove_self_entered(db: Session, staff: User, character: Character, troupe: Troupe) -> None:
-    """A correction for each self-entered entry, bringing it to nothing."""
+    """A correction for each self-entered entry, bringing it to nothing. One imported
+    from a file can be below nothing (XP taken away there, horatio.character_backup)."""
     for entry, gives in self_entered_entries(db, character):
-        if gives <= 0:
+        if gives == 0:
             continue
         db.add(
             XpEntry(

@@ -132,6 +132,7 @@ export function CharacterPage() {
                   canRetire={c.status === "active"}
                   onPronouns={saying ? undefined : () => setSaying(true)}
                   canDelete
+                  canExport
                   canGive={!!npcTroupe.data && abilities(npcTroupe.data.my_role, custodian).storyteller && !npcTroupe.data.archived && givable(c)}
                 />
               </div>
@@ -200,6 +201,7 @@ export function CharacterPage() {
                 onPronouns={mine && c.status === "active" && !saying ? () => setSaying(true) : undefined}
                 canDelete={mine}
                 canMove={custodian}
+                canExport={mine || custodian}
               />
             </div>
           }

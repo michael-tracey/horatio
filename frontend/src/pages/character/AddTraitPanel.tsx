@@ -6,7 +6,7 @@ import type { CatalogueOut, CharacterOut, SheetTraitOut, TraitOut } from "../../
 import { withClanNames } from "../../clanNames";
 import { useClanName } from "../../components/ClanNames";
 import { HouseMark, HouseSummary } from "../../components/HouseMark";
-import { Button, ErrorText, Field, Input, Notice, Select } from "../../components/ui";
+import { Button, ErrorText, Field, Input, Loading, Notice, Select } from "../../components/ui";
 import { AskStaff } from "./AskStaff";
 import type { CartLine, Exception } from "./cart";
 import { foundElsewhere, shownChips, useBarred, useChoices } from "./choices";
@@ -115,6 +115,8 @@ export function AddTraitPanel({
       unwrap(api.GET("/api/characters/{character_id}/free-choices", { params: { path: { character_id: character.id }, query: { category, name } } })),
   });
   const offers = free.data ?? [];
+  // Not added until they are known, or it would go in with none chosen (#576).
+  const choicesKnown = free.data !== undefined;
   const body = { category, name, detail, rating: cat?.rated ? (fixed ?? rating) : null, teacher: asksTeacher ? teacher : "" };
   const priced = !!trait && !!cat?.rated && !asking && (body.rating ?? 0) >= 1;
   const quote = useQuote(character.id, priced, body);
@@ -287,15 +289,21 @@ export function AddTraitPanel({
               <Input value={teacher} onChange={(e) => setTeacher(e.target.value)} />
             </Field>
           )}
-          {offers.length > 0 && (
-            <>
-              <FreeChoicesFields offers={offers} picks={picks} onChange={setPicks} />
-              <p className="text-xs text-mist">
-                {character.home_troupe_id
-                  ? "Choose now: once it is on the sheet, staff change them."
-                  : "You can change these on the sheet until a home troupe accepts the character."}
-              </p>
-            </>
+          {free.error ? (
+            <ErrorText error={free.error} />
+          ) : !choicesKnown ? (
+            <Loading compact label="Loading its choices…" />
+          ) : (
+            offers.length > 0 && (
+              <>
+                <FreeChoicesFields offers={offers} picks={picks} onChange={setPicks} />
+                <p className="text-xs text-mist">
+                  {character.home_troupe_id
+                    ? "Choose now: once it is on the sheet, staff change them."
+                    : "You can change these on the sheet until a home troupe accepts the character."}
+                </p>
+              </>
+            )
           )}
           {/* A power a merit opens says so: "Hard as Steel: 20 XP." */}
           {quote.data ? (
@@ -307,7 +315,7 @@ export function AddTraitPanel({
           )}
           <ErrorText error={quote.error} />
           <div className="flex gap-2">
-            <Button type="submit" disabled={!sayable(picks, offers)}>
+            <Button type="submit" disabled={!choicesKnown || !sayable(picks, offers)}>
               Add to cart
             </Button>
           </div>

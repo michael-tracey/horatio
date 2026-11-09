@@ -3,8 +3,10 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { RosterEntry, TitlesOut } from "../../api/types";
+import { ActionMenu, MenuItem } from "../../components/ActionMenu";
 import { Avatar } from "../../components/Avatar";
 import { useClanName } from "../../components/ClanNames";
+import { Dialog } from "../../components/Dialog";
 import { LinesVeilsNote } from "../../components/LinesVeils";
 import { AtHandle } from "../../components/PersonPicker";
 import { Pronouns } from "../../components/PronounsInput";
@@ -13,6 +15,7 @@ import { useEquipmentRules } from "./EquipmentEditor";
 import { holdersLink } from "./equipmentSearch";
 import { FilterBuilder } from "./FilterBuilder";
 import { asksEquipment, columnLabel, columnOf, columns, decode, DEFAULT_FILTER, encode, filterLabel, ready, sentence, type Group, type Names } from "./filters";
+import { TroupeExport } from "../character/Backup";
 import { NewNpc } from "./NewNpc";
 import { FORM_NAMES, filterNpcs, kindsIn, type NpcFilter, type NpcForm } from "./npcKinds";
 import { ageRank, clanText, nextSort, showOf, shows, sortRows, type Show, type Sort } from "./roster";
@@ -30,9 +33,10 @@ const SHOW_NAMES: Record<Show, [string, string]> = {
  * The troupe's characters, those whose home it is first, for its storytellers and
  * assistants: its player characters, its NPCs or both (#556), searched by name,
  * narrowed by a filter on their sheets (kept in the URL), ticked and printed. With
- * NPCs shown come their kind, form and Stock rating, and the way to make another.
+ * NPCs shown come their kind, form and Stock rating, and the way to make another. Its ⋯
+ * exports them as a backup (#567); storytellers (`canEmail`) may add players' emails.
  */
-export function RosterTab({ troupeId }: { troupeId: string }) {
+export function RosterTab({ troupeId, canEmail = false }: { troupeId: string; canEmail?: boolean }) {
   const path = { params: { path: { troupe_id: troupeId } } };
   const named = useClanName();
   const roster = useQuery({ queryKey: ["roster", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/characters", path)) });
@@ -72,6 +76,7 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
   // Printing sheets and badges, folded behind one button so the list starts near the top on a phone.
   const [printing, setPrinting] = useState(false);
   const [making, setMaking] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [sort, setSort] = useState<Sort>(null);
   const staffing = useStaffing(troupeId);
   if (roster.isPending) return <Loading />;
@@ -170,6 +175,12 @@ export function RosterTab({ troupeId }: { troupeId: string }) {
           <Button variant="secondary" aria-expanded={printing} onClick={() => setPrinting(!printing)}>
             Print…{ticked.length > 0 && ` (${ticked.length} selected)`}
           </Button>
+          <ActionMenu label="More for the troupe's characters">
+            <MenuItem onSelect={() => setExporting(true)}>Export characters and NPCs…</MenuItem>
+          </ActionMenu>
+          <Dialog title="Export characters and NPCs" open={exporting} onClose={() => setExporting(false)}>
+            {exporting && <TroupeExport troupeId={troupeId} selected={ticked.filter((e) => e.home || e.kind === "npc").map((e) => e.character_id)} canEmail={canEmail} />}
+          </Dialog>
         </span>
       }
     >
