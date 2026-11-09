@@ -603,6 +603,43 @@ def test_piece_that_remains_gives_one_clan_merit_of_another_clan(troupe: Troupe)
     assert "Appearance" not in ratings(troupe.player, character_id, "focus_socials")
 
 
+def test_a_merit_piece_that_remains_gives_has_its_own_free_choices(troupe: Troupe) -> None:
+    """Ventrue Royalty, given by Piece That Remains, places its 4, 3 and 2 as if bought
+    (#577)."""
+    character_id = new_character(troupe, troupe.player, clan="Caitiff")
+    for background, dots in (("Resources", 4), ("Haven", 3), ("Allies", 2)):
+        assert (
+            take(troupe.player, character_id, "backgrounds", background, dots).status_code == 200
+        )
+    take(troupe.player, character_id, "merits", "Piece That Remains", 2)
+    before = balance(troupe.player, character_id)
+    grant = grant_key(troupe.player, character_id, "Piece That Remains")
+
+    chosen = choose(
+        troupe.player, character_id, "Piece That Remains", [pick(grant, "Ventrue Royalty")]
+    )
+
+    assert chosen.status_code == 200, chosen.text
+    assert given(troupe.player, character_id, "merits") == {
+        "Ventrue Royalty": (2, 2, ["Piece That Remains"])
+    }
+    royalty = grant_key(troupe.player, character_id, "Ventrue Royalty")
+    placed = choose(
+        troupe.player,
+        character_id,
+        "Ventrue Royalty",
+        [pick(royalty, "Resources", 4), pick(royalty, "Haven", 3), pick(royalty, "Allies", 2)],
+    )
+    assert placed.status_code == 200, placed.text
+    assert {
+        name: (rating, free)
+        for name, (rating, free, _) in given(troupe.player, character_id, "backgrounds").items()
+    } == {"Resources": (4, 4), "Haven": (3, 3), "Allies": (2, 2)}
+    # The dots it makes free are refunded; the merit given costs nothing.
+    assert balance(troupe.player, character_id) > before
+    assert problems(troupe.player, character_id) == []
+
+
 def test_piece_that_remains_does_not_offer_the_characters_own_clan(troupe: Troupe) -> None:
     # Only a Caitiff buys it, so every clan merit but a Caitiff's is another clan's.
     character_id = new_character(troupe, troupe.player, clan="Caitiff")

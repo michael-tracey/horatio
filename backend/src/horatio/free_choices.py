@@ -10,6 +10,12 @@ until a home troupe has accepted the character with the merit on its sheet.
 After that a change goes through staff (an exception asked of them, or given).
 A merit taken after acceptance can still be chosen for once, as it was never
 part of what staff accepted; once chosen it is fixed too.
+
+An NPC's staff choose for it, at any time (#577): what Piece That Remains,
+Auspicious, Old Habits or Shadows of the Past gives is free on it as on a
+player's character, and goes to its player with it. Where an NPC's creation
+picks are fitted, the fitting places Ventrue Royalty's dots instead
+(horatio.npc_picks).
 """
 
 from collections.abc import Sequence
@@ -19,7 +25,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import sheets
+from horatio import npc_picks, sheets
 from horatio.models import Character, SheetVersion
 from horatio.rules.checks import matches
 from horatio.rules.grants import GrantData, Option, check_picks, holds_source, options
@@ -62,9 +68,16 @@ def accepted_keys(db: Session, character: Character) -> set[sheets.TraitKey]:
     return found
 
 
-def locked_reason(db: Session, character: Character, row: sheets.SheetRow) -> str | None:
+def locked_reason(
+    db: Session, character: Character, row: sheets.SheetRow, grant: GrantData
+) -> str | None:
     if character.kind != "pc":
-        return "An NPC's traits are set directly."
+        # Staff choose what an NPC's merit gives (Piece That Remains' clan merit,
+        # #577), except where its creation picks are fitted and the fitting places
+        # the merit's dots (Ventrue Royalty's 4, 3 and 2, horatio.npc_picks).
+        if "places" in (grant.picks or {}) and npc_picks.fitted(character):
+            return f"{row.definition.name}'s free dots are placed with the NPC's creation picks."
+        return None
     if sheets.ever_accepted(db, character) and (
         row.trait.choices or row.key in accepted_keys(db, character)
     ):
@@ -106,7 +119,6 @@ def held_offers(db: Session, character: Character) -> list[tuple[sheets.SheetRow
         grants = grants_of(row, sheet, rules.rule_set.grants)
         if not grants:
             continue
-        locked = locked_reason(db, character, row)
         mine = row.as_rules_trait().choices
         found.append(
             (
@@ -116,7 +128,7 @@ def held_offers(db: Session, character: Character) -> list[tuple[sheets.SheetRow
                         grant=g,
                         options=options(g, rules.rule_set, sheet),
                         picks=[c for c in mine if c.grant == g.key],
-                        locked=locked,
+                        locked=locked_reason(db, character, row, g),
                     )
                     for g in grants
                 ],
@@ -151,7 +163,7 @@ def set_choices(
     found = offers(db, character, key)
     if not found:
         raise unprocessable(f"{name} gives no free traits to choose.")
-    if (reason := found[0].locked) is not None:
+    if (reason := next((o.locked for o in found if o.locked), None)) is not None:
         raise sheets.conflict(reason)
     rules = sheets.rules_for(db, character)
     sheet = [r.as_rules_trait() for r in sheets.sheet_rows(db, character)]

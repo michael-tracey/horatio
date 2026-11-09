@@ -7,10 +7,11 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from horatio import import_yorick_print
-from horatio.models import Character
+from horatio.models import Character, XpEntry
 from horatio.yorick_names import Trait
 from tests.api_helpers import Person, Troupe, new_character, sign_up
 from tests.test_api_free_choices import choose, grant_key, pick, trait
@@ -486,6 +487,103 @@ def test_given_to_a_player_the_places_become_the_merits_own_choices(troupe: Trou
     resources = trait(heir, npc, "backgrounds", "Resources")
     assert (resources["rating"], resources["free_rating"]) == (5, 4)
     assert trait(heir, npc, "backgrounds", "Allies")["free_rating"] == 2
+
+
+# --- The merits a merit gives (#577) ---------------------------------------------------
+
+
+def remnant(troupe: Troupe, name: str = "Mercy Ashgrove") -> str:
+    """A Caitiff NPC with Piece That Remains, and Resources 5, Haven 3 and Allies 2."""
+    npc = make_npc(troupe, name=name)["id"]
+    rated(troupe.storyteller, npc, "clan", "Caitiff", None)
+    for background, rating in (("Resources", 5), ("Haven", 3), ("Allies", 2)):
+        rated(troupe.storyteller, npc, "backgrounds", background, rating)
+    rated(troupe.storyteller, npc, "merits", "Piece That Remains", 2)
+    return npc
+
+
+def test_staff_choose_what_piece_that_remains_gives_an_npc_and_it_is_free(
+    troupe: Troupe,
+) -> None:
+    npc = remnant(troupe)
+    before = npc_tally(troupe, npc)
+    grant = grant_key(troupe.storyteller, npc, "Piece That Remains")
+    # Players don't choose for an NPC.
+    refused = choose(troupe.player, npc, "Piece That Remains", [pick(grant, "Ventrue Royalty")])
+    assert refused.status_code in (403, 404)
+
+    chosen = choose(troupe.storyteller, npc, "Piece That Remains", [pick(grant, "Ventrue Royalty")])
+
+    assert chosen.status_code == 200, chosen.text
+    lines = npc_tally_lines(troupe, npc)
+    # The merit it gives costs nothing, and its own grant places 4, 3 and 2.
+    assert cost_of(lines, "Ventrue Royalty") == 0
+    assert places(picks(troupe.storyteller, npc), "Ventrue Royalty") == {
+        "Resources": (4, "fit"),
+        "Haven": (3, "fit"),
+        "Allies": (2, "fit"),
+    }
+    assert lines["total"] < before
+    # The fitting places Royalty's dots, so they aren't chosen as its choices.
+    royalty = grant_key(troupe.storyteller, npc, "Ventrue Royalty")
+    placed = choose(
+        troupe.storyteller,
+        npc,
+        "Ventrue Royalty",
+        [pick(royalty, "Resources", 4), pick(royalty, "Haven", 3), pick(royalty, "Allies", 2)],
+    )
+    assert placed.status_code == 409
+    assert "creation picks" in placed.json()["detail"]
+
+
+def test_given_to_a_player_what_piece_that_remains_gives_stays_free(troupe: Troupe) -> None:
+    npc = remnant(troupe)
+    grant = grant_key(troupe.storyteller, npc, "Piece That Remains")
+    choose(troupe.storyteller, npc, "Piece That Remains", [pick(grant, "Ventrue Royalty")])
+    heir = sign_up(troupe.client_for, "remnantheir")
+    assert npc_tally(troupe, npc) == preview_xp(troupe, npc)
+
+    given(troupe.storyteller, npc, heir)
+
+    piece = trait(heir, npc, "merits", "Piece That Remains")
+    assert [c["name"] for c in piece["free_choices"][0]["picks"]] == ["Ventrue Royalty"]
+    royalty = trait(heir, npc, "merits", "Ventrue Royalty")
+    assert (royalty["rating"], royalty["free_rating"], royalty["granted_by"]) == (
+        2,
+        2,
+        ["Piece That Remains"],
+    )
+    assert [(c["name"], c["amount"]) for c in royalty["free_choices"][0]["picks"]] == [
+        ("Resources", 4),
+        ("Haven", 3),
+        ("Allies", 2),
+    ]
+    # Its grants are brought into line on its next change, and keep the dots free.
+    take(heir, npc, "skills", "Brawl", 1)
+    resources = trait(heir, npc, "backgrounds", "Resources")
+    assert (resources["rating"], resources["free_rating"]) == (5, 4)
+    assert trait(heir, npc, "merits", "Ventrue Royalty")["free_rating"] == 2
+
+
+def test_a_merit_already_on_an_npc_is_given_instead_with_nothing_refunded(
+    troupe: Troupe, session: Session
+) -> None:
+    npc = remnant(troupe)
+    rated(troupe.storyteller, npc, "merits", "Aura of Command", 1)
+    grant = grant_key(troupe.storyteller, npc, "Piece That Remains")
+
+    chosen = choose(troupe.storyteller, npc, "Piece That Remains", [pick(grant, "Aura of Command")])
+
+    assert chosen.status_code == 200, chosen.text
+    aura = trait(troupe.storyteller, npc, "merits", "Aura of Command")
+    assert (aura["rating"], aura["free_rating"], aura["granted_by"]) == (
+        1,
+        1,
+        ["Piece That Remains"],
+    )
+    assert cost_of(npc_tally_lines(troupe, npc), "Aura of Command") == 0
+    # An NPC buys nothing, so nothing is refunded to it.
+    assert not session.scalars(select(XpEntry).where(XpEntry.character_id == uuid.UUID(npc))).all()
 
 
 def npc_tally_lines(troupe: Troupe, npc: str) -> dict[str, Any]:

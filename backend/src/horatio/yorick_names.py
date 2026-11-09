@@ -19,6 +19,11 @@ notes (horatio.yorick_print). So a discipline an "In clan:" line names beyond th
 clan's own, or that a merit such as Additional Common Discipline names in its detail,
 is put under Extra In-Clan Disciplines (#565); the sheet's checks say if the rules
 don't allow it.
+
+A merit that gives merits the player chooses (Piece That Remains, Auspicious, Old
+Habits, Shadows of the Past) is printed with them as its detail: "Piece That Remains
+(2, (Ventrue Royalty))", "Auspicious (1, Rugged)". They are read as its choices
+(#577), and a line of their own beside it is left out, as the merit is held once.
 """
 
 import ast
@@ -175,6 +180,9 @@ class Catalogue:
     # Each clan's own in-clan disciplines, with those it leaves its player to choose
     # from.
     clans: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
+    # The merits that give merits the player chooses (Piece That Remains, Auspicious,
+    # Old Habits, Shadows of the Past), with the key of the grant that gives them.
+    gives: Mapping[str, str] = field(default_factory=dict)
 
     def find(self, category: str, name: str) -> str | None:
         """The catalogue's name for `name`, ignoring case and spacing."""
@@ -202,6 +210,13 @@ def catalogue_of(
         if category == "clan"
     }
     path_detailed: dict[tuple[str, str], tuple[str, ...]] = {}
+    gives = {
+        g.source["name"]: g.key
+        for g in rule_set.grants
+        if g.kind == "free_choices"
+        and g.source.get("category") == "merits"
+        and g.target.get("category") == "merits"
+    }
     for grant in rule_set.grants:
         source = (grant.source.get("category", ""), grant.source.get("name", ""))
         prefix = grant.target.get("choose_prefix")
@@ -216,6 +231,7 @@ def catalogue_of(
         path_detailed=path_detailed,
         lists=dict(lists or {}),
         clans=clans,
+        gives=gives,
     )
 
 
@@ -232,6 +248,9 @@ class Trait:
     note: str = ""
     # Where on the printed sheet it came from: "Merits: Arcane (1)".
     source: str = ""
+    # For a merit that gives merits the player chooses, those it gives, as (name,
+    # detail): "Piece That Remains (2, (Ventrue Royalty))" gives Ventrue Royalty.
+    gives: list[tuple[str, str]] = field(default_factory=list)
 
 
 @dataclass
@@ -335,7 +354,7 @@ class Mapper:
                 else:
                     self.trait(heading, category, line, mapped)
         self.in_clan(printed, mapped)
-        mapped.traits = combined(mapped.traits)
+        mapped.traits = without_given(combined(mapped.traits))
         return mapped
 
     def starting(self, category: str, text: str) -> tuple[str, str] | None:
@@ -479,6 +498,7 @@ class Mapper:
             )
             return
         note = ""
+        gives: list[tuple[str, str]] = []
         disciplines = self.path_disciplines(category, found)
         if detail and disciplines is not None:
             path = self.path(detail, disciplines)
@@ -495,11 +515,40 @@ class Mapper:
                 )
                 return
             detail = path
+        elif detail and category == "merits" and found in self.catalogue.gives:
+            gives, note = self.given(heading, line.text, detail, mapped), ""
+            detail = ""
         elif detail and not self.is_detailed(category, found):
             note, detail = detail.lstrip("- ").strip(), ""
         # A line with no rating (a technique, a ritual) is held at its value, or 1.
         rating = abs(line.rating) if line.rating is not None else None
-        mapped.traits.append(Trait(category, found, detail, rating, note, source))
+        mapped.traits.append(Trait(category, found, detail, rating, note, source, gives))
+
+    def given(self, heading: str, text: str, detail: str, mapped: Mapped) -> list[tuple[str, str]]:
+        """The merits a merit that gives some names in its detail (#577): "(Ventrue
+        Royalty)", "Rugged", "Angelic Visage: Appearance". One that matches nothing is
+        kept aside, for staff to match."""
+        found: list[tuple[str, str]] = []
+        written = detail.strip()
+        while written.startswith("(") and written.endswith(")"):
+            written = written[1:-1].strip()
+        for part in re.split(r"[,;]", written):
+            part = part.strip()
+            if not part:
+                continue
+            name = self.lookup("merits", part)
+            if name is not None:
+                found.append((name, ""))
+                continue
+            joined = self.starting("merits", part)
+            if joined is not None:
+                name, rest = joined
+                found.append((name, rest if self.is_detailed("merits", name) else ""))
+                continue
+            mapped.unmatched.append(
+                Unmatched(heading, text, f"no such merit: {part}", "names", "merits", part)
+            )
+        return found
 
     def in_clan(self, printed: PrintedCharacter, mapped: Mapped) -> None:
         """The disciplines in-clan beyond the clan's own, as Extra In-Clan Disciplines:
@@ -672,4 +721,16 @@ def combined(traits: list[Trait]) -> list[Trait]:
             held.rating = trait.rating
         held.note = "; ".join(n for n in dict.fromkeys((held.note, trait.note)) if n)
         held.source = f"{held.source}; {trait.source}"
+        held.gives = list(dict.fromkeys([*held.gives, *trait.gives]))
     return list(found.values())
+
+
+def without_given(traits: list[Trait]) -> list[Trait]:
+    """Leave out a merit printed on its own line that another merit gives as well
+    ("Rugged (2)" beside "Auspicious (1, Rugged)"): it is held once, given (#577)."""
+    given = {(name, detail) for t in traits for name, detail in t.gives}
+    return [
+        t
+        for t in traits
+        if not (t.category == "merits" and not t.gives and (t.name, t.detail) in given)
+    ]
