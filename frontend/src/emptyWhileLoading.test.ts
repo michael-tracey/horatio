@@ -12,7 +12,7 @@ const CHECKED: Record<string, number> = {
   "components/PatronPicker.tsx": 1, // the picker's `loading`
   "pages/CharactersPage.tsx": 2, // shown once the troupes are in
   "pages/TroupesPage.tsx": 1, // isPending first
-  "pages/character/AddTraitPanel.tsx": 1, // free choices, shown when there are some
+  "pages/character/AddTraitPanel.tsx": 1, // free choices: the loader, and no adding, until answered (#576)
   "pages/character/Leaving.tsx": 1, // a warning, shown when there are titles
   "pages/character/PowerChoices.tsx": 1, // nothing shown for none
   "pages/character/ResultsTab.tsx": 1, // marks results seen
