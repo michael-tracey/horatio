@@ -5,7 +5,7 @@ import type { makeTap } from "./tracker";
 
 type TapWhat = Parameters<typeof makeTap>[0];
 
-/** A discipline or power with a plain cost, from the Pools tab's reference (issue #370). */
+/** A discipline, power, technique or elder power with a plain cost, from the Pools tab's reference (issues #370 and #588). */
 export type Costed = { name: string; cost?: Cost | null; switches?: string[] };
 
 /** Spends taps made together, told in one toast whose Undo takes them all back. */
@@ -14,7 +14,9 @@ export type UseTaps = (whats: TapWhat[]) => unknown;
 /**
  * The taps for using a power: its cost spent, then the switch it turns on, when
  * one is chosen and is off. A spend with no switch to say what it was for names
- * the power in its note: "Spent 1 Blood on Awe".
+ * the power in its note: "Spent 1 Blood on Awe". The cost is spent on every use,
+ * so a power paid for each time (Projectile's 1 Blood an attack) spends again
+ * while its switch is on.
  */
 export function usingTaps(view: Pick<PlayView, "powers">, cost: Cost, name: string, switchKeyOn?: string): TapWhat[] {
   const power = switchKeyOn ? view.powers.find((p) => p.key === switchKeyOn) : undefined;

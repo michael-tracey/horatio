@@ -21168,10 +21168,16 @@ export interface components {
         OtherPower: {
             /** Category Name */
             category_name: string;
+            cost?: components["schemas"]["Cost"] | null;
             /** Name */
             name: string;
             /** Note */
             note: string | null;
+            /**
+             * Switches
+             * @default []
+             */
+            switches: string[];
         };
         /** OtherStatusOut */
         OtherStatusOut: {

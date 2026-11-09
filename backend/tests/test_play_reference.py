@@ -19,6 +19,7 @@ from horatio.reference import (
     cost,
     damage_effects,
     effects,
+    other_powers,
     pools,
     work_out,
 )
@@ -190,6 +191,58 @@ def test_powers_say_what_using_them_costs(troupe: Troupe, swift: str) -> None:
     assert disciplines["Obfuscate"]["cost"] is None
 
 
+def test_elder_powers_say_what_using_them_costs(troupe: Troupe, swift: str) -> None:
+    """An elder power's Use button (issue #588) needs its cost and switch, from its
+    [[others]] entry: Projectile is 1 Blood an attack (core p. 214)."""
+    character_id = created(
+        troupe,
+        "Thrower",
+        ("attributes", "Physical", 5),
+        ("skills", "Firearms", 2),
+        ("skills", "Athletics", 2),
+        ("disciplines", "Celerity", 5),
+        ("elder_disciplines", "Celerity: Projectile", None),
+        ("techniques", "Instinctive Command", None),
+    )
+
+    found = reference(troupe, character_id)
+    others = {o["name"]: o for o in found["other_powers"]}
+    projectile = others["Celerity: Projectile"]
+    assert projectile["category_name"] == "Elder Disciplines"
+    assert projectile["cost"] == {"tracker": "blood", "amount": 1}
+    assert projectile["switches"] == ["Projectile"]
+    # With no [[others]] entry, no cost and no switch.
+    assert others["Instinctive Command"]["cost"] is None
+    assert others["Instinctive Command"]["switches"] == []
+    # While it is on: +3 to thrown and firearms attacks, and 1 more damage.
+    for key in ("attack:Firearms", "attack:Athletics"):
+        attack = pool(found, key)
+        assert ("Projectile", "Projectile", 3) in switched(attack)
+        assert ("Projectile", 1) in [
+            (s["switch"], s["amount"]) for s in attack["damage"]["switched"]
+        ]
+    assert not [s for s in switched(pool(found, "attack:Brawl")) if s[0] == "Projectile"]
+    # The swift character's Quickness has no entry, so no cost.
+    quickness = next(
+        o for o in reference(troupe, swift)["other_powers"] if o["name"] == "Celerity: Quickness"
+    )
+    assert (quickness["cost"], quickness["switches"]) == (None, [])
+
+
+def test_an_others_entry_needing_a_power_has_no_cost_or_switch_without_it() -> None:
+    swarm = catalogue().others[("techniques", "Animal Swarm")]
+    rule_set = load_rule_set(DATA_DIR / "bns_met_vampire.toml")
+    held = Sheet(
+        ratings={("techniques", "Animal Swarm"): 1},
+        others=[("techniques", "Techniques", "Animal Swarm")],
+    )
+    assert [o.switches for o in other_powers(held, rule_set)] == [[]]
+    held.disciplines["Protean"] = 4
+    assert [o.switches for o in other_powers(held, rule_set)] == [
+        [a["key"] for a in actives(swarm)]
+    ]
+
+
 def test_the_path_of_the_graveborn_has_its_five_powers(troupe: Troupe) -> None:
     """Vol. 2 pp. 116-119 (#413): each power with its note and focus, Use for the
     ones that cost Blood, and the scythe's aggravated Melee while it is out."""
@@ -259,10 +312,17 @@ def test_every_power_that_switches_on_has_a_plain_cost_or_none() -> None:
     assert feral is not None
     assert cost(feral, Sheet()) == Cost(tracker="blood", amount=1)
     assert [a["key"] for a in actives(feral)] == ["Feral Claws"]
-    for entry in [*book.disciplines.values(), *(p for ps in book.powers.values() for p in ps)]:
+    entries = [*book.disciplines.values(), *(p for ps in book.powers.values() for p in ps)]
+    for entry in [*entries, *book.others.values()]:
         given = entry.get("cost")
         if given is not None:
             assert set(given) <= {"blood", "willpower", "unless_focus"}, entry["name"]
+    # Elder and luminary powers and techniques with a plain cost in the book.
+    others = {name: cost(entry, Sheet()) for (_, name), entry in book.others.items()}
+    blood = {n: c.amount for n, c in others.items() if c and c.tracker == "blood"}
+    assert blood["Celerity: Projectile"] == 1  # core p. 214
+    assert blood["Celerity: Nimble Departure"] == 2  # Vol. 2 p. 198
+    assert blood["Serpentis: Divine Image"] == 3  # core p. 222
 
 
 def test_traits_say_what_they_do(troupe: Troupe, swift: str) -> None:

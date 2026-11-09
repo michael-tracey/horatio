@@ -389,6 +389,42 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(p.getByText("Undid: Blood 8 → 7")).toHaveCount(2);
 });
 
+test("Use on an elder power: Projectile spends 1 Blood on each attack, and switches itself on the first time (#588)", async ({ browser }) => {
+  const { page: p } = await person(browser, "elder-thrower");
+  // A Pretender Elder (Generation 3) with Celerity 5 and its elder power Projectile: Physical 7, Firearms 2.
+  const id = await builtVampire(
+    p,
+    "Hesper",
+    "Brujah",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] },
+    [
+      ["disciplines", "Celerity", 5],
+      ["elder_disciplines", "Celerity: Projectile", 1],
+    ],
+  );
+  const blood = (await (await p.request.get(`/api/characters/${id}/play`)).json()).blood;
+  const left = (spent: number) => `${blood.value - spent}/${blood.most}`;
+  await p.goto(`/play/characters/${id}`);
+  await p.getByRole("tab", { name: "Pools" }).click();
+  const firearms = p.getByRole("listitem").filter({ hasText: /^Firearms attack/ });
+  await expect(firearms.getByText("9", { exact: true })).toBeVisible();
+
+  // The first Use spends the Blood and switches Projectile on: +3 to the attack.
+  const use = p.getByRole("button", { name: "Use Celerity: Projectile, 1 Blood" });
+  await use.click();
+  await expect(p.getByText(`Spent 1 Blood · ${left(1)} · Celerity: Projectile switched on`)).toBeVisible();
+  await expect(firearms.getByText("12", { exact: true })).toBeVisible();
+  await expect(p.getByRole("region", { name: "Switched on now" })).toContainText("On: Celerity: Projectile");
+  await p.screenshot(shots("play-pools-use-elder"));
+
+  // The next attack pays again, and Projectile stays on.
+  await use.click();
+  await expect(p.getByText(`Spent 1 Blood on Celerity: Projectile · ${left(2)}`)).toBeVisible();
+  await expect(firearms.getByText("12", { exact: true })).toBeVisible();
+  await expect(p.getByRole("region", { name: "Switched on now" })).toContainText("On: Celerity: Projectile");
+  await expect.poll(async () => (await (await p.request.get(`/api/characters/${id}/play`)).json()).blood.value).toBe(blood.value - 2);
+});
+
 test("kept on the phone, a player's character opens with no signal: the sheet, the Play View and its powers, and taps go when the signal returns (#502)", async ({ browser }) => {
   // The player's own phone, with the service worker that keeps the app, and asked the first time they sign in.
   const { page: p } = await person(browser, "offline-keeper", { serviceWorkers: "allow", storageState: { cookies: [], origins: [] } });

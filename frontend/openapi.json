@@ -27254,6 +27254,16 @@
             "title": "Category Name",
             "type": "string"
           },
+          "cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Cost"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -27268,6 +27278,14 @@
               }
             ],
             "title": "Note"
+          },
+          "switches": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Switches",
+            "type": "array"
           }
         },
         "required": [

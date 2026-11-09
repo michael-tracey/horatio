@@ -187,6 +187,10 @@ class OtherPower(BaseModel):
     category_name: str
     name: str
     note: str | None
+    # What using it costs and the switches it turns on, from its [[others]] entry,
+    # as for a numbered power (issue #588).
+    cost: Cost | None = None
+    switches: list[str] = []
 
 
 class SwitchLevel(BaseModel):
@@ -994,10 +998,10 @@ COST_NOTE = re.compile(r"^(\d+) (Blood|Willpower)\b")
 
 
 def cost(entry: Mapping[str, Any], sheet: Sheet) -> Cost | None:
-    """What using a discipline or power costs: its `cost` (`{ blood = 1 }` or
-    `{ willpower = 1 }`, none with its `unless_focus`), or else the Blood or
-    Willpower its note starts with. Costs that come part way through a note
-    ("Grapple, then 1 Blood") are left to the player."""
+    """What using a discipline, power or [[others]] entry costs: its `cost`
+    (`{ blood = 1 }` or `{ willpower = 1 }`, none with its `unless_focus`), or else
+    the Blood or Willpower its note starts with. Costs that come part way through a
+    note ("Grapple, then 1 Blood") are left to the player."""
     given = entry.get("cost")
     if given is not None:
         if given.get("unless_focus") in sheet.focuses:
@@ -1086,6 +1090,28 @@ def other_notes(found: Sequence[Effect], shown: Collection[str] = ()) -> list[st
     return notes
 
 
+def other_powers(sheet: Sheet, rule_set: RuleSetData) -> list[OtherPower]:
+    """Techniques, elder and luminary powers, each with its note from the catalogue
+    and, from its [[others]] entry when it works for this sheet, its cost and switches."""
+    book = catalogue()
+    found: list[OtherPower] = []
+    for category, category_name, name in sorted(sheet.others):
+        trait = rule_set.traits.get((category, name))
+        entry = book.others.get((category, name), {})
+        if not _needs(entry, sheet):
+            entry = {}
+        found.append(
+            OtherPower(
+                category_name=category_name,
+                name=name,
+                note=trait.description if trait else None,
+                cost=cost(entry, sheet),
+                switches=[a["key"] for a in actives(entry)],
+            )
+        )
+    return found
+
+
 def reference(rows: Sequence[SheetRow], rule_set: RuleSetData, blood_per_turn: int) -> Reference:
     sheet = Sheet.read(rows, rule_set)
     worked = work_out(sheet, technique_bases(rule_set))
@@ -1095,16 +1121,7 @@ def reference(rows: Sequence[SheetRow], rule_set: RuleSetData, blood_per_turn: i
         pools=made,
         frenzy=frenzy(sheet, found),
         disciplines=disciplines(sheet),
-        other_powers=[
-            OtherPower(
-                category_name=category_name,
-                name=name,
-                note=rule_set.traits[(category, name)].description
-                if (category, name) in rule_set.traits
-                else None,
-            )
-            for category, category_name, name in sorted(sheet.others)
-        ],
+        other_powers=other_powers(sheet, rule_set),
         notes=other_notes(found, {p.key for p in made}),
         blood_per_turn=blood_per_turn,
     )
