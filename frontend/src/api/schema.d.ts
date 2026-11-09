@@ -3096,6 +3096,31 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        /**
+         * Save Retainer
+         * @description Save one Retainer, leaving the others as they are: each is edited on the
+         *     sheet under its own row. Who may do what is as for the whole list.
+         */
+        patch: operations["save_retainer_api_characters__character_id__retainers_patch"];
+        trace?: never;
+    };
+    "/api/characters/{character_id}/retainers/{retainer_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Retainer
+         * @description Remove one Retainer from a merit, or listed before each was bought on its own.
+         */
+        delete: operations["remove_retainer_api_characters__character_id__retainers__retainer_id__delete"];
+        options?: never;
+        head?: never;
         patch?: never;
         trace?: never;
     };
@@ -35013,6 +35038,73 @@ export interface operations {
                 "application/json": components["schemas"]["RetainersIn"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetainersOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_retainer_api_characters__character_id__retainers_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetainerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetainersOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_retainer_api_characters__character_id__retainers__retainer_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                retainer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

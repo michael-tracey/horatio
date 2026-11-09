@@ -795,7 +795,7 @@ test("an attribute stops rising at the limit Generation gives", async ({ browser
   await expect(p.getByRole("button", { name: "Spend XP" })).toBeEnabled();
 });
 
-test("a player says who each Retainer bought is, and a storyteller links one to an NPC", async ({ browser }) => {
+test("a player says who each Retainer bought is, each under its own row, and a storyteller links one to an NPC", async ({ browser }) => {
   const custodian = await person(browser, "ret-custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "ret-lead");
@@ -830,20 +830,45 @@ test("a player says who each Retainer bought is, and a storyteller links one to 
   await send(lead.page, "POST", `/api/characters/${id}/give`, { category: "backgrounds", name: "Retainers", detail: "Pike", rating: 1, free: true, reason: "A second Retainer" });
   await send(lead.page, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Marta Voss", wizard: false });
 
-  // Both are listed, under the last of them, with the dots bought for each.
+  // Each is listed under its own row, with the dots bought for it, and edited there on its own (#586).
   const p = owner.page;
   await p.goto(`/characters/${id}`);
-  const list = p.getByLabel("Retainers list");
-  await expect(list).toHaveCount(1);
-  await expect(list.getByRole("list", { name: "Retainers" }).getByRole("listitem")).toHaveCount(2);
-  // The player says who Marta is; her name and dots are the sheet's.
-  await list.getByRole("button", { name: "Edit Retainers" }).click();
-  await expect(list.getByLabel("Retainer name")).toHaveCount(0);
-  await list.getByLabel("About Marta, the driver").fill("Drives at night");
-  await list.getByRole("button", { name: "Save Retainers" }).click();
-  await expect(list.getByText("Drives at night")).toBeVisible();
-  await expect(list.getByRole("button", { name: /^NPC for/ })).toHaveCount(0);
+  const marta = p.getByLabel("Retainer: Marta, the driver", { exact: true });
+  const pike = p.getByLabel("Retainer: Pike", { exact: true });
+  await expect(marta.getByRole("listitem")).toHaveCount(1);
+  await expect(pike.getByRole("listitem")).toHaveCount(1);
+  await expect(p.getByText("Each Retainer is bought on its own; its dots are how capable it is.")).toHaveCount(1);
+  // The player says who Marta is; her name and dots are the sheet's. Pike's stays shut.
+  await marta.getByRole("button", { name: "Edit Marta, the driver" }).click();
+  await expect(marta.getByLabel("Retainer name")).toHaveCount(0);
+  await expect(p.getByLabel("About Pike")).toHaveCount(0);
+  await expect(pike.getByRole("button", { name: "Edit Pike" })).toBeVisible();
+  await marta.getByLabel("About Marta, the driver").fill("Drives at night");
+  await marta.getByRole("button", { name: "Save Retainer" }).click();
+  await expect(marta.getByText("Drives at night")).toBeVisible();
+  await expect(pike).not.toContainText("Drives at night");
+  await expect(p.getByRole("button", { name: /^NPC for/ })).toHaveCount(0);
   await p.screenshot(shots("retainers"));
+  // Then Pike, on his own: Marta's stays as she was saved.
+  await pike.getByRole("button", { name: "Edit Pike" }).click();
+  await expect(p.getByLabel("About Marta, the driver")).toHaveCount(0);
+  await pike.getByLabel("About Pike").fill("Keeps watch");
+  await pike.getByRole("button", { name: "Save Retainer" }).click();
+  await expect(pike.getByText("Keeps watch")).toBeVisible();
+  await expect(marta.getByText("Drives at night")).toBeVisible();
+  await expect(marta).not.toContainText("Keeps watch");
+
+  // Ardent Companion's ghouled animal is named under the merit, not under either Retainer.
+  await send(lead.page, "POST", `/api/characters/${id}/give`, { category: "merits", name: "Ardent Companion", rating: 3, free: true, despite: true, reason: "A companion" });
+  await p.reload();
+  const companion = p.getByLabel("Retainers from Ardent Companion", { exact: true });
+  await expect(marta.getByRole("listitem")).toHaveCount(1);
+  await companion.getByRole("button", { name: "Edit Ghouled animal, not yet named" }).click();
+  await companion.getByLabel("Retainer name").fill("Rex");
+  await companion.getByRole("button", { name: "Save Retainer" }).click();
+  await expect(companion.getByRole("listitem")).toContainText("Rex · 7 · ghouled animal");
+  await expect(marta).not.toContainText("Rex");
+  await expect(pike.getByText("Keeps watch")).toBeVisible();
 
   // Both show on the printed sheet and the Play View.
   await p.goto(`/print/characters/${id}`);
@@ -858,10 +883,10 @@ test("a player says who each Retainer bought is, and a storyteller links one to 
   // A storyteller links Marta to the NPC, and the link opens it.
   const l = lead.page;
   await l.goto(`/characters/${id}`);
-  const his = l.getByLabel("Retainers list");
-  await his.getByRole("button", { name: "Edit Retainers" }).click();
+  const his = l.getByLabel("Retainer: Marta, the driver", { exact: true });
+  await his.getByRole("button", { name: "Edit Marta, the driver" }).click();
   await his.getByLabel("NPC for Marta, the driver").selectOption({ label: "Marta Voss" });
-  await his.getByRole("button", { name: "Save Retainers" }).click();
+  await his.getByRole("button", { name: "Save Retainer" }).click();
   await his.getByRole("link", { name: "Marta Voss" }).click();
   await expect(l.getByRole("heading", { name: "Marta Voss" }).first()).toBeVisible();
 
@@ -872,15 +897,17 @@ test("a player says who each Retainer bought is, and a storyteller links one to 
   // Pike is killed: the sheet says when his dot comes back (a game, and two
   // weeks), and his block on the Play View is greyed out until then.
   await p.goto(`/characters/${id}`);
-  await list.getByRole("button", { name: "Edit Retainers" }).click();
-  await list.getByLabel("Status of Pike").selectOption("killed");
-  await list.getByRole("button", { name: "Save Retainers" }).click();
-  await expect(list.getByText(/^Its dots come back once 1 game has gone by since, and not before /)).toBeVisible();
+  await pike.getByRole("button", { name: "Edit Pike" }).click();
+  await pike.getByLabel("Status of Pike").selectOption("killed");
+  await pike.getByRole("button", { name: "Save Retainer" }).click();
+  await expect(pike.getByText(/^Its dots come back once 1 game has gone by since, and not before /)).toBeVisible();
+  // Marta still serves.
+  await expect(marta.getByRole("listitem")).not.toContainText("killed");
   await p.goto(`/play/characters/${id}`);
   await p.getByRole("tab", { name: "Tracker" }).click();
-  const pike = p.getByRole("article", { name: "Retainer: Pike" });
-  await expect(pike).toHaveAttribute("aria-disabled", "true");
-  await expect(pike.getByRole("status")).toContainText("Killed");
-  await expect(pike.getByRole("button", { name: "Spend Pike: health" })).toBeDisabled();
+  const pikeBlock = p.getByRole("article", { name: "Retainer: Pike" });
+  await expect(pikeBlock).toHaveAttribute("aria-disabled", "true");
+  await expect(pikeBlock.getByRole("status")).toContainText("Killed");
+  await expect(pikeBlock.getByRole("button", { name: "Spend Pike: health" })).toBeDisabled();
   await expect(p.getByRole("article", { name: "Retainer: Marta, the driver" }).getByRole("button", { name: "Spend Marta, the driver: health" })).toBeEnabled();
 });

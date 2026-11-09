@@ -286,8 +286,11 @@ def _refuse(code: int, message: str) -> HTTPException:
     return HTTPException(code, message)
 
 
-def _clean(db: Session, character: Character, drafts: list[Draft]) -> set[str]:
-    """Check and tidy the drafts; the names of those bought on the sheet."""
+def _clean(
+    db: Session, character: Character, drafts: list[Draft], checking: list[Draft] | None = None
+) -> set[str]:
+    """Check and tidy the drafts; the names of those bought on the sheet. With
+    `checking`, the rest are kept as they were saved and only those are checked."""
     if len(drafts) > MAX_LISTED:
         raise _refuse(status.HTTP_422_UNPROCESSABLE_CONTENT, "That is too many Retainers.")
     merits = {
@@ -305,23 +308,31 @@ def _clean(db: Session, character: Character, drafts: list[Draft]) -> set[str]:
     # Rows of the background's listed before Retainers were bought one by one.
     before = {r.id for r in rows(db, character) if not r.from_merit and r.name not in held}
     names = [d.name.strip() for d in drafts if not d.from_merit.strip()]
-    if len(set(names)) < len(names):
+    clashing = [n for n in names if names.count(n) > 1]
+    if checking is not None:
+        clashing = [n for n in clashing if any(c.name.strip() == n for c in checking)]
+    if clashing:
         raise _refuse(status.HTTP_422_UNPROCESSABLE_CONTENT, "Give each Retainer its own name.")
     for d in drafts:
+        checked = checking is None or any(d is c for c in checking)
         d.name = d.name.strip()
         d.description = d.description.strip()
         d.from_merit = d.from_merit.strip()
-        if not d.name:
+        if not d.name and checked:
             raise _refuse(status.HTTP_422_UNPROCESSABLE_CONTENT, "Name each Retainer.")
         if not d.from_merit and d.name in held:
             d.dots = held[d.name]
-        elif not d.from_merit and d.id not in before:
+        elif not d.from_merit and d.id not in before and checked:
             raise _refuse(
                 status.HTTP_409_CONFLICT,
                 f"Buy {d.name} on the sheet first: each Retainer is bought on its own,"
                 " with its own dots.",
             )
         spec = giving[d.from_merit].pop(0) if giving.get(d.from_merit) else None
+        if not checked:
+            if spec is not None:
+                d.dots, d.ghoul = spec.dots, spec.ghoul
+            continue
         if d.from_merit in giving and spec is None:
             raise _refuse(
                 status.HTTP_409_CONFLICT,
@@ -377,11 +388,18 @@ def _link(db: Session, character: Character, npc_id: uuid.UUID) -> None:
 
 
 def replace(
-    db: Session, user: User, character: Character, drafts: list[Draft], *, link: bool
+    db: Session,
+    user: User,
+    character: Character,
+    drafts: list[Draft],
+    *,
+    link: bool,
+    checking: list[Draft] | None = None,
 ) -> list[Listed]:
     """Save the whole list, logging what changed. Without `link`, each kept
-    Retainer keeps the NPC it had and a new one has none."""
-    on_sheet = _clean(db, character, drafts)
+    Retainer keeps the NPC it had and a new one has none. With `checking`, only
+    those are checked, the rest being kept as they were (see `save`)."""
+    on_sheet = _clean(db, character, drafts, checking)
     held = {r.id: r for r in rows(db, character)}
     troupe_id = character.home_troupe_id or character.owner_troupe_id
     log = {"character_id": character.id, "troupe_id": troupe_id}
@@ -430,3 +448,49 @@ def replace(
             db.delete(row)
     db.flush()
     return read(db, character)
+
+
+def _kept(row: Retainer) -> Draft:
+    """A Retainer kept as it was saved."""
+    return Draft(
+        id=row.id,
+        name=row.name,
+        dots=row.dots,
+        description=row.description,
+        from_merit=row.from_merit,
+        lost=row.lost,
+        lost_on=row.lost_on,
+        npc_id=row.npc_id,
+        ghoul=row.ghoul,
+        specialties=list(row.specialties),
+        discipline=row.discipline,
+    )
+
+
+def save(
+    db: Session, user: User, character: Character, draft: Draft, *, link: bool
+) -> list[Listed]:
+    """Save one Retainer, leaving the others as they are: each is edited on the
+    sheet under its own row. One bought with nothing kept for it yet is kept from
+    now on; one already kept is found by its id, or a bought one by its name."""
+    kept = rows(db, character)
+    if draft.id is None and not draft.from_merit.strip():
+        draft.id = next(
+            (r.id for r in kept if not r.from_merit and r.name == draft.name.strip()), None
+        )
+    if draft.id is not None and all(r.id != draft.id for r in kept):
+        raise _refuse(status.HTTP_404_NOT_FOUND, "No such Retainer.")
+    drafts = [draft if r.id == draft.id else _kept(r) for r in kept]
+    if draft.id is None:
+        drafts.append(draft)
+    return replace(db, user, character, drafts, link=link, checking=[draft])
+
+
+def remove(db: Session, user: User, character: Character, retainer_id: uuid.UUID) -> list[Listed]:
+    """Remove one Retainer kept here, leaving the others; one bought on the sheet
+    stays listed while it is held there, with nothing kept for it."""
+    kept = rows(db, character)
+    if all(r.id != retainer_id for r in kept):
+        raise _refuse(status.HTTP_404_NOT_FOUND, "No such Retainer.")
+    drafts = [_kept(r) for r in kept if r.id != retainer_id]
+    return replace(db, user, character, drafts, link=True, checking=[])

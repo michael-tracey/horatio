@@ -57255,6 +57255,58 @@
           "retainers"
         ]
       },
+      "patch": {
+        "description": "Save one Retainer, leaving the others as they are: each is edited on the\nsheet under its own row. Who may do what is as for the whole list.",
+        "operationId": "save_retainer_api_characters__character_id__retainers_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetainerIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetainersOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Retainer",
+        "tags": [
+          "retainers"
+        ]
+      },
       "put": {
         "description": "Replace the list. The player edits descriptions and losses, and the names\nand dots of those not bought on the sheet; staff do the same and alone link\nan NPC.",
         "operationId": "save_retainers_api_characters__character_id__retainers_put",
@@ -57303,6 +57355,60 @@
           }
         },
         "summary": "Save Retainers",
+        "tags": [
+          "retainers"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/retainers/{retainer_id}": {
+      "delete": {
+        "description": "Remove one Retainer from a merit, or listed before each was bought on its own.",
+        "operationId": "remove_retainer_api_characters__character_id__retainers__retainer_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "retainer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Retainer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetainersOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Retainer",
         "tags": [
           "retainers"
         ]

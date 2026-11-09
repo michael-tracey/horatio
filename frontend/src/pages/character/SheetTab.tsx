@@ -59,8 +59,8 @@ import {
   useSpecializations,
 } from "./Specializations";
 import { IdentityPanel } from "./Identities";
-import { RetainersPanel, useRetainers } from "./Retainers";
-import { givingMerits } from "./retainers";
+import { BuyAnotherRetainer, RetainerSection, useRetainers } from "./Retainers";
+import { addsRetainers, givingMerits, isRetainersRow, placeRetainers, sectionLabel } from "./retainers";
 import { PowerChoices } from "./PowerChoices";
 import { BackgroundChanges } from "./BackgroundChanges";
 import { InfluenceEffects } from "./InfluenceEffects";
@@ -209,8 +209,10 @@ export function SheetTab({
   const instanceOf = (t: SheetTraitOut) => catalogue.data?.traits.find((x) => x.category === t.category && x.name === t.name)?.instance ?? null;
   const [adding, setAdding] = useState<string | null>(null);
   const [giving, setGiving] = useState<string | null>(null);
-  // The category the Add panel opens on, when the sheet points to one.
+  // The category the Add panel opens on, when the sheet points to one, and the trait
+  // chosen in it ("Buy another Retainer").
   const [opening, setOpening] = useState<string | undefined>();
+  const [picking, setPicking] = useState<string | undefined>();
   const kinds = useSpecializations(character.id);
   // Changes wait in the cart until Spend XP; only the player has one.
   const cart = useCart(character.id);
@@ -284,11 +286,16 @@ export function SheetTab({
     });
   // Not on the saved sheet: in the cart, or asked of the home troupe.
   const inCart = (t: SheetTraitOut) => t.id.startsWith("cart/") || t.id.startsWith("asked/");
-  // The Retainers listed once, under the last Retainer bought; with none bought, under
-  // the first merit that gives one (Ardent Companion).
-  const lastRetainers =
-    s.traits.filter((t) => t.category === "backgrounds" && t.name === "Retainers").at(-1)?.id ??
-    s.traits.find((t) => t.category === "merits" && givingMerits(retainerList.data?.retainers ?? []).includes(t.name))?.id;
+  // Each Retainer under its own row: one bought under its Retainers row, one from a
+  // merit under the merit, each edited there on its own.
+  const listedRetainers = retainerList.data?.retainers ?? [];
+  const retainersUnder = placeRetainers(s.traits, listedRetainers);
+  // A merit that speaks of Retainers, and whose rules don't give one, can have one added by hand.
+  const givingRetainers = givingMerits(listedRetainers);
+  const addsRetainerTo = (t: SheetTraitOut) =>
+    t.category === "merits" && t.rating !== 0 && !givingRetainers.includes(t.name) && addsRetainers(aboutOf(t)?.description);
+  // Under the last Retainers row: what the dots are, and buying another.
+  const lastRetainers = s.traits.filter(isRetainersRow).at(-1)?.id;
   // Identity (clan, sect...) is shown with the name, in the page title.
   // Specialisations show under their skill or background, not as traits of their own,
   // health levels as boxes in a part of their own, and sect status in its own card.
@@ -449,6 +456,7 @@ export function SheetTab({
                     onClick={() => {
                       setAdding(adding === group ? null : group);
                       setOpening(undefined);
+                      setPicking(undefined);
                     }}
                   >
                     {adding === group ? "Close" : "Add"}
@@ -476,13 +484,14 @@ export function SheetTab({
               )}
               {adding === group && catalogue.data && (
                 <AddTraitPanel
-                  key={opening}
+                  key={`${opening}/${picking}`}
                   character={character}
                   catalogue={catalogue.data}
                   categories={addable.get(group) ?? []}
                   held={[...s.traits, ...adds]}
                   lines={lines}
                   initial={opening}
+                  pick={picking}
                   onAdd={(trait) => cart.update((l) => setRating(l, { ...trait, rating: 0 }, trait.rating))}
                   onClose={() => setAdding(null)}
                 />
@@ -544,11 +553,27 @@ export function SheetTab({
                                   editable={mine && !locked && s.status !== "retired"}
                                 />
                               ),
-                              !inCart(t) && t.id === lastRetainers && (
-                                <RetainersPanel
+                              !inCart(t) && (retainersUnder.has(t) || addsRetainerTo(t)) && (
+                                <RetainerSection
                                   key={`${t.id}/retainers`}
                                   character={character}
-                                  merits={[...new Set(s.traits.filter((x) => x.category === "merits" && x.rating !== 0).map((x) => x.name))]}
+                                  retainers={retainersUnder.get(t) ?? []}
+                                  label={sectionLabel(t)}
+                                  merit={addsRetainerTo(t) ? t.name : undefined}
+                                />
+                              ),
+                              !inCart(t) && t.id === lastRetainers && (
+                                <BuyAnotherRetainer
+                                  key={`${t.id}/another`}
+                                  onBuy={
+                                    canAdd
+                                      ? () => {
+                                          setAdding(group);
+                                          setOpening("backgrounds");
+                                          setPicking("Retainers");
+                                        }
+                                      : undefined
+                                  }
                                 />
                               ),
                               !inCart(t) && t.category === "backgrounds" && t.name === "Alternate Identity" && (
@@ -598,6 +623,7 @@ export function SheetTab({
                   onOpen={(key) => {
                     setAdding(group);
                     setOpening(key);
+                    setPicking(undefined);
                   }}
                 />
               )}
