@@ -1,10 +1,9 @@
-/** The loading screen: the logo, breathing. The same as index.html shows before
- * the app starts (styled there, as .splash), so one hands over to the other. */
+import { SplashScreen } from "../loaders/splash";
+import { useMotif } from "../loaders/useMotif";
+
+/** The loading screen: the logo, with the chosen loading animation under it. The
+ * same as index.html shows before the app starts (loaders/splash.tsx), so one
+ * hands over to the other. */
 export function Splash() {
-  return (
-    <div className="splash" role="status">
-      <img src="/logo.webp" alt="Horatio" width={224} height={224} />
-      <p>Loading…</p>
-    </div>
-  );
+  return <SplashScreen motif={useMotif()} />;
 }

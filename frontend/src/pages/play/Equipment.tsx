@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import type { EquipmentItemOut } from "../../api/types";
 import { pageLabel } from "../../components/TraitInfo";
-import { Badge, Button, ErrorText } from "../../components/ui";
+import { Badge, Button, ErrorText, Loader } from "../../components/ui";
 import { NO_EQUIPMENT } from "../character/EquipmentTab";
 import { ExpiryLine } from "../character/ExpiryLine";
 import { ItemActions } from "../character/ItemActions";
@@ -54,7 +54,7 @@ export function EquipmentTab({
     return error ? (
       <ErrorText error={error} />
     ) : (
-      <p className="py-8 text-center text-mist">Loading…</p>
+      <Loader />
     );
   const going = view ? itemsGoing(view.log) : new Set<string>();
   const items = combatFirst(equipment.items.filter((i) => !going.has(i.id)));

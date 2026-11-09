@@ -318,6 +318,8 @@ function TraitPanel({
                     ))}
                   </ul>
                 </>
+              ) : checks.isLoading ? (
+                <Loading compact />
               ) : (
                 <p>It has no checks of its own to keep.</p>
               )}

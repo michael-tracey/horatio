@@ -15,6 +15,7 @@ Only the custodian can:
 - look after anyone's account: view Horatio as them, reset their password, change their email, suspend them, merge two of their accounts, and move a character from one player to another;
 - see every account's email address;
 - make and download backups of the whole database;
+- choose the loading animation everyone sees;
 - see the System page, the clan logos and the whole audit log, and use the Tools tab.
 
 The custodian can also do anything a lead storyteller can, in any troupe, even one they have no role in: open its Staff tab, approve its characters, award XP, and so on. Use that sparingly. A troupe's own staff are the ones who run it, and its players expect their storytellers, not the custodian, to judge their characters.
@@ -258,6 +259,25 @@ There's no restore button: restoring replaces everything in the database, so it'
 
 Everything since that backup is lost, so make a fresh backup with **Back up now** first if the app still works.
 
+## Settings
+
+**Custodian › Settings** holds what's the same for everyone on the server.
+
+![The Settings tab](images/custodian/settings.png)
+
+### The loading animation
+
+While Horatio waits, it shows a loading animation: full screen under the logo as the app opens, signed in or not, and small in a page while it waits for an answer. Choose one of four:
+
+- **Blood drip**, the one until you choose: a drop gathers, falls and ripples in a small pool.
+- **Rising blood**: a chalice fills with blood, then drains.
+- **Candle**: a flame flickers as red wax runs down the candle.
+- **Heartbeat**: two beats and a pause. Full screen, the logo pulses with them.
+
+Each is shown moving, with the small one that sits beside a line of text, such as a search's count. **Full screen** shows it as the app opens: choose **Close**, or anywhere, to leave. Choosing one changes it for everyone at once, and goes in the audit log. On a device set to reduce motion, each stands still and fades gently instead.
+
+The very first screen shows before the app has asked the server anything, so it shows the animation last seen on that device. Someone who hasn't opened Horatio since you changed it sees the old one once.
+
 ## The System page
 
 **Custodian › System** shows what's running, so you can tell whether a fix has gone live:
@@ -399,6 +419,8 @@ Under **Import**, choose **Import into *troupe***, then **Import**. It can't sta
 4. deletes the page. The report stays, now saying what was done.
 
 Rule checks don't stop a character coming in: what its sheet breaks is flagged on it, as on any sheet. Each NPC's log says it was imported, with its Yorick id.
+
+Yorick's printout doesn't show a character's extra in-clan disciplines: a Caitiff's chosen three, or one a merit such as Additional Common Discipline makes in-clan. The import finds them only where the sheet names them: an **In clan:** line the player wrote in the notes printed with it (such as `In clan: Animalism, Auspex, Presence`), or a merit's detail (`Vestiges of Greatness (3, Vicissitude)`). Each one beyond the clan's own goes under **Extra in-clan disciplines**, except a path that a Thaumaturgic or Necromantic Expertise printed without its path can take: the path becomes that merit's. For the rest, staff add them on the NPC's sheet, under **Extra in-clan disciplines**: the NPC's creation picks are fitted again, and its XP follows.
 
 Importing again updates the characters it made before, rather than making them twice. It sets their names and printed traits again, and leaves anything staff added by hand. A character already given to its player is left alone.
 

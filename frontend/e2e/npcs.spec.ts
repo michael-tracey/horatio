@@ -184,6 +184,44 @@ test("a quick NPC's creation picks are fitted, and staff move one by hand", asyn
   await expect(p.getByText("5 XP", { exact: true })).toBeVisible();
 });
 
+test("a quick NPC's Ventrue Royalty places its free backgrounds, and staff take one off", async ({ browser }) => {
+  const custodian = await person(browser, "places-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "places-lead");
+  const { npcId } = await troupeWithNpc(custodian.page, lead.handle, "Court of Places", "Aurelia Vane");
+  const p = lead.page;
+  for (const [category, name, rating] of [
+    ["backgrounds", "Resources", 5],
+    ["backgrounds", "Haven", 3],
+    ["backgrounds", "Allies", 2],
+    ["merits", "Ventrue Royalty", 2],
+  ] as const) {
+    const rated = await p.request.put(`/api/characters/${npcId}/npc/ratings`, { headers: { "X-Horatio": "1" }, data: { category, name, rating } });
+    expect(rated.status(), await rated.text()).toBe(200);
+  }
+  await p.goto(`/characters/${npcId}`);
+
+  // The merit's 4, 3 and 2 are fitted where they save the most (#566): only Resources' fifth
+  // dot is bought, beside Brawl's.
+  const royalty = p.getByRole("region", { name: "Ventrue Royalty places" });
+  await expect(royalty.getByRole("combobox", { name: "Ventrue Royalty at 4", exact: true })).toHaveValue("Resources");
+  await expect(royalty.getByRole("combobox", { name: "Ventrue Royalty at 3", exact: true })).toHaveValue("Haven");
+  await expect(royalty.getByRole("combobox", { name: "Ventrue Royalty at 2", exact: true })).toHaveValue("Allies");
+  await expect(p.getByText("10 XP", { exact: true })).toBeVisible();
+  await p.screenshot(shots("npc-places"));
+
+  // Its player had Haven bought, not placed: taken off, Haven takes the creation pick at 3 instead.
+  await royalty.getByRole("button", { name: "Take Haven off" }).click();
+  await expect(p.getByText("Kept without a merit's free dots: Haven.")).toBeVisible();
+  await expect(royalty.getByRole("combobox", { name: "Ventrue Royalty at 3", exact: true })).toHaveValue("");
+  await expect(p.getByRole("region", { name: "Backgrounds picks" }).getByRole("combobox", { name: "Backgrounds at 3", exact: true })).toHaveValue("Haven");
+
+  // Fitting all again puts it back.
+  await p.getByRole("button", { name: "Fit all again" }).click();
+  await expect(royalty.getByRole("combobox", { name: "Ventrue Royalty at 3", exact: true })).toHaveValue("Haven");
+  await expect(p.getByText("Kept without a merit's free dots: Haven.")).toHaveCount(0);
+});
+
 /** A troupe led by `lead`, made by the custodian, with a sheeted vampire NPC built in it. */
 async function troupeWithNpc(custodian: Page, lead: string, troupe: string, npc: string): Promise<{ troupeId: string; npcId: string }> {
   const headers = { "X-Horatio": "1" };

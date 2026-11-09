@@ -6,6 +6,7 @@ import { AuditTab } from "./AuditTab";
 import { BackupsTab } from "./BackupsTab";
 import { ClanLogosTab } from "./ClanLogosTab";
 import { PeopleTab } from "./PeopleTab";
+import { SettingsTab } from "./SettingsTab";
 import { SystemTab } from "./SystemTab";
 import { ToolsTab } from "./ToolsTab";
 import { TroupeRequestsTab, useTroupeRequests } from "./TroupeRequestsTab";
@@ -30,6 +31,7 @@ export function CustodianPage() {
           { to: "/custodian/yorick-import", label: "Import from Yorick" },
           { to: "/custodian/backups", label: "Backups" },
           { to: "/custodian/audit", label: "Audit" },
+          { to: "/custodian/settings", label: "Settings" },
           { to: "/custodian/system", label: "System" },
           { to: "/custodian/tools", label: "Tools" },
         ]}
@@ -43,6 +45,7 @@ export function CustodianPage() {
         <Route path="yorick-import" element={<YorickImportTab />} />
         <Route path="backups" element={<BackupsTab />} />
         <Route path="audit" element={<AuditTab />} />
+        <Route path="settings" element={<SettingsTab />} />
         <Route path="system" element={<SystemTab />} />
         <Route path="tools" element={<ToolsTab />} />
       </Routes>

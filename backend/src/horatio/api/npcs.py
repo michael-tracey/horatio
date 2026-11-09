@@ -456,12 +456,19 @@ class NpcPoolOut(BaseModel):
     placed: list[NpcPlacedOut]
     # The traits a pick here could go on.
     candidates: list[NpcCandidateOut]
+    # For the free dots a merit the NPC holds places (Ventrue Royalty's 4, 3 and 2,
+    # or a Path merit's conversion): the grant's key, and the merit. Null for a
+    # creation pick.
+    grant: str | None
+    merit: str | None
 
 
 class NpcKeptOffOut(BaseModel):
     category: str
     name: str
     detail: str
+    # What staff took off it: a creation pick, or a merit's place.
+    kind: Literal["pick", "place"]
 
 
 class NpcPicksOut(BaseModel):
@@ -469,7 +476,7 @@ class NpcPicksOut(BaseModel):
     # an NPC built in the wizard, whose picks are as staff placed them there.
     fitted: bool
     pools: list[NpcPoolOut]
-    # The traits staff took a pick off, which the fitting leaves without one.
+    # The traits staff took a pick or place off, which the fitting leaves without one.
     kept_off: list[NpcKeptOffOut]
 
 
@@ -486,12 +493,17 @@ class NpcPickIn(BaseModel):
     rating: int | None = Field(default=None, ge=1)
     # The trait whose place in the list it takes.
     replacing: NpcPickNamed | None = None
+    # A merit's place rather than a creation pick: its grant's key (NpcPoolOut.grant),
+    # with `rating` the place.
+    grant: str | None = Field(default=None, max_length=200)
 
 
 class NpcPickOff(BaseModel):
     category: str
     name: str
     detail: str = Field(default="", max_length=200)
+    # Take off a merit's place, not a creation pick: its grant's key.
+    grant: str | None = Field(default=None, max_length=200)
 
 
 def picks_out(db: DbSession, npc: Character) -> NpcPicksOut:
@@ -515,10 +527,20 @@ def picks_out(db: DbSession, npc: Character) -> NpcPicksOut:
                     for x in p.placed
                 ],
                 candidates=[NpcCandidateOut(**asdict(c)) for c in p.candidates],
+                grant=p.grant,
+                merit=p.merit,
             )
             for p in found.pools
         ],
-        kept_off=[NpcKeptOffOut(category=c, name=n, detail=d) for c, n, d in found.kept_off],
+        kept_off=[
+            NpcKeptOffOut(
+                category=k.category,
+                name=k.name,
+                detail=k.detail,
+                kind="place" if k.kind == "place" else "pick",
+            )
+            for k in found.kept_off
+        ],
     )
 
 
@@ -539,10 +561,24 @@ def read_picks(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Npc
 def place_pick(
     character_id: uuid.UUID, body: NpcPickIn, db: DbSession, user: CurrentUser
 ) -> NpcPicksOut:
-    """Place a creation pick on a trait by hand; the rest are fitted around it."""
+    """Place a creation pick, or a merit's place, on a trait by hand; the rest are
+    fitted around it."""
     npc = sheeted_npc(db, user, character_id)
     replacing = (body.replacing.name, body.replacing.detail) if body.replacing else None
-    npc_picks.pin(db, user, npc, body.category, body.name, body.detail, body.rating, replacing)
+    if body.grant is not None:
+        npc_picks.pin_place(
+            db,
+            user,
+            npc,
+            body.grant,
+            body.category,
+            body.name,
+            body.detail,
+            body.rating,
+            replacing,
+        )
+    else:
+        npc_picks.pin(db, user, npc, body.category, body.name, body.detail, body.rating, replacing)
     db.commit()
     return picks_out(db, npc)
 
@@ -551,16 +587,20 @@ def place_pick(
 def take_pick_off(
     character_id: uuid.UUID, body: NpcPickOff, db: DbSession, user: CurrentUser
 ) -> NpcPicksOut:
-    """Take the pick off a trait, and keep the fitting from giving it one."""
+    """Take the pick, or a merit's place, off a trait, and keep the fitting from
+    giving it one."""
     npc = sheeted_npc(db, user, character_id)
-    npc_picks.take_off(db, user, npc, body.category, body.name, body.detail)
+    if body.grant is not None:
+        npc_picks.take_place_off(db, user, npc, body.category, body.name, body.detail)
+    else:
+        npc_picks.take_off(db, user, npc, body.category, body.name, body.detail)
     db.commit()
     return picks_out(db, npc)
 
 
 @router.post("/characters/{character_id}/npc/picks/refit")
 def refit_picks(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> NpcPicksOut:
-    """Forget the picks placed or taken off by hand, and fit them all again."""
+    """Forget the picks and places set or taken off by hand, and fit them all again."""
     npc = sheeted_npc(db, user, character_id)
     npc_picks.refit(db, user, npc)
     db.commit()

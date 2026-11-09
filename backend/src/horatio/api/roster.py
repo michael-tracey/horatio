@@ -504,6 +504,8 @@ MESSAGES: dict[str, str] = {
     "npc.pick_placed": "{actor} placed a creation pick of {pick} on {name} for the NPC"
     " {character}.",
     "npc.pick_taken_off": "{actor} took the creation pick off {name} for the NPC {character}.",
+    "npc.place_placed": "{actor} placed {merit}'s free dots on {name} for the NPC {character}.",
+    "npc.place_taken_off": "{actor} took a merit's free dots off {name} for the NPC {character}.",
     "npc.picks_refitted": "{actor} fitted the NPC {character}'s creation picks again.",
     "npc.troupe_picks_fitted": "{actor} fitted the creation picks of the troupe's NPCs built"
     " without the wizard: {changed} of {count} changed.",
@@ -734,6 +736,7 @@ MESSAGES: dict[str, str] = {
     "character.pronouns": "{actor} set {character}'s pronouns: {pronouns}.",
     "clan_logo.uploaded": "{actor} uploaded a logo for {clan}.",
     "clan_logo.removed": "{actor} removed the logo for {clan}.",
+    "appearance.loading_animation": "{actor} chose the {animation} loading animation.",
     "audit.exported": "{actor} exported {count} events from the audit log.",
     "dark_pack.fetched": "{actor} fetched the Dark Pack resources from {address}: {clans} clan"
     " symbols and {logo}.",

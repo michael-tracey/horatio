@@ -148,6 +148,12 @@ class BackupTrait(BackupTraitRef):
     # The creation pick placed on it, and on an NPC whose picks are fitted, how.
     creation_pick: int | None = Field(default=None, ge=0, le=100)
     pick_by: Literal["fit", "staff", "off"] | None = None
+    # On such an NPC, the free dots a merit it holds gives this trait (Ventrue
+    # Royalty's places, a Path merit's conversion), the grant's key, and how it was
+    # placed, as `pick_by` says.
+    grant_place: int | None = Field(default=None, ge=0, le=100)
+    place_grant: Annotated[str, Field(max_length=200)] | None = None
+    place_by: Literal["fit", "staff", "off"] | None = None
     note: Text = ""
     # A merit's free choices, and what was chosen with a discipline's powers.
     choices: list[dict[str, JsonValue]] = Field(default=[], max_length=50)
@@ -170,6 +176,16 @@ class BackupTrait(BackupTraitRef):
             raise ValueError(f"{self.name}'s pick was taken off, yet it has one")
         if self.pick_by in ("fit", "staff") and self.creation_pick is None:
             raise ValueError(f"{self.name}'s pick was placed, yet it has none")
+        if self.grant_place is not None and self.grant_place > self.free_rating:
+            raise ValueError(f"{self.name}'s granted place is more than its free dots")
+        placed = self.grant_place is not None and self.place_grant is not None
+        unplaced = self.grant_place is None and self.place_grant is None
+        if not (
+            (self.place_by is None and unplaced)
+            or (self.place_by == "off" and unplaced)
+            or (self.place_by in ("fit", "staff") and placed)
+        ):
+            raise ValueError(f"{self.name}'s granted place doesn't add up")
         return self
 
     def key(self) -> tuple[str, str, str]:
@@ -412,6 +428,9 @@ def traits_of(db: Session, character: Character) -> list[BackupTrait]:
             granted_rating=row.trait.granted_rating,
             creation_pick=row.trait.creation_pick,
             pick_by=cast(Any, row.trait.pick_by),
+            grant_place=row.trait.grant_place,
+            place_grant=row.trait.place_grant,
+            place_by=cast(Any, row.trait.place_by),
             note=row.trait.note,
             choices=row.trait.choices,
             power_choices=row.trait.power_choices,
@@ -811,8 +830,12 @@ def put(db: Session, character: Character, item: BackupTrait, troupe_name: str) 
             free_rating=item.free_rating,
             granted_rating=item.granted_rating,
             creation_pick=item.creation_pick,
-            # How a pick came to be is kept on an NPC whose picks are fitted alone.
+            # How a pick or a grant's place came to be is kept on an NPC whose picks
+            # are fitted alone (horatio.npc_picks).
             pick_by=item.pick_by if character.fits_picks else None,
+            grant_place=item.grant_place if character.fits_picks else None,
+            place_grant=item.place_grant if character.fits_picks else None,
+            place_by=item.place_by if character.fits_picks else None,
             note=item.note,
             choices=item.choices,
             power_choices=item.power_choices,

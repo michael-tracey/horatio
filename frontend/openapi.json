@@ -1159,6 +1159,28 @@
         "title": "AnswersIn",
         "type": "object"
       },
+      "AppearanceOut": {
+        "properties": {
+          "loading_animation": {
+            "additionalProperties": {
+              "enum": [
+                "drip",
+                "rising",
+                "candle",
+                "heartbeat"
+              ],
+              "type": "string"
+            },
+            "title": "Loading Animation",
+            "type": "object"
+          }
+        },
+        "required": [
+          "loading_animation"
+        ],
+        "title": "AppearanceOut",
+        "type": "object"
+      },
       "ApplyIn": {
         "properties": {
           "counts_toward_limit": {
@@ -3776,6 +3798,19 @@
             "title": "Free Rating",
             "type": "integer"
           },
+          "grant_place": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant Place"
+          },
           "granted_rating": {
             "default": 0,
             "maximum": 100.0,
@@ -3822,6 +3857,34 @@
               }
             ],
             "title": "Pick By"
+          },
+          "place_by": {
+            "anyOf": [
+              {
+                "enum": [
+                  "fit",
+                  "staff",
+                  "off"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Place By"
+          },
+          "place_grant": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Place Grant"
           },
           "power_choices": {
             "additionalProperties": {
@@ -21567,6 +21630,28 @@
         "title": "LiveReset",
         "type": "object"
       },
+      "LoadingAnimationIn": {
+        "properties": {
+          "loading_animation": {
+            "additionalProperties": {
+              "enum": [
+                "drip",
+                "rising",
+                "candle",
+                "heartbeat"
+              ],
+              "type": "string"
+            },
+            "title": "Loading Animation",
+            "type": "object"
+          }
+        },
+        "required": [
+          "loading_animation"
+        ],
+        "title": "LoadingAnimationIn",
+        "type": "object"
+      },
       "LocationCatalogueOut": {
         "properties": {
           "book": {
@@ -25982,6 +26067,14 @@
             "title": "Detail",
             "type": "string"
           },
+          "kind": {
+            "enum": [
+              "pick",
+              "place"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -25990,7 +26083,8 @@
         "required": [
           "category",
           "name",
-          "detail"
+          "detail",
+          "kind"
         ],
         "title": "NpcKeptOffOut",
         "type": "object"
@@ -26359,6 +26453,18 @@
             "title": "Detail",
             "type": "string"
           },
+          "grant": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -26423,6 +26529,18 @@
             "maxLength": 200,
             "title": "Detail",
             "type": "string"
+          },
+          "grant": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant"
           },
           "name": {
             "title": "Name",
@@ -26568,6 +26686,17 @@
             "title": "Category Name",
             "type": "string"
           },
+          "grant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant"
+          },
           "kind": {
             "enum": [
               "picks",
@@ -26575,6 +26704,17 @@
             ],
             "title": "Kind",
             "type": "string"
+          },
+          "merit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merit"
           },
           "placed": {
             "items": {
@@ -26595,7 +26735,9 @@
           "rating",
           "allowed",
           "placed",
-          "candidates"
+          "candidates",
+          "grant",
+          "merit"
         ],
         "title": "NpcPoolOut",
         "type": "object"
@@ -48240,6 +48382,69 @@
         ]
       }
     },
+    "/api/appearance": {
+      "get": {
+        "operationId": "appearance_api_appearance_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppearanceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Appearance",
+        "tags": [
+          "appearance"
+        ]
+      }
+    },
+    "/api/appearance/loading-animation": {
+      "put": {
+        "description": "The custodian chooses the loading animation: one for every splat, and any\nsplat that has its own.",
+        "operationId": "set_loading_animation_api_appearance_loading_animation_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoadingAnimationIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppearanceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Loading Animation",
+        "tags": [
+          "appearance"
+        ]
+      }
+    },
     "/api/approvals/{approval_id}/approve": {
       "post": {
         "operationId": "approve_api_approvals__approval_id__approve_post",
@@ -54276,7 +54481,7 @@
         ]
       },
       "put": {
-        "description": "Place a creation pick on a trait by hand; the rest are fitted around it.",
+        "description": "Place a creation pick, or a merit's place, on a trait by hand; the rest are\nfitted around it.",
         "operationId": "place_pick_api_characters__character_id__npc_picks_put",
         "parameters": [
           {
@@ -54330,7 +54535,7 @@
     },
     "/api/characters/{character_id}/npc/picks/off": {
       "post": {
-        "description": "Take the pick off a trait, and keep the fitting from giving it one.",
+        "description": "Take the pick, or a merit's place, off a trait, and keep the fitting from\ngiving it one.",
         "operationId": "take_pick_off_api_characters__character_id__npc_picks_off_post",
         "parameters": [
           {
@@ -54384,7 +54589,7 @@
     },
     "/api/characters/{character_id}/npc/picks/refit": {
       "post": {
-        "description": "Forget the picks placed or taken off by hand, and fit them all again.",
+        "description": "Forget the picks and places set or taken off by hand, and fit them all again.",
         "operationId": "refit_picks_api_characters__character_id__npc_picks_refit_post",
         "parameters": [
           {

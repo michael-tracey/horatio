@@ -14,7 +14,7 @@ import { Badge, Button, Card, Empty, ErrorText, Input, Loading, Select } from ".
 import { useEquipmentRules } from "./EquipmentEditor";
 import { holdersLink } from "./equipmentSearch";
 import { FilterBuilder } from "./FilterBuilder";
-import { asksEquipment, columnLabel, columnOf, columns, decode, encode, filterLabel, ready, sentence, type Group, type Names } from "./filters";
+import { asksEquipment, columnLabel, columnOf, columns, decode, DEFAULT_FILTER, encode, filterLabel, ready, sentence, type Group, type Names } from "./filters";
 import { TroupeExport } from "../character/Backup";
 import { NewNpc } from "./NewNpc";
 import { FORM_NAMES, filterNpcs, kindsIn, type NpcFilter, type NpcForm } from "./npcKinds";
@@ -87,10 +87,18 @@ export function RosterTab({ troupeId, canEmail = false }: { troupeId: string; ca
   const inShow = everyone.filter((e) => shows(show, e.kind));
   const npcsInShow = inShow.filter((e) => e.kind === "npc");
   const byKind = withNpcs ? filterNpcs(inShow, npcFilter) : inShow;
-  const matched = sent.items.length ? new Map((search.data ?? []).map((m) => [m.character_id, m])) : null;
+  // Until the filter's first answer, the list stays as it is (but the retired, which
+  // the opening filter hides) under a loader, never "No characters match" (#568). A
+  // later change of filter keeps the last answer, dimmed, until the next comes.
+  const waiting = sent.items.length > 0 && !search.data && !search.error;
+  const matched = sent.items.length && !waiting ? new Map((search.data ?? []).map((m) => [m.character_id, m])) : null;
+  const stale = waiting || (search.isPlaceholderData && search.isFetching);
+  const hidesRetired = sent.match === "all" && sent.items.some((c) => JSON.stringify(c) === JSON.stringify(DEFAULT_FILTER.items[0]));
   const q = query.trim().toLowerCase();
   const shown = byKind.filter(
-    (e) => (!matched || matched.has(e.character_id)) && (!q || `${e.character_name} ${e.player_name} ${e.player_handle ?? ""}`.toLowerCase().includes(q)),
+    (e) =>
+      (matched ? matched.has(e.character_id) : !(waiting && hidesRetired && e.retired)) &&
+      (!q || `${e.character_name} ${e.player_name} ${e.player_handle ?? ""}`.toLowerCase().includes(q)),
   );
   const names: Names = {
     category: (key) => catalogue.data?.categories.find((c) => c.key === key)?.name ?? key,
@@ -107,10 +115,11 @@ export function RosterTab({ troupeId, canEmail = false }: { troupeId: string; ca
     sameHolders ? [] : holding.map((e) => e.character_id),
     holding.some((e) => e.retired),
   );
-  // A column for each number the filter compares, such as Occult, to line them up.
-  const valueColumns = columns(sent).map((c) => ({ label: columnLabel(c, names), key: columnOf(c)! }));
+  // A column for each number the filter compares, such as Occult, to line them up:
+  // once the search has said what they are.
+  const valueColumns = matched ? columns(sent).map((c) => ({ label: columnLabel(c, names), key: columnOf(c)! })) : [];
   const valueOf = (e: RosterEntry, key: string) => matched?.get(e.character_id)?.values[key] ?? 0;
-  const showEquipment = asksEquipment(sent);
+  const showEquipment = !!matched && asksEquipment(sent);
   // The NPCs alone have columns of their own; player characters and everyone share the roster's.
   const npcColumns = show === "npcs";
   // Only a column shown sorts the list.
@@ -256,8 +265,8 @@ export function RosterTab({ troupeId, canEmail = false }: { troupeId: string; ca
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="text-mist">
             {shown.length} of {inShow.length} {showNoun}
-            {search.isFetching && " · searching…"}
           </span>
+          {search.isFetching && <Loading compact label="Searching…" />}
           {holding.length > 0 && (
             <Link to={equipmentLink} className="text-xs text-gold underline hover:text-parchment">
               Show their equipment
@@ -308,10 +317,16 @@ export function RosterTab({ troupeId, canEmail = false }: { troupeId: string; ca
       )}
       {inShow.length === 0 ? (
         <Empty>{show === "npcs" ? "No NPCs yet." : show === "pcs" ? "No player characters have joined this troupe yet." : "No characters have joined this troupe yet."}</Empty>
+      ) : shown.length === 0 && waiting ? (
+        <Loading label="Searching…" />
       ) : shown.length === 0 ? (
         <p className="py-3 text-sm text-mist">{byKind.length === 0 ? "No NPCs of that kind." : "No characters match."}</p>
       ) : (
-        <table aria-label={show === "npcs" ? "NPCs" : "Characters"} className="w-full text-sm">
+        <table
+          aria-label={show === "npcs" ? "NPCs" : "Characters"}
+          aria-busy={stale || undefined}
+          className={`w-full text-sm transition-opacity ${stale ? "opacity-60" : ""}`}
+        >
           {/* On a phone or a narrow window each row folds into a card, under the one heading. */}
           <thead className="max-lg:sr-only">
             <tr className="border-b border-ash text-left text-xs text-mist">

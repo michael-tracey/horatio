@@ -12,6 +12,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from horatio import delivery
 from horatio.api import (
     account_merges,
+    appearance,
     approvals,
     audit,
     auth,
@@ -208,6 +209,7 @@ for module in (
     preferences,
     unsubscribe,
     system,
+    appearance,
     play,
     play_others,
     character_moves,

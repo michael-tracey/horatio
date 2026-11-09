@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet, useMatch } from "react-router";
 import { useMe } from "../hooks";
+import { useAppearance } from "../loaders/useMotif";
 import { NeedsConnection } from "../offline/NeedsConnection";
 import { OfflineStrip, useSendWaiting, useSignOut } from "../offline/Offline";
 import { NotificationBell } from "./NotificationBell";
@@ -8,6 +9,8 @@ import { ErrorText } from "./ui";
 
 export function Layout() {
   const me = useMe();
+  // Asked at once, beside who is signed in, for the loading animation (#568).
+  useAppearance();
   // Signing out clears what is kept on this device for the person (#502).
   const signOut = useSignOut();
   useSendWaiting();

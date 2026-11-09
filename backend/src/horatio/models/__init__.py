@@ -97,6 +97,7 @@ from horatio.models.rules import (
     TraitOverride,
 )
 from horatio.models.scenes import Scene, SceneCharacter
+from horatio.models.server_settings import ServerSetting
 from horatio.models.shared_backgrounds import SharedBackground, SharedBackgroundEntry
 from horatio.models.status import HeldStatus, StatusBanMark, StatusSuppression
 from horatio.models.teachers import TeacherRule, Teaching
@@ -193,6 +194,7 @@ __all__ = [
     "TeacherRule",
     "Teaching",
     "ClanLogo",
+    "ServerSetting",
     "CostRule",
     "CreationRule",
     "EquipmentEvent",

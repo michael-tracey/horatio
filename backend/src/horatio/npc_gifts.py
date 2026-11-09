@@ -250,7 +250,9 @@ def give(
     npc.npc_form = None
     npc.npc_custom_kind = None
     npc.on_whos_who = False
-    # Its picks are its own now, as a wizard-built character's are.
+    # Its picks are its own now, as a wizard-built character's are, and so are the
+    # places its merits give (#566).
+    npc_picks.hand_over_places(db, npc)
     npc.fits_picks = False
     npc.home_troupe_id = troupe.id
     npc.building_troupe_id = None

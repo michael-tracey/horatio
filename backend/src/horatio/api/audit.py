@@ -92,7 +92,15 @@ GROUPS: dict[AuditGroup, tuple[str, tuple[str, ...]]] = {
     AuditGroup.ACCOUNTS: ("Accounts", ("account.",)),
     AuditGroup.SYSTEM: (
         "System",
-        ("backup.", "clan_logo.", "audit.", "yorick_import.", "dark_pack.", "vtes_symbols."),
+        (
+            "backup.",
+            "clan_logo.",
+            "audit.",
+            "yorick_import.",
+            "dark_pack.",
+            "vtes_symbols.",
+            "appearance.",
+        ),
     ),
 }
 
