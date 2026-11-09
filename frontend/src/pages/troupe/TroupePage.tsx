@@ -167,7 +167,7 @@ export function TroupePage() {
         {t.nominations && (
           <Route path="nominations" element={<NominationsTab troupeId={t.id} canStar={can.running} nominations={!!t.player_nominations} remembrances={!!t.remembrances} />} />
         )}
-        {can.running && <Route path="characters" element={<RosterTab troupeId={t.id} />} />}
+        {can.running && <Route path="characters" element={<RosterTab troupeId={t.id} canEmail={can.storyteller} />} />}
         {can.running && <Route path="players" element={<PlayersTab troupeId={t.id} />} />}
         {can.staff && <Route path="lines-veils" element={<LinesVeilsTab troupeId={t.id} />} />}
         {can.running && <Route path="play" element={<PlayTab troupeId={t.id} />} />}

@@ -314,6 +314,8 @@ MESSAGES: dict[str, str] = {
     " now.",
     "troupe.leave.visit": "{character} stopped visiting {troupe}.",
     "character.deleted": "{character} was deleted by its player.",
+    "character.imported": "{actor} imported {character} from a backup file {whence}; parts"
+    " left out: {left_out}.",
     "approval.request": "{actor} asked for {character} to be approved.",
     "approval.request.discipline": "{actor} bought {name} {rating} for {character}; pending.",
     "approval.request.review": "{actor} bought {name} {rating} for {character}; for review.",

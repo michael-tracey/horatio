@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { closeContextsAfterEach, run, shots, person, makeCustodian, PASSWORD } from "./support";
 
@@ -278,6 +279,30 @@ test("a storyteller gives an NPC to a player, who finds it among their character
   expect([character.kind, character.home_troupe_id]).toEqual(["pc", troupeId]);
   const notes = await (await h.request.get("/api/notifications")).json();
   expect(notes.items.map((n: { summary: string }) => n.summary)).toContain(`Odette Lamarr is yours now: Court of Gifts ${run} gave it to you, at home there and accepted`);
+});
+
+test("a storyteller exports the troupe's characters and NPCs as a .zip, with emails only if ticked (#567)", async ({ browser }) => {
+  const custodian = await person(browser, "export-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "export-lead");
+  const { troupeId } = await troupeWithNpc(custodian.page, lead.handle, "Court of Ledgers", "Archivist Bel");
+
+  const p = lead.page;
+  await p.goto(`/troupes/${troupeId}/characters?show=npcs`);
+  await p.getByRole("button", { name: "More for the troupe's characters" }).click();
+  await p.getByRole("menuitem", { name: "Export characters and NPCs…" }).click();
+  const dialog = p.getByRole("dialog", { name: "Export characters and NPCs" });
+  await dialog.getByRole("radio", { name: "NPCs" }).check();
+  await dialog.getByRole("checkbox", { name: "Retainers and Alternate Identities" }).check();
+  await expect(dialog.getByRole("checkbox", { name: /Include players' emails/ })).not.toBeChecked();
+  await p.screenshot(shots("export-characters"));
+  const [download] = await Promise.all([p.waitForEvent("download"), dialog.getByRole("link", { name: "Download .zip" }).click()]);
+  expect(download.suggestedFilename()).toMatch(/^court-of-ledgers-\d+-characters-\d{4}-\d{2}-\d{2}\.zip$/);
+  const zipped = readFileSync(await download.path());
+  // A zip names its files in the clear.
+  expect(zipped.subarray(0, 2).toString()).toBe("PK");
+  const day = download.suggestedFilename().match(/(\d{4}-\d{2}-\d{2})\.zip$/)![1];
+  for (const name of ["manifest.json", `npcs/ArchivistBel-${day}.horatio-character.json`, `sheets/ArchivistBel-${day}.html`]) expect(zipped.includes(name)).toBe(true);
 });
 
 test("a storyteller sends a claim link, and a newcomer signs up through it and claims the NPC", async ({ browser }) => {

@@ -7,6 +7,7 @@ import { Loading } from "./components/ui";
 import { AboutPage } from "./pages/AboutPage";
 import { useMe } from "./hooks";
 import { CharactersPage } from "./pages/CharactersPage";
+import { ImportCharacterPage } from "./pages/character/Backup";
 import { ClaimPage } from "./pages/ClaimPage";
 import { ConfirmEmailPage } from "./pages/ConfirmEmailPage";
 import { ForgotPasswordPage, ResetPasswordPage, SignInPage, SignUpPage } from "./pages/SignIn";
@@ -131,6 +132,7 @@ function AppRoutes() {
         <Route element={<RequireSignIn />}>
           <Route index element={<Navigate to="/characters" replace />} />
           <Route path="/characters" element={<CharactersPage />} />
+          <Route path="/characters/import" element={<ImportCharacterPage />} />
           <Route path="/characters/:characterId/*" element={<ForCharacter><CharacterPage /></ForCharacter>} />
           <Route path="/check-in" element={<CheckInPage />} />
           <Route path="/check-in/:code" element={<CheckInPage />} />

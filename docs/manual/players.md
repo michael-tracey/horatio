@@ -84,6 +84,20 @@ A troupe moving to Horatio may already have your character, as one of its NPCs. 
 
 Open the link to see the character's name and portrait. If you have no account yet, choose **Sign up to claim it**; after signing up you come back to the same page. Then choose **Claim *name***. The character is yours at once, at home in the troupe and already accepted, with its XP history showing what its sheet cost and any unspent XP carried over. A link works once, for 30 days; if yours has run out, ask the troupe for a new one.
 
+### Backing up a character
+
+A character's **⋯** has **Export (backup)…**. It downloads the character as a file named for it and the day, such as `AgnesdeVries-2026-11-09.horatio-character.json` for Agnes de Vries (accents become plain letters; spaces and other letters are left out). It holds its sheet with the free dots from creation, its XP history, backstory and picture. Tick **Also include** for its equipment, Retainers and Alternate Identities, or titles and status. **Printable sheet (.html)** downloads the printable sheet as a page any browser opens, without Horatio. Retired characters can be exported too. Staff notes are never in the file.
+
+On **Your characters**, **Export all** downloads every character you have, retired ones too, in one `.zip`.
+
+**Import a character** brings one back, as a new character of yours: a backup, or a character from another troupe or another Horatio.
+
+1. **Choose a file…** and, under **Which troupe will you play in?**, the troupe it is for.
+2. **Review** what comes in. Each part says **New**; **Differs**, held otherwise here (a merit at this troupe's value); **Can't import**, with why, such as a trait this troupe's rules don't have; or **Shown only**, such as equipment and titles, which a troupe's storytellers give. The XP box shows the file's XP and what the sheet costs at this troupe's prices beside what it cost where it came from.
+3. **Import** it. It joins no troupe until you [ask one](#joining-a-troupe) to make it home. The XP it earned comes as self-entered XP (as with [Add XP yourself](#xp-history-and-where-xp-comes-from)), which that troupe keeps or removes, and any difference in price is settled as you join.
+
+A file from a newer Horatio is refused: import it into a Horatio as new as the one that made it.
+
 ## Reading your sheet
 
 The **Sheet** tab is the character's record, laid out in the rule set's parts: Attributes, Skills, Backgrounds, Disciplines, Merits and Flaws, Morality, Health Levels and so on. Each part lists what the character holds, with its rating as dots or numbers (choose which in your settings). The character's clan, sect and archetype sit beside its name at the top of the page.

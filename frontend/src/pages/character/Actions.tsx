@@ -11,6 +11,7 @@ import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { MoveCharacter } from "../custodian/MoveCharacter";
 import { ClaimLink, GiveToPlayer } from "../troupe/GiveNpc";
+import { ExportBackup } from "./Backup";
 import { DiablerieForm, diablerieAction, useDiablerie } from "./Diablerie";
 import { RetireCharacter } from "./Leaving";
 
@@ -18,7 +19,8 @@ import { RetireCharacter } from "./Leaving";
  * The character's less-used actions, behind a ⋯ button beside Play, in groups:
  * Rename, Pronouns and Move to another player (the custodian's, for a PC); Give to a
  * player and Claim link (an NPC's storytellers', for one they can give); diablerie
- * (staff record it, the player asks them to); Retire and Delete. `renameOn` is the
+ * (staff record it, the player asks them to); Export (backup), for its player or an
+ * NPC's staff, retired or not; Retire and Delete. `renameOn` is the
  * first day a player who renamed lately can again; the item says so instead of
  * renaming. `canDelete` is for those who may delete it at all: a PC's player, an
  * NPC's staff. A PC still in a troupe can't be deleted yet, and Delete says why.
@@ -33,6 +35,7 @@ export function CharacterMenu({
   canDelete,
   canMove = false,
   canGive = false,
+  canExport = false,
 }: {
   character: CharacterOut;
   canRename: boolean;
@@ -45,16 +48,19 @@ export function CharacterMenu({
   canMove?: boolean;
   /** Give the NPC to a player, or make a claim link for it. */
   canGive?: boolean;
+  /** Export it as a file, as a backup (#567). */
+  canExport?: boolean;
 }) {
   const [retiring, setRetiring] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [moving, setMoving] = useState(false);
   const [giving, setGiving] = useState<"give" | "claim" | null>(null);
   const [diablerie, setDiablerie] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const dates = useDates();
   const diablerieList = useDiablerie(character);
   const diablerieItem = diablerieAction(diablerieList.data);
-  if (!canRename && !renameOn && !onPronouns && !canRetire && !canDelete && !canMove && !canGive && !diablerieItem) return null;
+  if (!canRename && !renameOn && !onPronouns && !canRetire && !canDelete && !canMove && !canGive && !canExport && !diablerieItem) return null;
 
   return (
     <div>
@@ -76,6 +82,7 @@ export function CharacterMenu({
           {canGive && <MenuItem onSelect={() => setGiving("claim")}>Claim link…</MenuItem>}
         </MenuGroup>
         <MenuGroup label="Diablerie">{diablerieItem && <MenuItem onSelect={() => setDiablerie(true)}>{diablerieItem}</MenuItem>}</MenuGroup>
+        <MenuGroup label="Backup">{canExport && <MenuItem onSelect={() => setExporting(true)}>Export (backup)…</MenuItem>}</MenuGroup>
         <MenuGroup label="Leaving">
           {canRetire && <MenuItem onSelect={() => setRetiring(true)}>Retire…</MenuItem>}
           {canDelete && <DeleteItem character={character} onDelete={() => setDeleting(true)} />}
@@ -101,6 +108,11 @@ export function CharacterMenu({
             {giving === "claim" && <ClaimLink npcId={character.id} />}
           </Dialog>
         </>
+      )}
+      {canExport && (
+        <Dialog title={`Export ${character.name}`} open={exporting} onClose={() => setExporting(false)}>
+          {exporting && <ExportBackup character={character} onDone={() => setExporting(false)} />}
+        </Dialog>
       )}
       <Dialog title={`Retire ${character.name}`} open={retiring} onClose={() => setRetiring(false)}>
         <RetireCharacter character={character} onDone={() => setRetiring(false)} />
