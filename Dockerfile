@@ -13,15 +13,19 @@ RUN npm run build
 FROM python:3.12-slim
 # pg_dump for the custodian's backups (horatio.backups), from PostgreSQL's own
 # repository: it must be at least the server's version, 18.
-RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates curl \
- && install -d /usr/share/postgresql-common/pgdg \
- && curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+# The repository's signing key, vendored so the build does not fetch it from
+# www.postgresql.org (#583): https://www.postgresql.org/media/keys/ACCC4CF8.asc,
+# fingerprint B97B 0AFC AA1A 47F0 44F2  44A0 7FCC 7D46 ACCC 4CF8.
+COPY deploy/pgdg-ACCC4CF8.asc /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+# apt retries a dropped connection to Debian or apt.postgresql.org.
+RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates \
  && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo "$VERSION_CODENAME")-pgdg main" \
     > /etc/apt/sources.list.d/pgdg.list \
  && apt-get update \
  && apt-get install -y --no-install-recommends postgresql-client-18 \
- && apt-get purge -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/*
 COPY --from=ghcr.io/astral-sh/uv:0.7.12 /uv /bin/uv
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
 WORKDIR /app
