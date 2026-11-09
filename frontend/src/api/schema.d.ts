@@ -125,6 +125,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/appearance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Appearance */
+        get: operations["appearance_api_appearance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/appearance/loading-animation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Loading Animation
+         * @description The custodian chooses the loading animation: one for every splat, and any
+         *     splat that has its own.
+         */
+        put: operations["set_loading_animation_api_appearance_loading_animation_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/approvals/{approval_id}/approve": {
         parameters: {
             query?: never;
@@ -10773,6 +10811,13 @@ export interface components {
             /** Quick Hands */
             quick_hands?: boolean | null;
         };
+        /** AppearanceOut */
+        AppearanceOut: {
+            /** Loading Animation */
+            loading_animation: {
+                [key: string]: "drip" | "rising" | "candle" | "heartbeat";
+            };
+        };
         /** ApplyIn */
         ApplyIn: {
             /**
@@ -18158,6 +18203,13 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+        };
+        /** LoadingAnimationIn */
+        LoadingAnimationIn: {
+            /** Loading Animation */
+            loading_animation: {
+                [key: string]: "drip" | "rising" | "candle" | "heartbeat";
+            };
         };
         /** LocationCatalogueOut */
         LocationCatalogueOut: {
@@ -28609,6 +28661,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgencyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    appearance_api_appearance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppearanceOut"];
+                };
+            };
+        };
+    };
+    set_loading_animation_api_appearance_loading_animation_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoadingAnimationIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppearanceOut"];
                 };
             };
             /** @description Validation Error */

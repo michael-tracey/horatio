@@ -4,7 +4,7 @@ import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { SeenOut } from "../../api/types";
 import { Pronouns } from "../../components/PronounsInput";
-import { Badge, Button, ErrorText, Input } from "../../components/ui";
+import { Badge, Button, ErrorText, Input, Loader } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { endingText } from "../character/status";
@@ -53,7 +53,11 @@ export function Others({ view, undo, online }: { view: Shown; undo: (tapId: stri
           </p>
           <Input aria-label="Find a character" placeholder="Find a character" value={query} onChange={(e) => setQuery(e.target.value)} />
           {!online && <p className="mt-2 text-xs text-mist">Seeing others needs a connection.</p>}
-          {others.isPending && online && <p className="mt-2 text-sm text-mist">Loading…</p>}
+          {others.isPending && online && (
+            <p className="mt-2 text-sm">
+              <Loader compact />
+            </p>
+          )}
           <ErrorText error={others.error} />
           {others.data && found.length === 0 && <p className="mt-2 text-sm text-mist">{query ? "No one by that name." : "No one else in the troupe."}</p>}
           <ul className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -112,7 +116,11 @@ function OtherStatus({ view, otherId, undo, online, onBack }: { view: Shown; oth
         ← Everyone
       </Button>
       {!online && <p className="text-xs text-mist">Seeing others needs a connection.</p>}
-      {shown.isPending && online && <p className="text-sm text-mist">Loading…</p>}
+      {shown.isPending && online && (
+        <p className="text-sm">
+          <Loader compact />
+        </p>
+      )}
       <ErrorText error={shown.error} />
       {other && (
         <>

@@ -25,51 +25,15 @@
     />
     <link rel="preload" href="/logo.webp" as="image" type="image/webp" />
     <title>Horatio</title>
-    <!-- The loading screen, styled here so it shows before the app's CSS and
-         script arrive. components/Splash.tsx shows the same while the app
-         checks who is signed in. -->
-    <style>
-      .splash {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 1rem;
-        background: #141016;
-        color: #9b8fa3;
-        font: 14px "Inter", system-ui, sans-serif;
-      }
-      .splash img {
-        width: min(224px, 55vw);
-        height: auto;
-        filter: drop-shadow(0 0 28px rgba(163, 37, 58, 0.35));
-        animation: splash-breathe 2.4s ease-in-out infinite;
-      }
-      @keyframes splash-breathe {
-        0%,
-        100% {
-          opacity: 0.8;
-          transform: scale(0.98);
-        }
-        50% {
-          opacity: 1;
-          transform: scale(1);
-        }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .splash img {
-          animation: none;
-        }
-      }
-    </style>
+    <!-- The loading screen's styles, put here by the build (src/loaders/indexHtml.tsx)
+         so it shows before the app's CSS and script arrive. -->
+    <!-- loaders.css -->
   </head>
   <body>
     <div id="root">
-      <div class="splash" role="status">
-        <img src="/logo.webp" alt="Horatio" width="224" height="224" />
-        <p>Loading…</p>
-      </div>
+      <!-- The loading screen, with the motif last seen here: components/Splash.tsx
+           shows the same while the app checks who is signed in. -->
+      <!-- loading screen -->
     </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

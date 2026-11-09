@@ -1159,6 +1159,28 @@
         "title": "AnswersIn",
         "type": "object"
       },
+      "AppearanceOut": {
+        "properties": {
+          "loading_animation": {
+            "additionalProperties": {
+              "enum": [
+                "drip",
+                "rising",
+                "candle",
+                "heartbeat"
+              ],
+              "type": "string"
+            },
+            "title": "Loading Animation",
+            "type": "object"
+          }
+        },
+        "required": [
+          "loading_animation"
+        ],
+        "title": "AppearanceOut",
+        "type": "object"
+      },
       "ApplyIn": {
         "properties": {
           "counts_toward_limit": {
@@ -20330,6 +20352,28 @@
           "asked_themselves"
         ],
         "title": "LiveReset",
+        "type": "object"
+      },
+      "LoadingAnimationIn": {
+        "properties": {
+          "loading_animation": {
+            "additionalProperties": {
+              "enum": [
+                "drip",
+                "rising",
+                "candle",
+                "heartbeat"
+              ],
+              "type": "string"
+            },
+            "title": "Loading Animation",
+            "type": "object"
+          }
+        },
+        "required": [
+          "loading_animation"
+        ],
+        "title": "LoadingAnimationIn",
         "type": "object"
       },
       "LocationCatalogueOut": {
@@ -47002,6 +47046,69 @@
         "summary": "Retire Agency",
         "tags": [
           "posts"
+        ]
+      }
+    },
+    "/api/appearance": {
+      "get": {
+        "operationId": "appearance_api_appearance_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppearanceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Appearance",
+        "tags": [
+          "appearance"
+        ]
+      }
+    },
+    "/api/appearance/loading-animation": {
+      "put": {
+        "description": "The custodian chooses the loading animation: one for every splat, and any\nsplat that has its own.",
+        "operationId": "set_loading_animation_api_appearance_loading_animation_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoadingAnimationIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppearanceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Loading Animation",
+        "tags": [
+          "appearance"
         ]
       }
     },

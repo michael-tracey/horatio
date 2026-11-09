@@ -324,7 +324,7 @@ function GiveTitle({ troupeId, entry, onGive }: { troupeId: string; entry: Roste
             </ul>
           </section>
         ))}
-        {titles.isPending && <p className="text-sm text-mist">Loading…</p>}
+        {titles.isPending && <Loading compact />}
       </div>
       {q && !exact && (
         <Button type="submit" variant="secondary">

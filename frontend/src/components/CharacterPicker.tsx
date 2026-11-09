@@ -1,6 +1,6 @@
 import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { findPatrons, patronLabel } from "../pages/character/status";
-import { Input } from "./ui";
+import { Input, Loading } from "./ui";
 
 /** A character to pick, with the titles it holds in the troupe ("Prince"), if any. */
 export type CharacterChoice = { id: string; name: string; kind: string; title: string };
@@ -17,6 +17,7 @@ export function CharacterPicker<T extends CharacterChoice>({
   picked,
   onPick,
   none = "No one matches.",
+  loading = false,
   extra,
 }: {
   label: string;
@@ -26,6 +27,8 @@ export function CharacterPicker<T extends CharacterChoice>({
   onPick: (choice: T | null) => void;
   /** Said when nothing matches what was typed. */
   none?: string;
+  /** The choices are still on their way: the list says so, rather than `none`. */
+  loading?: boolean;
   extra?: (choice: T) => ReactNode;
 }) {
   const chosen = choices.find((c) => c.id === picked);
@@ -114,7 +117,14 @@ export function CharacterPicker<T extends CharacterChoice>({
                 </li>
               ))}
             </ul>
-            {options.length === 0 && <p className="px-3 py-2 text-sm text-mist">{none}</p>}
+            {options.length === 0 &&
+              (loading ? (
+                <div className="px-3 py-2 text-sm">
+                  <Loading compact />
+                </div>
+              ) : (
+                <p className="px-3 py-2 text-sm text-mist">{none}</p>
+              ))}
           </div>
         )}
       </div>

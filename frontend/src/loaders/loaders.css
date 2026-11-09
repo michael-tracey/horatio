@@ -1,0 +1,513 @@
+/* The loading animations (#568), drawn by loaders/art.tsx. Not part of the app's
+   own CSS: the build puts these into index.html (loaders/indexHtml.tsx), so the
+   loading screen is styled before anything else arrives, and they stay there for
+   the app. Plain CSS, with the palette's colours written out (index.css). */
+
+/* The loading screen: the logo, the chosen animation under it, and "Loading…". */
+.splash {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem;
+  box-sizing: border-box;
+  background: #141016;
+  color: #9b8fa3;
+  font: 14px "Inter", system-ui, sans-serif;
+}
+.splash img {
+  width: min(224px, 55vw);
+  height: auto;
+  filter: drop-shadow(0 0 28px rgba(163, 37, 58, 0.35));
+  animation: splash-breathe 2.4s ease-in-out infinite;
+}
+.splash p {
+  margin: 0;
+  letter-spacing: 0.04em;
+}
+@keyframes splash-breathe {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: scale(0.985);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* index.html holds every motif; the one the screen names shows. */
+.splash > .loader {
+  display: none;
+}
+.splash:not([data-motif]) > .loader-drip,
+.splash[data-motif="drip"] > .loader-drip,
+.splash[data-motif="rising"] > .loader-rising,
+.splash[data-motif="candle"] > .loader-candle,
+.splash[data-motif="heartbeat"] > .loader-heartbeat {
+  display: flex;
+}
+
+/* Each motif's mark, at its size. */
+.loader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+}
+.loader-art {
+  display: block;
+  height: var(--loader-height);
+  width: auto;
+  max-width: 100%;
+  overflow: visible;
+}
+.loader-full {
+  --loader-height: clamp(76px, 12vh, 112px);
+}
+.loader-block {
+  --loader-height: 56px;
+}
+.loader-compact {
+  --loader-height: 22px;
+}
+.loader-heartbeat.loader-full {
+  --loader-height: clamp(44px, 7vh, 64px);
+}
+.loader-heartbeat.loader-block {
+  --loader-height: 32px;
+}
+.loader-heartbeat.loader-compact {
+  --loader-height: 15px;
+}
+/* The drop hangs from the point of the logo's shield. */
+.splash > .loader-drip {
+  margin-top: calc(-1rem - min(26px, 6.4vw));
+}
+
+/* An in-page loader fades in once it shows (after a moment: ui.tsx's Loading). */
+.loader-appear {
+  animation: loader-appear 0.3s ease-out both;
+}
+@keyframes loader-appear {
+  from {
+    opacity: 0;
+  }
+}
+
+/* With "reduce motion": no movement, the mark only fades gently in and out. */
+@keyframes loader-still {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* A. Blood drip ------------------------------------------------------------- */
+.loader-drip :is(.drip-fall, .drip-ripple, .drip-pool, .drip-splash) {
+  transform-box: fill-box;
+  animation-duration: 1.8s;
+  animation-iteration-count: infinite;
+}
+.loader-drip .drip-fall {
+  transform-origin: 50% 0;
+  animation-name: drip-fall;
+}
+.loader-drip .drip-ripple {
+  transform-origin: 50% 50%;
+  fill: none;
+  stroke: #c8384f;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  opacity: 0;
+  animation-name: drip-ripple;
+  animation-timing-function: ease-out;
+}
+.loader-drip .drip-ripple-late {
+  animation-name: drip-ripple-late;
+}
+.loader-drip .drip-pool {
+  transform-origin: 50% 50%;
+  animation-name: drip-pool;
+}
+.loader-drip .drip-splash {
+  opacity: 0;
+  transform-origin: 50% 50%;
+  animation-name: drip-splash-left;
+  animation-timing-function: ease-out;
+}
+.loader-drip .drip-splash-right {
+  animation-name: drip-splash-right;
+}
+@keyframes drip-fall {
+  0% {
+    transform: translateY(0) scale(0.15);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.3, 1);
+  }
+  44% {
+    transform: translateY(0) scale(1);
+    animation-timing-function: ease-in-out;
+  }
+  56% {
+    transform: translateY(1px) scale(0.86, 1.24);
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.5);
+  }
+  78% {
+    transform: translateY(51px) scale(0.8, 1.2);
+    opacity: 1;
+  }
+  80% {
+    transform: translateY(56px) scale(1.6, 0.25);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(0.15);
+    opacity: 0;
+  }
+}
+@keyframes drip-ripple {
+  0%,
+  78% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  80% {
+    transform: scale(0.45);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+@keyframes drip-ripple-late {
+  0%,
+  84% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  86% {
+    transform: scale(0.4);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+@keyframes drip-pool {
+  0%,
+  78% {
+    transform: scale(1);
+  }
+  84% {
+    transform: scale(1.14, 1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes drip-splash-left {
+  0%,
+  78% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  80% {
+    opacity: 1;
+  }
+  92% {
+    transform: translate(-6px, -7px);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-8px, -2px);
+    opacity: 0;
+  }
+}
+@keyframes drip-splash-right {
+  0%,
+  79% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  81% {
+    opacity: 1;
+  }
+  92% {
+    transform: translate(5px, -6px);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(7px, -1px);
+    opacity: 0;
+  }
+}
+
+/* B. Rising blood ----------------------------------------------------------- */
+.loader-rising .rising-level {
+  animation: rising-fill 3.6s infinite;
+}
+.loader-rising .rising-wave {
+  animation: rising-wave 1.3s linear infinite;
+}
+.loader-rising .rising-rim {
+  animation: rising-rim 3.6s ease-in-out infinite;
+}
+@keyframes rising-fill {
+  0% {
+    transform: translateY(37px);
+    animation-timing-function: cubic-bezier(0.3, 0.7, 0.4, 1);
+  }
+  48% {
+    transform: translateY(13px);
+  }
+  62% {
+    transform: translateY(13.5px);
+    animation-timing-function: cubic-bezier(0.6, 0, 0.8, 0.6);
+  }
+  100% {
+    transform: translateY(37px);
+  }
+}
+@keyframes rising-wave {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(24px);
+  }
+}
+@keyframes rising-rim {
+  0%,
+  30%,
+  80%,
+  100% {
+    stroke-opacity: 0.75;
+  }
+  50% {
+    stroke-opacity: 1;
+  }
+}
+
+/* C. Candle ----------------------------------------------------------------- */
+.loader-candle .candle-flame {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: candle-flicker 1.9s ease-in-out infinite;
+}
+.loader-candle .candle-core {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: candle-core 0.7s ease-in-out infinite alternate;
+}
+.loader-candle .candle-glow {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: candle-glow 1.9s ease-in-out infinite;
+}
+.loader-candle .candle-drip {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  animation: candle-drip 6s ease-out infinite;
+}
+@keyframes candle-flicker {
+  0%,
+  100% {
+    transform: scale(1, 1) skewX(0deg);
+  }
+  12% {
+    transform: scale(0.95, 1.07) skewX(-2.5deg);
+  }
+  25% {
+    transform: scale(1.03, 0.95) skewX(1.5deg);
+  }
+  37% {
+    transform: scale(0.97, 1.09) skewX(-1deg);
+  }
+  50% {
+    transform: scale(1.02, 0.97) skewX(3deg);
+  }
+  62% {
+    transform: scale(0.96, 1.05) skewX(-2deg);
+  }
+  80% {
+    transform: scale(1.01, 0.98) skewX(1deg);
+  }
+}
+@keyframes candle-core {
+  from {
+    transform: scale(0.94, 0.9);
+  }
+  to {
+    transform: scale(1.04, 1.06);
+  }
+}
+@keyframes candle-glow {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  50% {
+    opacity: 0.78;
+    transform: scale(0.97);
+  }
+  70% {
+    opacity: 0.95;
+    transform: scale(1.04);
+  }
+}
+@keyframes candle-drip {
+  0% {
+    transform: scaleY(0.12);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  75% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleY(1);
+    opacity: 0;
+  }
+}
+/* Full screen, the candle lights the logo. */
+.splash[data-motif="candle"] img {
+  animation: candle-lit 1.9s ease-in-out infinite;
+}
+@keyframes candle-lit {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 24px rgba(201, 162, 74, 0.26));
+  }
+  25% {
+    filter: drop-shadow(0 0 32px rgba(243, 201, 105, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 22px rgba(201, 162, 74, 0.22));
+  }
+  70% {
+    filter: drop-shadow(0 0 30px rgba(243, 201, 105, 0.36));
+  }
+}
+
+/* D. Heartbeat -------------------------------------------------------------- */
+.loader-heartbeat .loader-art {
+  filter: drop-shadow(0 0 3px rgba(200, 56, 79, 0.6));
+}
+.loader-heartbeat :is(.heart-trace, .heart-sweep) {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.loader-heartbeat .heart-trace {
+  stroke: #a3253a;
+  stroke-opacity: 0.4;
+}
+.loader-heartbeat .heart-sweep {
+  stroke: #e0566b;
+  stroke-width: 2.4;
+  stroke-dasharray: 18 140;
+  animation: heart-sweep 1.5s linear infinite;
+}
+.loader-compact .heart-trace,
+.loader-compact .heart-sweep {
+  stroke-width: 1.5;
+}
+@keyframes heart-sweep {
+  from {
+    stroke-dashoffset: 18;
+  }
+  to {
+    stroke-dashoffset: -118;
+  }
+}
+/* Full screen, the logo beats with it: two beats as the trace spikes, then a pause. */
+.splash[data-motif="heartbeat"] img {
+  animation: heart-logo 1.5s infinite;
+}
+@keyframes heart-logo {
+  0%,
+  24% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 22px rgba(163, 37, 58, 0.32));
+    animation-timing-function: ease-out;
+  }
+  30% {
+    transform: scale(1.045);
+    filter: drop-shadow(0 0 40px rgba(200, 56, 79, 0.62));
+    animation-timing-function: ease-in;
+  }
+  40% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 24px rgba(163, 37, 58, 0.36));
+    animation-timing-function: ease-out;
+  }
+  50% {
+    transform: scale(1.03);
+    filter: drop-shadow(0 0 34px rgba(200, 56, 79, 0.52));
+    animation-timing-function: ease-in;
+  }
+  62%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 22px rgba(163, 37, 58, 0.32));
+  }
+}
+
+/* Reduce motion ------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .splash img,
+  .splash[data-motif] img {
+    animation: none;
+  }
+  .loader-appear {
+    animation: none;
+  }
+  /* Each motif stands still and fades in and out, slowly. */
+  .loader-drip .drip-fall,
+  .loader-rising .rising-level,
+  .loader-candle .candle-glow,
+  .loader-heartbeat .heart-trace {
+    animation: loader-still 1.6s ease-in-out infinite alternate;
+  }
+  .loader-drip .drip-fall {
+    transform: none;
+  }
+  .loader-drip :is(.drip-ripple, .drip-splash),
+  .loader-heartbeat .heart-sweep {
+    animation: none;
+    opacity: 0;
+  }
+  .loader-drip .drip-pool,
+  .loader-rising .rising-wave,
+  .loader-rising .rising-rim,
+  .loader-candle :is(.candle-flame, .candle-core, .candle-drip) {
+    animation: none;
+  }
+  .loader-rising .rising-level {
+    transform: translateY(20px);
+  }
+  .loader-heartbeat .heart-trace {
+    stroke: #e0566b;
+    stroke-opacity: 1;
+  }
+}

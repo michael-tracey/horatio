@@ -898,6 +898,60 @@ test("storytellers filter the troupe's characters and print what they find", asy
   await printed.close();
 });
 
+test("the troupe's characters show a loader while the list and its filter load, never that there are none", async ({ browser }) => {
+  const custodian = await person(browser, "loader-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "loader-lead");
+  const c = custodian.page;
+  await c.reload();
+  const headers = { "X-Horatio": "1" };
+  const made = await c.request.post("/api/troupes", { headers, data: { name: `Hall of Waiting ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  const p = lead.page;
+  for (const name of ["Ottilie", "Wenzel"]) {
+    const npc = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name, wizard: false } });
+    expect(npc.status(), await npc.text()).toBe(201);
+  }
+
+  // The list and the search behind its filter ("is active", from the start), each held back until let go.
+  const hold = (url: string, method: string) => {
+    let release = () => {};
+    const released = new Promise<void>((resolve) => (release = resolve));
+    void p.route(url, async (route) => {
+      if (route.request().method() !== method) return route.fallback();
+      await released;
+      await route.fallback();
+    });
+    return release;
+  };
+  const releaseList = hold(`**/api/troupes/${troupeId}/characters`, "GET");
+  const releaseSearch = hold(`**/api/troupes/${troupeId}/characters/search`, "POST");
+  await p.goto(`/troupes/${troupeId}/characters?show=everyone`);
+  const main = p.locator("main");
+  const none = main.getByText(/^No (characters|NPCs|player characters)/);
+
+  // Until the list comes, the loader.
+  await expect(main.getByRole("status", { name: "Loading…" }).first()).toBeVisible();
+  await expect(none).toHaveCount(0);
+
+  // The list comes, but not the search: the characters show under the search's loader.
+  releaseList();
+  await expect(main.getByRole("status", { name: "Searching…" })).toBeVisible();
+  const list = main.getByRole("table", { name: "Characters" });
+  await expect(list).toHaveAttribute("aria-busy", "true");
+  await expect(list.getByRole("link", { name: "Ottilie" })).toBeVisible();
+  await expect(none).toHaveCount(0);
+  await expect(main.getByText("2 of 2 characters")).toBeVisible();
+
+  // The search answers: the same two, no longer waiting.
+  releaseSearch();
+  await expect(main.getByRole("status", { name: "Searching…" })).toHaveCount(0);
+  await expect(list).not.toHaveAttribute("aria-busy");
+  await expect(list.getByRole("link", { name: "Wenzel" })).toBeVisible();
+  await expect(none).toHaveCount(0);
+});
+
 test("staff award XP, give equipment and print from a character's ⋯ on the Characters list, and see only what they may do (#539)", async ({ browser }) => {
   const custodian = await person(browser, "rowmenu-cust");
   makeCustodian(custodian.email);

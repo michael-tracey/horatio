@@ -201,6 +201,19 @@ test("screenshots for the manual's Custodian part", async ({ browser }) => {
     await shoot(main, "backups");
   }
 
+  // The Settings tab: the loading animation, each caught mid-way rather than at its start.
+  await main.getByRole("link", { name: "Settings", exact: true }).click();
+  const settings = main.locator("section", { has: c.getByRole("heading", { name: "Loading animation" }) });
+  await expect(settings.locator(".loader-block")).toHaveCount(4);
+  await c.waitForTimeout(400);
+  await c.evaluate(() =>
+    document.getAnimations().forEach((a) => {
+      a.pause();
+      a.currentTime = 1100;
+    }),
+  );
+  await settings.screenshot({ path: `${OUT}/settings.png` });
+
   // The System tab.
   await main.getByRole("link", { name: "System", exact: true }).click();
   await expect(main.getByText("What is running")).toBeVisible();

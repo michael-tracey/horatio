@@ -2,6 +2,8 @@ import { cloneElement, useCallback, useEffect, useId, useLayoutEffect, useRef, u
 import type { ButtonHTMLAttributes, CSSProperties, InputHTMLAttributes, ReactElement, ReactNode, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 import { Link, NavLink, useLocation } from "react-router";
 import { usePreferences } from "../hooks";
+import { LoaderMark } from "../loaders/art";
+import { useMotif } from "../loaders/useMotif";
 import { useOnline } from "../offline/connection";
 import { NeedsConnection } from "../offline/NeedsConnection";
 import { pipGroups } from "../ratings";
@@ -129,11 +131,62 @@ export function Notice({ children }: { children: ReactNode }) {
   return <p className="rounded-md border border-gold/40 bg-gold/10 px-3 py-2 text-sm">{children}</p>;
 }
 
-/** Waiting for an answer; offline, with nothing kept to show, the screen says it needs a connection (#502). */
-export function Loading() {
+/** How long a wait goes unmarked, so that a quick answer doesn't flash a loader. */
+export const LOADING_DELAY_MS = 250;
+
+/** Whether `ms` have passed since the component first showed. */
+function useAfter(ms: number): boolean {
+  const [passed, setPassed] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setPassed(true), ms);
+    return () => clearTimeout(timer);
+  }, [ms]);
+  return passed;
+}
+
+/**
+ * Waiting for an answer: after a moment, the loading animation the custodian chose
+ * (#568), with `label`. `compact`, a small one to sit beside a line of text, such
+ * as a count while a search runs. Offline, with nothing kept to show, the screen
+ * says it needs a connection instead (#502).
+ */
+export function Loading({ compact = false, label = "Loading…" }: { compact?: boolean; label?: string }) {
   const online = useOnline();
-  if (!online) return <NeedsConnection />;
-  return <p className="py-8 text-center text-mist">Loading…</p>;
+  if (!online) return compact ? null : <NeedsConnection />;
+  return <Loader compact={compact} label={label} />;
+}
+
+/** The loading animation alone, online or not: for what is loading from the
+ * device, such as a page's own script, or the Play View's kept answers. */
+export function Loader({ compact = false, label = "Loading…" }: { compact?: boolean; label?: string }) {
+  const motif = useMotif();
+  const shown = useAfter(LOADING_DELAY_MS);
+  if (!shown) return null;
+  if (compact)
+    return (
+      <span role="status" aria-label={label} className="loader-appear inline-flex items-center gap-1.5 align-middle text-mist">
+        <LoaderMark motif={motif} size="compact" />
+        <span>{label}</span>
+      </span>
+    );
+  return (
+    <div role="status" aria-label={label} className="loader-appear flex flex-col items-center gap-3 py-8 text-sm text-mist">
+      <LoaderMark motif={motif} size="block" />
+      <span>{label}</span>
+    </div>
+  );
+}
+
+/**
+ * What a query found, once it has: the loader until then, and its error if it
+ * failed. So a screen never says there is nothing before it knows (#568):
+ * `<Loaded query={list}>{(items) => (items.length ? … : <Empty>None yet.</Empty>)}</Loaded>`.
+ * For a query that runs; one waiting on something (not enabled) would load for ever.
+ */
+export function Loaded<T>({ query, compact, children }: { query: { data: T | undefined; error: unknown }; compact?: boolean; children: (data: T) => ReactNode }) {
+  if (query.data !== undefined) return <>{children(query.data)}</>;
+  if (query.error) return <ErrorText error={query.error} />;
+  return <Loading compact={compact} />;
 }
 
 export function Empty({ children }: { children: ReactNode }) {

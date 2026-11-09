@@ -5,7 +5,7 @@ import { api, unwrap } from "../../api/client";
 import type { PlayReference, RosterEntry, SceneOut, TestPool } from "../../api/types";
 import { LinesVeilsNote } from "../../components/LinesVeils";
 import { useClanName } from "../../components/ClanNames";
-import { Button, ErrorText, Input } from "../../components/ui";
+import { Button, ErrorText, Input, Loading } from "../../components/ui";
 import { usePreferences } from "../../hooks";
 import { LogEntries, ResetGame, SyncStatus } from "./PlayPage";
 import { EquipmentSwitches } from "./EquipmentSwitches";
@@ -125,7 +125,7 @@ export function ScenePage() {
               </Link>
             </div>
           ) : scene.isPending ? (
-            <p className="py-8 text-center text-mist">Loading…</p>
+            <Loading />
           ) : (
             <>
               <ErrorText error={scene.error} />
@@ -160,7 +160,7 @@ export function ScenePage() {
             )}
             <ErrorText error={changes.rename.error} />
             {online ? (
-              <AddToScene roster={roster.data ?? []} pinned={pinned} onPin={(id) => pinning.mutate({ id, on: true })} error={roster.error ?? pinning.error} />
+              <AddToScene roster={roster.data} pinned={pinned} onPin={(id) => pinning.mutate({ id, on: true })} error={roster.error ?? pinning.error} />
             ) : (
               <div className="max-w-md text-sm">
                 <p>Add to the scene</p>
@@ -210,11 +210,12 @@ export function ScenePage() {
 }
 
 /** A search over the troupe's characters, NPCs first, that pins the one picked. */
-function AddToScene({ roster, pinned, onPin, error }: { roster: RosterEntry[]; pinned: string[]; onPin: (id: string) => void; error: unknown }) {
+/** Finds the troupe's characters to pin; `roster` is undefined until they arrive. */
+function AddToScene({ roster, pinned, onPin, error }: { roster: RosterEntry[] | undefined; pinned: string[]; onPin: (id: string) => void; error: unknown }) {
   const [text, setText] = useState("");
   const [open, setOpen] = useState(false);
   const found = findPins(
-    roster.filter((c) => !pinned.includes(c.character_id)),
+    (roster ?? []).filter((c) => !pinned.includes(c.character_id)),
     text,
   )
     .sort((a, b) => Number(b.kind === "npc") - Number(a.kind === "npc"))
@@ -262,7 +263,15 @@ function AddToScene({ roster, pinned, onPin, error }: { roster: RosterEntry[]; p
               </li>
             ))}
           </ul>
-          {found.length === 0 && <p className="px-3 py-2 text-sm text-mist">{roster.length === 0 ? "No characters in the troupe yet." : "Nobody else matches."}</p>}
+          {!roster ? (
+            !error && (
+              <div className="px-3 py-2 text-sm">
+                <Loading compact />
+              </div>
+            )
+          ) : (
+            found.length === 0 && <p className="px-3 py-2 text-sm text-mist">{roster.length === 0 ? "No characters in the troupe yet." : "Nobody else matches."}</p>
+          )}
         </div>
       )}
       <ErrorText error={error} />
@@ -426,7 +435,13 @@ function StockCard({ pin, back, onRemove }: { pin: SceneOut["stock"][number]; ba
     return (
       <article className="flex flex-col gap-2 rounded-lg border border-ash bg-dusk p-3" aria-label={pin.name}>
         <h2 className="truncate text-lg leading-tight text-gold">{pin.name}</h2>
-        {view.isPending ? <p className="text-mist">{view.fetchStatus === "paused" ? "Not kept on this phone: needs a connection." : "Loading…"}</p> : <ErrorText error={view.error} />}
+        {view.isPending && view.fetchStatus === "paused" ? (
+          <p className="text-mist">Not kept on this phone: needs a connection.</p>
+        ) : view.isPending ? (
+          <Loading compact />
+        ) : (
+          <ErrorText error={view.error} />
+        )}
         <Button variant="secondary" className="self-start" onClick={onRemove} disabled={!onRemove} title={onRemove ? undefined : "Needs a connection"}>
           Remove from the scene
         </Button>
@@ -532,7 +547,13 @@ function SceneCard({ characterId, back, onRemove, onRank }: { characterId: strin
   if (!shown) {
     return (
       <article className="flex flex-col gap-2 rounded-lg border border-ash bg-dusk p-3" aria-label="Character in the scene">
-        {view.isPending ? <p className="text-mist">{view.fetchStatus === "paused" ? "Not kept on this phone: needs a connection." : "Loading…"}</p> : <ErrorText error={view.error} />}
+        {view.isPending && view.fetchStatus === "paused" ? (
+          <p className="text-mist">Not kept on this phone: needs a connection.</p>
+        ) : view.isPending ? (
+          <Loading compact />
+        ) : (
+          <ErrorText error={view.error} />
+        )}
         <Button variant="secondary" className="self-start" onClick={onRemove} disabled={!onRemove} title={onRemove ? undefined : "Needs a connection"}>
           Remove from the scene
         </Button>

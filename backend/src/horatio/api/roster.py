@@ -732,6 +732,7 @@ MESSAGES: dict[str, str] = {
     "character.pronouns": "{actor} set {character}'s pronouns: {pronouns}.",
     "clan_logo.uploaded": "{actor} uploaded a logo for {clan}.",
     "clan_logo.removed": "{actor} removed the logo for {clan}.",
+    "appearance.loading_animation": "{actor} chose the {animation} loading animation.",
     "audit.exported": "{actor} exported {count} events from the audit log.",
     "dark_pack.fetched": "{actor} fetched the Dark Pack resources from {address}: {clans} clan"
     " symbols and {logo}.",
