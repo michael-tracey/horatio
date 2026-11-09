@@ -271,6 +271,55 @@ test("staff choose a quick NPC's Thaumaturgic Expertise path and a skill's field
   await expect(p.getByText("20 XP", { exact: true })).toBeVisible();
 });
 
+test("staff choose what a quick NPC's Piece That Remains gives on its sheet, and change it in the builder (#577)", async ({ browser }) => {
+  const custodian = await person(browser, "given-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "given-lead");
+  const { npcId } = await troupeWithNpc(custodian.page, lead.handle, "Court of the Given", "Mercy Ashgrove");
+  const p = lead.page;
+  // As an import from before #577 left it: the merit held, with nothing given.
+  for (const [category, name, rating] of [
+    ["clan", "Caitiff", null],
+    ["backgrounds", "Resources", 5],
+    ["backgrounds", "Haven", 3],
+    ["backgrounds", "Allies", 2],
+    ["merits", "Piece That Remains", 2],
+  ] as const) {
+    const rated = await p.request.put(`/api/characters/${npcId}/npc/ratings`, { headers: { "X-Horatio": "1" }, data: { category, name, rating } });
+    expect(rated.status(), await rated.text()).toBe(200);
+  }
+  await p.goto(`/characters/${npcId}`);
+  await expect(p.getByText("19 XP", { exact: true })).toBeVisible();
+
+  // On the Sheet tab, staff choose the clan merit it gives.
+  await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
+  const piece = p.locator('[data-free-choices="Piece That Remains"]');
+  await expect(piece).toContainText("not chosen yet");
+  await piece.getByRole("button", { name: "Choose the free traits for Piece That Remains" }).click();
+  await piece.getByRole("combobox").selectOption("Ventrue Royalty");
+  await p.screenshot(shots("npc-given-merit"));
+  await piece.getByRole("button", { name: "Save" }).click();
+  await expect(piece.getByRole("button", { name: "Change the free traits for Piece That Remains" })).toBeVisible();
+  await expect(piece).toContainText("Ventrue Royalty");
+  // Royalty is held, free, and its own dots are placed with the creation picks.
+  await expect(p.locator('[data-free-choices="Ventrue Royalty"]')).toContainText("placed with the NPC's creation picks");
+
+  // Back in the builder, Royalty's 4, 3 and 2 are fitted onto the backgrounds: 19 XP falls to 10.
+  await p.locator("main").getByRole("link", { name: "Build", exact: true }).click();
+  await expect(p.getByText("10 XP", { exact: true })).toBeVisible();
+  const royalty = p.getByRole("region", { name: "Ventrue Royalty places" });
+  await expect(royalty.getByRole("combobox", { name: "Ventrue Royalty at 4", exact: true })).toHaveValue("Resources");
+
+  // Changed under the merit in the builder: Royalty goes, with its places, and the price with it.
+  const built = p.locator('[data-free-choices="Piece That Remains"]');
+  await built.getByRole("button", { name: "Change the free traits for Piece That Remains" }).click();
+  await built.getByRole("combobox").selectOption("Aura of Command");
+  await built.getByRole("button", { name: "Save" }).click();
+  await expect(built).toContainText("Aura of Command");
+  await expect(p.getByText("19 XP", { exact: true })).toBeVisible();
+  await expect(royalty).toHaveCount(0);
+});
+
 /** A troupe led by `lead`, made by the custodian, with a sheeted vampire NPC built in it. */
 async function troupeWithNpc(custodian: Page, lead: string, troupe: string, npc: string): Promise<{ troupeId: string; npcId: string }> {
   const headers = { "X-Horatio": "1" };

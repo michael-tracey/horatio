@@ -542,7 +542,8 @@ export function SheetTab({
                                   key={`${t.id}/free`}
                                   character={character}
                                   trait={t}
-                                  editable={mine && !locked && s.status !== "retired"}
+                                  // Only an NPC's running staff see it, and they choose for it (#577).
+                                  editable={(character.kind === "npc" || (mine && !locked)) && s.status !== "retired"}
                                 />
                               ),
                               !inCart(t) && t.id === lastRetainers && (

@@ -15,7 +15,7 @@ from horatio.models import Character, XpEntry
 from horatio.yorick_names import Trait
 from tests.api_helpers import Person, Troupe, new_character, sign_up
 from tests.test_api_free_choices import choose, grant_key, pick, trait
-from tests.test_api_grants import take
+from tests.test_api_grants import sheet, take
 from tests.test_api_npc_gifts import given
 from tests.test_api_npcs_titles import make_npc, rate
 
@@ -534,6 +534,44 @@ def test_staff_choose_what_piece_that_remains_gives_an_npc_and_it_is_free(
     )
     assert placed.status_code == 409
     assert "creation picks" in placed.json()["detail"]
+
+
+def test_staff_change_what_piece_that_remains_gives_an_npc(troupe: Troupe) -> None:
+    npc = remnant(troupe, "Tobias Wren")
+    before = npc_tally(troupe, npc)
+    grant = grant_key(troupe.storyteller, npc, "Piece That Remains")
+    chosen = choose(troupe.storyteller, npc, "Piece That Remains", [pick(grant, "Ventrue Royalty")])
+    assert chosen.status_code == 200, chosen.text
+
+    # Changed by another of the running staff: Royalty goes, with its places, and
+    # the new merit is free in its stead.
+    changed = choose(troupe.assistant, npc, "Piece That Remains", [pick(grant, "Aura of Command")])
+
+    assert changed.status_code == 200, changed.text
+    held = {t["name"] for t in sheet(troupe.storyteller, npc)["traits"] if t["rating"]}
+    assert "Ventrue Royalty" not in held
+    assert places(picks(troupe.storyteller, npc), "Ventrue Royalty") == {}
+    aura = trait(troupe.storyteller, npc, "merits", "Aura of Command")
+    assert (aura["rating"], aura["free_rating"], aura["granted_by"]) == (
+        1,
+        1,
+        ["Piece That Remains"],
+    )
+    lines = npc_tally_lines(troupe, npc)
+    assert cost_of(lines, "Aura of Command") == 0
+    # Without Royalty's dots, the backgrounds cost what they did before any choice.
+    assert lines["total"] == before
+
+    # The custodian may change it too; a narrator, a player and a stranger may not.
+    piece = trait(troupe.storyteller, npc, "merits", "Piece That Remains")
+    assert [p["name"] for p in piece["free_choices"][0]["picks"]] == ["Aura of Command"]
+    assert piece["free_choices"][0]["locked"] is None
+    for person in (troupe.narrator, troupe.player, troupe.stranger):
+        refused = choose(person, npc, "Piece That Remains", [pick(grant, "Ventrue Royalty")])
+        assert refused.status_code in (403, 404), person.handle
+    again = choose(troupe.custodian, npc, "Piece That Remains", [pick(grant, "Ventrue Royalty")])
+    assert again.status_code == 200, again.text
+    assert cost_of(npc_tally_lines(troupe, npc), "Ventrue Royalty") == 0
 
 
 def test_given_to_a_player_what_piece_that_remains_gives_stays_free(troupe: Troupe) -> None:
