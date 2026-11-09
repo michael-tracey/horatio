@@ -98,6 +98,8 @@ On **Your characters**, **Export all** downloads every character you have, retir
 
 A file from a newer Horatio is refused: import it into a Horatio as new as the one that made it.
 
+**Import a character** takes the `.zip` from **Export all** too. Each character in it is reviewed as one file is; untick any you don't want, then **Import** brings in the rest, each as a new character of yours with its picture.
+
 ## Reading your sheet
 
 The **Sheet** tab is the character's record, laid out in the rule set's parts: Attributes, Skills, Backgrounds, Disciplines, Merits and Flaws, Morality, Health Levels and so on. Each part lists what the character holds, with its rating as dots or numbers (choose which in your settings). The character's clan, sect and archetype sit beside its name at the top of the page.

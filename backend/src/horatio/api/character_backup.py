@@ -10,20 +10,35 @@ picture under `pictures/` and its printable sheet under `sheets/`."""
 import base64
 import json
 import uuid
+from collections.abc import Callable
 from datetime import date
 from io import BytesIO
+from pathlib import Path
 from typing import Annotated, Literal
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
-from pydantic import BaseModel, Field, JsonValue
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
+from pydantic import BaseModel, Field, JsonValue, TypeAdapter, ValidationError
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from horatio import character_backup as backup
-from horatio import pictures
+from horatio import npc_gifts, pictures, troupe_import
+from horatio.api.character_moves import someone
 from horatio.api.characters import running_troupe_id
 from horatio.api.downtimes import staff_troupe
+from horatio.api.players import Someone
 from horatio.api.printing import print_sheet
 from horatio.api.sheet_html import sheet_html
 from horatio.auth.deps import CurrentUser, DbSession
@@ -429,3 +444,382 @@ def import_character(
         name=found.character.name,
         left_out=sum(1 for i in found.items if i.status == "cannot"),
     )
+
+
+# --- importing several at once ------------------------------------------------------------
+
+
+Uploads = Annotated[
+    list[UploadFile],
+    File(description="A .zip exported from Horatio, or character files, or both."),
+]
+
+
+def read_files(files: list[UploadFile]) -> troupe_import.Bundle:
+    """The character files in the upload, or 422 saying why it can't be read."""
+    uploads: list[tuple[str, bytes]] = []
+    total = 0
+    for upload in files:
+        data = upload.file.read(troupe_import.MAX_UPLOAD + 1 - total)
+        total += len(data)
+        if total > troupe_import.MAX_UPLOAD:
+            raise HTTPException(
+                status.HTTP_413_CONTENT_TOO_LARGE, "Those files come to more than 50 MB."
+            )
+        uploads.append((upload.filename or "", data))
+    try:
+        return troupe_import.read_uploads(uploads)
+    except troupe_import.CannotRead as error:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
+
+
+def undo_pictures(written: list[Path]) -> None:
+    for directory in written:
+        pictures.remove(directory)
+
+
+class BundleEntryOut(BaseModel):
+    # Where the character's file is in the upload: its path in a zip, or its name.
+    key: str
+    name: str | None
+    kind: Literal["pc", "npc"] | None
+    # new | skipped (not chosen) | cannot (`problem` says why).
+    outcome: Literal["new", "skipped", "cannot"]
+    problem: str | None
+    review: CharacterReviewOut | None
+    # Once imported.
+    character_id: uuid.UUID | None
+
+
+class BundleImportOut(BaseModel):
+    entries: list[BundleEntryOut]
+
+
+def mine_out(
+    found: list[troupe_import.Mine],
+    troupe_for: Callable[[backup.CharacterDocument], Troupe | None],
+) -> BundleImportOut:
+    entries: list[BundleEntryOut] = []
+    for m in found:
+        document = m.entry.document
+        entries.append(
+            BundleEntryOut(
+                key=m.entry.key,
+                name=document.character.name if document else None,
+                kind=document.character.kind if document else None,
+                outcome=m.outcome,
+                problem=m.problem,
+                review=review_out(document, troupe_for(document), m.found)
+                if document is not None and m.found is not None
+                else None,
+                character_id=m.found.character.id if m.found is not None else None,
+            )
+        )
+    return BundleImportOut(entries=entries)
+
+
+def troupes_by_splat(
+    db: Session, troupe_id: uuid.UUID | None
+) -> Callable[[backup.CharacterDocument], Troupe | None]:
+    """The troupe each character is built for: the one chosen, if it is running and
+    takes the character's splat."""
+    known: dict[str, Troupe | None] = {}
+
+    def troupe_for(document: backup.CharacterDocument) -> Troupe | None:
+        splat = document.character.splat
+        if splat not in known:
+            found = running_troupe_id(db, troupe_id, splat)
+            known[splat] = db.get_one(Troupe, found) if found else None
+        return known[splat]
+
+    return troupe_for
+
+
+@router.post("/characters/import/bundle/review")
+def review_bundle(
+    files: Uploads,
+    db: DbSession,
+    user: CurrentUser,
+    troupe_id: Annotated[uuid.UUID | None, Form()] = None,
+) -> BundleImportOut:
+    """What importing each character in the .zip (or files) as a new character of the
+    player's would do, each as the single import's review says. Nothing is saved."""
+    bundle = read_files(files)
+    troupe_for = troupes_by_splat(db, troupe_id)
+    savepoint = db.begin_nested()
+    try:
+        found = troupe_import.import_mine(
+            db, user, bundle, troupe_for, root=pictures.upload_dir(), write_pictures=False
+        )
+        out = mine_out(found, troupe_for)
+    finally:
+        savepoint.rollback()
+    for entry in out.entries:
+        entry.character_id = None
+    return out
+
+
+@router.post("/characters/import/bundle", status_code=status.HTTP_201_CREATED)
+def import_bundle(
+    files: Uploads,
+    db: DbSession,
+    user: CurrentUser,
+    troupe_id: Annotated[uuid.UUID | None, Form()] = None,
+    only: Annotated[
+        str | None, Form(description="A JSON list of the keys to import; all, without it.")
+    ] = None,
+) -> BundleImportOut:
+    """Import each character in the .zip (or files), or those in `only`, as new
+    characters of the player's in their vault, in one transaction."""
+    bundle = read_files(files)
+    chosen = None
+    if only is not None:
+        try:
+            chosen = set(TypeAdapter(list[str]).validate_json(only))
+        except ValidationError as error:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT, "Which to import can't be read."
+            ) from error
+    troupe_for = troupes_by_splat(db, troupe_id)
+    found = troupe_import.import_mine(
+        db,
+        user,
+        bundle,
+        troupe_for,
+        root=pictures.upload_dir(),
+        write_pictures=True,
+        only=chosen,
+    )
+    written = [d for m in found if m.found for d in m.found.written]
+    if not any(m.outcome == "new" for m in found):
+        undo_pictures(written)
+        db.rollback()
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "There is nothing to import.")
+    out = mine_out(found, troupe_for)
+    try:
+        db.commit()
+    except BaseException:
+        undo_pictures(written)
+        raise
+    return out
+
+
+# --- a troupe's import --------------------------------------------------------------------
+
+
+class ImportDecisionIn(BaseModel):
+    # For one with the name of a character here: skip it, replace it (an NPC), or add a copy.
+    choice: troupe_import.Choice | None = None
+    # A player character's player, by handle; "" to hold it as an NPC; left out for
+    # the player the file names, if they are found.
+    player: str | None = Field(default=None, max_length=100)
+    carried_xp: int = Field(default=0, ge=0, le=npc_gifts.CARRIED_MAX)
+    carried_reason: str = Field(default="", max_length=500)
+
+
+Decisions = TypeAdapter(dict[str, ImportDecisionIn])
+
+
+class HereOut(BaseModel):
+    character_id: uuid.UUID
+    name: str
+    whose: str
+
+
+class TroupeEntryOut(BaseModel):
+    key: str
+    name: str | None
+    kind: Literal["pc", "npc"] | None
+    # new (an NPC) | given (to `player`) | held (a player character, as an NPC to give
+    # later) | replaced (`duplicate`) | skipped | undecided (staff must choose, as a
+    # character here has its name) | cannot (`problem` says why).
+    outcome: troupe_import.Outcome
+    problem: str | None
+    # A player character's player as the file names them: "@handle (Name)".
+    file_player: str | None
+    # Who it goes to, and how they were found.
+    player: Someone | None
+    matched_by: troupe_import.MatchedBy | None
+    duplicate: HereOut | None
+    can_replace: bool
+    choice: troupe_import.Choice | None
+    # The file's unspent XP, and what is carried over to its player.
+    unspent: int
+    carried_xp: int
+    retired: bool
+    review: CharacterReviewOut | None
+    character_id: uuid.UUID | None
+
+
+class TroupeImportOut(BaseModel):
+    troupe: str
+    # Whether these staff give player characters to their players; if not, each is held.
+    can_give: bool
+    entries: list[TroupeEntryOut]
+
+
+def file_player(document: backup.CharacterDocument | None) -> str | None:
+    if document is None or document.character.kind != "pc" or document.player is None:
+        return None
+    named = document.player
+    handle = f"@{named.handle}" if named.handle else ""
+    return " ".join(p for p in (handle, f"({named.name})" if named.name else "") if p) or None
+
+
+def troupe_import_out(
+    troupe: Troupe, can_give: bool, found: list[troupe_import.Planned]
+) -> TroupeImportOut:
+    entries: list[TroupeEntryOut] = []
+    for p in found:
+        document = p.entry.document
+        entries.append(
+            TroupeEntryOut(
+                key=p.entry.key,
+                name=document.character.name if document else None,
+                kind=document.character.kind if document else None,
+                outcome=p.outcome,
+                problem=p.problem,
+                file_player=file_player(document),
+                player=someone(p.player) if p.player else None,
+                matched_by=p.matched_by,
+                duplicate=HereOut(
+                    character_id=p.duplicate.character_id,
+                    name=p.duplicate.name,
+                    whose=p.duplicate.whose,
+                )
+                if p.duplicate
+                else None,
+                can_replace=p.can_replace,
+                choice=p.choice,
+                unspent=p.unspent,
+                carried_xp=p.carried_xp,
+                retired=document.character.retired if document else False,
+                review=review_out(document, troupe, p.found)
+                if document is not None and p.found is not None
+                else None,
+                character_id=p.found.character.id if p.found is not None else None,
+            )
+        )
+    return TroupeImportOut(troupe=troupe.name, can_give=can_give, entries=entries)
+
+
+def importing_troupe(
+    db: Session, user: User, troupe_id: uuid.UUID, decisions: str | None
+) -> tuple[Troupe, bool, dict[str, troupe_import.Decision]]:
+    """The troupe, if `user` runs it; whether they give player characters to players;
+    and what they chose."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_NPCS)
+    can_give = allows(
+        troupe_role(db, user, troupe), TroupeAction.GIVE_NPCS, is_custodian=user.is_custodian
+    )
+    chosen: dict[str, troupe_import.Decision] = {}
+    if decisions:
+        try:
+            read = Decisions.validate_json(decisions)
+        except ValidationError as error:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT, "What you chose can't be read."
+            ) from error
+        for key, d in read.items():
+            if d.player and not can_give:
+                raise HTTPException(
+                    status.HTTP_403_FORBIDDEN,
+                    "Only the troupe's storytellers give characters to their players.",
+                )
+            chosen[key] = troupe_import.Decision(
+                choice=d.choice,
+                player=d.player,
+                carried_xp=d.carried_xp,
+                carried_reason=d.carried_reason.strip(),
+            )
+    return troupe, can_give, chosen
+
+
+DecisionsForm = Annotated[
+    str | None,
+    Form(
+        description="A JSON object of what staff chose for each file, by its key: choice,"
+        " player, carried_xp, carried_reason."
+    ),
+]
+
+
+@router.post("/troupes/{troupe_id}/character-imports/review")
+def review_troupe_import(
+    troupe_id: uuid.UUID,
+    files: Uploads,
+    db: DbSession,
+    user: CurrentUser,
+    decisions: DecisionsForm = None,
+) -> TroupeImportOut:
+    """What importing the troupe's export (a .zip, or character files) would do with
+    each character, as staff have chosen so far: an NPC of the troupe, a player
+    character given to its player or held to give later, replacing or beside one here
+    of its name, or left out with why. Nothing is saved."""
+    troupe, can_give, chosen = importing_troupe(db, user, troupe_id, decisions)
+    bundle = read_files(files)
+    savepoint = db.begin_nested()
+    try:
+        run = troupe_import.TroupeImport(
+            db,
+            user,
+            troupe,
+            bundle,
+            can_give=can_give,
+            decisions=chosen,
+            root=pictures.upload_dir(),
+            write_pictures=False,
+        )
+        out = troupe_import_out(troupe, can_give, run.run())
+    finally:
+        savepoint.rollback()
+    for entry in out.entries:
+        entry.character_id = None
+    return out
+
+
+@router.post("/troupes/{troupe_id}/character-imports", status_code=status.HTTP_201_CREATED)
+def run_troupe_import(
+    troupe_id: uuid.UUID,
+    files: Uploads,
+    db: DbSession,
+    user: CurrentUser,
+    decisions: DecisionsForm = None,
+) -> TroupeImportOut:
+    """Import the troupe's export as the review showed, in one transaction. Refused
+    while a character with the name of one here waits for staff to choose."""
+    troupe, can_give, chosen = importing_troupe(db, user, troupe_id, decisions)
+    bundle = read_files(files)
+    run = troupe_import.TroupeImport(
+        db,
+        user,
+        troupe,
+        bundle,
+        can_give=can_give,
+        decisions=chosen,
+        root=pictures.upload_dir(),
+        write_pictures=True,
+    )
+    found = run.run()
+    waiting = [
+        p.entry.document.character.name
+        for p in found
+        if p.outcome == "undecided" and p.entry.document
+    ]
+    if waiting or not any(p.outcome in ("new", "given", "held", "replaced") for p in found):
+        undo_pictures(run.written)
+        db.rollback()
+        if waiting:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                "Choose whether to skip, replace or copy each character with the name of one"
+                f" here: {', '.join(waiting)}.",
+            )
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "There is nothing to import.")
+    out = troupe_import_out(troupe, can_give, found)
+    try:
+        db.commit()
+    except BaseException:
+        undo_pictures(run.written)
+        raise
+    return out

@@ -305,6 +305,33 @@ test("a storyteller exports the troupe's characters and NPCs as a .zip, with ema
   for (const name of ["manifest.json", `npcs/ArchivistBel-${day}.horatio-character.json`, `sheets/ArchivistBel-${day}.html`]) expect(zipped.includes(name)).toBe(true);
 });
 
+test("a storyteller imports the troupe's export, choosing what to do with an NPC already here (#567)", async ({ browser }) => {
+  const custodian = await person(browser, "reimport-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "reimport-lead");
+  const { troupeId } = await troupeWithNpc(custodian.page, lead.handle, "Court of Returns", "Keeper Anselm");
+
+  const p = lead.page;
+  const zip = await p.request.get(`/api/troupes/${troupeId}/character-backups?which=npcs`);
+  expect(zip.status()).toBe(200);
+  await p.goto(`/troupes/${troupeId}/characters?show=npcs`);
+  await p.getByRole("button", { name: "More for the troupe's characters" }).click();
+  await p.getByRole("menuitem", { name: "Import characters and NPCs…" }).click();
+  await p.getByLabel("Files to import").setInputFiles({ name: "court.zip", mimeType: "application/zip", buffer: await zip.body() });
+
+  // It has the name of the NPC here, so it waits for a choice.
+  const anselm = p.getByRole("listitem", { name: "Keeper Anselm" });
+  await expect(anselm).toContainText("has this name: skip it, replace it or add a copy.");
+  await expect(p.getByRole("button", { name: "Import 0 characters" })).toBeDisabled();
+  await anselm.getByRole("radio", { name: "Add a copy" }).check();
+  await expect(anselm).toContainText("Comes in as a new NPC of the troupe.");
+  await p.getByRole("button", { name: "Import 1 character" }).click();
+  await expect(p.getByText("1 new NPC.", { exact: true })).toBeVisible();
+
+  await p.getByRole("link", { name: "Back to the characters" }).click();
+  await expect(p.getByRole("row", { name: /Keeper Anselm/ })).toHaveCount(2);
+});
+
 test("a storyteller sends a claim link, and a newcomer signs up through it and claims the NPC", async ({ browser }) => {
   const custodian = await person(browser, "claim-cust");
   makeCustodian(custodian.email);
