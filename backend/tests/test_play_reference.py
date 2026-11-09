@@ -26,6 +26,7 @@ from horatio.reference import (
 from horatio.rules.files import DATA_DIR, all_rule_set_files, load_rule_set
 from tests.api_helpers import Troupe
 from tests.test_api_character_search import member
+from tests.test_catalogue_descriptions import PAGE
 
 
 @pytest.fixture
@@ -241,6 +242,108 @@ def test_an_others_entry_needing_a_power_has_no_cost_or_switch_without_it() -> N
     assert [o.switches for o in other_powers(held, rule_set)] == [
         [a["key"] for a in actives(swarm)]
     ]
+
+
+def test_every_elder_and_luminary_power_says_what_it_does_and_where() -> None:
+    """Each shows a line and its page on the Pools tab (issue #587): its description
+    and page in the catalogue. One whose line starts with a plain cost has that cost
+    from its [[others]] entry, for its Use button."""
+    rule_set = load_rule_set(DATA_DIR / "bns_met_vampire.toml")
+    book = catalogue()
+    found = {
+        key: trait
+        for key, trait in rule_set.traits.items()
+        if key[0] in ("elder_disciplines", "luminary_disciplines")
+    }
+
+    assert found
+    unsaid = sorted(
+        name
+        for (_, name), trait in found.items()
+        if not trait.description or not PAGE.fullmatch(trait.page_reference or "")
+    )
+    assert unsaid == []
+    assert len({trait.description for trait in found.values()}) == len(found)
+    for key, trait in found.items():
+        said = cost({"note": trait.description}, Sheet())
+        if said is not None:
+            assert cost(book.others.get(key, {}), Sheet()) == said, key
+
+
+def test_elder_powers_switch_on_what_they_change(troupe: Troupe) -> None:
+    """Issue #587: Flick's switch adds +3 to Brawl (core p. 220), Force makes a Brawl
+    hit 4 (core pp. 219-220), Breath of the Dragon's switch makes the thrown attack 4
+    aggravated (core p. 223), and Psychic Assault has its line, page and cost alone."""
+    character_id = created(
+        troupe,
+        "Ancient",
+        ("attributes", "Physical", 5),
+        ("skills", "Brawl", 3),
+        ("skills", "Athletics", 2),
+        ("disciplines", "Potence", 5),
+        ("elder_disciplines", "Potence: Flick", None),
+        ("elder_disciplines", "Potence: Force", None),
+        ("elder_disciplines", "Vicissitude: Breath of the Dragon", None),
+        ("elder_disciplines", "Auspex: Psychic Assault", None),
+    )
+
+    found = reference(troupe, character_id)
+    others = {o["name"]: o for o in found["other_powers"]}
+    blood = {"tracker": "blood", "amount": 1}
+    assault = others["Auspex: Psychic Assault"]
+    assert assault["note"].startswith("1 Blood, standard action, Auspex test: 4 damage")
+    assert (assault["page"], assault["cost"], assault["switches"]) == ("213", blood, [])
+    flick = others["Potence: Flick"]
+    assert (flick["page"], flick["cost"], flick["switches"]) == ("220", blood, ["Flick"])
+    assert others["Vicissitude: Breath of the Dragon"]["cost"] == {"tracker": "blood", "amount": 2}
+
+    brawl = pool(found, "attack:Brawl")
+    assert ("Flick", "Flick", 3) in switched(brawl)
+    # Potence 5 makes it 3, and Force 4; Intensity's 2 more on an exceptional success.
+    assert (brawl["damage"]["total"], brawl["damage"]["exceptional"]) == (4, 2)
+    thrown = pool(found, "attack:Athletics")["damage"]
+    assert (thrown["total"], thrown["type"]) == (1, "normal")
+    assert [(s["switch"], s["amount"], s["type"]) for s in thrown["switched"]] == [
+        ("Breath of the Dragon", 3, "aggravated")
+    ]
+
+
+def test_luminary_powers_switch_on_forms_blood_health_and_a_frenzy() -> None:
+    """Issue #587: Ghost Body is a form (Vol. 2 p. 233), Awaken the Heartsblood gives
+    2 more Blood a turn (p. 236), Mythic Form's Tough 4 Healthy (p. 234), and Embrace
+    the Beast a rage frenzy's numbers (core p. 301), +3 with Manipulation (p. 117)."""
+    held = [
+        "Protean: Ghost Body",
+        "Protean: Mythic Form",
+        "Quietus: Awaken the Heartsblood",
+        "Animalism: Embrace the Beast",
+    ]
+    sheet = Sheet(
+        ratings={
+            ("attributes", "Physical"): 4,
+            ("skills", "Brawl"): 2,
+            ("skills", "Dodge"): 2,
+            **{("luminary_disciplines", name): 1 for name in held},
+        },
+        focuses={"Manipulation"},
+        disciplines={"Protean": 5, "Quietus": 5, "Animalism": 5},
+    )
+
+    worked = work_out(sheet, {})
+    found = by_key(worked.switches)
+    ghost = found["Ghost Body"]
+    assert (ghost.form, ghost.origin, ghost.page) == (True, "Protean: Ghost Body", "Vol. 2, p. 233")
+    assert found["Awaken the Heartsblood"].blood_per_turn == 2
+    assert [(h.level, h.boxes) for h in found["Mythic Form: Tough"].health] == [("Healthy", 4)]
+    assert not found["Mythic Form: Tough"].form
+
+    made = {p.key: p for p in pools(sheet, worked.effects, worked.hurts, worked.switches)}
+    on = [(s.switch, s.value) for s in made["attack:Brawl"].switched]
+    assert ("Embrace the Beast", 1) in on and ("Embrace the Beast", 2) in on
+    assert ("Mythic Form: Vicious", 3) in on
+    assert ("Embrace the Beast", -2) in [(s.switch, s.value) for s in made["dodge"].switched]
+    physical = made["defense:Physical"].switched
+    assert [(s.switch, s.value) for s in physical] == [("Embrace the Beast", -2)]
 
 
 def test_the_path_of_the_graveborn_has_its_five_powers(troupe: Troupe) -> None:
