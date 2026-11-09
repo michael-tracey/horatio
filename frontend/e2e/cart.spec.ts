@@ -114,10 +114,22 @@ test("a Ventrue takes Royalty from the sheet, places 4, 3 and 2 free dots, chang
   const chosen = p.locator('[data-free-choices="Ventrue Royalty"]');
 
   // The Add panel asks for the choices as the merit goes in: 4 in Resources, 3 in Herd, 2 in Allies.
+  // Until they have come, it shows it is loading them and can't be added without them (#576).
+  let release = () => {};
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await p.route("**/api/characters/*/free-choices?*", async (route) => {
+    await held;
+    await route.continue();
+  });
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
   await p.getByLabel("Search Merits").fill("Ventrue Royalty");
   await p.getByRole("button", { name: /^Ventrue Royalty/ }).click();
+  await expect(p.getByRole("status", { name: "Loading its choices…" })).toBeVisible();
+  await expect(p.getByRole("button", { name: "Add to cart" })).toBeDisabled();
+  release();
   await expect(p.getByText("Choose your free backgrounds")).toBeVisible();
+  await expect(p.getByRole("status", { name: "Loading its choices…" })).toHaveCount(0);
+  await p.unrouteAll();
   await expect(p.getByText("Place 4, 3 and 2 dots, each in a different one.")).toBeVisible();
   await p.getByLabel("4 dots in").selectOption("Resources");
   await p.getByLabel("3 dots in").selectOption("Herd");
