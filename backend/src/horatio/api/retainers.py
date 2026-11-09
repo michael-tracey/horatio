@@ -197,12 +197,7 @@ def save_retainers(
     """Replace the list. The player edits descriptions and losses, and the names
     and dots of those not bought on the sheet; staff do the same and alone link
     an NPC."""
-    character = visible_character(db, user, character_id)
-    if not retainers.can_edit(db, user, character):
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN, "Only the character's player or its staff can change this."
-        )
-    character = sheets.lock_character(db, character.id)
+    character = editable(db, user, character_id)
     retainers.replace(
         db,
         user,
@@ -212,6 +207,45 @@ def save_retainers(
     )
     db.commit()
     return retainers_out(db, character, user)
+
+
+@router.patch("/retainers")
+def save_retainer(
+    character_id: uuid.UUID, body: RetainerIn, db: DbSession, user: CurrentUser
+) -> RetainersOut:
+    """Save one Retainer, leaving the others as they are: each is edited on the
+    sheet under its own row. Who may do what is as for the whole list."""
+    character = editable(db, user, character_id)
+    retainers.save(
+        db,
+        user,
+        character,
+        retainers.Draft(**body.model_dump()),
+        link=retainers.can_link(db, user, character),
+    )
+    db.commit()
+    return retainers_out(db, character, user)
+
+
+@router.delete("/retainers/{retainer_id}")
+def remove_retainer(
+    character_id: uuid.UUID, retainer_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> RetainersOut:
+    """Remove one Retainer from a merit, or listed before each was bought on its own."""
+    character = editable(db, user, character_id)
+    retainers.remove(db, user, character, retainer_id)
+    db.commit()
+    return retainers_out(db, character, user)
+
+
+def editable(db: Session, user: User, character_id: uuid.UUID) -> Character:
+    """The character, locked to change its Retainers, for its player or staff."""
+    character = visible_character(db, user, character_id)
+    if not retainers.can_edit(db, user, character):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Only the character's player or its staff can change this."
+        )
+    return sheets.lock_character(db, character.id)
 
 
 @router.delete("/retainers/{retainer_id}/neglected")

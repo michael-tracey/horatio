@@ -49,6 +49,7 @@ export function AddTraitPanel({
   held,
   lines,
   initial,
+  pick,
   onAdd,
   onClose,
 }: {
@@ -61,14 +62,16 @@ export function AddTraitPanel({
   lines: CartLine[];
   /** The category to open on; the first if not given. */
   initial?: string;
+  /** A trait of it to open on, chosen ("Buy another Retainer"). */
+  pick?: string;
   onAdd: (trait: NewTrait) => void;
   onClose: () => void;
 }) {
   const [category, setCategory] = useState(initial ?? categories[0] ?? "");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(pick ?? "");
   const named = useClanName();
   const [filter, setFilter] = useState("can");
-  const [name, setName] = useState("");
+  const [name, setName] = useState(pick ?? "");
   const [detail, setDetail] = useState("");
   const [rating, setRating] = useState(1);
   const [teacher, setTeacher] = useState("");
@@ -122,9 +125,11 @@ export function AddTraitPanel({
   const quote = useQuote(character.id, priced, body);
   // On a phone the list grows with the page, so the chosen trait's form is brought into view.
   const form = useRef<HTMLFormElement>(null);
+  // Once it is listed, for one chosen as the panel opens.
+  const listed = !!trait;
   useEffect(() => {
     if (name) form.current?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
-  }, [name]);
+  }, [name, listed]);
 
   const choose = (t: TraitOut) => {
     setAsking(null);
