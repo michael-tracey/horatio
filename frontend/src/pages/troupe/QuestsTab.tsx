@@ -4,6 +4,7 @@ import { Link, Route, Routes, useNavigate, useSearchParams } from "react-router"
 import { api, unwrap } from "../../api/client";
 import type { QuestIn, QuestRequestOut, QueuedApproval } from "../../api/types";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, PageTabs, Select, Textarea } from "../../components/ui";
+import { WebLink } from "../../components/WebLink";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { buildsFromLocation, changeFromRequest, requestKindText } from "../quests/locationQuests";
@@ -132,9 +133,9 @@ function RequestCard({ request: r, troupeId, staff }: { request: QuestRequestOut
       </p>
       {r.details.map_link && (
         <p className="mt-1">
-          <a href={r.details.map_link} target="_blank" rel="noreferrer" className="text-gold hover:text-parchment">
+          <WebLink url={r.details.map_link} className="text-gold hover:text-parchment">
             Open the map
-          </a>
+          </WebLink>
         </p>
       )}
       {r.location && (

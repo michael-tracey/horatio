@@ -23,6 +23,7 @@ from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.resets import cancel_reset, email_reset, issue_reset, live_reset, reset_url
 from horatio.connectors import email
+from horatio.links import web_address
 from horatio.models import AuditEvent, Character, EmailChange, PasswordReset, Troupe, User
 from horatio.permissions import (
     Role,
@@ -206,19 +207,6 @@ def profile(db: DbSession, viewer: User, user: User) -> PlayerOut:
 def reset_expiry(db: DbSession, user: User) -> datetime | None:
     live = live_reset(db, user)
     return live.expires_at if live else None
-
-
-def web_address(url: str) -> str:
-    """`url` trimmed, if it is an http or https address; refused otherwise, so a
-    link can never run script (javascript:) or open something else."""
-    url = url.strip()
-    parts = urlsplit(url)
-    if parts.scheme not in ("http", "https") or not parts.netloc or len(url) > 300:
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_CONTENT,
-            f"{url or 'A link'} is not a web address: start it with https://.",
-        )
-    return url
 
 
 def clean_link(link: Link) -> Link:

@@ -472,8 +472,8 @@ class LocationIn(BaseModel):
     influence_type: InfluenceType | None = None
     influence_area: str = Field(default="", max_length=120)
     address: str = Field(default="", max_length=500)
-    web_address: str = Field(default="", max_length=500)
-    map_link: str = Field(default="", max_length=1000)
+    web_address: str = Field(default="", max_length=locations.WEB_ADDRESS)
+    map_link: str = Field(default="", max_length=locations.MAP_LINK)
     feeding_block: str = Field(default="", max_length=120)
     locked: bool = False
     haven_of_id: uuid.UUID | None = None

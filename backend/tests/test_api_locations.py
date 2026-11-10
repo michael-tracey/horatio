@@ -7,8 +7,10 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
+from horatio.models import Location
 from tests.api_helpers import Person, Troupe
 from tests.test_api_downtimes import member_character
 
@@ -501,6 +503,51 @@ def test_the_location_keeps_a_log_of_changes(scene: Scene) -> None:
 def test_names_are_unique_in_the_troupe(scene: Scene) -> None:
     scene.added(name="Warehouse", rating=1)
     assert scene.add(name="Warehouse", rating=2).status_code == 409
+
+
+NOT_WEB_ADDRESSES = [
+    "javascript:alert(1)",
+    "  JavaScript:alert(1)",
+    "data:text/html,<script>alert(1)</script>",
+    "vbscript:msgbox(1)",
+    "//evil.example/",
+]
+
+
+@pytest.mark.parametrize("key", ["web_address", "map_link"])
+def test_links_are_web_addresses(scene: Scene, key: str) -> None:
+    for url in NOT_WEB_ADDRESSES:
+        body: dict[str, Any] = {key: url}
+        refused = scene.add(name="Warehouse", **body)
+        assert refused.status_code == 422, url
+        assert refused.json()["detail"] == (
+            f"{url.strip()} is not a web address: start it with https://."
+        )
+    made = scene.added(name="Warehouse", **{key: " https://warehouse.example.com/ "})
+    assert made[key] == "https://warehouse.example.com/"
+
+    for url in NOT_WEB_ADDRESSES:
+        refused = scene.change(made, **{key: url})
+        assert refused.status_code == 422, url
+    changed = scene.change(made, **{key: "http://warehouse.example.org/map"})
+    assert changed.status_code == 200, changed.text
+    assert changed.json()[key] == "http://warehouse.example.org/map"
+    assert scene.change(made, **{key: ""}).json()[key] == ""
+
+
+def test_a_stored_link_that_isnt_a_web_address_doesnt_block_other_changes(
+    scene: Scene, session: Session
+) -> None:
+    made = scene.added(name="Warehouse")
+    session.execute(
+        update(Location)
+        .where(Location.id == made["id"])
+        .values(web_address="javascript:alert(1)", map_link="data:text/html,hi")
+    )
+    session.flush()
+    renamed = scene.change(made, name="Old Warehouse")
+    assert renamed.status_code == 200, renamed.text
+    assert scene.change(made, map_link="javascript:alert(2)").status_code == 422
 
 
 def test_the_controller_must_be_in_the_troupe(scene: Scene) -> None:

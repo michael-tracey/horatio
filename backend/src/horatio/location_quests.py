@@ -45,7 +45,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, locations, quest_requirements, quests
+from horatio import audit, links, locations, quest_requirements, quests
 from horatio.models import Character, Location, Quest, QuestRequest, QuestScenario, Troupe, User
 from horatio.notifications import notify, staff_for
 from horatio.permissions import TroupeAction
@@ -712,7 +712,7 @@ class RequestFields(BaseModel):
     # The place, typed in, to acquire or undermine.
     name: str = Field(default="", max_length=120)
     address: str = Field(default="", max_length=500)
-    map_link: str = Field(default="", max_length=1000)
+    map_link: str = Field(default="", max_length=locations.MAP_LINK)
     # One of the character's own locations, to add a quality to or repair.
     location_id: uuid.UUID | None = None
     quality: str = Field(default="", max_length=80)
@@ -753,7 +753,7 @@ def make_request(
             details = {
                 "name": name,
                 "address": body.address.strip(),
-                "map_link": body.map_link.strip(),
+                "map_link": links.optional_web_address(body.map_link, locations.MAP_LINK),
             }
         case "quality":
             location = own_location(db, character, troupe, body.location_id)
@@ -832,7 +832,11 @@ def match(
             raise unprocessable("Choose a location, or make a new one.")
         new.name = new.name or request.details.get("name", "")
         new.address = new.address or request.details.get("address", "")
-        new.map_link = new.map_link or request.details.get("map_link", "")
+        # Only a web address is carried over as the map link.
+        given = request.details.get("map_link", "")
+        new.map_link = new.map_link or (
+            given if links.is_web_address(given, locations.MAP_LINK) else ""
+        )
         location, _ = locations.save(db, staff, troupe, None, new)
     request.location_id = location.id
     if request.status == "new":
