@@ -43,6 +43,9 @@ from horatio import dark_pack, fetching
 from horatio.models import User
 
 DEFAULT_ADDRESS = "https://static.krcg.org/"
+# Where a fetch of the symbols may go: KRCG's static files, which it serves itself,
+# without sending Horatio on anywhere else (checked 2026-11-10).
+SOURCE = fetching.Source("KRCG (static.krcg.org)", ("static.krcg.org",))
 KINDS = ("svg", "webp", "png")
 GROUPS = ("clan", "disc/inf", "disc/sup", "icon")
 # KRCG's fonts, in web/: the disciplines, virtues and card types, and the clans.
@@ -209,7 +212,7 @@ def looks_like(kind: str, data: bytes) -> bool:
 def fetch(user: User, address: str) -> None:
     """Start fetching the symbols from `address` (KRCG's, by default), in the
     background."""
-    address = fetching.check_address(address)
+    address = fetching.check_address(address, SOURCE)
     root = dark_pack.writable_root()
     user_id = user.id
 
@@ -236,7 +239,7 @@ def fetch_now(root: Path, address: str) -> dict[str, Any]:
     new.mkdir()
     deadline = time.monotonic() + FETCH_TIME
     try:
-        with fetching.client() as http:
+        with fetching.client(SOURCE) as http:
             first = True
 
             def get(url: str, cap: int) -> bytes:

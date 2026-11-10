@@ -67,6 +67,7 @@ export function VtesSymbols() {
             <>
               <FetchForm
                 defaultAddress={s!.default_address}
+                hint="Only an address on static.krcg.org. Change it if KRCG moves the files."
                 agreement={s!.agreement}
                 disabled={!!s!.job}
                 pending={fetch.isPending}

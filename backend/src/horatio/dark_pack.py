@@ -302,6 +302,17 @@ DEFAULT_ADDRESS = (
     "https://www.dropbox.com/scl/fo/yyn4a7mwo913xe1f8vzs7/AKX0VWS23y5f5CWL-WlPuzU"
     "?rlkey=2x2fn5ic3tfp1zzublmmtkqca&dl=1"
 )
+# Where a fetch of the kit may go: Dropbox, and nowhere else (horatio.fetching).
+SOURCE = fetching.Source(
+    "Dropbox",
+    (
+        # The shared folder's address, as Paradox's page gives it.
+        "www.dropbox.com",
+        # Where Dropbox sends a dl=1 address on to for the zip: a name of its own
+        # under dl.dropboxusercontent.com for each download (checked 2026-11-10).
+        "*.dl.dropboxusercontent.com",
+    ),
+)
 AGREEMENT = (
     "https://www.paradoxinteractive.com/games/world-of-darkness/community/dark-pack-agreement"
 )
@@ -360,7 +371,7 @@ def imported_at(record: dict[str, Any]) -> datetime | None:
 
 def fetch(user: User, address: str) -> None:
     """Start fetching the kit from `address` and importing it, in the background."""
-    address = fetching.check_address(address)
+    address = fetching.check_address(address, SOURCE)
     into = writable_root()
     user_id = user.id
 
@@ -385,7 +396,7 @@ def fetch_now(into: Path, address: str) -> dict[str, Any]:
     try:
         download = work / "download.zip"
         deadline = time.monotonic() + DOWNLOAD_TIME
-        with fetching.client() as http:
+        with fetching.client(SOURCE) as http:
             fetching.download(
                 http,
                 address,

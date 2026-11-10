@@ -6,14 +6,22 @@ Agreement, so Horatio never ships them.
 Downloads are https only, with a User-Agent naming Horatio, timeouts and a size
 cap, and go to a file on the server's permanent storage rather than into memory.
 
+**Each tool fetches only from its own hosts** (its `Source`): the address the
+custodian gives, and every address it redirects to, must be https, on the default
+port, and on the tool's list. A literal IP address or `localhost` is never fetched
+from, even if a list were to name one. So the server can't be pointed at itself,
+the cloud's metadata service or anything else on its network.
+
 **A fetch runs in the background**, in a thread of the API process, as the Yorick
 import does: the kit is about 450 MB. How far it has got, and why the last one
 failed, are kept in memory, as the API runs as one process; a restart forgets
 them, and the next fetch sweeps up any files a stopped one left.
 """
 
+import ipaddress
 import logging
 import os
+import re
 import shutil
 import threading
 import time
@@ -23,7 +31,6 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
 
 import httpx
 from sqlalchemy.orm import Session
@@ -53,29 +60,86 @@ def user_agent() -> str:
     return f"Horatio ({get_settings().source_url})"
 
 
-def check_address(address: str) -> str:
-    """The address, trimmed, if it is one Horatio will fetch from: https only."""
+@dataclass(frozen=True)
+class Source:
+    """Where a tool fetches from: its name for the custodian, and the hosts it may
+    fetch from, each a host name or `*.` and a domain for any one name under it."""
+
+    name: str
+    hosts: tuple[str, ...]
+
+    def allows(self, host: str) -> bool:
+        host = host.lower()
+        if not host or _ip_or_local(host):
+            return False
+        for allowed in self.hosts:
+            if allowed.startswith("*."):
+                first, _, rest = host.partition(".")
+                if first and rest == allowed[2:]:
+                    return True
+            elif host == allowed:
+                return True
+        return False
+
+
+# A host that ends in a number is an IPv4 address to a browser and to the resolver,
+# however it is written (2130706433, 0x7f.1, 127.1).
+_NUMBER = re.compile(r"(0x[0-9a-f]*|[0-9]+)", re.IGNORECASE)
+
+
+def _ip_or_local(host: str) -> bool:
+    host = host.rstrip(".")
+    try:
+        ipaddress.ip_address(host.strip("[]"))
+    except ValueError:
+        pass
+    else:
+        return True
+    return (
+        bool(_NUMBER.fullmatch(host.rpartition(".")[2]))
+        or host == "localhost"
+        or host.endswith(".localhost")
+    )
+
+
+def _refuse(url: httpx.URL, source: Source) -> str | None:
+    """Why Horatio won't fetch `url` for `source`, if it won't."""
+    if url.scheme != "https":
+        return "isn't https"
+    if url.port not in (None, 443) or not source.allows(url.host):
+        return f"isn't {source.name}"
+    return None
+
+
+def check_address(address: str, source: Source) -> str:
+    """The address, trimmed, if it is one Horatio will fetch from for `source`:
+    https, and on its list."""
     address = address.strip()
-    parts = urlsplit(address)
-    if parts.scheme != "https" or not parts.hostname:
+    try:
+        url = httpx.URL(address)
+    except httpx.InvalidURL:
+        url = None
+    if url is None or url.scheme != "https" or not url.host:
         raise Failed("Only https addresses can be fetched from.")
+    if _refuse(url, source):
+        raise Failed(f"Horatio fetches these only from {source.name}.")
     return address
 
 
-def _https_only(request: httpx.Request) -> None:
-    # Checked again on every redirect.
-    if request.url.scheme != "https":
-        raise Failed(f"The address sent Horatio on to {request.url}, which isn't https.")
+def client(source: Source) -> httpx.Client:
+    def checked(request: httpx.Request) -> None:
+        # Every request, the first and each redirect, before it is sent.
+        why = _refuse(request.url, source)
+        if why:
+            raise Failed(f"The address sent Horatio on to {request.url}, which {why}.")
 
-
-def client() -> httpx.Client:
     return httpx.Client(
         transport=transport,
         follow_redirects=True,
         max_redirects=10,
         timeout=httpx.Timeout(60, connect=20),
         headers={"User-Agent": user_agent()},
-        event_hooks={"request": [_https_only]},
+        event_hooks={"request": [checked]},
     )
 
 

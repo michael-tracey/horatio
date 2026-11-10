@@ -40,10 +40,12 @@ export function NotSetUp({ configured, writable }: { configured: boolean; writab
 
 /**
  * The address to fetch from, filled with the usual one, and the licence to accept
- * first: the Dark Pack Agreement is the operator's to accept, not Horatio's.
+ * first: the Dark Pack Agreement is the operator's to accept, not Horatio's. The
+ * server fetches only from the tool's own hosts; `hint` says which.
  */
 export function FetchForm({
   defaultAddress,
+  hint,
   agreement,
   disabled,
   pending,
@@ -52,6 +54,7 @@ export function FetchForm({
   children,
 }: {
   defaultAddress: string;
+  hint: string;
   agreement: string;
   disabled: boolean;
   pending: boolean;
@@ -69,7 +72,7 @@ export function FetchForm({
         onFetch(address);
       }}
     >
-      <Field label="Address" hint="Only https addresses. Change it if the files move.">
+      <Field label="Address" hint={hint}>
         <Input type="url" value={address} onChange={(e) => setAddress(e.target.value)} required />
       </Field>
       <LicenceBox agreement={agreement} accepted={accepted} onChange={setAccepted} />
