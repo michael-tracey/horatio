@@ -28,6 +28,13 @@ sheet's own levels stays, since injuries carry between forms (core p. 114). Bloo
 over the usual most goes when Blood of Potency ends (core p. 188). Each game
 starts with everything off.
 
+A power whose qualities are picked each use (issue #599), such as Flesh of Marble's
+two Protective Gear qualities (Vol. 2 p. 232), has a tap for each:
+"pick:<key>/<quality>" +1 picks one while it is on and -1 drops it. Picking past
+its count drops the oldest, and switching it off drops them all, since using it
+again means picking again. While it is on, what they do to the pools counts as an
+equipped item's qualities do (horatio.equipment.picked_modifiers).
+
 A Stock NPC (issue #215) has only two trackers, from its stat block
 (horatio.rules.stock): its kind's resource in Blood's place (Rage for a werewolf)
 and its health levels, as one track. It has no Willpower, Morality or Beast
@@ -97,7 +104,7 @@ from horatio.models import (
     Troupe,
     User,
 )
-from horatio.rules.equipment import EQUIPPED_KINDS
+from horatio.rules.equipment import EQUIPPED_KINDS, EquipmentRules
 from horatio.rules.feeding import clan_family
 from horatio.rules.splats import SPLATS, Panels, Vitae, both
 
@@ -114,6 +121,8 @@ DERANGEMENT_TRAITS = 3
 TEMPORARY = "derangement:"
 # A form's or power's taps: +1 switches it on, -1 off.
 SWITCH = "power:"
+# A quality picked for a power while it is on: "pick:Flesh of Marble/Ballistic".
+PICK = "pick:"
 # A Retainer's health and Blood: "retainer:Bocephus/health" (horatio.retainers).
 RETAINER = "retainer:"
 # Equipping an item: +1 equips it, -1 takes it off.
@@ -201,6 +210,18 @@ class HeldItem:
 
 
 @dataclass(frozen=True)
+class PickOption:
+    """A quality a power's player can pick each use (issue #599), with what it does
+    to the pools while the power is on."""
+
+    name: str
+    # What it does at the table: "+3 defence against firearms, +1 against the rest".
+    play: str
+    page: str | None
+    modifiers: tuple[equipment.ItemModifier, ...] = ()
+
+
+@dataclass(frozen=True)
 class Limits:
     """What the sheet allows each tracker, and where a game starts it."""
 
@@ -236,6 +257,10 @@ class Limits:
     held: Mapping[str, int] = field(default_factory=dict[str, int])
     # The forms and powers the sheet has that can be switched on.
     switches: tuple[reference.Switch, ...] = ()
+    # What can be picked for each switch with `picks`, by its key.
+    options: Mapping[str, tuple[PickOption, ...]] = field(
+        default_factory=dict[str, tuple[PickOption, ...]]
+    )
     # Each Retainer's health and Blood.
     retainers: tuple[RetainerTrack, ...] = ()
     # What the "blood" tracker is: a Stock NPC's kind's resource, such as Rage.
@@ -297,6 +322,20 @@ class Limits:
     def switch(self, key: str) -> reference.Switch | None:
         return next((s for s in self.switches if s.key == key), None)
 
+    def picked(self, tracker: str) -> tuple[str, str]:
+        """The power a pick tap is for, by name, and the quality: ("Flesh of Marble",
+        "Ballistic")."""
+        key, _, quality = tracker.removeprefix(PICK).rpartition("/")
+        switch = self.switch(key)
+        return (switch.name if switch else key), quality
+
+    def option(self, tracker: str) -> tuple[reference.Switch, PickOption] | None:
+        """The switch and quality a pick tap names, or None if it can't be picked."""
+        key, _, name = tracker.removeprefix(PICK).rpartition("/")
+        found = self.switch(key)
+        option = next((o for o in self.options.get(key, ()) if o.name == name), None)
+        return (found, option) if found is not None and option is not None else None
+
     def on(self, keys: Sequence[str]) -> list[reference.Switch]:
         """The switches on, in the order they were switched on."""
         return [s for key in keys if (s := self.switch(key)) is not None]
@@ -323,6 +362,8 @@ class Limits:
         sheet does not have."""
         if tracker.startswith(SWITCH):
             return 1 if self.switch(tracker.removeprefix(SWITCH)) else None
+        if tracker.startswith(PICK):
+            return 1 if self.option(tracker) else None
         if tracker.startswith(EQUIP):
             return 1 if self.item(tracker.removeprefix(EQUIP)) else None
         if play_status.is_status(tracker):
@@ -374,6 +415,8 @@ class Limits:
             "uses": {e.key: e.uses for e in self.expendables} | self.retainer_trackers(),
             # Forms and powers switched on: none, as a game starts.
             "on": [],
+            # The qualities picked for each power on, by its key.
+            "picked": {},
             # Items equipped: as the last game left them.
             "equipped": [list(e) for e in self.equipped],
         }
@@ -403,6 +446,9 @@ class Limits:
         if tracker.startswith(SWITCH):
             switch = self.switch(tracker.removeprefix(SWITCH))
             return switch.name if switch else tracker.removeprefix(SWITCH)
+        if tracker.startswith(PICK):
+            power, quality = self.picked(tracker)
+            return f"{power}: {quality}"
         if tracker.startswith(EQUIP):
             item = self.item(tracker.removeprefix(EQUIP))
             return item.name if item else "an item"
@@ -471,6 +517,7 @@ def known_tracker(tracker: str) -> bool:
         or tracker == DRANK
         or tracker.startswith(("trait:", "counter:", RETAINER))
         or (tracker.startswith(SWITCH) and len(tracker) > len(SWITCH))
+        or (tracker.startswith(PICK) and "/" in tracker)
         or equipped_id(tracker) is not None
         or temporary_id(tracker) is not None
         or play_status.is_status(tracker)
@@ -574,6 +621,26 @@ def held_items(db: Session, character: Character) -> tuple[HeldItem, ...]:
         )
         for item in items
     )
+
+
+def pick_options(
+    rules: EquipmentRules, switches: Iterable[reference.Switch]
+) -> dict[str, tuple[PickOption, ...]]:
+    """What can be picked for each switch with `picks` (issue #599): every quality of
+    its kind in the character's rules, in their order."""
+    return {
+        s.key: tuple(
+            PickOption(
+                name=q.name,
+                play=q.play,
+                page=q.page,
+                modifiers=tuple(equipment.picked_modifiers(rules, q.kind, q.name, s.key)),
+            )
+            for q in rules.qualities_of(s.picks.kind)
+        )
+        for s in switches
+        if s.picks is not None
+    }
 
 
 def carried_equipped(
@@ -744,6 +811,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
     # for roleplay only.
     least = 1 if splat.weakness and malkavian(rows) else 0
     traits, held = carried(db, character, game, least)
+    switches = tuple(reference.switches(rows, rule_set))
     found = Limits(
         generation=generation,
         blood=blood,
@@ -764,7 +832,8 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         flaws=derangement_flaws(rows),
         temporary=temporary_derangements(db, character),
         held=held,
-        switches=tuple(reference.switches(rows, rule_set)),
+        switches=switches,
+        options=pick_options(rule_set.equipment, switches),
         blood_name=blood_name,
         trackers=trackers_for(panels),
         panels=panels,
@@ -824,6 +893,8 @@ def switch_off(
     for i in reversed(lost):
         del marks[i]
     on.remove(key)
+    # Using it again means picking its qualities again (Vol. 2 p. 232).
+    state.get("picked", {}).pop(key, None)
     state["blood"] = min(state["blood"], limits.blood_most(on))
     if said is not None and lost:
         said.append(f"{len(lost)} damage in its levels gone")
@@ -848,6 +919,34 @@ def switch(
     elif amount < 0 and before:
         switch_off(state, limits, key, said)
     return before, int(key in on)
+
+
+def pick(
+    state: dict[str, Any], limits: Limits, tracker: str, amount: int, said: list[str] | None = None
+) -> tuple[int, int]:
+    """Pick a quality for a power that is on (amount > 0), or drop it. Past the
+    power's count, the oldest picked goes."""
+    found = limits.option(tracker)
+    if found is None:
+        return 0, 0
+    switch, option = found
+    picked: dict[str, list[str]] = state.setdefault("picked", {})
+    now = list(picked.get(switch.key, []))
+    before = int(option.name in now)
+    count = switch.picks.count if switch.picks else 0
+    if amount > 0 and not before and switch.key in state.get("on", []):
+        while now and len(now) >= count:
+            gone = now.pop(0)
+            if said is not None:
+                said.append(f"dropped {gone} ({count} at most)")
+        now.append(option.name)
+    elif amount < 0 and before:
+        now.remove(option.name)
+    if now:
+        picked[switch.key] = now
+    else:
+        picked.pop(switch.key, None)
+    return before, int(option.name in now)
 
 
 def equip(
@@ -886,6 +985,8 @@ def apply(
         return None
     if event.tracker.startswith(SWITCH):
         return switch(state, limits, event.tracker.removeprefix(SWITCH), event.amount, said)
+    if event.tracker.startswith(PICK):
+        return pick(state, limits, event.tracker, event.amount, said)
     if event.tracker.startswith(EQUIP):
         return equip(state, limits, event, said)
     if event.tracker == "health":
@@ -1013,6 +1114,14 @@ def describe(
             text = f"Turned into {name}" if event.amount > 0 else f"Out of {name}"
         else:
             text = f"{name} on" if event.amount > 0 else f"{name} off"
+        return f"{text}: {', '.join(said)}" if said else text
+    if event.tracker.startswith(PICK):
+        power, quality = limits.picked(event.tracker)
+        text = (
+            f"Picked {quality} for {power}"
+            if event.amount > 0
+            else f"Dropped {quality} from {power}"
+        )
         return f"{text}: {', '.join(said)}" if said else text
     if event.tracker.startswith(EQUIP):
         text = f"Equipped {name}" if event.amount > 0 else f"Unequipped {name}"

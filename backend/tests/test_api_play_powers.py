@@ -25,7 +25,7 @@ def troupe(client_for: Callable[[], TestClient], session: Session) -> Troupe:
     return Troupe(client_for, session)
 
 
-def give(session: Session, character_id: str, category: str, name: str, rating: int) -> None:
+def give(session: Session, character_id: str, category: str, name: str, rating: int | None) -> None:
     definition = session.scalars(
         select(TraitDefinition)
         .join(TraitCategory, TraitDefinition.category_id == TraitCategory.id)
@@ -171,6 +171,133 @@ def test_blood_of_potency_grows_the_pool_until_it_ends(troupe: Troupe, session: 
     assert state["blood"]["value"] == 14
     state = send(troupe.player, character_id, tap("power:Blood of Potency", -1, at=2))
     assert state["blood"] == {"value": 10, "most": 10, "start": 10}
+
+
+# --- Qualities picked each use (issue #599) ----------------------------------
+
+MARBLE = "power:Flesh of Marble"
+
+
+def picking(quality: str, amount: int = 1, *, at: int = 0) -> dict[str, Any]:
+    return tap(f"pick:Flesh of Marble/{quality}", amount, at=at)
+
+
+@pytest.fixture
+def marble(troupe: Troupe, session: Session) -> str:
+    """A character with Flesh of Marble (Vol. 2 p. 232) and Horrid Blade of the
+    Demons (pp. 201-202)."""
+    character_id = new_character(troupe, troupe.player, "Statue")
+    give(session, character_id, "disciplines", "Protean", 5)
+    give(session, character_id, "elder_disciplines", "Protean: Flesh of Marble", None)
+    give(session, character_id, "elder_disciplines", "Chimerstry: Horrid Blade of the Demons", None)
+    return character_id
+
+
+def test_flesh_of_marble_offers_every_protective_gear_quality(troupe: Troupe, marble: str) -> None:
+    found = powers(view(troupe.player, marble))["Flesh of Marble"]
+    assert found["picks"] == {"kind": "protective", "count": 2}
+    assert found["picked"] == []
+    options = {o["name"]: o for o in found["options"]}
+    assert set(options) == {
+        "Ballistic",
+        "Chest Plate",
+        "Concealable",
+        "Full Body",
+        "Hardened",
+        "HazMat",
+        "Impact Absorption",
+        "Rugged",
+    }
+    # Ballistic and Hardened as the Vol. II Issue 1 update has them (p. 23): each a
+    # line under Dodge, by attack.
+    assert [
+        (m["label"], m["amount"], m["pools"], m["when"], m["situational"])
+        for m in options["Hardened"]["modifiers"]
+    ] == [
+        (
+            "Flesh of Marble: Hardened",
+            3,
+            "pool:dodge",
+            "against Brawl, Melee and thrown weapons",
+            True,
+        ),
+        ("Flesh of Marble: Hardened", 1, "pool:dodge", "against firearms", True),
+    ]
+    assert options["Rugged"]["modifiers"] == []
+    assert options["Rugged"]["play"] == "The first Physical hit does 2 less damage"
+
+
+def test_two_qualities_are_picked_while_it_is_on(troupe: Troupe, marble: str) -> None:
+    # Not while it is off.
+    state = send(troupe.player, marble, picking("Ballistic"))
+    assert powers(state)["Flesh of Marble"]["picked"] == []
+
+    state = send(
+        troupe.player,
+        marble,
+        tap(MARBLE, 1, at=1),
+        picking("Ballistic", at=2),
+        picking("Hardened", at=3),
+    )
+    assert powers(state)["Flesh of Marble"]["picked"] == ["Ballistic", "Hardened"]
+    assert texts(state)[0] == "Picked Hardened for Protean: Flesh of Marble"
+
+    # A third drops the oldest.
+    state = send(troupe.player, marble, picking("Rugged", at=4))
+    assert powers(state)["Flesh of Marble"]["picked"] == ["Hardened", "Rugged"]
+    assert (
+        texts(state)[0]
+        == "Picked Rugged for Protean: Flesh of Marble: dropped Ballistic (2 at most)"
+    )
+
+    state = send(troupe.player, marble, picking("Hardened", -1, at=5))
+    assert powers(state)["Flesh of Marble"]["picked"] == ["Rugged"]
+    assert texts(state)[0] == "Dropped Hardened from Protean: Flesh of Marble"
+
+    # Using it again means picking again.
+    state = send(troupe.player, marble, tap(MARBLE, -1, at=6), tap(MARBLE, 1, at=7))
+    assert powers(state)["Flesh of Marble"]["picked"] == []
+
+
+def test_undo_takes_a_pick_back(troupe: Troupe, marble: str) -> None:
+    first = picking("Ballistic", at=1)
+    send(troupe.player, marble, tap(MARBLE, 1), first, picking("Full Body", at=2))
+    state = send(
+        troupe.player,
+        marble,
+        {
+            "id": str(uuid.uuid4()),
+            "happened_at": first["happened_at"],
+            "kind": "undo",
+            "undoes": first["id"],
+        },
+    )
+    assert powers(state)["Flesh of Marble"]["picked"] == ["Full Body"]
+
+
+def test_only_its_own_kind_of_quality_is_picked(troupe: Troupe, marble: str) -> None:
+    state = send(troupe.player, marble, tap(MARBLE, 1), picking("Accurate", at=1))
+    assert powers(state)["Flesh of Marble"]["picked"] == []
+    assert (
+        troupe.player.client.post(
+            f"/characters/{marble}/play/taps", json={"taps": [tap("pick:Flesh of Marble", 1)]}
+        ).status_code
+        == 422
+    )
+
+    # Horrid Blade of the Demons picks two melee weapon qualities, on Melee attacks.
+    state = send(
+        troupe.player,
+        marble,
+        tap("power:Horrid Blade of the Demons", 1, at=2),
+        tap("pick:Horrid Blade of the Demons/Accurate", 1, at=3),
+    )
+    blade = powers(state)["Horrid Blade of the Demons"]
+    assert blade["picked"] == ["Accurate"]
+    accurate = next(o for o in blade["options"] if o["name"] == "Accurate")
+    assert [(m["label"], m["amount"], m["pools"]) for m in accurate["modifiers"]] == [
+        ("Horrid Blade of the Demons: Accurate", 2, "pool:attack:Melee")
+    ]
 
 
 # --- Choices made when buying a power ----------------------------------------

@@ -4,13 +4,14 @@ import { Button } from "../../components/ui";
 import { EquipmentSwitches } from "./EquipmentSwitches";
 import { ModifiersPanel } from "./Modifiers";
 import { PowersList } from "./Powers";
+import { withPicks } from "./powers";
 import type { makeTap } from "./tracker";
 import type { useModifiers } from "./useModifiers";
 
 /** What is on, in a few words: the forms and powers, the player's own modifiers with their amounts, then the items equipped. */
 export function inUse(powers: PowerSwitch[], modifiers: PoolModifier[], equipped: string[] = []): string {
   const names = [
-    ...powers.filter((p) => p.on).map((p) => p.name),
+    ...powers.filter((p) => p.on).map(withPicks),
     ...modifiers.filter((m) => m.on).map((m) => `${m.amount < 0 ? "−" : "+"}${Math.abs(m.amount)} ${m.label}`),
     ...equipped,
   ];

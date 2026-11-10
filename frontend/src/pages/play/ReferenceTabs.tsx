@@ -310,8 +310,8 @@ export function PoolsTab({
   const modifiers = useModifiers(characterId);
   const named = useClanName();
   const on = powers.filter((p) => p.on).map((p) => p.key);
-  // The player's own, then what the items equipped make (issue #306).
-  const counting = [...modifiers.modifiers, ...equipmentModifiers(items, equipped)];
+  // The player's own, then what the items equipped make (issue #306) and the qualities picked for the powers on (#599).
+  const counting = [...modifiers.modifiers, ...equipmentModifiers(items, equipped, powers)];
   return (
     <div className="flex flex-col gap-3 pb-20">
       <div className="grid gap-3 md:grid-cols-2">

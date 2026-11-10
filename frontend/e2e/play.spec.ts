@@ -427,6 +427,62 @@ test("Use on an elder power: Projectile spends 1 Blood on each attack, and switc
   await expect.poll(async () => (await (await p.request.get(`/api/characters/${id}/play`)).json()).blood.value).toBe(blood.value - 2);
 });
 
+test("Flesh of Marble: two Protective Gear qualities picked each use, each against the attacks it guards (#599)", async ({ browser }) => {
+  const { page: p } = await person(browser, "marble-skin");
+  // A Gangrel elder (Generation 3) with Protean 5 and Flesh of Marble (Vol. 2 p. 232).
+  const id = await builtVampire(
+    p,
+    "Galatea",
+    "Gangrel",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Protean", 2], ["Animalism", 1], ["Fortitude", 1]] },
+    [
+      ["disciplines", "Protean", 5],
+      ["elder_disciplines", "Protean: Flesh of Marble", 1],
+    ],
+  );
+  await p.goto(`/play/characters/${id}?tab=pools`);
+  const row = (name: RegExp) => p.getByRole("main").getByRole("listitem").filter({ hasText: name }).first();
+  const dodge = row(/^Dodge/);
+  await expect(dodge).toBeVisible();
+  const before = Number(await dodge.locator("strong").first().textContent());
+  const against = (attacks: RegExp) => dodge.getByRole("listitem").filter({ hasText: attacks });
+
+  // Use spends its Blood and switches it on; its qualities are picked in the drawer.
+  await p.getByRole("button", { name: "Use Protean: Flesh of Marble, 1 Blood" }).click();
+  await expect(p.getByText(/Protean: Flesh of Marble switched on$/)).toBeVisible();
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  const qualities = p.getByRole("group", { name: "Protean: Flesh of Marble: qualities" });
+  await expect(qualities).toContainText("Pick two each use (0 picked).");
+  await qualities.getByRole("button", { name: "Ballistic" }).click();
+  await expect(p.getByText("Picked Ballistic for Protean: Flesh of Marble", { exact: true })).toBeVisible();
+  await qualities.getByRole("button", { name: "Rugged" }).click();
+  await expect(qualities).toContainText("Rugged: The first Physical hit does 2 less damage (MET: VTM p. 519)");
+
+  // Ballistic: +3 against firearms and +1 against the rest, each a line under Dodge; Dodge itself stays.
+  await expect(against(/^Against firearms/)).toContainText("(+3 Flesh of Marble: Ballistic)");
+  await expect(against(/^Against firearms/).locator("strong")).toHaveText(String(before + 3));
+  await expect(against(/^Against Brawl, Melee and thrown weapons/).locator("strong")).toHaveText(String(before + 1));
+  await expect(dodge.locator("strong").first()).toHaveText(String(before));
+
+  // A third drops the oldest: Hardened in Ballistic's place turns the split round.
+  await qualities.getByRole("button", { name: "Hardened" }).click();
+  await expect(p.getByText("Picked Hardened for Protean: Flesh of Marble: dropped Ballistic (2 at most)")).toBeVisible();
+  await expect(qualities.getByRole("button", { name: "Ballistic" })).toHaveAttribute("aria-pressed", "false");
+  await expect(against(/^Against firearms/).locator("strong")).toHaveText(String(before + 1));
+  await expect(against(/^Against Brawl, Melee and thrown weapons/)).toContainText("(+3 Flesh of Marble: Hardened)");
+  await expect(against(/^Against Brawl, Melee and thrown weapons/).locator("strong")).toHaveText(String(before + 3));
+  await p.getByRole("dialog", { name: "Forms, powers and modifiers" }).getByRole("button", { name: "Close" }).click();
+  await expect(p.getByRole("region", { name: "Switched on now" })).toContainText("On: Protean: Flesh of Marble (Rugged, Hardened)");
+  await p.screenshot(shots("play-pools-flesh-of-marble"));
+
+  // Switched off, the qualities go with it, and using it again means picking again.
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  await p.getByLabel("Protean: Flesh of Marble on").uncheck();
+  await expect(against(/^Against/)).toHaveCount(0);
+  await p.getByLabel("Protean: Flesh of Marble on").check();
+  await expect(qualities).toContainText("(0 picked)");
+});
+
 test("kept on the phone, a player's character opens with no signal: the sheet, the Play View and its powers, and taps go when the signal returns (#502)", async ({ browser }) => {
   // The player's own phone, with the service worker that keeps the app, and asked the first time they sign in.
   const { page: p } = await person(browser, "offline-keeper", { serviceWorkers: "allow", storageState: { cookies: [], origins: [] } });

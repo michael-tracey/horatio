@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { EquipmentModifier, PlayItem, PlayView, TestPool } from "../../api/types";
+import type { EquipmentModifier, PlayItem, PlayView, PowerSwitch, TestPool } from "../../api/types";
 import { applyEquip, describeEquip, equipmentModifiers } from "./equipped";
 import { breakdown, describe as describeModifier, situations, total } from "./pools";
 
@@ -97,6 +97,37 @@ describe("equipment modifiers", () => {
     const found = equipmentModifiers([pistol, knife], ["Pistol", "Knife"]);
     expect(found.map((m) => m.id)).toEqual(["Pistol/0"]);
     expect(total(initiative, 0, found)).toBe(8);
+  });
+
+  it("count the qualities picked for a power while it is on, and a quality the gear worn has only once (#599)", () => {
+    const hardened = [
+      mod({ quality: "Hardened", label: "Flesh of Marble: Hardened", amount: 3, pools: "pool:dodge", when: "against Brawl, Melee and thrown weapons", situational: true }),
+      mod({ quality: "Hardened", label: "Flesh of Marble: Hardened", amount: 1, pools: "pool:dodge", when: "against firearms", situational: true }),
+    ];
+    const ballistic = vest.modifiers.map((m) => ({ ...m, label: "Flesh of Marble: Ballistic" }));
+    const marble: Pick<PowerSwitch, "key" | "on" | "picked" | "options">[] = [
+      {
+        key: "Flesh of Marble",
+        on: true,
+        picked: ["Ballistic", "Hardened"],
+        options: [
+          { name: "Ballistic", play: "", page: null, modifiers: ballistic },
+          { name: "Hardened", play: "", page: null, modifiers: hardened },
+          { name: "Rugged", play: "", page: null, modifiers: [] },
+        ],
+      },
+    ];
+    const found = equipmentModifiers([vest], [], marble);
+    expect(found.map((m) => m.id)).toEqual(["pick:Flesh of Marble/Ballistic/0", "pick:Flesh of Marble/Ballistic/1", "pick:Flesh of Marble/Hardened/0", "pick:Flesh of Marble/Hardened/1"]);
+    expect(total(dodge, 0, found)).toBe(7);
+    expect(situations(dodge, found)).toEqual([
+      { when: "against firearms", parts: [{ label: "Flesh of Marble: Ballistic", value: 3 }, { label: "Flesh of Marble: Hardened", value: 1 }] },
+      { when: "against Brawl, Melee and thrown weapons", parts: [{ label: "Flesh of Marble: Ballistic", value: 1 }, { label: "Flesh of Marble: Hardened", value: 3 }] },
+    ]);
+    // Wearing the flak vest too, its Ballistic counts, and Flesh of Marble's doesn't again.
+    expect(equipmentModifiers([vest], ["Flak Vest"], marble).map((m) => m.label)).toEqual(["Flak Vest: Ballistic", "Flak Vest: Ballistic", "Flesh of Marble: Hardened", "Flesh of Marble: Hardened"]);
+    // Off, nothing picked counts.
+    expect(equipmentModifiers([vest], [], [{ ...marble[0]!, on: false }])).toEqual([]);
   });
 
   it("say what a piece of miscellaneous gear's bonus is for", () => {

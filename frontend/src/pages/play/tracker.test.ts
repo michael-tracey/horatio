@@ -311,6 +311,8 @@ describe("a power's Use (#370)", () => {
     blood_per_turn: 0,
     blood_half: false,
     on: false,
+    options: [],
+    picked: [],
   };
   const blood = { tracker: "blood" as const, amount: 1 };
   const made = (whats: ReturnType<typeof usingTaps>) => whats.map((w, i) => makeTap(w, "g1", at(i + 1)));
@@ -369,6 +371,8 @@ describe("an elder power's Use (#588)", () => {
     blood_per_turn: 0,
     blood_half: false,
     on: false,
+    options: [],
+    picked: [],
   };
   const blood = { tracker: "blood" as const, amount: 1 };
   const made = (whats: ReturnType<typeof usingTaps>, from: number) => whats.map((w, i) => makeTap(w, "g1", at(from + i)));

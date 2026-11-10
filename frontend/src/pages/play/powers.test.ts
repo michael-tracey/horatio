@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PlayView, PowerSwitch } from "../../api/types";
-import { applySwitch, bloodMost, bloodPerTurn, boxes, describeSwitch, formsOn, healthMost, onKeys } from "./powers";
-import { makeTap, withPending } from "./tracker";
+import { applyPick, applySwitch, bloodMost, bloodPerTurn, boxes, describePick, describeSwitch, formsOn, healthMost, onKeys, withPicks } from "./powers";
+import { makeTap, tapToast, trackerName, withPending } from "./tracker";
 
 const power = (over: Partial<PowerSwitch>): PowerSwitch => ({
   key: "fight form",
@@ -18,6 +18,8 @@ const power = (over: Partial<PowerSwitch>): PowerSwitch => ({
   blood_per_turn: 0,
   blood_half: false,
   on: false,
+  options: [],
+  picked: [],
   ...over,
 });
 
@@ -130,5 +132,54 @@ describe("forms and powers", () => {
     expect(shown.log[0]!.text).toBe("Turned into Shape of the Beast: fight form (wolf, Huge)");
     const undone = withPending(view([fight, flight]), [tap, makeTap({ kind: "undo", undoes: tap.id }, "g1")]);
     expect(onKeys(undone)).toEqual([]);
+  });
+});
+
+describe("qualities picked each use (#599)", () => {
+  const option = (name: string) => ({ name, play: "", page: null, modifiers: [] });
+  const marble = power({
+    key: "Flesh of Marble",
+    name: "Protean: Flesh of Marble",
+    form: false,
+    picks: { kind: "protective", count: 2 },
+    options: ["Ballistic", "Hardened", "Rugged"].map(option),
+  });
+
+  it("picks while it is on, dropping the oldest past its count", () => {
+    const v = view([marble]);
+    expect(applyPick(v, "Flesh of Marble/Ballistic", 1)).toEqual([0, 0]);
+    applySwitch(v, "Flesh of Marble", 1);
+    expect(applyPick(v, "Flesh of Marble/Ballistic", 1)).toEqual([0, 1]);
+    applyPick(v, "Flesh of Marble/Hardened", 1);
+    const said: string[] = [];
+    applyPick(v, "Flesh of Marble/Rugged", 1, said);
+    expect(v.powers[0]!.picked).toEqual(["Hardened", "Rugged"]);
+    expect(said).toEqual(["dropped Ballistic (2 at most)"]);
+    expect(describePick(v, "Flesh of Marble/Rugged", 1, said)).toBe("Picked Rugged for Protean: Flesh of Marble: dropped Ballistic (2 at most)");
+    expect(withPicks(v.powers[0]!)).toBe("Protean: Flesh of Marble (Hardened, Rugged)");
+    expect(applyPick(v, "Flesh of Marble/Hardened", -1)).toEqual([1, 0]);
+    expect(describePick(v, "Flesh of Marble/Hardened", -1)).toBe("Dropped Hardened from Protean: Flesh of Marble");
+    // Not one of its kind's.
+    expect(applyPick(v, "Flesh of Marble/Accurate", 1)).toBeNull();
+  });
+
+  it("drops them all when it is switched off", () => {
+    const v = view([{ ...marble, on: true, picked: ["Ballistic", "Rugged"] }]);
+    applySwitch(v, "Flesh of Marble", -1);
+    applySwitch(v, "Flesh of Marble", 1);
+    expect(v.powers[0]!.picked).toEqual([]);
+    expect(withPicks(v.powers[0]!)).toBe("Protean: Flesh of Marble");
+  });
+
+  it("shows a pick at once, with its toast, and Undo takes it back", () => {
+    const v = view([{ ...marble, on: true, picked: ["Ballistic", "Hardened"] }]);
+    const tap = makeTap({ kind: "change", tracker: "pick:Flesh of Marble/Rugged", amount: 1 }, "g1");
+    expect(tapToast(withPending(v, []), tap)).toBe("Picked Rugged for Protean: Flesh of Marble: dropped Ballistic (2 at most)");
+    expect(trackerName(v, "pick:Flesh of Marble/Rugged")).toBe("Protean: Flesh of Marble: Rugged");
+    const shown = withPending(v, [tap]);
+    expect(shown.powers[0]!.picked).toEqual(["Hardened", "Rugged"]);
+    expect(v.powers[0]!.picked).toEqual(["Ballistic", "Hardened"]);
+    const undone = withPending(v, [tap, makeTap({ kind: "undo", undoes: tap.id }, "g1")]);
+    expect(undone.powers[0]!.picked).toEqual(["Ballistic", "Hardened"]);
   });
 });

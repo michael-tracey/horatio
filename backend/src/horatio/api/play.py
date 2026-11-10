@@ -205,10 +205,24 @@ class LogEntryOut(BaseModel):
     upkeep: bool = False
 
 
+class PickOptionOut(BaseModel):
+    """A quality the player can pick for a power each use (issue #599), with what it
+    does to the pools while the power is on."""
+
+    name: str
+    # What it does at the table: "+3 defence against firearms, +1 against the rest".
+    play: str
+    page: str | None
+    modifiers: list[EquipmentModifierOut]
+
+
 class PowerOut(reference.Switch):
     """A form or power the character has, and whether it is on in this game."""
 
     on: bool
+    # For a power with `picks`: what can be picked, and what is, in the order picked.
+    options: list[PickOptionOut] = []
+    picked: list[str] = []
 
 
 class PlayItemOut(BaseModel):
@@ -735,7 +749,23 @@ def play_view(db: Session, character: Character) -> PlayView:
             )
             for r in limits.retainers
         ],
-        powers=[PowerOut(**s.model_dump(), on=s.key in state["on"]) for s in limits.switches],
+        powers=[
+            PowerOut(
+                **s.model_dump(),
+                on=s.key in state["on"],
+                options=[
+                    PickOptionOut(
+                        name=o.name,
+                        play=o.play,
+                        page=o.page,
+                        modifiers=[modifier_out(m) for m in o.modifiers],
+                    )
+                    for o in limits.options.get(s.key, ())
+                ],
+                picked=state.get("picked", {}).get(s.key, []),
+            )
+            for s in limits.switches
+        ],
         equipment=[
             PlayItemOut(
                 id=uuid.UUID(i.id),
