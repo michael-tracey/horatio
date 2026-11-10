@@ -1,14 +1,33 @@
 import { QueryClient } from "@tanstack/react-query";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CharacterListOut } from "../api/types";
 import { keeping, keptTroupes, recordKey, scenesKey, setKeeping, setKeptFor, tapsWaiting } from "./keep";
 import { memoryShelf } from "./shelf";
-import { dropRestored, forget, keptScenesSummary, removeKept, removeScenes, restore, save, saveScenes, scenesTouched, type Kept, type KeptScenes } from "./store";
+import { dropRestored, forget, keptScenesSummary, refresh, removeKept, removeScenes, restore, save, saveScenes, scenesTouched, type Kept, type KeptScenes } from "./store";
+
+/** The server, for refresh: each path answers with a little data, but those in `failing`, which answer with
+ * that status (a 500 unless said), or never answer at all. */
+const failing = new Map<string, number | "no answer">();
+vi.mock(import("../api/client"), async (original) => ({
+  ...(await original()),
+  api: {
+    GET: async (path: string, options?: { params?: { query?: { kind?: string } } }) => {
+      const asked = options?.params?.query?.kind ? `${path}?kind=${options.params.query.kind}` : path;
+      const status = failing.get(asked);
+      if (status === "no answer") throw new TypeError("Failed to fetch");
+      if (status) return { error: { detail: "Down." }, response: new Response(null, { status }) };
+      return { data: answers[path] ?? {}, response: new Response(null, { status: 200 }) };
+    },
+  } as never,
+}));
 
 const ME = "11111111-1111-4111-8111-111111111111";
 const OTHER = "22222222-2222-4222-8222-222222222222";
 const ROSA = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const BRAM = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+
+/** What the server answers each path with, for refresh. */
+const answers: Record<string, unknown> = {};
 
 const rosa = { id: ROSA, name: "Rosa", player_id: ME, kind: "pc", status: "active", creation_complete: true, home_troupe_id: null, building_troupe_id: null } as unknown as CharacterListOut;
 
@@ -19,7 +38,10 @@ function signedIn(id = ME) {
   return client;
 }
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  failing.clear();
+});
 
 describe("keeping a person's answers", () => {
   it("writes their own characters' answers and never a staff screen's or another character's", async () => {
@@ -99,6 +121,105 @@ describe("keeping a person's answers", () => {
     expect(opening.getQueryData(["play", ROSA])).toBeUndefined();
     // Still kept on the device, for when they sign in again.
     expect(shelf.items.has(recordKey(ME))).toBe(true);
+  });
+});
+
+describe("refreshing what's kept (#619)", () => {
+  const TROUPE = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+  const inTroupe = { ...rosa, home_troupe_id: TROUPE };
+  afterEach(() => vi.useRealTimers());
+
+  function online() {
+    answers["/api/characters"] = [inTroupe];
+    answers["/api/characters/{character_id}"] = { id: ROSA, splat: "vampire", home_troupe_id: TROUPE };
+    answers["/api/troupes/{troupe_id}/posts"] = [];
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    client.setQueryData(["me"], { id: ME });
+    return client;
+  }
+
+  it("moves the time Updated when everything came", async () => {
+    const shelf = memoryShelf();
+    vi.setSystemTime(1000);
+    const kept = await refresh(online(), ME, shelf);
+    expect(kept).toMatchObject({ refreshedAt: 1000, partial: null });
+  });
+
+  it("keeps the time it last all came, and says how many didn't, when a sheet fails", async () => {
+    const shelf = memoryShelf();
+    const client = online();
+    vi.setSystemTime(1000);
+    await refresh(client, ME, shelf);
+    client.setQueryData(["sheet", ROSA], { traits: ["Brawl"] });
+    await save(client, ME, shelf);
+    failing.set("/api/characters/{character_id}/sheet", 500);
+    vi.setSystemTime(2000);
+    const kept = await refresh(client, ME, shelf);
+    expect(kept).toMatchObject({ refreshedAt: 1000, partial: { failed: 1, triedAt: 2000 } });
+    // What was kept for it before stays.
+    const record = shelf.items.get(recordKey(ME)) as Kept;
+    expect(record.queries.find((q) => q.queryKey[0] === "sheet")?.state.data).toEqual({ traits: ["Brawl"] });
+  });
+
+  it("is partial when a troupe's news fails too", async () => {
+    const shelf = memoryShelf();
+    failing.set("/api/troupes/{troupe_id}/posts?kind=news", 500);
+    vi.setSystemTime(2000);
+    const kept = await refresh(online(), ME, shelf);
+    expect(kept).toMatchObject({ refreshedAt: null, partial: { failed: 1, triedAt: 2000 } });
+  });
+
+  it("counts a character's catalogue and troupe as not refreshed when the character itself fails", async () => {
+    failing.set("/api/characters/{character_id}", 500);
+    const kept = await refresh(online(), ME, memoryShelf());
+    expect(kept?.partial?.failed).toBe(3);
+  });
+
+  it("takes the server's word that there's nothing there, such as a troupe's agencies when the player isn't a member, as refreshed, and keeps nothing for it", async () => {
+    const shelf = memoryShelf();
+    const client = online();
+    vi.setSystemTime(1000);
+    await refresh(client, ME, shelf);
+    expect((shelf.items.get(recordKey(ME)) as Kept).queries.some((q) => q.queryKey[0] === "agencies")).toBe(true);
+    failing.set("/api/troupes/{troupe_id}/agencies", 404);
+    vi.setSystemTime(2000);
+    const kept = await refresh(client, ME, shelf);
+    expect(kept).toMatchObject({ refreshedAt: 2000, partial: null });
+    expect((shelf.items.get(recordKey(ME)) as Kept).queries.some((q) => q.queryKey[0] === "agencies")).toBe(false);
+    expect(client.getQueryData(["agencies", TROUPE])).toBeUndefined();
+  });
+
+  it("is still partial when the same answers a 500, or never answers", async () => {
+    vi.setSystemTime(2000);
+    failing.set("/api/troupes/{troupe_id}/agencies", 500);
+    expect(await refresh(online(), ME, memoryShelf())).toMatchObject({ refreshedAt: null, partial: { failed: 1, triedAt: 2000 } });
+    failing.set("/api/troupes/{troupe_id}/agencies", "no answer");
+    expect(await refresh(online(), ME, memoryShelf())).toMatchObject({ refreshedAt: null, partial: { failed: 1, triedAt: 2000 } });
+  });
+
+  it("doesn't ask a building troupe for news, which has none for a player not yet in it", async () => {
+    const BUILDING = "99999999-9999-4999-8999-999999999999";
+    const client = online();
+    answers["/api/characters"] = [{ ...rosa, home_troupe_id: null, building_troupe_id: BUILDING }];
+    // Were it asked, it would be the server's 404.
+    failing.set("/api/troupes/{troupe_id}/agencies", 404);
+    vi.setSystemTime(2000);
+    expect(await refresh(client, ME, memoryShelf())).toMatchObject({ refreshedAt: 2000, partial: null });
+    expect(client.getQueryCache().find({ queryKey: ["posts-glance", BUILDING] })).toBeUndefined();
+  });
+
+  it("clears the partial once a later refresh all comes", async () => {
+    const shelf = memoryShelf();
+    const client = online();
+    failing.set("/api/characters/{character_id}/sheet", 500);
+    vi.setSystemTime(2000);
+    await refresh(client, ME, shelf);
+    // Written again as answers arrive, it still says so.
+    expect(await save(client, ME, shelf)).toMatchObject({ partial: { failed: 1, triedAt: 2000 } });
+    failing.clear();
+    vi.setSystemTime(3000);
+    const kept = await refresh(client, ME, shelf);
+    expect(kept).toMatchObject({ refreshedAt: 3000, partial: null });
   });
 });
 
