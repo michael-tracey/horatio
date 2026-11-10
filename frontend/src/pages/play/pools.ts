@@ -137,6 +137,14 @@ export function describe(m: Pick<Modifier, "amount" | "pools" | "when">, pools: 
   return `${sign}${Math.abs(m.amount)} ${describePools(m.pools, pools)}${m.when ? `, ${m.when}` : ""}`;
 }
 
+/**
+ * The pools to show now: a power's own test that deals damage (Psychic Assault,
+ * issue #600) shows only while its switch is on, which using the power does.
+ */
+export function showing(pools: TestPool[], on: readonly string[]): TestPool[] {
+  return pools.filter((p) => !p.switch || on.includes(p.switch));
+}
+
 /** The pools in their groups, in the order the page shows them. */
 export function grouped(pools: TestPool[]): [string, TestPool[]][] {
   const groups = new Map<string, TestPool[]>();
@@ -167,10 +175,15 @@ const exceptionalOf = (damage: Damage, extra: ExtraDamage[]) => damage.exception
 const kindOf = (damage: Damage, extra: ExtraDamage[]) =>
   damage.type === "aggravated" || extra.some((e) => e.type === "aggravated") ? "aggravated damage" : "damage";
 
+/** Damage that armour and Fortitude can't reduce (Psychic Assault, issue #600). */
+const UNREDUCIBLE = ", nothing reduces it";
+
 /**
  * One line for what a hit does, then an exceptional success (issue #371): "Damage 1
  * (unarmed) · exceptional 2", "Damage 2 (1 melee + 1 Might) · exceptional 3",
- * "Aggravated damage 1 (unarmed) · …", or "…, aggravated by Feral Claws · …".
+ * "Aggravated damage 1 (unarmed) · …", or "…, aggravated by Feral Claws · …". A
+ * power's own damage (issue #600) is the power's alone, so it isn't broken down:
+ * "Damage 4, nothing reduces it · exceptional 5".
  */
 export function damageText(damage: Damage, extra: ExtraDamage[] = []): string {
   const all = [...damage.parts, ...extra.filter((e) => e.value)];
@@ -178,12 +191,15 @@ export function damageText(damage: Damage, extra: ExtraDamage[] = []): string {
   const by = extra.filter((e) => e.type === "aggravated").map((e) => e.label);
   const now = damageTotal(damage, extra);
   const kind = damage.type === "aggravated" ? "Aggravated damage" : "Damage";
-  return `${kind} ${now} (${parts})${by.length && damage.type !== "aggravated" ? `, aggravated by ${by.join(" and ")}` : ""} · exceptional ${now + exceptionalOf(damage, extra)}`;
+  const shown = damage.kind === "power" && all.length === 1 ? "" : ` (${parts})`;
+  const reduced = damage.reducible === false ? UNREDUCIBLE : "";
+  return `${kind} ${now}${shown}${by.length && damage.type !== "aggravated" ? `, aggravated by ${by.join(" and ")}` : ""}${reduced} · exceptional ${now + exceptionalOf(damage, extra)}`;
 }
 
 /** The short form for the printed sheet: "2 damage (4 on an exceptional success)". */
 export function damageShort(damage: Damage, extra: ExtraDamage[] = []): string {
-  return `${damageTotal(damage, extra)} ${kindOf(damage, extra)} (${damageTotal(damage, extra) + exceptionalOf(damage, extra)} exceptional)`;
+  const reduced = damage.reducible === false ? UNREDUCIBLE : "";
+  return `${damageTotal(damage, extra)} ${kindOf(damage, extra)}${reduced} (${damageTotal(damage, extra) + exceptionalOf(damage, extra)} exceptional)`;
 }
 
 /** Spending Blood for Physical, said once over the Combat pools rather than under each (MET: VtM core p. 294). */

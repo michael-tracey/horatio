@@ -21,6 +21,7 @@ from horatio.reference import (
     effects,
     forms_at_once,
     other_powers,
+    own_tests,
     pools,
     work_out,
 )
@@ -274,7 +275,8 @@ def test_every_elder_and_luminary_power_says_what_it_does_and_where() -> None:
 def test_elder_powers_switch_on_what_they_change(troupe: Troupe) -> None:
     """Issue #587: Flick's switch adds +3 to Brawl (core p. 220), Force makes a Brawl
     hit 4 (core pp. 219-220), Breath of the Dragon's switch makes the thrown attack 4
-    aggravated (core p. 223), and Psychic Assault has its line, page and cost alone."""
+    aggravated (core p. 223), and Psychic Assault has its line, page, cost and a
+    switch for its test (issue #600)."""
     character_id = created(
         troupe,
         "Ancient",
@@ -293,7 +295,11 @@ def test_elder_powers_switch_on_what_they_change(troupe: Troupe) -> None:
     blood = {"tracker": "blood", "amount": 1}
     assault = others["Auspex: Psychic Assault"]
     assert assault["note"].startswith("1 Blood, standard action, Auspex test: 4 damage")
-    assert (assault["page"], assault["cost"], assault["switches"]) == ("213", blood, [])
+    assert (assault["page"], assault["cost"], assault["switches"]) == (
+        "213",
+        blood,
+        ["Psychic Assault"],
+    )
     flick = others["Potence: Flick"]
     assert (flick["page"], flick["cost"], flick["switches"]) == ("220", blood, ["Flick"])
     assert others["Vicissitude: Breath of the Dragon"]["cost"] == {"tracker": "blood", "amount": 2}
@@ -743,6 +749,165 @@ def test_every_damage_entry_is_from_a_page_and_names_an_attack() -> None:
         assert set(e["attacks"]) <= set(book.attacks)
         assert e["type"] in ("normal", "aggravated") if "type" in e else True
         assert "note" in e if "when" in e else True
+
+
+# --- Damage through a power's own test (issue #600) -------------------------
+
+
+def power_pools(sheet: Sheet) -> dict[str, Any]:
+    """The pools of the powers that deal damage through a test, by name."""
+    worked = work_out(sheet, {})
+    found = pools(sheet, worked.effects, worked.hurts, worked.switches)
+    return {p.name: p for p in found if p.key.startswith("power:")}
+
+
+def test_psychic_assault_is_an_auspex_test_for_damage_nothing_reduces(troupe: Troupe) -> None:
+    """Core p. 213: the Auspex test pool, 4 damage (5 on an exceptional success) that
+    armour and Fortitude can't reduce. It shows in Combat while its switch is on."""
+    character_id = created(
+        troupe,
+        "Seer",
+        ("attributes", "Mental", 5),
+        ("skills", "Investigation", 3),
+        ("disciplines", "Auspex", 5),
+        ("elder_disciplines", "Auspex: Psychic Assault", None),
+    )
+
+    found = reference(troupe, character_id)
+    assault = pool(found, "power:Psychic Assault")
+    assert (assault["name"], assault["group"], assault["switch"]) == (
+        "Psychic Assault",
+        "Combat",
+        "Psychic Assault",
+    )
+    assert [(p["label"], p["value"]) for p in assault["parts"]] == [
+        ("Mental", 5),
+        ("Investigation", 3),
+    ]
+    assert (assault["total"], assault["versus"]) == (8, "Mental + Willpower")
+    hurt = assault["damage"]
+    assert (hurt["total"], hurt["exceptional"], hurt["type"], hurt["reducible"]) == (
+        4,
+        1,
+        "normal",
+        False,
+    )
+    # The attacks and the discipline's own pool show at all times, as before.
+    assert pool(found, "attack:Brawl")["switch"] is None
+    assert pool(found, "discipline:Auspex")["total"] == 8
+    switch = next(p for p in found["other_powers"] if p["name"] == "Auspex: Psychic Assault")
+    assert switch["switches"] == ["Psychic Assault"]
+
+
+def test_powers_deal_damage_through_their_own_test() -> None:
+    """Shadowy Betrayal names its pool (Vol. 2 p. 224), Chronoton Bolt comes with
+    Temporal Anomaly (pp. 240-241), Scourge of Arikel has no test of its own (p. 231),
+    and Cataclysmic Upheaval does damage nothing reduces (p. 250)."""
+    held = {
+        ("elder_disciplines", "Obtenebration: Shadowy Betrayal"): 1,
+        ("elder_disciplines", "Temporis: Temporal Anomaly"): 1,
+        ("elder_disciplines", "Visceratika: Cataclysmic Upheaval"): 1,
+        ("luminary_disciplines", "Presence: Scourge of Arikel"): 1,
+    }
+    sheet = Sheet(
+        ratings={
+            ("attributes", "Physical"): 4,
+            ("attributes", "Social"): 5,
+            ("attributes", "Mental"): 3,
+            ("skills", "Occult"): 2,
+            ("skills", "Survival"): 1,
+            ("skills", "Athletics"): 4,
+            **held,
+        },
+        disciplines={"Obtenebration": 5, "Temporis": 5, "Visceratika": 5, "Presence": 5},
+    )
+
+    found = power_pools(sheet)
+    assert set(found) == {
+        "Shadowy Betrayal",
+        "Chronoton Bolt",
+        "Cataclysmic Upheaval",
+        "Scourge of Arikel",
+    }
+    shadow = found["Shadowy Betrayal"]
+    assert (shadow.total, shadow.versus, shadow.switch) == (
+        7,
+        "Social + Willpower",
+        "Shadowy Betrayal",
+    )
+    assert (shadow.damage.total, shadow.damage.exceptional, shadow.damage.reducible) == (2, 0, True)
+    assert shadow.damage.notes == ["2 more for each simple action you spend on it later"]
+
+    bolt = found["Chronoton Bolt"]
+    assert (bolt.total, bolt.versus, bolt.switch) == (5, "Physical + Willpower", "Temporal Anomaly")
+    assert (bolt.damage.total, bolt.damage.exceptional, bolt.damage.type) == (2, 1, "aggravated")
+
+    upheaval = found["Cataclysmic Upheaval"]
+    assert [(p.label, p.value) for p in upheaval.parts] == [("Mental", 3), ("Athletics", 4)]
+    assert (upheaval.damage.total, upheaval.damage.exceptional) == (3, 1)
+    assert not upheaval.damage.reducible
+
+    scourge = found["Scourge of Arikel"]
+    assert (scourge.parts, scourge.versus) == ([], None)
+    assert scourge.challenge and scourge.challenge.startswith("Any Social challenge you win")
+    assert (scourge.damage.total, scourge.damage.type) == (3, "aggravated")
+
+    # Each switch says so, beside what else it changes.
+    switches = by_key(work_out(sheet, {}).switches)
+    assert "Chronoton Bolt in Combat: 2 aggravated damage" in switches["Temporal Anomaly"].changes
+    assert switches["Cataclysmic Upheaval"].changes == [
+        "Cataclysmic Upheaval in Combat: 3 damage that nothing reduces"
+    ]
+
+
+def test_a_focus_can_change_a_power_tests_damage() -> None:
+    """Stygian Lance (core pp. 177-178): Social + Occult against Physical + Dodge, and
+    with the Charisma focus nothing reduces its damage."""
+    sheet = Sheet(
+        ratings={("attributes", "Social"): 4, ("skills", "Occult"): 3},
+        disciplines={"Necromancy: Ash Path": 4},
+    )
+    lance = power_pools(sheet)["Stygian Lance"]
+    assert (lance.total, lance.versus, lance.damage.total, lance.damage.reducible) == (
+        7,
+        "Physical + Dodge",
+        3,
+        True,
+    )
+    sheet.focuses.add("Charisma")
+    assert not power_pools(sheet)["Stygian Lance"].damage.reducible
+    # Flame Bolt is the Lure of Flames pool, dodged with Physical + Dodge (core p. 187).
+    flames = Sheet(
+        ratings={("attributes", "Mental"): 4}, disciplines={"Thaumaturgy: Lure of Flames": 2}
+    )
+    bolt = power_pools(flames)["Flame Bolt"]
+    assert (bolt.versus, bolt.damage.type, bolt.damage.total + bolt.damage.exceptional) == (
+        "Physical + Dodge",
+        "aggravated",
+        3,
+    )
+
+
+def test_every_power_test_names_its_switch_a_pool_and_a_page() -> None:
+    book = catalogue()
+    entries = [*book.disciplines.values(), *(p for ps in book.powers.values() for p in ps)]
+    entries += list(book.others.values())
+    found = [(e, t) for e in entries for t in own_tests(e)]
+    assert len(found) >= 12
+    attributes = {"Physical", "Social", "Mental"}
+    for e, t in found:
+        assert t["when"] in [a["key"] for a in actives(e)], e["name"]
+        assert t["page"] > 0 and t.get("book", "core") in ("core", "Vol. 2", "Vol. 2 Issue 1")
+        assert isinstance(t["damage"], int) and t["damage"] > 0
+        assert t.get("type", "normal") in ("normal", "aggravated")
+        spec = t.get("pool")
+        if spec is None:
+            assert t["challenge"], e["name"]
+        elif spec.startswith("discipline:"):
+            assert book.disciplines[spec.removeprefix("discipline:")].get("pool"), e["name"]
+        else:
+            attribute, _, skill = (s.strip() for s in spec.partition("+"))
+            assert attribute in attributes and skill and t["versus"], e["name"]
 
 
 # --- Forms and powers in use (issue #200) -----------------------------------

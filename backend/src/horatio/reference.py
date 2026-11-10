@@ -28,6 +28,10 @@ type (core p. 279) plus what the sheet's powers add through `damage` entries in 
 same file, with a note for the extra point of an exceptional success. Weapons are
 not counted.
 
+A power that deals damage through a test of its own rather than an attack (Psychic
+Assault, Flame Bolt: issue #600) has a `test` entry: a pool in Combat, with what a
+success does, that the Play View shows while the power's switch is on.
+
 Forms and powers that hold only while they are active (issue #200) are switches,
 from `active` in the same file: Shape of the Beast's forms, Celerity, Feral Claws
 and the rest. Each pool says what each switch would change in it (`switched`), and
@@ -125,6 +129,8 @@ class Damage(BaseModel):
     notes: list[str] = []
     # What forms and powers change while they are on.
     switched: list[SwitchedDamage] = []
+    # False for damage armour and Fortitude can't reduce (Psychic Assault, #600).
+    reducible: bool = True
 
 
 class TrackedPart(BaseModel):
@@ -165,6 +171,10 @@ class TestPool(BaseModel):
     damage: Damage | None = None
     # What forms and powers add while they are on (the Play View knows which are).
     switched: list[SwitchedPart] = []
+    # A power's own test (issue #600): the switch it shows while on, and the
+    # challenge in words where it has no pool of its own (Scourge of Arikel).
+    switch: str | None = None
+    challenge: str | None = None
 
 
 class Cost(BaseModel):
@@ -294,6 +304,12 @@ class Catalogue:
 def actives(entry: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     """An entry's switches: `active` is one table or a list of them."""
     found = entry.get("active", [])
+    return [found] if isinstance(found, Mapping) else list(found)  # pyright: ignore[reportUnknownArgumentType]
+
+
+def own_tests(entry: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    """An entry's tests that deal damage (issue #600): `test` is one table or a list."""
+    found = entry.get("test", [])
     return [found] if isinstance(found, Mapping) else list(found)  # pyright: ignore[reportUnknownArgumentType]
 
 
@@ -678,6 +694,41 @@ def damage(
     )
 
 
+@dataclass(frozen=True)
+class PowerTest:
+    """A test of a power that deals damage (issue #600), as the sheet has it."""
+
+    name: str
+    entry: Mapping[str, Any]
+
+
+def power_tests(sheet: Sheet) -> list[PowerTest]:
+    """Each power the character has that deals damage through a test of its own,
+    for its focus and purchase choices."""
+    return [
+        PowerTest(test.get("name") or owner.source, test)
+        for owner in owners(sheet)
+        for test in own_tests(owner.entry)
+        if _holds(test, sheet, owner.chosen)
+    ]
+
+
+def tested_damage(test: PowerTest) -> Damage:
+    """What a success with a power's test does: its damage, what an exceptional
+    success adds, and whether anything can reduce it."""
+    e = test.entry
+    note = e.get("note")
+    return Damage(
+        kind="power",
+        type=e.get("type", "normal"),
+        parts=[PoolPart(label=test.name, value=e["damage"])],
+        total=e["damage"],
+        exceptional=e.get("exceptional", 0),
+        notes=[note] if note else [],
+        reducible=not e.get("unreducible", False),
+    )
+
+
 def _applies(effect: Effect, key: str) -> bool:
     """Whether an effect's pool covers a pool: "attack" covers every attack,
     "discipline:Thaumaturgy" every Thaumaturgy path."""
@@ -868,6 +919,31 @@ def pools(
                 versus=spec.get("versus"),
             )
         )
+    # Powers that deal damage through a test of their own (issue #600): in Combat,
+    # beside the attacks, made on their discipline's pool or the one they name.
+    for test in power_tests(sheet):
+        key = f"power:{test.name}"
+        spec, versus = test.entry.get("pool", ""), test.entry.get("versus")
+        # A discipline's pool counts what changes that discipline's pool.
+        counts_as = key
+        if spec.startswith("discipline:"):
+            own = book.disciplines.get(spec.removeprefix("discipline:"), {})
+            counts_as, spec, versus = spec, own.get("pool", ""), versus or own.get("versus")
+        attribute, _, skill_name = (s.strip() for s in spec.partition("+"))
+        made = _pool(
+            counts_as,
+            test.name,
+            "Combat",
+            [attr(attribute), skill(skill_name)] if spec else [],
+            found,
+            keys,
+            versus=versus,
+            damage=tested_damage(test),
+            switch=test.entry["when"],
+            challenge=test.entry.get("challenge"),
+        )
+        made.key = key
+        out.append(made)
     for (name, detail), (rating, attribute) in sorted(sheet.skills.items()):
         if name in COMBAT_SKILLS:
             continue
@@ -931,7 +1007,12 @@ def _attack_words(skills: Iterable[str]) -> str:
     return " and ".join("thrown" if s == "Athletics" else s for s in skills)
 
 
-def _changes(switch: Switch, found: Sequence[Effect], hurts: Sequence[DamageEffect]) -> list[str]:
+def _changes(
+    switch: Switch,
+    found: Sequence[Effect],
+    hurts: Sequence[DamageEffect],
+    tested: Sequence[PowerTest] = (),
+) -> list[str]:
     """What a switch changes, in words, for its line on the Play View."""
     lines: list[str] = []
     for e in found:
@@ -961,6 +1042,13 @@ def _changes(switch: Switch, found: Sequence[Effect], hurts: Sequence[DamageEffe
             lines.append(f"{_signed(d.amount)} {words} damage")
         if d.exceptional:
             lines.append(f"{upper} exceptional successes add {d.exceptional} more")
+    for t in tested:
+        if t.entry["when"] != switch.key:
+            continue
+        hurt = tested_damage(t)
+        kind = "aggravated damage" if hurt.type == "aggravated" else "damage"
+        reduced = "" if hurt.reducible else " that nothing reduces"
+        lines.append(f"{t.name} in Combat: {hurt.total} {kind}{reduced}")
     lines += [f"The {focus} focus" for focus in switch.focuses]
     if switch.blood_per_turn:
         lines.append(f"{_signed(switch.blood_per_turn)} Blood a turn")
@@ -1043,8 +1131,9 @@ def work_out(sheet: Sheet, bases: Mapping[str, set[str]]) -> Worked:
     pools, hurts = effects(sheet, bases), damage_effects(sheet)
     more_pools, more_hurts = focus_effects(sheet, bases, found)
     pools, hurts = pools + more_pools, hurts + more_hurts
+    tested = power_tests(sheet)
     for switch in found:
-        switch.changes = _changes(switch, pools, hurts)
+        switch.changes = _changes(switch, pools, hurts, tested)
     return Worked(pools, hurts, found)
 
 

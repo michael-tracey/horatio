@@ -496,6 +496,42 @@ test("defences that aren't a flat bonus: Rampart of Faith follows Morality and B
   await p.screenshot(shots("play-pools-rockheart"));
 });
 
+test("a power that hurts through its own test: Psychic Assault's pool and damage show beside the attacks once it's used, until it's off (#600)", async ({ browser }) => {
+  const { page: p } = await person(browser, "elder-assault");
+  // A Pretender Elder (Generation 3) with Auspex 5 and its elder power Psychic Assault: Mental 3, Investigation 1.
+  const id = await builtVampire(
+    p,
+    "Ilaria",
+    "Toreador",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Auspex", 2], ["Celerity", 1], ["Presence", 1]] },
+    [
+      ["disciplines", "Auspex", 5],
+      ["elder_disciplines", "Auspex: Psychic Assault", 1],
+    ],
+  );
+  await p.goto(`/play/characters/${id}`);
+  await p.getByRole("tab", { name: "Pools" }).click();
+  await expect(p.getByRole("listitem").filter({ hasText: /^Unarmed attack/ })).toBeVisible();
+  const assault = p.getByRole("listitem").filter({ hasText: /^Psychic Assault/ });
+  await expect(assault).toHaveCount(0);
+
+  // Use spends the Blood and switches it on: the Auspex test pool, and 4 damage nothing reduces (core p. 213).
+  await p.getByRole("button", { name: "Use Auspex: Psychic Assault, 1 Blood" }).click();
+  await expect(p.getByText(/Spent 1 Blood · \d+\/\d+ · Auspex: Psychic Assault switched on/)).toBeVisible();
+  await expect(assault.getByText("4", { exact: true })).toBeVisible();
+  await expect(assault).toContainText("Mental 3 + Investigation 1 · against Mental + Willpower");
+  await expect(assault).toContainText("Damage 4, nothing reduces it · exceptional 5");
+  await p.screenshot(shots("play-pools-power-damage"));
+
+  // The drawer says what its switch does; switched off, the pool goes.
+  const switches = p.getByRole("button", { name: "Forms, powers and modifiers" });
+  await switches.click();
+  await expect(p.getByRole("dialog", { name: "Forms, powers and modifiers" })).toContainText("Psychic Assault in Combat: 4 damage that nothing reduces");
+  await p.getByLabel("Auspex: Psychic Assault on").uncheck();
+  await expect(switches).toHaveAccessibleDescription("Nothing in use");
+  await expect(assault).toHaveCount(0);
+});
+
 test("kept on the phone, a player's character opens with no signal: the sheet, the Play View and its powers, and taps go when the signal returns (#502)", async ({ browser }) => {
   // The player's own phone, with the service worker that keeps the app, and asked the first time they sign in.
   const { page: p } = await person(browser, "offline-keeper", { serviceWorkers: "allow", storageState: { cookies: [], origins: [] } });
