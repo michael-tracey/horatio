@@ -442,6 +442,8 @@ MESSAGES: dict[str, str] = {
     "post.published": "{actor} published {what} “{title}”.",
     "post.scheduled": "{actor} scheduled {what} “{title}”.",
     "post.unscheduled": "{actor} cancelled {what} “{title}”, which was scheduled.",
+    "post.missed": "{actor} reopened the troupe after {what} “{title}” was due: it went back"
+    " to the drafts unsent.",
     "post.edited": "{actor} edited {what} “{title}”, which is published.",
     "post.unpublished": "{actor} unpublished {what} “{title}”.",
     "post.declined": "{actor} declined {what} “{title}”, which a narrator proposed.",

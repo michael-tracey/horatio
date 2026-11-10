@@ -16,7 +16,9 @@ A post is, in turn:
   proposals, and only while they wait;
 - `declined`: a proposal the storytellers turned down, with a note;
 - `scheduled`: going out at `publish_at`. The delivery worker publishes it on its
-  first round after then (`publish_due`, every `delivery_interval`);
+  first round after then (`publish_due`, every `delivery_interval`), unless its
+  troupe is archived: then it waits, and if its time passes before the troupe
+  reopens, it goes back to the drafts unsent (`missed`);
 - `published`: in the troupe's list at once, with an unread dot for each person
   until they read it, a bell notification for those who want it, and an email for
   those who asked for one.
@@ -64,7 +66,7 @@ from horatio.models import (
     User,
 )
 from horatio.notifications import notify
-from horatio.permissions import Role, troupe_role
+from horatio.permissions import TROUPE_POLICY, Role, TroupeAction, troupe_role
 
 
 @dataclass(frozen=True)
@@ -485,12 +487,19 @@ def publish_due(db: Session, at: datetime | None = None, limit: int = 50) -> int
     locked so two workers never publish one twice. Returns how many."""
     published = 0
     while published < limit:
+        # An archived troupe's posts wait, left out here so they never hold up the
+        # rest; reopening it sends back to the drafts any whose time has passed.
         post = db.scalar(
             select(Post)
-            .where(Post.status == "scheduled", Post.publish_at <= (at or now()))
+            .join(Troupe, Troupe.id == Post.troupe_id)
+            .where(
+                Post.status == "scheduled",
+                Post.publish_at <= (at or now()),
+                Troupe.archived_at.is_(None),
+            )
             .order_by(Post.publish_at)
             .limit(1)
-            .with_for_update(skip_locked=True)
+            .with_for_update(of=Post, skip_locked=True)
         )
         if post is None:
             break
@@ -506,6 +515,51 @@ def publish_due_now() -> int:
 
     with get_sessionmaker()() as db:
         return publish_due(db)
+
+
+def writers(db: Session, troupe: Troupe) -> list[uuid.UUID]:
+    """Those who write and publish the troupe's posts: its storytellers and
+    assistant storytellers."""
+    roles = [r.value for r in TROUPE_POLICY[TroupeAction.WRITE_POSTS]]
+    staff = db.scalars(
+        select(TroupeStaff.user_id).where(
+            TroupeStaff.troupe_id == troupe.id, TroupeStaff.role.in_(roles)
+        )
+    )
+    return list(dict.fromkeys([troupe.lead_user_id, *staff]))
+
+
+def missed(db: Session, troupe: Troupe, by: User) -> list[Post]:
+    """As an archived troupe reopens: its scheduled posts whose time came while it
+    was archived go back to the drafts unsent, rather than going out late, and its
+    writers are told. Those still to come go out as scheduled."""
+    found = list(
+        db.scalars(
+            select(Post)
+            .where(
+                Post.troupe_id == troupe.id,
+                Post.status == "scheduled",
+                Post.publish_at <= now(),
+            )
+            .order_by(Post.publish_at)
+            .with_for_update()
+        )
+    )
+    people = writers(db, troupe)
+    for post in found:
+        post.status = "draft"
+        post.publish_at = None
+        audit.record(db, by, "post.missed", troupe_id=troupe.id, **described(db, post))
+        notify(
+            db,
+            people,
+            f"{post.kind}.missed",
+            f"“{post.title}” wasn't published: its time came while {troupe.name} was"
+            " archived. It is back in the drafts.",
+            link(post),
+            troupe_id=troupe.id,
+        )
+    return found
 
 
 def unpublish(db: Session, post: Post, by: User) -> None:

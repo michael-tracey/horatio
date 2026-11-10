@@ -486,7 +486,7 @@ Venues are often basements with no signal. Horatio can keep your own characters 
 - **Off: online only.** Nothing is kept on the device.
 - **On: my characters work offline.** The sheets, Play Views and powers of every character you have in play, in every troupe, are kept on the device and brought up to date whenever there's signal, with their home troupe's news and announcements from the last 30 days.
 
-The same tab shows what's kept now (the characters, when they were last updated and roughly how much space it takes), with **Update now**, worth pressing before you leave for a game, and **Remove from this device**.
+The same tab shows what's kept now (the characters, when they were last updated and roughly how much space it takes), with **Update now**, worth pressing before you leave for a game, and **Remove from this device**. **Updated** is the last time everything kept came through. If the last try couldn't refresh some screens, it says how many and when; those screens show what was kept before, so press **Update now** again while you still have signal.
 
 **With no signal.** A line under the menu says you're offline and how old what you're seeing is: *Offline · your characters as of 7:42 pm*. On the Play View, the saved pill says **Offline** with the taps waiting, and *Your sheet as of…* under it. Other screens, such as downtimes, Spend XP, other characters and every staff screen (but for the scenes staff keep; see [Scenes at a game with no signal](running-a-troupe.md#scenes-at-a-game-with-no-signal)), say they need a connection, with a link back to your character. Nothing but Play View taps waits to be sent: anything else you try offline says **Needs a connection.**
 

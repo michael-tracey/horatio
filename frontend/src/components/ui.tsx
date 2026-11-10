@@ -1,7 +1,7 @@
 import { cloneElement, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import type { ButtonHTMLAttributes, CSSProperties, InputHTMLAttributes, ReactElement, ReactNode, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 import { Link, NavLink, useLocation } from "react-router";
-import { usePreferences } from "../hooks";
+import { useMe, usePreferences } from "../hooks";
 import { LoaderMark } from "../loaders/art";
 import { useMotif } from "../loaders/useMotif";
 import { useOnline } from "../offline/connection";
@@ -124,6 +124,24 @@ export function ErrorText({ error }: { error: unknown }) {
     <p role="alert" className="rounded-md border border-blood/60 bg-blood/15 px-3 py-2 text-sm text-parchment">
       {message}
     </p>
+  );
+}
+
+/**
+ * Who is signed in couldn't be checked: the server failed, rather than saying there
+ * is no session (#621). Says so, with a way to ask again, so a signed-in person
+ * isn't sent to the sign-in form or offered an account by a passing fault.
+ */
+export function SessionCheckFailed() {
+  const me = useMe();
+  return (
+    <div className="flex flex-col items-start gap-3">
+      <p className="text-parchment">Couldn't check that you're signed in.</p>
+      <ErrorText error={me.error} />
+      <Button variant="secondary" disabled={me.isFetching} onClick={() => void me.refetch()}>
+        Try again
+      </Button>
+    </div>
   );
 }
 

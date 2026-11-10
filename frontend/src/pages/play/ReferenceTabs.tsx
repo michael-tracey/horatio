@@ -11,7 +11,7 @@ import { IdentityNote } from "../character/Identities";
 import { RetainerLines } from "../character/Retainers";
 import { placeRetainers } from "../character/retainers";
 import { equipmentModifiers } from "./equipped";
-import { bloodNote, breakdown, damageText, grouped, OTHER_TESTS, showing, situations, switchedDamage, total, variantNow, variantText, withAttribute, type Modifier, type Trackers } from "./pools";
+import { bloodNote, breakdown, damageText, grouped, OTHER_TESTS, qualityText, showing, situations, switchedDamage, total, variantNow, variantsOn, variantText, withAttribute, type Modifier, type Trackers, type VariantNow } from "./pools";
 import { SwitchesDrawer } from "./SwitchesDrawer";
 import type { makeTap } from "./tracker";
 import { UseButtons, type UseTaps } from "./UsePower";
@@ -167,8 +167,9 @@ function IdentityLine({ reference, detail }: { reference: PlayReference; detail:
 export function PoolRow({ pool, willpower, modifiers, on, trackers }: { pool: TestPool; willpower: number; modifiers: Modifier[]; on: string[]; trackers?: Trackers }) {
   const hurt = pool.damage ? switchedDamage(pool.damage, on) : [];
   const now = total(pool, willpower, modifiers, on);
-  const variants = [
-    ...pool.variants.map((v) => variantNow(pool, v, willpower, modifiers, on, trackers)),
+  const variants: VariantNow[] = [
+    // Killer Instincts' "Against your hunted target" shows only while it's on (issue #613).
+    ...variantsOn(pool, on).map((v) => variantNow(pool, v, willpower, modifiers, on, trackers)),
     // An equipped item's bonus that counts only sometimes: "Against firearms (+3 Flak Vest: Ballistic)".
     ...situations(pool, modifiers).map((s) => ({ when: s.when.charAt(0).toUpperCase() + s.when.slice(1), parts: s.parts, total: now + s.parts.reduce((sum, p) => sum + p.value, 0) })),
   ];
@@ -196,12 +197,23 @@ export function PoolRow({ pool, willpower, modifiers, on, trackers }: { pool: Te
       {variants.length > 0 && (
         <ul className="mt-1 flex flex-col gap-0.5 text-sm">
           {variants.map((v) => (
-            <li key={v.when} className="flex items-baseline justify-between gap-3 pl-3">
-              <span className="text-mist">
-                {v.when}
-                <span className="text-xs"> ({variantText(v)})</span>
-              </span>
-              <strong className="text-gold">{v.total}</strong>
+            <li key={v.when} className="pl-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-mist">
+                  {v.when}
+                  <span className="text-xs">
+                    {" "}
+                    ({variantText(v)}){v.qualities?.map((q) => `, ${q.name}`).join("")}
+                  </span>
+                </span>
+                <strong className="text-gold">{v.total}</strong>
+              </div>
+              {/* What a quality it gives does: Brutal's exceptional success (core p. 516). */}
+              {v.qualities?.map((q) => (
+                <p key={q.name} className="text-xs text-mist">
+                  {qualityText(q)}
+                </p>
+              ))}
             </li>
           ))}
         </ul>

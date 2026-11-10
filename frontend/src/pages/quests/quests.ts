@@ -216,6 +216,13 @@ export function offerText(offer: string): string {
   return OFFERS[offer] ?? offer;
 }
 
+/** "1 of 4 requirements met", as staff glance at a character's quests (#614). */
+export function requirementsMetText(requirements: { met: boolean }[]): string {
+  if (requirements.length === 0) return "No requirements yet";
+  const met = requirements.filter((r) => r.met).length;
+  return `${met} of ${requirements.length} ${requirements.length === 1 ? "requirement" : "requirements"} met`;
+}
+
 /** "Scenario 2: passed". */
 export function resultText(r: { number: number; result: string | null }): string {
   return `Scenario ${r.number}: ${r.result === "passed" ? "passed" : "failed"}`;

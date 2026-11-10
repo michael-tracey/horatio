@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
 import { api, ApiError, unwrap } from "../api/client";
-import { Loading, PageTitle } from "../components/ui";
+import { Loading, PageTitle, SessionCheckFailed } from "../components/ui";
 import { useMe } from "../hooks";
 import { withNext } from "../next";
 import { TroupeProfileView } from "./troupe/TroupeProfile";
@@ -34,6 +34,8 @@ export function PublicTroupePage() {
   const { troupeId = "" } = useParams();
   const me = useMe();
   const signedIn = !!me.data;
+  // Couldn't tell (the server failed): neither the troupe's own page nor signing in (#621).
+  const unknown = !signedIn && me.isError;
   const profile = useQuery({
     queryKey: ["troupe-profile", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/profile", { params: { path: { troupe_id: troupeId } } })),
@@ -48,7 +50,7 @@ export function PublicTroupePage() {
         <p className="text-mist">
           {missing ? (signedIn ? "There is no such troupe." : "This troupe's profile is only for people signed in, or there is no such troupe.") : profile.error.message}
         </p>
-        {!signedIn && <JoinOrSignIn troupeId={troupeId} />}
+        {unknown ? <SessionCheckFailed /> : !signedIn && <JoinOrSignIn troupeId={troupeId} />}
       </div>
     );
   }
@@ -71,6 +73,8 @@ export function PublicTroupePage() {
             <Link to={`/troupes/${p.id}`} className="text-sm text-gold underline">
               Open the troupe
             </Link>
+          ) : unknown ? (
+            <SessionCheckFailed />
           ) : (
             <JoinOrSignIn troupeId={p.id} />
           )

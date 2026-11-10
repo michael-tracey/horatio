@@ -834,6 +834,37 @@ def visible_quests(db: Session, character: Character) -> list[tuple[Quest, Role_
     return found
 
 
+def kept_role(db: Session, quest: Quest, character: Character) -> Role_ | None:
+    """Leader or joined, sent or not: the character in a quest as the troupe's staff see it."""
+    if quest.leader_id == character.id:
+        return "leader"
+    joined = db.scalar(
+        select(QuestMember.id).where(
+            QuestMember.quest_id == quest.id,
+            QuestMember.character_id == character.id,
+            QuestMember.status == "joined",
+        )
+    )
+    return "joined" if joined is not None else None
+
+
+def kept_quests(db: Session, troupe: Troupe, character: Character) -> list[tuple[Quest, Role_]]:
+    """The troupe's quests the character leads or has joined, sent or still being
+    built, newest first: what its staff see on the character's page (#614)."""
+    joined = select(QuestMember.quest_id).where(
+        QuestMember.character_id == character.id, QuestMember.status == "joined"
+    )
+    found = db.scalars(
+        select(Quest)
+        .where(
+            Quest.troupe_id == troupe.id,
+            or_(Quest.leader_id == character.id, Quest.id.in_(joined)),
+        )
+        .order_by(Quest.created_at.desc())
+    )
+    return [(q, "leader" if q.leader_id == character.id else "joined") for q in found]
+
+
 def ensure_active(quest: Quest) -> None:
     if quest.status != "active":
         raise conflict(

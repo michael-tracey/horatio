@@ -658,6 +658,123 @@ def test_turning_quests_off_hides_them_again(troupe: Troupe, agnes: str) -> None
     assert troupe.player.client.get(f"/characters/{agnes}/quests/{quest['id']}").status_code == 404
 
 
+def test_the_home_troupes_staff_see_a_characters_quests_read_only(
+    troupe: Troupe, agnes: str, bram: str, second: Person
+) -> None:
+    """#614: on the character's page, its home troupe's storytellers, assistant
+    storytellers and the custodian see its quests, being built or sent, with their
+    requirements and every result recorded, and its requests; nothing to act on."""
+    quests_on(troupe)
+    request = ok(ask(troupe.player, agnes, "Locate Karsh"), 201)
+    quest = ok(
+        troupe.storyteller.client.post(
+            f"/troupes/{troupe.id}/quests",
+            json={
+                "name": "Dude, Where's My Warlord?",
+                "category": "epic",
+                "difficulty": 2,
+                "request_id": request["id"],
+            },
+        ),
+        201,
+    )
+    qid = quest["id"]
+    requirement(troupe, qid, MEDICINE)
+    quest = requirement(troupe, qid, {"kind": "text", "text": "Expend an Elder Games action"})
+    words = quest["requirements"][1]["id"]
+    staff = (troupe.lead, troupe.storyteller, troupe.assistant, troupe.custodian)
+
+    # Still being built: its player sees nothing of it; staff see it, not yet sent.
+    assert mine(troupe.player, agnes)["quests"] == []
+    for person in staff:
+        found = mine(person, agnes)
+        [shown] = found["quests"]
+        assert (shown["name"], shown["objective"], shown["role"], shown["status"]) == (
+            "Dude, Where's My Warlord?",
+            "Locate Karsh",
+            "leader",
+            "draft",
+        )
+        assert (shown["category"], shown["difficulty"], shown["downtime_only"]) == (
+            "epic",
+            2,
+            False,
+        )
+        [asked] = found["requests"]
+        assert (asked["quest_id"], asked["can_withdraw"]) == (qid, False)
+    [asked] = mine(troupe.player, agnes)["requests"]
+    assert asked["quest_id"] is None
+
+    ok(troupe.storyteller.client.post(f"/quests/{qid}/send"))
+    ok(
+        troupe.storyteller.client.post(
+            f"/quests/{qid}/members", json={"character_ids": [bram], "joined": True}
+        )
+    )
+    ok(
+        troupe.storyteller.client.post(
+            f"/quests/{qid}/requirements/{words}/met", json={"character_id": agnes}
+        )
+    )
+    ok(
+        troupe.storyteller.client.post(
+            f"/quests/{qid}/scenarios/1/result", json={"result": "passed", "text": "Asheville."}
+        )
+    )
+
+    for person in staff:
+        seen = ok(person.client.get(f"/characters/{agnes}/quests/{qid}"))
+        assert (seen["status"], seen["party"]) == ("active", ["Agnes", "Bram"])
+        assert [(r["label"], r["met"], r["met_by_name"]) for r in seen["requirements"]] == [
+            ("Medicine 3", False, ""),
+            ("Expend an Elder Games action", True, "Agnes"),
+        ]
+        assert [(r["number"], r["result"], r["text"]) for r in seen["results"]] == [
+            (1, "passed", "Asheville.")
+        ]
+        assert (seen["can_join"], seen["can_share"], seen["can_write_tale"]) == (
+            False,
+            False,
+            False,
+        )
+    # Bram joined it, so the staff see it on his page too.
+    [joined] = mine(troupe.storyteller, bram)["quests"]
+    assert (joined["id"], joined["role"]) == (qid, "joined")
+    # The player's own view is unchanged: theirs to share.
+    [shown] = mine(troupe.player, agnes)["quests"]
+    assert (shown["status"], shown["can_share"]) == ("active", True)
+
+    # A narrator, a stranger and another player see nothing of it.
+    for person in (troupe.narrator, troupe.stranger, second):
+        assert person.client.get(f"/characters/{agnes}/quests").status_code == 404
+        assert person.client.get(f"/characters/{agnes}/quests/{qid}").status_code == 404
+    # Staff still don't act for the player.
+    assert (
+        troupe.storyteller.client.post(
+            f"/characters/{agnes}/quests/{qid}/share", json={"character_ids": [bram]}
+        ).status_code
+        == 404
+    )
+
+
+def test_staff_see_no_quests_on_a_character_while_its_troupe_has_them_off(
+    troupe: Troupe, agnes: str
+) -> None:
+    quests_on(troupe)
+    quest = build(troupe, name="Errand for Staff", leader_id=agnes)
+    ok(
+        troupe.storyteller.client.put(
+            f"/troupes/{troupe.id}/quest-settings", json={"enabled": False, "requests_per_cycle": 1}
+        )
+    )
+
+    found = mine(troupe.storyteller, agnes)
+
+    assert (found["enabled"], found["quests"], found["requests"]) == (False, [], [])
+    url = f"/characters/{agnes}/quests/{quest['id']}"
+    assert troupe.storyteller.client.get(url).status_code == 404
+
+
 def test_sheets_are_checked_for_specialisations_powers_and_aspects(
     troupe: Troupe, agnes: str, session: Session
 ) -> None:

@@ -2,14 +2,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Link } from "react-router";
 import { Button, Card, ErrorText } from "../components/ui";
-import { useDates } from "../dates";
+import { useDates, type Dates } from "../dates";
 import { useMe } from "../hooks";
 import { manualLink } from "../manualLink";
 import { Setting } from "../pages/settings/SettingsPage";
 import { isNoAnswer, useOnline } from "./connection";
 import { useKeepChoice, useKept, useSetKeeping } from "./Offline";
 import { keptText } from "./KeepScenes";
-import { keptScenesSummaries, keptVersion, loadSummary, refresh, removeKept, removeScenes, subscribe } from "./store";
+import { keptScenesSummaries, keptVersion, loadSummary, refresh, removeKept, removeScenes, subscribe, type KeptSummary } from "./store";
 
 function useKeptScenesList() {
   useSyncExternalStore(subscribe, keptVersion);
@@ -20,6 +20,25 @@ function useKeptScenesList() {
 export function sizeText(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** "Updated 10 Nov 2026, 2:05 pm", or "Not updated yet". */
+export function updatedText(kept: Pick<KeptSummary, "refreshedAt">, dates: Dates): string {
+  return kept.refreshedAt ? `Updated ${dates.dateTime(new Date(kept.refreshedAt))}` : "Not updated yet";
+}
+
+/**
+ * When the last refresh left some screens as they were (#619): "The last try, at 6:20 pm,
+ * couldn't refresh 2 screens; they show what was kept before." Null when it didn't.
+ */
+export function partialText(kept: Pick<KeptSummary, "refreshedAt" | "partial">, dates: Dates): string | null {
+  if (!kept.partial) return null;
+  const { failed, triedAt } = kept.partial;
+  const sameDay = !!kept.refreshedAt && dates.date(new Date(kept.refreshedAt)) === dates.date(new Date(triedAt));
+  const at = sameDay ? dates.time(new Date(triedAt)) : dates.dateTime(new Date(triedAt));
+  const screens = failed === 1 ? "1 screen" : `${failed} screens`;
+  const before = kept.refreshedAt ? (failed === 1 ? "; it shows what was kept before" : "; they show what was kept before") : "";
+  return `The last try, at ${at}, couldn't refresh ${screens}${before}.`;
 }
 
 /**
@@ -36,6 +55,7 @@ export function DevicePanel() {
   const scenes = useKeptScenesList();
   const online = useOnline();
   const dates = useDates();
+  const partial = kept && partialText(kept, dates);
   const client = useQueryClient();
   const set = useSetKeeping();
   const [busy, setBusy] = useState(false);
@@ -100,8 +120,9 @@ export function DevicePanel() {
             <div role="group" aria-label="Kept on this device" className="text-sm">
               <p className="text-parchment">Kept here now: {kept.characters.map((c) => c.name).join(", ")}</p>
               <p className="text-xs text-mist">
-                {kept.refreshedAt ? `Updated ${dates.dateTime(new Date(kept.refreshedAt))}` : "Not updated yet"} · about {sizeText(kept.bytes)}
+                {updatedText(kept, dates)} · about {sizeText(kept.bytes)}
               </p>
+              {partial && <p className="text-xs text-parchment">{partial}</p>}
             </div>
           ) : (
             <p className="text-sm text-mist">{busy ? "Keeping your characters…" : "Nothing is kept here yet. Update now keeps your characters in play."}</p>

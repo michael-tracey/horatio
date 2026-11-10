@@ -30090,7 +30090,7 @@
         "type": "object"
       },
       "PlayerQuestOut": {
-        "description": "A quest as one of its characters' players sees it.",
+        "description": "A quest as one of its characters' players sees it, or, on the character's page,\nits home troupe's staff (#614): they also see one still being built (a draft), and\nevery result recorded, sent or not.",
         "properties": {
           "can_join": {
             "title": "Can Join",
@@ -30664,6 +30664,25 @@
             },
             "title": "Parts",
             "type": "array"
+          },
+          "qualities": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/VariantQuality"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "switch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Switch"
           },
           "total": {
             "title": "Total",
@@ -46284,6 +46303,30 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "VariantQuality": {
+        "description": "An equipment quality a variant gives (issue #613): Killer Instincts' Brutal.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "string"
+          },
+          "play": {
+            "title": "Play",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "play",
+          "page"
+        ],
+        "title": "VariantQuality",
+        "type": "object"
+      },
       "Venue": {
         "properties": {
           "access": {
@@ -57562,7 +57605,7 @@
     },
     "/api/characters/{character_id}/quests": {
       "get": {
-        "description": "The character's quest requests and the quests it may see. Nothing while its\nhome troupe has quests off.",
+        "description": "The character's quest requests and the quests it may see. Nothing while its\nhome troupe has quests off. Its home troupe's storytellers and assistant\nstorytellers see it too, read-only (#614).",
         "operationId": "character_quests_api_characters__character_id__quests_get",
         "parameters": [
           {

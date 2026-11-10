@@ -76,8 +76,19 @@ export function trackersOf(view: { morality: { value: number } | null; beast: { 
 }
 
 type Variant = TestPool["variants"][number];
-/** A variant as it counts now: what it adds, or the whole pool used instead. */
-export type VariantNow = { when: string; parts: { label: string; value: number }[]; total: number; instead?: boolean };
+/** An equipment quality a variant gives besides its parts (Killer Instincts' Brutal, issue #613). */
+export type VariantQuality = Variant["qualities"][number];
+/** A variant as it counts now: what it adds, or the whole pool used instead, and the qualities it gives. */
+export type VariantNow = { when: string; parts: { label: string; value: number }[]; total: number; instead?: boolean; qualities?: VariantQuality[] };
+
+/**
+ * The variants to show now: one a switch holds against someone (Killer Instincts'
+ * hunted target, issue #613) only while that switch is on. A Play View kept on the
+ * phone from before it has no `switch`, so shows them all.
+ */
+export function variantsOn(pool: TestPool, on: readonly string[]): Variant[] {
+  return pool.variants.filter((v) => !v.switch || on.includes(v.switch));
+}
 
 /** Rampart of Faith's current Morality minus current Beast traits (Vol. 2 p. 244), never below 0. */
 export function trackedValue(_tracked: Variant["tracked"][number], trackers: Trackers | undefined): number {
@@ -97,13 +108,18 @@ export function variantNow(pool: TestPool, v: Variant, willpower: number, modifi
   }
   const tracked = v.tracked.map((t) => ({ label: t.label, value: trackedValue(t, trackers) }));
   const more = tracked.reduce((sum, t) => sum + t.value, 0);
-  return { when: v.when, parts: [...v.parts, ...tracked], total: v.total + total(pool, willpower, modifiers, on) - pool.total + more };
+  return { when: v.when, parts: [...v.parts, ...tracked], total: v.total + total(pool, willpower, modifiers, on) - pool.total + more, qualities: v.qualities ?? [] };
 }
 
 /** What a variant adds, "+4 Alacrity, −2 Injured", or the pool it is, "Physical 5 + Survival 3". */
 export function variantText(v: VariantNow): string {
   if (v.instead) return v.parts.map((p) => `${p.label} ${p.value}`).join(" + ");
   return v.parts.map((p) => `${p.value >= 0 ? "+" : "−"}${Math.abs(p.value)} ${p.label}`).join(", ");
+}
+
+/** What a quality a variant gives does: "Brutal: win on the larger pool: exceptional success (p. 516)". */
+export function qualityText(q: VariantQuality): string {
+  return `${q.name}: ${q.play.charAt(0).toLowerCase()}${q.play.slice(1)} (${q.page})`;
 }
 
 /**

@@ -1,11 +1,9 @@
 import { lazy } from "react";
-import { Navigate, Outlet, Route, Routes, useLocation, useParams } from "react-router";
+import { Navigate, Route, Routes, useParams } from "react-router";
 import { CharacterRouteClanNames as ForCharacter, TroupeRouteClanNames as ForTroupe } from "./components/ClanNames";
 import { Layout } from "./components/Layout";
 import { SunriseHost } from "./components/Sunrise";
-import { Loading } from "./components/ui";
 import { AboutPage } from "./pages/AboutPage";
-import { useMe } from "./hooks";
 import { CharactersPage } from "./pages/CharactersPage";
 import { ImportCharacterPage } from "./pages/character/Backup";
 import { ClaimPage } from "./pages/ClaimPage";
@@ -13,10 +11,9 @@ import { ConfirmEmailPage } from "./pages/ConfirmEmailPage";
 import { ForgotPasswordPage, ResetPasswordPage, SignInPage, SignUpPage } from "./pages/SignIn";
 import { TroupesPage } from "./pages/TroupesPage";
 import { UnsubscribePage } from "./pages/UnsubscribePage";
-import { withNext } from "./next";
-import { NeedsConnection } from "./offline/NeedsConnection";
 import { KeepQuestion, useKeptOnDevice } from "./offline/Offline";
 import { UpdatePrompt } from "./offline/UpdatePrompt";
+import { RequireSignIn } from "./RequireSignIn";
 import { LazyPages } from "./staleBuild";
 import { useTextSize } from "./textSize";
 
@@ -46,24 +43,6 @@ const WhosWhoPrintPage = lazy(() => import("./pages/WhosWhoPrintPage").then((m) 
 function ToScenes() {
   const { troupeId = "" } = useParams();
   return <Navigate to={`/play/troupes/${troupeId}/scenes`} replace />;
-}
-
-function RequireSignIn() {
-  const me = useMe();
-  const location = useLocation();
-  // Offline with nothing kept here, it can't know who is signed in.
-  if (me.isPending && me.fetchStatus === "paused") return <NeedsConnection />;
-  if (me.isPending) return <Loading />;
-  if (!me.data) {
-    // Sign in, then on to where they were going.
-    const here = location.pathname === "/" ? null : location.pathname + location.search + location.hash;
-    return <Navigate to={withNext("/sign-in", here)} replace />;
-  }
-  return (
-    <LazyPages>
-      <Outlet />
-    </LazyPages>
-  );
 }
 
 export function App() {

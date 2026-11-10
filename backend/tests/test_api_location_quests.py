@@ -40,6 +40,11 @@ def bram(troupe: Troupe, second: Person) -> str:
     return member_character_of(troupe, second, "Bram")
 
 
+@pytest.fixture
+def cora(troupe: Troupe, client_for: Callable[[], TestClient]) -> str:
+    return member_character_of(troupe, sign_up(client_for, "third"), "Cora")
+
+
 def location(troupe: Troupe, **body: Any) -> Any:
     return ok(troupe.storyteller.client.post(f"/troupes/{troupe.id}/locations", json=body), 201)
 
@@ -103,6 +108,14 @@ def effects(person: Person, character_id: str) -> list[tuple[str, str, bool, str
         for loc in held(person, character_id)["locations"]
         for e in loc["effects"]
     ]
+
+
+def told_lost(session: Session) -> list[str]:
+    """The characters whose players were told they lost a location, once for each time."""
+    found = session.scalars(
+        select(Notification.character_id).where(Notification.kind == "location.lost")
+    ).all()
+    return sorted(str(c) for c in found)
 
 
 def queue(troupe: Troupe) -> list[Any]:
@@ -481,6 +494,48 @@ def test_a_controlled_location_is_acquired_only_once_insolvent_three_times(
     assert held(troupe.player, agnes)["locations"] == []
 
 
+def test_acquiring_a_jointly_controlled_location_tells_both_controllers(
+    troupe: Troupe, agnes: str, bram: str, cora: str, session: Session
+) -> None:
+    bar = ruby(troupe, agnes)
+    ok(
+        troupe.storyteller.client.patch(
+            f"/locations/{bar['id']}",
+            json={"joint_id": cora, "negatives": [{"name": "Insolvent", "level": 3}]},
+        )
+    )
+    # The joint controller can't take it over, so never loses it to themselves.
+    assert plan(troupe, bar["id"], {"kind": "acquire"}, leader_id=cora)["refusal"] == (
+        "Cora already controls Ruby's Bar."
+    )
+    quest = ok(
+        build(troupe, bar["id"], {"kind": "acquire"}, name="Foreclosure", leader_id=bram), 201
+    )
+    complete(troupe, quest)
+    found = read(troupe, bar["id"])
+    assert (found["controller"]["name"], found["joint"]) == ("Bram", None)
+    # Agnes's and Cora's players are told; Bram's, who took it, isn't.
+    assert told_lost(session) == sorted([agnes, cora])
+
+
+def test_a_joint_known_only_by_name_is_told_nothing(
+    troupe: Troupe, agnes: str, bram: str, session: Session
+) -> None:
+    bar = ruby(troupe, agnes)
+    ok(
+        troupe.storyteller.client.patch(
+            f"/locations/{bar['id']}",
+            json={"joint_name": "Old Tom", "negatives": [{"name": "Insolvent", "level": 3}]},
+        )
+    )
+    quest = ok(
+        build(troupe, bar["id"], {"kind": "acquire"}, name="Foreclosure", leader_id=bram), 201
+    )
+    complete(troupe, quest)
+    assert read(troupe, bar["id"])["joint"] is None
+    assert told_lost(session) == [agnes]
+
+
 # --- negatives acting on their own ----------------------------------------------------------
 
 
@@ -541,6 +596,21 @@ def test_insolvent_twice_makes_it_forfeit_when_the_rating_is_above_resources(
     )
     found = ok(troupe.storyteller.client.post(f"/locations/{bar['id']}/forfeit"))
     assert (found["control"], found["controller"], found["forfeit"]) == ("none", None, None)
+
+
+def test_a_forfeit_tells_the_joint_controller_too(
+    troupe: Troupe, agnes: str, cora: str, session: Session
+) -> None:
+    bar = ruby(troupe, agnes)
+    ok(
+        troupe.storyteller.client.patch(
+            f"/locations/{bar['id']}",
+            json={"joint_id": cora, "negatives": [{"name": "Insolvent", "level": 2}]},
+        )
+    )
+    found = ok(troupe.storyteller.client.post(f"/locations/{bar['id']}/forfeit"))
+    assert (found["controller"], found["joint"]) == (None, None)
+    assert told_lost(session) == sorted([agnes, cora])
 
 
 def test_damaged_switches_off_what_staff_choose(troupe: Troupe, agnes: str) -> None:

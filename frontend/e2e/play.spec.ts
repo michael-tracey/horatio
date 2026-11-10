@@ -659,6 +659,89 @@ test("an elder power adds its notes to another power's switch: Quickness with Ce
   await expect(banner).toHaveCount(0);
 });
 
+test("Killer Instincts: +2 Accurate and Brutal on a line of their own against the hunted target, on the Play View and in a Scene (#613)", async ({ browser }) => {
+  const custodian = await person(browser, "instinct-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "instinct-lead");
+  const troupeName = `Ashen Spoor ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // An NPC with Killer Instincts (Vol. 2 p. 84): Physical 5, Brawl 3, Melee 2, Firearms 1, Athletics 1.
+  const p = lead.page;
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(p.url()).pathname.split("/")[2]!;
+  const headers = { "X-Horatio": "1" };
+  const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: "Sefa", wizard: false } });
+  expect(made.status(), await made.text()).toBe(201);
+  const npc = (await made.json()).id;
+  for (const [category, name, rating] of [
+    ["clan", "Gangrel", null],
+    ["attributes", "Physical", 5],
+    ["attributes", "Mental", 3],
+    ["skills", "Brawl", 3],
+    ["skills", "Melee", 2],
+    ["skills", "Firearms", 1],
+    ["skills", "Athletics", 1],
+    ["skills", "Dodge", 2],
+    ["elder_disciplines", "Spiritus: Killer Instincts", 1],
+  ] as const) {
+    const rated = await p.request.put(`/api/characters/${npc}/npc/ratings`, { headers, data: { category, name, rating, detail: "" } });
+    expect(rated.status(), await rated.text()).toBe(200);
+  }
+
+  // Off, each attack is as it was, with no line for the hunted target.
+  await p.goto(`/play/characters/${npc}?tab=pools`);
+  await expect(p.getByRole("heading", { name: "Sefa" })).toBeVisible();
+  const attacks = { "Unarmed attack": 8, "Melee attack": 7, "Firearms attack": 6, "Thrown or bow attack": 6 };
+  const row = (name: string) => p.getByRole("main").getByRole("listitem").filter({ hasText: new RegExp(`^${name}`) }).first();
+  const hunted = (name: string) => row(name).getByRole("listitem").filter({ hasText: /^Against your hunted target/ });
+  await expect(row("Unarmed attack").locator("strong").first()).toHaveText("8");
+  await expect(p.getByText(/Against your hunted target/)).toHaveCount(0);
+
+  // On, the totals stay, and each Physical attack has its line: +2 Accurate, and Brutal with what it does (core p. 516).
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  const drawer = p.getByRole("dialog", { name: "Forms, powers and modifiers" });
+  await expect(drawer).toContainText("Against your hunted target: +2 attacks (Accurate), Brutal");
+  await drawer.getByLabel("Spiritus: Killer Instincts on").check();
+  await drawer.getByRole("button", { name: "Close" }).click();
+  for (const [name, total] of Object.entries(attacks)) {
+    await expect(row(name).locator("strong").first()).toHaveText(String(total));
+    await expect(hunted(name)).toContainText("Against your hunted target (+2 Accurate), Brutal");
+    await expect(hunted(name).locator("strong")).toHaveText(String(total + 2));
+    await expect(hunted(name)).toContainText("Brutal: win on the larger pool: exceptional success (p. 516)");
+  }
+  await expect(row("Dodge")).not.toContainText("hunted target");
+  await p.screenshot(shots("play-pools-killer-instincts"));
+
+  // The Scene view's pools list shows the same line.
+  const scene = await p.context().newPage();
+  await openScene(scene, troupeId, "Sefa's quarry");
+  await scene.getByRole("combobox", { name: "Add to the scene" }).fill("Sefa");
+  await scene.getByRole("option", { name: /Sefa/ }).click();
+  const card = scene.getByRole("article", { name: "Sefa" });
+  await expect(card).toContainText("Attack Unarmed 8 (1 dmg) · Melee 7");
+  await card.getByRole("button", { name: /^Pools/ }).click();
+  const unarmed = card.getByRole("region", { name: "Combat" }).getByRole("listitem").filter({ hasText: /^Unarmed attack/ }).first();
+  const line = unarmed.getByRole("listitem").filter({ hasText: /^Against your hunted target/ });
+  await expect(line).toContainText("Against your hunted target (+2 Accurate), Brutal");
+  await expect(line.locator("strong")).toHaveText("10");
+  await expect(line).toContainText("Brutal: win on the larger pool: exceptional success (p. 516)");
+  await scene.close();
+
+  // Off again, the lines go.
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  await drawer.getByLabel("Spiritus: Killer Instincts on").uncheck();
+  await expect(p.getByText(/Against your hunted target \(/)).toHaveCount(0);
+});
+
 test("kept on the phone, a player's character opens with no signal: the sheet, the Play View and its powers, and taps go when the signal returns (#502)", async ({ browser }) => {
   // The player's own phone, with the service worker that keeps the app, and asked the first time they sign in.
   const { page: p } = await person(browser, "offline-keeper", { serviceWorkers: "allow", storageState: { cookies: [], origins: [] } });
@@ -679,6 +762,8 @@ test("kept on the phone, a player's character opens with no signal: the sheet, t
   await p.getByRole("button", { name: "Update now" }).click();
   await expect(kept).toContainText("Kept here now: Nocturne");
   await expect(kept).toContainText(/Updated .* · about \d+ KB/);
+  // Everything kept came: no word of screens left as they were (#619).
+  await expect(kept).not.toContainText("The last try");
   await p.screenshot(shots("offline-device"));
   await p.evaluate(async () => void (await navigator.serviceWorker.ready));
 
