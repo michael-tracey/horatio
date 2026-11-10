@@ -10553,6 +10553,11 @@
             "title": "Parts",
             "type": "array"
           },
+          "reducible": {
+            "default": true,
+            "title": "Reducible",
+            "type": "boolean"
+          },
           "switched": {
             "default": [],
             "items": {
@@ -43367,6 +43372,17 @@
             "title": "Adds Willpower",
             "type": "boolean"
           },
+          "challenge": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Challenge"
+          },
           "damage": {
             "anyOf": [
               {
@@ -43403,6 +43419,17 @@
             },
             "title": "Parts",
             "type": "array"
+          },
+          "switch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Switch"
           },
           "switched": {
             "default": [],

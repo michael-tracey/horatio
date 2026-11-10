@@ -11,7 +11,7 @@ import { LogEntries, ResetGame, SyncStatus } from "./PlayPage";
 import { EquipmentSwitches } from "./EquipmentSwitches";
 import { equipmentModifiers } from "./equipped";
 import { ModifiersPanel } from "./Modifiers";
-import { attackGlance, bloodNote, defenceGlance, fightFirst, grouped, topAttacks, total, type Modifier } from "./pools";
+import { attackGlance, bloodNote, defenceGlance, fightFirst, grouped, showing, topAttacks, total, type Modifier } from "./pools";
 import { PowersList } from "./Powers";
 import { formsOn, healthMost } from "./powers";
 import { PoolRow } from "./ReferenceTabs";
@@ -616,7 +616,7 @@ function SceneCard({ characterId, back, onRemove, onRank }: { characterId: strin
       {open.includes("pools") &&
         (reference ? (
           <div className="flex max-h-96 flex-col gap-2 overflow-y-auto">
-            {fightFirst(grouped(reference.pools)).map(([group, pools]) => (
+            {fightFirst(grouped(showing(reference.pools, on))).map(([group, pools]) => (
               <section key={group} aria-label={group}>
                 <h3 className="text-xs tracking-wide text-mist uppercase">{group}</h3>
                 {group === "Combat" && reference.blood_per_turn > 0 && <p className="text-xs text-mist">{bloodNote(reference.blood_per_turn)}</p>}
