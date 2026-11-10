@@ -22,7 +22,11 @@
 #   to those who chose that when buying the power. `note` makes it a reminder
 #   under the pool instead of a number (under Also for frenzy), and `alternative`
 #   ("Physical + Survival") names attributes and skills the character may test
-#   with in the pool's place (issue #602).
+#   with in the pool's place (issue #602). `against` with a switch's `when` makes
+#   it hold only against someone ("your hunted target"): a line of its own under
+#   the pool while the switch is on, not part of its total, with `label` naming
+#   its part ("Accurate") and `qualities = [{ name, play, page, book? }]` the
+#   equipment qualities it gives besides (issue #613).
 # `active` (on a discipline, power or [[others]] entry): what the Play View can
 #   switch on while the character has it, one table or a list of them (issue
 #   #200): { key, name?, form?, combines?, page, book?, label?, health?,
@@ -2150,8 +2154,9 @@ active = { key = "Dust Devil", page = 238, book = "Vol. 2", notes = ["Ten minute
 category = "elder_disciplines"
 name = "Spiritus: Killer Instincts"
 cost = { blood = 1 }
-active = { key = "Killer Instincts", page = 84, book = "Vol. 2", notes = ["The +2 shows on every attack while it's on, but the book gives it only against the one target you hunt: your Physical attacks on them are Accurate (the +2) and Brutal, and your unarmed ones can also be Harrying or Encumbering.", "Hit them and they're marked: they can't hide from you, and you get +3 to track them until the next sunset or sunrise."] }
-pools = [{ pool = "attack", amount = 2, when = "Killer Instincts" }]
+active = { key = "Killer Instincts", page = 84, book = "Vol. 2", notes = ["Only against the one target you hunt: each attack shows its pool against them on a line of its own. Your unarmed attacks on them can also be Harrying or Encumbering, your choice.", "Hit them and they're marked: they can't hide from you, and you get +3 to track them until the next sunset or sunrise."] }
+# Issue #613: Accurate and Brutal only against the hunted target, so a line of their own.
+pools = [{ pool = "attack", amount = 2, label = "Accurate", when = "Killer Instincts", against = "your hunted target", qualities = [{ name = "Brutal", play = "Win on the larger pool: exceptional success", page = 516 }] }]
 
 # Vol. 2 pp. 240-241: 1 Blood, simple action: for ten minutes, aggravated blows or bolts.
 [[others]]
