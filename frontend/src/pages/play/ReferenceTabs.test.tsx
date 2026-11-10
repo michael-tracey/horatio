@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { PlayReference } from "../../api/types";
-import { SheetTab } from "./ReferenceTabs";
+import { PoolRow, SheetTab } from "./ReferenceTabs";
 
 afterEach(cleanup);
 
@@ -96,5 +96,33 @@ describe("SheetTab", () => {
     sheet();
     expect(screen.queryByText("Loner")).toBeNull();
     expect(screen.queryByRole("heading", { name: "Archetype" })).toBeNull();
+  });
+});
+
+describe("PoolRow", () => {
+  const damage = { kind: "power", type: "aggravated" as const, parts: [{ label: "Scourge of Arikel", value: 3 }], total: 3, exceptional: 0, notes: [], switched: [], reducible: true };
+  const pool = { key: "power:Scourge of Arikel", name: "Scourge of Arikel", group: "Combat", parts: [], total: 0, versus: null, adds_willpower: false, willpower_floor: 0, variants: [], notes: [], switched: [], switch: "Scourge of Arikel", damage };
+
+  it("shows a power's damage with the challenge it comes from where it has no pool of its own", () => {
+    render(
+      <ul>
+        <PoolRow pool={{ ...pool, challenge: "Any Social challenge you win" }} willpower={0} modifiers={[]} on={["Scourge of Arikel"]} />
+      </ul>,
+    );
+    expect(screen.getByText("Any Social challenge you win")).toBeTruthy();
+    expect(screen.getByText("Aggravated damage 3 · exceptional 3")).toBeTruthy();
+    expect(screen.queryByText("0")).toBeNull();
+  });
+
+  it("shows a power's pool, what it is against and the damage nothing reduces", () => {
+    const assault = { ...pool, key: "power:Psychic Assault", name: "Psychic Assault", parts: [{ label: "Mental", value: 5 }, { label: "Investigation", value: 3 }], total: 8, versus: "Mental + Willpower", damage: { ...damage, type: "normal" as const, total: 4, exceptional: 1, reducible: false } };
+    render(
+      <ul>
+        <PoolRow pool={assault} willpower={0} modifiers={[]} on={["Psychic Assault"]} />
+      </ul>,
+    );
+    expect(screen.getByText("8")).toBeTruthy();
+    expect(screen.getByText(/Mental 5 \+ Investigation 3/).textContent).toBe("Mental 5 + Investigation 3 · against Mental + Willpower");
+    expect(screen.getByText("Damage 4, nothing reduces it · exceptional 5")).toBeTruthy();
   });
 });

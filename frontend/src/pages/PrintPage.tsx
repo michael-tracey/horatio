@@ -506,7 +506,8 @@ function Sheet({ sheet }: { sheet: PrintedSheet }) {
           </p>
           <ul className="mt-1 text-[10px] leading-4">
             {sheet.pools
-              .filter((p) => p.key !== "initiative" && (p.group === "Combat" || p.group === "Defence"))
+              // A power's own test (issue #600) is on the Play View only while the power is.
+              .filter((p) => p.key !== "initiative" && !p.switch && (p.group === "Combat" || p.group === "Defence"))
               .map((p) => (
                 <li key={p.key} className="flex flex-wrap items-baseline justify-between gap-x-2 border-b border-dotted border-neutral-400">
                   <span>
