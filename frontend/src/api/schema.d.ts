@@ -14651,6 +14651,11 @@ export interface components {
             /** Parts */
             parts: components["schemas"]["PoolPart"][];
             /**
+             * Reducible
+             * @default true
+             */
+            reducible: boolean;
+            /**
              * Switched
              * @default []
              */
@@ -27405,6 +27410,8 @@ export interface components {
              * @default false
              */
             adds_willpower: boolean;
+            /** Challenge */
+            challenge?: string | null;
             damage?: components["schemas"]["Damage"] | null;
             /** Group */
             group: string;
@@ -27419,6 +27426,8 @@ export interface components {
             notes: string[];
             /** Parts */
             parts: components["schemas"]["PoolPart"][];
+            /** Switch */
+            switch?: string | null;
             /**
              * Switched
              * @default []
