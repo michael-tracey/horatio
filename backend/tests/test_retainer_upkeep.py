@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from horatio import downtimes
 from horatio.models import AuditEvent, Character, RetainerGrowth
 from tests.api_helpers import Person, Troupe, new_character
 from tests.test_api_checkin import check_in, game, open_checkin, send, tap, view
@@ -301,8 +302,75 @@ def test_a_months_upkeep_as_a_downtime_cost_is_charged_at_the_close_and_taken_ne
     assert upkeep_lines(troupe.player, character_id) == []
 
 
+MONTHLY = {"amount": 1, "pool": "blood", "per": "month", "month_at": "downtime"}
+
+
+def close_on(troupe: Troupe, monkeypatch: pytest.MonkeyPatch, day: date) -> None:
+    """Open a new cycle and close it on `day`."""
+    cycle = open_cycle(troupe, new_cycle(troupe))
+    at = datetime.combine(day, datetime.min.time(), UTC) + timedelta(hours=12)
+    with monkeypatch.context() as patched:
+        patched.setattr(downtimes, "now", lambda: at)
+        close(troupe, cycle)
+
+
+def kept_charges(session: Session, character_id: str) -> list[dict[str, Any]]:
+    kept = session.scalar(
+        select(Character.upkeep_next_game).where(Character.id == uuid.UUID(character_id))
+    )
+    return (kept or {}).get("charges", [])
+
+
+def test_a_months_upkeep_as_a_downtime_cost_is_charged_once_a_calendar_month(
+    troupe: Troupe, session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    character_id = with_both(troupe)
+    set_rules(troupe, upkeep=MONTHLY)
+
+    close_on(troupe, monkeypatch, date(2026, 11, 3))
+    # A second cycle closing in the same month charges nothing more.
+    close_on(troupe, monkeypatch, date(2026, 11, 28))
+    assert kept_charges(session, character_id) == [
+        {"pool": "blood", "amount": 2, "retainers": [MARTA, "Pike"], "month": "2026-11-01"}
+    ]
+    assert actions(session, troupe).count("retainer.upkeep_charged") == 1
+
+    # One closing in the next month charges that month's, and both are taken.
+    close_on(troupe, monkeypatch, date(2026, 12, 2))
+    assert [c["month"] for c in kept_charges(session, character_id)] == [
+        "2026-11-01",
+        "2026-12-01",
+    ]
+    assert actions(session, troupe).count("retainer.upkeep_charged") == 2
+    tonight(troupe, character_id)
+    assert upkeep_lines(troupe.player, character_id) == [
+        f"Retainer upkeep: −2 Blood ({MARTA}, Pike)",
+        f"Retainer upkeep: −2 Blood ({MARTA}, Pike)",
+    ]
+
+
+def test_a_months_upkeep_taken_at_a_game_is_not_charged_again_that_month(
+    troupe: Troupe, session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    character_id = with_both(troupe)
+    set_rules(troupe, upkeep=MONTHLY)
+
+    close_on(troupe, monkeypatch, date(2026, 11, 3))
+    tonight(troupe, character_id)
+    assert upkeep_lines(troupe.player, character_id) == [
+        f"Retainer upkeep: −2 Blood ({MARTA}, Pike)"
+    ]
+    assert kept_charges(session, character_id) == []
+
+    close_on(troupe, monkeypatch, date(2026, 11, 28))
+    assert kept_charges(session, character_id) == []
+    assert actions(session, troupe).count("retainer.upkeep_charged") == 1
+    next_night(troupe, character_id)
+    assert upkeep_lines(troupe.player, character_id) == []
+
+
 def test_growth_goes_to_the_linked_npc_or_is_banked_once_a_month(
-    troupe: Troupe, session: Session
+    troupe: Troupe, session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     character_id = with_both(troupe)
     npc_id = make_npc(troupe)
@@ -312,7 +380,7 @@ def test_growth_goes_to_the_linked_npc_or_is_banked_once_a_month(
         "4 XP a month for each Retainer, given as a downtime cycle closes"
     )
 
-    close(troupe, open_cycle(troupe, new_cycle(troupe)))
+    close_on(troupe, monkeypatch, date(2026, 11, 3))
 
     shown = listed(troupe.storyteller, character_id)
     assert (shown[MARTA]["banked_xp"], shown["Pike"]["banked_xp"]) == (0, 4)
@@ -323,9 +391,13 @@ def test_growth_goes_to_the_linked_npc_or_is_banked_once_a_month(
     ]
     assert actions(session, troupe).count("retainer.grew") == 2
     # Another cycle closing in the same month gives nothing more.
-    close(troupe, open_cycle(troupe, new_cycle(troupe, closes_in=timedelta(days=8))))
+    close_on(troupe, monkeypatch, date(2026, 11, 28))
     assert listed(troupe.storyteller, character_id)["Pike"]["banked_xp"] == 4
     assert len(session.scalars(select(RetainerGrowth)).all()) == 2
+    # One closing in the next month gives that month's.
+    close_on(troupe, monkeypatch, date(2026, 12, 2))
+    assert listed(troupe.storyteller, character_id)["Pike"]["banked_xp"] == 8
+    assert len(session.scalars(select(RetainerGrowth)).all()) == 4
 
 
 def test_a_character_removed_from_the_cycle_pays_no_upkeep_and_gains_nothing(
@@ -358,8 +430,9 @@ def test_a_character_removed_from_the_cycle_pays_no_upkeep_and_gains_nothing(
             select(Character.upkeep_next_game).where(Character.id == uuid.UUID(character_id))
         )
 
+    month = datetime.now(UTC).date().replace(day=1).isoformat()
     assert kept(taking_part) == {
-        "charges": [{"pool": "blood", "amount": 2, "retainers": [MARTA, "Pike"]}]
+        "charges": [{"pool": "blood", "amount": 2, "retainers": [MARTA, "Pike"], "month": month}]
     }
     assert kept(removed) is None
     assert actions(session, troupe).count("retainer.upkeep_charged") == 1
