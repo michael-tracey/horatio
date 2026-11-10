@@ -22492,10 +22492,20 @@ export interface components {
         };
         /** PoolVariant */
         PoolVariant: {
+            /**
+             * Instead
+             * @default false
+             */
+            instead: boolean;
             /** Parts */
             parts: components["schemas"]["PoolPart"][];
             /** Total */
             total: number;
+            /**
+             * Tracked
+             * @default []
+             */
+            tracked: components["schemas"]["TrackedPart"][];
             /** When */
             when: string;
         };
@@ -27657,6 +27667,20 @@ export interface components {
             status_choices: components["schemas"]["StatusChoice"][];
             /** Titles */
             titles: components["schemas"]["TitleOut"][];
+        };
+        /**
+         * TrackedPart
+         * @description A part of a variant the Play View's trackers hold, so the page counts it
+         *     (issue #602): Rampart of Faith adds current Morality minus current Beast traits.
+         */
+        TrackedPart: {
+            /** Label */
+            label: string;
+            /**
+             * Tracks
+             * @constant
+             */
+            tracks: "morality_less_beast";
         };
         /** Tracker */
         Tracker: {

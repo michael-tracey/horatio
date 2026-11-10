@@ -429,6 +429,75 @@ test("Use on an elder power: Projectile spends 1 Blood on each attack, and switc
   await expect.poll(async () => (await (await p.request.get(`/api/characters/${id}/play`)).json()).blood.value).toBe(blood.value - 2);
 });
 
+test("defences that aren't a flat bonus: Rampart of Faith follows Morality and Beast traits, Rockheart resists with Physical + Survival (#602)", async ({ browser }) => {
+  const { page: p } = await person(browser, "rampart-keeper");
+  const pool = (name: string) => p.getByRole("listitem").filter({ hasText: new RegExp(`^${name}`) });
+  const play = async (id: string) => (await (await p.request.get(`/api/characters/${id}/play`)).json()) as { willpower: { value: number }; blood: { value: number; most: number } };
+
+  // A Salubri Pretender Elder with Valeren 5 and Rampart of Faith: Mental 3, Humanity 5, no Beast traits.
+  const salubri = await builtVampire(
+    p,
+    "Ithiel",
+    "Salubri",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Fame", 2], ["Resources", 1]], disciplines: [["Valeren", 2], ["Auspex", 1], ["Fortitude", 1]] },
+    [
+      ["disciplines", "Valeren", 5],
+      ["elder_disciplines", "Valeren: Rampart of Faith", 1],
+    ],
+  );
+  const { willpower, blood } = await play(salubri);
+  await p.goto(`/play/characters/${salubri}`);
+  await p.getByRole("tab", { name: "Pools" }).click();
+  // Each defence counts Willpower, so each offers Rampart of Faith for 1 Blood: Humanity 5 − 0 Beast traits.
+  const mental = pool("Resisting Mental powers");
+  await expect(mental.getByText(String(3 + willpower.value), { exact: true })).toBeVisible();
+  const rampart = mental.getByRole("listitem").filter({ hasText: "For 1 Blood" });
+  await expect(rampart).toContainText("(+5 Rampart of Faith)");
+  await expect(rampart.getByText(String(3 + willpower.value + 5), { exact: true })).toBeVisible();
+  for (const name of ["Resisting Social powers", "Resisting Physical powers"]) await expect(pool(name)).toContainText("(+5 Rampart of Faith)");
+  await expect(p.getByText(/Instead, with Rockheart/)).toHaveCount(0);
+  // Using it spends the Blood.
+  await p.getByRole("button", { name: "Use Valeren: Rampart of Faith, 1 Blood" }).click();
+  await expect(p.getByText(`Spent 1 Blood on Valeren: Rampart of Faith · ${blood.value - 1}/${blood.most}`)).toBeVisible();
+  await p.screenshot(shots("play-pools-rampart"));
+
+  // A Beast trait takes one off it.
+  await p.getByRole("tab", { name: "Tracker" }).click();
+  await p.getByRole("button", { name: "Gain a Beast traits point" }).click();
+  await expect(p.getByLabel("Beast traits: 1 of 5")).toBeVisible();
+  await p.getByRole("tab", { name: "Pools" }).click();
+  await expect(rampart).toContainText("(+4 Rampart of Faith)");
+  await expect(rampart.getByText(String(3 + willpower.value + 4), { exact: true })).toBeVisible();
+
+  // A Gargoyle Luminary Elder with Rockheart: Physical 7, Survival 4.
+  const skills = ATTRIBUTES_AND_FOCUSES.skills!.filter(([name]) => name !== "Brawl");
+  const gargoyle = await builtVampire(
+    p,
+    "Petronel",
+    "Gargoyles",
+    { ...ATTRIBUTES_AND_FOCUSES, skills: [["Survival", 4], ...skills], backgrounds: [["Generation", 3], ["Fame", 2], ["Herd", 1]], disciplines: [["Visceratika", 2], ["Fortitude", 1], ["Potence", 1]] },
+    [
+      ["backgrounds", "Generation", 4],
+      ["backgrounds", "Generation", 5],
+      ["disciplines", "Visceratika", 5],
+      ["luminary_disciplines", "Visceratika: Rockheart", 1],
+    ],
+  );
+  await p.goto(`/play/characters/${gargoyle}`);
+  await p.getByRole("tab", { name: "Pools" }).click();
+  // Mental and Social defence offer Physical + Survival instead, without Willpower; Physical defence doesn't.
+  for (const name of ["Resisting Mental powers", "Resisting Social powers"]) {
+    const instead = pool(name).getByRole("listitem").filter({ hasText: "Instead, with Rockheart" });
+    await expect(instead).toContainText("(Physical 7 + Survival 4)");
+    await expect(instead.getByText("11", { exact: true })).toBeVisible();
+  }
+  await expect(pool("Resisting Physical powers")).not.toContainText("Rockheart");
+  await expect(pool("Resisting Social powers")).toContainText("A Willpower spent to retest a Social power comes straight back (Rockheart)");
+  await expect(p.getByText("Rockheart: 1 Blood wins a frenzy test outright")).toBeVisible();
+  await expect(p.getByText(/For 1 Blood/)).toHaveCount(0);
+  await p.screenshot(shots("play-pools-rockheart"));
+});
+
 test("Flesh of Marble: two Protective Gear qualities picked each use, each against the attacks it guards (#599)", async ({ browser }) => {
   const { page: p } = await person(browser, "marble-skin");
   // A Gangrel elder (Generation 3) with Protean 5 and Flesh of Marble (Vol. 2 p. 232).

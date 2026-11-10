@@ -13,11 +13,16 @@
 #   attack:<Skill>, defense, defense:<Attribute>, discipline:<Name>, skill:<Name>
 #   or frenzy (where `beast` counts that many more Beast traits, or fewer); `amount`
 #   is a number, "powers:<Discipline>" for how many powers of it the character
-#   has, or "rating:<category>/<Name>"; a `when` naming a switch (see `active`)
-#   makes it hold only while that switch is on, and any other `when` makes it a
-#   variant ("While Injured"); `focus` limits it to characters with that focus,
-#   `unless_focus` to those without it (for a bonus a focus replaces), and
-#   `choice` (see `choices`) to those who chose that when buying the power.
+#   has, "rating:<category>/<Name>", or "morality_less_beast" for current Morality
+#   minus current Beast traits, which the Play View counts from its trackers (it
+#   needs a `when`); a `when` naming a switch (see `active`) makes it hold only
+#   while that switch is on, and any other `when` makes it a variant ("For 1
+#   Blood"); `focus` limits it to characters with that focus, `unless_focus` to
+#   those without it (for a bonus a focus replaces), and `choice` (see `choices`)
+#   to those who chose that when buying the power. `note` makes it a reminder
+#   under the pool instead of a number (under Also for frenzy), and `alternative`
+#   ("Physical + Survival") names attributes and skills the character may test
+#   with in the pool's place (issue #602).
 # `active` (on a discipline, power or [[others]] entry): what the Play View can
 #   switch on while the character has it, one table or a list of them (issue
 #   #200): { key, name?, form?, combines?, page, book?, label?, health?,
@@ -2406,10 +2411,13 @@ category = "elder_disciplines"
 name = "Valeren: Fiery Agony"
 cost = { blood = 1 }
 
+# Vol. 2 p. 244: 1 Blood, no action, defending with Willpower in the pool: add
+# current Morality minus current Beast traits. Every defence here counts Willpower.
 [[others]]
 category = "elder_disciplines"
 name = "Valeren: Rampart of Faith"
 cost = { blood = 1 }
+pools = [{ pool = "defense", amount = "morality_less_beast", when = "for 1 Blood" }]
 
 [[others]]
 category = "elder_disciplines"
@@ -2591,10 +2599,19 @@ name = "Vicissitude: Ravenous Conglomeration"
 cost = { blood = 4 }
 forms = 2
 
+# Vol. 2 p. 251: always on: can't be staked while the heart is in; 1 Blood (the
+# cost here) wins a frenzy test; resist Mental and Social challenges with Physical
+# + Survival; a Willpower spent to retest a Social power comes straight back.
 [[others]]
 category = "luminary_disciplines"
 name = "Visceratika: Rockheart"
 cost = { blood = 1 }
+pools = [
+  { pool = "defense:Mental", alternative = "Physical + Survival" },
+  { pool = "defense:Social", alternative = "Physical + Survival" },
+  { pool = "defense:Social", note = "A Willpower spent to retest a Social power comes straight back" },
+  { pool = "frenzy", note = "1 Blood wins a frenzy test outright" },
+]
 
 # Vol. 2 Issue 1 p. 62: +5 to Dodge for the turn, ending if you move.
 [[others]]
