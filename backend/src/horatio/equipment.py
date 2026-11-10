@@ -201,10 +201,31 @@ def item_modifiers(rules: EquipmentRules, item: EquipmentItem) -> list[ItemModif
     holder's rules: a weapon's on every attack it can make. A quality taken again
     (Superior) adds to its own modifier. A special item's own effects are words for
     the table, not modifiers."""
+    return quality_modifiers(
+        rules, item.kind, item_qualities(item.qualities), item.name, weapon_attacks(rules, item)
+    )
+
+
+def picked_modifiers(rules: EquipmentRules, kind: str, quality: str, by: str) -> list[ItemModifier]:
+    """The pool modifiers a quality picked for a power makes while the power is on
+    (issue #599), named for the power: "Flesh of Marble: Ballistic". A weapon
+    quality's are on its kind's own attack (Horrid Blade of the Demons: Melee)."""
+    attack = WEAPON_POOLS.get(kind)
+    return quality_modifiers(rules, kind, (ItemQuality(quality),), by, [attack] if attack else [])
+
+
+def quality_modifiers(
+    rules: EquipmentRules,
+    kind: str,
+    qualities: Iterable[ItemQuality],
+    name: str,
+    attacks: Sequence[str],
+) -> list[ItemModifier]:
+    """The pool modifiers qualities of `kind` make, labelled "<name>: <quality>":
+    a weapon's on each of `attacks`."""
     found: dict[tuple[str, str, str, bool], ItemModifier] = {}
-    attacks = weapon_attacks(rules, item)
-    for chosen in item_qualities(item.qualities):
-        quality = rules.qualities.get((item.kind, chosen.name))
+    for chosen in qualities:
+        quality = rules.qualities.get((kind, chosen.name))
         for effect in quality.pool if quality else ():
             when = effect.when.replace("{detail}", chosen.detail or "its circumstance")
             for pools in attacks if effect.pools == WEAPON else [effect.pools]:
@@ -214,7 +235,7 @@ def item_modifiers(rules: EquipmentRules, item: EquipmentItem) -> list[ItemModif
                 else:
                     found[key] = ItemModifier(
                         quality=chosen.name,
-                        label=f"{item.name}: {chosen.name}",
+                        label=f"{name}: {chosen.name}",
                         amount=effect.amount,
                         pools=pools,
                         when=when,

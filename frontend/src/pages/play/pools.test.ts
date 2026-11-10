@@ -339,6 +339,12 @@ describe("the Scene view's glance", () => {
       adds_willpower: true,
     });
     expect(defenceGlance([pool({}), social], 3)).toEqual(["Dodge 9", "vs Social 7"]);
+    // Armour that differs by attack (#599): each after Dodge.
+    const marble = [
+      { id: "a", label: "Flesh of Marble: Ballistic", amount: 3, pools: "pool:dodge", when: "against firearms", on: true, situational: true },
+      { id: "b", label: "Flesh of Marble: Ballistic", amount: 1, pools: "pool:dodge", when: "against Brawl, Melee and thrown weapons", on: true, situational: true },
+    ];
+    expect(defenceGlance([pool({}), social], 3, marble)).toEqual(["Dodge 9 (12 against firearms, 10 against Brawl, Melee and thrown weapons)", "vs Social 7"]);
   });
 
   it("puts Combat and Defence before the other groups", () => {

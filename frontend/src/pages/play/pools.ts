@@ -243,10 +243,19 @@ export function attackGlance(pool: TestPool, willpower: number, modifiers: Modif
   return `${pool.name.replace(/ attack$/, "")} ${total(pool, willpower, modifiers, on)}${dmg}`;
 }
 
-/** "Dodge 8 · vs Social 7 · vs Mental 7": Dodge, then each defence against a power. */
+/**
+ * "Dodge 8 · vs Social 7 · vs Mental 7": Dodge, then each defence against a power.
+ * Where armour makes Dodge differ by attack (issue #599), each comes after it:
+ * "Dodge 8 (11 against firearms, 9 against Brawl, Melee and thrown weapons)".
+ */
 export function defenceGlance(pools: TestPool[], willpower: number, modifiers: Modifier[] = [], on: readonly string[] = []): string[] {
   const now = (p: TestPool) => total(p, willpower, modifiers, on);
-  const dodge = pools.filter((p) => p.key === "dodge").map((p) => `Dodge ${now(p)}`);
+  const dodge = pools
+    .filter((p) => p.key === "dodge")
+    .map((p) => {
+      const split = situations(p, modifiers).map((s) => `${now(p) + s.parts.reduce((sum, part) => sum + part.value, 0)} ${s.when}`);
+      return split.length ? `Dodge ${now(p)} (${split.join(", ")})` : `Dodge ${now(p)}`;
+    });
   const resisting = pools.filter((p) => p.key.startsWith("defense:")).map((p) => `vs ${p.key.slice("defense:".length)} ${now(p)}`);
   return [...dodge, ...resisting];
 }

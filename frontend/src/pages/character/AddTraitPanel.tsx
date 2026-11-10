@@ -14,7 +14,7 @@ import { QuickPicks } from "./creation/DotGrid";
 import { detailNeed, fieldSkills, isInstance } from "./fields";
 import { ChoiceSelect } from "./ChoiceSelect";
 import { FreeChoicesFields } from "./FreeChoices";
-import { sayable, summary, toSend, type FreePick } from "./freeChoices";
+import { later, sayable, summary, toSend, type FreePick } from "./freeChoices";
 import { rulesLink } from "../rules/rulesBrowser";
 import { ruleLink } from "../troupe/writtenRules";
 import { rulesTroupe } from "./rules";
@@ -302,11 +302,7 @@ export function AddTraitPanel({
             offers.length > 0 && (
               <>
                 <FreeChoicesFields offers={offers} picks={picks} onChange={setPicks} />
-                <p className="text-xs text-mist">
-                  {character.home_troupe_id
-                    ? "Choose now: once it is on the sheet, staff change them."
-                    : "You can change these on the sheet until a home troupe accepts the character."}
-                </p>
+                <p className="text-xs text-mist">{later(offers, !!character.home_troupe_id)}</p>
               </>
             )
           )}

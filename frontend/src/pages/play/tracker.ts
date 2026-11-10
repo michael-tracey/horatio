@@ -1,7 +1,7 @@
 import type { InfluenceDetailsIn, ItemTapIn, PlayLogEntry, PlayView, TapIn, TemporaryDerangementIn } from "../../api/types";
 import { TYPE_NAMES } from "../../influence";
 import { applyEquip, describeEquip, EQUIP } from "./equipped";
-import { applySwitch, describeSwitch, healthMost, SWITCH } from "./powers";
+import { applyPick, applySwitch, describePick, describeSwitch, healthMost, PICK, pickedFor, SWITCH } from "./powers";
 
 /**
  * The Play View's taps on the device. The server works the trackers out from
@@ -163,6 +163,7 @@ export function trackerName(view: PlayView, tracker: string): string {
   const status = statusEntry(view, tracker);
   if (status) return status.name;
   if (tracker.startsWith(STATUS)) return tracker.slice(STATUS.length);
+  if (tracker.startsWith(PICK)) return pickedFor(view, tracker.slice(PICK.length)).join(": ");
   const power = tracker.startsWith(SWITCH) ? view.powers.find((p) => SWITCH + p.key === tracker) : undefined;
   return power?.name ?? tracker;
 }
@@ -200,6 +201,7 @@ const clamp = (value: number, top: number, least = 0) => Math.max(least, Math.mi
  */
 export function applyChange(view: PlayView, tracker: string, amount: number, damage: Damage | null = null, said: string[] = []): [number, number] | null {
   if (tracker.startsWith(SWITCH)) return applySwitch(view, tracker.slice(SWITCH.length), amount, said);
+  if (tracker.startsWith(PICK)) return applyPick(view, tracker.slice(PICK.length), amount, said);
   if (tracker.startsWith(EQUIP)) return applyEquip(view, tracker.slice(EQUIP.length), amount, said);
   // An item given or discarded is no longer held, so no longer equipped.
   if (tracker.startsWith(ITEM) && amount < 0) {
@@ -275,6 +277,7 @@ export function describe(
   if (tap.kind === "note") return "Note";
   if (tap.tracker.startsWith(ITEM)) return itemText(tap.equipment);
   if (tap.tracker.startsWith(SWITCH)) return describeSwitch(view, tap.tracker.slice(SWITCH.length), tap.amount, said);
+  if (tap.tracker.startsWith(PICK)) return describePick(view, tap.tracker.slice(PICK.length), tap.amount, said);
   if (tap.tracker.startsWith(EQUIP)) return describeEquip(view, tap.tracker.slice(EQUIP.length), tap.amount, said);
   const spent = tap.kind === "change" ? spendText(view, tap.tracker, tap.amount, tap.influence) : null;
   if (spent) return spent;
@@ -435,6 +438,8 @@ export function tapToast(view: Shown, tap: Tap): string {
     return `${power?.name ?? name} switched ${amount > 0 ? "on" : "off"}`;
   }
   if (tracker.startsWith(EQUIP)) return `${view.equipment.find((i) => EQUIP + i.id === tracker)?.name ?? "Item"} ${amount > 0 ? "equipped" : "put away"}`;
+  // "Picked Rugged for Protean: Flesh of Marble: dropped Ballistic (2 at most)", as the log says it.
+  if (tracker.startsWith(PICK)) return after.log.find((e) => e.id === tap.id)?.text ?? "Saved";
   return "Saved";
 }
 

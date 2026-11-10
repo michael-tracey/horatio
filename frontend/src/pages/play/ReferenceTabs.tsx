@@ -65,7 +65,10 @@ function TraitLine({ trait: t, reference }: { trait: Trait; reference: PlayRefer
         ) : focuses.length > 0 ? (
           focuses.map((f) => (
             <p key={f.name} className="mt-0.5">
-              <span className="text-parchment">{f.name}:</span> {f.description}
+              <span className="text-parchment">{f.name}</span>
+              {/* A focus a power gives: "from Vicissitude: Azhi Dahaka" (#598). A reference kept offline from before may not say. */}
+              {(f.granted_by ?? []).length > 0 && <span className="text-mist"> (from {f.granted_by.join(", ")})</span>}
+              <span className="text-parchment">:</span> {f.description}
             </p>
           ))
         ) : null
@@ -317,8 +320,8 @@ export function PoolsTab({
   const modifiers = useModifiers(characterId);
   const named = useClanName();
   const on = powers.filter((p) => p.on).map((p) => p.key);
-  // The player's own, then what the items equipped make (issue #306).
-  const counting = [...modifiers.modifiers, ...equipmentModifiers(items, equipped)];
+  // The player's own, then what the items equipped make (issue #306) and the qualities picked for the powers on (#599).
+  const counting = [...modifiers.modifiers, ...equipmentModifiers(items, equipped, powers)];
   return (
     <div className="flex flex-col gap-3 pb-20">
       <div className="grid gap-3 md:grid-cols-2">
