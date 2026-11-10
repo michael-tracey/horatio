@@ -568,6 +568,55 @@ def test_another_tests_attribute_carries_every_switch_change() -> None:
     assert ("Mental", -3) in [(s.attribute, s.value) for s in occult.switched]
 
 
+def test_defences_that_are_not_a_flat_bonus(troupe: Troupe) -> None:
+    """Rampart of Faith adds Morality minus Beast traits to each defence, which
+    counts Willpower, for 1 Blood; the Play View counts it from its trackers.
+    Rockheart offers Physical + Survival in place of Mental and Social defence,
+    with its other effects as notes (issue #602)."""
+    stone = created(
+        troupe,
+        "Stone",
+        ("attributes", "Physical", 5),
+        ("attributes", "Social", 3),
+        ("attributes", "Mental", 2),
+        ("skills", "Survival", 3),
+        ("elder_disciplines", "Valeren: Rampart of Faith", None),
+        ("luminary_disciplines", "Visceratika: Rockheart", None),
+    )
+    found = reference(troupe, stone)
+
+    for key in ("defense:Mental", "defense:Social", "defense:Physical"):
+        rampart = next(v for v in pool(found, key)["variants"] if v["when"] == "For 1 Blood")
+        assert rampart["total"] == pool(found, key)["total"]
+        assert rampart["tracked"] == [
+            {"label": "Rampart of Faith", "tracks": "morality_less_beast"}
+        ]
+        assert not rampart["instead"]
+    for key in ("defense:Mental", "defense:Social"):
+        rockheart = next(v for v in pool(found, key)["variants"] if v["instead"])
+        assert rockheart["when"] == "Instead, with Rockheart"
+        assert rockheart["parts"] == [
+            {"label": "Physical", "value": 5},
+            {"label": "Survival", "value": 3},
+        ]
+        assert rockheart["total"] == 8
+    assert not any(v["instead"] for v in pool(found, "defense:Physical")["variants"])
+    assert pool(found, "defense:Social")["notes"] == [
+        "A Willpower spent to retest a Social power comes straight back (Rockheart)"
+    ]
+    assert "Rockheart: 1 Blood wins a frenzy test outright" in found["notes"]
+    # Neither changes any other pool, nor the frenzy numbers.
+    assert all(p["variants"] == [] for p in found["pools"] if not p["key"].startswith("defense:"))
+    assert found["frenzy"]["parts"] == [{"label": "Mental", "value": 2}]
+
+
+def test_defences_without_those_powers_have_no_variants(troupe: Troupe, swift: str) -> None:
+    found = reference(troupe, swift)
+    for key in ("defense:Mental", "defense:Social", "defense:Physical"):
+        assert pool(found, key)["variants"] == []
+    assert not any("Rockheart" in n for n in found["notes"])
+
+
 def test_frenzy_counts_mental_and_what_changes_it(troupe: Troupe) -> None:
     calm = created(
         troupe,
@@ -799,8 +848,12 @@ def test_every_when_in_the_powers_names_a_switch_and_every_switch_a_page() -> No
     keys = [a["key"] for e in entries for a in actives(e)]
     assert len(keys) == len(set(keys)), "switch keys are unique"
     for e in entries:
-        for when in [x.get("when") for x in [*e.get("pools", []), *e.get("damage", [])]]:
-            assert when is None or when in book.switch_keys, (e["name"], when)
+        for x in [*e.get("pools", []), *e.get("damage", [])]:
+            when = x.get("when")
+            # What the trackers hold can only be a variant (Rampart of Faith's "for 1 Blood").
+            tracked = x.get("amount") == "morality_less_beast"
+            assert when is None or when in book.switch_keys or tracked, (e["name"], when)
+            assert when if tracked else True, e["name"]
         for a in actives(e):
             assert a["page"] > 0 and a.get("book", "core") in ("core", "Vol. 2", "Vol. 2 Issue 1")
     rule_set = load_rule_set(DATA_DIR / "bns_met_vampire.toml")

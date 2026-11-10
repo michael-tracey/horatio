@@ -11,7 +11,7 @@ import { LogEntries, ResetGame, SyncStatus } from "./PlayPage";
 import { EquipmentSwitches } from "./EquipmentSwitches";
 import { equipmentModifiers } from "./equipped";
 import { ModifiersPanel } from "./Modifiers";
-import { attackGlance, bloodNote, defenceGlance, fightFirst, grouped, topAttacks, total, type Modifier } from "./pools";
+import { attackGlance, bloodNote, defenceGlance, fightFirst, grouped, topAttacks, total, trackersOf, type Modifier } from "./pools";
 import { PowersList } from "./Powers";
 import { formsOn, healthMost } from "./powers";
 import { PoolRow } from "./ReferenceTabs";
@@ -622,7 +622,7 @@ function SceneCard({ characterId, back, onRemove, onRank }: { characterId: strin
                 {group === "Combat" && reference.blood_per_turn > 0 && <p className="text-xs text-mist">{bloodNote(reference.blood_per_turn)}</p>}
                 <ul>
                   {pools.map((p) => (
-                    <PoolRow key={p.key} pool={p} willpower={willpower} modifiers={counting} on={on} />
+                    <PoolRow key={p.key} pool={p} willpower={willpower} modifiers={counting} on={on} trackers={trackersOf(shown)} />
                   ))}
                 </ul>
               </section>

@@ -18,7 +18,10 @@ Disciplines, focuses, merits and flaws change pools through `pools` entries in
 the rules data: on a discipline or power in bns_met_vampire_powers.toml, and on
 merits and flaws in the catalogue. See the top of that file for their shape. An
 entry with `when` is a variant ("With Celerity active: 12"), not part of the
-number shown, since it holds only some of the time.
+number shown, since it holds only some of the time. A variant can also be another
+pool to use in its place (Rockheart's Physical + Survival), or add what the Play
+View's trackers hold (Rampart of Faith's Morality minus Beast traits), which the
+page counts (issue #602).
 
 Each attack pool also carries the damage a hit does (issue #190): the base for its
 type (core p. 279) plus what the sheet's powers add through `damage` entries in the
@@ -68,6 +71,8 @@ COMBAT_SKILLS = ("Brawl", "Dodge", "Firearms", "Melee")
 POWER_CATEGORIES = ("elder_disciplines", "luminary_disciplines")
 BOOK = "core"
 # How the summary of a switch names each pool family.
+# Amounts the Play View's trackers hold, which it counts (TrackedPart).
+TRACKED = ("morality_less_beast",)
 POOL_WORDS = {
     "initiative": "initiative",
     "dodge": "Dodge",
@@ -122,12 +127,25 @@ class Damage(BaseModel):
     switched: list[SwitchedDamage] = []
 
 
+class TrackedPart(BaseModel):
+    """A part of a variant the Play View's trackers hold, so the page counts it
+    (issue #602): Rampart of Faith adds current Morality minus current Beast traits."""
+
+    label: str
+    tracks: Literal["morality_less_beast"]
+
+
 class PoolVariant(BaseModel):
     # When it applies: "With Celerity active", "In fight form".
     when: str
     total: int
     # What it adds to the pool: "+4 Alacrity".
     parts: list[PoolPart]
+    # Its parts are the whole pool, in place of the pool's own and Willpower:
+    # Rockheart's Physical + Survival for Mental and Social defence (issue #602).
+    instead: bool = False
+    # What it adds that the trackers hold, which `total` leaves out.
+    tracked: list[TrackedPart] = []
 
 
 class TestPool(BaseModel):
@@ -309,6 +327,10 @@ class Effect:
     focus: str | None = None
     # For frenzy: Beast traits it counts as more (or fewer, below 0).
     beast: int = 0
+    # An amount the Play View's trackers hold, which it counts (TrackedPart).
+    tracks: Literal["morality_less_beast"] | None = None
+    # Another pool to use in place of this one: Physical + Survival (Rockheart).
+    alternative: tuple[PoolPart, ...] = ()
 
 
 @dataclass
@@ -482,6 +504,17 @@ def _amount(spec: Any, sheet: Sheet, bases: Mapping[str, set[str]]) -> int:
     return 0
 
 
+def _alternative(spec: str | None, sheet: Sheet) -> tuple[PoolPart, ...]:
+    """Another pool's parts, from its traits: "Physical + Survival"."""
+    if not spec:
+        return ()
+    names = [s.strip() for s in spec.split("+")]
+    return tuple(
+        PoolPart(label=n, value=sheet.rating("attributes" if n in ATTRIBUTES else "skills", n))
+        for n in names
+    )
+
+
 def _holds(entry: Mapping[str, Any], sheet: Sheet, chosen: Mapping[str, str]) -> bool:
     """Whether an entry holds for this sheet: its focus, and the purchase choice it needs."""
     if "focus" in entry and entry["focus"] not in sheet.focuses:
@@ -559,6 +592,8 @@ def effects(sheet: Sheet, bases: Mapping[str, set[str]]) -> list[Effect]:
                     instead_of=tuple(e.get("instead_of", ())),
                     focus=e.get("focus"),
                     beast=e.get("beast", 0),
+                    tracks=e.get("amount") if e.get("amount") in TRACKED else None,
+                    alternative=_alternative(e.get("alternative"), sheet),
                 )
             )
 
@@ -673,19 +708,35 @@ def _pool(
 ) -> TestPool:
     """A pool from its base parts and the effects that change it: those that
     always hold add to it, those a switch holds are kept for while it is on, and
-    those with another `when` become its variants."""
+    those with another `when` become its variants, as does another pool to use
+    in its place."""
     parts = list(base)
     variants: dict[str, list[PoolPart]] = defaultdict(list)
+    tracked: dict[str, list[TrackedPart]] = defaultdict(list)
+    instead: list[PoolVariant] = []
     switched: list[SwitchedPart] = []
     notes: list[str] = list(extra.pop("notes", []))
     for e in found:
         if e.pool == "all" or not _applies(e, key) or e.attribute or e.instead_of:
             continue
-        if e.note:
+        if e.alternative:
+            instead.append(
+                PoolVariant(
+                    when=f"instead, with {e.source}",
+                    total=sum(p.value for p in e.alternative),
+                    parts=list(e.alternative),
+                    instead=True,
+                )
+            )
+        elif e.note:
             notes.append(f"{e.note} ({e.source})")
         elif e.when in keys:
             if e.amount:
                 switched.append(SwitchedPart(switch=e.when, label=e.source, value=e.amount))
+        elif e.when and e.tracks:
+            # A variant of its own, though it adds no number here.
+            variants.setdefault(e.when, [])
+            tracked[e.when].append(TrackedPart(label=e.source, tracks=e.tracks))
         elif e.when:
             variants[e.when].append(PoolPart(label=e.source, value=e.amount))
         elif e.amount:
@@ -698,9 +749,15 @@ def _pool(
         parts=parts,
         total=total,
         variants=[
-            PoolVariant(when=when, total=total + sum(p.value for p in adds), parts=adds)
+            PoolVariant(
+                when=when,
+                total=total + sum(p.value for p in adds),
+                parts=adds,
+                tracked=tracked[when],
+            )
             for when, adds in variants.items()
-        ],
+        ]
+        + instead,
         notes=notes,
         switched=switched,
         **extra,

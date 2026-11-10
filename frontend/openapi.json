@@ -30514,6 +30514,11 @@
       },
       "PoolVariant": {
         "properties": {
+          "instead": {
+            "default": false,
+            "title": "Instead",
+            "type": "boolean"
+          },
           "parts": {
             "items": {
               "$ref": "#/components/schemas/PoolPart"
@@ -30524,6 +30529,14 @@
           "total": {
             "title": "Total",
             "type": "integer"
+          },
+          "tracked": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TrackedPart"
+            },
+            "title": "Tracked",
+            "type": "array"
           },
           "when": {
             "title": "When",
@@ -43739,6 +43752,26 @@
           "court_order"
         ],
         "title": "TitlesOut",
+        "type": "object"
+      },
+      "TrackedPart": {
+        "description": "A part of a variant the Play View's trackers hold, so the page counts it\n(issue #602): Rampart of Faith adds current Morality minus current Beast traits.",
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "tracks": {
+            "const": "morality_less_beast",
+            "title": "Tracks",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "tracks"
+        ],
+        "title": "TrackedPart",
         "type": "object"
       },
       "Tracker": {
