@@ -1,13 +1,15 @@
 """Feeding in downtimes: each clan's difficulty, what traits and staff change, the
 Feeding section with Herd and gifts, and the storytellers' answer."""
 
-from collections.abc import Callable
+import random
+from collections.abc import Callable, MutableSequence
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from horatio import rack
 from horatio.rules import feeding as rules
 from horatio.rules.files import all_rule_set_files, load_rule_set
 from tests.api_helpers import Person, Troupe, new_character, sign_up
@@ -748,6 +750,25 @@ def test_territories_with_book_feeding_poaching_and_patrols(troupe: Troupe) -> N
     assert "Patrolling Docks, you caught Bram poaching." in results_of(troupe.player, agnes)
 
 
+class InOrder(random.Random):
+    """Deals Feeding Card numbers in order, lowest free first, where the Rack shuffles
+    them."""
+
+    def shuffle(self, x: MutableSequence[Any]) -> None:
+        pass
+
+
+@pytest.fixture
+def in_order(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Card numbers are dealt in order, not at random, so a test that bars cards by
+    their last digit knows which cards that bars."""
+    dealt = rack.numbers
+    monkeypatch.setattr(
+        rack, "numbers", lambda db, cycle, count, _: dealt(db, cycle, count, InOrder())
+    )
+
+
+@pytest.mark.usefixtures("in_order")
 def test_the_rack_from_laying_it_out_to_the_results(troupe: Troupe) -> None:
     other = sign_up(troupe.client_for, "other")
     agnes = vampire(troupe, troupe.player, "Agnes", "Toreador", ("backgrounds", "Herd", 2))
@@ -764,7 +785,16 @@ def test_the_rack_from_laying_it_out_to_the_results(troupe: Troupe) -> None:
     assert (laid["players"], laid["suggested"]) == (2, 3)
     sources = sorted(c["source"] for c in laid["cards"])
     assert sources == ["herd", "herd", "rack", "rack", "rack", "territory", "territory"]
-    assert len({c["number"] for c in laid["cards"]}) == 7
+    # Numbered in order: the Rack's 1 to 3, the Docks' 4 and 5, Agnes's Herd 6 and 7.
+    assert [(c["source"], c["number"]) for c in laid["cards"]] == [
+        ("herd", 6),
+        ("herd", 7),
+        ("rack", 1),
+        ("rack", 2),
+        ("rack", 3),
+        ("territory", 4),
+        ("territory", 5),
+    ]
     assert {c["dealt_to"] for c in laid["cards"] if c["source"] == "herd"} == {"Agnes"}
     # Dealing again tops up the Rack, but never deals Herd or territory cards twice.
     again = troupe.storyteller.client.post(rack_url, json={"count": 0}).json()["rack"]
@@ -794,7 +824,8 @@ def test_the_rack_from_laying_it_out_to_the_results(troupe: Troupe) -> None:
     assert (
         other.client.post(take.format(bram), json={"card_id": herd_card["id"]}).status_code == 422
     )
-    # Bram's Ventrue weakness: never a card ending as the second one does.
+    # Bram's Ventrue weakness: never a card ending as the second one does (2, so not the
+    # Docks card he takes below).
     participant = character_view(troupe, cycle["id"], "Bram")["participant_id"]
     restricted = troupe.storyteller.client.put(
         f"/cycles/{cycle['id']}/participants/{participant}/feeding-numbers",
@@ -856,8 +887,6 @@ def test_the_rack_from_laying_it_out_to_the_results(troupe: Troupe) -> None:
 
 
 def test_the_book_number_of_cards() -> None:
-    from horatio import rack
-
     assert [rack.suggested(n) for n in (10, 20, 30, 40)] == [14, 28, 42, 56]
     assert rack.suggested(20, masquerade="severe") == 20
     assert rack.suggested(10, mood="very") == 19

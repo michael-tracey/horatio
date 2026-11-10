@@ -209,6 +209,9 @@ class PowerOut(reference.Switch):
     """A form or power the character has, and whether it is on in this game."""
 
     on: bool
+    # Its place in the order those on were switched on (1 for the first), so the
+    # Play View knows which form goes first past the limit; 0 while off.
+    turned_on: int = 0
 
 
 class PlayItemOut(BaseModel):
@@ -330,6 +333,9 @@ class PlayView(BaseModel):
     # health tracker gains the wound levels of those on, after the sheet's own in
     # each category; `blood_per_turn` and `blood_usual` are without them.
     powers: list[PowerOut] = []
+    # How many forms it can be in at once: one (core p. 114), two with Ravenous
+    # Conglomeration (Vol. 2 p. 249, issue #597).
+    forms: int = 1
     # The items it holds, and those equipped, in the order they were (issue #306):
     # like what is switched on, kept from game to game.
     equipment: list[PlayItemOut] = []
@@ -740,7 +746,15 @@ def play_view(db: Session, character: Character) -> PlayView:
             )
             for r in limits.retainers
         ],
-        powers=[PowerOut(**s.model_dump(), on=s.key in state["on"]) for s in limits.switches],
+        powers=[
+            PowerOut(
+                **s.model_dump(),
+                on=s.key in state["on"],
+                turned_on=state["on"].index(s.key) + 1 if s.key in state["on"] else 0,
+            )
+            for s in limits.switches
+        ],
+        forms=limits.forms,
         equipment=[
             PlayItemOut(
                 id=uuid.UUID(i.id),
