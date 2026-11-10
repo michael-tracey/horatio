@@ -27,6 +27,7 @@ export function inUse(powers: PowerSwitch[], modifiers: PoolModifier[], equipped
 export function SwitchesDrawer({
   pools,
   powers,
+  forms,
   items = [],
   equipped = [],
   modifiers,
@@ -34,6 +35,7 @@ export function SwitchesDrawer({
 }: {
   pools: TestPool[];
   powers: PowerSwitch[];
+  forms?: number;
   items?: PlayItem[];
   equipped?: string[];
   modifiers: ReturnType<typeof useModifiers>;
@@ -111,7 +113,7 @@ export function SwitchesDrawer({
                 Close
               </Button>
             </div>
-            <PowersList powers={powers} tap={tap} />
+            <PowersList powers={powers} forms={forms} tap={tap} />
             <EquipmentSwitches items={items} equipped={equipped} pools={pools} tap={tap} />
             <ModifiersPanel pools={pools} modifiers={modifiers} />
           </div>

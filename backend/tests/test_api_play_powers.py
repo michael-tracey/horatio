@@ -132,6 +132,70 @@ def test_one_form_at_a_time_but_powers_go_with_it(troupe: Troupe, ursula: str) -
     assert texts(state)[2] == "Feral Claws on"
 
 
+def test_ravenous_conglomeration_holds_two_forms_but_not_two_of_one_power(
+    troupe: Troupe, ursula: str, session: Session
+) -> None:
+    """Issue #597: up to two major transformations at once, never the same power
+    twice (Vol. 2 p. 249). A third form ends the one on longest."""
+    give(session, ursula, "disciplines", "Vicissitude", 5)
+    give(session, ursula, "luminary_disciplines", "Vicissitude: Ravenous Conglomeration", 1)
+    choose(troupe.player, ursula, template="Huge")
+    assert view(troupe.player, ursula)["forms"] == 2
+
+    state = send(
+        troupe.player,
+        ursula,
+        tap("power:Horrid Form", 1),
+        tap(FIGHT, 1, at=1),
+        tap("power:Feral Claws", 1, at=2),
+    )
+    assert on(state) == {"Horrid Form", "fight form", "Feral Claws"}
+    found = powers(state)
+    assert (found["Horrid Form"]["turned_on"], found["fight form"]["turned_on"]) == (1, 2)
+    assert found["flight form"]["turned_on"] == 0
+    # Both forms count: five damage reach into the fight form's two Healthy levels.
+    state = send(troupe.player, ursula, tap("health", 5, at=3, damage="normal"))
+    assert len(state["health"]["marks"]) == 5
+    assert texts(state)[2] == "Turned into Shape of the Beast: fight form (wolf, Huge)"
+
+    # The bat is Shape of the Beast too, so it takes the wolf's place.
+    state = send(troupe.player, ursula, tap(FLIGHT, 1, at=4))
+    assert on(state) == {"Horrid Form", "flight form", "Feral Claws"}
+    assert texts(state)[0] == (
+        "Turned into Shape of the Beast: flight form (bat): out of Shape of the Beast: "
+        "fight form (wolf, Huge), 2 damage in its levels gone"
+    )
+
+    # A third form ends Horrid Form, on longest.
+    state = send(troupe.player, ursula, tap("power:Blood Form", 1, at=5))
+    assert on(state) == {"flight form", "Blood Form", "Feral Claws"}
+    assert texts(state)[0] == "Turned into Blood Form: out of Horrid Form"
+
+    # Its Use spends the 4 Blood that starts any number of forms at once.
+    other = next(
+        o
+        for o in troupe.player.client.get(f"/characters/{ursula}/play/reference").json()[
+            "other_powers"
+        ]
+        if o["name"] == "Vicissitude: Ravenous Conglomeration"
+    )
+    assert other["cost"] == {"tracker": "blood", "amount": 4}
+    assert other["page"] == "Vol. 2, p. 249"
+
+
+def test_without_ravenous_conglomeration_forms_of_two_powers_take_turns(
+    troupe: Troupe, ursula: str, session: Session
+) -> None:
+    give(session, ursula, "disciplines", "Vicissitude", 4)
+    assert view(troupe.player, ursula)["forms"] == 1
+
+    state = send(troupe.player, ursula, tap("power:Horrid Form", 1), tap(FIGHT, 1, at=1))
+    assert on(state) == {"fight form"}
+    assert texts(state)[0] == (
+        "Turned into Shape of the Beast: fight form (wolf): out of Horrid Form"
+    )
+
+
 def test_another_device_sees_the_form_and_reset_turns_everything_off(
     troupe: Troupe, ursula: str, session: Session
 ) -> None:

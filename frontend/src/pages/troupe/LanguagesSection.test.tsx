@@ -14,7 +14,7 @@ const book: LanguagesOut = {
   accelerated: [1, 2, 4, 8, 16, 24, 32],
   max_rating: 10,
   text: "one per dot of Linguistics (the book's); Natural Linguist doubles it",
-  book_text: "One per dot of Linguistics; Natural Linguist doubles it (pp. 95, 252)",
+  book_text: "One per dot of Linguistics; Natural Linguist doubles it (pp. 94, 252)",
   over: [],
 };
 

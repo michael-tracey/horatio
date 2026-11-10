@@ -744,6 +744,52 @@ test("a skill's specialisations sit in its own list item, in the sheet's two col
   await p.screenshot(shots("specializations-stay-together"));
 });
 
+test("a language held with no Linguistics shows on the sheet, with one plain problem, and is removed (#596)", async ({ browser }) => {
+  const custodian = await person(browser, "mute-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "mute-lead");
+  const player = await person(browser, "mute-player");
+  const headers = { "X-Horatio": "1" };
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of the Mute ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  await backstoryOptional(custodian.page, troupeId);
+  // The book's language check only noted, so a language can be held with no
+  // Linguistics, as a Yorick import or an older sheet leaves it.
+  const noted = await lead.page.request.put(`/api/troupes/${troupeId}/checks/linguistics_specializations/*/1`, { headers, data: { strength: "note" } });
+  expect(noted.status(), await noted.text()).toBe(200);
+  const p = player.page;
+  const id = await builtVampire(p, "Morgane", "Gangrel", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Herd", 3], ["Fame", 2], ["Generation", 1]],
+    disciplines: [["Animalism", 2], ["Fortitude", 1], ["Protean", 1]],
+  });
+  const asked = await p.request.post(`/api/characters/${id}/home-troupe`, { headers, data: { troupe_id: troupeId } });
+  expect(asked.status(), await asked.text()).toBeLessThan(300);
+  const accepted = await lead.page.request.post(`/api/approvals/${(await asked.json()).id}/approve`, { headers, data: {} });
+  expect(accepted.status(), await accepted.text()).toBeLessThan(300);
+  const learnt = await p.request.put(`/api/characters/${id}/traits`, { headers, data: { category: "linguistics_specializations", name: "Custom", detail: "Spanish", rating: 1 } });
+  expect(learnt.status(), await learnt.text()).toBe(200);
+
+  // Skills lists it, though there is no Linguistics to list it under.
+  await p.goto(`/characters/${id}`);
+  const skills = p.locator("section").filter({ has: p.getByRole("heading", { name: "Skills", exact: true }) });
+  await expect(skills.getByText("Languages without Linguistics")).toBeVisible();
+  await expect(skills.getByText("Take Linguistics to keep them, or remove them.", { exact: false })).toBeVisible();
+  await expect(skills.getByRole("button", { name: "Add to Languages" })).toHaveCount(0);
+  // One plain problem naming it; nothing about Natural Linguist, which it doesn't hold.
+  const problems = p.locator("section").filter({ has: p.getByRole("heading", { name: "Against the rules" }) });
+  await expect(problems.getByRole("listitem")).toHaveCount(1);
+  await expect(problems.getByRole("listitem")).toHaveText(/^Holds Spanish with no Linguistics\. A character has one language per dot of Linguistics/);
+  await expect(problems.getByText(/Natural Linguist/)).toHaveCount(0);
+  await p.screenshot(shots("language-without-linguistics"));
+
+  await skills.getByRole("button", { name: "Remove Spanish" }).click();
+  await expect(skills.getByText("Languages without Linguistics")).toHaveCount(0);
+  await expect(p.getByRole("heading", { name: "Against the rules" })).toHaveCount(0);
+});
+
 test("on a phone the − and + are big enough to tap, apart, and a greyed − says why when tapped (#361)", async ({ browser }) => {
   const { page: p } = await person(browser, "thumb-steps");
   const id = await builtVampire(p, "Ysolde", "Brujah", {

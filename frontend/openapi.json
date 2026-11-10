@@ -29596,6 +29596,11 @@
             "title": "Expendables",
             "type": "array"
           },
+          "forms": {
+            "default": 1,
+            "title": "Forms",
+            "type": "integer"
+          },
           "game": {
             "anyOf": [
               {
@@ -31106,6 +31111,11 @@
                 "type": "null"
               }
             ]
+          },
+          "turned_on": {
+            "default": 0,
+            "title": "Turned On",
+            "type": "integer"
           }
         },
         "required": [
