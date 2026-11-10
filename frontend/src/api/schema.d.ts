@@ -22502,6 +22502,13 @@ export interface components {
             instead: boolean;
             /** Parts */
             parts: components["schemas"]["PoolPart"][];
+            /**
+             * Qualities
+             * @default []
+             */
+            qualities: components["schemas"]["VariantQuality"][];
+            /** Switch */
+            switch?: string | null;
             /** Total */
             total: number;
             /**
@@ -28480,6 +28487,18 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /**
+         * VariantQuality
+         * @description An equipment quality a variant gives (issue #613): Killer Instincts' Brutal.
+         */
+        VariantQuality: {
+            /** Name */
+            name: string;
+            /** Page */
+            page: string;
+            /** Play */
+            play: string;
         };
         /** Venue */
         Venue: {

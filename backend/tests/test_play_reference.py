@@ -316,6 +316,60 @@ def test_elder_powers_switch_on_what_they_change(troupe: Troupe) -> None:
     ]
 
 
+def test_killer_instincts_shows_its_bonus_only_against_the_hunted_target(troupe: Troupe) -> None:
+    """Issue #613: Killer Instincts makes Physical attacks on the one target you hunt
+    Accurate (+2) and Brutal (Vol. 2 p. 84; core p. 516), so each attack keeps its
+    total and has a line of its own for that target while the switch is on."""
+    character_id = created(
+        troupe,
+        "Ahrimane",
+        ("attributes", "Physical", 5),
+        ("skills", "Brawl", 3),
+        ("skills", "Melee", 2),
+        ("skills", "Firearms", 1),
+        ("skills", "Athletics", 4),
+        ("skills", "Dodge", 2),
+        ("elder_disciplines", "Spiritus: Killer Instincts", None),
+    )
+
+    found = reference(troupe, character_id)
+    brutal = {
+        "name": "Brutal",
+        "play": "Win on the larger pool: exceptional success",
+        "page": "p. 516",
+    }
+    for skill, total in (("Brawl", 8), ("Melee", 7), ("Firearms", 6), ("Athletics", 9)):
+        attack = pool(found, f"attack:{skill}")
+        assert attack["total"] == total
+        # Nothing on the switch changes the attack's own total.
+        assert switched(attack) == []
+        assert attack["variants"] == [
+            {
+                "when": "Against your hunted target",
+                "total": total + 2,
+                "parts": [{"label": "Accurate", "value": 2}],
+                "instead": False,
+                "tracked": [],
+                "switch": "Killer Instincts",
+                "qualities": [brutal],
+            }
+        ]
+    # Not a Physical attack: Dodge and the defences have no such line.
+    assert all(p["variants"] == [] for p in found["pools"] if not p["key"].startswith("attack:"))
+    others = {o["name"]: o for o in found["other_powers"]}
+    assert others["Spiritus: Killer Instincts"]["switches"] == ["Killer Instincts"]
+
+    # The switch's line says whom it is for; the unarmed choice stays a note.
+    sheet = Sheet(
+        ratings={("elder_disciplines", "Spiritus: Killer Instincts"): 0},
+        others=[("elder_disciplines", "Elder Powers", "Spiritus: Killer Instincts")],
+    )
+    switch = by_key(work_out(sheet, {}).switches)["Killer Instincts"]
+    assert switch.changes == ["Against your hunted target: +2 attacks (Accurate), Brutal"]
+    assert not any("every attack" in n for n in switch.notes)
+    assert any("Harrying or Encumbering" in n for n in switch.notes)
+
+
 def test_luminary_powers_switch_on_forms_blood_health_and_a_frenzy() -> None:
     """Issue #587: Ghost Body is a form (Vol. 2 p. 233), Awaken the Heartsblood gives
     2 more Blood a turn (p. 236), Mythic Form's Tough 4 Healthy (p. 234), and Embrace
@@ -1103,6 +1157,11 @@ def test_every_when_in_the_powers_names_a_switch_and_every_switch_a_page() -> No
             tracked = x.get("amount") == "morality_less_beast"
             assert when is None or when in book.switch_keys or tracked, (e["name"], when)
             assert when if tracked else True, e["name"]
+            # Whom a bonus holds against shows only while its switch is on (issue #613).
+            if "against" in x:
+                assert when in book.switch_keys, e["name"]
+            for q in x.get("qualities", []):
+                assert q["name"] and q["play"] and q["page"] > 0, e["name"]
         for n in e.get("notes", []):
             assert n["when"] in book.switch_keys and n["note"], (e["name"], n)
             assert n["page"] > 0 and n.get("book", "core") in ("core", "Vol. 2", "Vol. 2 Issue 1")

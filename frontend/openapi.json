@@ -30648,6 +30648,25 @@
             "title": "Parts",
             "type": "array"
           },
+          "qualities": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/VariantQuality"
+            },
+            "title": "Qualities",
+            "type": "array"
+          },
+          "switch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Switch"
+          },
           "total": {
             "title": "Total",
             "type": "integer"
@@ -46265,6 +46284,30 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "VariantQuality": {
+        "description": "An equipment quality a variant gives (issue #613): Killer Instincts' Brutal.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "string"
+          },
+          "play": {
+            "title": "Play",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "play",
+          "page"
+        ],
+        "title": "VariantQuality",
         "type": "object"
       },
       "Venue": {

@@ -221,6 +221,12 @@ def controls(location: Location, character_id: uuid.UUID | None) -> bool:
     return character_id is not None and character_id in (location.controller_id, location.joint_id)
 
 
+def holders(location: Location) -> list[uuid.UUID]:
+    """The characters who control the location, alone or jointly. A controller or joint
+    known only by name isn't one."""
+    return list(dict.fromkeys(c for c in (location.controller_id, location.joint_id) if c))
+
+
 def refusal(
     db: Session, rules: LocationRules, location: Location, change: Change, leader: Character | None
 ) -> str | None:
@@ -422,7 +428,7 @@ def changed_draft(
 
 def complete(db: Session, staff: User, quest: Quest) -> None:
     """Make the change a completed location quest makes, log it on the quest and the
-    location, and tell a controller who lost it."""
+    location, and tell each controller who lost it."""
     location = db.get(Location, quest.location_id) if quest.location_id else None
     if location is None or quest.location_change is None:
         quests.log(db, quest, staff, "its location is no longer on the list, so nothing changed")
@@ -436,7 +442,7 @@ def complete(db: Session, staff: User, quest: Quest) -> None:
             f"The quest's change to {location.name} can't be made: {reason} "
             "Change the location first, or close the quest."
         )
-    lost = location.controller_id if change.kind == "acquire" else None
+    held = holders(location) if change.kind == "acquire" else []
     if change.kind != "infiltrate":
         _, warnings = locations.save(
             db, staff, troupe, location, changed_draft(db, location, change, leader)
@@ -456,8 +462,9 @@ def complete(db: Session, staff: User, quest: Quest) -> None:
         change=what,
         **locations.describe(location),
     )
-    if lost is not None and (leader is None or lost != leader.id):
-        lose(db, location, lost)
+    for character_id in held:
+        if not controls(location, character_id):
+            lose(db, location, character_id)
     forfeit_warning(db, staff, troupe, location)
 
 
@@ -588,7 +595,7 @@ def forfeit(db: Session, staff: User, location: Location) -> None:
     """Staff confirm a forfeit: nobody controls it now."""
     if forfeit_reason(db, location) is None:
         raise conflict(f"{location.name} isn't forfeit.")
-    lost = location.controller_id
+    held = holders(location)
     location.control = "none"
     location.controller_id = None
     location.joint_id = None
@@ -597,8 +604,8 @@ def forfeit(db: Session, staff: User, location: Location) -> None:
     audit.record(
         db, staff, "location.forfeit", troupe_id=location.troupe_id, **locations.describe(location)
     )
-    if lost is not None:
-        lose(db, location, lost)
+    for character_id in held:
+        lose(db, location, character_id)
 
 
 def game_passed(db: Session, actor: User | None, troupe: Troupe) -> None:
