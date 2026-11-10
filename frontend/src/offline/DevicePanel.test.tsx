@@ -62,8 +62,8 @@ describe("Account › This device: when what's kept was updated (#619)", () => {
     // The panel reads what's kept as it opens (nothing, here) before the refreshes are written.
     await act(async () => {});
     await act(async () => {
-      await save(client, ME, shelf, { at: updated, failed: 0 });
-      await save(client, ME, shelf, { at: tried, failed: 2 });
+      await save(client, ME, shelf, { at: updated, failed: 0, gone: [] });
+      await save(client, ME, shelf, { at: tried, failed: 2, gone: [] });
     });
     const kept = screen.getByRole("group", { name: "Kept on this device" });
     expect(kept.textContent).toContain("Updated 10 Nov 2026, 14:05");
