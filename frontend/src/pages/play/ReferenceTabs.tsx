@@ -11,7 +11,7 @@ import { IdentityNote } from "../character/Identities";
 import { RetainerLines } from "../character/Retainers";
 import { placeRetainers } from "../character/retainers";
 import { equipmentModifiers } from "./equipped";
-import { bloodNote, breakdown, damageText, grouped, OTHER_TESTS, situations, switchedDamage, total, withAttribute, type Modifier } from "./pools";
+import { bloodNote, breakdown, damageText, grouped, OTHER_TESTS, showing, situations, switchedDamage, total, withAttribute, type Modifier } from "./pools";
 import { SwitchesDrawer } from "./SwitchesDrawer";
 import type { makeTap } from "./tracker";
 import { UseButtons, type UseTaps } from "./UsePower";
@@ -173,10 +173,11 @@ export function PoolRow({ pool, willpower, modifiers, on }: { pool: TestPool; wi
     <li className="border-b border-ash/60 py-2 last:border-0">
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-parchment">{pool.name}</span>
-        <strong className="font-display text-2xl leading-none text-parchment">{now}</strong>
+        {/* A power with no test of its own (Scourge of Arikel) has no pool to show, only when it hurts. */}
+        {!pool.challenge && <strong className="font-display text-2xl leading-none text-parchment">{now}</strong>}
       </div>
       <p className="text-xs text-mist">
-        {breakdown(pool, willpower, modifiers, on)}
+        {pool.challenge ?? breakdown(pool, willpower, modifiers, on)}
         {pool.versus && <> · against {pool.versus}</>}
       </p>
       {pool.damage && (
@@ -318,7 +319,7 @@ export function PoolsTab({
   return (
     <div className="flex flex-col gap-3 pb-20">
       <div className="grid gap-3 md:grid-cols-2">
-        {grouped(reference.pools).map(([group, pools]) =>
+        {grouped(showing(reference.pools, on)).map(([group, pools]) =>
           group === OTHER_TESTS ? (
             <OtherTests key={group} pools={pools} reference={reference} willpower={willpower} modifiers={counting} on={on} />
           ) : (

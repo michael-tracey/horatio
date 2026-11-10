@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PoolModifier, TestPool } from "../../api/types";
-import { appliesTo, attackGlance, breakdown, damageShort, damageText, damageTotal, describe as describeModifier, defenceGlance, describePools, fightFirst, grouped, switchedDamage, topAttacks, total, withAttribute } from "./pools";
+import { appliesTo, attackGlance, breakdown, damageShort, damageText, damageTotal, describe as describeModifier, defenceGlance, describePools, fightFirst, grouped, showing, switchedDamage, topAttacks, total, withAttribute } from "./pools";
 
 const pool = (over: Partial<TestPool>): TestPool => ({
   key: "dodge",
@@ -42,6 +42,13 @@ describe("pools", () => {
       total: 1,
     });
     expect(breakdown(initiative, 0)).toBe("Physical 6 − Slow Reactions 5");
+  });
+
+  it("shows a power's own test only while its switch is on", () => {
+    const assault = pool({ key: "power:Psychic Assault", name: "Psychic Assault", switch: "Psychic Assault" });
+    const brawl = pool({ key: "attack:Brawl", name: "Unarmed attack" });
+    expect(showing([brawl, assault], []).map((p) => p.key)).toEqual(["attack:Brawl"]);
+    expect(showing([brawl, assault], ["Psychic Assault"]).map((p) => p.key)).toEqual(["attack:Brawl", "power:Psychic Assault"]);
   });
 
   it("keeps the groups in order", () => {
@@ -95,6 +102,7 @@ describe("damage", () => {
     total: 1,
     exceptional: 1,
     notes: [],
+    reducible: true,
     ...over,
   });
 
@@ -110,6 +118,14 @@ describe("damage", () => {
     expect(damageText(intensity)).toBe("Damage 2 (1 melee + 1 Might) · exceptional 4");
     expect(damageShort(intensity)).toBe("2 damage (4 exceptional)");
     expect(damageText(melee({ type: "aggravated" }))).toBe("Aggravated damage 1 (melee) · exceptional 2");
+  });
+
+  it("says a power's own damage plainly, and when nothing reduces it", () => {
+    const assault = melee({ kind: "power", parts: [{ label: "Psychic Assault", value: 4 }], total: 4, reducible: false });
+    expect(damageText(assault)).toBe("Damage 4, nothing reduces it · exceptional 5");
+    expect(damageShort(assault)).toBe("4 damage, nothing reduces it (5 exceptional)");
+    const bolt = melee({ kind: "power", type: "aggravated", parts: [{ label: "Chronoton Bolt", value: 2 }], total: 2 });
+    expect(damageText(bolt)).toBe("Aggravated damage 2 · exceptional 3");
   });
 
   it("leaves a seam for damage a modifier adds", () => {
@@ -161,6 +177,7 @@ describe("forms and powers switched on", () => {
       total: 1,
       exceptional: 1,
       notes: [],
+      reducible: true,
       switched: [
         { switch: "Feral Claws", label: "Feral Claws", amount: 0, exceptional: 0, type: "aggravated" as const },
         { switch: "The Fourth Horseman", label: "The Fourth Horseman", amount: 1, exceptional: 0, type: "normal" as const },
@@ -248,6 +265,7 @@ describe("the Scene view's glance", () => {
       total: 1,
       exceptional: 1,
       notes: [],
+      reducible: true,
       switched: [],
     };
     expect(attackGlance(attack("Unarmed", 9, { damage }), 0)).toBe("Unarmed 9 (1 dmg)");

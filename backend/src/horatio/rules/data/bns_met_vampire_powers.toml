@@ -453,6 +453,9 @@ level = 5
 name = "Death of the Drum"
 note = "1 Blood, standard action, Melpominee test: your voice does 3 aggravated damage."
 focus = { Charisma = "Shatter objects with it too." }
+# Core p. 139 (issue #600): a Melpominee test, 3 aggravated (4 on an exceptional success).
+active = { key = "Death of the Drum", page = 139, notes = ["Fail, and you can try again on the next turn, at them or anyone else."] }
+test = { when = "Death of the Drum", pool = "discipline:Melpominee", damage = 3, exceptional = 1, type = "aggravated", page = 139 }
 
 [[disciplines]]
 name = "Mytherceria"
@@ -1153,6 +1156,9 @@ level = 2
 name = "Torment"
 note = "1 Blood, standard action, Necromancy test: 3 normal damage to a wraith (4 on an exceptional success)."
 focus = { Manipulation = "It also loses 1 Pathos." }
+# Core p. 173 (issue #600): a Necromancy test against a wraith, 3 (4 on an exceptional success).
+active = { key = "Torment", page = 173, notes = ["Only against a wraith."] }
+test = { when = "Torment", pool = "discipline:Necromancy: Sepulchre Path", damage = 3, exceptional = 1, note = "Only against a wraith", page = 173 }
 
 [[powers]]
 discipline = "Necromancy: Sepulchre Path"
@@ -1249,6 +1255,13 @@ level = 4
 name = "Stygian Lance"
 note = "1 Blood, standard action: a bolt of plasm, Social + Occult against Physical + Dodge, 3 normal damage; hits wraiths too."
 focus = { Charisma = "Its damage can't be reduced or negated." }
+# Core pp. 177-178 (issue #600): 3 (4 on an exceptional success); with the
+# Charisma focus nothing reduces it.
+active = { key = "Stygian Lance", page = 177, notes = ["It hits those in the Shadowlands too, wraiths among them."] }
+test = [
+  { when = "Stygian Lance", pool = "Social + Occult", versus = "Physical + Dodge", damage = 3, exceptional = 1, unless_focus = "Charisma", page = 177 },
+  { when = "Stygian Lance", pool = "Social + Occult", versus = "Physical + Dodge", damage = 3, exceptional = 1, unreducible = true, focus = "Charisma", page = 178 },
+]
 
 [[powers]]
 discipline = "Necromancy: Ash Path"
@@ -1498,6 +1511,9 @@ name = "Flame Bolt"
 note = "1 Blood, standard action, opposed test within 20 steps: 2 aggravated fire damage."
 focus = { Wits = "No Blood needed." }
 cost = { blood = 1, unless_focus = "Wits" }
+# Core p. 196 (issue #600): 2 aggravated fire damage (3 on an exceptional success).
+active = { key = "Flame Bolt", page = 196, notes = ["Within 20 steps; dodged with Physical + Dodge, and you can try again after failing."] }
+test = { when = "Flame Bolt", pool = "discipline:Thaumaturgy: Lure of Flames", damage = 2, exceptional = 1, type = "aggravated", page = 196 }
 
 [[powers]]
 discipline = "Thaumaturgy: Lure of Flames"
@@ -1512,6 +1528,10 @@ level = 4
 name = "Engulf"
 note = "1 Blood, standard action, opposed test within 20 steps: the target bursts into flames, 2 aggravated and burning on."
 focus = { Wits = "Three actions to put the flames out." }
+# Core p. 196 (issue #600): 2 aggravated (3 on an exceptional success), then 2 a
+# turn until put out.
+active = { key = "Engulf", page = 196, notes = ["Within 20 steps. They burn for 2 aggravated at the end of each turn until they spend two actions putting it out (three with your Wits focus)."] }
+test = { when = "Engulf", pool = "discipline:Thaumaturgy: Lure of Flames", damage = 2, exceptional = 1, type = "aggravated", note = "Then 2 aggravated a turn while they burn", page = 196 }
 
 [[powers]]
 discipline = "Thaumaturgy: Lure of Flames"
@@ -1642,6 +1662,9 @@ level = 5
 name = "Lightning"
 note = "1 Blood, standard action, opposed test: a lightning bolt, 4 normal damage."
 focus = { Perception = "Also blind them a turn, or take their next simple action." }
+# Core p. 201 (issue #600): 4 normal damage (5 on an exceptional success).
+active = { key = "Lightning", page = 201, notes = ["From your hand, or from the clouds when you're outdoors."] }
+test = { when = "Lightning", pool = "discipline:Thaumaturgy: Path of Weather Mastery", damage = 4, exceptional = 1, page = 201 }
 
 [[disciplines]]
 name = "Kineticism"
@@ -2117,6 +2140,8 @@ name = "Temporis: Temporal Anomaly"
 cost = { blood = 1 }
 active = { key = "Temporal Anomaly", page = 240, book = "Vol. 2", notes = ["Chronoton Strike: your hand or melee attacks do aggravated damage and ignore Celerity's bonus to the target's Dodge.", "Chronoton Bolt: a Temporis test at someone in sight for 2 aggravated, 3 if they used Celerity or Temporis this turn (1 more on an exceptional success)."] }
 damage = [{ attacks = ["Brawl", "Melee"], type = "aggravated", when = "Temporal Anomaly", note = "Aggravated with Chronoton Strike", page = 240, book = "Vol. 2" }]
+# Vol. 2 pp. 240-241 (issue #600): Chronoton Bolt, a Temporis test.
+test = { when = "Temporal Anomaly", name = "Chronoton Bolt", pool = "discipline:Temporis", damage = 2, exceptional = 1, type = "aggravated", note = "1 more if they used Celerity or Temporis this turn", page = 240, book = "Vol. 2" }
 
 # Vol. 2 p. 245: a simple action and 1 Blood per choice: combat maneuvers or qualities that fail on you.
 [[others]]
@@ -2170,6 +2195,10 @@ cost = { blood = 1 }
 category = "elder_disciplines"
 name = "Auspex: Psychic Assault"
 cost = { blood = 1 }
+# Core p. 213 (issue #600): an Auspex test, 4 damage (5 on an exceptional success)
+# that armour and Fortitude can't reduce.
+active = { key = "Psychic Assault", page = 213, notes = ["They know at once where it came from, and who sent it.", "Fail, and you can try again on the next turn, at them or anyone else."] }
+test = { when = "Psychic Assault", pool = "discipline:Auspex", damage = 4, exceptional = 1, unreducible = true, page = 213 }
 
 [[others]]
 category = "elder_disciplines"
@@ -2255,6 +2284,10 @@ cost = { blood = 1 }
 category = "elder_disciplines"
 name = "Obtenebration: Shadowy Betrayal"
 cost = { blood = 1 }
+# Vol. 2 p. 224 (issue #600): Social + Occult against Social + Willpower; their
+# shadow hits them for 2, and again for each simple action you spend.
+active = { key = "Shadowy Betrayal", page = 224, book = "Vol. 2", notes = ["On later turns, each simple action you spend has their shadow hit them for 2 more, counted as one hit for damage reduction; it ends after 3 of them (5 on an exceptional success) or 10 minutes.", "Fail, and you can try again on the next turn. Someone without a shadow is safe from it."] }
+test = { when = "Shadowy Betrayal", pool = "Social + Occult", versus = "Social + Willpower", damage = 2, note = "2 more for each simple action you spend on it later", page = 224, book = "Vol. 2" }
 
 [[others]]
 category = "elder_disciplines"
@@ -2335,6 +2368,11 @@ cost = { blood = 1 }
 category = "elder_disciplines"
 name = "Visceratika: Cataclysmic Upheaval"
 cost = { blood = 2 }
+# Vol. 2 p. 250 (issue #600): everyone within 10 steps, 3 damage (4 on an
+# exceptional success) that nothing reduces. The book names no pool, so it is
+# Visceratika's.
+active = { key = "Cataclysmic Upheaval", page = 250, book = "Vol. 2", notes = ["Everyone within 10 steps is tested, but up to your Survival dots of allies; you can drag those hurt up to 5 steps towards you.", "One Willpower retest counts for every challenge still to come. An exceptional success knocks them down too."] }
+test = { when = "Cataclysmic Upheaval", pool = "discipline:Visceratika", damage = 3, exceptional = 1, unreducible = true, page = 250, book = "Vol. 2" }
 
 [[others]]
 category = "elder_disciplines"
@@ -2412,6 +2450,8 @@ category = "luminary_disciplines"
 name = "Presence: Scourge of Arikel"
 cost = { blood = 1 }
 active = { key = "Scourge of Arikel", page = 231, book = "Vol. 2", notes = ["Anyone in sight who loses a Social challenge to you, either side, takes 3 aggravated damage if you want; not if they relent.", "It isn't an attack, so it doesn't break Majesty and the like."] }
+# Vol. 2 p. 231 (issue #600): no test of its own; Fortitude reduces it apart from the challenge's own damage.
+test = { when = "Scourge of Arikel", challenge = "Any Social challenge you win against someone in sight, attacking or defending", damage = 3, type = "aggravated", page = 231, book = "Vol. 2" }
 
 # Vol. 2 p. 233: 3 Blood, standard action: an hour incorporeal.
 [[others]]
