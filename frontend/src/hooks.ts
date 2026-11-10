@@ -27,9 +27,22 @@ export function useMe() {
   });
 }
 
-/** Ask before leaving the page (closing the tab, reloading) while `active`: there
- * are changes not yet saved. */
-export function useLeaveWarning(active: boolean) {
+/** The forms on screen with changes that going elsewhere in the app would lose. */
+const unsavedForms = new Set<symbol>();
+
+/** Whether going from one page to another in the app asks first (LeaveGuard). Not
+ * within a page (only its ?query or #part changes, and the form stays), nor to sign
+ * in: the session has ended, and the page can't stay. */
+export function asksBeforeLeaving({ currentLocation, nextLocation }: { currentLocation: { pathname: string }; nextLocation: { pathname: string } }): boolean {
+  return unsavedForms.size > 0 && nextLocation.pathname !== currentLocation.pathname && nextLocation.pathname !== "/sign-in";
+}
+
+/** Ask before leaving the page while `active`: there are changes not yet saved.
+ * Closing the tab or reloading asks with the browser's own question. Going to
+ * another page in the app asks too, with LeaveGuard's dialog, when `inApp`: a form
+ * saved with its button loses its changes when it goes. One that saves itself
+ * saves as it goes, so it asks in the app only while its last save failed. */
+export function useLeaveWarning(active: boolean, { inApp = false }: { inApp?: boolean } = {}) {
   useEffect(() => {
     if (!active) return;
     const warn = (e: BeforeUnloadEvent) => {
@@ -39,6 +52,14 @@ export function useLeaveWarning(active: boolean) {
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [active]);
+  useEffect(() => {
+    if (!active || !inApp) return;
+    const form = Symbol("unsaved form");
+    unsavedForms.add(form);
+    return () => {
+      unsavedForms.delete(form);
+    };
+  }, [active, inApp]);
 }
 
 /** Every setting's default, as the server has them, for before anyone signs in. */

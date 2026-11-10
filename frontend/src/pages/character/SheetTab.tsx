@@ -220,6 +220,7 @@ export function SheetTab({
   const cart = useCart(character.id);
   const shopping = mine && character.kind === "pc";
   const prices = useCartPrices(character.id, shopping ? cart.lines : []);
+  // The cart is kept on this device, so going to another page in the app loses nothing.
   useLeaveWarning(shopping && cart.lines.length > 0);
   const hasDomitor = useHasDomitor(character.splat);
   const retainerList = useRetainers(character.id);

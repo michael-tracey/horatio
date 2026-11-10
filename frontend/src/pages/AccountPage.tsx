@@ -109,7 +109,7 @@ function ProfileForm({ player }: { player: PlayerOut }) {
     toast({ message: "Profile saved." });
   });
   const unsaved = JSON.stringify(form) !== JSON.stringify(kept);
-  useLeaveWarning(unsaved);
+  useLeaveWarning(unsaved, { inApp: true });
   const { links } = form;
   const setLink = (i: number, change: Partial<ProfileLink>) => set({ links: links.map((l, j) => (j === i ? { ...l, ...change } : l)) });
 

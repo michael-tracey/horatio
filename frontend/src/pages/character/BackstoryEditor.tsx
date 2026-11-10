@@ -130,7 +130,8 @@ export function BackstoryEditor({ characterId, backstory, onDone }: { characterI
       saveNow();
     };
   }, []);
-  useLeaveWarning(dirty || saving);
+  // Going to another page saves at once (above), so only a failed save asks first.
+  useLeaveWarning(dirty || saving, { inApp: failed });
 
   const submitNow = () => {
     // The draft first, so the server knows the submission is the draft and lets it go.

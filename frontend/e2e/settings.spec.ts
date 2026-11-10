@@ -157,6 +157,33 @@ test("a handle to be found by, and to sign in with", async ({ browser }) => {
   await expect(other.getByRole("heading", { name: "Your characters" })).toBeVisible();
 });
 
+test("the profile asks before going to another page with changes not saved: Cancel keeps them, Leave drops them (#622)", async ({ browser }) => {
+  const { page } = await person(browser, "unsaved-profile");
+  await page.getByRole("link", { name: "unsaved-profile" }).click();
+  const bio = page.getByLabel("Bio");
+  await bio.fill("Half a thought about a Brujah.");
+  const troupes = page.getByRole("banner").getByRole("link", { name: "Troupes", exact: true });
+  const leaving = page.getByRole("dialog", { name: "Leave this page?" });
+
+  // Cancel stays on the profile, with the change still there to save.
+  await troupes.click();
+  await expect(leaving).toBeVisible();
+  await expect(leaving.getByText("Your changes here aren't saved. Leave anyway? They'll be lost.")).toBeVisible();
+  await page.screenshot(shots("leave-unsaved"));
+  await leaving.getByRole("button", { name: "Cancel" }).click();
+  await expect(leaving).toBeHidden();
+  await expect(page).toHaveURL(/\/account$/);
+  await expect(bio).toHaveValue("Half a thought about a Brujah.");
+  await expect(page.getByText("Not saved yet")).toBeVisible();
+
+  // Leave goes on, and the change is gone.
+  await troupes.click();
+  await leaving.getByRole("button", { name: "Leave" }).click();
+  await expect(page).toHaveURL(/\/troupes$/);
+  await page.getByRole("link", { name: "unsaved-profile" }).click();
+  await expect(bio).toHaveValue("");
+});
+
 test("a signed-in person changes their password, and signs in with the new one", async ({ browser }) => {
   const { page, email } = await person(browser, "pwchange-player");
   // Signed in on another device too, which the change signs out.

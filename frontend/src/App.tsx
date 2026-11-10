@@ -1,8 +1,11 @@
 import { lazy } from "react";
-import { Navigate, Route, Routes, useParams } from "react-router";
+import { createRoutesFromElements, Navigate, Outlet, Route, useParams, useRouteError } from "react-router";
 import { CharacterRouteClanNames as ForCharacter, TroupeRouteClanNames as ForTroupe } from "./components/ClanNames";
 import { Layout } from "./components/Layout";
+import { LeaveGuard } from "./components/LeaveGuard";
 import { SunriseHost } from "./components/Sunrise";
+import { ToastProvider } from "./components/Toast";
+import { ViewingBanner } from "./components/ViewingBanner";
 import { AboutPage } from "./pages/AboutPage";
 import { CharactersPage } from "./pages/CharactersPage";
 import { ImportCharacterPage } from "./pages/character/Backup";
@@ -14,7 +17,7 @@ import { UnsubscribePage } from "./pages/UnsubscribePage";
 import { KeepQuestion, useKeptOnDevice } from "./offline/Offline";
 import { UpdatePrompt } from "./offline/UpdatePrompt";
 import { RequireSignIn } from "./RequireSignIn";
-import { LazyPages } from "./staleBuild";
+import { isLoadFailure, LazyPages, UpdatedMessage } from "./staleBuild";
 import { useTextSize } from "./textSize";
 
 // The bigger pages load when first opened, so the first visit (signing in, the
@@ -45,87 +48,95 @@ function ToScenes() {
   return <Navigate to={`/play/troupes/${troupeId}/scenes`} replace />;
 }
 
-export function App() {
+/** Round every page. */
+function App() {
   useTextSize();
   useKeptOnDevice();
   return (
-    <>
+    <ToastProvider>
+      <ViewingBanner />
       <KeepQuestion />
       <UpdatePrompt />
-      <AppRoutes />
+      <Outlet />
       <SunriseHost />
-    </>
+      <LeaveGuard />
+    </ToastProvider>
   );
 }
 
-function AppRoutes() {
-  return (
-    <Routes>
-      {/* The printed sheet stands alone: no header, black on white. So does the
-          Play View, which needs every bit of a phone's screen at a game. A page about
-          a troupe or a character names the clan stored as Assamite as that troupe
-          does (ForTroupe, ForCharacter); any other page by the default. */}
-      <Route element={<RequireSignIn />}>
-        <Route path="/print/characters/:characterId" element={<ForCharacter><PrintPage /></ForCharacter>} />
-        <Route path="/print/troupes/:troupeId" element={<ForTroupe><TroupePrintPage /></ForTroupe>} />
-        <Route path="/print/troupes/:troupeId/badges" element={<ForTroupe><TroupeBadgesPage /></ForTroupe>} />
-        <Route path="/print/troupes/:troupeId/staff-badges" element={<StaffBadgesPage />} />
-        <Route path="/print/troupes/:troupeId/whos-who" element={<ForTroupe><WhosWhoPrintPage /></ForTroupe>} />
-        <Route path="/print/characters/:characterId/badge" element={<ForCharacter><CharacterBadgePage /></ForCharacter>} />
-        {/* Found by tapping the clan symbol seven times (#537): no link leads here for a player. */}
-        <Route path="/print/characters/:characterId/jyhad" element={<ForCharacter><JyhadCardPage /></ForCharacter>} />
-        <Route path="/play/characters/:characterId" element={<ForCharacter><PlayPage /></ForCharacter>} />
-        <Route path="/play/troupes/:troupeId/scenes" element={<ForTroupe><ScenesPage /></ForTroupe>} />
-        <Route path="/play/troupes/:troupeId/scenes/:sceneId" element={<ForTroupe><ScenePage /></ForTroupe>} />
-        {/* The one scene per troupe from before scenes were named (issue #231). */}
-        <Route path="/play/troupes/:troupeId/scene" element={<ToScenes />} />
-      </Route>
-      <Route element={<Layout />}>
-        <Route path="/sign-in" element={<SignInPage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/sign-up" element={<SignUpPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-        <Route path="/unsubscribe/:token" element={<UnsubscribePage />} />
-        <Route path="/confirm-email/:token" element={<ConfirmEmailPage />} />
-        {/* A claim link for a character a troupe is giving its player (#481): signed in or not. */}
-        <Route path="/claim/:token" element={<ClaimPage />} />
-        {/* A troupe's profile, for anyone if the troupe has made it public. */}
-        <Route
-          path="/t/:troupeId"
-          element={
-            <LazyPages>
-              <PublicTroupePage />
-            </LazyPages>
-          }
-        />
-        {/* The user manual, from docs/manual: for anyone, signed in or not. */}
-        <Route
-          path="/help/:page?"
-          element={
-            <LazyPages>
-              <HelpPage />
-            </LazyPages>
-          }
-        />
-        <Route element={<RequireSignIn />}>
-          <Route index element={<Navigate to="/characters" replace />} />
-          <Route path="/characters" element={<CharactersPage />} />
-          <Route path="/characters/import" element={<ImportCharacterPage />} />
-          <Route path="/characters/:characterId/*" element={<ForCharacter><CharacterPage /></ForCharacter>} />
-          <Route path="/check-in" element={<CheckInPage />} />
-          <Route path="/check-in/:code" element={<CheckInPage />} />
-          <Route path="/troupes" element={<TroupesPage />} />
-          <Route path="/troupes/:troupeId/*" element={<ForTroupe><TroupePage /></ForTroupe>} />
-          <Route path="/rules" element={<RulesPage />} />
-          <Route path="/cycles/:cycleId/*" element={<CyclePage />} />
-          <Route path="/players/:userId" element={<PlayerPage />} />
-          <Route path="/account/*" element={<AccountPage />} />
-          <Route path="/custodian/*" element={<CustodianPage />} />
-          <Route path="/people" element={<Navigate to="/custodian/people" replace />} />
-        </Route>
-        <Route path="*" element={<p className="text-mist">There is nothing here.</p>} />
-      </Route>
-    </Routes>
-  );
+/** A page that broke outside LazyPages (the header, say): a message, not a blank screen. */
+function RouteError() {
+  return <UpdatedMessage failedToLoad={isLoadFailure(useRouteError())} />;
 }
+
+/** Every page, for main.tsx's router: a data router, so LeaveGuard can ask before a
+ * page with changes not saved is left. The pages' own tabs are routes within them. */
+export const routes = createRoutesFromElements(
+  <Route element={<App />} errorElement={<RouteError />}>
+    {/* The printed sheet stands alone: no header, black on white. So does the
+        Play View, which needs every bit of a phone's screen at a game. A page about
+        a troupe or a character names the clan stored as Assamite as that troupe
+        does (ForTroupe, ForCharacter); any other page by the default. */}
+    <Route element={<RequireSignIn />}>
+      <Route path="/print/characters/:characterId" element={<ForCharacter><PrintPage /></ForCharacter>} />
+      <Route path="/print/troupes/:troupeId" element={<ForTroupe><TroupePrintPage /></ForTroupe>} />
+      <Route path="/print/troupes/:troupeId/badges" element={<ForTroupe><TroupeBadgesPage /></ForTroupe>} />
+      <Route path="/print/troupes/:troupeId/staff-badges" element={<StaffBadgesPage />} />
+      <Route path="/print/troupes/:troupeId/whos-who" element={<ForTroupe><WhosWhoPrintPage /></ForTroupe>} />
+      <Route path="/print/characters/:characterId/badge" element={<ForCharacter><CharacterBadgePage /></ForCharacter>} />
+      {/* Found by tapping the clan symbol seven times (#537): no link leads here for a player. */}
+      <Route path="/print/characters/:characterId/jyhad" element={<ForCharacter><JyhadCardPage /></ForCharacter>} />
+      <Route path="/play/characters/:characterId" element={<ForCharacter><PlayPage /></ForCharacter>} />
+      <Route path="/play/troupes/:troupeId/scenes" element={<ForTroupe><ScenesPage /></ForTroupe>} />
+      <Route path="/play/troupes/:troupeId/scenes/:sceneId" element={<ForTroupe><ScenePage /></ForTroupe>} />
+      {/* The one scene per troupe from before scenes were named (issue #231). */}
+      <Route path="/play/troupes/:troupeId/scene" element={<ToScenes />} />
+    </Route>
+    <Route element={<Layout />}>
+      <Route path="/sign-in" element={<SignInPage />} />
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/sign-up" element={<SignUpPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+      <Route path="/unsubscribe/:token" element={<UnsubscribePage />} />
+      <Route path="/confirm-email/:token" element={<ConfirmEmailPage />} />
+      {/* A claim link for a character a troupe is giving its player (#481): signed in or not. */}
+      <Route path="/claim/:token" element={<ClaimPage />} />
+      {/* A troupe's profile, for anyone if the troupe has made it public. */}
+      <Route
+        path="/t/:troupeId"
+        element={
+          <LazyPages>
+            <PublicTroupePage />
+          </LazyPages>
+        }
+      />
+      {/* The user manual, from docs/manual: for anyone, signed in or not. */}
+      <Route
+        path="/help/:page?"
+        element={
+          <LazyPages>
+            <HelpPage />
+          </LazyPages>
+        }
+      />
+      <Route element={<RequireSignIn />}>
+        <Route index element={<Navigate to="/characters" replace />} />
+        <Route path="/characters" element={<CharactersPage />} />
+        <Route path="/characters/import" element={<ImportCharacterPage />} />
+        <Route path="/characters/:characterId/*" element={<ForCharacter><CharacterPage /></ForCharacter>} />
+        <Route path="/check-in" element={<CheckInPage />} />
+        <Route path="/check-in/:code" element={<CheckInPage />} />
+        <Route path="/troupes" element={<TroupesPage />} />
+        <Route path="/troupes/:troupeId/*" element={<ForTroupe><TroupePage /></ForTroupe>} />
+        <Route path="/rules" element={<RulesPage />} />
+        <Route path="/cycles/:cycleId/*" element={<CyclePage />} />
+        <Route path="/players/:userId" element={<PlayerPage />} />
+        <Route path="/account/*" element={<AccountPage />} />
+        <Route path="/custodian/*" element={<CustodianPage />} />
+        <Route path="/people" element={<Navigate to="/custodian/people" replace />} />
+      </Route>
+      <Route path="*" element={<p className="text-mist">There is nothing here.</p>} />
+    </Route>
+  </Route>,
+);
