@@ -13,11 +13,16 @@
 #   attack:<Skill>, defense, defense:<Attribute>, discipline:<Name>, skill:<Name>
 #   or frenzy (where `beast` counts that many more Beast traits, or fewer); `amount`
 #   is a number, "powers:<Discipline>" for how many powers of it the character
-#   has, or "rating:<category>/<Name>"; a `when` naming a switch (see `active`)
-#   makes it hold only while that switch is on, and any other `when` makes it a
-#   variant ("While Injured"); `focus` limits it to characters with that focus,
-#   `unless_focus` to those without it (for a bonus a focus replaces), and
-#   `choice` (see `choices`) to those who chose that when buying the power.
+#   has, "rating:<category>/<Name>", or "morality_less_beast" for current Morality
+#   minus current Beast traits, which the Play View counts from its trackers (it
+#   needs a `when`); a `when` naming a switch (see `active`) makes it hold only
+#   while that switch is on, and any other `when` makes it a variant ("For 1
+#   Blood"); `focus` limits it to characters with that focus, `unless_focus` to
+#   those without it (for a bonus a focus replaces), and `choice` (see `choices`)
+#   to those who chose that when buying the power. `note` makes it a reminder
+#   under the pool instead of a number (under Also for frenzy), and `alternative`
+#   ("Physical + Survival") names attributes and skills the character may test
+#   with in the pool's place (issue #602).
 # `active` (on a discipline, power or [[others]] entry): what the Play View can
 #   switch on while the character has it, one table or a list of them (issue
 #   #200): { key, name?, form?, combines?, page, book?, label?, health?,
@@ -36,7 +41,15 @@
 #     focus adds elsewhere in this file counts too;
 #   - `blood = { per_turn?, most? }`: more Blood a turn, and `most = "half"` makes
 #     the Blood pool half again as big (rounded up) until it ends;
-#   - `notes = [text, or { note, choice?, focus? }]`: what can't be worked out.
+#   - `notes = [text, or { note, choice?, focus? }]`: what can't be worked out;
+#   - `picks = { kind, count }`: the player picks `count` equipment qualities of
+#     that kind each time it goes on (issue #599: Flesh of Marble's two Protective
+#     Gear qualities), and their pool effects count as an equipped item's do.
+# `notes` (on a discipline, power or [[others]] entry): what it adds to another
+#   entry's switch while the character has it (issue #601), shown with that switch
+#   under its own name and page: [{ when, note, page, book?, focus?, choice? }],
+#   `when` naming the switch. Its `pools` and `damage` with that `when` change the
+#   switch's numbers the same way (Baal's Bloody Talons on Baal's Caress).
 # `choices` (on a power): what the player chooses when buying it, kept on the
 #   discipline's trait and fixed afterwards: [{ key, label, default?, options? }].
 #   `choice = { key = value }` on an entry makes it hold only for that choice.
@@ -65,6 +78,13 @@
 #   it aggravated. An entry whose `when` names a switch holds while it is on; any
 #   other `when` holds only some of the time, so it is a `note` on the pool, not
 #   part of the number shown. `page` is the book page (`book` as for `active`).
+# `test` (on a discipline, power or [[others]] entry, one table or a list): a power
+#   that deals damage through a test of its own (issue #600), a pool in Combat
+#   while the switch its `when` names is on: { when, pool?, versus?, challenge?,
+#   damage, exceptional?, type?, unreducible?, note?, name?, focus?, unless_focus?,
+#   choice?, page, book? }. `pool` is "discipline:<Name>" for that discipline's test
+#   pool, or an attribute and a skill; `challenge` says in words what it is tested
+#   in where there is no pool; `unreducible = true` when nothing reduces the damage.
 
 # MET: VTM core, p. 279.
 [[attacks]]
@@ -2032,7 +2052,7 @@ active = { key = "Zephyr", page = 199, book = "Vol. 2", notes = ["Twice your usu
 category = "elder_disciplines"
 name = "Chimerstry: Horrid Blade of the Demons"
 cost = { blood = 2 }
-active = { key = "Horrid Blade of the Demons", page = 201, book = "Vol. 2", notes = ["A level 5 magical melee weapon only you can wield: two weapon qualities and up to 5 points of Cantrips. It can't be disbelieved.", "An hour, then 2 Blood for each hour more; if you're disarmed it vanishes unless you spend 1 Blood to have it back in hand.", "No Horrid Reality or Quietus on it; its damage doesn't fade."] }
+active = { key = "Horrid Blade of the Demons", page = 201, book = "Vol. 2", picks = { kind = "melee", count = 2 }, notes = ["A level 5 magical melee weapon only you can wield: pick its two weapon qualities each time (core p. 516), and up to 5 points of Cantrips. It can't be disbelieved.", "An hour, then 2 Blood for each hour more; if you're disarmed it vanishes unless you spend 1 Blood to have it back in hand.", "No Horrid Reality or Quietus on it; its damage doesn't fade."] }
 
 # Vol. 2 pp. 204-205: 2 Blood, standard action: for five minutes your touch spreads a plague.
 [[others]]
@@ -2116,7 +2136,7 @@ active = { key = "Comrades in Arms", page = 230, book = "Vol. 2", notes = ["For 
 category = "elder_disciplines"
 name = "Protean: Flesh of Marble"
 cost = { blood = 1 }
-active = { key = "Flesh of Marble", page = 232, book = "Vol. 2", notes = ["Pick two Protective Gear qualities (core p. 519) each time; Armor Piercing doesn't get through them.", "A minor transformation: it goes with a form. A Masquerade breach if mortals see it."] }
+active = { key = "Flesh of Marble", page = 232, book = "Vol. 2", picks = { kind = "protective", count = 2 }, notes = ["Pick two Protective Gear qualities each time (core p. 519); one your worn gear has doesn't count twice, and Armor Piercing doesn't get through them.", "A minor transformation: it goes with a form. A Masquerade breach if mortals see it."] }
 
 # Vol. 2 p. 238: 1 Blood, simple action: a sandstorm that makes your blows blinding.
 [[others]]
@@ -2177,6 +2197,38 @@ category = "elder_disciplines"
 name = "Visceratika: Meteor"
 active = { key = "Dive Bomb", name = "Meteor: Dive Bomb", page = 250, book = "Vol. 2", notes = ["Dive Bomb and Plummet cost no Willpower; Plummet keeps its full pool and works on the Stamina-focused.", "No flight needed for a Dive Bomb if you're 6 steps above your target; 1 Blood gives you stone wings for a turn's aerial maneuvers."] }
 damage = [{ attacks = ["Brawl", "Melee"], amount = 1, when = "Dive Bomb", note = "1 more damage on a Dive Bomb", page = 250, book = "Vol. 2" }]
+
+# Always-on elder and luminary powers that add to another power's switch, shown
+# with it while the character has them (issue #601).
+# Core p. 214: an extra round of actions each time Celerity is activated.
+[[others]]
+category = "elder_disciplines"
+name = "Celerity: Quickness"
+notes = [{ when = "Celerity", note = "An extra round of actions, one simple and one standard, taken in the third Celerity round.", page = 214 }]
+
+# Vol. 2 p. 200: on with any Celerity power, at no cost.
+[[others]]
+category = "luminary_disciplines"
+name = "Celerity: Momentum Swing"
+notes = [
+  { when = "Celerity", note = "Defend against a Brawl or Melee attack and you can move the attacker up to 6 steps; if they hit something, they take 2 normal damage and are knocked down (both of them, if it's someone).", page = 200, book = "Vol. 2" },
+  { when = "Celerity", note = "Defend against a thrown or fired projectile and you can deflect it at someone within 6 steps: Physical + Dodge against their Physical + Dodge, and they take its damage.", page = 200, book = "Vol. 2" },
+]
+
+# Core p. 221: move and fight underground while Earth Melded.
+[[others]]
+category = "elder_disciplines"
+name = "Protean: Earth Control"
+notes = [
+  { when = "Earth Meld", note = "Move underground at your normal speed, but not through rock, water, concrete or thick roots; you can act, and attack anyone you find there, even others in Earth Meld.", page = 221 },
+  { when = "Earth Meld", note = "You sense the underground within 10 steps, but not the surface.", page = 221 },
+]
+
+# Core p. 224: in Blood Form, 1 Blood a turn burns everyone touching you.
+[[others]]
+category = "elder_disciplines"
+name = "Vicissitude: Acid Blood"
+notes = [{ when = "Blood Form", note = "1 Blood a turn: 3 aggravated damage to up to four people touching you, anyone you grapple too.", page = 224 }]
 
 # Elder powers with a plain cost and nothing to switch on: Use only spends it
 # (issue #587). What each does, with its page, is its description in the trait
@@ -2359,10 +2411,13 @@ category = "elder_disciplines"
 name = "Valeren: Fiery Agony"
 cost = { blood = 1 }
 
+# Vol. 2 p. 244: 1 Blood, no action, defending with Willpower in the pool: add
+# current Morality minus current Beast traits. Every defence here counts Willpower.
 [[others]]
 category = "elder_disciplines"
 name = "Valeren: Rampart of Faith"
 cost = { blood = 1 }
+pools = [{ pool = "defense", amount = "morality_less_beast", when = "for 1 Blood" }]
 
 [[others]]
 category = "elder_disciplines"
@@ -2544,10 +2599,19 @@ name = "Vicissitude: Ravenous Conglomeration"
 cost = { blood = 4 }
 forms = 2
 
+# Vol. 2 p. 251: always on: can't be staked while the heart is in; 1 Blood (the
+# cost here) wins a frenzy test; resist Mental and Social challenges with Physical
+# + Survival; a Willpower spent to retest a Social power comes straight back.
 [[others]]
 category = "luminary_disciplines"
 name = "Visceratika: Rockheart"
 cost = { blood = 1 }
+pools = [
+  { pool = "defense:Mental", alternative = "Physical + Survival" },
+  { pool = "defense:Social", alternative = "Physical + Survival" },
+  { pool = "defense:Social", note = "A Willpower spent to retest a Social power comes straight back" },
+  { pool = "frenzy", note = "1 Blood wins a frenzy test outright" },
+]
 
 # Vol. 2 Issue 1 p. 62: +5 to Dodge for the turn, ending if you move.
 [[others]]

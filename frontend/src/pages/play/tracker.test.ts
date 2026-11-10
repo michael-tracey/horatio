@@ -306,12 +306,15 @@ describe("a power's Use (#370)", () => {
     page: "p. 121",
     changes: [],
     notes: [],
+    added: [],
     health: [],
     attributes: [],
     focuses: [],
     blood_per_turn: 0,
     blood_half: false,
     on: false,
+    options: [],
+    picked: [],
     turned_on: 0,
   };
   const blood = { tracker: "blood" as const, amount: 1 };
@@ -365,12 +368,15 @@ describe("an elder power's Use (#588)", () => {
     page: "p. 214",
     changes: ["+3 Firearms", "+3 Athletics"],
     notes: [],
+    added: [],
     health: [],
     attributes: [],
     focuses: [],
     blood_per_turn: 0,
     blood_half: false,
     on: false,
+    options: [],
+    picked: [],
     turned_on: 0,
   };
   const blood = { tracker: "blood" as const, amount: 1 };

@@ -17,6 +17,7 @@ import { EquipmentTab } from "./Equipment";
 import { Feed, FeedButton } from "./Feed";
 import { Frenzy } from "./Frenzy";
 import { frenzyNumbers } from "./frenzy";
+import { trackersOf } from "./pools";
 import { KindBadge } from "../character/NpcKindBadge";
 import { bloodPerTurn, boxes, healthMost } from "./powers";
 import { PowersBanner } from "./Powers";
@@ -142,7 +143,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
       <Identity view={shown} />
       <PowersBanner powers={shown.powers} tap={tap} />
       {tab === "sheet" && lookup((r) => <SheetTab reference={r} />)}
-      {tab === "pools" && lookup((r) => <PoolsTab reference={r} willpower={shown.willpower.value} characterId={characterId} powers={shown.powers} forms={shown.forms} items={shown.equipment} equipped={shown.equipped} tap={tap} using={{ view: shown, use: taps }} />)}
+      {tab === "pools" && lookup((r) => <PoolsTab reference={r} willpower={shown.willpower.value} characterId={characterId} powers={shown.powers} forms={shown.forms} items={shown.equipment} equipped={shown.equipped} tap={tap} using={{ view: shown, use: taps }} trackers={trackersOf(shown)} />)}
       {tab === "status" && (
         <StatusTab
           view={shown}

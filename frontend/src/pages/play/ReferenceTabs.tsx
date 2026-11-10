@@ -11,7 +11,7 @@ import { IdentityNote } from "../character/Identities";
 import { RetainerLines } from "../character/Retainers";
 import { placeRetainers } from "../character/retainers";
 import { equipmentModifiers } from "./equipped";
-import { bloodNote, breakdown, damageText, grouped, OTHER_TESTS, showing, situations, switchedDamage, total, withAttribute, type Modifier } from "./pools";
+import { bloodNote, breakdown, damageText, grouped, OTHER_TESTS, showing, situations, switchedDamage, total, variantNow, variantText, withAttribute, type Modifier, type Trackers } from "./pools";
 import { SwitchesDrawer } from "./SwitchesDrawer";
 import type { makeTap } from "./tracker";
 import { UseButtons, type UseTaps } from "./UsePower";
@@ -65,7 +65,10 @@ function TraitLine({ trait: t, reference }: { trait: Trait; reference: PlayRefer
         ) : focuses.length > 0 ? (
           focuses.map((f) => (
             <p key={f.name} className="mt-0.5">
-              <span className="text-parchment">{f.name}:</span> {f.description}
+              <span className="text-parchment">{f.name}</span>
+              {/* A focus a power gives: "from Vicissitude: Azhi Dahaka" (#598). A reference kept offline from before may not say. */}
+              {(f.granted_by ?? []).length > 0 && <span className="text-mist"> (from {f.granted_by.join(", ")})</span>}
+              <span className="text-parchment">:</span> {f.description}
             </p>
           ))
         ) : null
@@ -161,11 +164,11 @@ function IdentityLine({ reference, detail }: { reference: PlayReference; detail:
   return identity ? <IdentityNote identity={identity} /> : null;
 }
 
-export function PoolRow({ pool, willpower, modifiers, on }: { pool: TestPool; willpower: number; modifiers: Modifier[]; on: string[] }) {
+export function PoolRow({ pool, willpower, modifiers, on, trackers }: { pool: TestPool; willpower: number; modifiers: Modifier[]; on: string[]; trackers?: Trackers }) {
   const hurt = pool.damage ? switchedDamage(pool.damage, on) : [];
   const now = total(pool, willpower, modifiers, on);
   const variants = [
-    ...pool.variants.map((v) => ({ when: v.when, parts: v.parts, total: v.total + (now - pool.total) })),
+    ...pool.variants.map((v) => variantNow(pool, v, willpower, modifiers, on, trackers)),
     // An equipped item's bonus that counts only sometimes: "Against firearms (+3 Flak Vest: Ballistic)".
     ...situations(pool, modifiers).map((s) => ({ when: s.when.charAt(0).toUpperCase() + s.when.slice(1), parts: s.parts, total: now + s.parts.reduce((sum, p) => sum + p.value, 0) })),
   ];
@@ -196,7 +199,7 @@ export function PoolRow({ pool, willpower, modifiers, on }: { pool: TestPool; wi
             <li key={v.when} className="flex items-baseline justify-between gap-3 pl-3">
               <span className="text-mist">
                 {v.when}
-                <span className="text-xs"> ({v.parts.map((p) => `${p.value >= 0 ? "+" : "−"}${Math.abs(p.value)} ${p.label}`).join(", ")})</span>
+                <span className="text-xs"> ({variantText(v)})</span>
               </span>
               <strong className="text-gold">{v.total}</strong>
             </li>
@@ -298,6 +301,7 @@ export function PoolsTab({
   equipped = [],
   tap,
   using,
+  trackers,
 }: {
   reference: PlayReference;
   willpower: number;
@@ -310,12 +314,14 @@ export function PoolsTab({
   tap: (what: Parameters<typeof makeTap>[0]) => void;
   /** A "Use" button on each power with a plain cost: disciplines, their powers, and elder powers. */
   using?: Using;
+  /** Morality and Beast traits now, for Rampart of Faith (issue #602). */
+  trackers?: Trackers;
 }) {
   const modifiers = useModifiers(characterId);
   const named = useClanName();
   const on = powers.filter((p) => p.on).map((p) => p.key);
-  // The player's own, then what the items equipped make (issue #306).
-  const counting = [...modifiers.modifiers, ...equipmentModifiers(items, equipped)];
+  // The player's own, then what the items equipped make (issue #306) and the qualities picked for the powers on (#599).
+  const counting = [...modifiers.modifiers, ...equipmentModifiers(items, equipped, powers)];
   return (
     <div className="flex flex-col gap-3 pb-20">
       <div className="grid gap-3 md:grid-cols-2">
@@ -327,7 +333,7 @@ export function PoolsTab({
               {group === "Combat" && reference.blood_per_turn > 0 && <p className="text-xs text-mist">{bloodNote(reference.blood_per_turn)}</p>}
               <ul>
                 {pools.map((p) => (
-                  <PoolRow key={p.key} pool={p} willpower={willpower} modifiers={counting} on={on} />
+                  <PoolRow key={p.key} pool={p} willpower={willpower} modifiers={counting} on={on} trackers={trackers} />
                 ))}
               </ul>
             </Panel>
