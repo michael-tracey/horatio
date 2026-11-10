@@ -16,7 +16,9 @@ Each player affected is told, and so are its staff. Characters are never retired
 by it: their players decide what comes next.
 
 Troupes archived before this settled nothing; the custodian settles one with
-`settle`. Reopening a troupe brings none of its characters back.
+`settle`. Reopening a troupe brings none of its characters back. Its scheduled
+posts wait while it is archived, and any whose time passed meanwhile go back to
+the drafts as it reopens (horatio.posts.missed).
 """
 
 import uuid
@@ -26,7 +28,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, notifications, play, reconciliation
+from horatio import audit, notifications, play, posts, reconciliation
 from horatio.models import (
     AuditEvent,
     Character,
@@ -230,6 +232,7 @@ def reopen(db: Session, actor: User, troupe: Troupe, reason: str) -> None:
     ]
     troupe.archived_at = None
     audit.record(db, actor, "troupe.reopened", troupe_id=troupe.id, reason=reason)
+    posts.missed(db, troupe, actor)
     notifications.notify(
         db,
         [s for s in staff_ids(db, troupe) if s != actor.id],
