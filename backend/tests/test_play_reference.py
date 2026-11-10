@@ -19,6 +19,7 @@ from horatio.reference import (
     cost,
     damage_effects,
     effects,
+    forms_at_once,
     other_powers,
     own_tests,
     pools,
@@ -877,6 +878,13 @@ def beast(**choices: str) -> Sheet:
         disciplines={"Protean": 4, "Celerity": 2},
         choices={"Protean": {"Shape of the Beast": choices}} if choices else {},
     )
+
+
+def test_ravenous_conglomeration_allows_two_forms_at_once() -> None:
+    """Issue #597: Vol. 2 p. 249. Everyone else has one (core p. 114)."""
+    ravenous = ("luminary_disciplines", "Vicissitude: Ravenous Conglomeration")
+    assert forms_at_once(Sheet(ratings={ravenous: 1}, disciplines={"Vicissitude": 5})) == 2
+    assert forms_at_once(Sheet(disciplines={"Vicissitude": 5, "Protean": 5})) == 1
 
 
 def by_key(found: list[Any]) -> dict[str, Any]:

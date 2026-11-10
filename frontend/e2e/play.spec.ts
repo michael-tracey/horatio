@@ -679,6 +679,89 @@ test("Shape of the Beast on the Play View: a Huge fight form adds Healthy levels
   await expect(p.getByLabel("Celerity on")).not.toBeChecked();
 });
 
+test("Ravenous Conglomeration on the Play View: two forms at once, never two of one power, and a third ends the first (#597)", async ({ browser }) => {
+  const custodian = await person(browser, "ravenous-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "ravenous-lead");
+  const troupeName = `Gorge Hall ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  // An NPC with Vicissitude 5 (Horrid Form, Blood Form), Protean 4 (Shape of the Beast's two forms) and the luminary power.
+  const p = lead.page;
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(p.url()).pathname.split("/")[2]!;
+  const headers = { "X-Horatio": "1" };
+  const made = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: "Zelimir", wizard: false } });
+  expect(made.status(), await made.text()).toBe(201);
+  const npc = (await made.json()).id;
+  for (const [category, name, rating] of [
+    ["clan", "Tzimisce", null],
+    ["attributes", "Physical", 5],
+    ["attributes", "Mental", 3],
+    ["skills", "Brawl", 3],
+    ["disciplines", "Vicissitude", 5],
+    ["disciplines", "Protean", 4],
+    ["luminary_disciplines", "Vicissitude: Ravenous Conglomeration", 1],
+  ] as const) {
+    const rated = await p.request.put(`/api/characters/${npc}/npc/ratings`, { headers, data: { category, name, rating, detail: "" } });
+    expect(rated.status(), await rated.text()).toBe(200);
+  }
+
+  await p.goto(`/play/characters/${npc}?tab=pools`);
+  await expect(p.getByRole("heading", { name: "Zelimir" })).toBeVisible();
+  // Its Use spends the 4 Blood that starts any number of forms at once.
+  await expect(p.getByRole("button", { name: "Use Vicissitude: Ravenous Conglomeration, 4 Blood" })).toBeVisible();
+
+  const switches = p.getByRole("button", { name: "Forms, powers and modifiers" });
+  await switches.click();
+  await expect(p.getByText(/^Forms: two at once with Ravenous Conglomeration \(Vol\. 2 p\. 249\)/)).toBeVisible();
+  const horrid = p.getByLabel("Horrid Form on");
+  const fight = p.getByLabel("Shape of the Beast: fight form (wolf) on");
+  const flight = p.getByLabel("Shape of the Beast: flight form (bat) on");
+  const bloodForm = p.getByLabel("Blood Form on");
+
+  // Horrid Form and the wolf together: both forms' Brawl bonuses count.
+  await horrid.check();
+  await fight.check();
+  await expect(horrid).toBeChecked();
+  const banner = p.getByRole("region", { name: "Switched on now" });
+  await expect(banner).toContainText("In Horrid Form");
+  await expect(banner).toContainText("In Shape of the Beast: fight form (wolf)");
+  const unarmed = p.getByRole("listitem").filter({ hasText: /^Unarmed attack/ });
+  await expect(unarmed).toContainText("Horrid Form 3");
+  await expect(unarmed).toContainText("Shape of the Beast 2");
+
+  // The bat is Shape of the Beast too, so it takes the wolf's place; Horrid Form stays.
+  await flight.check();
+  await expect(fight).not.toBeChecked();
+  await expect(horrid).toBeChecked();
+  // A third form ends the one on longest: Horrid Form.
+  await bloodForm.check();
+  await expect(horrid).not.toBeChecked();
+  await expect(flight).toBeChecked();
+  await expect(p.getByRole("status")).toHaveText("Saved");
+
+  // The server keeps the order: after a reload, Horrid Form ends the bat, on before Blood Form.
+  await p.reload();
+  await switches.click();
+  await expect(bloodForm).toBeChecked();
+  await horrid.check();
+  await expect(flight).not.toBeChecked();
+  await expect(bloodForm).toBeChecked();
+  await p.getByRole("tab", { name: "Tracker" }).click();
+  await expect(p.getByText("Turned into Horrid Form: out of Shape of the Beast: flight form (bat)")).toBeVisible();
+  await expect(p.getByText("Turned into Blood Form: out of Horrid Form")).toBeVisible();
+  await expect(p.getByText("Turned into Shape of the Beast: flight form (bat): out of Shape of the Beast: fight form (wolf)")).toBeVisible();
+});
+
 /**
  * Stand-ins for what feeding's finish uses, so a test can see it happen: the
  * sound (oscillators made), a vibration and a notification, granted.

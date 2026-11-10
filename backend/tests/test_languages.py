@@ -100,3 +100,42 @@ def test_a_chart_in_words() -> None:
     assert chart_text([1, 1]) == "1 language at any rating of Linguistics"
     assert LanguageRule().ratings(5) == [1, 2, 3, 4, 5]
     assert LanguageRule("accelerated").ratings(9)[-3:] == [32, 32, 32]
+
+
+BY_THE_BOOK_AND_A_CHART = [LanguageRule(), LanguageRule("accelerated")]
+
+
+@pytest.mark.parametrize("rule", BY_THE_BOOK_AND_A_CHART)
+def test_a_language_with_no_linguistics_breaks_one_check_not_natural_linguists(
+    checks: list,  # type: ignore[type-arg]
+    rule: LanguageRule,
+) -> None:
+    found = violations(applied(checks, rule, PAGE), sheet(0, 1))
+
+    assert len(found) == 1
+    assert "Natural Linguist" not in found[0].message
+    assert found[0].on_sheet.startswith("Holds Tongue 0 with no Linguistics. ")
+
+
+@pytest.mark.parametrize("rule", BY_THE_BOOK_AND_A_CHART)
+def test_natural_linguist_within_twice_the_limit_breaks_nothing(
+    checks: list,  # type: ignore[type-arg]
+    rule: LanguageRule,
+) -> None:
+    played = applied(checks, rule, PAGE)
+
+    assert violations(played, sheet(1, rule.allowed(1, True), natural=True)) == []
+    # One more breaks Natural Linguist's check alone.
+    over = violations(played, sheet(1, rule.allowed(1, True) + 1, natural=True))
+    assert over
+    assert all(v.message.startswith("Natural Linguist") for v in over)
+
+
+def test_the_sheet_names_the_languages_held_against_the_dots(checks: list) -> None:  # type: ignore[type-arg]
+    found = violations(checks, sheet(2, 3))
+
+    assert {v.on_sheet for v in found} == {
+        "Holds Tongue 0, Tongue 1 and Tongue 2 with Linguistics 2, which allows 2."
+        " A character has one language per dot of Linguistics, besides their native tongue."
+        " (p. 94)"
+    }
