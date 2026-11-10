@@ -40,6 +40,11 @@
 #   - `picks = { kind, count }`: the player picks `count` equipment qualities of
 #     that kind each time it goes on (issue #599: Flesh of Marble's two Protective
 #     Gear qualities), and their pool effects count as an equipped item's do.
+# `notes` (on a discipline, power or [[others]] entry): what it adds to another
+#   entry's switch while the character has it (issue #601), shown with that switch
+#   under its own name and page: [{ when, note, page, book?, focus?, choice? }],
+#   `when` naming the switch. Its `pools` and `damage` with that `when` change the
+#   switch's numbers the same way (Baal's Bloody Talons on Baal's Caress).
 # `choices` (on a power): what the player chooses when buying it, kept on the
 #   discipline's trait and fixed afterwards: [{ key, label, default?, options? }].
 #   `choice = { key = value }` on an entry makes it hold only for that choice.
@@ -68,6 +73,13 @@
 #   it aggravated. An entry whose `when` names a switch holds while it is on; any
 #   other `when` holds only some of the time, so it is a `note` on the pool, not
 #   part of the number shown. `page` is the book page (`book` as for `active`).
+# `test` (on a discipline, power or [[others]] entry, one table or a list): a power
+#   that deals damage through a test of its own (issue #600), a pool in Combat
+#   while the switch its `when` names is on: { when, pool?, versus?, challenge?,
+#   damage, exceptional?, type?, unreducible?, note?, name?, focus?, unless_focus?,
+#   choice?, page, book? }. `pool` is "discipline:<Name>" for that discipline's test
+#   pool, or an attribute and a skill; `challenge` says in words what it is tested
+#   in where there is no pool; `unreducible = true` when nothing reduces the damage.
 
 # MET: VTM core, p. 279.
 [[attacks]]
@@ -2180,6 +2192,38 @@ category = "elder_disciplines"
 name = "Visceratika: Meteor"
 active = { key = "Dive Bomb", name = "Meteor: Dive Bomb", page = 250, book = "Vol. 2", notes = ["Dive Bomb and Plummet cost no Willpower; Plummet keeps its full pool and works on the Stamina-focused.", "No flight needed for a Dive Bomb if you're 6 steps above your target; 1 Blood gives you stone wings for a turn's aerial maneuvers."] }
 damage = [{ attacks = ["Brawl", "Melee"], amount = 1, when = "Dive Bomb", note = "1 more damage on a Dive Bomb", page = 250, book = "Vol. 2" }]
+
+# Always-on elder and luminary powers that add to another power's switch, shown
+# with it while the character has them (issue #601).
+# Core p. 214: an extra round of actions each time Celerity is activated.
+[[others]]
+category = "elder_disciplines"
+name = "Celerity: Quickness"
+notes = [{ when = "Celerity", note = "An extra round of actions, one simple and one standard, taken in the third Celerity round.", page = 214 }]
+
+# Vol. 2 p. 200: on with any Celerity power, at no cost.
+[[others]]
+category = "luminary_disciplines"
+name = "Celerity: Momentum Swing"
+notes = [
+  { when = "Celerity", note = "Defend against a Brawl or Melee attack and you can move the attacker up to 6 steps; if they hit something, they take 2 normal damage and are knocked down (both of them, if it's someone).", page = 200, book = "Vol. 2" },
+  { when = "Celerity", note = "Defend against a thrown or fired projectile and you can deflect it at someone within 6 steps: Physical + Dodge against their Physical + Dodge, and they take its damage.", page = 200, book = "Vol. 2" },
+]
+
+# Core p. 221: move and fight underground while Earth Melded.
+[[others]]
+category = "elder_disciplines"
+name = "Protean: Earth Control"
+notes = [
+  { when = "Earth Meld", note = "Move underground at your normal speed, but not through rock, water, concrete or thick roots; you can act, and attack anyone you find there, even others in Earth Meld.", page = 221 },
+  { when = "Earth Meld", note = "You sense the underground within 10 steps, but not the surface.", page = 221 },
+]
+
+# Core p. 224: in Blood Form, 1 Blood a turn burns everyone touching you.
+[[others]]
+category = "elder_disciplines"
+name = "Vicissitude: Acid Blood"
+notes = [{ when = "Blood Form", note = "1 Blood a turn: 3 aggravated damage to up to four people touching you, anyone you grapple too.", page = 224 }]
 
 # Elder powers with a plain cost and nothing to switch on: Use only spends it
 # (issue #587). What each does, with its page, is its description in the trait

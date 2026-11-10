@@ -255,6 +255,30 @@
         "title": "ActiveIn",
         "type": "object"
       },
+      "AddedNote": {
+        "description": "What another power the character has adds to a switch, that can't be worked\nout (issue #601): Quickness's extra round on Celerity's.",
+        "properties": {
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "page",
+          "note"
+        ],
+        "title": "AddedNote",
+        "type": "object"
+      },
       "Adjustment": {
         "description": "XP staff tick for a character when awarding a game: \"Helped +1\", at most\n`per_month` times a calendar month (None for no limit).",
         "properties": {
@@ -31038,6 +31062,14 @@
       "PowerOut": {
         "description": "A form or power the character has, and whether it is on in this game.",
         "properties": {
+          "added": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AddedNote"
+            },
+            "title": "Added",
+            "type": "array"
+          },
           "attributes": {
             "default": [],
             "items": {

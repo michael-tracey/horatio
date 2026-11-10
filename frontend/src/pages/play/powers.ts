@@ -15,6 +15,9 @@ export const SWITCH = "power:";
 
 export const switchKey = (key: string) => `${SWITCH}${key}`;
 
+/** What another power the character has adds to a switch (issue #601): "Quickness (p. 214): An extra round of actions…". */
+export const addedNote = (added: PowerSwitch["added"][number]) => `${added.source} (${added.page}): ${added.note}`;
+
 /**
  * A quality picked for a power each use (issue #599): "pick:Flesh of Marble/Ballistic"
  * +1 picks it while the power is on, −1 drops it. Past the power's count the oldest

@@ -217,6 +217,8 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   await expect(await undoInHeader(p, /Celerity on/)).toBeEnabled();
   await expect(initiative).toContainText("Physical 5 + Alacrity 2");
   await expect(p.getByRole("region", { name: "Switched on now" })).toContainText("On: Celerity");
+  // Without Quickness (#601), nothing more with it.
+  await expect(p.getByText(/^Quickness \(p\. 214\)/)).toHaveCount(0);
   await expect(switches).toHaveAccessibleDescription(/In use: Celerity/);
   await p.getByLabel("Celerity on").uncheck();
   await expect(switches).toHaveAccessibleDescription("Nothing in use");
@@ -556,6 +558,36 @@ test("a power that hurts through its own test: Psychic Assault's pool and damage
   await p.getByLabel("Auspex: Psychic Assault on").uncheck();
   await expect(switches).toHaveAccessibleDescription("Nothing in use");
   await expect(assault).toHaveCount(0);
+});
+
+test("an elder power adds its notes to another power's switch: Quickness with Celerity (#601)", async ({ browser }) => {
+  const { page: p } = await person(browser, "quick-elder");
+  // A Pretender Elder (Generation 3) with Celerity 5 and its elder power Quickness.
+  const id = await builtVampire(
+    p,
+    "Lark",
+    "Brujah",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] },
+    [
+      ["disciplines", "Celerity", 5],
+      ["elder_disciplines", "Celerity: Quickness", 1],
+    ],
+  );
+  await p.goto(`/play/characters/${id}`);
+  await p.getByRole("tab", { name: "Pools" }).click();
+  const quickness = "Quickness (p. 214): An extra round of actions, one simple and one standard, taken in the third Celerity round.";
+  // With Celerity's switch, under the power's name and page.
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  const drawer = p.getByRole("dialog", { name: "Forms, powers and modifiers" });
+  await expect(drawer.getByRole("listitem").filter({ hasText: /^Celerity/ })).toContainText(quickness);
+  await expect(p.getByRole("region", { name: "Switched on now" })).toHaveCount(0);
+  // Switched on, it is in the banner too, and goes with it.
+  await drawer.getByLabel("Celerity on").check();
+  const banner = p.getByRole("region", { name: "Switched on now" });
+  await expect(banner).toContainText("On: Celerity");
+  await expect(banner).toContainText(quickness);
+  await drawer.getByLabel("Celerity on").uncheck();
+  await expect(banner).toHaveCount(0);
 });
 
 test("kept on the phone, a player's character opens with no signal: the sheet, the Play View and its powers, and taps go when the signal returns (#502)", async ({ browser }) => {

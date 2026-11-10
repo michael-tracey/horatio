@@ -35,6 +35,8 @@ and the rest. Each pool says what each switch would change in it (`switched`), a
 the Play View adds what is on, since being on is a tap in the game
 (horatio.play). A switch can also add wound levels, change an attribute, give a
 focus or more Blood; `switches` lists those the sheet has, with what they change.
+Another power the character has can add notes to a switch (`notes` with a `when`,
+issue #601), as Quickness does to Celerity's.
 
 A troupe's house merits and flaws carry `pools` and `active` in their catalogue
 properties, as the troupe's rules read them (horatio.rules.house_effects), and are
@@ -221,6 +223,16 @@ class AttributeChange(BaseModel):
     pools: str | None = None
 
 
+class AddedNote(BaseModel):
+    """What another power the character has adds to a switch, that can't be worked
+    out (issue #601): Quickness's extra round on Celerity's."""
+
+    # The power it comes from, and where its rules are: "Quickness", "p. 214".
+    source: str
+    page: str
+    note: str
+
+
 class Picks(BaseModel):
     """Equipment qualities the player picks each time a switch goes on (issue #599):
     Flesh of Marble's two Protective Gear qualities (Vol. 2 p. 232). What they do
@@ -250,6 +262,8 @@ class Switch(BaseModel):
     changes: list[str] = []
     # What can't be worked out: "Can fly at your normal speed."
     notes: list[str] = []
+    # What other powers the character has add to it, that can't be worked out.
+    added: list[AddedNote] = []
     # Wound levels it adds while on.
     health: list[SwitchLevel] = []
     attributes: list[AttributeChange] = []
@@ -1072,6 +1086,17 @@ def focus_effects(
     return pools, hurts
 
 
+def added_notes(sheet: Sheet, found: Sequence[Switch]) -> None:
+    """Give each switch the `notes` other entries the character has add to it, by
+    their `when` (issue #601): Quickness's on Celerity, Earth Control's on Earth Meld."""
+    by_key = {switch.key: switch for switch in found}
+    for owner in owners(sheet):
+        for n in owner.entry.get("notes", []):
+            switch = by_key.get(n["when"])
+            if switch and _holds(n, sheet, owner.chosen):
+                switch.added.append(AddedNote(source=owner.source, page=_page(n), note=n["note"]))
+
+
 @dataclass(frozen=True)
 class Worked:
     """Everything that changes the character's pools, worked out from the sheet."""
@@ -1089,6 +1114,7 @@ def work_out(sheet: Sheet, bases: Mapping[str, set[str]]) -> Worked:
     tested = power_tests(sheet)
     for switch in found:
         switch.changes = _changes(switch, pools, hurts, tested)
+    added_notes(sheet, found)
     return Worked(pools, hurts, found)
 
 

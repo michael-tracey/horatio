@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PlayView, PowerSwitch } from "../../api/types";
-import { applyPick, applySwitch, bloodMost, bloodPerTurn, boxes, describePick, describeSwitch, formsOn, healthMost, onKeys, withPicks } from "./powers";
+import { addedNote, applyPick, applySwitch, bloodMost, bloodPerTurn, boxes, describePick, describeSwitch, formsOn, healthMost, onKeys, withPicks } from "./powers";
 import { makeTap, tapToast, trackerName, withPending } from "./tracker";
 
 const power = (over: Partial<PowerSwitch>): PowerSwitch => ({
@@ -12,6 +12,7 @@ const power = (over: Partial<PowerSwitch>): PowerSwitch => ({
   page: "p. 155",
   changes: [],
   notes: [],
+  added: [],
   health: [],
   attributes: [],
   focuses: [],
@@ -165,6 +166,10 @@ describe("forms and powers", () => {
     v.blood.value = 14;
     applySwitch(v, "Blood of Potency", -1);
     expect([v.blood.value, v.blood.most, bloodPerTurn(v)]).toEqual([10, 10, 1]);
+  });
+
+  it("names the power and page a note added to a switch comes from (#601)", () => {
+    expect(addedNote({ source: "Momentum Swing", page: "Vol. 2, p. 200", note: "Deflect a projectile." })).toBe("Momentum Swing (Vol. 2, p. 200): Deflect a projectile.");
   });
 
   it("shows a switch tap at once, before the server has it, and Undo takes it back", () => {

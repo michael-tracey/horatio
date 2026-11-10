@@ -1,6 +1,6 @@
 import type { PowerSwitch } from "../../api/types";
 import { pageLabel } from "../../components/TraitInfo";
-import { formsOn, pickKey, switchKey, withPicks } from "./powers";
+import { addedNote, formsOn, pickKey, switchKey, withPicks } from "./powers";
 import type { makeTap } from "./tracker";
 
 type Tap = (what: Parameters<typeof makeTap>[0]) => void;
@@ -70,6 +70,12 @@ function Row({ power, tap }: { power: PowerSwitch; tap: Tap }) {
               {n}
             </span>
           ))}
+          {/* A view kept on the phone from before #601 has no `added`. */}
+          {(power.added ?? []).map((a) => (
+            <span key={addedNote(a)} className="block text-xs text-mist">
+              {addedNote(a)}
+            </span>
+          ))}
           <span className="block text-xs text-mist">
             {power.origin} · {power.page}
           </span>
@@ -119,7 +125,7 @@ export function PowersList({ powers, forms: atOnce = 1, tap }: { powers: PowerSw
   );
 }
 
-/** A short banner while a form or power is on: which, with its notes, and a way back. */
+/** A short banner while a form or power is on: which, with its notes and what other powers add to it, and a way back. */
 export function PowersBanner({ powers, tap }: { powers: PowerSwitch[]; tap: Tap }) {
   const forms = formsOn({ powers });
   const others = powers.filter((p) => p.on && !p.form);
@@ -134,6 +140,11 @@ export function PowersBanner({ powers, tap }: { powers: PowerSwitch[]; tap: Tap 
               <strong className="font-semibold text-gold">{f.name}</strong>
             </p>
             {f.notes.length > 0 && <p className="text-xs text-mist">{f.notes.join(" ")}</p>}
+            {(f.added ?? []).map((a) => (
+              <p key={addedNote(a)} className="text-xs text-mist">
+                {addedNote(a)}
+              </p>
+            ))}
             <p className="text-xs text-mist">It ends if you sleep or fall into torpor (p. 114); switch it off then.</p>
           </div>
           <button type="button" className="shrink-0 text-xs text-mist underline hover:text-parchment" onClick={() => toggle(tap, f)}>
@@ -147,6 +158,13 @@ export function PowersBanner({ powers, tap }: { powers: PowerSwitch[]; tap: Tap 
           {others.map(withPicks).join(", ")}
         </p>
       )}
+      {others
+        .flatMap((p) => p.added ?? [])
+        .map((a) => (
+          <p key={addedNote(a)} className="text-xs text-mist">
+            {addedNote(a)}
+          </p>
+        ))}
     </section>
   );
 }
