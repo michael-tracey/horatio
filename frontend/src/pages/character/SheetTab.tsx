@@ -319,8 +319,8 @@ export function SheetTab({
       (k) => k.parent_category === t.category && k.parent_name === t.name,
     );
   // Specialisations held without their skill or background show in its part, so
-  // they can be seen and removed.
-  const orphaned = orphanedKinds(kinds.data ?? [], s.traits);
+  // they can be seen and removed: none until the kinds are in, which says nothing.
+  const orphaned = kinds.data ? orphanedKinds(kinds.data, s.traits) : [];
   const orphanedIn = (group: string) =>
     orphaned.filter((k) => catalogue.data?.categories.find((c) => c.key === k.category)?.group === group);
   const addable = addableByGroup(catalogue.data);
