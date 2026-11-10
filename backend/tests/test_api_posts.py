@@ -299,6 +299,119 @@ def test_a_scheduled_story_can_be_cancelled(news: News, session: Session) -> Non
     assert posts.publish_due(session, datetime.now(UTC) + timedelta(hours=2)) == 0
 
 
+def schedule(news: News, post: str, when: datetime, by: Person | None = None) -> None:
+    done = (by or news.troupe.storyteller).client.post(
+        f"/posts/{post}/schedule", json={"publish_at": when.isoformat()}
+    )
+    assert done.status_code == 200, done.text
+
+
+def archive(news: News) -> None:
+    troupe = news.troupe
+    done = troupe.lead.client.post(f"/troupes/{troupe.id}/archive", json={"reason": "Done"})
+    assert done.status_code == 200, done.text
+
+
+def test_an_archived_troupes_scheduled_story_never_goes_out(
+    news: News,
+    session: Session,
+    clock: list[datetime],
+    mail: FakeSMTP,
+    fake_discord: FakeDiscord,
+) -> None:
+    troupe = news.troupe
+    on_discord(news)
+    troupe.narrator.client.patch("/preferences", json={"email_news": True})
+    post = news.draft()
+    schedule(news, post, START + timedelta(hours=1))
+    # Another troupe's story, due after it, still goes out.
+    other = troupe.custodian.client.post(
+        "/troupes", json={"name": "Princes of the City", "lead_handle": troupe.lead.handle}
+    ).json()["id"]
+    agency = troupe.lead.client.post(f"/troupes/{other}/agencies", json={"name": "Gazette"})
+    live = troupe.lead.client.post(
+        f"/troupes/{other}/posts",
+        json={"agency_id": agency.json()["id"], "title": "Still open", "body": "Yes."},
+    ).json()["id"]
+    schedule(news, live, START + timedelta(hours=2), by=troupe.lead)
+    archive(news)
+
+    clock[0] = START + timedelta(hours=3)
+    # The archived troupe's story is due first, and left where it is: the publisher
+    # goes on past it to the other's, and then stops.
+    assert posts.publish_due(session) == 1
+    assert session.get_one(Post, uuid.UUID(live)).status == "published"
+    waiting = session.get_one(Post, uuid.UUID(post))
+    assert (waiting.status, waiting.published_at) == ("scheduled", None)
+    assert posts.publish_due(session) == 0
+
+    # Nobody hears of it: no bell, no email, nothing for Discord.
+    assert not [s for s in bell(session, troupe.narrator) if "Fire at the docks" in s]
+    assert session.scalars(select(EmailNotice).where(EmailNotice.topic == "news")).all() == []
+    assert session.scalars(select(Delivery).where(Delivery.post_id == waiting.id)).all() == []
+    assert send_all(session, clock[0]) == 0
+    assert fake_discord.messages == {}
+
+
+def test_nothing_is_published_or_scheduled_in_an_archived_troupe(
+    news: News, session: Session
+) -> None:
+    troupe = news.troupe
+    post = news.draft()
+    archive(news)
+    later = (datetime.now(UTC) + timedelta(hours=1)).isoformat()
+
+    # Its staff no longer see its drafts; the custodian does, but sends nothing.
+    assert troupe.storyteller.client.post(f"/posts/{post}/publish", json={}).status_code == 404
+    for done in (
+        troupe.custodian.client.post(f"/posts/{post}/publish", json={}),
+        troupe.custodian.client.post(f"/posts/{post}/schedule", json={"publish_at": later}),
+    ):
+        assert done.status_code == 409, done.text
+        assert done.json()["detail"] == "This troupe is archived, so its posts don't go out."
+    assert session.get_one(Post, uuid.UUID(post)).status == "draft"
+
+
+def test_reopening_a_troupe_sends_back_to_the_drafts_what_it_missed(
+    news: News, session: Session, clock: list[datetime]
+) -> None:
+    troupe = news.troupe
+    missed = news.draft()
+    schedule(news, missed, START + timedelta(hours=1))
+    coming = news.draft(title="Still to come")
+    schedule(news, coming, START + timedelta(hours=5))
+    archive(news)
+
+    clock[0] = START + timedelta(hours=2)
+    assert posts.publish_due(session) == 0
+    reopened = troupe.custodian.client.post(
+        f"/troupes/{troupe.id}/reopen", json={"reason": "Starting again"}
+    )
+    assert reopened.status_code == 200, reopened.text
+
+    # Its time passed while the troupe was archived: it doesn't go out late.
+    back = session.get_one(Post, uuid.UUID(missed))
+    assert (back.status, back.publish_at, back.published_at) == ("draft", None, None)
+    assert posts.publish_due(session) == 0
+    told = (
+        "“Fire at the docks” wasn't published: its time came while Lords of the Night was"
+        " archived. It is back in the drafts."
+    )
+    for person in (troupe.lead, troupe.storyteller, troupe.assistant):
+        assert told in bell(session, person), person.email
+    assert told not in bell(session, troupe.narrator)
+    assert (
+        "custodian reopened the troupe after the story “Fire at the docks” was due: it went"
+        " back to the drafts unsent." in news.log()
+    )
+
+    # One still to come goes out when its time comes, as scheduled.
+    assert session.get_one(Post, uuid.UUID(coming)).status == "scheduled"
+    clock[0] = START + timedelta(hours=6)
+    assert posts.publish_due(session) == 1
+    assert session.get_one(Post, uuid.UUID(coming)).status == "published"
+
+
 def test_unpublishing_takes_it_back_to_the_drafts(news: News) -> None:
     troupe = news.troupe
     post = news.published()

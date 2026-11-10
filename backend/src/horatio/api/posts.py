@@ -201,6 +201,15 @@ def writing_troupe(db: Session, user: User, troupe_id: uuid.UUID) -> Troupe:
     return troupe
 
 
+def going_out(troupe: Troupe) -> None:
+    """Nothing goes out from an archived troupe, even at the custodian's hand: its
+    members, Discord and email would hear from a troupe that is closed."""
+    if troupe.archived_at is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "This troupe is archived, so its posts don't go out."
+        )
+
+
 def proposing(db: Session, user: User, troupe: Troupe, post: Post) -> bool:
     """A narrator's own proposal, still waiting: theirs to see and edit."""
     return (
@@ -554,6 +563,7 @@ def schedule_post(
     post, troupe = writer_post(db, user, post_id)
     if post.status not in ("draft", "proposed", "scheduled"):
         raise HTTPException(status.HTTP_409_CONFLICT, "That can't be scheduled now.")
+    going_out(troupe)
     if body.publish_at <= delivery.now():
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, "Choose a time to come, or publish it now."
@@ -593,6 +603,7 @@ def publish_post(post_id: uuid.UUID, body: NoteIn, db: DbSession, user: CurrentU
     post, troupe = writer_post(db, user, post_id)
     if post.status not in ("draft", "proposed", "scheduled"):
         raise HTTPException(status.HTTP_409_CONFLICT, "That can't be published now.")
+    going_out(troupe)
     check_agency(db, troupe, post.kind, post.agency_id, keeping=post.agency_id)
     posts.publish(db, post, user, body.note.strip())
     db.commit()
