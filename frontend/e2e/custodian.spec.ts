@@ -813,6 +813,7 @@ test("the custodian fetches the Dark Pack resources and the VTES symbols onto th
   // The Dark Pack: the usual address, and nothing until the licence is accepted.
   await expect(darkPack.getByText("Not on this server yet.")).toBeVisible();
   await expect(darkPack.getByLabel("Address")).toHaveValue(dropbox);
+  await expect(darkPack.getByText("Only a Dropbox address.")).toBeVisible();
   const fetch = darkPack.getByRole("button", { name: "Fetch and import" });
   await expect(fetch).toBeDisabled();
   await darkPack.getByLabel("I accept Paradox's Dark Pack Agreement for this server").first().check();
@@ -837,6 +838,7 @@ test("the custodian fetches the Dark Pack resources and the VTES symbols onto th
 
   // The VTES symbols: a fetch that fails says why, and that nothing was lost.
   await expect(vtes.getByLabel("Address")).toHaveValue("https://static.krcg.org/");
+  await expect(vtes.getByText("Only an address on static.krcg.org.")).toBeVisible();
   await vtes.getByLabel("I accept Paradox's Dark Pack Agreement for this server").check();
   await vtes.getByRole("button", { name: "Fetch", exact: true }).click();
   await expect(vtes.getByRole("alert")).toContainText("failed: https://static.krcg.org/svg/clan/ answered 503 Service Unavailable.");

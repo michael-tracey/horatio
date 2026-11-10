@@ -24,7 +24,8 @@ from tests.test_api_audit import messages
 from tests.test_dark_pack import CLANS, KIT, png
 
 DROPBOX = dark_pack.DEFAULT_ADDRESS
-DOWNLOAD = "https://uc.example-dropbox.com/zip_download/WoD%20Community%20Assets.zip"
+# Where Dropbox sends the shared folder on to: a name of its own for each download.
+DOWNLOAD = "https://uc0a1b2c3d4e5f.dl.dropboxusercontent.com/zip_download_get/AbC123"
 KRCG = vtes_symbols.DEFAULT_ADDRESS
 OLD_KIT = "WoD-Logos-and-Symbols"
 
@@ -255,6 +256,80 @@ def test_only_https_and_only_with_the_licence_accepted(
     fake.answers[DROPBOX] = httpx.Response(302, headers={"Location": "http://example.com/k.zip"})
     fetch(troupe.custodian, "dark-pack", DROPBOX)
     assert "which isn't https" in status(troupe.custodian, "dark-pack")["error"]
+
+
+# Addresses on the server's own network, the cloud's metadata service, and places that
+# aren't the tool's: none is fetched from.
+ELSEWHERE = [
+    "https://169.254.169.254/computeMetadata/v1/",
+    "https://metadata.google.internal/computeMetadata/v1/",
+    "https://127.0.0.1/",
+    "https://[::1]/",
+    "https://[::ffff:169.254.169.254]/",
+    "https://2130706433/",
+    "https://10.0.0.1/",
+    "https://localhost/",
+    "https://localhost:8000/",
+    "https://api.localhost/",
+    "https://example.com/kit.zip",
+    "https://www.dropbox.com.example.com/kit.zip",
+    "https://dropbox.com/kit.zip",
+    "https://www.dropbox.com:8443/kit.zip",
+    "https://www.dropbox.com@169.254.169.254/",
+    "https://a.b.dl.dropboxusercontent.com/kit.zip",
+]
+
+
+@pytest.mark.parametrize("address", [*ELSEWHERE, KRCG])
+def test_the_kit_is_fetched_only_from_dropbox(
+    troupe: Troupe, fake: Fake, folder: Path, address: str
+) -> None:
+    refused = fetch(troupe.custodian, "dark-pack", address)
+    assert refused.status_code == 422
+    assert refused.json()["detail"] == "Horatio fetches these only from Dropbox."
+    assert fake.asked == []
+
+
+@pytest.mark.parametrize(
+    "to",
+    [
+        "https://169.254.169.254/computeMetadata/v1/",
+        "https://metadata.google.internal/computeMetadata/v1/",
+        "https://[::1]/kit.zip",
+        "https://127.0.0.1:8000/kit.zip",
+        "https://localhost/kit.zip",
+        "https://example.com/kit.zip",
+        "https://uc1.dl.dropboxusercontent.com.example.com/kit.zip",
+        "http://uc1.dl.dropboxusercontent.com/kit.zip",
+    ],
+)
+def test_dropbox_is_not_followed_anywhere_else(
+    troupe: Troupe, fake: Fake, folder: Path, to: str
+) -> None:
+    fake.answers[DROPBOX] = httpx.Response(302, headers={"Location": to})
+    fake.answers[to] = httpx.Response(200, content=download())
+    assert fetch(troupe.custodian, "dark-pack", DROPBOX).status_code == 202
+    found = status(troupe.custodian, "dark-pack")
+    assert found["error"].startswith("The address sent Horatio on to ")
+    assert found["error"].endswith(("which isn't Dropbox.", "which isn't https."))
+    assert found["imported"] is False
+    # It stopped before asking.
+    assert [str(r.url) for r in fake.asked] == [DROPBOX]
+
+
+def test_the_ip_and_localhost_are_refused_even_if_listed() -> None:
+    source = fetching.Source(
+        "anywhere", ("127.0.0.1", "::1", "[::1]", "localhost", "a.localhost", "1.2", "*.test")
+    )
+    for host in ("127.0.0.1", "::1", "[::1]", "localhost", "LOCALHOST", "a.localhost", "1.2"):
+        assert not source.allows(host), host
+    assert source.allows("files.test")
+    assert not source.allows("a.b.test") and not source.allows("test")
+    assert dark_pack.SOURCE.allows("www.dropbox.com")
+    assert dark_pack.SOURCE.allows("UC0A1B.dl.dropboxusercontent.com")
+    assert not dark_pack.SOURCE.allows("dl.dropboxusercontent.com")
+    assert vtes_symbols.SOURCE.allows("static.krcg.org")
+    assert not vtes_symbols.SOURCE.allows("www.dropbox.com")
 
 
 def test_one_fetch_at_a_time(troupe: Troupe, fake: Fake, folder: Path) -> None:
@@ -535,14 +610,40 @@ def test_a_failed_vtes_fetch_keeps_the_last(troupe: Troupe, fake: Fake, folder: 
     fetch(troupe.custodian, "vtes-symbols", KRCG)
     assert "isn't the SVG image it should be" in status(troupe.custodian, "vtes-symbols")["error"]
     # and somewhere with no symbols all leave the last fetch alone.
-    fetch(troupe.custodian, "vtes-symbols", "https://example.com/")
+    fetch(troupe.custodian, "vtes-symbols", f"{KRCG}moved/")
     assert status(troupe.custodian, "vtes-symbols")["error"] == (
-        "https://example.com/svg/clan/ answered 404 Not Found."
+        f"{KRCG}moved/svg/clan/ answered 404 Not Found."
     )
 
     assert {p: (folder / p).read_bytes() for p in files(folder)} == kept
     assert not [p for p in folder.iterdir() if p.name.startswith(".")]
     assert status(troupe.custodian, "vtes-symbols")["fetched"] is True
+
+
+@pytest.mark.parametrize("address", [*ELSEWHERE, DROPBOX, "https://krcg.org/"])
+def test_the_symbols_are_fetched_only_from_krcg(
+    troupe: Troupe, fake: Fake, folder: Path, address: str
+) -> None:
+    refused = fetch(troupe.custodian, "vtes-symbols", address)
+    assert refused.status_code == 422
+    assert refused.json()["detail"] == "Horatio fetches these only from KRCG (static.krcg.org)."
+    assert fake.asked == []
+
+
+@pytest.mark.parametrize(
+    "to", ["https://169.254.169.254/svg/clan/", "https://[::1]/svg/clan/", "https://krcg.org/"]
+)
+def test_krcg_is_not_followed_anywhere_else(
+    troupe: Troupe, fake: Fake, folder: Path, to: str
+) -> None:
+    krcg(fake)
+    fake.answers[f"{KRCG}svg/clan/"] = httpx.Response(302, headers={"Location": to})
+    fetch(troupe.custodian, "vtes-symbols", KRCG)
+    found = status(troupe.custodian, "vtes-symbols")
+    assert found["error"].startswith("The address sent Horatio on to ")
+    assert found["error"].endswith("which isn't KRCG (static.krcg.org).")
+    assert found["fetched"] is False
+    assert [str(r.url) for r in fake.asked] == [f"{KRCG}svg/clan/"]
 
 
 def test_a_symbol_over_the_cap_is_refused(

@@ -70,6 +70,7 @@ export function DarkPackResources() {
             <>
               <FetchForm
                 defaultAddress={s!.default_address}
+                hint="Only a Dropbox address. Change it if Paradox moves the download."
                 agreement={s!.agreement}
                 disabled={!!s!.job}
                 pending={fetch.isPending}
