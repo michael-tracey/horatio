@@ -34,9 +34,20 @@ export function useTeacherRules(characterId: string, enabled: boolean) {
 /**
  * A skill or background's specialisations, under it on the sheet: what the
  * character has, and (if they can edit) a way to add another or remove one.
- * Options come from the troupe's list where it has one.
+ * Options come from the troupe's list where it has one. Ones held without the skill
+ * or background (`orphaned`: an import, or an older sheet) can only be removed.
  */
-export function SpecializationRow({ character, kind, editable }: { character: CharacterOut; kind: Kind; editable: boolean }) {
+export function SpecializationRow({
+  character,
+  kind,
+  editable,
+  orphaned = false,
+}: {
+  character: CharacterOut;
+  kind: Kind;
+  editable: boolean;
+  orphaned?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   // One a teacher rule is about, waiting for its teacher before it is added.
@@ -77,7 +88,7 @@ export function SpecializationRow({ character, kind, editable }: { character: Ch
   // How many it may hold, by the rules' checks (the troupe's chart of languages, two
   // a dot with Natural Linguist), counting only those not given by another trait.
   const allowed = kind.allowed ?? kind.parent_rating;
-  const room = kind.counted < Math.max(allowed, 1);
+  const room = !orphaned && kind.counted < Math.max(allowed, 1);
   const pick = (option: string) => {
     // A troupe's options and free text are both stored as Custom with the text.
     void (kind.from_troupe ? add(CUSTOM, option) : add(option, ""));
@@ -89,7 +100,7 @@ export function SpecializationRow({ character, kind, editable }: { character: Ch
     <div className="mb-1 ml-3 border-l border-ash pl-3 text-xs">
       <span className="flex flex-wrap items-center gap-1.5">
         <span className={kind.counted > allowed ? "text-blood-bright" : missing ? "text-gold" : "text-mist"}>
-          {kind.name} {kind.counted} of {allowed}
+          {orphaned ? `${kind.name} without ${kind.parent_name}` : `${kind.name} ${kind.counted} of ${allowed}`}
         </span>
         {held.map((h) => (
           <span key={`${h.name}/${h.detail}`} className="inline-flex items-center gap-1 rounded border border-ash px-1.5 text-parchment">
@@ -116,6 +127,8 @@ export function SpecializationRow({ character, kind, editable }: { character: Ch
           </button>
         )}
       </span>
+      {/* Only those counted against the skill need it: not ones another trait gives. */}
+      {orphaned && kind.counted > 0 && <p className="mt-1 text-mist">{orphanedText(kind)}</p>}
       {open && (
         <div className="mt-1.5 flex flex-col gap-1.5 rounded border border-ash bg-night/50 p-2">
           <div className="flex flex-wrap gap-1">
@@ -182,6 +195,21 @@ export function SpecializationRow({ character, kind, editable }: { character: Ch
       )}
       <ErrorText error={change.error} />
     </div>
+  );
+}
+
+/** What to do about specialisations held without their skill or background. */
+export function orphanedText(kind: Pick<Kind, "category" | "parent_name">): string {
+  const text = `Take ${kind.parent_name} to keep them, or remove them.`;
+  // The native tongue is no language from Linguistics, so it isn't listed (MET: VTM p. 94).
+  return kind.category === "linguistics_specializations" ? `${text} A native tongue needs no Linguistics and isn't listed here.` : text;
+}
+
+/** The kinds of specialisation the character holds some of without the skill or
+ * background they specialise, which the sheet would otherwise not show. */
+export function orphanedKinds(kinds: Kind[], traits: Pick<SheetTraitOut, "category" | "name" | "rating">[]): Kind[] {
+  return kinds.filter(
+    (k) => k.held.length > 0 && !traits.some((t) => t.category === k.parent_category && t.name === k.parent_name && t.rating !== 0),
   );
 }
 

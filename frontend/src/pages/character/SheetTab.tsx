@@ -54,6 +54,7 @@ import { rulesTroupe } from "./rules";
 import { fieldSkills } from "./fields";
 import { byKind, countOf } from "./traitFilter";
 import {
+  orphanedKinds,
   SetField,
   SpecializationRow,
   useSpecializations,
@@ -317,6 +318,11 @@ export function SheetTab({
     inCart(t) ? undefined : kinds.data?.find(
       (k) => k.parent_category === t.category && k.parent_name === t.name,
     );
+  // Specialisations held without their skill or background show in its part, so
+  // they can be seen and removed.
+  const orphaned = orphanedKinds(kinds.data ?? [], s.traits);
+  const orphanedIn = (group: string) =>
+    orphaned.filter((k) => catalogue.data?.categories.find((c) => c.key === k.category)?.group === group);
   const addable = addableByGroup(catalogue.data);
   const canAdd =
     !locked &&
@@ -348,7 +354,7 @@ export function SheetTab({
     );
   }
   const parts = [...addable.keys()].filter(
-    (g) => groups.has(g) || ((canAdd || canGive) && (addable.get(g)?.length ?? 0) > 0),
+    (g) => groups.has(g) || orphanedIn(g).length > 0 || ((canAdd || canGive) && (addable.get(g)?.length ?? 0) > 0),
   );
   const single = (group: string) => (groups.get(group)?.size ?? 0) === 1;
   // A part of powers learned by meeting what they need (disciplines and their
@@ -411,7 +417,8 @@ export function SheetTab({
         {s.problems.length > 0 && (
           <Card dense title="Against the rules">
             <ul className="flex flex-col gap-1 text-sm">
-              {s.problems.map((p) => (
+              {/* A check on how many a category holds is broken once for each it holds: said once. */}
+              {s.problems.filter((p, i) => s.problems.findIndex((q) => q.message === p.message) === i).map((p) => (
                 <li
                   key={`${p.category}/${p.name}/${p.message}`}
                   className={
@@ -497,7 +504,7 @@ export function SheetTab({
                   onClose={() => setAdding(null)}
                 />
               )}
-              {!groups.has(group) && (
+              {!groups.has(group) && orphanedIn(group).length === 0 && (
                 <p className="text-sm text-mist">None yet.</p>
               )}
               {[...(groups.get(group)?.values() ?? [])].some((ts) => ts.some((t) => t.category === "disciplines")) &&
@@ -615,6 +622,15 @@ export function SheetTab({
                   </div>
                 ))}
               </div>
+              {orphanedIn(group).map((k) => (
+                <SpecializationRow
+                  key={`orphaned/${k.category}`}
+                  character={character}
+                  kind={k}
+                  editable={mine && !locked && s.status !== "retired"}
+                  orphaned
+                />
+              ))}
               {canAdd && catalogue.data && pointsTo(group) && (
                 <OpenToYou
                   character={character}
