@@ -53,8 +53,10 @@
 #   button. Use spends it on every press, and turns the switch on if it is off, so
 #   a cost paid each time (Projectile's 1 Blood an attack) is spent again.
 # [[others]]: techniques, elder and luminary powers and merits with `pools`,
-#   `damage`, `active` or `cost`, by `category` and `name`; `needs = { discipline,
-#   level }` when it works only with a power of a discipline. Merits show no Use
+#   `damage`, `active`, `cost` or `forms`, by `category` and `name`; `needs = {
+#   discipline, level }` when it works only with a power of a discipline. `forms`
+#   is how many forms the character can be in at once while it has it, rather than
+#   one (issue #597); never two from one power. Merits show no Use
 #   button. What an elder or luminary power does, and its page, are its trait's
 #   `description` and `page_reference` in bns_met_vampire_traits.toml (issue #587),
 #   whether it has an entry here or not.
@@ -2531,10 +2533,13 @@ category = "luminary_disciplines"
 name = "Spiritus: Become the Hunted"
 cost = { blood = 3 }
 
+# Vol. 2 p. 249: up to two major transformations at once, never the same power
+# twice; 4 Blood and a simple action start any number of transformations.
 [[others]]
 category = "luminary_disciplines"
 name = "Vicissitude: Ravenous Conglomeration"
 cost = { blood = 4 }
+forms = 2
 
 [[others]]
 category = "luminary_disciplines"

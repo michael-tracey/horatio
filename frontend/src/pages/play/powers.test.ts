@@ -19,6 +19,7 @@ const power = (over: Partial<PowerSwitch>): PowerSwitch => ({
   blood_per_turn: 0,
   blood_half: false,
   on: false,
+  turned_on: 0,
   ...over,
 });
 
@@ -26,7 +27,7 @@ const fight = power({ health: [{ level: "Healthy", boxes: 2 }] });
 const flight = power({ key: "flight form", name: "Shape of the Beast: flight form (bat)" });
 const claws = power({ key: "Feral Claws", name: "Feral Claws", form: false });
 
-function view(powers: PowerSwitch[], marks: string[] = []): PlayView {
+function view(powers: PowerSwitch[], marks: string[] = [], forms = 1): PlayView {
   return {
     character_id: "c1",
     character_name: "Ursula",
@@ -62,6 +63,7 @@ function view(powers: PowerSwitch[], marks: string[] = []): PlayView {
     equipped: [],
     influence: [],
     powers: powers.map((p) => ({ ...p })),
+    forms,
     game: null,
     log: [],
   };
@@ -111,6 +113,47 @@ describe("forms and powers", () => {
     expect(onKeys(v)).toEqual(["Mantle of Atira", "Spiritwalker"]);
     applySwitch(v, "fight form", 1);
     expect(onKeys(v)).toEqual(["fight form"]);
+  });
+
+  it("keeps two forms with Ravenous Conglomeration, never two of one power, and a third ends the first (#597)", () => {
+    const horrid = power({ key: "Horrid Form", name: "Horrid Form", origin: "Vicissitude 4", health: [{ level: "Healthy", boxes: 1 }] });
+    const blood = power({ key: "Blood Form", name: "Blood Form", origin: "Vicissitude 5" });
+    const v = view([fight, flight, horrid, blood, claws], [], 2);
+    applySwitch(v, "Horrid Form", 1);
+    applySwitch(v, "fight form", 1);
+    applySwitch(v, "Feral Claws", 1);
+    // Both forms are on, and both forms' wound levels count.
+    expect(formsOn(v).map((f) => f.key)).toEqual(["fight form", "Horrid Form"]);
+    expect(healthMost(v)).toBe(12);
+
+    // The bat is the same power as the wolf (Shape of the Beast), so it takes its place.
+    const said: string[] = [];
+    applySwitch(v, "flight form", 1, said);
+    expect(onKeys(v)).toEqual(["flight form", "Horrid Form", "Feral Claws"]);
+    expect(said).toEqual(["out of Shape of the Beast: fight form (wolf, Huge)"]);
+
+    // A third form ends the one on longest: Horrid Form, not the bat that came after it.
+    const third: string[] = [];
+    applySwitch(v, "Blood Form", 1, third);
+    expect(onKeys(v)).toEqual(["flight form", "Blood Form", "Feral Claws"]);
+    expect(describeSwitch(v, "Blood Form", 1, third)).toBe("Turned into Blood Form: out of Horrid Form");
+  });
+
+  it("keeps the one-form rule without Ravenous Conglomeration, for forms of different powers too", () => {
+    const horrid = power({ key: "Horrid Form", name: "Horrid Form", origin: "Vicissitude 4" });
+    const v = view([fight, horrid]);
+    applySwitch(v, "Horrid Form", 1);
+    applySwitch(v, "fight form", 1);
+    expect(formsOn(v).map((f) => f.key)).toEqual(["fight form"]);
+  });
+
+  it("knows the order the forms went on from the server, after a reload", () => {
+    const horrid = power({ key: "Horrid Form", name: "Horrid Form", origin: "Vicissitude 4" });
+    const blood = power({ key: "Blood Form", name: "Blood Form", origin: "Vicissitude 5" });
+    // The fight form went on first, so it is the one a third form ends.
+    const v = view([{ ...horrid, on: true, turned_on: 3 }, { ...fight, on: true, turned_on: 1 }, blood], [], 2);
+    applySwitch(v, "Blood Form", 1);
+    expect(formsOn(v).map((f) => f.key)).toEqual(["Horrid Form", "Blood Form"]);
   });
 
   it("grows the Blood pool with Blood of Potency, and takes the extra away after", () => {

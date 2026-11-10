@@ -236,6 +236,8 @@ class Limits:
     held: Mapping[str, int] = field(default_factory=dict[str, int])
     # The forms and powers the sheet has that can be switched on.
     switches: tuple[reference.Switch, ...] = ()
+    # How many forms it can be in at once: two with Ravenous Conglomeration.
+    forms: int = 1
     # Each Retainer's health and Blood.
     retainers: tuple[RetainerTrack, ...] = ()
     # What the "blood" tracker is: a Stock NPC's kind's resource, such as Rage.
@@ -765,6 +767,7 @@ def limits(db: Session, character: Character, game: PlayGame | None = None) -> L
         temporary=temporary_derangements(db, character),
         held=held,
         switches=tuple(reference.switches(rows, rule_set)),
+        forms=reference.forms_at_once(reference.Sheet.read(rows, rule_set)),
         blood_name=blood_name,
         trackers=trackers_for(panels),
         panels=panels,
@@ -829,21 +832,39 @@ def switch_off(
         said.append(f"{len(lost)} damage in its levels gone")
 
 
+def forms_displaced(
+    limits: Limits, on: Sequence[str], form: reference.Switch
+) -> list[reference.Switch]:
+    """The forms on that turning `form` on ends, in the order they were switched on:
+    those it doesn't combine with past the character's limit, oldest first, and any
+    other form of the same power."""
+    clash = [
+        s
+        for s in limits.on(on)
+        if s.form and s.key not in form.combines and form.key not in s.combines
+    ]
+    others = [s for s in clash if s.origin != form.origin]
+    gone = {s.key for s in clash if s.origin == form.origin}
+    gone |= {s.key for s in others[: max(0, len(others) - (limits.forms - 1))]}
+    return [s for s in clash if s.key in gone]
+
+
 def switch(
     state: dict[str, Any], limits: Limits, key: str, amount: int, said: list[str] | None = None
 ) -> tuple[int, int]:
     """Switch a form or power on (amount > 0) or off. A form turns off any other
-    form it does not combine with (core p. 114; Vol. 2 p. 82)."""
+    form it does not combine with (core p. 114; Vol. 2 p. 82), or with Ravenous
+    Conglomeration those past its limit, first on first off, and any other form of
+    the same power (Vol. 2 p. 249)."""
     on: list[str] = state.setdefault("on", [])
     before = int(key in on)
     found = limits.switch(key)
     if amount > 0 and not before and found is not None:
         if found.form:
-            for other in limits.on(list(on)):
-                if other.form and other.key not in found.combines and key not in other.combines:
-                    if said is not None:
-                        said.append(f"out of {other.name}")
-                    switch_off(state, limits, other.key, said)
+            for other in forms_displaced(limits, on, found):
+                if said is not None:
+                    said.append(f"out of {other.name}")
+                switch_off(state, limits, other.key, said)
         on.append(key)
     elif amount < 0 and before:
         switch_off(state, limits, key, said)

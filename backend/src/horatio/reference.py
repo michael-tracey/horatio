@@ -226,7 +226,8 @@ class AddedNote(BaseModel):
 class Switch(BaseModel):
     """A form or power the Play View can switch on while the character has it
     (issue #200). Forms are transformative: only one is on at a time (core
-    p. 114), but for those it combines with."""
+    p. 114), but for those it combines with, or more with Ravenous
+    Conglomeration (`forms_at_once`)."""
 
     key: str
     # "Shape of the Beast: fight form (wolf, Huge)".
@@ -1019,6 +1020,13 @@ def work_out(sheet: Sheet, bases: Mapping[str, set[str]]) -> Worked:
 def switches(rows: Sequence[SheetRow], rule_set: RuleSetData) -> list[Switch]:
     """The forms and powers on this sheet the Play View can switch on."""
     return work_out(Sheet.read(rows, rule_set), technique_bases(rule_set)).switches
+
+
+def forms_at_once(sheet: Sheet) -> int:
+    """How many forms the character can be in at once: one (core p. 114), or more
+    with a power whose entry has `forms` (Ravenous Conglomeration's two, Vol. 2
+    p. 249)."""
+    return max((o.entry.get("forms", 1) for o in owners(sheet)), default=1)
 
 
 # A note that starts with what the power costs: "1 Blood, standard action: …".

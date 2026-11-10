@@ -63,7 +63,7 @@ export function LanguagesForm({
     <div className="flex flex-col gap-6">
       <Card title="Languages from Linguistics">
         <p className="mb-3 text-sm text-mist">
-          By the book each dot of Linguistics gives one language (p. 95), and Natural Linguist two (p. 252). A troupe can play a chart instead. Creation, purchases and sheets
+          By the book each dot of Linguistics gives one language (p. 94), and Natural Linguist two (p. 252). A troupe can play a chart instead. Creation, purchases and sheets
           follow the troupe&apos;s choice straight away.
         </p>
         {!canEdit ? (

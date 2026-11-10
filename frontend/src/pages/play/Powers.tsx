@@ -43,9 +43,11 @@ function Row({ power, tap }: { power: PowerSwitch; tap: Tap }) {
 /**
  * "From your powers": the forms and powers on the sheet that hold only while
  * they are active, each with a switch. One form at a time (core p. 114): turning
- * one on turns the last off. The rest go with a form and with each other.
+ * one on turns the last off. With Ravenous Conglomeration (`forms` 2, Vol. 2
+ * p. 249) two, and a third turns off the one on longest. The rest go with a form
+ * and with each other.
  */
-export function PowersList({ powers, tap }: { powers: PowerSwitch[]; tap: Tap }) {
+export function PowersList({ powers, forms: atOnce = 1, tap }: { powers: PowerSwitch[]; forms?: number; tap: Tap }) {
   if (powers.length === 0) return null;
   const forms = powers.filter((p) => p.form);
   const others = powers.filter((p) => !p.form);
@@ -54,7 +56,11 @@ export function PowersList({ powers, tap }: { powers: PowerSwitch[]; tap: Tap })
       <h3 className="text-xs tracking-wide text-mist uppercase">From your powers</h3>
       {forms.length > 0 && (
         <>
-          <p className="mt-1 text-xs text-mist">Forms: one at a time (p. 114). Turning one on turns the last off.</p>
+          <p className="mt-1 text-xs text-mist">
+            {atOnce > 1
+              ? `Forms: ${atOnce === 2 ? "two" : atOnce} at once with Ravenous Conglomeration (Vol. 2 p. 249), never two of one power. Another turns off the one on longest.`
+              : "Forms: one at a time (p. 114). Turning one on turns the last off."}
+          </p>
           <ul className="divide-y divide-ash/60" aria-label="Forms">
             {forms.map((p) => (
               <Row key={p.key} power={p} tap={tap} />

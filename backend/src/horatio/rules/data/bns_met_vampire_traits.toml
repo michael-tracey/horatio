@@ -3088,7 +3088,7 @@ page_reference = "Vol. 2, p. 249"
 [[traits]]
 category = "luminary_disciplines"
 name = "Vicissitude: Ravenous Conglomeration"
-description = "Always on: two major transformations at once; 4 Blood and a simple action start any number of them."
+description = "Always on: up to two major transformations at once, not the same power twice (kept Bonecraft alterations count as one). 4 Blood and a simple action start any number of your transformations instead of their own costs. If either form can't attack, neither can you."
 page_reference = "Vol. 2, p. 249"
 
 [[traits]]

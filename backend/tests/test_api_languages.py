@@ -77,7 +77,7 @@ def test_the_book_gives_one_a_dot_until_staff_choose_the_accelerated_chart(troup
         assert learn(troupe, agnes, language).status_code == 200
     refused = learn(troupe, agnes, "Cornish")
     assert refused.status_code == 409
-    assert "one Linguistics specialisation per dot" in refused.json()["detail"]
+    assert "one language per dot of Linguistics" in refused.json()["detail"]
     read = troupe.storyteller.client.get(f"/troupes/{troupe.id}/languages").json()
     assert (read["mode"], read["natural_doubles"], read["table"][:5]) == (
         "book",
@@ -174,8 +174,70 @@ def test_characters_over_a_smaller_chart_are_flagged_not_changed(troupe: Troupe)
     sheet = troupe.player.client.get(f"/characters/{agnes}/sheet").json()
     assert sum(1 for t in sheet["traits"] if t["category"] == LANGUAGES) == 4
     assert any(
-        p["category"] == LANGUAGES and "one Linguistics specialisation per dot" in p["message"]
+        p["category"] == LANGUAGES and "one language per dot of Linguistics" in p["message"]
         for p in sheet["problems"]
     )
     kind = languages_kind(troupe, agnes)
     assert (kind["counted"], kind["allowed"]) == (4, 3)
+
+
+@pytest.mark.parametrize("mode", ["book", "accelerated"])
+def test_a_language_held_with_no_linguistics_is_one_plain_problem_and_can_go(
+    troupe: Troupe, mode: str
+) -> None:
+    # As a Yorick import or an older sheet can leave it: a language and no Linguistics.
+    choose(troupe, mode=mode)
+    agnes = built_for(troupe)
+    put(troupe, agnes, LANGUAGES, "Custom", detail="Spanish")
+
+    sheet = troupe.player.client.get(f"/characters/{agnes}/sheet").json()
+    problems = {p["message"] for p in sheet["problems"] if p["category"] == LANGUAGES}
+    assert len(problems) == 1
+    [problem] = problems
+    assert problem.startswith("Holds Spanish with no Linguistics. ")
+    assert "Natural Linguist" not in problem
+    # The sheet's Languages section lists it, though there is no Linguistics to show it under.
+    kind = languages_kind(troupe, agnes)
+    assert (kind["held"], kind["parent_rating"], kind["counted"], kind["allowed"]) == (
+        [{"name": "Custom", "detail": "Spanish"}],
+        0,
+        1,
+        0,
+    )
+
+    removed = troupe.player.client.put(
+        f"/characters/{agnes}/traits",
+        json={"category": LANGUAGES, "name": "Custom", "detail": "Spanish", "rating": 0},
+    )
+
+    assert removed.status_code == 200, removed.text
+    after = troupe.player.client.get(f"/characters/{agnes}/sheet").json()
+    assert not [p for p in after["problems"] if p["category"] == LANGUAGES]
+    assert languages_kind(troupe, agnes)["held"] == []
+
+
+def test_natural_linguist_within_twice_the_chart_is_no_problem(troupe: Troupe) -> None:
+    choose(troupe, mode="accelerated")
+    agnes = built_for(troupe)
+    put(troupe, agnes, "skills", "Linguistics", 1)
+    put(troupe, agnes, "merits", "Natural Linguist")
+    for language in ("Basque", "Welsh"):
+        assert learn(troupe, agnes, language).status_code == 200
+
+    sheet = troupe.player.client.get(f"/characters/{agnes}/sheet").json()
+
+    assert not [p for p in sheet["problems"] if p["category"] == LANGUAGES]
+
+
+def test_linguistics_cannot_go_while_its_languages_stay(troupe: Troupe) -> None:
+    agnes = built_for(troupe)
+    put(troupe, agnes, "skills", "Linguistics", 1)
+    assert learn(troupe, agnes, "Basque").status_code == 200
+
+    refused = troupe.player.client.put(
+        f"/characters/{agnes}/traits",
+        json={"category": "skills", "name": "Linguistics", "rating": 0},
+    )
+
+    assert refused.status_code == 409, refused.text
+    assert "one language per dot of Linguistics" in refused.json()["detail"]

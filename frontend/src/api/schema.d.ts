@@ -22095,6 +22095,11 @@ export interface components {
             equipped: string[];
             /** Expendables */
             expendables: components["schemas"]["ExpendableOut"][];
+            /**
+             * Forms
+             * @default 1
+             */
+            forms: number;
             game: components["schemas"]["GameOut"] | null;
             /** Generation */
             generation: number;
@@ -22657,6 +22662,11 @@ export interface components {
             origin: string;
             /** Page */
             page: string;
+            /**
+             * Turned On
+             * @default 0
+             */
+            turned_on: number;
         };
         /** Preferences */
         Preferences: {
