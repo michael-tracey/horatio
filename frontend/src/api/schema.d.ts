@@ -2944,7 +2944,8 @@ export interface paths {
         /**
          * Character Quests
          * @description The character's quest requests and the quests it may see. Nothing while its
-         *     home troupe has quests off.
+         *     home troupe has quests off. Its home troupe's storytellers and assistant
+         *     storytellers see it too, read-only (#614).
          */
         get: operations["character_quests_api_characters__character_id__quests_get"];
         put?: never;
@@ -5626,6 +5627,27 @@ export interface paths {
          * @description Staff decline or stop a project; its player withdraws one they proposed.
          */
         post: operations["drop_api_projects__project_id__drop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{project_id}/quest-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * To Quest Request
+         * @description Staff decline a proposed Research or Other project and make a quest request of
+         *     it for the character, its name the objective.
+         */
+        post: operations["to_quest_request_api_projects__project_id__quest_request_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13580,8 +13602,15 @@ export interface components {
             paths: string[];
             /** Projects */
             projects: components["schemas"]["ProjectOut"][];
+            /**
+             * Quests
+             * @default false
+             */
+            quests: boolean;
             /** Staff */
             staff: boolean;
+            /** Troupe Id */
+            troupe_id?: string | null;
         };
         /** CharacterQuestionsOut */
         CharacterQuestionsOut: {
@@ -22270,7 +22299,9 @@ export interface components {
         };
         /**
          * PlayerQuestOut
-         * @description A quest as one of its characters' players sees it.
+         * @description A quest as one of its characters' players sees it, or, on the character's page,
+         *     its home troupe's staff (#614): they also see one still being built (a draft), and
+         *     every result recorded, sent or not.
          */
         PlayerQuestOut: {
             /** Can Join */
@@ -40214,6 +40245,37 @@ export interface operations {
         };
     };
     drop_api_projects__project_id__drop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    to_quest_request_api_projects__project_id__quest_request_post: {
         parameters: {
             query?: never;
             header?: never;

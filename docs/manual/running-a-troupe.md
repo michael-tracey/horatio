@@ -398,6 +398,8 @@ The troupe's house options for locations are under [Location rules](#location-ru
 
 Narrators see the requests and quests assigned to them; storytellers and assistant storytellers see them all. A merit or flaw request can also be answered with a quest (see [Merit and flaw requests](#merit-and-flaw-requests)).
 
+On a character's page, its home troupe's storytellers and assistant storytellers, and the custodian, also have a **Quests** tab, beside **Projects**, while the troupe runs quests. It shows the quests the character leads or has joined, those still being built too, with how many of each one's requirements are met, and the character's quest requests and how they were answered. Open a quest for its objective, party, each requirement (met or not, and by whom) and its results so far, including any not yet sent. Nothing changes there: **Manage it in the troupe's Quests** opens it under **Downtimes › Quests**.
+
 ## Shared backgrounds
 
 **World › Shared backgrounds** keeps the Havens, Herds, Allies and Contacts that a coterie pools together. Storytellers and assistant storytellers set one up, with who shares it and the dots each puts in, and keep its log. The players of the characters sharing it see it too. It is a record only: it changes no rating on any sheet.
@@ -902,7 +904,8 @@ A player can aim an action at one or more characters of the troupe, home or visi
 
 Projects are work a character does over several cycles: a **Path change**, **Research** or **Other**. Each has a number of actions it takes and, if you like, a least number each month, or it starts over.
 
-- **Starting one.** On the character's **Projects** tab, choose **Start a project**. A player can propose one from their Downtime tab; you're told in the bell, and **Confirm** or **Decline** it there or on the cycle's **Projects** tab. **Stop** ends one under way.
+- **Starting one.** On the character's **Projects** tab, choose **Start a project**. A player can propose one from their Downtime tab; you're told in the bell, and **Confirm** or **Decline** it there or on the cycle's **Projects** tab. **Stop** ends one under way. Each shows its kind beside its progress.
+- **A quest instead.** A goal with things to gather and tests to pass is a quest, not a project. While the troupe runs quests, the project form says so, with a link to the Quests tab (the player's, or the troupe's for you). On a proposed Research or Other project, **Make it a quest request instead** declines it and puts a quest request for the character in the queue, its name the objective. It counts toward the character's quest requests for the cycle. A Path change stays a project.
 - **Progress.** A player counts an action toward a project under **Counts toward**. When you mark a cycle complete, each project goes up by the actions spent on it in submitted downtimes. One with fewer than its least that month starts over, back to none. The cycle's **Projects** tab shows what each has had so far this cycle, and warns in red of any that will start over; so does **Mark complete**. A character not taking part in a cycle keeps its progress.
 - **A Path change** takes the book's numbers: 9 actions with a teacher, 18 without, at least 1 a month (MET: VTM p. 306). When it finishes, you're told in the bell to change the character's Morality to the new Path on the sheet, which lowers Morality by 1. Make the change as usual, then choose **It's on the sheet**.
 

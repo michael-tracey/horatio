@@ -29,7 +29,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, notifications
+from horatio import audit, notifications, quests
 from horatio.models import (
     Answer,
     Character,
@@ -230,6 +230,46 @@ def drop(db: Session, user: User, project: Project, *, as_staff: bool) -> None:
         troupe_id=project.troupe_id,
         character_id=project.character_id,
         name=project.name,
+    )
+
+
+def to_quest_request(db: Session, staff: User, project: Project) -> None:
+    """Staff decline a proposed Research or Other project and ask for a quest in its
+    place, its name the objective: a goal with things to gather and tests to pass is
+    a quest (CONTEXT.md: Quest). It counts toward the character's quest requests, and
+    is refused, with the reason, past the troupe's limit."""
+    if project.status != "proposed":
+        raise conflict("Only a proposed project becomes a quest request.")
+    if project.kind == "path_change":
+        raise conflict("A Path change stays a project.")
+    character = db.get_one(Character, project.character_id)
+    quests.make_request(
+        db,
+        db.get_one(User, character.player_id),
+        character,
+        objective=project.name,
+        reason=f"Proposed first as a project ({KINDS[project.kind]}).",
+        companions="",
+        made_by=staff,
+    )
+    project.status = "dropped"
+    db.flush()
+    audit.record(
+        db,
+        staff,
+        "project.made_quest_request",
+        troupe_id=project.troupe_id,
+        character_id=character.id,
+        name=project.name,
+    )
+    notifications.notify(
+        db,
+        [character.player_id],
+        "project.made_quest_request",
+        f"{character.name}'s project {project.name} is now a quest request.",
+        f"/characters/{character.id}/quests",
+        troupe_id=project.troupe_id,
+        character_id=character.id,
     )
 
 

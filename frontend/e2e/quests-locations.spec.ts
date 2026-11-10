@@ -174,6 +174,63 @@ test("quests: a player asks for one, staff build it Complex 2 and send it, it is
   await s.screenshot(shots("quest-player"));
 });
 
+test("a character's quests for staff: the lead storyteller opens Morgan, sees the quest she leads with its requirements, and follows it to the troupe's Quests", async ({ browser }) => {
+  // #614: staff saw only a Projects tab on the character, not its quest.
+  const custodian = await person(browser, "staffq-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "staffq-lead");
+  const player = await person(browser, "staffq-player");
+  const headers = { "X-Horatio": "1" };
+  const send = async (p: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await p.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const troupeId = (await send(custodian.page, "POST", "/api/troupes", { name: `Land of the Sky ${run}`, lead_handle: lead.handle })).id;
+  await backstoryOptional(custodian.page, troupeId);
+  const disciplines: [string, number][] = [["Animalism", 2], ["Fortitude", 1], ["Protean", 1]];
+  const morgan = await builtVampire(player.page, "Morgan", "Gangrel", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]], disciplines });
+  const asked = await send(player.page, "POST", `/api/characters/${morgan}/home-troupe`, { troupe_id: troupeId });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+  await send(lead.page, "PUT", `/api/troupes/${troupeId}/quest-settings`, { enabled: true, requests_per_cycle: 1 });
+
+  // The player asks; the lead answers with an Epic 2 quest, two requirements, one met, and sends it.
+  const request = await send(player.page, "POST", `/api/characters/${morgan}/quest-requests`, { objective: "Locate Karsh" });
+  const quest = await send(lead.page, "POST", `/api/troupes/${troupeId}/quests`, {
+    name: "Dude, Where's My Warlord?",
+    category: "epic",
+    difficulty: 2,
+    request_id: request.id,
+  });
+  await send(lead.page, "POST", `/api/quests/${quest.id}/requirements`, { options: [{ kind: "aspect", aspect: "clan", name: "Gangrel" }] });
+  const built = await send(lead.page, "POST", `/api/quests/${quest.id}/requirements`, { options: [{ kind: "text", text: "Expend an Elder Games action" }] });
+  const words = built.requirements.find((r: { label: string }) => r.label === "Expend an Elder Games action");
+  await send(lead.page, "POST", `/api/quests/${quest.id}/requirements/${words.id}/met`, { character_id: morgan });
+  await send(lead.page, "POST", `/api/quests/${quest.id}/send`);
+
+  // On Morgan's page the lead has a Quests tab beside Projects.
+  const l = lead.page;
+  await l.goto(`/characters/${morgan}`);
+  await characterTab(l, "Quests");
+  const row = l.getByRole("listitem").filter({ has: l.getByRole("link", { name: "Dude, Where's My Warlord?" }) });
+  await expect(row.getByText("Epic 2 · Under way · Leader · 1 of 2 requirements met", { exact: false })).toBeVisible();
+  await expect(l.getByRole("button", { name: /Ask for a quest/ })).toHaveCount(0);
+  const asking = l.getByRole("listitem", { name: "Quest request" });
+  await expect(asking.getByText("Locate Karsh")).toBeVisible();
+  await expect(asking.getByRole("link", { name: "Open the quest in the troupe's Quests" })).toBeVisible();
+
+  // The quest, with each requirement met or not, and the way to where staff manage it.
+  await row.getByRole("link", { name: "Dude, Where's My Warlord?" }).click();
+  await expect(l.getByRole("heading", { name: "Dude, Where's My Warlord?" })).toBeVisible();
+  await expect(l.getByText("○ Gangrel (clan)")).toBeVisible();
+  await expect(l.getByText("✓ Expend an Elder Games action")).toBeVisible();
+  await expect(l.getByText("(met by Morgan)")).toBeVisible();
+  await expect(l.getByRole("button", { name: "Join this quest" })).toHaveCount(0);
+  await l.getByRole("link", { name: "Manage it in the troupe's Quests" }).click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/quests/${quest.id}$`));
+  await expect(l.getByRole("button", { name: "Send scenario 1's result" })).toBeVisible();
+});
+
 test("quests in downtime: a Quest action joins a Downtime Only quest, one result answers both members, and it goes out with the delivery", async ({ browser }) => {
   test.slow();
   const custodian = await person(browser, "qdt-custodian");

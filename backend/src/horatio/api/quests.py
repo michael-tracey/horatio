@@ -301,7 +301,9 @@ class PlayerScenarioOut(BaseModel):
 
 
 class PlayerQuestOut(BaseModel):
-    """A quest as one of its characters' players sees it."""
+    """A quest as one of its characters' players sees it, or, on the character's page,
+    its home troupe's staff (#614): they also see one still being built (a draft), and
+    every result recorded, sent or not."""
 
     id: uuid.UUID
     name: str
@@ -317,7 +319,7 @@ class PlayerQuestOut(BaseModel):
     party: list[str]
     requirements: list[PlayerRequirementOut]
     scenario_count: int
-    # Results sent, for its party.
+    # Results sent, for its party; for staff, all recorded so far.
     results: list[PlayerScenarioOut]
     ended_on: date | None
     finished_by: list[str]
@@ -341,7 +343,7 @@ class PlayerRequestOut(BaseModel):
     note: str
     created_at: datetime
     answered_at: datetime | None
-    # The quest it was answered with.
+    # The quest it was answered with: once sent, for the player.
     quest_id: uuid.UUID | None
     can_withdraw: bool
 
@@ -496,6 +498,21 @@ def worked_quest(db: DbSession, user: User, quest_id: uuid.UUID) -> tuple[Quest,
     return quest, troupe
 
 
+def viewed_character(db: DbSession, user: User, character_id: uuid.UUID) -> tuple[Character, bool]:
+    """The user's own PC, or one whose quests they keep as staff (#614): its home
+    troupe's storytellers and assistant storytellers, or the custodian. The second is
+    true for staff."""
+    character = db.get(Character, character_id)
+    if character is not None and character.kind == "pc" and character.player_id == user.id:
+        return character, False
+    home = quests.home_troupe(db, character) if character is not None else None
+    if character is None or not (
+        user.is_custodian or (home is not None and quests.is_running(db, user, home))
+    ):
+        raise not_found("character")
+    return character, True
+
+
 def own_character(db: DbSession, user: User, character_id: uuid.UUID) -> Character:
     """The user's own PC (or any, for the custodian)."""
     character = db.get(Character, character_id)
@@ -513,6 +530,24 @@ def seen_quest(
     troupe = db.get(Troupe, quest.troupe_id) if quest else None
     role = quests.role_of(db, quest, character) if quest else None
     if quest is None or troupe is None or not troupe.quests_enabled or role is None:
+        raise not_found("quest")
+    return quest, role
+
+
+def kept_quest(
+    db: DbSession, character: Character, quest_id: uuid.UUID
+) -> tuple[Quest, quests.Role_]:
+    """A quest of its home troupe the character leads or has joined, for its staff."""
+    quest = db.get(Quest, quest_id)
+    troupe = quests.home_troupe(db, character)
+    role = quests.kept_role(db, quest, character) if quest else None
+    if (
+        quest is None
+        or troupe is None
+        or quest.troupe_id != troupe.id
+        or not troupe.quests_enabled
+        or role is None
+    ):
         raise not_found("quest")
     return quest, role
 
@@ -803,15 +838,15 @@ def quest_row(db: DbSession, quest: Quest) -> QuestRowOut:
 
 
 def player_quest_out(
-    db: DbSession, character: Character, quest: Quest, role: quests.Role_
+    db: DbSession, character: Character, quest: Quest, role: quests.Role_, staff: bool = False
 ) -> PlayerQuestOut:
     leader = db.get(Character, quest.leader_id) if quest.leader_id else None
-    in_party = role in ("leader", "joined")
+    in_party = staff or role in ("leader", "joined")
     all_scenarios = quests.scenarios(db, quest)
-    # A result recorded through a downtime cycle shows once that cycle is delivered,
-    # and so does the end it brought.
-    sent = [s for s in all_scenarios if s.result is not None and s.sent_at is not None]
-    waiting = any(quests.awaiting_delivery(s) for s in all_scenarios)
+    # A result recorded through a downtime cycle shows to the player once that cycle is
+    # delivered, and so does the end it brought. Staff see it as recorded.
+    sent = [s for s in all_scenarios if s.result is not None and (staff or s.sent_at is not None)]
+    waiting = not staff and any(quests.awaiting_delivery(s) for s in all_scenarios)
     status = "active" if waiting and quest.status in ("completed", "failed") else quest.status
     ended = status in ("completed", "failed")
     return PlayerQuestOut(
@@ -847,16 +882,18 @@ def player_quest_out(
         close_note=quest.close_note,
         tale=quest.tale if in_party else "",
         tale_approved=quest.tale_approved_at is not None,
-        can_join=quest.status == "active" and role in ("invited", "offered"),
-        can_share=quest.status == "active" and role == "leader",
-        can_write_tale=role == "leader" and ended and quest.tale_approved_at is None,
+        can_join=not staff and quest.status == "active" and role in ("invited", "offered"),
+        can_share=not staff and quest.status == "active" and role == "leader",
+        can_write_tale=not staff and role == "leader" and ended and quest.tale_approved_at is None,
     )
 
 
 PLAYER_STATUS = {"new": "waiting", "working": "working", "answered": "answered"}
 
 
-def player_request_out(db: DbSession, request: QuestRequest) -> PlayerRequestOut:
+def player_request_out(
+    db: DbSession, request: QuestRequest, staff: bool = False
+) -> PlayerRequestOut:
     quest = db.get(Quest, request.quest_id) if request.quest_id else None
     return PlayerRequestOut(
         id=request.id,
@@ -869,16 +906,20 @@ def player_request_out(db: DbSession, request: QuestRequest) -> PlayerRequestOut
         note=request.note,
         created_at=request.created_at,
         answered_at=request.answered_at,
-        quest_id=quest.id if quest and quest.sent_at is not None else None,
-        can_withdraw=request.status == "new",
+        quest_id=quest.id if quest and (staff or quest.sent_at is not None) else None,
+        can_withdraw=not staff and request.status == "new",
     )
 
 
-def character_quests_out(db: DbSession, character: Character) -> CharacterQuestsOut:
+def character_quests_out(
+    db: DbSession, character: Character, staff: bool = False
+) -> CharacterQuestsOut:
+    """For its player, or, with staff, for its home troupe's staff: the quests it leads
+    or has joined there, being built or sent, and its requests."""
     troupe = quests.home_troupe(db, character)
     if troupe is None or not troupe.quests_enabled:
         # Quests elsewhere it was shared on still show, while their troupes run them.
-        shown = quests.visible_quests(db, character)
+        shown = [] if staff else quests.visible_quests(db, character)
         return CharacterQuestsOut(
             enabled=bool(shown),
             limit=0,
@@ -900,9 +941,14 @@ def character_quests_out(db: DbSession, character: Character) -> CharacterQuests
         used=found.used,
         cycle_name=found.cycle.name if found.cycle else None,
         refusal=found.refusal,
-        requests=[player_request_out(db, r) for r in requests],
+        requests=[player_request_out(db, r, staff) for r in requests],
         quests=[
-            player_quest_out(db, character, q, r) for q, r in quests.visible_quests(db, character)
+            player_quest_out(db, character, q, r, staff)
+            for q, r in (
+                quests.kept_quests(db, troupe, character)
+                if staff
+                else quests.visible_quests(db, character)
+            )
         ],
     )
 
@@ -953,8 +999,10 @@ def character_quests(
     character_id: uuid.UUID, db: DbSession, user: CurrentUser
 ) -> CharacterQuestsOut:
     """The character's quest requests and the quests it may see. Nothing while its
-    home troupe has quests off."""
-    return character_quests_out(db, own_character(db, user, character_id))
+    home troupe has quests off. Its home troupe's storytellers and assistant
+    storytellers see it too, read-only (#614)."""
+    character, staff = viewed_character(db, user, character_id)
+    return character_quests_out(db, character, staff)
 
 
 @router.post("/characters/{character_id}/quest-requests", status_code=status.HTTP_201_CREATED)
@@ -991,7 +1039,10 @@ def withdraw_request(request_id: uuid.UUID, db: DbSession, user: CurrentUser) ->
 def character_quest(
     character_id: uuid.UUID, quest_id: uuid.UUID, db: DbSession, user: CurrentUser
 ) -> PlayerQuestOut:
-    character = own_character(db, user, character_id)
+    character, staff = viewed_character(db, user, character_id)
+    if staff:
+        quest, role = kept_quest(db, character, quest_id)
+        return player_quest_out(db, character, quest, role, staff=True)
     quest, role = seen_quest(db, character, quest_id)
     return player_quest_out(db, character, quest, role)
 

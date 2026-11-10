@@ -256,9 +256,11 @@ def make_request(
     kind: str = "custom",
     details: dict[str, Any] | None = None,
     location_id: uuid.UUID | None = None,
+    made_by: User | None = None,
 ) -> QuestRequest:
     """A request in the troupe's queue: a custom quest, or one about a location
-    (horatio.location_quests checks those first)."""
+    (horatio.location_quests checks those first). `made_by` is staff making it for
+    the player, from a project they proposed (horatio.projects)."""
     troupe = home_troupe(db, character)
     found = allowance(db, troupe, character)
     if found.refusal is not None or troupe is None:
@@ -280,7 +282,9 @@ def make_request(
     )
     db.add(request)
     db.flush()
-    audit.record(db, player, "quest.requested", troupe_id=troupe.id, character_id=character.id)
+    audit.record(
+        db, made_by or player, "quest.requested", troupe_id=troupe.id, character_id=character.id
+    )
     return request
 
 
@@ -828,6 +832,37 @@ def visible_quests(db: Session, character: Character) -> list[tuple[Quest, Role_
         if role is not None:
             found.append((quest, role))
     return found
+
+
+def kept_role(db: Session, quest: Quest, character: Character) -> Role_ | None:
+    """Leader or joined, sent or not: the character in a quest as the troupe's staff see it."""
+    if quest.leader_id == character.id:
+        return "leader"
+    joined = db.scalar(
+        select(QuestMember.id).where(
+            QuestMember.quest_id == quest.id,
+            QuestMember.character_id == character.id,
+            QuestMember.status == "joined",
+        )
+    )
+    return "joined" if joined is not None else None
+
+
+def kept_quests(db: Session, troupe: Troupe, character: Character) -> list[tuple[Quest, Role_]]:
+    """The troupe's quests the character leads or has joined, sent or still being
+    built, newest first: what its staff see on the character's page (#614)."""
+    joined = select(QuestMember.quest_id).where(
+        QuestMember.character_id == character.id, QuestMember.status == "joined"
+    )
+    found = db.scalars(
+        select(Quest)
+        .where(
+            Quest.troupe_id == troupe.id,
+            or_(Quest.leader_id == character.id, Quest.id.in_(joined)),
+        )
+        .order_by(Quest.created_at.desc())
+    )
+    return [(q, "leader" if q.leader_id == character.id else "joined") for q in found]
 
 
 def ensure_active(quest: Quest) -> None:

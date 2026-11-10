@@ -7,14 +7,17 @@ only), a game or a month. A game's is taken as the character's night begins on t
 Play View: at check-in (horatio.checkin), or else at the night's first tap
 (horatio.play). A month's is taken at the first game of the calendar month, or is
 charged as a downtime cycle closes and taken as the next night begins, as the troupe
-chooses. Each is its own line in the night's log: "Retainer upkeep: −2 Blood".
-Each Retainer is paid for in full or not at all, from what the night starts with; one
-the character can't pay for is marked neglected, and staff are told. What follows is
-the troupe's call, so nothing is lost by itself, and staff clear the mark.
+chooses: once for each calendar month, by when the cycle closed, so a second cycle
+closing in the same month charges nothing more. Each is its own line in the night's
+log: "Retainer upkeep: −2 Blood". Each Retainer is paid for in full or not at all, from
+what the night starts with; one the character can't pay for is marked neglected, and
+staff are told. What follows is the troupe's call, so nothing is lost by itself, and
+staff clear the mark.
 
 Growth is XP a month for each Retainer, given as a downtime cycle closes, once for
-each calendar month: to the NPC linked to the Retainer, on that NPC's XP, where staff
-spend it; or banked on the Retainer, with a ledger, while none is.
+each calendar month, by when the cycle closed: to the NPC linked to the Retainer, on
+that NPC's XP, where staff spend it; or banked on the Retainer, with a ledger, while
+none is.
 
 A lost Retainer (core p. 104, horatio.retainers) pays no upkeep and gains nothing
 while its dots are away.
@@ -337,7 +340,10 @@ def begin(db: Session, character: Character, actor: User, game: PlayGame, *, at:
         pool, amount = charge["pool"], int(charge["amount"])
         if pool not in available or amount <= 0:
             continue
-        line("change", pool, amount, {"per": "downtime", "retainers": charge["retainers"]})
+        facts: dict[str, Any] = {"per": "downtime", "retainers": charge["retainers"]}
+        if "month" in charge:
+            facts["month"] = charge["month"]
+        line("change", pool, amount, facts)
         available[pool] = max(0, available[pool] - amount)
         taken.append({"pool": pool, "amount": amount, "per": "downtime"})
     if due and upkeep is not None and upkeep.pool in available:
@@ -364,7 +370,7 @@ def begin(db: Session, character: Character, actor: User, game: PlayGame, *, at:
 def cycle_closed(db: Session, staff: User, cycle: DowntimeCycle) -> None:
     """Charge a month's upkeep kept as a downtime cost, and give each Retainer its
     month's growth, for each character taking part in the cycle: not one staff
-    removed from it."""
+    removed from it. Both are for the calendar month the cycle closed in."""
     troupe = db.get(Troupe, cycle.troupe_id)
     rules = rules_of(troupe)
     upkeep = rules.upkeep
@@ -372,6 +378,8 @@ def cycle_closed(db: Session, staff: User, cycle: DowntimeCycle) -> None:
     if not charges and not rules.growth:
         return
     today = date.today()
+    closed = cycle.closed_at or datetime.now(UTC)
+    month = closed.astimezone(UTC).date().replace(day=1)
     ids = db.scalars(
         select(CycleParticipant.character_id)
         .where(CycleParticipant.cycle_id == cycle.id, CycleParticipant.removed_at.is_(None))
@@ -385,10 +393,31 @@ def cycle_closed(db: Session, staff: User, cycle: DowntimeCycle) -> None:
         if not listed:
             continue
         if charges and upkeep is not None:
-            charge(db, staff, cycle, character, listed, upkeep, today)
+            charge(db, staff, cycle, character, listed, upkeep, month, today)
         if rules.growth:
-            grow(db, staff, cycle, character, listed, rules.growth, today)
+            grow(db, staff, cycle, character, listed, rules.growth, month, today)
     db.flush()
+
+
+def charged_for(db: Session, character: Character, month: date) -> bool:
+    """A downtime charged the month's upkeep already: still waiting for the next game,
+    or taken at one."""
+    kept: list[dict[str, Any]] = (character.upkeep_next_game or {}).get("charges", [])
+    if any(c.get("month") == month.isoformat() for c in kept):
+        return True
+    return (
+        db.scalar(
+            select(PlayEvent.id)
+            .join(PlayGame, PlayEvent.game_id == PlayGame.id)
+            .where(
+                PlayGame.character_id == character.id,
+                PlayEvent.upkeep["per"].astext == "downtime",
+                PlayEvent.upkeep["month"].astext == month.isoformat(),
+            )
+            .limit(1)
+        )
+        is not None
+    )
 
 
 def charge(
@@ -398,10 +427,13 @@ def charge(
     character: Character,
     listed: Sequence[retainers.Listed],
     upkeep: Upkeep,
+    month: date,
     today: date,
 ) -> None:
-    """The month's upkeep as a downtime cost: judged against what the next game starts
-    with, and taken from it as that night begins."""
+    """The month's upkeep as a downtime cost, once a calendar month: judged against
+    what the next game starts with, and taken from it as that night begins."""
+    if charged_for(db, character, month):
+        return
     game = play.current_game(db, character)
     untouched = game is not None and game.upkeep is None and not play.game_events(db, game)
     limits = play.limits(db, character, game if untouched else None)
@@ -414,7 +446,12 @@ def charge(
     if judged.paid:
         kept = [
             *kept,
-            {"pool": upkeep.pool, "amount": judged.total, "retainers": judged.paid},
+            {
+                "pool": upkeep.pool,
+                "amount": judged.total,
+                "retainers": judged.paid,
+                "month": month.isoformat(),
+            },
         ]
         character.upkeep_next_game = {"charges": kept}
         troupe = troupe_of(db, character)
@@ -437,10 +474,10 @@ def grow(
     character: Character,
     listed: Sequence[retainers.Listed],
     xp: int,
+    month: date,
     today: date,
 ) -> None:
     """Each Retainer's month of growth, once a calendar month: on its NPC, or banked."""
-    month = today.replace(day=1)
     troupe = troupe_of(db, character)
     for entry in listed:
         if lost(entry, today):

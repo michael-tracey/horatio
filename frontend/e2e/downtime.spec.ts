@@ -1063,6 +1063,55 @@ test("a project a player proposes advances over two cycles until it finishes", a
 });
 
 /**
+ * Projects and quests (#615): while the troupe runs quests, the project form points
+ * a goal with things to gather and tests to pass at a quest request, and staff can
+ * make a proposed Research project one. Each project shows its kind.
+ */
+test("the project form points at quests while the troupe runs them, and a project shows its kind", async ({ browser }) => {
+  const custodian = await person(browser, "dtpq-cust");
+  const lead = await person(browser, "dtpq-lead");
+  const player = await person(browser, "dtpq-player");
+  const { troupe, bram, send } = await feedingTroupe(custodian, lead, player, `Quest Or Project ${run}`);
+  const p = player.page;
+  const l = lead.page;
+  const projects = p.locator("section").filter({ has: p.getByRole("heading", { name: "Projects" }) });
+  const proposing = async () => {
+    await p.goto(`/characters/${bram}/downtime`);
+    await projects.getByRole("button", { name: "Propose a project" }).click();
+    return projects.getByRole("form", { name: "Propose a project" });
+  };
+
+  // Quests off: no such line.
+  let form = await proposing();
+  await expect(form.getByLabel("Kind")).toBeVisible();
+  await expect(form.getByText("is a quest, not a project")).toHaveCount(0);
+
+  await send(l, "PUT", `/api/troupes/${troupe}/quest-settings`, { enabled: true, requests_per_cycle: 1 });
+  form = await proposing();
+  await expect(form.getByRole("note")).toContainText("A goal with things to gather and tests to pass is a quest, not a project");
+  await expect(form.getByRole("link", { name: "ask for one on the Quests tab" })).toHaveAttribute("href", `/characters/${bram}/quests`);
+  await form.getByLabel("Kind").selectOption({ label: "Research" });
+  await form.getByLabel("Name").fill("Locate the Nosferatu primogen");
+  await form.getByLabel("Actions it takes").fill("6");
+  await form.getByRole("button", { name: "Propose it" }).click();
+  const locate = projects.getByRole("listitem", { name: "Locate the Nosferatu primogen" });
+  await expect(locate.getByText("Research · 0 of 6 actions")).toBeVisible();
+
+  // Staff: the line points at the troupe's Quests tab, and they make the project a quest request.
+  await l.goto(`/characters/${bram}/projects`);
+  const theirs = l.locator("section").filter({ has: l.getByRole("heading", { name: "Projects" }) });
+  await theirs.getByRole("button", { name: "Start a project" }).click();
+  const starting = theirs.getByRole("form", { name: "Start a project" });
+  await expect(starting.getByRole("link", { name: "build one on the troupe's Quests tab" })).toHaveAttribute("href", `/troupes/${troupe}/quests`);
+  const item = theirs.getByRole("listitem", { name: "Locate the Nosferatu primogen" });
+  await item.getByRole("button", { name: "Make it a quest request instead" }).click();
+  await expect(item.getByText("Stopped")).toBeVisible();
+
+  await p.goto(`/characters/${bram}/quests`);
+  await expect(p.getByText("Locate the Nosferatu primogen")).toBeVisible();
+});
+
+/**
  * Running a cycle: staff add a character accepted after it opened, find who
  * hasn't submitted, and remind them, which their player sees in the bell.
  */

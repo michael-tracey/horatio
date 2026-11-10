@@ -8,10 +8,14 @@ import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, R
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { NEGATIVES, REQUEST_KINDS, type RequestKind } from "../quests/locationQuests";
-import { outcomeText, questStatus, questType, requestStatus, resultText, roleText } from "../quests/quests";
+import { outcomeText, questStatus, questType, requestStatus, requirementsMetText, resultText, roleText } from "../quests/quests";
 
-/** The character's quests: the ones under way, requests, past quests, and asking for one. */
-export function QuestsTab({ characterId }: { characterId: string }) {
+/**
+ * The character's quests: the ones under way, requests, past quests, and asking for one.
+ * With `staffOf`, the troupe whose staff are looking (#614): the same, read-only, with
+ * quests still being built, and links to where staff manage each in that troupe.
+ */
+export function QuestsTab({ characterId, staffOf }: { characterId: string; staffOf?: string }) {
   const quests = useQuery({
     queryKey: ["character-quests", characterId],
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/quests", { params: { path: { character_id: characterId } } })),
@@ -20,22 +24,24 @@ export function QuestsTab({ characterId }: { characterId: string }) {
   if (quests.error) return <ErrorText error={quests.error} />;
   return (
     <Routes>
-      <Route index element={<Overview characterId={characterId} found={quests.data} />} />
-      <Route path=":questId" element={<OneQuest characterId={characterId} />} />
+      <Route index element={<Overview characterId={characterId} found={quests.data} staffOf={staffOf} />} />
+      <Route path=":questId" element={<OneQuest characterId={characterId} staffOf={staffOf} />} />
     </Routes>
   );
 }
 
 /** The quests come first, as that is what a player comes back for; asking for one
  * waits behind a button. The form stays mounted while closed, so nothing typed in
- * it is lost. */
-function Overview({ characterId, found }: { characterId: string; found: CharacterQuestsOut }) {
+ * it is lost. Staff only read. */
+function Overview({ characterId, found, staffOf }: { characterId: string; found: CharacterQuestsOut; staffOf?: string }) {
   const dates = useDates();
   const [asking, setAsking] = useState(false);
   const withdraw = useAction((id: string) => unwrap(api.POST("/api/quest-requests/{request_id}/withdraw", { params: { path: { request_id: id } } })));
-  const ongoing = found.quests.filter((q) => q.status === "active");
-  const past = found.quests.filter((q) => q.status !== "active");
-  const canAsk = found.limit > 0 || found.requests.length > 0;
+  // Staff also see those still being built.
+  const open = (q: PlayerQuestOut) => q.status === "active" || q.status === "draft";
+  const ongoing = found.quests.filter(open);
+  const past = found.quests.filter((q) => !open(q));
+  const canAsk = !staffOf && (found.limit > 0 || found.requests.length > 0);
   return (
     <div className="flex flex-col gap-4">
       {canAsk &&
@@ -61,13 +67,13 @@ function Overview({ characterId, found }: { characterId: string; found: Characte
         ) : (
           <ul className="flex flex-col gap-2">
             {ongoing.map((q) => (
-              <QuestRow key={q.id} quest={q} />
+              <QuestRow key={q.id} quest={q} staff={!!staffOf} />
             ))}
           </ul>
         )}
       </Card>
       {found.requests.length > 0 && (
-        <Card title="Your requests">
+        <Card title={staffOf ? "Quest requests" : "Your requests"}>
           <ul className="flex flex-col gap-3">
             {found.requests.map((r) => (
               <li key={r.id} aria-label="Quest request" className="rounded-md border border-ash p-3 text-sm">
@@ -84,8 +90,8 @@ function Overview({ characterId, found }: { characterId: string; found: Characte
                 {r.note && <p className="mt-1 text-mist">From the storytellers: {r.note}</p>}
                 {r.quest_id && (
                   <p className="mt-1">
-                    <Link to={r.quest_id} className="text-gold hover:text-parchment">
-                      See the quest
+                    <Link to={staffOf ? `/troupes/${staffOf}/quests/${r.quest_id}` : r.quest_id} className="text-gold hover:text-parchment">
+                      {staffOf ? "Open the quest in the troupe's Quests" : "See the quest"}
                     </Link>
                   </p>
                 )}
@@ -104,7 +110,7 @@ function Overview({ characterId, found }: { characterId: string; found: Characte
         <Card title="Past quests">
           <ul className="flex flex-col gap-2">
             {past.map((q) => (
-              <QuestRow key={q.id} quest={q} />
+              <QuestRow key={q.id} quest={q} staff={!!staffOf} />
             ))}
           </ul>
         </Card>
@@ -113,7 +119,8 @@ function Overview({ characterId, found }: { characterId: string; found: Characte
   );
 }
 
-function QuestRow({ quest: q }: { quest: PlayerQuestOut }) {
+/** For staff, how many of its requirements are met, at a glance. */
+function QuestRow({ quest: q, staff }: { quest: PlayerQuestOut; staff: boolean }) {
   return (
     <li className="rounded-md border border-ash p-3 text-sm">
       <Link to={q.id} className="text-gold hover:text-parchment">
@@ -121,6 +128,7 @@ function QuestRow({ quest: q }: { quest: PlayerQuestOut }) {
       </Link>{" "}
       <span className="text-mist">
         · {questType(q)} · {questStatus(q.status)} · {roleText(q.role)}
+        {staff && ` · ${requirementsMetText(q.requirements)}`}
       </span>
     </li>
   );
@@ -311,7 +319,7 @@ function Ask({ characterId, found, onClose }: { characterId: string; found: Char
   );
 }
 
-function OneQuest({ characterId }: { characterId: string }) {
+function OneQuest({ characterId, staffOf }: { characterId: string; staffOf?: string }) {
   const { questId = "" } = useParams();
   const path = { params: { path: { character_id: characterId, quest_id: questId } } };
   const quest = useQuery({
@@ -336,6 +344,13 @@ function OneQuest({ characterId }: { characterId: string }) {
           </p>
           {q.objective && <p className="whitespace-pre-line">{q.objective}</p>}
           {q.party.length > 0 && <p className="text-mist">The party: {q.party.join(", ")}</p>}
+          {staffOf && (
+            <p>
+              <Link to={`/troupes/${staffOf}/quests/${q.id}`} className="text-gold underline hover:text-parchment">
+                Manage it in the troupe's Quests
+              </Link>
+            </p>
+          )}
           {q.status === "closed" && <Notice>Closed by the storytellers: {q.close_note}</Notice>}
           {q.ended_on && (
             <p>
@@ -368,7 +383,11 @@ function OneQuest({ characterId }: { characterId: string }) {
           <ol className="flex flex-col gap-3">
             {q.results.map((r) => (
               <li key={r.number} className="text-sm">
-                <p className="text-gold">{resultText(r)}</p>
+                <p className="text-gold">
+                  {resultText(r)}
+                  {/* Staff see a result recorded through a downtime before it goes out. */}
+                  {!r.sent_at && <span className="text-mist"> (not sent yet)</span>}
+                </p>
                 <RichText text={r.text} />
               </li>
             ))}
