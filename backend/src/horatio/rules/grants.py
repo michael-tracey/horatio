@@ -51,7 +51,13 @@ A grant names a source (a trait, perhaps at a rating) and what holding it does:
                  a merit given whole and at its value (so it is not counted against
                  the merit limit, which is for merits bought), a specialisation
                  named free. A specialisation named "Custom" takes the player's
-                 words as its detail. Removing the merit removes what it gave
+                 words as its detail. Removing the merit removes what it gave.
+                 Or `below` (a `category` and a `rating`): one dot for each dot the
+                 category's trait is below the rating, which the player spreads
+                 over the options, at most `most` on one (Walking Atrocity: a bonus
+                 attribute dot for each dot Morality is below 5). Those dots are
+                 added like `add`, on top of what the trait holds; once there are
+                 fewer to give than are placed, the last in the list go first
     open_barred  the character can buy `amount` powers of a discipline that a
                  check would otherwise bar (Hard as Steel: one Fortitude elder power
                  a Neonate's Generation bars, Vol. II Issue 1, p. 45). The target
@@ -368,6 +374,17 @@ def chosen_options(grant: GrantData, trait: SheetTrait, rule_set: RuleSetData) -
     return [c for c in mine if c.name in allowed]
 
 
+def dots_to_place(grant: GrantData, sheet: Sequence[SheetTrait]) -> int | None:
+    """For a free_choices grant whose dots follow a trait (`below`): how many the
+    sheet gives, one for each dot that trait is below the rating. None for any
+    other grant; none at all for a sheet without the trait."""
+    below = (grant.picks or {}).get("below")
+    if below is None:
+        return None
+    held = [t.rating for t in sheet if t.category == below["category"] and t.rating is not None]
+    return max(0, below["rating"] - sum(held)) if held else 0
+
+
 def check_picks(
     grant: GrantData,
     picks: Sequence[FreeChoice],
@@ -393,6 +410,17 @@ def check_picks(
         if (pick.name, detail) in seen:
             return f"{pick.name} is chosen twice."
         seen.add((pick.name, detail))
+    can = dots_to_place(grant, sheet)
+    if can is not None:
+        most = grant.picks.get("most")
+        for pick in picks:
+            if pick.amount < 1:
+                return f"Place at least one dot on {pick.name}, or leave it out."
+            if most is not None and pick.amount > most:
+                return f"{grant.source['name']} puts at most {most} dots on {pick.name}."
+        placed = sum(p.amount for p in picks)
+        if placed > can:
+            return f"{grant.source['name']} gives {can} dots to place now, not {placed}."
     places = grant.picks.get("places")
     if places is not None:
         if len({p.name for p in picks}) < len(picks):
@@ -432,10 +460,19 @@ def effects(
                 continue
             if grant.kind == "free_choices":
                 given = chosen_options(grant, trait, rule_set)
+                # Dots that follow a trait are added, as many as it gives now.
+                left = dots_to_place(grant, sheet)
                 for pick in given:
                     key = (grant.target["category"], pick.name, pick.detail)
-                    amount = pick.amount if "places" in (grant.picks or {}) else 1
-                    found.free_up_to[key] = max(found.free_up_to.get(key, 0), amount)
+                    if left is not None:
+                        amount = min(pick.amount, left)
+                        left -= amount
+                        if amount <= 0:
+                            continue
+                        found.added[key] = found.added.get(key, 0) + amount
+                    else:
+                        amount = pick.amount if "places" in (grant.picks or {}) else 1
+                        found.free_up_to[key] = max(found.free_up_to.get(key, 0), amount)
                     found.sources.setdefault(key, []).append(label)
                     found.givers.setdefault(key, []).append((trait.category, trait.name))
                 continue
@@ -677,8 +714,21 @@ def validate_free_choices(grant: GrantData) -> None:
     ):
         raise ValueError(f"grant {grant.key} must name one category and what can be chosen in it")
     shape = grant.picks or {}
-    if not set(shape) & {"places", "count", "points"} or set(shape) - {"places", "count", "points"}:
-        raise ValueError(f"grant {grant.key} must say its picks: places, count or points")
+    if not set(shape) & {"places", "count", "points", "below"} or set(shape) - {
+        "places",
+        "count",
+        "points",
+        "below",
+        "most",
+    }:
+        raise ValueError(f"grant {grant.key} must say its picks: places, count, points or below")
+    below = shape.get("below")
+    if below is not None and not (
+        isinstance(below, Mapping)
+        and isinstance(below.get("category"), str)
+        and isinstance(below.get("rating"), int)
+    ):
+        raise ValueError(f"grant {grant.key} must say the category and rating its dots are below")
     pool = grant.target.get("pool") or {}
     unknown = set(pool) - {
         "types", "requirement", "other_clan", "max_rating", "except_prefix", "except",

@@ -483,6 +483,45 @@ test("Flesh of Marble: two Protective Gear qualities picked each use, each again
   await expect(qualities).toContainText("(0 picked)");
 });
 
+test("Azhi Dahaka gives every attribute focus: on the sheet and the Play View, from the power, and counted in its powers (#598)", async ({ browser }) => {
+  const { page: p } = await person(browser, "azhi-seeker");
+  // A Tzimisce Luminary Elder (Generation 5) with Vicissitude 5, whose own Social focus is Manipulation.
+  const id = await builtVampire(
+    p,
+    "Vasilisa",
+    "Tzimisce",
+    {
+      ...ATTRIBUTES_AND_FOCUSES,
+      focus_socials: [["Manipulation", 1]],
+      backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]],
+      disciplines: [["Vicissitude", 2], ["Animalism", 1], ["Auspex", 1]],
+    },
+    [
+      ["disciplines", "Vicissitude", 5],
+      ["backgrounds", "Generation", 5],
+      ["luminary_disciplines", "Vicissitude: Azhi Dahaka", 1],
+    ],
+  );
+
+  // The sheet has every focus, those it lacked marked as given by the power.
+  await p.goto(`/characters/${id}`);
+  const row = (name: string) => p.locator("main li").filter({ hasText: new RegExp(`^${name}(?![a-z])`) });
+  for (const focus of ["Dexterity", "Stamina", "Appearance", "Charisma", "Intelligence", "Perception"]) await expect(row(focus)).toContainText("from Vicissitude: Azhi Dahaka");
+  await expect(row("Manipulation")).not.toContainText("from Vicissitude: Azhi Dahaka");
+
+  // The Play View's Sheet tab lists them by attribute, and says which the power gives.
+  await p.goto(`/play/characters/${id}?tab=sheet`);
+  await expect(p.getByText("(Appearance, Charisma, Manipulation)")).toBeVisible();
+  await p.getByRole("button", { name: /^Social/ }).click();
+  await expect(p.getByText("Charisma (from Vicissitude: Azhi Dahaka): Charm and the force of your personality.", { exact: false })).toBeVisible();
+  await expect(p.getByText("Manipulation: Getting people to do what you want", { exact: false })).toBeVisible();
+
+  // On the Pools tab, Vicissitude's powers say what the focuses add: Malleable Visage's Charisma.
+  await p.getByRole("tab", { name: "Pools" }).click();
+  await expect(p.getByText("Your focus: One standard action, no hands needed.")).toBeVisible();
+  await p.screenshot(shots("play-pools-azhi-dahaka"));
+});
+
 test("a power that hurts through its own test: Psychic Assault's pool and damage show beside the attacks once it's used, until it's off (#600)", async ({ browser }) => {
   const { page: p } = await person(browser, "elder-assault");
   // A Pretender Elder (Generation 3) with Auspex 5 and its elder power Psychic Assault: Mental 3, Investigation 1.

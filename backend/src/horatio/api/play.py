@@ -288,6 +288,8 @@ class PlayTrait(BaseModel):
     # the book's summary or in its place; "" for none.
     wording: str = ""
     wording_mode: Literal["added", "replaces"] = "added"
+    # The traits that give it, when it is given: a focus from Azhi Dahaka (issue #598).
+    granted_by: list[str] = []
 
 
 class PlayView(BaseModel):
@@ -609,6 +611,8 @@ def sheet_traits(db: Session, character: Character) -> list[PlayTrait]:
             key = (parent.specializes["category"], parent.specializes["name"])
             specialties.setdefault(key, []).append(row.trait.detail or row.definition.name)
     house = house_traits.marks(db, [r.definition.id for r in rows if r.definition.troupe_id])
+    granted = [r for r in rows if r.trait.granted_rating]
+    granting = sheets.sheet_effects(db, character).sources if granted else {}
     return [
         PlayTrait(
             category=row.category.key,
@@ -629,6 +633,7 @@ def sheet_traits(db: Session, character: Character) -> list[PlayTrait]:
             if row.definition.id in house
             else None,
             **wording_of(changes.get((row.category.key, row.definition.name))),
+            granted_by=granting.get(row.key, []) if row.trait.granted_rating else [],
         )
         for row in rows
         if row.category.key in rule_set.categories
