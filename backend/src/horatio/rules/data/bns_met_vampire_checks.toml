@@ -2937,21 +2937,23 @@ page = "96"
 
 [[checks]]
 category = "lore_specializations"
-forbids = { more_than_dots = { count = { category = "lore_specializations" }, dots = { category = "skills", name_prefix = "Lore" }, per_dot = 2 } }
+forbids = { more_than_dots = { count = { category = "lore_specializations" }, dots = { category = "skills", name_prefix = "Lore" }, per_dot = 2 }, has = { category = "merits", name = "Loremaster" } }
 message = "Loremaster gives two Lore specialisations per dot of Lore, no more."
 page = "251"
 
-# One Linguistics specialisation per dot of Linguistics; Natural Linguist gives two (pp. 95, 252).
+# One language per dot of Linguistics, besides the native tongue, which is not held
+# as a language (p. 94); Natural Linguist gives two (p. 252). The second check is
+# only for its holders: the first already holds everyone else to one a dot.
 [[checks]]
 category = "linguistics_specializations"
 forbids = { more_than_dots = { count = { category = "linguistics_specializations" }, dots = { category = "skills", name_prefix = "Linguistics" } }, not = { has = { category = "merits", name = "Natural Linguist" } } }
-message = "A character has one Linguistics specialisation per dot of Linguistics."
-page = "95"
+message = "A character has one language per dot of Linguistics, besides their native tongue."
+page = "94"
 
 [[checks]]
 category = "linguistics_specializations"
-forbids = { more_than_dots = { count = { category = "linguistics_specializations" }, dots = { category = "skills", name_prefix = "Linguistics" }, per_dot = 2 } }
-message = "Natural Linguist gives two Linguistics specialisations per dot of Linguistics, no more."
+forbids = { more_than_dots = { count = { category = "linguistics_specializations" }, dots = { category = "skills", name_prefix = "Linguistics" }, per_dot = 2 }, has = { category = "merits", name = "Natural Linguist" } }
+message = "Natural Linguist gives two languages per dot of Linguistics, no more."
 page = "252"
 
 # Thin Blooded vampires are always Caitiff (p. 265).
@@ -3235,7 +3237,7 @@ page = "92"
 
 [[checks]]
 category = "academics_specializations"
-forbids = { more_than_dots = { count = { category = "academics_specializations" }, dots = { category = "skills", name_prefix = "Academics" }, per_dot = 2 } }
+forbids = { more_than_dots = { count = { category = "academics_specializations" }, dots = { category = "skills", name_prefix = "Academics" }, per_dot = 2 }, has = { category = "merits", name = "Athenaeum of the Hive" } }
 strength = "refuse"
 message = "Athenaeum of the Hive gives two fields of study per dot of Academics, no more."
 page = "Vol. 2, p. 259"
@@ -3256,7 +3258,7 @@ page = "103"
 
 [[checks]]
 category = "influence_elite_specializations"
-forbids = { more_than_dots = { count = { category = "influence_elite_specializations" }, dots = { category = "backgrounds", name_prefix = "Influences: The Elite" }, per_dot = 2 } }
+forbids = { more_than_dots = { count = { category = "influence_elite_specializations" }, dots = { category = "backgrounds", name_prefix = "Influences: The Elite" }, per_dot = 2 }, has = { category = "merits", name = "Monopoly" } }
 strength = "note"
 message = "Monopoly gives two areas per dot of Influences: The Elite, no more."
 page = "405"
@@ -3270,7 +3272,7 @@ page = "103"
 
 [[checks]]
 category = "influence_underworld_specializations"
-forbids = { more_than_dots = { count = { category = "influence_underworld_specializations" }, dots = { category = "backgrounds", name_prefix = "Influences: The Underworld" }, per_dot = 2 } }
+forbids = { more_than_dots = { count = { category = "influence_underworld_specializations" }, dots = { category = "backgrounds", name_prefix = "Influences: The Underworld" }, per_dot = 2 }, has = { category = "merits", name = "Monopoly" } }
 strength = "note"
 message = "Monopoly gives two areas per dot of Influences: The Underworld, no more."
 page = "405"

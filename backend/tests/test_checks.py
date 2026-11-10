@@ -207,6 +207,57 @@ def test_dots_limit_is_how_many_a_check_allows_where_its_other_conditions_hold()
     )
 
 
+@pytest.mark.parametrize(
+    ("category", "skill", "merit"),
+    [
+        ("linguistics_specializations", ("skills", "Linguistics"), "Natural Linguist"),
+        ("lore_specializations", ("skills", "Lore"), "Loremaster"),
+        ("academics_specializations", ("skills", "Academics"), "Athenaeum of the Hive"),
+        (
+            "influence_elite_specializations",
+            ("backgrounds", "Influences: The Elite"),
+            "Monopoly",
+        ),
+        (
+            "influence_underworld_specializations",
+            ("backgrounds", "Influences: The Underworld"),
+            "Monopoly",
+        ),
+    ],
+)
+def test_a_merit_doubling_specialisations_is_only_checked_for_its_holders(
+    category: str, skill: tuple[str, str], merit: str
+) -> None:
+    # Its category's checks alone: Athenaeum of the Hive is also only for the Baali.
+    checks = [
+        c for c in load_rule_set(DATA_DIR / "bns_met_vampire.toml").checks if c.category == category
+    ]
+    held = [t(category, "Custom", 1)]
+
+    # One held with none of the skill: the plain check alone, not the merit's.
+    [found] = violations(checks, held)
+    assert merit not in found.message
+    # Twice the skill's dots, with the merit: nothing; one more breaks the merit's alone.
+    doubled = [*held, t(category, "Custom", 1), t(skill[0], skill[1], 1), t("merits", merit, 1)]
+    assert violations(checks, doubled) == []
+    over = violations(checks, [*doubled, t(category, "Custom", 1)])
+    assert over
+    assert all(v.message.startswith(merit) for v in over)
+
+
+def test_a_broken_more_than_dots_says_what_is_held_against_the_dots() -> None:
+    check = CheckData(key="a", category="rituals", forbids={"more_than_dots": SPELLS})
+
+    [none] = violations([check], [t("rituals", "Custom", 1, detail="Rite of Ash")])
+    assert none.held == "Holds Rite of Ash with no disciplines."
+    sheet = [t("rituals", f"Ritual {n}") for n in range(3)] + [t("disciplines", "Auspex", 2)]
+    found = violations([check], sheet)
+    assert {v.held for v in found} == {
+        "Holds Ritual 0, Ritual 1 and Ritual 2 with disciplines 2, which allows 2."
+    }
+    assert found[0].on_sheet.startswith("Holds Ritual 0")
+
+
 def test_a_more_than_dots_table_must_list_whole_numbers() -> None:
     from horatio.rules.checks import validate_condition
 

@@ -644,7 +644,7 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
                 category=v.subject.category,
                 name=v.subject.full_name,
                 strength=v.check.strength,
-                message=v.message,
+                message=v.on_sheet,
                 looks_at=[
                     TraitRefOut(category=c, name=n)
                     for c, n in sorted(v.check.looks_at, key=lambda k: (k[0], k[1] or ""))

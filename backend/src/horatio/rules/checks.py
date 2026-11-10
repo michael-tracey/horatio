@@ -244,12 +244,20 @@ class Violation:
     subject: SheetTrait
     # The trait the subject clashes with, where the check names one (same_value).
     other: str = ""
+    # What the sheet holds against the dots, where the check counts them
+    # (more_than_dots, held_text): said on the sheet before the check's message.
+    held: str = ""
 
     @property
     def message(self) -> str:
         page = f" ({page_text(self.check.page)})" if self.check.page else ""
         text = self.check.message or f"{self.subject.full_name} is not allowed here."
         return text.replace("{other}", self.other).replace("{name}", self.subject.full_name) + page
+
+    @property
+    def on_sheet(self) -> str:
+        """The message as the sheet shows it: with what is held, where it counts."""
+        return f"{self.held} {self.message}" if self.held else self.message
 
     @property
     def key(self) -> tuple[str, str, str, str]:
@@ -383,16 +391,7 @@ def matches(
         elif key == "npc":
             ok = context.npc == test
         elif key == "more_than_dots":
-            counted, dotted = test["count"], test["dots"]
-            held = sum(
-                1
-                for t in sheet
-                if t.category == counted["category"]
-                and t.name.startswith(counted.get("name_prefix", ""))
-                and t.rating != 0
-                and not t.granted
-            )
-            ok = held > dots_allow(test, dots_of(sheet, dotted))
+            ok = len(counted_by(test, sheet)) > dots_allow(test, dots_of(sheet, test["dots"]))
         elif key == "above_in_clan":
             primaries = [
                 t.rating or 0
@@ -445,6 +444,48 @@ def matches(
         if not ok:
             return False
     return True
+
+
+def counted_by(test: Mapping[str, Any], sheet: Sequence[SheetTrait]) -> list[SheetTrait]:
+    """For more_than_dots: the held traits of the first kind that count against the
+    dots, leaving out those another trait gives."""
+    counted = test["count"]
+    return [
+        t
+        for t in sheet
+        if t.category == counted["category"]
+        and t.name.startswith(counted.get("name_prefix", ""))
+        and t.rating != 0
+        and not t.granted
+    ]
+
+
+# A specialisation named freely is "Custom", with its name as the detail.
+CUSTOM = "Custom"
+
+# The most traits held_text names before saying how many more.
+NAMED = 8
+
+
+def held_text(test: Mapping[str, Any], sheet: Sequence[SheetTrait]) -> str:
+    """For a broken more_than_dots: what the sheet holds against what its dots allow,
+    "Holds Basque and Welsh with Linguistics 1, which allows 1.", or with none of the
+    dots, "Holds Spanish with no Linguistics.", so the player sees which ones."""
+    names = [
+        t.detail if t.name == CUSTOM and t.detail else t.full_name for t in counted_by(test, sheet)
+    ]
+    if not names:
+        return ""
+    if len(names) > NAMED:
+        names = [*names[:NAMED], f"{len(names) - NAMED} more"]
+    listed = names[0] if len(names) == 1 else f"{', '.join(names[:-1])} and {names[-1]}"
+    dotted = test["dots"]
+    skill = (dotted.get("name") or dotted.get("name_prefix") or dotted["category"]).rstrip(": ")
+    dots = dots_of(sheet, dotted)
+    if dots == 0:
+        return f"Holds {listed} with no {skill}."
+    allowed = int(dots_allow(test, dots))
+    return f"Holds {listed} with {skill} {dots}, which allows {allowed or 'none'}."
 
 
 def dots_of(sheet: Sequence[SheetTrait], dotted: Mapping[str, Any]) -> int:
@@ -545,7 +586,9 @@ def violations(
             if breaks(check, sheet, trait, context):
                 test = (check.forbids or {}).get("same_value")
                 other = clashing(test, sheet, trait, context) if test else None
-                found.append(Violation(check, trait, other.name if other else ""))
+                counting = (check.forbids or {}).get("more_than_dots")
+                held = held_text(counting, sheet) if counting else ""
+                found.append(Violation(check, trait, other.name if other else "", held))
     return found
 
 
