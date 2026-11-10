@@ -165,7 +165,8 @@ export function DowntimeTab({ characterId }: { characterId: string }) {
       saveNow();
     };
   }, []);
-  useLeaveWarning(dirty || saving);
+  // Going to another page saves at once (above), so only a failed save asks first.
+  useLeaveWarning(dirty || saving, { inApp: failed });
 
   if (downtime.isPending) return <Loading />;
   if (downtime.error) return <ErrorText error={downtime.error} />;

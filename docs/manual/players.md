@@ -278,7 +278,7 @@ Press **Write the backstory**. The editor has two views: **Formatted**, with but
 
 ### Autosave and drafts
 
-Your writing saves itself as a draft a moment after you stop typing, and when you leave the editor, so a long story is never lost and you can carry on from another device. The line beside the buttons says **Saving…**, **Saved** with the time, or **Couldn't save** with **try again**.
+Your writing saves itself as a draft a moment after you stop typing, and when you leave the editor, so a long story is never lost and you can carry on from another device. The line beside the buttons says **Saving…**, **Saved** with the time, or **Couldn't save** with **try again**. While a save has failed, going to another page asks first.
 
 A draft isn't what the storytellers read: they read only what you submit. While you have a draft, the tab marks it **Draft, not yet submitted**, and **Carry on writing** opens it again. **Discard the draft** throws away the changes since the last version you submitted. If a newer version was submitted after you started the draft (on another device, say), Horatio shows both and lets you choose which to go on with, with **Compare them** to see the difference.
 
@@ -399,7 +399,7 @@ It lists each character the troupe is remembering, with their portrait and why t
 
 ### Saving and submitting
 
-The form saves itself a couple of seconds after you stop typing, and when you switch away; the line by the buttons says **Saving…**, **Saved** or **Not saved yet**. **Save draft** saves at once. **Submit downtime** saves and submits. You can keep editing after submitting: the button becomes **Save and resubmit**.
+The form saves itself a couple of seconds after you stop typing, and when you switch away; the line by the buttons says **Saving…**, **Saved** or **Not saved yet**. If a save fails, it says **Couldn't save**, and going to another page asks first. **Save draft** saves at once. **Submit downtime** saves and submits. You can keep editing after submitting: the button becomes **Save and resubmit**.
 
 If the cycle gives XP for completing it, the card says **Submitting it earns** so much, and once you have, **You earned** it. That XP is given once, however often you resubmit.
 

@@ -31,7 +31,7 @@ export function LinesVeilsForm({ value }: { value: LinesVeils }) {
     toast({ message: "Lines and veils saved." });
   });
   const unsaved = shared !== kept.shared || JSON.stringify([filled(lines), filled(veils)]) !== JSON.stringify([filled(kept.lines), filled(kept.veils)]);
-  useLeaveWarning(unsaved);
+  useLeaveWarning(unsaved, { inApp: true });
 
   return (
     <form
