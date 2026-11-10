@@ -429,6 +429,101 @@ test("Use on an elder power: Projectile spends 1 Blood on each attack, and switc
   await expect.poll(async () => (await (await p.request.get(`/api/characters/${id}/play`)).json()).blood.value).toBe(blood.value - 2);
 });
 
+test("Flesh of Marble: two Protective Gear qualities picked each use, each against the attacks it guards (#599)", async ({ browser }) => {
+  const { page: p } = await person(browser, "marble-skin");
+  // A Gangrel elder (Generation 3) with Protean 5 and Flesh of Marble (Vol. 2 p. 232).
+  const id = await builtVampire(
+    p,
+    "Galatea",
+    "Gangrel",
+    { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Protean", 2], ["Animalism", 1], ["Fortitude", 1]] },
+    [
+      ["disciplines", "Protean", 5],
+      ["elder_disciplines", "Protean: Flesh of Marble", 1],
+    ],
+  );
+  await p.goto(`/play/characters/${id}?tab=pools`);
+  const row = (name: RegExp) => p.getByRole("main").getByRole("listitem").filter({ hasText: name }).first();
+  const dodge = row(/^Dodge/);
+  await expect(dodge).toBeVisible();
+  const before = Number(await dodge.locator("strong").first().textContent());
+  const against = (attacks: RegExp) => dodge.getByRole("listitem").filter({ hasText: attacks });
+
+  // Use spends its Blood and switches it on; its qualities are picked in the drawer.
+  await p.getByRole("button", { name: "Use Protean: Flesh of Marble, 1 Blood" }).click();
+  await expect(p.getByText(/Protean: Flesh of Marble switched on$/)).toBeVisible();
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  const qualities = p.getByRole("group", { name: "Protean: Flesh of Marble: qualities" });
+  await expect(qualities).toContainText("Pick two each use (0 picked).");
+  await qualities.getByRole("button", { name: "Ballistic" }).click();
+  await expect(p.getByText("Picked Ballistic for Protean: Flesh of Marble", { exact: true })).toBeVisible();
+  await qualities.getByRole("button", { name: "Rugged" }).click();
+  await expect(qualities).toContainText("Rugged: The first Physical hit does 2 less damage (MET: VTM p. 519)");
+
+  // Ballistic: +3 against firearms and +1 against the rest, each a line under Dodge; Dodge itself stays.
+  await expect(against(/^Against firearms/)).toContainText("(+3 Flesh of Marble: Ballistic)");
+  await expect(against(/^Against firearms/).locator("strong")).toHaveText(String(before + 3));
+  await expect(against(/^Against Brawl, Melee and thrown weapons/).locator("strong")).toHaveText(String(before + 1));
+  await expect(dodge.locator("strong").first()).toHaveText(String(before));
+
+  // A third drops the oldest: Hardened in Ballistic's place turns the split round.
+  await qualities.getByRole("button", { name: "Hardened" }).click();
+  await expect(p.getByText("Picked Hardened for Protean: Flesh of Marble: dropped Ballistic (2 at most)")).toBeVisible();
+  await expect(qualities.getByRole("button", { name: "Ballistic" })).toHaveAttribute("aria-pressed", "false");
+  await expect(against(/^Against firearms/).locator("strong")).toHaveText(String(before + 1));
+  await expect(against(/^Against Brawl, Melee and thrown weapons/)).toContainText("(+3 Flesh of Marble: Hardened)");
+  await expect(against(/^Against Brawl, Melee and thrown weapons/).locator("strong")).toHaveText(String(before + 3));
+  await p.getByRole("dialog", { name: "Forms, powers and modifiers" }).getByRole("button", { name: "Close" }).click();
+  await expect(p.getByRole("region", { name: "Switched on now" })).toContainText("On: Protean: Flesh of Marble (Rugged, Hardened)");
+  await p.screenshot(shots("play-pools-flesh-of-marble"));
+
+  // Switched off, the qualities go with it, and using it again means picking again.
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  await p.getByLabel("Protean: Flesh of Marble on").uncheck();
+  await expect(against(/^Against/)).toHaveCount(0);
+  await p.getByLabel("Protean: Flesh of Marble on").check();
+  await expect(qualities).toContainText("(0 picked)");
+});
+
+test("Azhi Dahaka gives every attribute focus: on the sheet and the Play View, from the power, and counted in its powers (#598)", async ({ browser }) => {
+  const { page: p } = await person(browser, "azhi-seeker");
+  // A Tzimisce Luminary Elder (Generation 5) with Vicissitude 5, whose own Social focus is Manipulation.
+  const id = await builtVampire(
+    p,
+    "Vasilisa",
+    "Tzimisce",
+    {
+      ...ATTRIBUTES_AND_FOCUSES,
+      focus_socials: [["Manipulation", 1]],
+      backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]],
+      disciplines: [["Vicissitude", 2], ["Animalism", 1], ["Auspex", 1]],
+    },
+    [
+      ["disciplines", "Vicissitude", 5],
+      ["backgrounds", "Generation", 5],
+      ["luminary_disciplines", "Vicissitude: Azhi Dahaka", 1],
+    ],
+  );
+
+  // The sheet has every focus, those it lacked marked as given by the power.
+  await p.goto(`/characters/${id}`);
+  const row = (name: string) => p.locator("main li").filter({ hasText: new RegExp(`^${name}(?![a-z])`) });
+  for (const focus of ["Dexterity", "Stamina", "Appearance", "Charisma", "Intelligence", "Perception"]) await expect(row(focus)).toContainText("from Vicissitude: Azhi Dahaka");
+  await expect(row("Manipulation")).not.toContainText("from Vicissitude: Azhi Dahaka");
+
+  // The Play View's Sheet tab lists them by attribute, and says which the power gives.
+  await p.goto(`/play/characters/${id}?tab=sheet`);
+  await expect(p.getByText("(Appearance, Charisma, Manipulation)")).toBeVisible();
+  await p.getByRole("button", { name: /^Social/ }).click();
+  await expect(p.getByText("Charisma (from Vicissitude: Azhi Dahaka): Charm and the force of your personality.", { exact: false })).toBeVisible();
+  await expect(p.getByText("Manipulation: Getting people to do what you want", { exact: false })).toBeVisible();
+
+  // On the Pools tab, Vicissitude's powers say what the focuses add: Malleable Visage's Charisma.
+  await p.getByRole("tab", { name: "Pools" }).click();
+  await expect(p.getByText("Your focus: One standard action, no hands needed.")).toBeVisible();
+  await p.screenshot(shots("play-pools-azhi-dahaka"));
+});
+
 test("a power that hurts through its own test: Psychic Assault's pool and damage show beside the attacks once it's used, until it's off (#600)", async ({ browser }) => {
   const { page: p } = await person(browser, "elder-assault");
   // A Pretender Elder (Generation 3) with Auspex 5 and its elder power Psychic Assault: Mental 3, Investigation 1.

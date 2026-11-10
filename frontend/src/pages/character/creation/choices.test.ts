@@ -59,7 +59,8 @@ const STEP_LISTS: Record<string, { category: string; name: string }[] | "merits"
 const key = (t: { category?: string; name?: string }) => `${t.category}/${t.name}`;
 
 describe("merits and flaws that need a choice", () => {
-  const choosing = grants.filter((g) => g.chooses);
+  // An elder power is not taken in the wizard: Walking Atrocity's dots are placed on the sheet.
+  const choosing = grants.filter((g) => g.chooses && (g.category === "merits" || g.category === "flaws"));
 
   it("finds the ones the rules data has", () => {
     // A sanity check on the reading of the data above.

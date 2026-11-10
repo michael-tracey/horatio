@@ -233,6 +233,16 @@ class AddedNote(BaseModel):
     note: str
 
 
+class Picks(BaseModel):
+    """Equipment qualities the player picks each time a switch goes on (issue #599):
+    Flesh of Marble's two Protective Gear qualities (Vol. 2 p. 232). What they do
+    to the pools counts while it is on, as an equipped item's does (horatio.play)."""
+
+    # The kind of equipment they are qualities of: "protective", "melee".
+    kind: str
+    count: int
+
+
 class Switch(BaseModel):
     """A form or power the Play View can switch on while the character has it
     (issue #200). Forms are transformative: only one is on at a time (core
@@ -261,6 +271,7 @@ class Switch(BaseModel):
     blood_per_turn: int = 0
     # The Blood pool is half again as big (rounded up) while it is on.
     blood_half: bool = False
+    picks: Picks | None = None
 
 
 class Frenzy(BaseModel):
@@ -1045,6 +1056,7 @@ def _switch(owner: Owner, active: Mapping[str, Any], sheet: Sheet) -> Switch:
         focuses=list(active.get("focuses", [])),
         blood_per_turn=blood.get("per_turn", 0),
         blood_half=blood.get("most") == "half",
+        picks=Picks(**active["picks"]) if "picks" in active else None,
     )
 
 

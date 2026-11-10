@@ -21,6 +21,8 @@ const power = (over: Partial<PowerSwitch>): PowerSwitch => ({
   blood_per_turn: 0,
   blood_half: false,
   on: false,
+  options: [],
+  picked: [],
   turned_on: 0,
   ...over,
 });

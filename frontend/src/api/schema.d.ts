@@ -16910,10 +16910,14 @@ export interface components {
             complete: boolean;
             /** Count */
             count: number | null;
+            /** Dots */
+            dots?: number | null;
             /** Grant */
             grant: string;
             /** Locked */
             locked: string | null;
+            /** Most */
+            most?: number | null;
             /** Options */
             options: components["schemas"]["FreeOptionOut"][];
             /** Picks */
@@ -21812,6 +21816,21 @@ export interface components {
              */
             rating: number;
         };
+        /**
+         * PickOptionOut
+         * @description A quality the player can pick for a power each use (issue #599), with what it
+         *     does to the pools while the power is on.
+         */
+        PickOptionOut: {
+            /** Modifiers */
+            modifiers: components["schemas"]["EquipmentModifierOut"][];
+            /** Name */
+            name: string;
+            /** Page */
+            page: string | null;
+            /** Play */
+            play: string;
+        };
         /** PickedTrait */
         PickedTrait: {
             /**
@@ -21835,6 +21854,18 @@ export interface components {
             name: string;
             /** Pick */
             pick: number;
+        };
+        /**
+         * Picks
+         * @description Equipment qualities the player picks each time a switch goes on (issue #599):
+         *     Flesh of Marble's two Protective Gear qualities (Vol. 2 p. 232). What they do
+         *     to the pools counts while it is on, as an equipped item's does (horatio.play).
+         */
+        Picks: {
+            /** Count */
+            count: number;
+            /** Kind */
+            kind: string;
         };
         /** PictureOut */
         PictureOut: {
@@ -22029,6 +22060,11 @@ export interface components {
             description?: string | null;
             /** Detail */
             detail: string;
+            /**
+             * Granted By
+             * @default []
+             */
+            granted_by: string[];
             /** Group */
             group: string;
             /** House */
@@ -22663,10 +22699,21 @@ export interface components {
             notes: string[];
             /** On */
             on: boolean;
+            /**
+             * Options
+             * @default []
+             */
+            options: components["schemas"]["PickOptionOut"][];
             /** Origin */
             origin: string;
             /** Page */
             page: string;
+            /**
+             * Picked
+             * @default []
+             */
+            picked: string[];
+            picks?: components["schemas"]["Picks"] | null;
             /**
              * Turned On
              * @default 0

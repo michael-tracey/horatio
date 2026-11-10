@@ -1,11 +1,55 @@
 import type { PowerSwitch } from "../../api/types";
-import { addedNote, formsOn, switchKey } from "./powers";
+import { pageLabel } from "../../components/TraitInfo";
+import { addedNote, formsOn, pickKey, switchKey, withPicks } from "./powers";
 import type { makeTap } from "./tracker";
 
 type Tap = (what: Parameters<typeof makeTap>[0]) => void;
 
 /** Switch a form or power on or off: a tap, logged in the game with Undo like the rest. */
 export const toggle = (tap: Tap, power: PowerSwitch) => tap({ kind: "change", tracker: switchKey(power.key), amount: power.on ? -1 : 1 });
+
+const COUNTS = ["none", "one", "two", "three", "four"];
+
+/**
+ * A power whose qualities are picked each use (issue #599), such as Flesh of
+ * Marble's two Protective Gear qualities: while it is on, a button for each, and
+ * what those picked do. Past its count, the oldest picked goes.
+ */
+function Picks({ power, tap }: { power: PowerSwitch; tap: Tap }) {
+  const count = power.picks?.count ?? 0;
+  const chosen = power.options.filter((o) => power.picked.includes(o.name));
+  return (
+    <div className="mt-1 pl-8" role="group" aria-label={`${power.name}: qualities`}>
+      <p className="text-xs text-mist">
+        Pick {COUNTS[count] ?? count} each use ({power.picked.length} picked).
+      </p>
+      <ul className="mt-1 flex flex-wrap gap-1">
+        {power.options.map((o) => {
+          const picked = power.picked.includes(o.name);
+          return (
+            <li key={o.name}>
+              <button
+                type="button"
+                aria-pressed={picked}
+                title={o.play}
+                onClick={() => tap({ kind: "change", tracker: pickKey(power.key, o.name), amount: picked ? -1 : 1 })}
+                className={`min-h-9 rounded-full border px-3 text-xs pointer-coarse:min-h-11 ${picked ? "border-gold/60 bg-gold/10 text-gold" : "border-line text-mist hover:text-parchment"}`}
+              >
+                {o.name}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {chosen.map((o) => (
+        <p key={o.name} className="mt-1 text-xs text-parchment/80">
+          {o.name}: {o.play}
+          {pageLabel(o.page) && <span className="text-mist"> ({pageLabel(o.page)})</span>}
+        </p>
+      ))}
+    </div>
+  );
+}
 
 function Row({ power, tap }: { power: PowerSwitch; tap: Tap }) {
   return (
@@ -26,7 +70,8 @@ function Row({ power, tap }: { power: PowerSwitch; tap: Tap }) {
               {n}
             </span>
           ))}
-          {power.added.map((a) => (
+          {/* A view kept on the phone from before #601 has no `added`. */}
+          {(power.added ?? []).map((a) => (
             <span key={addedNote(a)} className="block text-xs text-mist">
               {addedNote(a)}
             </span>
@@ -36,6 +81,7 @@ function Row({ power, tap }: { power: PowerSwitch; tap: Tap }) {
           </span>
         </span>
       </label>
+      {power.picks && power.on && <Picks power={power} tap={tap} />}
     </li>
   );
 }
@@ -94,7 +140,7 @@ export function PowersBanner({ powers, tap }: { powers: PowerSwitch[]; tap: Tap 
               <strong className="font-semibold text-gold">{f.name}</strong>
             </p>
             {f.notes.length > 0 && <p className="text-xs text-mist">{f.notes.join(" ")}</p>}
-            {f.added.map((a) => (
+            {(f.added ?? []).map((a) => (
               <p key={addedNote(a)} className="text-xs text-mist">
                 {addedNote(a)}
               </p>
@@ -109,11 +155,11 @@ export function PowersBanner({ powers, tap }: { powers: PowerSwitch[]; tap: Tap 
       {others.length > 0 && (
         <p className={forms.length ? "mt-1" : undefined}>
           <span className="text-mist">On: </span>
-          {others.map((p) => p.name).join(", ")}
+          {others.map(withPicks).join(", ")}
         </p>
       )}
       {others
-        .flatMap((p) => p.added)
+        .flatMap((p) => p.added ?? [])
         .map((a) => (
           <p key={addedNote(a)} className="text-xs text-mist">
             {addedNote(a)}

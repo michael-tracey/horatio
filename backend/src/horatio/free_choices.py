@@ -11,6 +11,11 @@ After that a change goes through staff (an exception asked of them, or given).
 A merit taken after acceptance can still be chosen for once, as it was never
 part of what staff accepted; once chosen it is fixed too.
 
+Walking Atrocity (Vol. 2, p. 205) gives its dots as Morality falls: one for each
+dot below 5, placed in the attributes. Those are never locked whole: a dot that
+comes later is placed then. Once a home troupe has accepted the character, a dot
+placed stays where it is, unless Morality rises and one must be given up.
+
 An NPC's staff choose for it, at any time (#577): what Piece That Remains,
 Auspicious, Old Habits or Shadows of the Past gives is free on it as on a
 player's character, and goes to its player with it. Where an NPC's creation
@@ -28,7 +33,14 @@ from sqlalchemy.orm import Session
 from horatio import npc_picks, sheets
 from horatio.models import Character, SheetVersion
 from horatio.rules.checks import matches
-from horatio.rules.grants import GrantData, Option, check_picks, holds_source, options
+from horatio.rules.grants import (
+    GrantData,
+    Option,
+    check_picks,
+    dots_to_place,
+    holds_source,
+    options,
+)
 from horatio.rules.model import FreeChoice, SheetTrait
 
 
@@ -41,16 +53,25 @@ class Offer:
     picks: list[FreeChoice]
     # Why the player can no longer change the picks; None while they can.
     locked: str | None
+    # For dots that follow a trait (Walking Atrocity's, from Morality): how many the
+    # sheet gives now. None for any other grant.
+    dots: int | None = None
 
     @property
     def category(self) -> str:
         return self.grant.target["category"]
 
     @property
+    def placed(self) -> int:
+        return sum(p.amount for p in self.picks)
+
+    @property
     def complete(self) -> bool:
         """Whether the player has chosen all the grant gives: every place filled,
-        or every pick of a count; for a budget of points, any."""
+        or every pick of a count, or every dot placed; for a budget of points, any."""
         shape = self.grant.picks or {}
+        if self.dots is not None:
+            return self.placed == self.dots
         if "places" in shape:
             return len(self.picks) == len(shape["places"])
         if "count" in shape:
@@ -77,6 +98,9 @@ def locked_reason(
         # the merit's dots (Ventrue Royalty's 4, 3 and 2, horatio.npc_picks).
         if "places" in (grant.picks or {}) and npc_picks.fitted(character):
             return f"{row.definition.name}'s free dots are placed with the NPC's creation picks."
+        return None
+    if "below" in (grant.picks or {}):
+        # New dots come as Morality falls; moving the placed ones is judged on saving.
         return None
     if sheets.ever_accepted(db, character) and (
         row.trait.choices or row.key in accepted_keys(db, character)
@@ -129,6 +153,7 @@ def held_offers(db: Session, character: Character) -> list[tuple[sheets.SheetRow
                         options=options(g, rules.rule_set, sheet),
                         picks=[c for c in mine if c.grant == g.key],
                         locked=locked_reason(db, character, row, g),
+                        dots=dots_to_place(g, sheet),
                     )
                     for g in grants
                 ],
@@ -177,6 +202,14 @@ def set_choices(
         message = check_picks(offer.grant, mine, rules.rule_set, sheet)
         if message:
             raise unprocessable(message)
+        if (
+            offer.dots is not None
+            and character.kind == "pc"
+            and sheets.ever_accepted(db, character)
+        ):
+            moved = _moves_placed(offer, mine, name)
+            if moved:
+                raise sheets.conflict(moved)
         for pick in mine:
             _check_troupe_options(db, character, offer.category, pick)
     stray = {p.grant for p in cleaned} - {o.grant.key for o in found}
@@ -187,6 +220,21 @@ def set_choices(
         {"grant": p.grant, "name": p.name, "detail": p.detail, "amount": p.amount} for p in cleaned
     ]
     db.flush()
+
+
+def _moves_placed(offer: Offer, picks: Sequence[FreeChoice], name: str) -> str | None:
+    """Once a home troupe has accepted the character, Walking Atrocity's placed dots
+    stay put: new ones can be placed, and the dots placed beyond what Morality now
+    gives can be given up, but no more (Vol. 2, p. 205)."""
+    assert offer.dots is not None
+    was = {p.name: p.amount for p in offer.picks}
+    now = {p.name: p.amount for p in picks}
+    taken_off = sum(max(amount - now.get(n, 0), 0) for n, amount in was.items())
+    if taken_off <= max(offer.placed - offer.dots, 0):
+        return None
+    return (
+        f"{name}'s placed dots can't move once a home troupe has accepted the character. Ask staff."
+    )
 
 
 def _check_troupe_options(
@@ -205,7 +253,13 @@ def preview(db: Session, character: Character, category: str, name: str) -> list
     rules = sheets.rules_for(db, character)
     sheet = [r.as_rules_trait() for r in sheets.sheet_rows(db, character)]
     return [
-        Offer(grant=g, options=options(g, rules.rule_set, sheet), picks=[], locked=None)
+        Offer(
+            grant=g,
+            options=options(g, rules.rule_set, sheet),
+            picks=[],
+            locked=None,
+            dots=dots_to_place(g, sheet),
+        )
         for g in rules.rule_set.grants
         if g.kind == "free_choices" and (g.source["category"], g.source["name"]) == (category, name)
     ]

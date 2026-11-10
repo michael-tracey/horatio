@@ -516,7 +516,7 @@ function rankOf(reference: PlayReference, shown: Shown, own: Modifier[]): Rank |
   const initiative = reference.pools.find((p) => p.key === "initiative");
   if (!initiative) return undefined;
   const on = shown.powers.filter((p) => p.on).map((p) => p.key);
-  const counting = [...own, ...equipmentModifiers(shown.equipment, shown.equipped)];
+  const counting = [...own, ...equipmentModifiers(shown.equipment, shown.equipped, shown.powers)];
   const rating = (name: string) => reference.traits.find((t) => t.category === "attributes" && t.name === name)?.rating ?? 0;
   return { initiative: total(initiative, shown.willpower.value, counting, on), mental: rating("Mental"), physical: rating("Physical"), social: rating("Social") };
 }
@@ -565,8 +565,8 @@ function SceneCard({ characterId, back, onRemove, onRank }: { characterId: strin
   const name = shown.character_name;
   const on = shown.powers.filter((p) => p.on).map((p) => p.key);
   const willpower = shown.willpower.value;
-  // The player's own modifiers, then what the items equipped make (issue #306).
-  const counting = [...modifiers.modifiers, ...equipmentModifiers(shown.equipment, shown.equipped)];
+  // The player's own modifiers, then what the items equipped make (issue #306) and the qualities picked for the powers on (#599).
+  const counting = [...modifiers.modifiers, ...equipmentModifiers(shown.equipment, shown.equipped, shown.powers)];
   return (
     <article className="flex flex-col gap-3 rounded-lg border border-ash bg-dusk p-3" aria-label={name}>
       <header className="flex items-start justify-between gap-2">

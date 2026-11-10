@@ -147,6 +147,82 @@ target = { category = "focus_socials", name = "Appearance" }
 amount = 1
 page = "Vol. 2 Issue 1, p. 53"
 
+# Azhi Dahaka gives every attribute focus while the character has it (Vol. 2, p. 249,
+# issue #598). What takes a focus away still does, so Stolen Potential's attribute
+# gets none, as its check says (p. 265).
+
+[[grants]]
+source = { category = "luminary_disciplines", name = "Vicissitude: Azhi Dahaka" }
+when = { not = { has = { category = "flaws", name = "Stolen Potential", detail = "Physical" } } }
+kind = "free_up_to"
+target = { category = "focus_physicals", name = "Strength" }
+amount = 1
+page = "Vol. 2, p. 249"
+
+[[grants]]
+source = { category = "luminary_disciplines", name = "Vicissitude: Azhi Dahaka" }
+when = { not = { has = { category = "flaws", name = "Stolen Potential", detail = "Physical" } } }
+kind = "free_up_to"
+target = { category = "focus_physicals", name = "Dexterity" }
+amount = 1
+page = "Vol. 2, p. 249"
+
+[[grants]]
+source = { category = "luminary_disciplines", name = "Vicissitude: Azhi Dahaka" }
+when = { not = { has = { category = "flaws", name = "Stolen Potential", detail = "Physical" } } }
+kind = "free_up_to"
+target = { category = "focus_physicals", name = "Stamina" }
+amount = 1
+page = "Vol. 2, p. 249"
+
+[[grants]]
+source = { category = "luminary_disciplines", name = "Vicissitude: Azhi Dahaka" }
+when = { not = { has = { category = "flaws", name = "Stolen Potential", detail = "Social" } } }
+kind = "free_up_to"
+target = { category = "focus_socials", name = "Charisma" }
+amount = 1
+page = "Vol. 2, p. 249"
+
+[[grants]]
+source = { category = "luminary_disciplines", name = "Vicissitude: Azhi Dahaka" }
+when = { not = { has = { category = "flaws", name = "Stolen Potential", detail = "Social" } } }
+kind = "free_up_to"
+target = { category = "focus_socials", name = "Manipulation" }
+amount = 1
+page = "Vol. 2, p. 249"
+
+[[grants]]
+source = { category = "luminary_disciplines", name = "Vicissitude: Azhi Dahaka" }
+when = { not = { has = { category = "flaws", name = "Stolen Potential", detail = "Social" } } }
+kind = "free_up_to"
+target = { category = "focus_socials", name = "Appearance" }
+amount = 1
+page = "Vol. 2, p. 249"
+
+[[grants]]
+source = { category = "luminary_disciplines", name = "Vicissitude: Azhi Dahaka" }
+when = { not = { has = { category = "flaws", name = "Stolen Potential", detail = "Mental" } } }
+kind = "free_up_to"
+target = { category = "focus_mentals", name = "Perception" }
+amount = 1
+page = "Vol. 2, p. 249"
+
+[[grants]]
+source = { category = "luminary_disciplines", name = "Vicissitude: Azhi Dahaka" }
+when = { not = { has = { category = "flaws", name = "Stolen Potential", detail = "Mental" } } }
+kind = "free_up_to"
+target = { category = "focus_mentals", name = "Intelligence" }
+amount = 1
+page = "Vol. 2, p. 249"
+
+[[grants]]
+source = { category = "luminary_disciplines", name = "Vicissitude: Azhi Dahaka" }
+when = { not = { has = { category = "flaws", name = "Stolen Potential", detail = "Mental" } } }
+kind = "free_up_to"
+target = { category = "focus_mentals", name = "Wits" }
+amount = 1
+page = "Vol. 2, p. 249"
+
 # --- merits that give other merits, whole and free --------------------------------
 
 # The benefits of Acute Sense for hearing and for smell, without buying them.
@@ -621,6 +697,18 @@ target = { category = "merits", pool = { types = ["Clan"], requirement = ["Lasom
 picks = { points = 3 }
 amount = 0
 page = "Vol. 2, p. 260"
+
+# Walking Atrocity: a bonus attribute dot for each dot Morality (Humanity or a Path) is
+# below 5, free, where the player likes; so one more each time Morality drops, and one
+# given up if it rises. At most 5 in one attribute (Vol. 2, p. 205). The dots raise
+# the attribute's maximum with them (checks: attributes above 10).
+[[grants]]
+source = { category = "elder_disciplines", name = "Daimoinon: Walking Atrocity" }
+kind = "free_choices"
+target = { category = "attributes", choose = ["Physical", "Social", "Mental"] }
+picks = { below = { category = "paths", rating = 5 }, most = 5 }
+amount = 0
+page = "Vol. 2, p. 205"
 
 # --- higher caps -------------------------------------------------------------------
 
