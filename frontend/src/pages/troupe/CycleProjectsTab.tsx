@@ -21,7 +21,7 @@ export function CycleProjectsTab({ cycle }: { cycle: CycleOut }) {
       <p className="text-sm text-mist">When the cycle is marked complete, each project goes up by the actions spent on it in submitted downtimes.</p>
       <ul className="flex flex-col gap-3">
         {found.data.map((p) => (
-          <ProjectItem key={p.id} project={p} staff characterId={p.character_id} showName />
+          <ProjectItem key={p.id} project={p} staff characterId={p.character_id} showName questsOn={cycle.quests_enabled} />
         ))}
       </ul>
     </div>

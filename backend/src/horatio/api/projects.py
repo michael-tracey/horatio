@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from horatio import projects
+from horatio import projects, quests
 from horatio.api.downtimes import staff_cycle
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, DowntimeCycle, Project, ProjectCycle, Troupe, User
@@ -69,6 +69,10 @@ class CharacterProjectsOut(BaseModel):
     paths: list[str]
     # The viewer is its home troupe's staff, who start, confirm and stop projects.
     staff: bool
+    # Its home troupe, and whether it runs quests: a goal with things to gather and
+    # tests to pass is a quest to ask for, not a project.
+    troupe_id: uuid.UUID | None = None
+    quests: bool = False
 
 
 def project_out(
@@ -162,10 +166,13 @@ def character_projects(
     character, staff = character_access(db, user, character_id)
     found = projects.of_character(db, character)
     history = projects.history(db, [p.id for p in found])
+    troupe = quests.home_troupe(db, character)
     return CharacterProjectsOut(
         projects=[project_out(db, p, character, history[p.id]) for p in found],
         paths=paths_for(db, character),
         staff=staff,
+        troupe_id=character.home_troupe_id,
+        quests=troupe is not None and troupe.quests_enabled,
     )
 
 
@@ -212,6 +219,18 @@ def drop(project_id: uuid.UUID, db: DbSession, user: CurrentUser) -> ProjectOut:
     """Staff decline or stop a project; its player withdraws one they proposed."""
     project, character, staff = a_project(db, user, project_id)
     projects.drop(db, user, project, as_staff=staff)
+    db.commit()
+    return project_out(db, project, character)
+
+
+@router.post("/projects/{project_id}/quest-request")
+def to_quest_request(project_id: uuid.UUID, db: DbSession, user: CurrentUser) -> ProjectOut:
+    """Staff decline a proposed Research or Other project and make a quest request of
+    it for the character, its name the objective."""
+    project, character, staff = a_project(db, user, project_id)
+    if not staff:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only staff make a quest request of it.")
+    projects.to_quest_request(db, user, project)
     db.commit()
     return project_out(db, project, character)
 

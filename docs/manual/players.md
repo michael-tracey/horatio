@@ -374,7 +374,9 @@ Under an action, **Aimed at…** names a character of the troupe it's aimed at, 
 
 ### Projects
 
-Some work takes more than one downtime, such as changing your character's Path. The **Projects** card at the foot of the Downtime tab shows each of the character's projects: how many actions it has had of how many it needs, and any rule about a least number each month. It shows even when no downtime is open.
+Some work takes more than one downtime, such as changing your character's Path. The **Projects** card at the foot of the Downtime tab shows each of the character's projects: its kind, how many actions it has had of how many it needs, and any rule about a least number each month. It shows even when no downtime is open.
+
+A project is a count of actions. A goal with things to gather and tests to pass, such as finding someone, is a quest instead: while your troupe runs quests, the form says so, with a link to ask for one on the [Quests tab](#quests). A Path change stays a project.
 
 - **Propose a project** to start one: choose its **Kind** (**Path change**, **Research** or **Other**), and give it a name, the **Actions it takes** and, if you like, **At least this many a month**. The storytellers confirm it before actions count toward it. **Withdraw** takes back one they haven't confirmed yet. They can also start one for you.
 - **Spending on it.** Under an action, **Counts toward** names the project it's for. When the storytellers mark the cycle complete, the project goes up by the actions spent on it in your submitted downtime.
