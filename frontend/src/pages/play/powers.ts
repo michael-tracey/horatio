@@ -13,6 +13,9 @@ export const SWITCH = "power:";
 
 export const switchKey = (key: string) => `${SWITCH}${key}`;
 
+/** What another power the character has adds to a switch (issue #601): "Quickness (p. 214): An extra round of actions…". */
+export const addedNote = (added: PowerSwitch["added"][number]) => `${added.source} (${added.page}): ${added.note}`;
+
 /** The keys of the forms and powers on now. */
 export function onKeys(view: Pick<PlayView, "powers">): string[] {
   return view.powers.filter((p) => p.on).map((p) => p.key);

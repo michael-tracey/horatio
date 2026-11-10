@@ -10690,6 +10690,19 @@ export interface components {
             name: string;
         };
         /**
+         * AddedNote
+         * @description What another power the character has adds to a switch, that can't be worked
+         *     out (issue #601): Quickness's extra round on Celerity's.
+         */
+        AddedNote: {
+            /** Note */
+            note: string;
+            /** Page */
+            page: string;
+            /** Source */
+            source: string;
+        };
+        /**
          * Adjustment
          * @description XP staff tick for a character when awarding a game: "Helped +1", at most
          *     `per_month` times a calendar month (None for no limit).
@@ -22584,6 +22597,11 @@ export interface components {
          * @description A form or power the character has, and whether it is on in this game.
          */
         PowerOut: {
+            /**
+             * Added
+             * @default []
+             */
+            added: components["schemas"]["AddedNote"][];
             /**
              * Attributes
              * @default []

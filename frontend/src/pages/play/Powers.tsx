@@ -1,5 +1,5 @@
 import type { PowerSwitch } from "../../api/types";
-import { formsOn, switchKey } from "./powers";
+import { addedNote, formsOn, switchKey } from "./powers";
 import type { makeTap } from "./tracker";
 
 type Tap = (what: Parameters<typeof makeTap>[0]) => void;
@@ -24,6 +24,11 @@ function Row({ power, tap }: { power: PowerSwitch; tap: Tap }) {
           {power.notes.map((n) => (
             <span key={n} className="block text-xs text-mist">
               {n}
+            </span>
+          ))}
+          {power.added.map((a) => (
+            <span key={addedNote(a)} className="block text-xs text-mist">
+              {addedNote(a)}
             </span>
           ))}
           <span className="block text-xs text-mist">
@@ -68,7 +73,7 @@ export function PowersList({ powers, tap }: { powers: PowerSwitch[]; tap: Tap })
   );
 }
 
-/** A short banner while a form or power is on: which, with its notes, and a way back. */
+/** A short banner while a form or power is on: which, with its notes and what other powers add to it, and a way back. */
 export function PowersBanner({ powers, tap }: { powers: PowerSwitch[]; tap: Tap }) {
   const forms = formsOn({ powers });
   const others = powers.filter((p) => p.on && !p.form);
@@ -83,6 +88,11 @@ export function PowersBanner({ powers, tap }: { powers: PowerSwitch[]; tap: Tap 
               <strong className="font-semibold text-gold">{f.name}</strong>
             </p>
             {f.notes.length > 0 && <p className="text-xs text-mist">{f.notes.join(" ")}</p>}
+            {f.added.map((a) => (
+              <p key={addedNote(a)} className="text-xs text-mist">
+                {addedNote(a)}
+              </p>
+            ))}
             <p className="text-xs text-mist">It ends if you sleep or fall into torpor (p. 114); switch it off then.</p>
           </div>
           <button type="button" className="shrink-0 text-xs text-mist underline hover:text-parchment" onClick={() => toggle(tap, f)}>
@@ -96,6 +106,13 @@ export function PowersBanner({ powers, tap }: { powers: PowerSwitch[]; tap: Tap 
           {others.map((p) => p.name).join(", ")}
         </p>
       )}
+      {others
+        .flatMap((p) => p.added)
+        .map((a) => (
+          <p key={addedNote(a)} className="text-xs text-mist">
+            {addedNote(a)}
+          </p>
+        ))}
     </section>
   );
 }
