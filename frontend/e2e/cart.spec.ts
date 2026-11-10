@@ -189,6 +189,85 @@ test("a Ventrue takes Royalty from the sheet, places 4, 3 and 2 free dots, chang
   expect(refused.status()).toBe(409);
 });
 
+test("Walking Atrocity gives a bonus attribute dot for each dot of Morality below 5, and another when it drops", async ({ browser }) => {
+  const custodian = await person(browser, "atrocity-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "atrocity-lead");
+  const player = await person(browser, "atrocity-play");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Atrocities ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  await backstoryOptional(custodian.page, troupeId);
+
+  // A Baali elder (Generation 3) on the Path of Evil Revelations, which starts at 4: one dot below 5.
+  const p = player.page;
+  const id = await builtVampire(
+    p,
+    "Zillah",
+    "Baali",
+    {
+      ...ATTRIBUTES_AND_FOCUSES,
+      backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]],
+      disciplines: [["Daimoinon", 2], ["Obfuscate", 1], ["Presence", 1]],
+      merits: [["Path of Evil Revelations", 3]],
+    },
+    [["disciplines", "Daimoinon", 5]],
+  );
+  await p.goto(`/characters/${id}`);
+  const part = (title: string) => p.locator("section").filter({ has: p.getByRole("heading", { name: title, exact: true }) });
+  const cart = p.getByRole("list", { name: "Changes in the cart" });
+  const trait = (name: string) => p.locator(`li[data-trait="${name}"]`);
+  const placed = p.locator('[data-free-choices="Daimoinon: Walking Atrocity"]');
+  const power = "Daimoinon: Walking Atrocity";
+
+  // The Add panel asks where the dot goes as the power goes in.
+  await part("Disciplines").getByRole("button", { name: "Add" }).click();
+  await p.getByRole("navigation", { name: "Categories" }).getByRole("button", { name: /^Elder Disciplines/ }).click();
+  await p.getByRole("button", { name: new RegExp(`^${power}`) }).click();
+  await expect(p.getByText("Place your bonus attribute dots")).toBeVisible();
+  await expect(p.getByText("Place 1 bonus dot, one for each dot of Morality below 5, up to 5 in one.")).toBeVisible();
+  await p.getByLabel("Bonus dots in Physical").selectOption("1");
+  // One dot only: none is left for Social.
+  await expect(p.getByLabel("Bonus dots in Social").getByRole("option")).toHaveText(["0"]);
+  await p.getByRole("button", { name: "Add to cart" }).click();
+  await expect(cart.getByRole("listitem").filter({ hasText: `Add ${power}` })).toContainText("free: Physical 1");
+  await p.getByRole("button", { name: "Spend XP" }).click();
+
+  // The dot is free, and the attribute says where it came from.
+  await expect(trait("Physical")).toContainText(`+1 from ${power}`);
+  await expect(trait("Physical").getByLabel("8 dots", { exact: true })).toBeVisible();
+  await expect(placed).toContainText("Physical 1");
+  await p.screenshot(shots("walking-atrocity-placed"));
+
+  // A home troupe accepts her; then a diablerie costs her a dot of her Path.
+  const asked = await (await p.request.post(`/api/characters/${id}/home-troupe`, { headers, data: { troupe_id: troupeId } })).json();
+  const accepted = await lead.page.request.post(`/api/approvals/${asked.id}/approve`, { headers, data: {} });
+  expect(accepted.status(), await accepted.text()).toBe(200);
+  const recorded = await lead.page.request.post(`/api/characters/${id}/diablerie`, {
+    headers,
+    data: { committed_on: "2026-10-31", victim: "A rival", humanity_lowered: 1 },
+  });
+  expect(recorded.status(), await recorded.text()).toBe(200);
+
+  // Another dot to place, on the sheet. The one placed stays put.
+  await p.reload();
+  await expect(placed).toContainText("1 more to place");
+  await p.getByRole("button", { name: `Choose the free traits for ${power}` }).click();
+  await expect(placed.getByText("1 of 2 placed")).toBeVisible();
+  await p.getByLabel("Bonus dots in Physical").selectOption("0");
+  await p.getByLabel("Bonus dots in Mental").selectOption("2");
+  await p.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(placed).toContainText("placed dots can't move once a home troupe has accepted");
+  await p.getByLabel("Bonus dots in Mental").selectOption("0");
+  await p.getByLabel("Bonus dots in Physical").selectOption("1");
+  await p.getByLabel("Bonus dots in Social").selectOption("1");
+  await p.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(trait("Social")).toContainText(`+1 from ${power}`);
+  await expect(trait("Physical")).toContainText(`+1 from ${power}`);
+  await expect(placed).not.toContainText("more to place");
+});
+
 test("once accepted, a merit or flaw is asked of the home troupe: one declined, a flaw bought off through a quest", async ({ browser }) => {
   test.slow();
   const custodian = await person(browser, "meritask-cust");

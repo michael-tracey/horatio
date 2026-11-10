@@ -5,6 +5,9 @@ import { Button, ErrorText, Field, Input, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import {
   describePick,
+  dotsAllowed,
+  dotsOn,
+  dotsPlaced,
   fill,
   heading,
   optionOf,
@@ -15,6 +18,7 @@ import {
   rule,
   sayable,
   setDetail,
+  setDots,
   slot,
   toggle,
   toSend,
@@ -42,7 +46,9 @@ export function FreeChoicesFields({
         <fieldset key={offer.grant} className="flex flex-col gap-2 rounded border border-ash p-2">
           <legend className="px-1 text-sm text-parchment">{heading(offer)}</legend>
           <p className="text-xs text-mist">{rule(offer)}</p>
-          {offer.places ? (
+          {offer.dots != null ? (
+            <Dots offer={offer} picks={picks} onChange={onChange} />
+          ) : offer.places ? (
             <Places offer={offer} picks={picks} onChange={onChange} />
           ) : offer.points != null ? (
             <Budget offer={offer} picks={picks} onChange={onChange} />
@@ -78,6 +84,37 @@ function Places({ offer, picks, onChange }: Part) {
         );
       })}
     </div>
+  );
+}
+
+/** Dots to spread over the traits, as many on one as it takes (Walking Atrocity's). */
+function Dots({ offer, picks, onChange }: Part) {
+  const placedNow = dotsPlaced(picks, offer);
+  if (offer.dots === 0 && placedNow === 0) return null;
+  return (
+    <>
+      <div className="flex flex-wrap gap-3">
+        {offer.options.map((o) => {
+          const here = dotsOn(picks, offer, o.name);
+          const most = Math.max(here, dotsAllowed(picks, offer, o.name));
+          return (
+            <Field key={o.name} label={`Bonus dots in ${o.name}`}>
+              <Select value={String(here)} onChange={(e) => onChange(setDots(picks, offer, o.name, Number(e.target.value)))}>
+                {Array.from({ length: most + 1 }, (_, n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          );
+        })}
+      </div>
+      <p className={`text-xs ${placedNow > (offer.dots ?? 0) ? "text-blood-bright" : "text-gold"}`}>
+        {placedNow} of {offer.dots} placed
+        {placedNow > (offer.dots ?? 0) ? `: Morality rose, so give up ${placedNow - (offer.dots ?? 0)}.` : ""}
+      </p>
+    </>
   );
 }
 
@@ -178,6 +215,8 @@ export function FreeChoicesRow({ character, trait, editable }: { character: Char
   const locked = offers.find((o) => o.locked)?.locked ?? null;
   const open = editable && !locked;
   const done = offers.every((o) => o.complete);
+  // Walking Atrocity at Morality 5 or more, with nothing placed: nothing to choose yet.
+  const nothingToPlace = offers.every((o) => o.dots === 0 && o.picks.length === 0);
   // An NPC's fitted creation picks place the merit's dots (Ventrue Royalty's): nothing to choose here.
   const placedElsewhere = character.kind === "npc" && !!locked;
 
@@ -185,16 +224,19 @@ export function FreeChoicesRow({ character, trait, editable }: { character: Char
     <div className="mb-1 ml-3 border-l border-ash pl-3 text-xs" data-free-choices={trait.name}>
       {offers.filter((o) => !placedElsewhere || o.picks.length > 0).map((o) => (
         <p key={o.grant} className="flex flex-wrap items-center gap-1.5">
-          <span className={o.picks.length === 0 ? "text-gold" : "text-mist"}>{o.category_name.replace(/^./, (c) => c.toUpperCase())} given free:</span>
-          {o.picks.length === 0 && <span className="text-gold">not chosen yet</span>}
+          <span className={o.picks.length === 0 && o.dots !== 0 ? "text-gold" : "text-mist"}>
+            {o.dots != null ? "Bonus dots, one for each dot of Morality below 5:" : `${o.category_name.replace(/^./, (c) => c.toUpperCase())} given free:`}
+          </span>
+          {o.picks.length === 0 && <span className={o.dots === 0 ? "text-mist" : "text-gold"}>{o.dots === 0 ? "none yet" : "not chosen yet"}</span>}
           {o.picks.map((p) => (
             <span key={`${p.name}/${p.detail}`} className="rounded border border-ash px-1.5 text-parchment">
               {describePick(p)}
             </span>
           ))}
+          {o.dots != null && o.picks.length > 0 && <DotsLeft offer={o} />}
         </p>
       ))}
-      {draft === null && open && (
+      {draft === null && open && !nothingToPlace && (
         <Button
           variant="ghost"
           className="min-h-7 px-1 py-0 text-xs text-gold"
@@ -234,5 +276,17 @@ export function FreeChoicesRow({ character, trait, editable }: { character: Char
         </form>
       )}
     </div>
+  );
+}
+
+/** Beside Walking Atrocity's placed dots: how many more Morality gives, or how many it now takes. */
+function DotsLeft({ offer }: { offer: FreeChoicesOut }) {
+  const placed = offer.picks.reduce((sum, p) => sum + p.amount, 0);
+  const dots = offer.dots ?? 0;
+  if (placed === dots) return null;
+  return placed < dots ? (
+    <span className="text-gold">{dots - placed} more to place</span>
+  ) : (
+    <span className="text-gold">Morality rose: {placed - dots} to give up</span>
   );
 }

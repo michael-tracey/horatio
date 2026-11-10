@@ -16567,6 +16567,17 @@
             ],
             "title": "Count"
           },
+          "dots": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dots"
+          },
           "grant": {
             "title": "Grant",
             "type": "string"
@@ -16581,6 +16592,17 @@
               }
             ],
             "title": "Locked"
+          },
+          "most": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Most"
           },
           "options": {
             "items": {

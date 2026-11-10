@@ -82,7 +82,9 @@ Condition vocabulary (every key in one table must hold):
     excess_over_generation = { category, above }
                                     the dots rated above `above`, added up across
                                     the sheet's traits in that category, are more
-                                    than the Generation rating (attributes: p. 102)
+                                    than the Generation rating (attributes: p. 102).
+                                    Dots a grant gives raise the maximum with them,
+                                    so they are not counted (Walking Atrocity)
     any_of = [ {...}, {...} ]       any of these conditions
     not = { ... }                   the condition does not hold
 
@@ -403,8 +405,10 @@ def matches(
             ]
             ok = bool(primaries) and (subject.rating or 0) > max(primaries)
         elif key == "excess_over_generation":
+            # Dots a grant gives are bonus dots that raise the maximum with them
+            # (Walking Atrocity's, Vol. 2 p. 205), so they use no Generation.
             excess = sum(
-                max((t.rating or 0) - test["above"], 0)
+                max((t.rating or 0) - max(t.granted_rating, 0) - test["above"], 0)
                 for t in sheet
                 if t.category == test["category"]
             )

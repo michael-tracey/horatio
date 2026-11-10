@@ -3288,3 +3288,12 @@ category = "attributes"
 forbids = { self = { rating = { gt = 10 } }, excess_over_generation = { category = "attributes", above = 10 } }
 message = "Attributes can go above 10 by only as many dots, in all, as the Generation rating: one dot of Generation gives one point to raise an attribute's maximum."
 page = "102"
+
+# Walking Atrocity's bonus dots raise their attribute's maximum with them, so they are
+# not counted above (checks.py, excess_over_generation). With Generation's, an
+# attribute takes no more than 5 bonus dots: 15 at most (Vol. 2, p. 205).
+[[checks]]
+category = "attributes"
+forbids = { self = { rating = { gt = 15 } } }
+message = "An attribute can have no more than 5 bonus dots, Generation's and Walking Atrocity's together."
+page = "Vol. 2, p. 205"

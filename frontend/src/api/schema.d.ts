@@ -16892,10 +16892,14 @@ export interface components {
             complete: boolean;
             /** Count */
             count: number | null;
+            /** Dots */
+            dots?: number | null;
             /** Grant */
             grant: string;
             /** Locked */
             locked: string | null;
+            /** Most */
+            most?: number | null;
             /** Options */
             options: components["schemas"]["FreeOptionOut"][];
             /** Picks */

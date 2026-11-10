@@ -902,7 +902,7 @@ page_reference = "214-215"
 [[traits]]
 category = "elder_disciplines"
 name = "Daimoinon: Walking Atrocity"
-description = "Always on: a free bonus attribute dot for each Morality dot below 5, and another each time Morality drops."
+description = "Always on: a free bonus attribute dot, placed where you like, for each dot Morality is below 5; one more each time it drops, one given up if it rises."
 page_reference = "Vol. 2, p. 205"
 
 [[traits]]
