@@ -16596,6 +16596,17 @@
             ],
             "title": "Count"
           },
+          "dots": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dots"
+          },
           "grant": {
             "title": "Grant",
             "type": "string"
@@ -16610,6 +16621,17 @@
               }
             ],
             "title": "Locked"
+          },
+          "most": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Most"
           },
           "options": {
             "items": {
@@ -29392,6 +29414,14 @@
           "detail": {
             "title": "Detail",
             "type": "string"
+          },
+          "granted_by": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Granted By",
+            "type": "array"
           },
           "group": {
             "title": "Group",

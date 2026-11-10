@@ -65,7 +65,10 @@ function TraitLine({ trait: t, reference }: { trait: Trait; reference: PlayRefer
         ) : focuses.length > 0 ? (
           focuses.map((f) => (
             <p key={f.name} className="mt-0.5">
-              <span className="text-parchment">{f.name}:</span> {f.description}
+              <span className="text-parchment">{f.name}</span>
+              {/* A focus a power gives: "from Vicissitude: Azhi Dahaka" (#598). A reference kept offline from before may not say. */}
+              {(f.granted_by ?? []).length > 0 && <span className="text-mist"> (from {f.granted_by.join(", ")})</span>}
+              <span className="text-parchment">:</span> {f.description}
             </p>
           ))
         ) : null

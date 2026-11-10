@@ -76,6 +76,10 @@ class FreeChoicesOut(BaseModel):
     # The most traits to choose, or the most points of merits to choose.
     count: int | None
     points: int | None
+    # Dots that follow Morality (Walking Atrocity): how many to place now, spread over
+    # the options, and the most on one. Null for any other merit.
+    dots: int | None = None
+    most: int | None = None
     picks: list[FreePickOut]
     # Everything it gives has been chosen.
     complete: bool
@@ -464,6 +468,8 @@ def free_offer_out(rule_set: RuleSetData, offer: free_choices.Offer) -> FreeChoi
         places=list(shape["places"]) if "places" in shape else None,
         count=shape.get("count"),
         points=shape.get("points"),
+        dots=offer.dots,
+        most=shape.get("most") if offer.dots is not None else None,
         picks=[FreePickOut(name=p.name, detail=p.detail, amount=p.amount) for p in offer.picks],
         complete=offer.complete,
         locked=offer.locked,

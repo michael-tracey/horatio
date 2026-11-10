@@ -28,6 +28,7 @@ from horatio.reference import (
 from horatio.rules.files import DATA_DIR, all_rule_set_files, load_rule_set
 from tests.api_helpers import Troupe
 from tests.test_api_character_search import member
+from tests.test_api_grants import AZHI_DAHAKA, luminary_tzimisce
 from tests.test_catalogue_descriptions import PAGE
 
 
@@ -1010,6 +1011,34 @@ def test_a_form_can_give_a_focus_and_change_attributes() -> None:
     assert "-3 Mental" in horrid.changes and horrid.form
     found = {p.key: p for p in pools(sheet, worked.effects, worked.hurts, worked.switches)}
     assert [(s.attribute, s.value) for s in found["defense:Mental"].switched] == [("Mental", -3)]
+
+
+def test_focuses_azhi_dahaka_gives_count_and_say_where_they_are_from(troupe: Troupe) -> None:
+    """Issue #598: the power's focuses are on the sheet, so the Play View counts
+    them as the character's own, and says what gives them."""
+    character_id = luminary_tzimisce(troupe)
+    before = reference(troupe, character_id)
+    assert switched(pool(before, "attack:Brawl")) == [("Horrid Form", "Horrid Form", 3)]
+
+    taken = troupe.player.client.put(
+        f"/characters/{character_id}/traits",
+        json={"category": "luminary_disciplines", "name": AZHI_DAHAKA, "rating": 1},
+    )
+    assert taken.status_code == 200, taken.text
+
+    found = reference(troupe, character_id)
+    # The Charisma focus: Horrid Form's +5 to Brawl in place of +3 (core p. 169).
+    assert switched(pool(found, "attack:Brawl")) == [("Horrid Form", "Horrid Form", 5)]
+    vicissitude = next(d for d in found["disciplines"] if d["name"] == "Vicissitude")
+    visage = vicissitude["powers"][0]
+    assert (visage["name"], visage["focus"]) == (
+        "Malleable Visage",
+        "One standard action, no hands needed.",
+    )
+    traits = {(t["category"], t["name"]): t["granted_by"] for t in found["traits"]}
+    assert traits[("focus_socials", "Charisma")] == [AZHI_DAHAKA]
+    assert traits[("focus_socials", "Manipulation")] == []
+    assert sum(1 for c, _ in traits if c.startswith("focus_")) == 9
 
 
 def test_every_when_in_the_powers_names_a_switch_and_every_switch_a_page() -> None:
