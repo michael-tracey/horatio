@@ -140,4 +140,34 @@ describe("PoolRow", () => {
     expect(screen.getByText(/Mental 5 \+ Investigation 3/).textContent).toBe("Mental 5 + Investigation 3 · against Mental + Willpower");
     expect(screen.getByText("Damage 4, nothing reduces it · exceptional 5")).toBeTruthy();
   });
+
+  it("shows an attack against the hunted target, with Brutal, only while Killer Instincts is on (#613)", () => {
+    const brawl = {
+      ...pool,
+      key: "attack:Brawl",
+      name: "Unarmed attack",
+      switch: null,
+      parts: [{ label: "Physical", value: 5 }, { label: "Brawl", value: 3 }],
+      total: 8,
+      versus: "Physical + Dodge",
+      damage: { ...damage, kind: "unarmed", type: "normal" as const, parts: [{ label: "unarmed", value: 1 }], total: 1, exceptional: 1 },
+      variants: [{ when: "Against your hunted target", total: 10, parts: [{ label: "Accurate", value: 2 }], instead: false, tracked: [], switch: "Killer Instincts", qualities: [{ name: "Brutal", play: "Win on the larger pool: exceptional success", page: "p. 516" }] }],
+    };
+    const { rerender } = render(
+      <ul>
+        <PoolRow pool={brawl} willpower={0} modifiers={[]} on={[]} />
+      </ul>,
+    );
+    expect(screen.getByText("8")).toBeTruthy();
+    expect(screen.queryByText(/hunted target/)).toBeNull();
+    rerender(
+      <ul>
+        <PoolRow pool={brawl} willpower={0} modifiers={[]} on={["Killer Instincts"]} />
+      </ul>,
+    );
+    expect(screen.getByText("8")).toBeTruthy();
+    expect(screen.getByText(/Against your hunted target/).textContent).toBe("Against your hunted target (+2 Accurate), Brutal");
+    expect(screen.getByText("10")).toBeTruthy();
+    expect(screen.getByText("Brutal: win on the larger pool: exceptional success (p. 516)")).toBeTruthy();
+  });
 });

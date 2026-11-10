@@ -21,7 +21,9 @@ entry with `when` is a variant ("With Celerity active: 12"), not part of the
 number shown, since it holds only some of the time. A variant can also be another
 pool to use in its place (Rockheart's Physical + Survival), or add what the Play
 View's trackers hold (Rampart of Faith's Morality minus Beast traits), which the
-page counts (issue #602).
+page counts (issue #602). One a switch holds only against someone (Killer
+Instincts' hunted target, issue #613) is a variant the page shows while the switch
+is on, with the equipment qualities it gives, rather than part of the total.
 
 Each attack pool also carries the damage a hit does (issue #190): the base for its
 type (core p. 279) plus what the sheet's powers add through `damage` entries in the
@@ -143,6 +145,16 @@ class TrackedPart(BaseModel):
     tracks: Literal["morality_less_beast"]
 
 
+class VariantQuality(BaseModel):
+    """An equipment quality a variant gives (issue #613): Killer Instincts' Brutal."""
+
+    name: str
+    # What it does at the table: "Win on the larger pool: exceptional success".
+    play: str
+    # Where its rules are: "p. 516".
+    page: str
+
+
 class PoolVariant(BaseModel):
     # When it applies: "With Celerity active", "In fight form".
     when: str
@@ -154,6 +166,11 @@ class PoolVariant(BaseModel):
     instead: bool = False
     # What it adds that the trackers hold, which `total` leaves out.
     tracked: list[TrackedPart] = []
+    # The switch it holds for, shown only while that is on: Killer Instincts' line
+    # "Against your hunted target" (issue #613), which the pool's total leaves out.
+    switch: str | None = None
+    # Equipment qualities it gives besides its parts, each with what it does.
+    qualities: list[VariantQuality] = []
 
 
 class TestPool(BaseModel):
@@ -373,6 +390,12 @@ class Effect:
     tracks: Literal["morality_less_beast"] | None = None
     # Another pool to use in place of this one: Physical + Survival (Rockheart).
     alternative: tuple[PoolPart, ...] = ()
+    # Whom it holds against, with a switch: a line of its own under the pool while
+    # the switch is on, not part of its total (Killer Instincts, issue #613).
+    against: str | None = None
+    # What its part is called, if not its source: "Accurate".
+    label: str | None = None
+    qualities: tuple[VariantQuality, ...] = ()
 
 
 @dataclass
@@ -636,6 +659,12 @@ def effects(sheet: Sheet, bases: Mapping[str, set[str]]) -> list[Effect]:
                     beast=e.get("beast", 0),
                     tracks=e.get("amount") if e.get("amount") in TRACKED else None,
                     alternative=_alternative(e.get("alternative"), sheet),
+                    against=e.get("against"),
+                    label=e.get("label"),
+                    qualities=tuple(
+                        VariantQuality(name=q["name"], play=q["play"], page=_page(q))
+                        for q in e.get("qualities", [])
+                    ),
                 )
             )
 
@@ -791,6 +820,8 @@ def _pool(
     variants: dict[str, list[PoolPart]] = defaultdict(list)
     tracked: dict[str, list[TrackedPart]] = defaultdict(list)
     instead: list[PoolVariant] = []
+    # Variants a switch holds against someone, by switch and whom.
+    against: dict[tuple[str, str], PoolVariant] = {}
     switched: list[SwitchedPart] = []
     notes: list[str] = list(extra.pop("notes", []))
     for e in found:
@@ -807,6 +838,14 @@ def _pool(
             )
         elif e.note:
             notes.append(f"{e.note} ({e.source})")
+        elif e.when in keys and e.against:
+            variant = against.setdefault(
+                (e.when, e.against),
+                PoolVariant(when=f"against {e.against}", total=0, parts=[], switch=e.when),
+            )
+            if e.amount:
+                variant.parts.append(PoolPart(label=e.label or e.source, value=e.amount))
+            variant.qualities += [q for q in e.qualities if q not in variant.qualities]
         elif e.when in keys:
             if e.amount:
                 switched.append(SwitchedPart(switch=e.when, label=e.source, value=e.amount))
@@ -834,7 +873,11 @@ def _pool(
             )
             for when, adds in variants.items()
         ]
-        + instead,
+        + instead
+        + [
+            v.model_copy(update={"total": total + sum(p.value for p in v.parts)})
+            for v in against.values()
+        ],
         notes=notes,
         switched=switched,
         **extra,
@@ -1041,6 +1084,15 @@ def _changes(
     """What a switch changes, in words, for its line on the Play View."""
     lines: list[str] = []
     for e in found:
+        if e.when == switch.key and e.against and not e.note:
+            # "Against your hunted target: +2 attacks (Accurate), Brutal" (issue #613).
+            gives = [q.name for q in e.qualities]
+            if e.amount:
+                gives.insert(
+                    0, f"{_signed(e.amount)} {_pool_words(e.pool)} ({e.label or e.source})"
+                )
+            lines.append(f"Against {e.against}: {', '.join(gives)}")
+            continue
         if e.when == switch.key and e.amount and not e.note:
             by = "" if switch.name.startswith(e.source) else f" ({e.source})"
             lines.append(f"{_signed(e.amount)} {_pool_words(e.pool)}{by}")

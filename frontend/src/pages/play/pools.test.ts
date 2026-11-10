@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PoolModifier, TestPool } from "../../api/types";
-import { appliesTo, attackGlance, breakdown, damageShort, damageText, damageTotal, describe as describeModifier, defenceGlance, describePools, fightFirst, grouped, showing, switchedDamage, topAttacks, total, trackersOf, variantNow, variantText, withAttribute } from "./pools";
+import { appliesTo, attackGlance, breakdown, damageShort, damageText, damageTotal, describe as describeModifier, defenceGlance, describePools, fightFirst, grouped, qualityText, showing, switchedDamage, topAttacks, total, trackersOf, variantNow, variantsOn, variantText, withAttribute } from "./pools";
 
 const pool = (over: Partial<TestPool>): TestPool => ({
   key: "dodge",
@@ -229,7 +229,7 @@ describe("defences that aren't a flat bonus (issue #602)", () => {
     total: 3,
     adds_willpower: true,
     variants: [
-      { when: "For 1 Blood", total: 3, parts: [], instead: false, tracked: [{ label: "Rampart of Faith", tracks: "morality_less_beast" }] },
+      { when: "For 1 Blood", total: 3, parts: [], instead: false, tracked: [{ label: "Rampart of Faith", tracks: "morality_less_beast" }], qualities: [] },
       {
         when: "Instead, with Rockheart",
         total: 7,
@@ -239,6 +239,7 @@ describe("defences that aren't a flat bonus (issue #602)", () => {
         ],
         instead: true,
         tracked: [],
+        qualities: [],
       },
     ],
     switched: [
@@ -276,6 +277,43 @@ describe("defences that aren't a flat bonus (issue #602)", () => {
   it("reads Morality and Beast traits from the Play View", () => {
     expect(trackersOf({ morality: { value: 4 }, beast: { value: 1 } })).toEqual({ morality: 4, beast: 1 });
     expect(trackersOf({ morality: null, beast: { value: 0 } })).toEqual({ morality: 0, beast: 0 });
+  });
+});
+
+describe("an attack against your hunted target (issue #613)", () => {
+  const brutal = { name: "Brutal", play: "Win on the larger pool: exceptional success", page: "p. 516" };
+  // Physical 6 + Brawl 3, with Killer Instincts' line for the target it hunts, and Celerity's +2 while on.
+  const brawl = pool({
+    key: "attack:Brawl",
+    name: "Unarmed attack",
+    parts: [
+      { label: "Physical", value: 6 },
+      { label: "Brawl", value: 3 },
+    ],
+    variants: [{ when: "Against your hunted target", total: 11, parts: [{ label: "Accurate", value: 2 }], instead: false, tracked: [], switch: "Killer Instincts", qualities: [brutal] }],
+    switched: [{ switch: "Celerity", label: "Celerity", value: 2, attribute: null, most: null }],
+  });
+  const [hunted] = brawl.variants as [TestPool["variants"][number]];
+
+  it("shows the line only while Killer Instincts is on, and leaves the attack's total alone", () => {
+    expect(variantsOn(brawl, [])).toEqual([]);
+    expect(variantsOn(brawl, ["Celerity"])).toEqual([]);
+    expect(variantsOn(brawl, ["Killer Instincts"])).toEqual([hunted]);
+    expect(total(brawl, 0, [], ["Killer Instincts"])).toBe(9);
+  });
+
+  it("counts +2 Accurate on what the attack counts now, and gives Brutal", () => {
+    const now = variantNow(brawl, hunted, 0, [], ["Killer Instincts"]);
+    expect([now.when, now.total, variantText(now)]).toEqual(["Against your hunted target", 11, "+2 Accurate"]);
+    expect(now.qualities).toEqual([brutal]);
+    expect(variantNow(brawl, hunted, 0, [{ id: "a", label: "Sharp", amount: 1, pools: "attack", when: "", on: true }], ["Killer Instincts", "Celerity"]).total).toBe(9 + 2 + 2 + 1);
+    expect(qualityText(brutal)).toBe("Brutal: win on the larger pool: exceptional success (p. 516)");
+  });
+
+  it("shows every variant from a Play View kept from before, which has no switch", () => {
+    const old = pool({ variants: [{ when: "For 1 Blood", total: 9, parts: [], instead: false, tracked: [] } as unknown as TestPool["variants"][number]] });
+    expect(variantsOn(old, [])).toHaveLength(1);
+    expect(variantNow(old, old.variants[0]!, 0).qualities).toEqual([]);
   });
 });
 
