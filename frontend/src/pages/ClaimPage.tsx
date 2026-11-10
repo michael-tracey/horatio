@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import { Avatar } from "../components/Avatar";
 import { useToast } from "../components/Toast";
-import { Button, Card, ErrorText, Loading } from "../components/ui";
+import { Button, Card, ErrorText, Loading, SessionCheckFailed } from "../components/ui";
 import { useDates } from "../dates";
 import { useAction, useMe } from "../hooks";
 import { withNext } from "../next";
@@ -62,6 +62,9 @@ export function ClaimPage() {
                   </Button>
                   <p className="text-xs text-mist">Signed in as @{me.data.handle}. Not you? Sign out first.</p>
                 </>
+              ) : me.isError ? (
+                // Not known to be signed out: don't offer an account (#621).
+                <SessionCheckFailed />
               ) : (
                 <>
                   <Link

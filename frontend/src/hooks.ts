@@ -19,6 +19,11 @@ export function useMe() {
       }
     },
     staleTime: 60_000,
+    // A failed check is asked again by Try again (SessionCheckFailed), on focus or
+    // reconnecting, not by each screen that opens on it: asking puts the query back to
+    // loading, the layout swaps in its loading screen, and the page opening again
+    // would ask again, for ever (#621).
+    retryOnMount: false,
   });
 }
 

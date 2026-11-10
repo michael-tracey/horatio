@@ -102,6 +102,30 @@ test("a link opened signed out goes there once signed in, and never to another s
   expect(new URL(other.url()).origin).toBe(new URL(page.url()).origin);
 });
 
+test("a session check that fails says so on the page with Try again, not the sign-in form", async ({ browser }) => {
+  const { page } = await person(browser, "sessioncheck-player");
+  // The server fails every check after a reload, until it is back.
+  let failing = true;
+  let failed = 0;
+  await page.route("**/api/auth/me", (route) => {
+    if (!failing) return route.fallback();
+    failed += 1;
+    return route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ detail: "The server is having a moment." }) });
+  });
+  await page.goto("/troupes");
+  await expect(page.getByText("Couldn't check that you're signed in.")).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveText("The server is having a moment.");
+  await expect(page.getByRole("heading", { name: "Sign in" })).toHaveCount(0);
+  expect(new URL(page.url()).pathname).toBe("/troupes");
+  // Asked once, not again and again as the page opens on the failure.
+  expect(failed).toBeLessThanOrEqual(2);
+
+  failing = false;
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByRole("heading", { name: "Troupes", exact: true })).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe("/troupes");
+});
+
 test("a page whose file is gone after a deploy reloads once, then says Horatio was updated", async ({ browser }) => {
   const { page } = await person(browser, "Staleo");
   let asked = 0;
