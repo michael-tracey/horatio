@@ -9,10 +9,10 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from horatio.models import InfluenceEntry, Notification
+from horatio.models import InfluenceEntry, Notification, QuestRequest
 from tests.api_helpers import Person, Troupe, sign_up
 from tests.test_api_downtimes import member_character, my_downtime, new_cycle, open_cycle
 from tests.test_api_quests import give, member_character_of, ok, quests_on
@@ -218,6 +218,55 @@ def test_a_request_is_matched_only_by_those_who_keep_locations(troupe: Troupe, a
     assert refused.status_code == 403
     seen = ok(troupe.narrator.client.get(f"/troupes/{troupe.id}/quest-requests"))[0]
     assert (seen["can_match"], seen["location"]) == (False, None)
+
+
+NOT_WEB_ADDRESSES = [
+    "javascript:alert(1)",
+    "  JavaScript:alert(1)",
+    "data:text/html,<script>alert(1)</script>",
+    "vbscript:msgbox(1)",
+    "//evil.example/map",
+]
+
+
+def test_a_map_link_must_be_a_web_address(troupe: Troupe, agnes: str) -> None:
+    for url in NOT_WEB_ADDRESSES:
+        refused = ask(troupe.player, agnes, kind="acquire", name="Ruby's Bar", map_link=url)
+        assert refused.status_code == 422, url
+        assert refused.json()["detail"] == (
+            f"{url.strip()} is not a web address: start it with https://."
+        )
+    assert queue(troupe) == []
+
+    map_link = "https://maps.example.com/?q=12+Main+St"
+    ok(ask(troupe.player, agnes, kind="acquire", name="Ruby's Bar", map_link=f" {map_link} "), 201)
+    request = queue(troupe)[0]
+    assert request["details"]["map_link"] == map_link
+    matched = ok(
+        troupe.storyteller.client.put(
+            f"/quest-requests/{request['id']}/location", json={"new": {"rating": 1}}
+        )
+    )
+    assert read(troupe, matched["location"]["id"])["map_link"] == map_link
+
+
+def test_a_stored_map_link_that_isnt_a_web_address_is_not_carried_over(
+    troupe: Troupe, agnes: str, session: Session
+) -> None:
+    ok(ask(troupe.player, agnes, kind="acquire", name="Ruby's Bar"), 201)
+    request = queue(troupe)[0]
+    session.execute(
+        update(QuestRequest)
+        .where(QuestRequest.id == request["id"])
+        .values(details={"name": "Ruby's Bar", "address": "", "map_link": "javascript:alert(1)"})
+    )
+    session.flush()
+    matched = ok(
+        troupe.storyteller.client.put(
+            f"/quest-requests/{request['id']}/location", json={"new": {"rating": 1}}
+        )
+    )
+    assert read(troupe, matched["location"]["id"])["map_link"] == ""
 
 
 # --- adding a quality -----------------------------------------------------------------------

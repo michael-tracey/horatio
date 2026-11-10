@@ -38,7 +38,7 @@ from typing import Any
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from horatio import audit
+from horatio import audit, links
 from horatio.influence_log import in_troupe
 from horatio.models import AuditEvent, Character, Location, Troupe, TroupeLocationQuality, User
 from horatio.rules import locations as catalogue
@@ -55,6 +55,9 @@ from horatio.sheets import conflict, sheet_rows, unprocessable
 CONTROLS = ("character", "named", "none", "uncontrollable")
 INFLUENCE_TYPES = ("elite", "underworld")
 HAVEN = "Haven"
+# The longest web address and map link a location keeps.
+WEB_ADDRESS = 500
+MAP_LINK = 1000
 
 
 def suggestion_from(raw: dict[str, Any]) -> Suggestion:
@@ -574,6 +577,15 @@ def counted_for(db: Session, location: Location) -> set[uuid.UUID]:
     }
 
 
+def checked_links(draft: Draft, before: Draft | None) -> None:
+    """Refuse a web address or map link, new or changed, that isn't a web address.
+    One kept from before is left for the page to show as plain text."""
+    for key, longest in (("web_address", WEB_ADDRESS), ("map_link", MAP_LINK)):
+        url = getattr(draft, key)
+        if url != (getattr(before, key) if before else ""):
+            links.optional_web_address(url, longest)
+
+
 def save(
     db: Session, actor: User, troupe: Troupe, location: Location | None, draft: Draft
 ) -> tuple[Location, list[str]]:
@@ -583,6 +595,7 @@ def save(
     rules = rules_for(db, troupe)
     before = draft_of(location) if location is not None else None
     had = {q.name for q in before.qualities} if before else set[str]()
+    checked_links(draft, before)
     if reason := problem(rules, draft, had, this_year()):
         raise unprocessable(reason)
     name_taken(db, troupe, draft.name, location)

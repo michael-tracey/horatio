@@ -50,9 +50,16 @@ const QUOTE = /^ {0,3}>\s?(.*)$/;
 const FENCE = /^ {0,3}(```|~~~)/;
 const TABLE_DELIMITER = /^ {0,3}\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
 export const SAFE_LINK = /^(https?:\/\/|mailto:)/i;
+/** A web address as a link takes it: http or https only, not even `mailto:`. */
+const WEB_LINK = /^https?:\/\//i;
 /** A link with a scheme (`javascript:`, `data:`…) or a host (`//x`): the manual's own links have neither. */
 const NOT_RELATIVE = /^([a-z][a-z0-9+.-]*:|\/\/|\\)/i;
 const ESCAPABLE = "\\`*_{}[]()#+-.!>~|<";
+
+/** `url` if it is safe to give as a link's `href`, an http or https address; null otherwise, to show as plain text. */
+export function webLink(url: string | null | undefined): string | null {
+  return url && WEB_LINK.test(url) ? url : null;
+}
 
 /** The heading lines of a backstory, as their text: the sections feedback can be on. */
 export function headings(text: string): string[] {

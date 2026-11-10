@@ -593,16 +593,22 @@ test("location quests: a player acquires Ruby's Bar, adds Profitable, a rival ma
     await expect(l.getByText("Completed", { exact: true })).toBeVisible();
   };
 
-  // Acquire: Agnes's player asks for Ruby's Bar, 12 Main St.
+  // Acquire: Agnes's player asks for Ruby's Bar, 12 Main St. A map link that isn't a web address is refused.
+  const mapLink = "https://maps.example.com/?q=12+Main+St";
   await ask(o, agnes, "Acquire a location", async () => {
     await o.getByLabel("Name of the place").fill("Ruby's Bar");
     await o.getByLabel("Address").fill("12 Main St");
+    await o.getByLabel("Map link (optional)").fill("javascript:alert(1)");
   });
+  await expect(o.getByText("javascript:alert(1) is not a web address: start it with https://.")).toBeVisible();
+  await o.getByLabel("Map link (optional)").fill(mapLink);
+  await o.getByRole("button", { name: "Ask for this quest" }).click();
   await expect(o.getByText("Acquire Ruby's Bar, 12 Main St")).toBeVisible();
 
-  // The lead makes it a new standard 2 with a Hangout, and builds a Simple 2 from it.
+  // The lead sees the map link in the queue, makes it a new standard 2 with a Hangout, and builds a Simple 2 from it.
   await l.goto(`/troupes/${troupe.id}/quests`);
   const request = l.getByRole("listitem", { name: "Request from Agnes Ruby" });
+  await expect(request.getByRole("link", { name: "Open the map" })).toHaveAttribute("href", mapLink);
   const match = request.getByRole("group", { name: "Match to a location" });
   await match.getByLabel("Or a new standard location, rated").selectOption("2");
   await match.getByLabel("With the quality").selectOption("Hangout");

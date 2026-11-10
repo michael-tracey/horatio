@@ -10,6 +10,7 @@ import { InfoButton } from "../../components/InfoButton";
 import { LogList } from "../../components/LogList";
 import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, Empty, ErrorText, Input, Loading, Select } from "../../components/ui";
+import { WebLink } from "../../components/WebLink";
 import { useAction } from "../../hooks";
 import { LocationForm, Warnings } from "./LocationForm";
 import { RemoveNegative } from "./RemoveNegative";
@@ -421,8 +422,8 @@ function Record({ location: l, catalogue, onEdit, onQuest }: { location: Locatio
     ...(influenceText(l) ? [["Influence", influenceText(l)] as [string, string]] : []),
     ...(l.feeding_block ? [["Feeding block", l.feeding_block] as [string, string]] : []),
     ...(l.address ? [["Address", l.address] as [string, string]] : []),
-    ...(l.web_address ? [["Web", <a key="w" href={l.web_address} target="_blank" rel="noreferrer" className="text-gold hover:text-parchment break-all">{l.web_address}</a>] as [string, ReactNode]] : []),
-    ...(l.map_link ? [["Map", <a key="m" href={l.map_link} target="_blank" rel="noreferrer" className="text-gold hover:text-parchment">Open the map</a>] as [string, ReactNode]] : []),
+    ...(l.web_address ? [["Web", <WebLink key="w" url={l.web_address} className="text-gold hover:text-parchment break-all" />] as [string, ReactNode]] : []),
+    ...(l.map_link ? [["Map", <WebLink key="m" url={l.map_link} className="text-gold hover:text-parchment">Open the map</WebLink>] as [string, ReactNode]] : []),
     ...(l.haven_of ? [["Haven of", l.haven_of.name] as [string, string]] : []),
     ...(l.elysium_since != null ? [["Elysium", `Unviolated since ${l.elysium_since}: ${l.elysium_qualities} Elysium ${l.elysium_qualities === 1 ? "quality" : "qualities"}`] as [string, string]] : []),
   ];

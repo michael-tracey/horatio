@@ -22,10 +22,10 @@ from sqlalchemy.orm import Session
 
 from horatio import pictures
 from horatio.api.pictures import CropIn, as_fractions, uploads
-from horatio.api.players import web_address
 from horatio.api.written_rules import WrittenRuleOut, rules_out
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession, MaybeUser
+from horatio.links import web_address
 from horatio.models import GameAttendance, ScheduledGame, Troupe, TroupeStaff, User
 from horatio.permissions import TroupeAction, allows, require_troupe_action, troupe_role
 
