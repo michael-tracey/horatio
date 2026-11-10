@@ -292,6 +292,7 @@ export function PoolsTab({
   willpower,
   characterId,
   powers,
+  forms,
   items = [],
   equipped = [],
   tap,
@@ -302,6 +303,8 @@ export function PoolsTab({
   willpower: number;
   characterId: string;
   powers: PowerSwitch[];
+  /** How many forms can be on at once: two with Ravenous Conglomeration. */
+  forms?: number;
   items?: PlayItem[];
   equipped?: string[];
   tap: (what: Parameters<typeof makeTap>[0]) => void;
@@ -375,7 +378,7 @@ export function PoolsTab({
           </ul>
         </Panel>
       )}
-      <SwitchesDrawer pools={reference.pools} powers={powers} items={items} equipped={equipped} modifiers={modifiers} tap={tap} />
+      <SwitchesDrawer pools={reference.pools} powers={powers} forms={forms} items={items} equipped={equipped} modifiers={modifiers} tap={tap} />
     </div>
   );
 }

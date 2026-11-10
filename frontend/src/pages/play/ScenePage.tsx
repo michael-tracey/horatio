@@ -633,7 +633,7 @@ function SceneCard({ characterId, back, onRemove, onRank }: { characterId: strin
         ))}
       {open.includes("powers") && (
         <div className="flex max-h-96 flex-col gap-3 overflow-y-auto">
-          <PowersList powers={shown.powers} tap={tap} />
+          <PowersList powers={shown.powers} forms={shown.forms} tap={tap} />
           <EquipmentSwitches items={shown.equipment} equipped={shown.equipped} pools={reference?.pools ?? []} tap={tap} />
           <ModifiersPanel pools={reference?.pools ?? []} modifiers={modifiers} />
         </div>

@@ -1,6 +1,6 @@
 """How many languages Linguistics gives, as a troupe plays it.
 
-By the book each dot of Linguistics gives one language (p. 95), and Natural
+By the book each dot of Linguistics gives one language (p. 94), and Natural
 Linguist two (p. 252): two checks on the Languages category say so, with
 more_than_dots (horatio.rules.checks). A troupe can play a chart instead: the
 accelerated one some troupes use, or its own figure for each rating. Natural
@@ -113,7 +113,7 @@ def setting_text(rule: LanguageRule, capital: bool = False) -> str:
     return text[:1].upper() + text[1:] if capital else text
 
 
-BOOK_TEXT = f"One per dot of {SKILL}; {MERIT} doubles it (pp. 95, 252)"
+BOOK_TEXT = f"One per dot of {SKILL}; {MERIT} doubles it (pp. 94, 252)"
 
 
 def applied(checks: Sequence[CheckData], rule: LanguageRule, page: str) -> tuple[CheckData, ...]:
