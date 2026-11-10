@@ -679,6 +679,8 @@ test("kept on the phone, a player's character opens with no signal: the sheet, t
   await p.getByRole("button", { name: "Update now" }).click();
   await expect(kept).toContainText("Kept here now: Nocturne");
   await expect(kept).toContainText(/Updated .* · about \d+ KB/);
+  // Everything kept came: no word of screens left as they were (#619).
+  await expect(kept).not.toContainText("The last try");
   await p.screenshot(shots("offline-device"));
   await p.evaluate(async () => void (await navigator.serviceWorker.ready));
 

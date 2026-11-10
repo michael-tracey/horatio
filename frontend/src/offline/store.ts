@@ -31,14 +31,19 @@ type Queries = DehydratedState["queries"];
 export type Kept = {
   /** When it was last written. */
   savedAt: number;
-  /** When every kept character was last asked for afresh (Update now, or opening the app). */
+  /** When everything kept was last asked for afresh and all of it came (Update now, or opening the app). */
   refreshedAt: number | null;
+  /** The last time it was asked for afresh, if some of it didn't come (#619): those screens keep what was kept before. */
+  partial?: PartialRefresh | null;
   characters: { id: string; name: string }[];
   troupes: string[];
   queries: Queries;
   /** Roughly how much space it takes. */
   bytes: number;
 };
+
+/** A refresh that left some kept screens as they were: how many, and when it was tried. */
+export type PartialRefresh = { failed: number; triedAt: number };
 
 /** What Account › This device shows: a person's kept answers, without the answers. */
 export type KeptSummary = Omit<Kept, "queries">;
@@ -135,7 +140,7 @@ export async function loadSummary(userId: string, shelf: Shelf = indexedShelf): 
 }
 
 /** Write what the app has now for a person's own characters, keeping what it had before for those not on screen. */
-export async function save(client: QueryClient, userId: string, shelf: Shelf = indexedShelf, refreshedAt?: number): Promise<KeptSummary | null> {
+export async function save(client: QueryClient, userId: string, shelf: Shelf = indexedShelf, refreshed?: { at: number; failed: number }): Promise<KeptSummary | null> {
   // Only ever the signed-in person's own answers, under their own key.
   if (client.getQueryData<Me | null>(["me"])?.id !== userId) return null;
   const before = await shelf.get<Kept>(recordKey(userId));
@@ -147,7 +152,9 @@ export async function save(client: QueryClient, userId: string, shelf: Shelf = i
   for (const q of now) queries.set(q.queryHash, { ...q, promise: undefined });
   const kept: Omit<Kept, "bytes"> = {
     savedAt: Date.now(),
-    refreshedAt: refreshedAt ?? before?.refreshedAt ?? null,
+    // Updated only when all of it came; otherwise the time it last did, and what didn't.
+    refreshedAt: refreshed && !refreshed.failed ? refreshed.at : (before?.refreshedAt ?? null),
+    partial: refreshed ? (refreshed.failed ? { failed: refreshed.failed, triedAt: refreshed.at } : null) : (before?.partial ?? null),
     characters: list ? keptCharacters(list, userId).map((c) => ({ id: c.id, name: c.name })) : (before?.characters ?? []),
     troupes: [...mine.troupes],
     queries: [...queries.values()],
@@ -159,25 +166,38 @@ export async function save(client: QueryClient, userId: string, shelf: Shelf = i
   return found;
 }
 
-/** Ask afresh for everything kept for each of the person's characters, then keep it. Needs a connection. */
+/**
+ * Ask afresh for everything kept for each of the person's characters, then keep it. Needs a connection.
+ * Whatever doesn't come keeps what was kept before, and is counted, so the refresh says it was partial.
+ */
 export async function refresh(client: QueryClient, userId: string, shelf: Shelf = indexedShelf): Promise<KeptSummary | null> {
   const fetch = <T>(queryKey: unknown[], queryFn: () => Promise<T>) => client.fetchQuery({ queryKey, queryFn, staleTime: 0 });
+  let failed = 0;
+  const settled = async <T extends readonly unknown[] | []>(fetches: T) => {
+    const results = await Promise.allSettled(fetches);
+    failed += results.filter((r) => r.status === "rejected").length;
+    return results;
+  };
   const list = await fetch(["characters"], () => unwrap(api.GET("/api/characters")));
-  await Promise.allSettled([fetch(["troupes"], () => unwrap(api.GET("/api/troupes"))), fetch(["splats"], () => unwrap(api.GET("/api/rules")))]);
+  await settled([fetch(["troupes"], () => unwrap(api.GET("/api/troupes"))), fetch(["splats"], () => unwrap(api.GET("/api/rules")))]);
   // One character at a time: the API is one process, and this is not what anyone is waiting on.
   for (const c of keptCharacters(list, userId)) {
     const path = { params: { path: { character_id: c.id } } };
-    const [character] = await Promise.allSettled([
+    const [character] = await settled([
       fetch(["character", c.id], () => unwrap(api.GET("/api/characters/{character_id}", path))),
       fetch(["sheet", c.id], () => unwrap(api.GET("/api/characters/{character_id}/sheet", path))),
       fetch(["play", c.id], () => unwrap(api.GET("/api/characters/{character_id}/play", path))),
       fetch(["play-reference", c.id], () => unwrap(api.GET("/api/characters/{character_id}/play/reference", path))),
       fetch(["character-equipment", c.id], () => unwrap(api.GET("/api/characters/{character_id}/equipment", path))),
     ]);
-    if (character.status !== "fulfilled") continue;
+    if (character.status !== "fulfilled") {
+      // Its catalogue and troupe aren't asked for either.
+      failed += c.home_troupe_id ? 2 : 1;
+      continue;
+    }
     const troupeId = rulesTroupe(character.value);
     const splat = character.value.splat;
-    await Promise.allSettled([
+    await settled([
       fetch(["catalogue", splat, troupeId], () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat }, query: { troupe_id: troupeId } } }))),
       ...(c.home_troupe_id ? [fetch(["troupe", c.home_troupe_id], () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: c.home_troupe_id! } } })))] : []),
     ]);
@@ -185,7 +205,7 @@ export async function refresh(client: QueryClient, userId: string, shelf: Shelf 
   // Each troupe's latest news (#510), to read at a game with no signal.
   for (const troupeId of mineOf(list, userId).troupes) {
     const path = { params: { path: { troupe_id: troupeId } } };
-    await Promise.allSettled([
+    await settled([
       fetch(["agencies", troupeId], () => unwrap(api.GET("/api/troupes/{troupe_id}/agencies", path))),
       fetch(["posts", troupeId, "news"], () => unwrap(api.GET("/api/troupes/{troupe_id}/posts", { params: { path: { troupe_id: troupeId }, query: { kind: "news" } } }))),
       // Its announcements, pinned ones first (#511).
@@ -193,7 +213,7 @@ export async function refresh(client: QueryClient, userId: string, shelf: Shelf 
       fetch(["posts-glance", troupeId], () => unwrap(api.GET("/api/troupes/{troupe_id}/posts/glance", path))),
     ]);
   }
-  return save(client, userId, shelf, Date.now());
+  return save(client, userId, shelf, { at: Date.now(), failed });
 }
 
 /** Account › This device's Remove: the person's kept answers go, and nothing more is kept here until they turn it on again. */
