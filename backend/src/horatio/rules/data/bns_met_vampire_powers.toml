@@ -36,7 +36,10 @@
 #     focus adds elsewhere in this file counts too;
 #   - `blood = { per_turn?, most? }`: more Blood a turn, and `most = "half"` makes
 #     the Blood pool half again as big (rounded up) until it ends;
-#   - `notes = [text, or { note, choice?, focus? }]`: what can't be worked out.
+#   - `notes = [text, or { note, choice?, focus? }]`: what can't be worked out;
+#   - `picks = { kind, count }`: the player picks `count` equipment qualities of
+#     that kind each time it goes on (issue #599: Flesh of Marble's two Protective
+#     Gear qualities), and their pool effects count as an equipped item's do.
 # `choices` (on a power): what the player chooses when buying it, kept on the
 #   discipline's trait and fixed afterwards: [{ key, label, default?, options? }].
 #   `choice = { key = value }` on an entry makes it hold only for that choice.
@@ -2032,7 +2035,7 @@ active = { key = "Zephyr", page = 199, book = "Vol. 2", notes = ["Twice your usu
 category = "elder_disciplines"
 name = "Chimerstry: Horrid Blade of the Demons"
 cost = { blood = 2 }
-active = { key = "Horrid Blade of the Demons", page = 201, book = "Vol. 2", notes = ["A level 5 magical melee weapon only you can wield: two weapon qualities and up to 5 points of Cantrips. It can't be disbelieved.", "An hour, then 2 Blood for each hour more; if you're disarmed it vanishes unless you spend 1 Blood to have it back in hand.", "No Horrid Reality or Quietus on it; its damage doesn't fade."] }
+active = { key = "Horrid Blade of the Demons", page = 201, book = "Vol. 2", picks = { kind = "melee", count = 2 }, notes = ["A level 5 magical melee weapon only you can wield: pick its two weapon qualities each time (core p. 516), and up to 5 points of Cantrips. It can't be disbelieved.", "An hour, then 2 Blood for each hour more; if you're disarmed it vanishes unless you spend 1 Blood to have it back in hand.", "No Horrid Reality or Quietus on it; its damage doesn't fade."] }
 
 # Vol. 2 pp. 204-205: 2 Blood, standard action: for five minutes your touch spreads a plague.
 [[others]]
@@ -2116,7 +2119,7 @@ active = { key = "Comrades in Arms", page = 230, book = "Vol. 2", notes = ["For 
 category = "elder_disciplines"
 name = "Protean: Flesh of Marble"
 cost = { blood = 1 }
-active = { key = "Flesh of Marble", page = 232, book = "Vol. 2", notes = ["Pick two Protective Gear qualities (core p. 519) each time; Armor Piercing doesn't get through them.", "A minor transformation: it goes with a form. A Masquerade breach if mortals see it."] }
+active = { key = "Flesh of Marble", page = 232, book = "Vol. 2", picks = { kind = "protective", count = 2 }, notes = ["Pick two Protective Gear qualities each time (core p. 519); one your worn gear has doesn't count twice, and Armor Piercing doesn't get through them.", "A minor transformation: it goes with a form. A Masquerade breach if mortals see it."] }
 
 # Vol. 2 p. 238: 1 Blood, simple action: a sandstorm that makes your blows blinding.
 [[others]]

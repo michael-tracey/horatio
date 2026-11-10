@@ -28776,6 +28776,45 @@
         "title": "PickChangeIn",
         "type": "object"
       },
+      "PickOptionOut": {
+        "description": "A quality the player can pick for a power each use (issue #599), with what it\ndoes to the pools while the power is on.",
+        "properties": {
+          "modifiers": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentModifierOut"
+            },
+            "title": "Modifiers",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "play": {
+            "title": "Play",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "play",
+          "page",
+          "modifiers"
+        ],
+        "title": "PickOptionOut",
+        "type": "object"
+      },
       "PickedTrait": {
         "properties": {
           "because": {
@@ -28818,6 +28857,25 @@
           "pick"
         ],
         "title": "PickedTrait",
+        "type": "object"
+      },
+      "Picks": {
+        "description": "Equipment qualities the player picks each time a switch goes on (issue #599):\nFlesh of Marble's two Protective Gear qualities (Vol. 2 p. 232). What they do\nto the pools counts while it is on, as an equipped item's does (horatio.play).",
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "count"
+        ],
+        "title": "Picks",
         "type": "object"
       },
       "PictureOut": {
@@ -31055,6 +31113,14 @@
             "title": "On",
             "type": "boolean"
           },
+          "options": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PickOptionOut"
+            },
+            "title": "Options",
+            "type": "array"
+          },
           "origin": {
             "title": "Origin",
             "type": "string"
@@ -31062,6 +31128,24 @@
           "page": {
             "title": "Page",
             "type": "string"
+          },
+          "picked": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Picked",
+            "type": "array"
+          },
+          "picks": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Picks"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "turned_on": {
             "default": 0,
