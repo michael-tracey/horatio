@@ -1,5 +1,6 @@
-import type { EquipmentModifier, PlayItem, PlayView } from "../../api/types";
+import type { EquipmentModifier, PlayItem, PlayView, PowerSwitch } from "../../api/types";
 import type { Modifier } from "./pools";
+import { pickKey } from "./powers";
 
 /**
  * Equipment in use at a game (issue #306), as the server works it out
@@ -76,20 +77,29 @@ type Holding = { id: string; modifiers: EquipmentModifier[] };
 
 const bonus = (m: EquipmentModifier) => [m.quality, m.pools, m.when, m.situational].join("|");
 
+/** The qualities picked for the powers on (issue #599), each as an item held: Flesh of Marble's Ballistic. */
+function picked(powers: Pick<PowerSwitch, "key" | "on" | "picked" | "options">[]): Holding[] {
+  return powers
+    .filter((p) => p.on)
+    .flatMap((p) => (p.picked ?? []).map((name) => ({ id: pickKey(p.key, name), modifiers: p.options?.find((o) => o.name === name)?.modifiers ?? [] })));
+}
+
 /**
  * The modifiers the items equipped make, as the pools count them, in the order the
- * items were equipped. The same bonus from a second weapon counts once (the
- * Ambidextrous merit, p. 248).
+ * items were equipped, then those of the qualities picked for the powers on
+ * (Flesh of Marble). The same bonus from a second weapon counts once (the
+ * Ambidextrous merit, p. 248), and so does a quality the worn gear has and Flesh of
+ * Marble too (Vol. 2 p. 232).
  */
-export function equipmentModifiers(items: Holding[], equipped: string[]): Modifier[] {
+export function equipmentModifiers(items: Holding[], equipped: string[], powers: Pick<PowerSwitch, "key" | "on" | "picked" | "options">[] = []): Modifier[] {
   const seen = new Set<string>();
   const found: Modifier[] = [];
-  for (const id of equipped) {
-    const item = items.find((i) => i.id === id);
-    item?.modifiers.forEach((m, at) => {
+  const held = [...equipped.map((id) => items.find((i) => i.id === id)).filter((i): i is Holding => !!i), ...picked(powers)];
+  for (const item of held) {
+    item.modifiers.forEach((m, at) => {
       if (seen.has(bonus(m))) return;
       seen.add(bonus(m));
-      found.push({ id: `${id}/${at}`, label: m.label, amount: m.amount, pools: m.pools, when: m.when, on: true, situational: m.situational });
+      found.push({ id: `${item.id}/${at}`, label: m.label, amount: m.amount, pools: m.pools, when: m.when, on: true, situational: m.situational });
     });
   }
   return found;

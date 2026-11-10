@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PoolModifier, TestPool } from "../../api/types";
-import { appliesTo, attackGlance, breakdown, damageShort, damageText, damageTotal, describe as describeModifier, defenceGlance, describePools, fightFirst, grouped, showing, switchedDamage, topAttacks, total, withAttribute } from "./pools";
+import { appliesTo, attackGlance, breakdown, damageShort, damageText, damageTotal, describe as describeModifier, defenceGlance, describePools, fightFirst, grouped, showing, switchedDamage, topAttacks, total, trackersOf, variantNow, variantText, withAttribute } from "./pools";
 
 const pool = (over: Partial<TestPool>): TestPool => ({
   key: "dodge",
@@ -219,6 +219,66 @@ describe("other tests", () => {
   });
 });
 
+describe("defences that aren't a flat bonus (issue #602)", () => {
+  // Mental 3 + Willpower, with Rampart of Faith's variant and Rockheart's Physical 5 + Survival 2 instead.
+  const mental = pool({
+    key: "defense:Mental",
+    name: "Resisting Mental powers",
+    group: "Defence",
+    parts: [{ label: "Mental", value: 3 }],
+    total: 3,
+    adds_willpower: true,
+    variants: [
+      { when: "For 1 Blood", total: 3, parts: [], instead: false, tracked: [{ label: "Rampart of Faith", tracks: "morality_less_beast" }] },
+      {
+        when: "Instead, with Rockheart",
+        total: 7,
+        parts: [
+          { label: "Physical", value: 5 },
+          { label: "Survival", value: 2 },
+        ],
+        instead: true,
+        tracked: [],
+      },
+    ],
+    switched: [
+      { switch: "Horrid Form", label: "Mental (Horrid Form)", value: -3, attribute: "Mental", most: null },
+      { switch: "Ward", label: "Ward", value: 1, attribute: null, most: null },
+    ],
+  });
+  const [rampart, rockheart] = mental.variants as [TestPool["variants"][number], TestPool["variants"][number]];
+
+  it("adds Morality minus Beast traits now to the pool with Willpower, for Rampart of Faith", () => {
+    const now = variantNow(mental, rampart, 4, [], [], { morality: 5, beast: 2 });
+    expect(now.total).toBe(3 + 4 + 3);
+    expect(variantText(now)).toBe("+3 Rampart of Faith");
+    // It follows the trackers, and never takes away.
+    expect(variantNow(mental, rampart, 4, [], [], { morality: 4, beast: 0 }).total).toBe(11);
+    expect(variantNow(mental, rampart, 4, [], [], { morality: 1, beast: 3 }).total).toBe(7);
+    expect(variantNow(mental, rampart, 4).total).toBe(7);
+    // And counts what is on, as the pool does.
+    expect(variantNow(mental, rampart, 4, [], ["Horrid Form"], { morality: 5, beast: 2 }).total).toBe(0 + 4 + 3);
+  });
+
+  it("counts Physical + Survival without Willpower, for Rockheart", () => {
+    const now = variantNow(mental, rockheart, 6);
+    expect(now.total).toBe(7);
+    expect(variantText(now)).toBe("Physical 5 + Survival 2");
+    // A defence modifier or one on Physical counts; one on Mental, and Horrid Form's Mental, don't.
+    const mods = [
+      { id: "a", label: "Steady", amount: 1, pools: "defense", when: "", on: true },
+      { id: "b", label: "Brawny", amount: 2, pools: "Physical", when: "", on: true },
+      { id: "c", label: "Sharp", amount: 2, pools: "Mental", when: "", on: true },
+    ];
+    expect(variantNow(mental, rockheart, 6, mods, ["Horrid Form", "Ward"]).total).toBe(7 + 1 + 2 + 1);
+  });
+
+  it("reads Morality and Beast traits from the Play View", () => {
+    expect(trackersOf({ morality: { value: 4 }, beast: { value: 1 } })).toEqual({ morality: 4, beast: 1 });
+    expect(trackersOf({ morality: null, beast: { value: 0 } })).toEqual({ morality: 0, beast: 0 });
+  });
+});
+
 describe("the Scene view's glance", () => {
   const attack = (name: string, value: number, over: Partial<TestPool> = {}) =>
     pool({
@@ -279,6 +339,12 @@ describe("the Scene view's glance", () => {
       adds_willpower: true,
     });
     expect(defenceGlance([pool({}), social], 3)).toEqual(["Dodge 9", "vs Social 7"]);
+    // Armour that differs by attack (#599): each after Dodge.
+    const marble = [
+      { id: "a", label: "Flesh of Marble: Ballistic", amount: 3, pools: "pool:dodge", when: "against firearms", on: true, situational: true },
+      { id: "b", label: "Flesh of Marble: Ballistic", amount: 1, pools: "pool:dodge", when: "against Brawl, Melee and thrown weapons", on: true, situational: true },
+    ];
+    expect(defenceGlance([pool({}), social], 3, marble)).toEqual(["Dodge 9 (12 against firearms, 10 against Brawl, Melee and thrown weapons)", "vs Social 7"]);
   });
 
   it("puts Combat and Defence before the other groups", () => {

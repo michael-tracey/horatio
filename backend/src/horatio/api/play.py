@@ -205,10 +205,24 @@ class LogEntryOut(BaseModel):
     upkeep: bool = False
 
 
+class PickOptionOut(BaseModel):
+    """A quality the player can pick for a power each use (issue #599), with what it
+    does to the pools while the power is on."""
+
+    name: str
+    # What it does at the table: "+3 defence against firearms, +1 against the rest".
+    play: str
+    page: str | None
+    modifiers: list[EquipmentModifierOut]
+
+
 class PowerOut(reference.Switch):
     """A form or power the character has, and whether it is on in this game."""
 
     on: bool
+    # For a power with `picks`: what can be picked, and what is, in the order picked.
+    options: list[PickOptionOut] = []
+    picked: list[str] = []
     # Its place in the order those on were switched on (1 for the first), so the
     # Play View knows which form goes first past the limit; 0 while off.
     turned_on: int = 0
@@ -274,6 +288,8 @@ class PlayTrait(BaseModel):
     # the book's summary or in its place; "" for none.
     wording: str = ""
     wording_mode: Literal["added", "replaces"] = "added"
+    # The traits that give it, when it is given: a focus from Azhi Dahaka (issue #598).
+    granted_by: list[str] = []
 
 
 class PlayView(BaseModel):
@@ -595,6 +611,8 @@ def sheet_traits(db: Session, character: Character) -> list[PlayTrait]:
             key = (parent.specializes["category"], parent.specializes["name"])
             specialties.setdefault(key, []).append(row.trait.detail or row.definition.name)
     house = house_traits.marks(db, [r.definition.id for r in rows if r.definition.troupe_id])
+    granted = [r for r in rows if r.trait.granted_rating]
+    granting = sheets.sheet_effects(db, character).sources if granted else {}
     return [
         PlayTrait(
             category=row.category.key,
@@ -615,6 +633,7 @@ def sheet_traits(db: Session, character: Character) -> list[PlayTrait]:
             if row.definition.id in house
             else None,
             **wording_of(changes.get((row.category.key, row.definition.name))),
+            granted_by=granting.get(row.key, []) if row.trait.granted_rating else [],
         )
         for row in rows
         if row.category.key in rule_set.categories
@@ -745,6 +764,16 @@ def play_view(db: Session, character: Character) -> PlayView:
             PowerOut(
                 **s.model_dump(),
                 on=s.key in state["on"],
+                options=[
+                    PickOptionOut(
+                        name=o.name,
+                        play=o.play,
+                        page=o.page,
+                        modifiers=[modifier_out(m) for m in o.modifiers],
+                    )
+                    for o in limits.options.get(s.key, ())
+                ],
+                picked=state.get("picked", {}).get(s.key, []),
                 turned_on=state["on"].index(s.key) + 1 if s.key in state["on"] else 0,
             )
             for s in limits.switches

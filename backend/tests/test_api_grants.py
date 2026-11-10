@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from horatio.models import CharacterTrait, TraitCategory, TraitDefinition
 from tests.api_helpers import Person, Troupe, new_character
+from tests.test_api_powers import vampire
 
 
 @pytest.fixture
@@ -423,6 +424,85 @@ def test_a_granted_trait_still_answers_to_the_checks(troupe: Troupe) -> None:
 
     assert refused.status_code == 409
     assert "Hard of Hearing" in refused.json()["detail"]
+
+
+AZHI_DAHAKA = "Vicissitude: Azhi Dahaka"
+
+
+def picked(troupe: Troupe, character_id: str, category: str, name: str, **row: Any) -> None:
+    """A trait as picked at creation: its dot free."""
+    definition = troupe.session.scalars(
+        select(TraitDefinition)
+        .join(TraitCategory, TraitDefinition.category_id == TraitCategory.id)
+        .where(TraitCategory.key == category, TraitDefinition.name == name)
+    ).one()
+    rating = row.pop("rating", 1)
+    troupe.session.add(
+        CharacterTrait(
+            character_id=uuid.UUID(character_id),
+            trait_definition_id=definition.id,
+            rating=rating,
+            free_rating=rating,
+            creation_pick=rating,
+            **row,
+        )
+    )
+    troupe.session.flush()
+
+
+def luminary_tzimisce(troupe: Troupe) -> str:
+    """A Tzimisce Luminary Elder (Generation 5) with Vicissitude 5, and the
+    Strength, Manipulation and Wits focuses picked at creation."""
+    character_id = vampire(troupe, "Tzimisce", 5, ("disciplines", "Vicissitude", 5))
+    picked(troupe, character_id, "focus_physicals", "Strength")
+    picked(troupe, character_id, "focus_socials", "Manipulation")
+    picked(troupe, character_id, "focus_mentals", "Wits")
+    return character_id
+
+
+def test_azhi_dahaka_gives_every_focus_and_takes_them_back(troupe: Troupe) -> None:
+    """Vol. 2 p. 249 (issue #598): every attribute focus while the power is held,
+    beside the character's own."""
+    character_id = luminary_tzimisce(troupe)
+
+    taken = take(troupe.player, character_id, "luminary_disciplines", AZHI_DAHAKA)
+
+    assert taken.status_code == 200, taken.text
+    given = (1, 1, [AZHI_DAHAKA])
+    assert granted(troupe.player, character_id, "focus_physicals") == {
+        "Dexterity": given,
+        "Stamina": given,
+        "Strength": (1, 0, []),
+    }
+    assert granted(troupe.player, character_id, "focus_socials") == {
+        "Appearance": given,
+        "Charisma": given,
+        "Manipulation": (1, 0, []),
+    }
+    assert granted(troupe.player, character_id, "focus_mentals") == {
+        "Intelligence": given,
+        "Perception": given,
+        "Wits": (1, 0, []),
+    }
+
+    take(troupe.player, character_id, "luminary_disciplines", AZHI_DAHAKA, 0)
+
+    assert ratings(troupe.player, character_id, "focus_physicals") == {"Strength": 1}
+    assert ratings(troupe.player, character_id, "focus_socials") == {"Manipulation": 1}
+    assert ratings(troupe.player, character_id, "focus_mentals") == {"Wits": 1}
+
+
+def test_stolen_potential_still_takes_its_focuses_from_azhi_dahaka(troupe: Troupe) -> None:
+    """What takes focuses away still does (Vol. 2 p. 249): Stolen Potential (p. 265)."""
+    character_id = vampire(troupe, "Tzimisce", 5, ("disciplines", "Vicissitude", 5))
+    picked(troupe, character_id, "flaws", "Stolen Potential", rating=3, detail="Physical")
+
+    taken = take(troupe.player, character_id, "luminary_disciplines", AZHI_DAHAKA)
+
+    assert taken.status_code == 200, taken.text
+    assert ratings(troupe.player, character_id, "focus_physicals") == {}
+    assert len(ratings(troupe.player, character_id, "focus_socials")) == 3
+    assert len(ratings(troupe.player, character_id, "focus_mentals")) == 3
 
 
 def test_a_granted_merit_grants_in_turn(troupe: Troupe) -> None:

@@ -28,6 +28,7 @@ from horatio.reference import (
 from horatio.rules.files import DATA_DIR, all_rule_set_files, load_rule_set
 from tests.api_helpers import Troupe
 from tests.test_api_character_search import member
+from tests.test_api_grants import AZHI_DAHAKA, luminary_tzimisce
 from tests.test_catalogue_descriptions import PAGE
 
 
@@ -225,7 +226,7 @@ def test_elder_powers_say_what_using_them_costs(troupe: Troupe, swift: str) -> N
             (s["switch"], s["amount"]) for s in attack["damage"]["switched"]
         ]
     assert not [s for s in switched(pool(found, "attack:Brawl")) if s[0] == "Projectile"]
-    # The swift character's Quickness has no entry, so no cost.
+    # The swift character's Quickness has no cost or switch of its own.
     quickness = next(
         o for o in reference(troupe, swift)["other_powers"] if o["name"] == "Celerity: Quickness"
     )
@@ -351,6 +352,53 @@ def test_luminary_powers_switch_on_forms_blood_health_and_a_frenzy() -> None:
     assert ("Embrace the Beast", -2) in [(s.switch, s.value) for s in made["dodge"].switched]
     physical = made["defense:Physical"].switched
     assert [(s.switch, s.value) for s in physical] == [("Embrace the Beast", -2)]
+
+
+def test_powers_add_notes_to_another_powers_switch_for_those_who_have_them() -> None:
+    """Issue #601: Quickness (core p. 214) and Momentum Swing (Vol. 2 p. 200) add to
+    Celerity's switch, Earth Control (core p. 221) to Earth Meld's and Acid Blood
+    (core p. 224) to Blood Form's, each under its own name and page."""
+    disciplines = {"Celerity": 5, "Protean": 5, "Vicissitude": 5}
+    held = {
+        ("elder_disciplines", "Celerity: Quickness"): 1,
+        ("luminary_disciplines", "Celerity: Momentum Swing"): 1,
+        ("elder_disciplines", "Protean: Earth Control"): 1,
+        ("elder_disciplines", "Vicissitude: Acid Blood"): 1,
+    }
+
+    found = by_key(work_out(Sheet(ratings=held, disciplines=disciplines), {}).switches)
+    added = {key: [(a.source, a.page) for a in s.added] for key, s in found.items() if s.added}
+    assert added == {
+        "Celerity": [
+            ("Quickness", "p. 214"),
+            ("Momentum Swing", "Vol. 2, p. 200"),
+            ("Momentum Swing", "Vol. 2, p. 200"),
+        ],
+        "Earth Meld": [("Earth Control", "p. 221"), ("Earth Control", "p. 221")],
+        "Blood Form": [("Acid Blood", "p. 224")],
+    }
+    assert found["Celerity"].added[0].note.startswith("An extra round of actions")
+    # Celerity's own notes are as they were.
+    assert found["Celerity"].notes == [
+        "For the turn: 1 Blood activates every Celerity power you have."
+    ]
+
+    # Without the powers, the switches are as the book's disciplines give them.
+    bare = work_out(Sheet(disciplines=disciplines), {}).switches
+    assert all(s.added == [] for s in bare)
+    # The power without the switch's discipline adds nothing anywhere.
+    alone = Sheet(ratings=held, disciplines={"Celerity": 5})
+    assert [s.key for s in work_out(alone, {}).switches if s.added] == ["Celerity"]
+
+
+def test_the_play_view_sends_what_quickness_adds_to_celerity(troupe: Troupe, swift: str) -> None:
+    response = troupe.player.client.get(f"/characters/{swift}/play")
+    assert response.status_code == 200, response.text
+    celerity = next(p for p in response.json()["powers"] if p["key"] == "Celerity")
+    assert [(a["source"], a["page"]) for a in celerity["added"]] == [("Quickness", "p. 214")]
+    plain_id = created(troupe, "Plain", ("disciplines", "Celerity", 4))
+    plain = troupe.player.client.get(f"/characters/{plain_id}/play").json()
+    assert next(p for p in plain["powers"] if p["key"] == "Celerity")["added"] == []
 
 
 def test_the_path_of_the_graveborn_has_its_five_powers(troupe: Troupe) -> None:
@@ -573,6 +621,55 @@ def test_another_tests_attribute_carries_every_switch_change() -> None:
         if p.key == "skill:Occult"
     )
     assert ("Mental", -3) in [(s.attribute, s.value) for s in occult.switched]
+
+
+def test_defences_that_are_not_a_flat_bonus(troupe: Troupe) -> None:
+    """Rampart of Faith adds Morality minus Beast traits to each defence, which
+    counts Willpower, for 1 Blood; the Play View counts it from its trackers.
+    Rockheart offers Physical + Survival in place of Mental and Social defence,
+    with its other effects as notes (issue #602)."""
+    stone = created(
+        troupe,
+        "Stone",
+        ("attributes", "Physical", 5),
+        ("attributes", "Social", 3),
+        ("attributes", "Mental", 2),
+        ("skills", "Survival", 3),
+        ("elder_disciplines", "Valeren: Rampart of Faith", None),
+        ("luminary_disciplines", "Visceratika: Rockheart", None),
+    )
+    found = reference(troupe, stone)
+
+    for key in ("defense:Mental", "defense:Social", "defense:Physical"):
+        rampart = next(v for v in pool(found, key)["variants"] if v["when"] == "For 1 Blood")
+        assert rampart["total"] == pool(found, key)["total"]
+        assert rampart["tracked"] == [
+            {"label": "Rampart of Faith", "tracks": "morality_less_beast"}
+        ]
+        assert not rampart["instead"]
+    for key in ("defense:Mental", "defense:Social"):
+        rockheart = next(v for v in pool(found, key)["variants"] if v["instead"])
+        assert rockheart["when"] == "Instead, with Rockheart"
+        assert rockheart["parts"] == [
+            {"label": "Physical", "value": 5},
+            {"label": "Survival", "value": 3},
+        ]
+        assert rockheart["total"] == 8
+    assert not any(v["instead"] for v in pool(found, "defense:Physical")["variants"])
+    assert pool(found, "defense:Social")["notes"] == [
+        "A Willpower spent to retest a Social power comes straight back (Rockheart)"
+    ]
+    assert "Rockheart: 1 Blood wins a frenzy test outright" in found["notes"]
+    # Neither changes any other pool, nor the frenzy numbers.
+    assert all(p["variants"] == [] for p in found["pools"] if not p["key"].startswith("defense:"))
+    assert found["frenzy"]["parts"] == [{"label": "Mental", "value": 2}]
+
+
+def test_defences_without_those_powers_have_no_variants(troupe: Troupe, swift: str) -> None:
+    found = reference(troupe, swift)
+    for key in ("defense:Mental", "defense:Social", "defense:Physical"):
+        assert pool(found, key)["variants"] == []
+    assert not any("Rockheart" in n for n in found["notes"])
 
 
 def test_frenzy_counts_mental_and_what_changes_it(troupe: Troupe) -> None:
@@ -965,6 +1062,34 @@ def test_a_form_can_give_a_focus_and_change_attributes() -> None:
     assert [(s.attribute, s.value) for s in found["defense:Mental"].switched] == [("Mental", -3)]
 
 
+def test_focuses_azhi_dahaka_gives_count_and_say_where_they_are_from(troupe: Troupe) -> None:
+    """Issue #598: the power's focuses are on the sheet, so the Play View counts
+    them as the character's own, and says what gives them."""
+    character_id = luminary_tzimisce(troupe)
+    before = reference(troupe, character_id)
+    assert switched(pool(before, "attack:Brawl")) == [("Horrid Form", "Horrid Form", 3)]
+
+    taken = troupe.player.client.put(
+        f"/characters/{character_id}/traits",
+        json={"category": "luminary_disciplines", "name": AZHI_DAHAKA, "rating": 1},
+    )
+    assert taken.status_code == 200, taken.text
+
+    found = reference(troupe, character_id)
+    # The Charisma focus: Horrid Form's +5 to Brawl in place of +3 (core p. 169).
+    assert switched(pool(found, "attack:Brawl")) == [("Horrid Form", "Horrid Form", 5)]
+    vicissitude = next(d for d in found["disciplines"] if d["name"] == "Vicissitude")
+    visage = vicissitude["powers"][0]
+    assert (visage["name"], visage["focus"]) == (
+        "Malleable Visage",
+        "One standard action, no hands needed.",
+    )
+    traits = {(t["category"], t["name"]): t["granted_by"] for t in found["traits"]}
+    assert traits[("focus_socials", "Charisma")] == [AZHI_DAHAKA]
+    assert traits[("focus_socials", "Manipulation")] == []
+    assert sum(1 for c, _ in traits if c.startswith("focus_")) == 9
+
+
 def test_every_when_in_the_powers_names_a_switch_and_every_switch_a_page() -> None:
     book = catalogue()
     entries = [*book.disciplines.values(), *(p for ps in book.powers.values() for p in ps)]
@@ -972,8 +1097,15 @@ def test_every_when_in_the_powers_names_a_switch_and_every_switch_a_page() -> No
     keys = [a["key"] for e in entries for a in actives(e)]
     assert len(keys) == len(set(keys)), "switch keys are unique"
     for e in entries:
-        for when in [x.get("when") for x in [*e.get("pools", []), *e.get("damage", [])]]:
-            assert when is None or when in book.switch_keys, (e["name"], when)
+        for x in [*e.get("pools", []), *e.get("damage", [])]:
+            when = x.get("when")
+            # What the trackers hold can only be a variant (Rampart of Faith's "for 1 Blood").
+            tracked = x.get("amount") == "morality_less_beast"
+            assert when is None or when in book.switch_keys or tracked, (e["name"], when)
+            assert when if tracked else True, e["name"]
+        for n in e.get("notes", []):
+            assert n["when"] in book.switch_keys and n["note"], (e["name"], n)
+            assert n["page"] > 0 and n.get("book", "core") in ("core", "Vol. 2", "Vol. 2 Issue 1")
         for a in actives(e):
             assert a["page"] > 0 and a.get("book", "core") in ("core", "Vol. 2", "Vol. 2 Issue 1")
     rule_set = load_rule_set(DATA_DIR / "bns_met_vampire.toml")

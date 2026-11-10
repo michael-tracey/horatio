@@ -68,6 +68,44 @@ export function total(pool: TestPool, willpower: number, modifiers: Modifier[] =
 
 const part = (label: string, value: number) => (value < 0 ? `− ${label} ${-value}` : `${label} ${value}`);
 
+/** What the Play View's trackers hold that a pool can count (issue #602). */
+export type Trackers = { morality: number; beast: number };
+
+export function trackersOf(view: { morality: { value: number } | null; beast: { value: number } }): Trackers {
+  return { morality: view.morality?.value ?? 0, beast: view.beast.value };
+}
+
+type Variant = TestPool["variants"][number];
+/** A variant as it counts now: what it adds, or the whole pool used instead. */
+export type VariantNow = { when: string; parts: { label: string; value: number }[]; total: number; instead?: boolean };
+
+/** Rampart of Faith's current Morality minus current Beast traits (Vol. 2 p. 244), never below 0. */
+export function trackedValue(_tracked: Variant["tracked"][number], trackers: Trackers | undefined): number {
+  return Math.max(0, (trackers?.morality ?? 0) - (trackers?.beast ?? 0));
+}
+
+/**
+ * A variant as it counts now. One that adds to the pool counts what the pool does
+ * with what is on, and what the trackers hold (Rampart of Faith). One used instead
+ * (Rockheart's Physical + Survival) is its own parts without Willpower, with the
+ * modifiers and powers on that change this pool or its attribute.
+ */
+export function variantNow(pool: TestPool, v: Variant, willpower: number, modifiers: Modifier[] = [], on: readonly string[] = [], trackers?: Trackers): VariantNow {
+  if (v.instead) {
+    const alone: TestPool = { ...pool, parts: v.parts, total: v.total, adds_willpower: false, willpower_floor: 0, variants: [], switched: pool.switched.filter((s) => !s.attribute) };
+    return { when: v.when, parts: v.parts, total: total(alone, willpower, modifiers, on), instead: true };
+  }
+  const tracked = v.tracked.map((t) => ({ label: t.label, value: trackedValue(t, trackers) }));
+  const more = tracked.reduce((sum, t) => sum + t.value, 0);
+  return { when: v.when, parts: [...v.parts, ...tracked], total: v.total + total(pool, willpower, modifiers, on) - pool.total + more };
+}
+
+/** What a variant adds, "+4 Alacrity, −2 Injured", or the pool it is, "Physical 5 + Survival 3". */
+export function variantText(v: VariantNow): string {
+  if (v.instead) return v.parts.map((p) => `${p.label} ${p.value}`).join(" + ");
+  return v.parts.map((p) => `${p.value >= 0 ? "+" : "−"}${Math.abs(p.value)} ${p.label}`).join(", ");
+}
+
 /**
  * "Physical 6 + Dodge 3 + Slippery Customer 3", with Willpower where it counts, then
  * what the forms and powers on add ("+ Shape of the Beast 2"), then each modifier that is on.
@@ -205,10 +243,19 @@ export function attackGlance(pool: TestPool, willpower: number, modifiers: Modif
   return `${pool.name.replace(/ attack$/, "")} ${total(pool, willpower, modifiers, on)}${dmg}`;
 }
 
-/** "Dodge 8 · vs Social 7 · vs Mental 7": Dodge, then each defence against a power. */
+/**
+ * "Dodge 8 · vs Social 7 · vs Mental 7": Dodge, then each defence against a power.
+ * Where armour makes Dodge differ by attack (issue #599), each comes after it:
+ * "Dodge 8 (11 against firearms, 9 against Brawl, Melee and thrown weapons)".
+ */
 export function defenceGlance(pools: TestPool[], willpower: number, modifiers: Modifier[] = [], on: readonly string[] = []): string[] {
   const now = (p: TestPool) => total(p, willpower, modifiers, on);
-  const dodge = pools.filter((p) => p.key === "dodge").map((p) => `Dodge ${now(p)}`);
+  const dodge = pools
+    .filter((p) => p.key === "dodge")
+    .map((p) => {
+      const split = situations(p, modifiers).map((s) => `${now(p) + s.parts.reduce((sum, part) => sum + part.value, 0)} ${s.when}`);
+      return split.length ? `Dodge ${now(p)} (${split.join(", ")})` : `Dodge ${now(p)}`;
+    });
   const resisting = pools.filter((p) => p.key.startsWith("defense:")).map((p) => `vs ${p.key.slice("defense:".length)} ${now(p)}`);
   return [...dodge, ...resisting];
 }
