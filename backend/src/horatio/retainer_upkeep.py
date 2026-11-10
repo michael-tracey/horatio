@@ -363,7 +363,8 @@ def begin(db: Session, character: Character, actor: User, game: PlayGame, *, at:
 
 def cycle_closed(db: Session, staff: User, cycle: DowntimeCycle) -> None:
     """Charge a month's upkeep kept as a downtime cost, and give each Retainer its
-    month's growth, for each character taking part in the cycle."""
+    month's growth, for each character taking part in the cycle: not one staff
+    removed from it."""
     troupe = db.get(Troupe, cycle.troupe_id)
     rules = rules_of(troupe)
     upkeep = rules.upkeep
@@ -373,7 +374,7 @@ def cycle_closed(db: Session, staff: User, cycle: DowntimeCycle) -> None:
     today = date.today()
     ids = db.scalars(
         select(CycleParticipant.character_id)
-        .where(CycleParticipant.cycle_id == cycle.id)
+        .where(CycleParticipant.cycle_id == cycle.id, CycleParticipant.removed_at.is_(None))
         .order_by(CycleParticipant.id)
     )
     for character_id in list(ids):
