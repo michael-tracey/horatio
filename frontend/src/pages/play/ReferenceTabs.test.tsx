@@ -9,7 +9,7 @@ afterEach(cleanup);
 type Trait = PlayReference["traits"][number];
 
 function trait(category: string, category_name: string, group: string, name: string, more: Partial<Trait> = {}): Trait {
-  return { category, category_name, group, name, detail: "", rating: 1, specialties: [], note: "", wording: "", wording_mode: "added", ...more };
+  return { category, category_name, group, name, detail: "", rating: 1, specialties: [], note: "", wording: "", wording_mode: "added", granted_by: [], ...more };
 }
 
 const reference: PlayReference = {
@@ -82,6 +82,21 @@ describe("SheetTab", () => {
     expect(screen.getByText("Speed, in steps and actions.")).toBeTruthy();
     expect(screen.getByText("Alacrity")).toBeTruthy();
     expect(screen.queryByText("Supernatural speed.")).toBeNull();
+  });
+
+  it("says what gives a focus the character has from a power (#598)", () => {
+    const given = trait("focus_physicals", "Physical Focus", "Attributes", "Dexterity", {
+      rating: 1,
+      description: "Speed and precision.",
+      granted_by: ["Vicissitude: Azhi Dahaka"],
+    });
+    sheet({ ...reference, traits: [...reference.traits, given] });
+    expect(screen.getByText("(Stamina, Dexterity)", { exact: false })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /^Physical/ }));
+    const line = screen.getByText("Speed and precision.", { exact: false });
+    expect(line.textContent).toBe("Dexterity (from Vicissitude: Azhi Dahaka): Speed and precision.");
+    // The character's own focus says nothing more.
+    expect(screen.getByText("Toughness and endurance.", { exact: false }).textContent).toBe("Stamina: Toughness and endurance.");
   });
 
   it("opens a trait to the troupe's wording, marked as the troupe's, in place of the book's", () => {

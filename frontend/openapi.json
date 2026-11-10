@@ -29364,6 +29364,14 @@
             "title": "Detail",
             "type": "string"
           },
+          "granted_by": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Granted By",
+            "type": "array"
+          },
           "group": {
             "title": "Group",
             "type": "string"

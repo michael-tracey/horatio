@@ -22011,6 +22011,11 @@ export interface components {
             description?: string | null;
             /** Detail */
             detail: string;
+            /**
+             * Granted By
+             * @default []
+             */
+            granted_by: string[];
             /** Group */
             group: string;
             /** House */
