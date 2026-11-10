@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emptyDraft, guidanceText, meetsNow, optionFrom, optionsFrom, questChoiceText, questType, requestStatus, resultText } from "./quests";
+import { emptyDraft, guidanceText, meetsNow, optionFrom, optionsFrom, questChoiceText, questType, requestStatus, requirementsMetText, resultText } from "./quests";
 
 describe("quest requirements", () => {
   it("builds a trait with a specialisation, and influence to expend", () => {
@@ -55,5 +55,13 @@ describe("quest words", () => {
     expect(requestStatus("waiting")).toBe("Waiting");
     expect(requestStatus("working")).toBe("Being worked on");
     expect(resultText({ number: 2, result: "passed" })).toBe("Scenario 2: passed");
+  });
+});
+
+describe("requirements met, at a glance", () => {
+  it("counts the met ones, or says there are none yet", () => {
+    expect(requirementsMetText([{ met: true }, { met: false }, { met: false }, { met: true }])).toBe("2 of 4 requirements met");
+    expect(requirementsMetText([{ met: false }])).toBe("0 of 1 requirement met");
+    expect(requirementsMetText([])).toBe("No requirements yet");
   });
 });

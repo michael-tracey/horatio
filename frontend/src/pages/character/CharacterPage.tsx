@@ -56,18 +56,20 @@ export function CharacterPage() {
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/shared-backgrounds", { params: { path: { character_id: characterId } } })),
     enabled: character.data?.kind === "pc",
   });
-  // The Quests tab shows to its player while a troupe it is in runs quests.
-  const quests = useQuery({
-    queryKey: ["character-quests", characterId],
-    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/quests", { params: { path: { character_id: characterId } } })),
-    enabled: character.data?.kind === "pc" && character.data.player_id === me.data?.id,
-  });
   // A PC's influence is for its player and its home troupe's storytellers and assistants.
   const homeId = character.data?.kind === "pc" && character.data.player_id !== me.data?.id ? character.data.home_troupe_id : null;
   const home = useQuery({
     queryKey: ["troupe", homeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: homeId! } } })),
     enabled: !!homeId,
+  });
+  // The Quests tab shows to its player while a troupe it is in runs quests, and to its
+  // home troupe's storytellers and assistants while that troupe runs them (#614).
+  const staffQuests = !!home.data?.quests_enabled && abilities(home.data.my_role, !!me.data?.is_custodian).running;
+  const quests = useQuery({
+    queryKey: ["character-quests", characterId],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/quests", { params: { path: { character_id: characterId } } })),
+    enabled: character.data?.kind === "pc" && (character.data.player_id === me.data?.id || staffQuests),
   });
 
   // An NPC's storytellers can give it to a player (#481).
@@ -238,6 +240,7 @@ export function CharacterPage() {
                 : []),
               ...(influence && !creating ? [{ to: `${base}/influence`, label: "Influence" }] : []),
               ...(keepsProjects && !creating ? [{ to: `${base}/projects`, label: "Projects" }] : []),
+              ...(staffQuests && quests.data?.enabled ? [{ to: `${base}/quests`, label: "Quests" }] : []),
             ],
           },
           {
@@ -274,6 +277,7 @@ export function CharacterPage() {
         {influence && <Route path="influence" element={<InfluenceTab character={c} mine={mine} />} />}
         <Route path="shared" element={<CharacterShared characterId={c.id} />} />
         {keepsProjects && <Route path="projects" element={<ProjectsCard characterId={c.id} />} />}
+        {staffQuests && quests.data?.enabled && <Route path="quests/*" element={<QuestsTab characterId={c.id} staffOf={home.data?.id} />} />}
         {backstory.data?.read && <Route path="backstory" element={<BackstoryTab character={c} />} />}
         {creating && <Route path="create/:step?" element={<CreationWizard character={c} />} />}
         {mine && (

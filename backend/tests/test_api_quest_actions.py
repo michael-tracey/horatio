@@ -432,6 +432,10 @@ def test_the_last_result_shows_the_quest_ended_only_once_delivered(troupe: Troup
     assert ok(troupe.storyteller.client.get(f"/quests/{quest_id}"))["status"] == "completed"
     seen = ok(troupe.player.client.get(f"/characters/{agnes}/quests/{quest_id}"))
     assert (seen["status"], seen["results"], seen["can_write_tale"]) == ("active", [], False)
+    # The home troupe's staff see it on the character's page as recorded, not yet sent (#614).
+    kept = ok(troupe.storyteller.client.get(f"/characters/{agnes}/quests/{quest_id}"))
+    assert kept["status"] == "completed"
+    assert [(r["number"], r["sent_at"]) for r in kept["results"]] == [(1, None)]
     ok(troupe.storyteller.client.post(f"/cycles/{cycle['id']}/close"))
     ok(troupe.storyteller.client.post(f"/cycles/{cycle['id']}/deliver"))
     seen = ok(troupe.player.client.get(f"/characters/{agnes}/quests/{quest_id}"))

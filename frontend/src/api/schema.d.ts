@@ -2944,7 +2944,8 @@ export interface paths {
         /**
          * Character Quests
          * @description The character's quest requests and the quests it may see. Nothing while its
-         *     home troupe has quests off.
+         *     home troupe has quests off. Its home troupe's storytellers and assistant
+         *     storytellers see it too, read-only (#614).
          */
         get: operations["character_quests_api_characters__character_id__quests_get"];
         put?: never;
@@ -22270,7 +22271,9 @@ export interface components {
         };
         /**
          * PlayerQuestOut
-         * @description A quest as one of its characters' players sees it.
+         * @description A quest as one of its characters' players sees it, or, on the character's page,
+         *     its home troupe's staff (#614): they also see one still being built (a draft), and
+         *     every result recorded, sent or not.
          */
         PlayerQuestOut: {
             /** Can Join */
