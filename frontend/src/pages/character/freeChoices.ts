@@ -11,6 +11,11 @@ export type FreePick = FreePickIn;
 
 /** What a grant asks of the player, in a line. */
 export function rule(offer: FreeChoicesOut): string {
+  if (offer.dots != null) {
+    const most = offer.most ? `, up to ${offer.most} in one` : "";
+    if (offer.dots === 0) return "One bonus dot for each dot of Morality below 5: none yet.";
+    return `Place ${offer.dots} bonus ${offer.dots === 1 ? "dot" : "dots"}, one for each dot of Morality below 5${most}.`;
+  }
   if (offer.places) return `Place ${list(offer.places)} dots, each in a different one.`;
   if (offer.points != null) return `Up to ${offer.points} points of merits.`;
   if (offer.count === 1) return "Choose one.";
@@ -23,7 +28,21 @@ function list(numbers: number[]): string {
 
 /** The heading for a grant: "Choose your free merits". */
 export function heading(offer: FreeChoicesOut): string {
+  if (offer.dots != null) return `Place your bonus ${offer.category_name.toLowerCase().replace(/s$/, "")} dots`;
   return `Choose your free ${offer.category_name.toLowerCase()}`;
+}
+
+/**
+ * What the player can still do with the choices once the trait is taken. Dots that
+ * follow Morality (Walking Atrocity) keep coming as it falls; the rest are fixed once
+ * a home troupe has the character.
+ */
+export function later(offers: FreeChoicesOut[], homeTroupe: boolean): string {
+  if (offers.some((o) => o.dots != null))
+    return homeTroupe
+      ? "A new dot comes each time Morality drops, to place on the sheet. Placed dots stay where they are."
+      : "A new dot comes each time Morality drops. You can move these on the sheet until a home troupe accepts the character.";
+  return homeTroupe ? "Choose now: once it is on the sheet, staff change them." : "You can change these on the sheet until a home troupe accepts the character.";
 }
 
 export const picksOf = (picks: FreePick[], offer: FreeChoicesOut) => picks.filter((p) => p.grant === offer.grant);
@@ -50,6 +69,27 @@ export function fill(picks: FreePick[], offer: FreeChoicesOut, i: number, name: 
   if (name) next[i] = { grant: offer.grant, name, detail, amount: 0 };
   else next.splice(i, 1);
   return [...picks.filter((p) => p.grant !== offer.grant), ...next.filter(Boolean)];
+}
+
+/** The dots placed on a trait, for dots spread over the options (Walking Atrocity). */
+export const dotsOn = (picks: FreePick[], offer: FreeChoicesOut, name: string) => picksOf(picks, offer).find((p) => p.name === name)?.amount ?? 0;
+
+/** All the dots placed so far. */
+export const dotsPlaced = (picks: FreePick[], offer: FreeChoicesOut) => picksOf(picks, offer).reduce((sum, p) => sum + p.amount, 0);
+
+/** Put `amount` dots on a trait (none takes it off), keeping where the others are in the list. */
+export function setDots(picks: FreePick[], offer: FreeChoicesOut, name: string, amount: number): FreePick[] {
+  const mine = picksOf(picks, offer);
+  const at = mine.findIndex((p) => p.name === name);
+  const next = at < 0 ? [...mine, { grant: offer.grant, name, detail: "", amount }] : mine.map((p, i) => (i === at ? { ...p, amount } : p));
+  return [...picks.filter((p) => p.grant !== offer.grant), ...next.filter((p) => p.amount > 0)];
+}
+
+/** The most dots a trait can take now: what is on it and what is left, up to the most on one. */
+export function dotsAllowed(picks: FreePick[], offer: FreeChoicesOut, name: string): number {
+  const here = dotsOn(picks, offer, name);
+  const left = Math.max(0, (offer.dots ?? 0) - dotsPlaced(picks, offer));
+  return Math.min(offer.most ?? Infinity, here + left);
 }
 
 /** Say the words for a pick that needs them ("Custom": Latin). */
