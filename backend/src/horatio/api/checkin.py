@@ -11,7 +11,16 @@ from pydantic import BaseModel, Field
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, checkin, game_xp, play_status, sheets, suspensions, xp_range
+from horatio import (
+    audit,
+    checkin,
+    game_xp,
+    location_quests,
+    play_status,
+    sheets,
+    suspensions,
+    xp_range,
+)
 from horatio.api.games import member_troupe
 from horatio.api.play_status import AbidingSourceOut, source_status
 from horatio.api.troupe_profiles import ProfilePerson, someone
@@ -692,6 +701,9 @@ def award_game_xp(
     figure = game_xp.range_figure(db, troupe, body.amount)
     if body.to_range:
         xp_range.add_game(db, user, troupe, figure, reason)
+    # The game has passed, whatever went into the floor and ceiling: Out of Code counts
+    # it. A game's XP is awarded only once, so it is counted only once.
+    location_quests.game_passed(db, user, troupe)
     # Awarding the XP ends check-in: everyone there has had it.
     checkin.close_checkin(db, user, game)
     game.xp_awarded = figure

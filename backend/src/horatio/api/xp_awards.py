@@ -101,6 +101,8 @@ def award_all(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Nobody would get any XP.")
     for award in given:
         sheets.award_xp(db, user, characters[award.character_id], award.amount, reason)
+    # Only the floor and ceiling: this award isn't tied to a game, so Out of Code
+    # doesn't count one (horatio.location_quests counts a scheduled game's award).
     if body.game_xp:
         xp_range.add_game(db, user, troupe, body.game_xp, reason)
     db.commit()
