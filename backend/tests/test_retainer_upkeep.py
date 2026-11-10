@@ -13,11 +13,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio.models import AuditEvent, RetainerGrowth
-from tests.api_helpers import Person, Troupe
+from horatio.models import AuditEvent, Character, RetainerGrowth
+from tests.api_helpers import Person, Troupe, new_character
 from tests.test_api_checkin import check_in, game, open_checkin, send, tap, view
 from tests.test_api_downtimes import new_cycle, open_cycle
-from tests.test_api_retainers import make_npc, put, with_both
+from tests.test_api_retainers import give_retainers, make_npc, put, with_both
 
 
 @pytest.fixture
@@ -325,6 +325,47 @@ def test_growth_goes_to_the_linked_npc_or_is_banked_once_a_month(
     # Another cycle closing in the same month gives nothing more.
     close(troupe, open_cycle(troupe, new_cycle(troupe, closes_in=timedelta(days=8))))
     assert listed(troupe.storyteller, character_id)["Pike"]["banked_xp"] == 4
+    assert len(session.scalars(select(RetainerGrowth)).all()) == 2
+
+
+def test_a_character_removed_from_the_cycle_pays_no_upkeep_and_gains_nothing(
+    troupe: Troupe, session: Session
+) -> None:
+    taking_part = with_both(troupe)
+    removed = new_character(troupe, troupe.player, "Bertha")
+    request = troupe.player.client.post(
+        f"/characters/{removed}/home-troupe", json={"troupe_id": troupe.id}
+    ).json()
+    troupe.lead.client.post(f"/approvals/{request['id']}/approve", json={})
+    give_retainers(troupe, removed, 2, "Old Tom")
+    set_rules(
+        troupe,
+        upkeep={"amount": 1, "pool": "blood", "per": "month", "month_at": "downtime"},
+        growth=4,
+    )
+    cycle = open_cycle(troupe, new_cycle(troupe))
+    participants = troupe.storyteller.client.get(f"/cycles/{cycle['id']}/participants").json()
+    [participant] = [p for p in participants if p["character_id"] == removed]
+    taken_out = troupe.storyteller.client.delete(
+        f"/cycles/{cycle['id']}/participants/{participant['id']}"
+    )
+    assert taken_out.status_code == 204, taken_out.text
+
+    close(troupe, cycle)
+
+    def kept(character_id: str) -> Any:
+        return session.scalar(
+            select(Character.upkeep_next_game).where(Character.id == uuid.UUID(character_id))
+        )
+
+    assert kept(taking_part) == {
+        "charges": [{"pool": "blood", "amount": 2, "retainers": [MARTA, "Pike"]}]
+    }
+    assert kept(removed) is None
+    assert actions(session, troupe).count("retainer.upkeep_charged") == 1
+    assert listed(troupe.storyteller, taking_part)["Pike"]["banked_xp"] == 4
+    assert listed(troupe.storyteller, removed)["Old Tom"]["banked_xp"] == 0
+    assert actions(session, troupe).count("retainer.grew") == 2
     assert len(session.scalars(select(RetainerGrowth)).all()) == 2
 
 
