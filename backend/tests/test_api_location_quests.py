@@ -4,6 +4,7 @@ build the quest from the location; its success changes the location; and a
 location's qualities give its controller what they say, unless a negative switches
 them off."""
 
+import uuid
 from collections.abc import Callable
 from typing import Any
 
@@ -12,8 +13,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
+from horatio import xp_range
 from horatio.models import InfluenceEntry, Notification, QuestRequest
+from horatio.models import Troupe as TroupeRecord
 from tests.api_helpers import Person, Troupe, sign_up
+from tests.test_api_checkin import check_in, past_game, path
 from tests.test_api_downtimes import member_character, my_downtime, new_cycle, open_cycle
 from tests.test_api_quests import give, member_character_of, ok, quests_on
 
@@ -539,32 +543,36 @@ def test_a_joint_known_only_by_name_is_told_nothing(
 # --- negatives acting on their own ----------------------------------------------------------
 
 
+def out_of_code(troupe: Troupe) -> dict[str, Any]:
+    return location(
+        troupe, name="Ruby's Bar", rating=2, negatives=[{"name": "Out of Code", "level": 1}]
+    )
+
+
+def counted(troupe: Troupe, bar: dict[str, Any]) -> list[tuple[int, int]]:
+    """Out of Code's level, and the games it has counted since it last got worse."""
+    found = read(troupe, bar["id"])
+    return [(n["level"], n.get("games", 0)) for n in found["negatives"]]
+
+
+def award_game(troupe: Troupe, session: Session, agnes: str, **body: Any) -> Any:
+    """A scheduled game that has passed, Agnes checked in, and its XP awarded."""
+    game_id = past_game(troupe, session)
+    assert check_in(troupe.assistant, troupe, game_id, agnes).status_code == 200
+    return ok(
+        troupe.lead.client.post(
+            path(troupe, game_id, "/xp"), json={"amount": 1, "reason": "Game", **body}
+        )
+    )
+
+
 def test_out_of_code_gets_worse_after_two_games_and_staff_are_told(
     troupe: Troupe, agnes: str, session: Session
 ) -> None:
-    bar = location(
-        troupe,
-        name="Ruby's Bar",
-        rating=2,
-        negatives=[{"name": "Out of Code", "level": 1}],
-    )
+    bar = out_of_code(troupe)
 
-    def game() -> None:
-        ok(
-            troupe.lead.client.post(
-                f"/troupes/{troupe.id}/xp-awards",
-                json={
-                    "reason": "Game",
-                    "awards": [{"character_id": agnes, "amount": 1}],
-                    "game_xp": 1,
-                },
-            ),
-            201,
-        )
-
-    game()
-    found = read(troupe, bar["id"])
-    assert [(n["level"], n["games"]) for n in found["negatives"]] == [(1, 1)]
+    award_game(troupe, session, agnes)
+    assert counted(troupe, bar) == [(1, 1)]
     told = session.scalars(
         select(Notification.summary).where(Notification.kind == "location.out_of_code")
     ).all()
@@ -572,13 +580,88 @@ def test_out_of_code_gets_worse_after_two_games_and_staff_are_told(
 
     # Editing the location keeps the count.
     ok(troupe.storyteller.client.patch(f"/locations/{bar['id']}", json={"notes": "Watch it"}))
-    game()
-    found = read(troupe, bar["id"])
-    assert [(n["level"], n["games"]) for n in found["negatives"]] == [(2, 0)]
+    award_game(troupe, session, agnes)
+    assert counted(troupe, bar) == [(2, 0)]
     told = session.scalars(
         select(Notification.summary).where(Notification.kind == "location.out_of_code")
     ).all()
     assert "Out of Code on Ruby's Bar is now ×2: two games passed without it being removed." in told
+
+
+def test_a_game_counts_once_however_its_xp_goes_into_the_floor_and_ceiling(
+    troupe: Troupe, agnes: str, session: Session
+) -> None:
+    """Out of Code counts a scheduled game when its XP is awarded, with the XP range
+    option off, and with a range figure of 0 (issue #617)."""
+    bar = out_of_code(troupe)
+    record = session.get_one(TroupeRecord, uuid.UUID(troupe.id))
+    start = xp_range.figures(session, record).floor
+
+    award_game(troupe, session, agnes, to_range=False)
+    assert counted(troupe, bar) == [(1, 1)]
+    assert xp_range.figures(session, record).floor == start
+
+    # The monthly cap of 5 is used up by one game: the next adds 0 to the floor.
+    ok(
+        troupe.storyteller.client.put(
+            f"/troupes/{troupe.id}/game-xp",
+            json={
+                "bands": [{"up_to": None, "attended": 5, "absentee": 0}],
+                "cap": "cap",
+                "monthly_xp": 5,
+            },
+        )
+    )
+    award_game(troupe, session, agnes)
+    assert counted(troupe, bar) == [(2, 0)]
+    assert xp_range.figures(session, record).floor == start + 5
+    award_game(troupe, session, agnes)
+    assert counted(troupe, bar) == [(2, 1)]
+    assert xp_range.figures(session, record).floor == start + 5
+
+
+def test_a_games_xp_awarded_again_isnt_counted_again(
+    troupe: Troupe, agnes: str, session: Session
+) -> None:
+    bar = out_of_code(troupe)
+    game_id = past_game(troupe, session)
+    assert check_in(troupe.assistant, troupe, game_id, agnes).status_code == 200
+    body = {"amount": 1, "reason": "Game"}
+    ok(troupe.lead.client.post(path(troupe, game_id, "/xp"), json=body))
+    assert counted(troupe, bar) == [(1, 1)]
+
+    again = troupe.lead.client.post(path(troupe, game_id, "/xp"), json=body)
+    assert again.status_code == 409
+    assert counted(troupe, bar) == [(1, 1)]
+
+
+def test_the_floor_and_ceiling_by_hand_and_the_award_xp_tab_count_no_game(
+    troupe: Troupe, agnes: str, session: Session
+) -> None:
+    """Setting the floor or ceiling by hand isn't a game. Nor is Characters › Award
+    XP: it isn't tied to a game, and is used for any award, such as a late arrival's."""
+    bar = out_of_code(troupe)
+    record = session.get_one(TroupeRecord, uuid.UUID(troupe.id))
+    start = xp_range.figures(session, record)
+
+    for figures in ({"floor": start.floor + 10, "ceiling": start.ceiling + 10}, {"ceiling": 500}):
+        ok(
+            troupe.storyteller.client.put(
+                f"/troupes/{troupe.id}/xp-range", json={"reason": "Old chronicle", **figures}
+            )
+        )
+    assert counted(troupe, bar) == [(1, 0)]
+
+    ok(
+        troupe.lead.client.post(
+            f"/troupes/{troupe.id}/xp-awards",
+            json={"reason": "Game", "awards": [{"character_id": agnes, "amount": 1}], "game_xp": 1},
+        ),
+        201,
+    )
+    # The floor and ceiling still go up by the game's XP.
+    assert xp_range.figures(session, record).floor == start.floor + 11
+    assert counted(troupe, bar) == [(1, 0)]
 
 
 def test_insolvent_twice_makes_it_forfeit_when_the_rating_is_above_resources(

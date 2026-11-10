@@ -26,8 +26,9 @@ controller who loses the location is told, without the record.
 127-129): Resources dots for Damaged, Elite influence for Insolvent and Shunned,
 Underworld influence for Compromised and Out of Code, each at the location's
 rating, spent as a quest requirement's expenditure is. Out of Code gets worse by
-itself when two games pass without it being removed (`game_passed`), and staff
-are told before and when it does. Insolvent ×2 makes the location forfeit if its
+itself when two games pass without it being removed (`game_passed`, as a
+scheduled game's XP is awarded at check-in), and staff are told before and when
+it does. Insolvent ×2 makes the location forfeit if its
 rating is above its controller's Resources, which staff confirm.
 
 **What qualities give** (`held`): Profitable, Hangout, Clubhouse, Artistic, Fancy
