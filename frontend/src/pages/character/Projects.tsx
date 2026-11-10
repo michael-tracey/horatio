@@ -22,7 +22,9 @@ export function ProjectsCard({ characterId }: { characterId: string }) {
   const [starting, setStarting] = useState(false);
   if (found.isPending) return <Loading />;
   if (found.error) return <ErrorText error={found.error} />;
-  const { projects, paths, staff } = found.data;
+  const { projects, paths, staff, quests, troupe_id } = found.data;
+  // While its troupe runs quests: where a goal that is a quest is asked for, or built.
+  const questsAt = !quests ? null : !staff ? `/characters/${characterId}/quests` : troupe_id ? `/troupes/${troupe_id}/quests` : null;
   return (
     <Card title="Projects">
       <p className="mb-3 text-sm text-mist">
@@ -37,13 +39,13 @@ export function ProjectsCard({ characterId }: { characterId: string }) {
       ) : (
         <ul className="flex flex-col gap-3">
           {projects.map((p) => (
-            <ProjectItem key={p.id} project={p} staff={staff} characterId={characterId} />
+            <ProjectItem key={p.id} project={p} staff={staff} characterId={characterId} questsOn={quests} />
           ))}
         </ul>
       )}
       <div className="mt-3">
         {starting ? (
-          <StartProject characterId={characterId} paths={paths} staff={staff} onDone={() => setStarting(false)} />
+          <StartProject characterId={characterId} paths={paths} staff={staff} questsAt={questsAt} onDone={() => setStarting(false)} />
         ) : (
           <Button variant="secondary" onClick={() => setStarting(true)}>
             {staff ? "Start a project" : "Propose a project"}
@@ -54,12 +56,29 @@ export function ProjectsCard({ characterId }: { characterId: string }) {
   );
 }
 
-/** One project: its progress, its monthly rule, and what staff or its player can do with it. */
-export function ProjectItem({ project: p, staff, characterId, showName = false }: { project: ProjectOut; staff: boolean; characterId: string; showName?: boolean }) {
-  const act = useAction((what: "confirm" | "drop" | "sheet-changed") => {
+/**
+ * One project: its kind, progress and monthly rule, and what staff or its player can
+ * do with it. While its troupe runs quests (`questsOn`), staff can make a proposed
+ * Research or Other project a quest request instead (#615).
+ */
+export function ProjectItem({
+  project: p,
+  staff,
+  characterId,
+  showName = false,
+  questsOn = false,
+}: {
+  project: ProjectOut;
+  staff: boolean;
+  characterId: string;
+  showName?: boolean;
+  questsOn?: boolean;
+}) {
+  const act = useAction((what: "confirm" | "drop" | "quest-request" | "sheet-changed") => {
     const params = { params: { path: { project_id: p.id } } };
     if (what === "confirm") return unwrap(api.POST("/api/projects/{project_id}/confirm", params));
     if (what === "drop") return unwrap(api.POST("/api/projects/{project_id}/drop", params));
+    if (what === "quest-request") return unwrap(api.POST("/api/projects/{project_id}/quest-request", params));
     return unwrap(api.POST("/api/projects/{project_id}/sheet-changed", params));
   });
   const open = p.status === "proposed" || p.status === "active";
@@ -105,6 +124,11 @@ export function ProjectItem({ project: p, staff, characterId, showName = false }
             {p.status === "proposed" ? (staff ? "Decline" : "Withdraw") : "Stop"}
           </Button>
         )}
+        {staff && questsOn && p.status === "proposed" && p.kind !== "path_change" && (
+          <Button variant="secondary" onClick={() => act.mutate("quest-request")} disabled={act.isPending}>
+            Make it a quest request instead
+          </Button>
+        )}
         {staff && p.sheet_change_due && (
           <Button variant="secondary" onClick={() => act.mutate("sheet-changed")} disabled={act.isPending}>
             It's on the sheet
@@ -116,7 +140,19 @@ export function ProjectItem({ project: p, staff, characterId, showName = false }
   );
 }
 
-function StartProject({ characterId, paths, staff, onDone }: { characterId: string; paths: string[]; staff: boolean; onDone: () => void }) {
+function StartProject({
+  characterId,
+  paths,
+  staff,
+  questsAt,
+  onDone,
+}: {
+  characterId: string;
+  paths: string[];
+  staff: boolean;
+  questsAt: string | null;
+  onDone: () => void;
+}) {
   const [draft, setDraft] = useState<ProjectIn>({ kind: "path_change", name: "", path: "", with_teacher: false, target: null, monthly_minimum: null });
   const start = useAction(() => unwrap(api.POST("/api/characters/{character_id}/projects", { params: { path: { character_id: characterId } }, body: draft })));
   const set = (next: Partial<ProjectIn>) => setDraft({ ...draft, ...next });
@@ -130,6 +166,15 @@ function StartProject({ characterId, paths, staff, onDone }: { characterId: stri
         start.mutate(undefined, { onSuccess: onDone });
       }}
     >
+      {questsAt && (
+        <p role="note" className="text-sm text-mist">
+          A goal with things to gather and tests to pass is a quest, not a project:{" "}
+          <Link to={questsAt} className="underline hover:text-parchment">
+            {staff ? "build one on the troupe's Quests tab" : "ask for one on the Quests tab"}
+          </Link>
+          . A Path change stays a project.
+        </p>
+      )}
       <Field label="Kind">
         <Select value={draft.kind} onChange={(e) => set({ kind: e.target.value as ProjectIn["kind"] })}>
           {Object.entries(PROJECT_KINDS).map(([key, name]) => (

@@ -7716,9 +7716,26 @@
             "title": "Projects",
             "type": "array"
           },
+          "quests": {
+            "default": false,
+            "title": "Quests",
+            "type": "boolean"
+          },
           "staff": {
             "title": "Staff",
             "type": "boolean"
+          },
+          "troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Troupe Id"
           }
         },
         "required": [
@@ -65336,6 +65353,50 @@
           }
         },
         "summary": "Drop",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/projects/{project_id}/quest-request": {
+      "post": {
+        "description": "Staff decline a proposed Research or Other project and make a quest request of\nit for the character, its name the objective.",
+        "operationId": "to_quest_request_api_projects__project_id__quest_request_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "To Quest Request",
         "tags": [
           "projects"
         ]

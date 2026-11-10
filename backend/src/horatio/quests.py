@@ -256,9 +256,11 @@ def make_request(
     kind: str = "custom",
     details: dict[str, Any] | None = None,
     location_id: uuid.UUID | None = None,
+    made_by: User | None = None,
 ) -> QuestRequest:
     """A request in the troupe's queue: a custom quest, or one about a location
-    (horatio.location_quests checks those first)."""
+    (horatio.location_quests checks those first). `made_by` is staff making it for
+    the player, from a project they proposed (horatio.projects)."""
     troupe = home_troupe(db, character)
     found = allowance(db, troupe, character)
     if found.refusal is not None or troupe is None:
@@ -280,7 +282,9 @@ def make_request(
     )
     db.add(request)
     db.flush()
-    audit.record(db, player, "quest.requested", troupe_id=troupe.id, character_id=character.id)
+    audit.record(
+        db, made_by or player, "quest.requested", troupe_id=troupe.id, character_id=character.id
+    )
     return request
 
 

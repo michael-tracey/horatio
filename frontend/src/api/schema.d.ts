@@ -5632,6 +5632,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{project_id}/quest-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * To Quest Request
+         * @description Staff decline a proposed Research or Other project and make a quest request of
+         *     it for the character, its name the objective.
+         */
+        post: operations["to_quest_request_api_projects__project_id__quest_request_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/projects/{project_id}/sheet-changed": {
         parameters: {
             query?: never;
@@ -13580,8 +13601,15 @@ export interface components {
             paths: string[];
             /** Projects */
             projects: components["schemas"]["ProjectOut"][];
+            /**
+             * Quests
+             * @default false
+             */
+            quests: boolean;
             /** Staff */
             staff: boolean;
+            /** Troupe Id */
+            troupe_id?: string | null;
         };
         /** CharacterQuestionsOut */
         CharacterQuestionsOut: {
@@ -40195,6 +40223,37 @@ export interface operations {
         };
     };
     drop_api_projects__project_id__drop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    to_quest_request_api_projects__project_id__quest_request_post: {
         parameters: {
             query?: never;
             header?: never;

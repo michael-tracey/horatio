@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from tests.api_helpers import Person, Troupe, sign_up
 from tests.test_api_downtimes import member_character, my_downtime, new_cycle, open_cycle, save
+from tests.test_api_quests import quests_on
 
 
 class Scene:
@@ -225,3 +226,54 @@ def test_a_month_without_an_action_starts_a_path_change_over(scene: Scene) -> No
     scene.complete(third)
     assert scene.projects()[0]["history"][-1]["cycle_name"] == "October 2026"
     assert len(scene.projects()[0]["history"]) == 2
+
+
+def test_staff_make_a_proposed_project_a_quest_request_while_the_troupe_runs_quests(
+    scene: Scene,
+) -> None:
+    troupe = scene.troupe
+    found = troupe.player.client.get(f"/characters/{scene.agnes}/projects").json()
+    assert (found["quests"], found["troupe_id"]) == (False, str(troupe.id))
+    research = scene.start(troupe.player, kind="research", name="Locate Karsh", target=6).json()
+    # Not while quests are off.
+    refused = troupe.storyteller.client.post(f"/projects/{research['id']}/quest-request")
+    assert refused.status_code == 409
+    assert "does not run quests" in refused.json()["detail"]
+
+    quests_on(troupe)
+    assert troupe.player.client.get(f"/characters/{scene.agnes}/projects").json()["quests"]
+    # Only staff, and only a proposed Research or Other project.
+    assert troupe.player.client.post(f"/projects/{research['id']}/quest-request").status_code == 403
+    path = scene.start(troupe.player, kind="path_change", path="Night").json()
+    stays = troupe.storyteller.client.post(f"/projects/{path['id']}/quest-request")
+    assert stays.status_code == 409
+    assert stays.json()["detail"] == "A Path change stays a project."
+    under_way = scene.started(kind="other", name="A gallery", target=3)
+    assert (
+        troupe.storyteller.client.post(f"/projects/{under_way['id']}/quest-request").status_code
+        == 409
+    )
+
+    made = troupe.assistant.client.post(f"/projects/{research['id']}/quest-request")
+    assert made.status_code == 200, made.text
+    assert made.json()["status"] == "dropped"
+    mine = troupe.player.client.get(f"/characters/{scene.agnes}/quests").json()
+    assert [(r["objective"], r["status"]) for r in mine["requests"]] == [
+        ("Locate Karsh", "waiting")
+    ]
+    # It is the player's request, counted toward their limit.
+    assert mine["used"] == 1
+    queued = troupe.storyteller.client.get(f"/troupes/{troupe.id}/quest-requests").json()
+    assert [(r["objective"], r["player_name"]) for r in queued] == [("Locate Karsh", "player")]
+    bell = troupe.player.client.get("/notifications").json()["items"]
+    assert any(n["summary"] == "Agnes's project Locate Karsh is now a quest request." for n in bell)
+    log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
+    assert any("proposed project Locate Karsh a quest request." in m for m in log)
+
+    # Past the troupe's limit, it is refused and the project stays proposed.
+    other = scene.start(troupe.player, kind="other", name="Find the Prince's haven", target=2)
+    again = troupe.storyteller.client.post(f"/projects/{other.json()['id']}/quest-request")
+    assert again.status_code == 409
+    assert "has made 1 of 1 quest request" in again.json()["detail"]
+    still = next(p for p in scene.projects() if p["name"] == "Find the Prince's haven")
+    assert still["status"] == "proposed"

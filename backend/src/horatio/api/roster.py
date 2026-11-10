@@ -417,6 +417,8 @@ MESSAGES: dict[str, str] = {
     "project.proposed": "{actor} proposed the project {name} for {character}.",
     "project.confirmed": "{actor} confirmed {character}'s project {name}.",
     "project.dropped": "{actor} stopped {character}'s project {name}.",
+    "project.made_quest_request": "{actor} made {character}'s proposed project {name} a quest"
+    " request.",
     "project.started_over": "{character}'s project {name} started over: too few actions on it"
     " in {cycle_name}.",
     "project.finished": "{character} finished the project {name}.",
