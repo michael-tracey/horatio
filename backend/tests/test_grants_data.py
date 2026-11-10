@@ -83,6 +83,7 @@ def test_every_free_choices_grant_offers_something_it_can_be_answered_with() -> 
         "Piece That Remains",
         "Auspicious",
         "Shadows of the Past",
+        "Daimoinon: Walking Atrocity",
     }
     for grant in chosen:
         found = options(grant, rules, [SheetTrait("clan", "Caitiff")])
