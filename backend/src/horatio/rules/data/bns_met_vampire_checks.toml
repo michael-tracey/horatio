@@ -900,7 +900,7 @@ key = "flaws/past-limit"
 category = "flaws"
 forbids = { over_points_limit = true, accepted = false }
 strength = "review"
-message = "Flaws past the limit need the Storyteller's OK, and count for nothing more."
+message = "Flaws past the limit need the Storyteller's OK, and give no more XP."
 page = "85"
 
 # --- taking a trait more than once (p. 236) ---------------------------------------

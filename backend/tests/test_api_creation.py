@@ -175,7 +175,7 @@ def test_merits_and_flaws_come_from_a_points_budget(troupe: Troupe) -> None:
 # Hunted 4, Fragile Bones 4 and Dark Secret 1: 9 points of flaws.
 NINE_POINTS_OF_FLAWS = [("Hunted", 4), ("Fragile Bones", 4), ("Dark Secret", 1)]
 
-PAST_LIMIT = "Flaws past the limit need the Storyteller's OK, and count for nothing more. (p. 85)"
+PAST_LIMIT = "Flaws past the limit need the Storyteller's OK, and give no more XP. (p. 85)"
 
 
 def set_flaws(person: Person, character_id: str, flaws: list[tuple[str, int]]) -> Any:
@@ -207,10 +207,11 @@ def test_flaws_can_go_past_their_budget_for_staff_to_review(troupe: Troupe) -> N
     assert (flaws["used"], flaws["allowed"], flaws["remaining"]) == (9, 7, -2)
     assert flaws["past_budget"] is True
     assert pool(state, "merits", 0)["past_budget"] is False
-    # Nothing past the limit counts: the sheet has 7 of the 9 points paid out, and
-    # the XP to spend is what it was.
+    # Nothing past the limit counts: the sheet has 7 of the 9 points paid out, 7 XP
+    # added to the 30 to start with (p. 85).
     found = sheet(troupe.player, character_id)
-    assert (found["xp"]["balance"], found["xp"]["earned"]) == (30, 30)
+    assert (found["xp"]["balance"], found["xp"]["earned"]) == (37, 30)
+    assert state["xp"] == {"starting": 30, "merits": 0, "flaws": 7, "flaw_budget": 7, "left": 37}
     [limit] = [x for x in found["limits"] if x["category"] == "flaws"]
     assert (limit["used"], limit["limit"]) == (9, 7)
     # Flagged for staff, in the same words for every flaw.
@@ -227,7 +228,7 @@ def test_flaws_can_go_past_their_budget_for_staff_to_review(troupe: Troupe) -> N
         json={"category": "flaws", "name": "Amnesia", "rating": 1},
     )
     assert taken.status_code == 200, taken.text
-    assert taken.json()["sheet"]["xp"]["balance"] == 30
+    assert taken.json()["sheet"]["xp"]["balance"] == 37
 
 
 def test_merits_never_go_past_their_budget(troupe: Troupe) -> None:

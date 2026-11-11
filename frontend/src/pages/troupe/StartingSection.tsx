@@ -28,8 +28,8 @@ export function StartingSection({ troupeId, canEdit }: { troupeId: string; canEd
     <div className="flex flex-col gap-6">
       <Explainer id="rules-starting" title="How starting points work">
         <p className="text-sm">
-          A new character places these during step-by-step creation: picks give a trait that many free dots, and a budget of points
-          buys merits (or is paid back by flaws) at their value.{" "}
+          A new character places these during step-by-step creation: picks give a trait that many free dots. Merits are bought with
+          the character's starting XP, up to their budget of points, and flaws add their points to it, up to theirs (p. 106).{" "}
           {canEdit ? "Change a category to play it differently here; going back uses the rule set's again." : ""}
         </p>
         <p className="mt-2 text-sm text-mist">

@@ -303,9 +303,10 @@ def test_ventrue_royalty_places_4_3_and_2_where_they_save_the_most(troupe: Troup
         0,
     ]
     # Before, the picks at 3, 2 and 1 saved 10 of the backgrounds' 30; now they save
-    # 25. The merit's 2 points come out of the merit points.
-    assert cost_of(tally, "Ventrue Royalty") == 0
-    assert tally["total"] == before - 15
+    # 25. The merit's 2 points come out of the merit points, and cost 2 XP, as a
+    # player character's merits taken in creation do (p. 106).
+    assert cost_of(tally, "Ventrue Royalty") == 2
+    assert tally["total"] == before - 15 + 2
 
 
 def test_a_place_set_by_hand_stays_and_one_taken_off_stays_off(troupe: Troupe) -> None:

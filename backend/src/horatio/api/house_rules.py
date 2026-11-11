@@ -15,6 +15,7 @@ from sqlalchemy import select
 from horatio import (
     audit,
     clan_merits,
+    creation_xp,
     diablerie,
     downtimes,
     feeding,
@@ -616,6 +617,13 @@ def list_starting(
     return starting_out(db, troupe_id, house_splat(db, troupe_id, splat))
 
 
+def resync_xp(db: DbSession, troupe: Troupe, category: str) -> None:
+    """The flaws' budget is the most XP flaws give: characters being built here give
+    what the new one does (horatio.creation_xp)."""
+    if category in ("merits", "flaws"):
+        creation_xp.resync(db, troupe_settings.building_here(db, troupe))
+
+
 @router.put("/creation/{category}")
 def change_starting(
     troupe_id: uuid.UUID,
@@ -653,6 +661,7 @@ def change_starting(
     except ValueError as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
     changed = starting_category(db, troupe.id, splat, category)
+    resync_xp(db, troupe, category)
     audit.record(
         db,
         user,
@@ -678,6 +687,7 @@ def reset_starting(
     starting_category(db, troupe.id, splat, category)
     set_house_creation_rules(db, troupe.id, splat, category, [])
     changed = starting_category(db, troupe.id, splat, category)
+    resync_xp(db, troupe, category)
     audit.record(
         db,
         user,

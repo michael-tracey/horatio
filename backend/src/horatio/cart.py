@@ -226,7 +226,10 @@ def make(db: Session, user: User, character: Character, change: Change) -> sheet
                 db, user, character, change.category, change.name, change.detail, change.rating
             )
     else:
-        creation.remove_pick(db, user, character, change.category, change.name, change.detail)
+        # As its own endpoint does: what the pick granted goes with it, and a merit's
+        # or flaw's XP (horatio.creation_xp).
+        with sheets.checked(db, character, user, rules=False):
+            creation.remove_pick(db, user, character, change.category, change.name, change.detail)
     return None
 
 

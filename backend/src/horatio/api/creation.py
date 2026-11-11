@@ -2,11 +2,12 @@
 
 import uuid
 from collections.abc import Iterable
+from dataclasses import asdict
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from horatio import clan_merits, creation, sheets
+from horatio import clan_merits, creation, creation_xp, sheets
 from horatio.api.sheets import TraitRefOut, players_character
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character
@@ -47,8 +48,8 @@ class PoolOut(BaseModel):
     allowed: int
     used: int
     remaining: int
-    # Picks may go past `allowed` (flaws, with the Storyteller's OK), counting nothing
-    # past it: `remaining` can then be below 0 (p. 85).
+    # Picks may go past `allowed` (flaws, with the Storyteller's OK), giving no more
+    # XP past it: `remaining` can then be below 0 (p. 85).
     past_budget: bool = False
     # A fact each trait must have to take a pick here, such as "in_clan".
     restriction: str | None
@@ -141,9 +142,24 @@ class ClanChoiceOut(BaseModel):
     page: str | None
 
 
+class CreationXpOut(BaseModel):
+    """The character's XP, the book's way (MET: VTM pp. 85, 106): what it starts with,
+    what the merits taken in creation cost, what the flaws gave (at most
+    `flaw_budget`), and what is left to spend once creation is finished."""
+
+    starting: int
+    merits: int
+    flaws: int
+    flaw_budget: int
+    left: int
+
+
 class CreationOut(BaseModel):
     complete: bool
     pools: list[PoolOut]
+    # While in creation. None once finished, for a character whose merits and flaws
+    # came from free budgets (finished before #657), and for an NPC, which spends no XP.
+    xp: CreationXpOut | None = None
     # The merits the clan needs, held from the merit points: not among the merit pool's
     # picks (`traits`), though their points are in its `used`.
     clan_merits: list[ClanMeritOut] = []
@@ -247,6 +263,7 @@ def creation_out(db: DbSession, character: Character) -> CreationOut:
     rules = creation.rules_for(db, character)
     rows = creation.sheet_rows(db, character)
     choice = clan_choice(rules, [r.as_rules_trait() for r in rows])
+    totals = creation_xp.totals(db, character)
     return CreationOut(
         shortfalls=[
             ShortfallOut(
@@ -264,6 +281,7 @@ def creation_out(db: DbSession, character: Character) -> CreationOut:
         if choice is not None
         else None,
         complete=character.creation_completed_at is not None,
+        xp=CreationXpOut(**asdict(totals)) if totals is not None else None,
         needs=list({(n.step, n.message): n for n in needs}.values()),
         pools=[pool_out(p) for p in sorted(placed, key=lambda p: (p.category, -p.rating))],
         clan_merits=[

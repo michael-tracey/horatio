@@ -10,9 +10,10 @@ pronouns, sheet, titles, status, equipment, backstory and history stay. Retainer
 staff linked to it are unlinked, with a line in their owner's log.
 
 Its XP must balance as a PC's does. Each trait's paid dots are written as a
-purchase at what the troupe's costs say they cost, and one "Imported" award gives
-that much, so it starts with nothing unspent. XP the player had banked elsewhere
-is its own award, with its reason. A trait the troupe's costs don't price (a
+purchase at what the troupe's costs say they cost, and its merits and flaws taken
+as creation picks what they cost or gave in creation (horatio.creation_xp), and one
+"Imported" award gives that much, so it starts with nothing unspent. XP the player
+had banked elsewhere is its own award, with its reason. A trait the troupe's costs don't price (a
 ghoul's starting discipline dots, or one the troupe doesn't allow) is kept as free
 dots. Neither award is checked against the troupe's XP floor and ceiling: that is
 only done when a character asks to make a troupe its home, and this one already
@@ -41,7 +42,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, npc_picks, play
+from horatio import audit, creation_xp, npc_picks, play
 from horatio.auth.sessions import hash_token
 from horatio.config import get_settings
 from horatio.models import Character, NpcClaim, Retainer, Troupe, User, XpEntry
@@ -143,11 +144,13 @@ class Preview:
 def preview(db: Session, npc: Character, to_player: User | None) -> Preview:
     troupe = db.get_one(Troupe, npc.owner_troupe_id or npc.home_troupe_id)
     found: list[Priced] = []
+    creation = 0
     if npc.kind == "npc":
         # Priced as giving would price it, with its picks fitted, but left as it was.
         savepoint = db.begin_nested()
         npc_picks.fit(db, npc)
         found = priced(db, npc)
+        creation = -sum(line.amount for line in creation_xp.due(db, npc))
         savepoint.rollback()
     linked = db.execute(
         select(Character.name, Retainer.name)
@@ -159,7 +162,7 @@ def preview(db: Session, npc: Character, to_player: User | None) -> Preview:
         npc=npc,
         troupe=troupe,
         to_player=to_player,
-        xp=sum(p.quote.cost for p in found if p.quote is not None),
+        xp=sum(p.quote.cost for p in found if p.quote is not None) + creation,
         free=[label(p.row) for p in found if p.quote is None],
         retainers=[(owner, name) for owner, name in linked],
         refusal=refusal(db, npc, to_player) if to_player is not None else npc_refusal(npc),
@@ -221,6 +224,11 @@ def give(
                 cost_basis=p.quote.rule.describe(),
             )
         )
+    # Its merits and flaws taken as creation picks, as a player character's (#657).
+    taken = creation_xp.due(db, npc)
+    creation_xp.write(db, npc, taken, actor.id)
+    npc.merits_flaws_xp = True
+    total -= sum(line.amount for line in taken)
     if total > 0:
         db.add(
             XpEntry(

@@ -9,12 +9,12 @@ const flaw = (name: string, points: number) => ({ category: "flaws", name, fixed
 const FLAWS = [flaw("Hunted", 4), flaw("Fragile Bones", 4), flaw("Dark Secret", 1)];
 
 describe("PointsList", () => {
-  it("lets flaws go past their budget, saying they count for nothing more", () => {
+  it("lets flaws go past their budget, saying they give no more XP", () => {
     const onChange = vi.fn();
     render(<PointsList title="Flaws" traits={FLAWS} budget={7} pastBudget picks={{ Hunted: 4, "Fragile Bones": 4 }} onChange={onChange} />);
 
-    expect(screen.getByText("8 points, 7 count toward the budget")).toBeTruthy();
-    expect(screen.getByText("Flaws past 7 points need the Storyteller's OK, and count for nothing more (p. 85).")).toBeTruthy();
+    expect(screen.getByText("8 points, 7 XP paid out")).toBeTruthy();
+    expect(screen.getByText("Flaws past 7 points need the Storyteller's OK, and give no more XP (p. 85).")).toBeTruthy();
     const darkSecret = screen.getByRole("checkbox", { name: /Dark Secret/ }) as HTMLInputElement;
     expect(darkSecret.disabled).toBe(false);
     fireEvent.click(darkSecret);

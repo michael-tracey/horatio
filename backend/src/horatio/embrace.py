@@ -31,9 +31,11 @@ Becoming a vampire converts the sheet, step by step, in one go:
    teacher; the Storyteller may let them be bought into debt, now or later from
    the cart.
 
-Horatio gives merits and flaws at creation from a budget of points where the book
-spends initial XP on them (p. 106), so a merit or flaw taken off here is worth its
-points from that budget as well as the XP it cost or gave.
+Merits and flaws taken in creation cost and gave XP, as the book has it (p. 106,
+horatio.creation_xp), so a merit or flaw taken off here is worth the XP it cost or
+gave, in creation and since. A character finished before that (#657) took them from
+free budgets of points instead, so for it, one is worth its points from that budget
+as well.
 
 The character is then a vampire, by the vampire rule set, with no domitor. Every
 step is in its log, the sheet as it now stands is the one its home troupe has
@@ -417,7 +419,8 @@ def suggested_clan_merits(rules: TroupeRules, clan: str, default: str | None = N
 
 def net_spent(db: Session, character: Character, category: str, name: str, detail: str) -> int:
     """The XP spent on a trait, net of what came back (negative for a flaw that paid),
-    by its name: the ghoul's purchases and the vampire's are of different rule sets."""
+    in creation and since, by its name: the ghoul's purchases and the vampire's are of
+    different rule sets."""
     return -(
         db.scalar(
             select(func.coalesce(func.sum(XpEntry.amount), 0))
@@ -425,7 +428,7 @@ def net_spent(db: Session, character: Character, category: str, name: str, detai
             .join(TraitCategory, TraitDefinition.category_id == TraitCategory.id)
             .where(
                 XpEntry.character_id == character.id,
-                XpEntry.kind.in_(("purchase", "reprice")),
+                XpEntry.kind.in_(("purchase", "reprice", "creation")),
                 TraitCategory.key == category,
                 TraitDefinition.name == name,
                 func.coalesce(XpEntry.detail, "") == detail,
@@ -437,9 +440,10 @@ def net_spent(db: Session, character: Character, category: str, name: str, detai
 
 def worth(db: Session, character: Character, row: sheets.SheetRow) -> int:
     """What taking a merit off gives back, or a flaw off takes back: the XP it cost
-    or gave, and the points it took of the creation budget."""
+    or gave, and for a character whose merits and flaws came from free budgets in
+    creation, the points it took of that budget."""
     spent = net_spent(db, character, row.category.key, row.definition.name, row.trait.detail)
-    budget = row.trait.creation_pick or 0
+    budget = 0 if character.merits_flaws_xp else row.trait.creation_pick or 0
     if row.category.key == "flaws":
         return max(0, -spent) + budget
     return max(0, spent) + budget

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogueOut } from "../../../api/types";
 import { detailNeed, fieldSkills } from "../fields";
-import { canTapDots, choiceName, choose, clear, move, copyKey, fieldProblems, identityChoices, isRanking, keyed, keysOf, left, nextCopy, pastBudgetText, picksLeft, pointsText, seatPicks, tapDots, togglePoints, traitOf } from "./logic";
+import { canTapDots, choiceName, choose, clear, move, copyKey, fieldProblems, identityChoices, isRanking, keyed, keysOf, left, nextCopy, pastBudgetText, picksLeft, pointsText, seatPicks, tapDots, togglePoints, traitOf, xpText, xpWith } from "./logic";
 
 const SKILLS = { 4: 1, 3: 2, 2: 3, 1: 4 };
 const ATTRIBUTES = { 7: 1, 5: 1, 3: 1 };
@@ -169,10 +169,29 @@ describe("pointsText", () => {
     expect(pointsText(7, 7, true)).toBe("7 of 7 points");
   });
 
-  it("says flaws past the budget count only up to it (p. 85)", () => {
-    expect(pointsText(9, 7, true)).toBe("9 points, 7 count toward the budget");
-    expect(pointsText(11, 10, true)).toBe("11 points, 10 count toward the budget");
-    expect(pastBudgetText("Flaws", 7)).toBe("Flaws past 7 points need the Storyteller's OK, and count for nothing more (p. 85).");
+  it("says flaws past the budget pay XP only up to it (p. 85)", () => {
+    expect(pointsText(9, 7, true)).toBe("9 points, 7 XP paid out");
+    expect(pointsText(11, 10, true)).toBe("11 points, 10 XP paid out");
+    expect(pastBudgetText("Flaws", 7)).toBe("Flaws past 7 points need the Storyteller's OK, and give no more XP (p. 85).");
+  });
+});
+
+describe("xpWith", () => {
+  const xp = { starting: 30, merits: 3, flaws: 1, flaw_budget: 7, left: 28 };
+
+  it("is the saved XP while the picks are as saved", () => {
+    expect(xpWith(xp, { merits: 3, flaws: 1 }, { merits: 3, flaws: 1 })).toEqual(xp);
+  });
+
+  it("takes merits picked since from what is left, and adds flaws up to the budget", () => {
+    expect(xpWith(xp, { merits: 3, flaws: 1 }, { merits: 7, flaws: 1 })).toEqual({ ...xp, merits: 7, left: 24 });
+    expect(xpWith(xp, { merits: 3, flaws: 1 }, { merits: 3, flaws: 9 })).toEqual({ ...xp, flaws: 7, left: 34 });
+    expect(xpWith(xp, { merits: 3, flaws: 1 }, { merits: 0, flaws: 0 })).toEqual({ ...xp, merits: 0, flaws: 0, left: 30 });
+  });
+
+  it("says it in a line", () => {
+    expect(xpText(xp)).toBe("30 XP to start, 3 on merits, 1 from flaws: 28 left.");
+    expect(xpText({ ...xp, merits: 0, flaws: 0, left: 30 })).toBe("30 XP to start: 30 left.");
   });
 });
 

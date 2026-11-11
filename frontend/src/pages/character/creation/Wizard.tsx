@@ -18,7 +18,7 @@ import { FreeChoicesStep, withFreeChoices } from "./FreeChoicesStep";
 import { BACKGROUND_MERITS, FOCUS_MERITS, SKILL_MERITS, freedPicks, givenIn, takenAway, unchosenFree } from "./gifts";
 import { detailNeed, fieldSkills } from "../fields";
 import { SetField } from "../Specializations";
-import { CUSTOM_ARCHETYPE, fieldProblems, identityChoices, keyed, pointsText, spent, traitOf, type Allowed, type Picks } from "./logic";
+import { CUSTOM_ARCHETYPE, fieldProblems, identityChoices, keyed, pointsText, spent, traitOf, xpText, xpWith, type Allowed, type Picks } from "./logic";
 import { FromMerits } from "./FromMerits";
 import { IdentitySelect } from "./IdentitySelect";
 import { ClanMerits } from "./ClanMerits";
@@ -78,7 +78,12 @@ const ORDER: Step[] = [
     intro: "What the character has in the world: allies, contacts, money, fame and the like. Choose one for each pick, at the rating beside it.",
   },
   { key: "disciplines", title: "Disciplines", categories: ["disciplines"] },
-  { key: "merits", title: "Merits & flaws", categories: ["merits", "flaws"], intro: "Each comes from its own budget of points. Both are optional." },
+  {
+    key: "merits",
+    title: "Merits & flaws",
+    categories: ["merits", "flaws"],
+    intro: "Merits are bought with the character's starting XP, and flaws add to it (p. 106). Each has its own budget of points. Both are optional.",
+  },
 ];
 
 function buildSteps(creation: CreationOut, catalogue: CatalogueOut): Step[] {
@@ -535,6 +540,18 @@ function StepView({
           {clanChoiceHere.current && <ClanChoice character={character} creation={creation} catalogue={catalogue} />}
           {inClanHere.current && <InClanPicker character={character} sheet={sheet} catalogue={catalogue} />}
         </div>
+      )}
+      {step.key === "merits" && creation.xp && (
+        // The XP as picked, before the step saves: merits take from it, flaws add (p. 106).
+        <p aria-label="Experience" className="mb-4 text-sm">
+          {xpText(
+            xpWith(
+              creation.xp,
+              { merits: spent(before.merits ?? {}), flaws: spent(before.flaws ?? {}) },
+              { merits: spent(picks.merits ?? {}), flaws: spent(picks.flaws ?? {}) },
+            ),
+          )}
+        </p>
       )}
       {step.key === "merits" && <FreeTraitsToChoose character={character} sheet={sheet} />}
       {/* Not held while saving: a tap made meanwhile is kept, and saved next. */}
@@ -1048,6 +1065,8 @@ function CharacterSummary({
     const names = [...(p.category === "merits" ? creation.clan_merits.map(named) : []), ...p.traits.map(named)];
     rows.push([p.category_name, `${names.join(", ") || "None"} (${pointsText(p.used, p.allowed, p.past_budget)})`]);
   }
+  // What the merits cost and the flaws gave, and what is left to spend once finished.
+  if (creation.xp) rows.push(["Experience", xpText(creation.xp)]);
 
   return (
     <section aria-label="Summary" className="flex flex-col gap-2">

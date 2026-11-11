@@ -480,6 +480,10 @@ def staff_change(db: Session, staff: User, character: Character) -> Iterator[Non
         yield
         db.flush()
         sheets.apply_grants(db, staff, character)
+        # A merit or flaw picked in creation taken off refunds its XP (horatio.creation_xp).
+        from horatio import creation_xp  # imports horatio.sheets, as this does
+
+        creation_xp.sync(db, character, staff.id)
         if character.kind == "pc":
             refused = sheets.broken_since(db, None, character, before, creation_only=False).refused
             if refused:
