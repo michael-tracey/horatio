@@ -33,6 +33,8 @@ export type Staffing = {
   /** Its storytellers and the custodian. */
   storyteller: boolean;
   archived: boolean;
+  /** False where the troupe doesn't use the Play View (#673): its NPCs have no Play. */
+  playView?: boolean;
 };
 
 /**
@@ -48,7 +50,7 @@ export function staffActions(c: ActionTarget, who: Staffing): { doing: StaffActi
   const npc = c.kind === "npc";
   const home = c.home || npc;
   const doing: StaffAction[] = [];
-  if (npc) doing.push("play");
+  if (npc && who.playView !== false) doing.push("play");
   if (c.home && c.kind === "pc") doing.push("xp");
   if (home && !c.retired) doing.push("equipment");
   if (home) doing.push("status");

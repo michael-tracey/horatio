@@ -11331,6 +11331,11 @@ export interface components {
             /** Status Source */
             status_source?: string | null;
             /**
+             * Status Tab
+             * @default true
+             */
+            status_tab: boolean;
+            /**
              * Status To Choose
              * @default false
              */
@@ -13527,6 +13532,11 @@ export interface components {
             /** Picture */
             picture: string | null;
             /**
+             * Play View
+             * @default true
+             */
+            play_view: boolean;
+            /**
              * Player Id
              * Format: uuid
              */
@@ -13581,6 +13591,11 @@ export interface components {
             owner_troupe_id: string | null;
             /** Picture */
             picture: string | null;
+            /**
+             * Play View
+             * @default true
+             */
+            play_view: boolean;
             /**
              * Player Id
              * Format: uuid
@@ -13742,6 +13757,11 @@ export interface components {
             /** Name */
             name: string;
             /**
+             * Play View
+             * @default true
+             */
+            play_view: boolean;
+            /**
              * Status At Checkin
              * @default false
              */
@@ -13874,6 +13894,11 @@ export interface components {
             character_name: string;
             /** Play Started */
             play_started: boolean;
+            /**
+             * Play View
+             * @default true
+             */
+            play_view: boolean;
         };
         /** ChoiceChange */
         ChoiceChange: {
@@ -20988,6 +21013,11 @@ export interface components {
             /** Picture */
             picture: string | null;
             /**
+             * Play View
+             * @default true
+             */
+            play_view: boolean;
+            /**
              * Player Id
              * Format: uuid
              */
@@ -22227,6 +22257,17 @@ export interface components {
             splat: string;
             status?: components["schemas"]["PlayStatusOut"] | null;
             stock?: components["schemas"]["StockNpcOut"] | null;
+            /**
+             * Tabs
+             * @default [
+             *       "sheet",
+             *       "tracker",
+             *       "pools",
+             *       "status",
+             *       "equipment"
+             *     ]
+             */
+            tabs: ("sheet" | "tracker" | "pools" | "status" | "equipment")[];
             vitae?: components["schemas"]["VitaeOut"] | null;
             willpower: components["schemas"]["Tracker"];
             /** Willpower Lent */
@@ -27939,6 +27980,8 @@ export interface components {
             downtime_xp?: number | null;
             /** Name */
             name?: string | null;
+            /** Play Tabs Off */
+            play_tabs_off?: ("sheet" | "tracker" | "pools" | "status" | "equipment")[] | null;
             /** Session Xp */
             session_xp?: number | null;
             /** Starting Xp */
@@ -28179,6 +28222,11 @@ export interface components {
             /** Place */
             place: string;
             /**
+             * Play Tabs Off
+             * @default []
+             */
+            play_tabs_off: ("sheet" | "tracker" | "pools" | "status" | "equipment")[];
+            /**
              * Player Nominations
              * @default false
              */
@@ -28250,6 +28298,11 @@ export interface components {
             /** Last Tap At */
             last_tap_at: string | null;
             lines_veils?: components["schemas"]["LinesVeils"] | null;
+            /**
+             * Play View
+             * @default true
+             */
+            play_view: boolean;
             /** Player Name */
             player_name: string;
             /** Taps */

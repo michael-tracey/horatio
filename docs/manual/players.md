@@ -446,7 +446,7 @@ The [Play View](glossary.md#play-view) is the character sheet for a game, laid o
 
 Along the top: the way back to the character, **Keep the screen awake**, **Undo** for your last tap, and whether your taps are saved. Every tap is kept on the phone when there's no signal and sent when it comes back; to open the Play View with no signal at all, see [Using Horatio at a game with no signal](#using-horatio-at-a-game-with-no-signal).
 
-The tabs are **Sheet** (to look things up), **Tracker**, **Pools**, **Status** (for a character with sect status) and **Equipment**. On every tab but the Tracker, a strip under the tabs shows Blood, Willpower and health, with **−** to spend. Your settings choose which tab it opens on.
+The tabs are **Sheet** (to look things up), **Tracker**, **Pools**, **Status** (for a character with sect status) and **Equipment**, as many of them as your character's home troupe has switched on. On every tab but the Tracker, a strip under the tabs shows Blood, Willpower and health, with **−** to spend. Your settings choose which tab it opens on; where your troupe has switched that one off, it opens on the first tab on. A troupe that keeps its sheets in Horatio but doesn't play from it switches the Play View off, and its characters have no **Play**.
 
 ![The Play View's Tracker, a few taps into the night: Blood, Willpower and Health](images/players/play-tracker.png)
 

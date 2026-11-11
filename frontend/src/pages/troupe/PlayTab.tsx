@@ -60,19 +60,25 @@ export function PlayTab({ troupeId }: { troupeId: string }) {
             {list.data.map((c) => (
               <li key={c.character_id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
                 <span className="min-w-40 flex-1">
-                  {/* Underlined with a chevron, so it reads as a link on a phone, where nothing hovers. */}
-                  <Link
-                    to={`/play/characters/${c.character_id}`}
-                    className="text-parchment underline decoration-line underline-offset-4 hover:decoration-parchment"
-                  >
-                    {c.character_name}
-                    <span aria-hidden="true" className="ml-1 inline-block text-mist">
-                      ›
-                    </span>
-                  </Link>{" "}
+                  {/* Underlined with a chevron, so it reads as a link on a phone, where nothing hovers.
+                      A visitor whose home troupe doesn't use the Play View has none to open (#673). */}
+                  {c.play_view ? (
+                    <Link
+                      to={`/play/characters/${c.character_id}`}
+                      className="text-parchment underline decoration-line underline-offset-4 hover:decoration-parchment"
+                    >
+                      {c.character_name}
+                      <span aria-hidden="true" className="ml-1 inline-block text-mist">
+                        ›
+                      </span>
+                    </Link>
+                  ) : (
+                    c.character_name
+                  )}{" "}
                   <span className="text-xs text-mist">
                     {c.player_name}
                     {c.game_number ? ` · game ${c.game_number}, ${c.taps === 1 ? "1 tap" : `${c.taps} taps`}` : " · not played yet"}
+                    {!c.play_view && " · its home troupe doesn't use the Play View"}
                   </span>
                 </span>
                 <span className="flex flex-wrap gap-1.5 text-xs">

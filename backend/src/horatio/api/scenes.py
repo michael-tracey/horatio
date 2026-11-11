@@ -15,7 +15,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from horatio import audit
+from horatio import audit, play_tabs
 from horatio.api.downtimes import staff_troupe
 from horatio.api.play import PlayReference, PlayView, read_play, read_reference
 from horatio.auth.deps import CurrentUser, DbSession
@@ -162,18 +162,31 @@ def pin_at_end(db: Session, scene_id: uuid.UUID, character_id: uuid.UUID) -> Non
     )
 
 
-def runnable(db: Session, troupe_id: uuid.UUID, character_ids: list[uuid.UUID]) -> set[uuid.UUID]:
-    """Those of the characters the troupe can run in Play: the ones in it now, its
-    NPCs and the PCs whose home or visiting troupe it is, as on its roster."""
-    return set(
+def members(db: Session, troupe_id: uuid.UUID, character_ids: list[uuid.UUID]) -> list[Character]:
+    """Those of the characters in the troupe now: its NPCs and the PCs whose home or
+    visiting troupe it is, as on its roster."""
+    return list(
         db.scalars(
-            select(TroupeMembership.character_id).where(
+            select(Character)
+            .join(TroupeMembership, TroupeMembership.character_id == Character.id)
+            .where(
                 TroupeMembership.troupe_id == troupe_id,
                 TroupeMembership.left_at.is_(None),
                 TroupeMembership.character_id.in_(character_ids),
             )
         )
     )
+
+
+def runnable(db: Session, troupe_id: uuid.UUID, character_ids: list[uuid.UUID]) -> set[uuid.UUID]:
+    """Those of the characters the troupe can run in Play: its members, but none whose
+    troupe doesn't use the Play View (horatio.play_tabs), nor any at all in a troupe
+    that doesn't."""
+    if not play_tabs.uses_play_view(db.get(Troupe, troupe_id)):
+        return set()
+    found = members(db, troupe_id, character_ids)
+    without = play_tabs.without_play_view(db, found)
+    return {c.id for c in found if c.id not in without}
 
 
 def summaries(db: Session, user: User, troupe: Troupe, scenes: list[Scene]) -> list[SceneSummary]:
@@ -371,6 +384,8 @@ def pin(
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.RUN_SCENES)
     scene = troupe_scene(db, troupe, scene_id)
     if character_id not in runnable(db, troupe.id, [character_id]):
+        if members(db, troupe.id, [character_id]):
+            raise HTTPException(status.HTTP_409_CONFLICT, play_tabs.NO_PLAY_VIEW)
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such character in this troupe.")
     pin_at_end(db, scene.id, character_id)
     used(scene)

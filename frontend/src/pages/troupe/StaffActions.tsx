@@ -11,6 +11,7 @@ import { BadgeNote } from "../character/Badge";
 import { StatusCard } from "../character/StatusCard";
 import { EquipmentEditor } from "./EquipmentEditor";
 import { ClaimLink, GiveToPlayer } from "./GiveNpc";
+import { usesPlayView } from "../play/tabs";
 import { abilities } from "./roles";
 import { staffActions, type StaffAction, type Staffing } from "./staffActions";
 import { titleGives, titleGroups, titleStatusWords } from "./titleGroups";
@@ -27,7 +28,7 @@ export function useStaffing(troupeId: string): Staffing {
   const me = useMe();
   const troupe = useTroupe(troupeId);
   const can = abilities(troupe.data?.my_role, me.data?.is_custodian ?? false);
-  return { running: can.running, storyteller: can.storyteller, archived: troupe.data?.archived ?? false };
+  return { running: can.running, storyteller: can.storyteller, archived: troupe.data?.archived ?? false, playView: !troupe.data || usesPlayView(troupe.data) };
 }
 
 /** What each item is called in the menu; Who's Who listing says which way it goes. */

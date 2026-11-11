@@ -11,6 +11,8 @@ import { abilities } from "../troupe/roles";
 import { SaveDeviceScene } from "./DeviceScene";
 import { useOnline } from "../../offline/connection";
 import { KeepScenes, NeedsSignal, ScenesStrip } from "../../offline/KeepScenes";
+import { NotUsed } from "./NotUsed";
+import { usesPlayView } from "./tabs";
 
 // How often to look for scenes other staff made or changed, as the Play View does.
 export const SCENE_REFRESH = 15_000;
@@ -71,12 +73,14 @@ export function ScenesPage() {
   const lead = troupe.data ? abilities(troupe.data.my_role, me.data?.is_custodian ?? false).lead : false;
   // With no signal, kept scenes open, but making, renaming and removing them wait for it (#503).
   const online = useOnline();
+  // A troupe that has switched every Play View tab off runs no scenes (#673).
+  const off = !!troupe.data && !usesPlayView(troupe.data);
 
   return (
     <div className="min-h-screen bg-night pb-16 text-parchment">
       <header className="sticky top-0 z-10 border-b border-ash bg-night/95 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-2">
-          <Link to={`/troupes/${troupeId}/play`} className="inline-flex min-h-10 items-center text-sm text-mist hover:text-parchment">
+          <Link to={off ? `/troupes/${troupeId}` : `/troupes/${troupeId}/play`} className="inline-flex min-h-10 items-center text-sm text-mist hover:text-parchment">
             ← {troupe.data?.name ?? "Back"}
           </Link>
           <h1 className="text-lg">Scenes</h1>
@@ -84,41 +88,47 @@ export function ScenesPage() {
         <ScenesStrip troupeId={troupeId} />
       </header>
       <main className="mx-auto flex max-w-3xl flex-col gap-4 px-4 pt-3">
-        <KeepScenes troupeId={troupeId} />
-        {online && <SaveDeviceScene troupeId={troupeId} onSave={(name, characters) => changes.create.mutateAsync({ name, characters })} />}
-        <NewScene
-          onCreate={async (name) => navigate(`/play/troupes/${troupeId}/scenes/${(await changes.create.mutateAsync({ name })).id}`)}
-          error={changes.create.error}
-          pending={changes.create.isPending}
-          online={online}
-        />
-        <div className="flex gap-1" role="group" aria-label="Whose scenes">
-          {(
-            [
-              [true, "Mine"],
-              [false, "All"],
-            ] as const
-          ).map(([value, label]) => (
-            <Button key={label} variant={mine === value ? "secondary" : "ghost"} aria-pressed={mine === value} onClick={() => setMine(value)}>
-              {label}
-            </Button>
-          ))}
-        </div>
-        {scenes.isPending ? (
-          <Loading />
-        ) : scenes.error ? (
-          <ErrorText error={scenes.error} />
-        ) : scenes.data.length === 0 ? (
-          <Empty>{mine ? "You have no scenes in this troupe yet. Make one above, or look at All." : "No scenes in this troupe yet. Make one above."}</Empty>
+        {off ? (
+          <NotUsed className="py-8 text-center" />
         ) : (
-          <ul className="divide-y divide-ash rounded-lg border border-ash bg-dusk">
-            {scenes.data.map((s) => (
-              <SceneRow key={s.id} troupeId={troupeId} scene={s} changes={changes} online={online} />
+          <>
+          <KeepScenes troupeId={troupeId} />
+          {online && <SaveDeviceScene troupeId={troupeId} onSave={(name, characters) => changes.create.mutateAsync({ name, characters })} />}
+          <NewScene
+            onCreate={async (name) => navigate(`/play/troupes/${troupeId}/scenes/${(await changes.create.mutateAsync({ name })).id}`)}
+            error={changes.create.error}
+            pending={changes.create.isPending}
+            online={online}
+          />
+          <div className="flex gap-1" role="group" aria-label="Whose scenes">
+            {(
+              [
+                [true, "Mine"],
+                [false, "All"],
+              ] as const
+            ).map(([value, label]) => (
+              <Button key={label} variant={mine === value ? "secondary" : "ghost"} aria-pressed={mine === value} onClick={() => setMine(value)}>
+                {label}
+              </Button>
             ))}
-          </ul>
+          </div>
+          {scenes.isPending ? (
+            <Loading />
+          ) : scenes.error ? (
+            <ErrorText error={scenes.error} />
+          ) : scenes.data.length === 0 ? (
+            <Empty>{mine ? "You have no scenes in this troupe yet. Make one above, or look at All." : "No scenes in this troupe yet. Make one above."}</Empty>
+          ) : (
+            <ul className="divide-y divide-ash rounded-lg border border-ash bg-dusk">
+              {scenes.data.map((s) => (
+                <SceneRow key={s.id} troupeId={troupeId} scene={s} changes={changes} online={online} />
+              ))}
+            </ul>
+          )}
+          <ErrorText error={changes.rename.error ?? changes.remove.error} />
+          {lead && online && <ClearOldScenes troupeId={troupeId} mine={mine} />}
+          </>
         )}
-        <ErrorText error={changes.rename.error ?? changes.remove.error} />
-        {lead && online && <ClearOldScenes troupeId={troupeId} mine={mine} />}
       </main>
     </div>
   );

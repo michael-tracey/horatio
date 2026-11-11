@@ -30,7 +30,7 @@ const BRAM = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 /** What the server answers each path with, for refresh. */
 const answers: Record<string, unknown> = {};
 
-const rosa = { id: ROSA, name: "Rosa", player_id: ME, kind: "pc", status: "active", creation_complete: true, home_troupe_id: null, building_troupe_id: null } as unknown as CharacterListOut;
+const rosa = { id: ROSA, name: "Rosa", player_id: ME, kind: "pc", status: "active", creation_complete: true, home_troupe_id: null, building_troupe_id: null, play_view: true } as unknown as CharacterListOut;
 
 function signedIn(id = ME) {
   const client = new QueryClient();
@@ -146,6 +146,18 @@ describe("refreshing what's kept (#619)", () => {
     expect(client.getQueryData(catalogueKey("vampire", TROUPE))).toBeDefined();
     const record = shelf.items.get(recordKey(ME)) as Kept;
     expect(record.queries.map((q) => q.queryKey)).toContainEqual(catalogueKey("vampire", TROUPE));
+  });
+
+  it("keeps no Play View for a character whose troupe doesn't use it, only its sheet (#673)", async () => {
+    const shelf = memoryShelf();
+    const client = online();
+    answers["/api/characters"] = [{ ...inTroupe, play_view: false }];
+    await refresh(client, ME, shelf);
+    expect(client.getQueryCache().find({ queryKey: ["play", ROSA], exact: true })).toBeUndefined();
+    expect(client.getQueryCache().find({ queryKey: ["play-reference", ROSA], exact: true })).toBeUndefined();
+    const record = shelf.items.get(recordKey(ME)) as Kept;
+    expect(record.queries.map((q) => q.queryKey[0])).toEqual(expect.arrayContaining(["character", "sheet"]));
+    expect(record.queries.map((q) => q.queryKey[0])).not.toContain("play");
   });
 
   it("keeps the book's catalogue for a character with no troupe, under the book's key", async () => {

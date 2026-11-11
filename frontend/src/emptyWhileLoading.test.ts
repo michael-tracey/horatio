@@ -23,6 +23,7 @@ const CHECKED: Record<string, number> = {
   "pages/nominations/NominationsAbout.tsx": 1, // nothing shown for none
   "pages/play/Others.tsx": 1, // "No one" only once answered
   "pages/rules/RulesPage.tsx": 1, // a menu's options
+  "pages/settings/SettingsPage.tsx": 1, // every tab offered until the troupes are in
   "pages/troupe/BookTraitsSection.tsx": 1, // isLoading first
   "pages/troupe/CyclePage.tsx": 1, // facts, once the cycle is in
   "pages/troupe/EquipmentEditor.tsx": 1, // shown when there are some

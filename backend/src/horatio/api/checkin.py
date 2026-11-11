@@ -17,6 +17,7 @@ from horatio import (
     game_xp,
     location_quests,
     play_status,
+    play_tabs,
     sheets,
     suspensions,
     xp_range,
@@ -60,6 +61,8 @@ class CheckInCharacter(BaseModel):
     status_at_checkin: bool = False
     status_sources: list[AbidingSourceOut] = []
     status_source: str | None = None
+    # Whether it has a Play View, which checking in opens (horatio.play_tabs).
+    play_view: bool = True
 
 
 class CheckInOffer(BaseModel):
@@ -91,6 +94,8 @@ class CheckedIn(BaseModel):
     already: bool
     # The night started on the Play View; not for a game already over.
     play_started: bool
+    # Whether it has a Play View to open: its troupe may not use one (horatio.play_tabs).
+    play_view: bool = True
 
 
 class CheckInState(BaseModel):
@@ -120,6 +125,9 @@ class Attendee(BaseModel):
     # `status_to_choose` while staff are still to choose one of several.
     status_source: str | None = None
     status_to_choose: bool = False
+    # Its Play View has the Status tab, where staff choose or change its status for
+    # the night (horatio.play_tabs).
+    status_tab: bool = True
 
 
 class NotHere(BaseModel):
@@ -327,7 +335,12 @@ def offered(
 ) -> CheckInCharacter:
     """A character the caller can check in, with the sources of abiding status to
     choose from where its troupe chooses one at check-in."""
-    found = CheckInCharacter(id=character.id, name=character.name, checked_in=checked_in)
+    found = CheckInCharacter(
+        id=character.id,
+        name=character.name,
+        checked_in=checked_in,
+        play_view=play_tabs.plays(db, character),
+    )
     if checked_in or not play_status.at_checkin(play_status.troupe_of(db, character)):
         return found
     night = checkin.joined_night(db, character, game)
@@ -431,6 +444,7 @@ def night_out(db: Session, user: User, troupe: Troupe, game: ScheduledGame) -> G
             kind="absentee" if a.kind == "absentee" else "attended",
             status_source=night.source if night and fixed else None,
             status_to_choose=night.to_choose if night and fixed else False,
+            status_tab="status" in play_tabs.character_tabs(db, c),
         )
 
     return GameNight(
@@ -620,6 +634,7 @@ def check_in(
         character_name=character.name,
         already=not new,
         play_started=attendance.play_game_id is not None,
+        play_view=play_tabs.plays(db, character),
     )
 
 

@@ -7,6 +7,7 @@ import { LinesVeilsNote } from "../../components/LinesVeils";
 import { useClanName } from "../../components/ClanNames";
 import { Button, ErrorText, Input, Loading } from "../../components/ui";
 import { usePreferences } from "../../hooks";
+import { NotUsed } from "./NotUsed";
 import { LogEntries, ResetGame, SyncStatus } from "./PlayPage";
 import { EquipmentSwitches } from "./EquipmentSwitches";
 import { equipmentModifiers } from "./equipped";
@@ -21,6 +22,7 @@ import { incapacitated, latestUndoable, type Damage, type Shown } from "./tracke
 import { useModifiers } from "./useModifiers";
 import { usePlay } from "./usePlay";
 import { useReference } from "./useReference";
+import { usesPlayView } from "./tabs";
 import { useKeepAwake } from "./wakeLock";
 import { useOnline } from "../../offline/connection";
 import { NeedsSignal, ScenesStrip } from "../../offline/KeepScenes";
@@ -116,7 +118,9 @@ export function ScenePage() {
         <ScenesStrip troupeId={troupeId} />
       </header>
       <main className="mx-auto flex max-w-6xl flex-col gap-3 px-4 pt-3">
-        {!scene.data ? (
+        {troupe.data && !usesPlayView(troupe.data) ? (
+          <NotUsed className="py-8 text-center" />
+        ) : !scene.data ? (
           scene.isPending && scene.fetchStatus === "paused" ? (
             <div role="status" className="py-8 text-center">
               <p>This scene isn't kept on this phone, so it needs a connection.</p>
@@ -554,6 +558,18 @@ function SceneCard({ characterId, back, onRemove, onRank }: { characterId: strin
         ) : (
           <ErrorText error={view.error} />
         )}
+        <Button variant="secondary" className="self-start" onClick={onRemove} disabled={!onRemove} title={onRemove ? undefined : "Needs a connection"}>
+          Remove from the scene
+        </Button>
+      </article>
+    );
+  }
+  if (shown.tabs.length === 0) {
+    // Pinned before its troupe switched every tab off.
+    return (
+      <article className="flex flex-col gap-2 rounded-lg border border-ash bg-dusk p-3" aria-label={shown.character_name}>
+        <h2 className="truncate text-lg leading-tight text-gold">{shown.character_name}</h2>
+        <NotUsed name={shown.character_name} className="text-sm" />
         <Button variant="secondary" className="self-start" onClick={onRemove} disabled={!onRemove} title={onRemove ? undefined : "Needs a connection"}>
           Remove from the scene
         </Button>
