@@ -91,7 +91,7 @@ def test_storytellers_ban_a_trait_and_players_read_it(troupe: Troupe) -> None:
         "Too swingy at our table.",
     )
     plain = troupe.player.client.get("/rules/vampire").json()
-    assert next(t for t in plain["traits"] if t["name"] == "Lucky")["changed"] is None
+    assert "changed" not in next(t for t in plain["traits"] if t["name"] == "Lucky")
     log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
     assert "storyteller banned Lucky in the troupe (reason: Too swingy at our table.)." in log
 
@@ -234,14 +234,8 @@ def test_storytellers_give_a_trait_house_wording_and_players_read_it(troupe: Tro
     assert (worded.json()["wording"], worded.json()["wording_mode"]) == (AWE, "added")
     catalogue = troupe.player.client.get(f"/rules/vampire?troupe_id={troupe.id}").json()
     presence = next(t for t in catalogue["traits"] if t["name"] == "Presence")
-    assert presence["changed"] == {
-        "banned": False,
-        "ban_reason": "",
-        "wording": AWE,
-        "wording_mode": "added",
-        "kind": None,
-        "book_kind": None,
-    }
+    # The catalogue leaves out what is at its default: the wording added, no category change.
+    assert presence["changed"] == {"banned": False, "ban_reason": "", "wording": AWE}
     read = troupe.player.client.get(f"/troupes/{troupe.id}/house-rules").json()
     assert [(b["name"], b["wording"]) for b in read["book_traits"]] == [("Presence", AWE)]
     log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
@@ -283,7 +277,7 @@ def test_house_wording_is_the_troupes_own_and_follows_the_home_troupe(troupe: Tr
         ("Presence", AWE, "added")
     ]
     other = troupe.player.client.get(f"/rules/vampire?troupe_id={elsewhere}").json()
-    assert next(t for t in other["traits"] if t["name"] == "Presence")["changed"] is None
+    assert "changed" not in next(t for t in other["traits"] if t["name"] == "Presence")
 
 
 # --- Category -------------------------------------------------------------------------------
@@ -332,7 +326,7 @@ def test_a_sect_flaw_made_general_is_listed_and_taken_as_one(troupe: Troupe) -> 
 
     # Its book category again is no change at all.
     assert recategorise(troupe, "Soul Shard", "", "flaws").json()["kind"] is None
-    assert catalogued(troupe, "Soul Shard")["changed"] is None
+    assert "changed" not in catalogued(troupe, "Soul Shard")
     log = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
     assert "storyteller put Soul Shard back in its book category, Sabbat." in log
 
@@ -346,7 +340,7 @@ def test_a_clan_merit_made_general_leaves_its_clan_requirement_behind(troupe: Tr
     assert recategorise(troupe, "Absent Sway", "General").status_code == 200
 
     absent_sway = catalogued(troupe, "Absent Sway")
-    assert (absent_sway["kind"], absent_sway["requirement"]) == ("General", None)
+    assert (absent_sway["kind"], absent_sway.get("requirement")) == ("General", None)
     checks = troupe.storyteller.client.get(f"/troupes/{troupe.id}/checks").json()
     assert "merits/Absent Sway/requirement" not in [c["key"] for c in checks]
     bought(troupe, brujah, "merits", "Absent Sway", 3)
