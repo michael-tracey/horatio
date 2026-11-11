@@ -31,13 +31,15 @@ import { newResults, useSeenUpTo } from "./resultsSeen";
 import { CharacterShared } from "../troupe/SharedBackground";
 import { ChoiceInfo } from "./Info";
 import { useClanName } from "../../components/ClanNames";
-import { SheetTab, useCatalogue } from "./SheetTab";
+import { SheetTab } from "./SheetTab";
+import { rulesTroupe } from "./rules";
 import { NominationsAbout } from "../nominations/NominationsAbout";
 import { RemembrancesCard } from "../nominations/Remembrances";
 import { StatusTitlesTab } from "./StatusTitlesTab";
 import { TroupesTab } from "./TroupesTab";
 import { XpTab } from "./XpTab";
 import { useSevenTaps } from "../jyhad/taps";
+import { useCatalogue } from "../../catalogue";
 
 export function CharacterPage() {
   const { characterId = "" } = useParams();
@@ -380,7 +382,7 @@ function Identity({ character, lead }: { character: CharacterOut; lead: string }
     queryKey: ["sheet", character.id],
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/sheet", { params: { path: { character_id: character.id } } })),
   });
-  const catalogue = useCatalogue(character);
+  const catalogue = useCatalogue(character.splat, rulesTroupe(character));
   const named = useClanName();
   // Tapping the clan's name seven times opens the character's Jyhad card (#537).
   const taps = useSevenTaps(character.id);

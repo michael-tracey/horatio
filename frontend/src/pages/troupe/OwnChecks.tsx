@@ -5,8 +5,9 @@ import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, OwnCheckIn, OwnCheckOut } from "../../api/types";
 import { Dialog } from "../../components/Dialog";
 import { EmptyState } from "../../components/EmptyState";
+import { RowEditor, useRowEditor } from "../../components/RowEditor";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 import { TraitList } from "./HouseEffects";
 import {
   COND_TYPES,
@@ -26,6 +27,9 @@ import {
   type Draft,
   type SubjectHow,
 } from "./ownChecks";
+import { useCatalogue } from "../../catalogue";
+
+const sameCheck = (a: OwnCheckOut | "new", b: OwnCheckOut | "new") => (a === "new" || b === "new" ? a === b : a.id === b.id);
 
 const TONE: Record<string, "blood" | "gold" | "mist"> = { refuse: "blood", complete: "blood", review: "gold", note: "mist" };
 
@@ -50,13 +54,14 @@ function Labelled({ label, children }: { label: string; children: ReactNode }) {
  * the builder, change it or remove it; every change goes in the troupe's log.
  */
 export function OwnChecks({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
-  const [editing, setEditing] = useState<OwnCheckOut | "new" | null>(null);
+  const editor = useRowEditor<OwnCheckOut | "new">(sameCheck);
+  const editing = editor.open;
   const [removing, setRemoving] = useState<OwnCheckOut | null>(null);
   const list = useQuery({
     queryKey: ["own-checks", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/house-checks", { params: { path: { troupe_id: troupeId } } })),
   });
-  const remove = useAction((id: string) =>
+  const remove = useRulesAction((id: string) =>
     unwrap(api.DELETE("/api/troupes/{troupe_id}/house-checks/{check_id}", { params: { path: { troupe_id: troupeId, check_id: id } } })),
   );
 
@@ -66,7 +71,7 @@ export function OwnChecks({ troupeId, canEdit }: { troupeId: string; canEdit: bo
       actions={
         canEdit &&
         !editing && (
-          <Button variant="secondary" onClick={() => setEditing("new")}>
+          <Button variant="secondary" ref={editor.fallback} onClick={(e) => editor.toggle("new", e.currentTarget)}>
             Add a check
           </Button>
         )
@@ -76,10 +81,14 @@ export function OwnChecks({ troupeId, canEdit }: { troupeId: string; canEdit: bo
         Checks this troupe added beside the book's. Each works as a book check does. A character who breaks one when it is added is flagged on
         their sheet, not changed.
       </p>
-      {editing && <OwnCheckEditor key={editing === "new" ? "new" : editing.id} troupeId={troupeId} editing={editing} onClose={() => setEditing(null)} />}
+      {editing === "new" && (
+        <RowEditor className="mb-4">
+          <OwnCheckEditor troupeId={troupeId} editing="new" onClose={editor.close} />
+        </RowEditor>
+      )}
       {list.isPending && <Loading />}
       <ErrorText error={list.error} />
-      {list.data?.length === 0 && !editing && (
+      {list.data?.length === 0 && editing !== "new" && (
         <EmptyState title="No checks of the troupe's own yet.">
           {canEdit ? "Add one with Add a check: pick what it is about, then build what it needs from blocks." : "Its storytellers can add them."}
         </EmptyState>
@@ -99,7 +108,13 @@ export function OwnChecks({ troupeId, canEdit }: { troupeId: string; canEdit: bo
                   <Badge tone={TONE[c.strength]}>{strengthLabel(c.strength)}</Badge>
                   {canEdit && (
                     <>
-                      <Button variant="secondary" className="min-h-8 px-3" aria-label={`Change: ${c.message}`} onClick={() => setEditing(c)}>
+                      <Button
+                        variant="secondary"
+                        className="min-h-8 px-3"
+                        aria-label={`Change: ${c.message}`}
+                        aria-expanded={editor.isOpen(c)}
+                        onClick={(e) => editor.toggle(c, e.currentTarget)}
+                      >
                         Change
                       </Button>
                       <Button variant="ghost" className="min-h-8 px-2" aria-label={`Remove: ${c.message}`} onClick={() => setRemoving(c)}>
@@ -112,6 +127,11 @@ export function OwnChecks({ troupeId, canEdit }: { troupeId: string; canEdit: bo
               <p className="text-xs text-mist">{c.text}</p>
               {c.problem && <p className="text-xs text-blood-bright">Not applied: {c.problem}</p>}
               {c.breaking.length > 0 && <p className="text-xs text-gold">Flagged on: {c.breaking.map((b) => b.name).join(", ")}</p>}
+              {editor.isOpen(c) && (
+                <RowEditor className="pt-2">
+                  <OwnCheckEditor troupeId={troupeId} editing={c} onClose={editor.close} />
+                </RowEditor>
+              )}
             </li>
           ))}
         </ul>
@@ -181,14 +201,11 @@ function OwnCheckEditor({ troupeId, editing, onClose }: { troupeId: string; edit
     queryKey: ["troupe", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupeId } } })),
   });
-  const catalogue = useQuery({
-    queryKey: ["catalogue", draft.splat, troupeId],
-    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: draft.splat }, query: { troupe_id: troupeId } } })),
-  });
+  const catalogue = useCatalogue(draft.splat, troupeId);
   const built = toBody(draft);
   const body = "body" in built ? built.body : null;
   const preview = useOwnCheckPreview(troupeId, body, editing === "new" ? null : editing.id);
-  const save = useAction(async () => {
+  const save = useRulesAction(async () => {
     if (!body) return;
     if (editing === "new") await unwrap(api.POST("/api/troupes/{troupe_id}/house-checks", { params: { path: { troupe_id: troupeId } }, body }));
     else
@@ -206,7 +223,7 @@ function OwnCheckEditor({ troupeId, editing, onClose }: { troupeId: string; edit
   const text = body ? preview.data?.text : "";
 
   return (
-    <section aria-label={editing === "new" ? "A new check" : "Change the check"} className="mb-4 flex flex-col gap-4 rounded-md border border-gold/40 p-3 sm:p-4">
+    <section aria-label={editing === "new" ? "A new check" : "Change the check"} className="flex flex-col gap-4 rounded-md border border-gold/40 p-3 sm:p-4">
       <h3 className="text-gold">{editing === "new" ? "A new check" : "Change the check"}</h3>
       {unreadable && <p className="text-sm text-blood-bright">The form cannot show this check's condition. Build it again, or keep it as it is.</p>}
       {!cat && <Loading />}

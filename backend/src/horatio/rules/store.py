@@ -1132,14 +1132,10 @@ def trait_changes_of(
     if troupe_id is None:
         return {}
     found: dict[tuple[str, str], TraitChangeData] = {}
-    rows = list(
-        session.scalars(
-            select(TraitOverride).where(
-                TraitOverride.troupe_id == troupe_id,
-                TraitOverride.trait_definition_id.in_(definition_keys),
-            )
-        )
-    )
+    # The troupe's few rows, kept here to this rule set's: asking the database with
+    # every trait of the rule set in an IN took longer than loading the rows (#638).
+    ours = session.scalars(select(TraitOverride).where(TraitOverride.troupe_id == troupe_id))
+    rows = [row for row in ours if row.trait_definition_id in definition_keys]
     books = {
         d.id: d.properties.get("type")
         for d in session.scalars(

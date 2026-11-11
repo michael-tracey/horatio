@@ -3,7 +3,7 @@ import { api, unwrap } from "../../api/client";
 import type { ClanBansOut } from "../../api/types";
 import { useClanName } from "../../components/ClanNames";
 import { Badge, Button, Card, ErrorText } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 
 type Ban = ClanBansOut["bans"][number];
 
@@ -37,7 +37,7 @@ export function StatusBanClans({ troupeId, canEdit }: { troupeId: string; canEdi
     queryKey: ["status-ban-clans", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/status-ban-clans", path)),
   });
-  const save = useAction((body: { key: string; clans: string[] }) => unwrap(api.PUT("/api/troupes/{troupe_id}/status-ban-clans", { ...path, body })));
+  const save = useRulesAction((body: { key: string; clans: string[] }) => unwrap(api.PUT("/api/troupes/{troupe_id}/status-ban-clans", { ...path, body })));
   if (!bans.data) return <ErrorText error={bans.error} />;
   if (!bans.data.bans.length) return null;
   return (

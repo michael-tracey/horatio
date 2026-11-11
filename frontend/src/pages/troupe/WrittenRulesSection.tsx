@@ -8,10 +8,11 @@ import { EmptyState } from "../../components/EmptyState";
 import { Explainer } from "../../components/Explainer";
 import { Markdown } from "../../components/Markdown";
 import { Button, Card, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 import { SECTIONS } from "../rules/rulesBrowser";
 import { RuleAbout } from "./WrittenRulesList";
 import { bySection, sectionLabel, sectionsInUse } from "./writtenRules";
+import { useCatalogue } from "../../catalogue";
 
 type Draft = { section: string; title: string; body: string; category: string; trait: string; page: string };
 
@@ -49,7 +50,7 @@ export function WrittenRulesSection({ troupeId, canEdit }: { troupeId: string; c
   });
   const [editing, setEditing] = useState<WrittenRuleOut | "new" | null>(null);
   const [deleting, setDeleting] = useState<WrittenRuleOut | null>(null);
-  const move = useAction((body: { rule: WrittenRuleOut; move: "up" | "down" }) =>
+  const move = useRulesAction((body: { rule: WrittenRuleOut; move: "up" | "down" }) =>
     unwrap(
       api.PUT("/api/troupes/{troupe_id}/written-rules/{rule_id}", {
         params: { path: { troupe_id: troupeId, rule_id: body.rule.id } },
@@ -57,11 +58,11 @@ export function WrittenRulesSection({ troupeId, canEdit }: { troupeId: string; c
       }),
     ),
   );
-  const remove = useAction(async (rule: WrittenRuleOut) => {
+  const remove = useRulesAction(async (rule: WrittenRuleOut) => {
     await unwrap(api.DELETE("/api/troupes/{troupe_id}/written-rules/{rule_id}", { params: { path: { troupe_id: troupeId, rule_id: rule.id } } }));
     setDeleting(null);
   });
-  const publish = useAction((show: boolean) => unwrap(api.PUT("/api/troupes/{troupe_id}/written-rules-public", { ...path, body: { public: show } })));
+  const publish = useRulesAction((show: boolean) => unwrap(api.PUT("/api/troupes/{troupe_id}/written-rules-public", { ...path, body: { public: show } })));
   if (written.isPending) return <Loading />;
   if (written.error) return <ErrorText error={written.error} />;
   const { rules, public: shown } = written.data;
@@ -174,16 +175,12 @@ function RuleEditor({ troupeId, rule, sections, onDone }: { troupeId: string; ru
   const set = (change: Partial<Draft>) => setDraft((d) => ({ ...d, ...change }));
   const sectionList = useId();
   const traitList = useId();
-  const catalogue = useQuery({
-    queryKey: ["catalogue", "vampire", troupeId],
-    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: "vampire" }, query: { troupe_id: troupeId } } })),
-    staleTime: 5 * 60_000,
-  });
+  const catalogue = useCatalogue("vampire", troupeId);
   const categories = SECTIONS.flatMap((s) => s.categories)
     .map((key) => catalogue.data?.categories.find((c) => c.key === key))
     .filter((c) => c !== undefined);
   const names = (catalogue.data?.traits ?? []).filter((t) => t.category === draft.category).map((t) => t.name);
-  const save = useAction(async () => {
+  const save = useRulesAction(async () => {
     const body = bodyOf(draft);
     if (rule) {
       await unwrap(

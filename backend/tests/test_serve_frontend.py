@@ -17,6 +17,7 @@ def site(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
         '<meta property="og:image" content="__HORATIO_PUBLIC_URL__/preview.jpg" />'
     )
     (tmp_path / "favicon.ico").write_bytes(b"icon")
+    (tmp_path / "sw.js").write_text("self.skipWaiting()")
     (tmp_path / "assets").mkdir()
     (tmp_path / "assets" / "PlayerPage-abc123.js").write_text("export {}")
     monkeypatch.setattr(get_settings(), "public_url", "https://horatio.example.org/")
@@ -55,4 +56,9 @@ def test_index_is_always_rechecked_and_built_files_are_kept(site: TestClient) ->
         assert site.get(path).headers["cache-control"] == "no-cache"
     built = site.get("/assets/PlayerPage-abc123.js")
     assert built.headers["cache-control"] == "public, max-age=31536000, immutable"
-    assert "cache-control" not in site.get("/favicon.ico").headers
+
+
+@pytest.mark.parametrize("path", ["/sw.js", "/favicon.ico"])
+def test_files_that_keep_their_names_are_always_rechecked(site: TestClient, path: str) -> None:
+    """The service worker and the icons are named the same in every build."""
+    assert site.get(path).headers["cache-control"] == "no-cache"

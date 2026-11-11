@@ -5,7 +5,7 @@ import { api, unwrap } from "../../api/client";
 import type { SettingsDocument, ShareImportOut, ShareReviewItemOut, ShareReviewOut, ShareSectionOut, TroupeOut } from "../../api/types";
 import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Notice, Select, Textarea } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 import { manualLink } from "../../manualLink";
 import { abilities } from "./roles";
 import {
@@ -307,7 +307,7 @@ function Review({
     mutationFn: (body: SettingsDocument) =>
       unwrap(api.POST("/api/troupes/{troupe_id}/settings-share/review", { params: { path: { troupe_id: troupe.id } }, body: { document: body } })),
   });
-  const apply = useAction(() =>
+  const apply = useRulesAction(() =>
     unwrap(
       api.POST("/api/troupes/{troupe_id}/settings-share/apply", {
         params: { path: { troupe_id: troupe.id } },

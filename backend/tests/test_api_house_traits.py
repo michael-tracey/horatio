@@ -137,7 +137,7 @@ def test_the_catalogue_has_them_for_the_troupe_only(troupe: Troupe) -> None:
     assert here["Child of the Crossroads"]["house"]["offered"] is True
     assert here["Marked by the Prince"]["house"]["label"] == "House flaw of Lords of the Night"
     assert here["Marked by the Prince"]["house"]["offered"] is False
-    assert here["Acute Sense"]["house"] is None
+    assert "house" not in here["Acute Sense"]
     assert "Child of the Crossroads" not in catalogue(troupe.player, None)
     assert "Child of the Crossroads" not in catalogue(troupe.player, elsewhere)
 

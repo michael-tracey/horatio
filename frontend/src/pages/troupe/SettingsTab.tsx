@@ -4,7 +4,7 @@ import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { TroupeOut } from "../../api/types";
 import { Card, ErrorText, Loading } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useAction, useRulesAction } from "../../hooks";
 import { BadgeSetting } from "./BadgeSetting";
 import { ClanNamesSetting } from "./ClanNamesSetting";
 import { DiablerieFlaws } from "./DiablerieFlaws";
@@ -20,6 +20,7 @@ import { StatusBanClans } from "./StatusBanClans";
 import { StatusAtCheckinSetting, StatusSetting, TitlesSetting } from "./StatusSetting";
 import { WhosWhoSetting } from "./WhosWhoSetting";
 import { XpRangeCard } from "./XpRange";
+import { useCatalogue } from "../../catalogue";
 
 /**
  * The settings for the whole troupe, set once a season or so, by what they are
@@ -114,13 +115,9 @@ export function sectsText(allowed: string[]) {
 
 /** Which sects' player characters may join. None ticked means any may. */
 function SectsCard({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
-  const catalogue = useQuery({
-    queryKey: ["catalogue", "vampire", null],
-    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: "vampire" }, query: {} } })),
-    staleTime: 5 * 60_000,
-    enabled: canEdit,
-  });
-  const save = useAction((allowed_sects: string[]) =>
+  // The book's sects alone: nothing else on this page needs the catalogue.
+  const catalogue = useCatalogue("vampire", null, { category: "sect", enabled: canEdit });
+  const save = useRulesAction((allowed_sects: string[]) =>
     unwrap(api.PATCH("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupe.id } }, body: { allowed_sects } })),
   );
   const allowed = troupe.allowed_sects;

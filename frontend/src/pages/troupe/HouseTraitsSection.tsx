@@ -10,8 +10,9 @@ import { HouseMark, HouseSummary } from "../../components/HouseMark";
 import { useToast } from "../../components/Toast";
 import { useClanName } from "../../components/ClanNames";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useAction, useRulesAction } from "../../hooks";
 import { EffectsEditor, HousePreview, useHousePreview } from "./HouseEffects";
+import { useCatalogue } from "../../catalogue";
 
 const AVAILABILITY: Record<HouseTraitIn["availability"], string> = {
   staff: "Given by staff only",
@@ -154,9 +155,9 @@ function HouseTraitRow({ trait: h, troupeId, canEdit, onChange }: { trait: House
   const [deleting, setDeleting] = useState(false);
   const toast = useToast();
   const path = { params: { path: { troupe_id: troupeId, house_trait_id: h.id } } };
-  const archive = useAction(() => unwrap(api.PUT("/api/troupes/{troupe_id}/house-traits/{house_trait_id}/archived", { ...path, body: { archived: !h.archived } })));
+  const archive = useRulesAction(() => unwrap(api.PUT("/api/troupes/{troupe_id}/house-traits/{house_trait_id}/archived", { ...path, body: { archived: !h.archived } })));
   // Said and closed before the list is asked again, which takes the row away.
-  const remove = useAction(async () => {
+  const remove = useRulesAction(async () => {
     await unwrap(api.DELETE("/api/troupes/{troupe_id}/house-traits/{house_trait_id}", path));
     toast({ message: `${h.name} deleted.` });
     setDeleting(false);
@@ -251,10 +252,7 @@ function HouseTraitEditor({
   const [sample, setSample] = useState("");
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft({ ...draft, [key]: value });
   const body: HouseTraitIn = { ...draft, creation_only: draft.availability === "building" && draft.creation_only };
-  const catalogue = useQuery({
-    queryKey: ["catalogue", draft.splat, troupeId],
-    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: draft.splat }, query: { troupe_id: troupeId } } })),
-  });
+  const catalogue = useCatalogue(draft.splat, troupeId);
   const choices = useQuery({
     queryKey: ["house-trait-choices", troupeId, draft.splat],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/house-traits/choices", { params: { path: { troupe_id: troupeId }, query: { splat: draft.splat } } })),
@@ -262,7 +260,7 @@ function HouseTraitEditor({
   const preview = useHousePreview(troupeId, body, editing === "new" ? null : editing.id, sample);
   const problems = new Map((preview.data?.problems ?? []).map((p) => [p.index, p.message] as const));
 
-  const save = useAction(async () => {
+  const save = useRulesAction(async () => {
     if (editing === "new") {
       await unwrap(api.POST("/api/troupes/{troupe_id}/house-traits", { params: { path: { troupe_id: troupeId } }, body }));
     } else {

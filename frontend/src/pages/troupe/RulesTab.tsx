@@ -9,7 +9,7 @@ import { useToast } from "../../components/Toast";
 import { withClanNames } from "../../clanNames";
 import { useClanName } from "../../components/ClanNames";
 import { Badge, Button, ErrorText, Input, Loading, PageTabs, Select } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 import { AllowancesSection } from "./AllowancesSection";
 import { BackstorySettings } from "./BackstorySettings";
 import { BookTraitsSection } from "./BookTraitsSection";
@@ -134,7 +134,7 @@ function ChecksSection({ troupeId, canEdit }: { troupeId: string; canEdit: boole
     queryKey: ["checks", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/checks", { params: { path: { troupe_id: troupeId } } })),
   });
-  const change = useAction((body: { key: string; strength: Strength | null }) =>
+  const change = useRulesAction((body: { key: string; strength: Strength | null }) =>
     unwrap(
       api.PUT("/api/troupes/{troupe_id}/checks/{key}", {
         params: { path: { troupe_id: troupeId, key: body.key } },

@@ -3,11 +3,13 @@ import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { AllowanceOut, AllowancesOut } from "../../api/types";
 import { Explainer } from "../../components/Explainer";
+import { RowEditor, useRowEditor } from "../../components/RowEditor";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 import { useHouseSplat } from "./HouseSplat";
 import { InfluenceLookback } from "./InfluenceLookback";
 import { RareDisciplinesSetting } from "./RareDisciplinesSetting";
+import { useCatalogue } from "../../catalogue";
 
 type Scheme = AllowanceOut["scheme"];
 
@@ -19,19 +21,21 @@ export function fieldRatings(text: string): number[] | null {
 
 /** An editor's target: a new trait rule, a rule set rule to replace, or a troupe rule to change. */
 type Editing = { kind: "new" } | { kind: "replace"; rule: AllowanceOut } | { kind: "change"; rule: AllowanceOut };
+const sameEditing = (a: Editing, b: Editing) => JSON.stringify(a) === JSON.stringify(b);
 
 /**
  * How many downtime actions of each kind characters get each cycle, and what
  * traits add or take away. A cycle keeps the allowances it was opened with.
  */
 export function AllowancesSection({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
-  const [editing, setEditing] = useState<Editing | null>(null);
+  const editor = useRowEditor<Editing>(sameEditing);
+  const editing = editor.open;
   const { splat, picker } = useHouseSplat(troupeId);
   const allowances = useQuery({
     queryKey: ["allowances", troupeId, splat],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/allowances", { params: { path: { troupe_id: troupeId }, query: { splat } } })),
   });
-  const remove = useAction((id: string) =>
+  const remove = useRulesAction((id: string) =>
     unwrap(api.DELETE("/api/troupes/{troupe_id}/allowances/{rule_id}", { params: { path: { troupe_id: troupeId, rule_id: id }, query: { splat } } })),
   );
   if (allowances.isPending) return <Loading />;
@@ -55,52 +59,76 @@ export function AllowancesSection({ troupeId, canEdit }: { troupeId: string; can
         </p>
       </Explainer>
 
-      {editing && (
-        <AllowanceEditor key={JSON.stringify(editing)} troupeId={troupeId} splat={splat} data={allowances.data} editing={editing} onClose={() => setEditing(null)} />
-      )}
-
       <Card
         title="Downtime actions"
         actions={
           canEdit &&
           !editing && (
-            <Button variant="secondary" onClick={() => setEditing({ kind: "new" })}>
+            <Button variant="secondary" ref={editor.fallback} onClick={(e) => editor.toggle({ kind: "new" }, e.currentTarget)}>
               Add a trait
             </Button>
           )
         }
       >
+        {editing?.kind === "new" && (
+          <RowEditor className="mb-4">
+            <AllowanceEditor troupeId={troupeId} splat={splat} data={allowances.data} editing={editing} onClose={editor.close} />
+          </RowEditor>
+        )}
         <div className="flex flex-col gap-5">
           {[...groups].map(([kind, rules]) => (
             <section key={kind}>
               <h3 className="mb-1 font-sans text-xs tracking-wide text-mist uppercase">{kindName(kind)}</h3>
               <ul className="divide-y divide-ash">
-                {rules.map((r) => (
-                  <li key={r.id ?? `${r.category}-${r.trait}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
-                    <span className={`min-w-48 flex-1 text-sm ${r.replaced ? "text-mist line-through" : ""}`}>
-                      <span className={r.replaced ? "" : "text-parchment"}>{r.who}</span>: {r.amount_text}
-                    </span>
-                    <span className="flex shrink-0 items-center gap-2">
-                      {r.house && <Badge tone="gold">House rule</Badge>}
-                      {r.replaced && <Badge>Replaced here</Badge>}
-                      {canEdit && r.house && r.id && (
-                        <>
-                          <Button variant="secondary" className="min-h-8 px-3" aria-label={`Change actions for ${r.who}`} onClick={() => setEditing({ kind: "change", rule: r })}>
-                            Change
-                          </Button>
-                          <Button variant="ghost" className="min-h-8 px-2" aria-label={`Remove actions for ${r.who}`} onClick={() => remove.mutate(r.id!)}>
-                            Remove
-                          </Button>
-                        </>
+                {rules.map((r) => {
+                  const change: Editing = r.house ? { kind: "change", rule: r } : { kind: "replace", rule: r };
+                  const open = editor.isOpen(change);
+                  return (
+                    <li key={r.id ?? `${r.category}-${r.trait}`}>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
+                        <span className={`min-w-48 flex-1 text-sm ${r.replaced ? "text-mist line-through" : ""}`}>
+                          <span className={r.replaced ? "" : "text-parchment"}>{r.who}</span>: {r.amount_text}
+                        </span>
+                        <span className="flex shrink-0 items-center gap-2">
+                          {r.house && <Badge tone="gold">House rule</Badge>}
+                          {r.replaced && <Badge>Replaced here</Badge>}
+                          {canEdit && r.house && r.id && (
+                            <>
+                              <Button
+                                variant="secondary"
+                                className="min-h-8 px-3"
+                                aria-label={`Change actions for ${r.who}`}
+                                aria-expanded={open}
+                                onClick={(e) => editor.toggle(change, e.currentTarget)}
+                              >
+                                Change
+                              </Button>
+                              <Button variant="ghost" className="min-h-8 px-2" aria-label={`Remove actions for ${r.who}`} onClick={() => remove.mutate(r.id!)}>
+                                Remove
+                              </Button>
+                            </>
+                          )}
+                          {canEdit && !r.house && !r.replaced && (
+                            <Button
+                              variant="secondary"
+                              className="min-h-8 px-3"
+                              aria-label={`Change actions for ${r.who}`}
+                              aria-expanded={open}
+                              onClick={(e) => editor.toggle(change, e.currentTarget)}
+                            >
+                              Change
+                            </Button>
+                          )}
+                        </span>
+                      </div>
+                      {open && (
+                        <RowEditor className="pb-3">
+                          <AllowanceEditor troupeId={troupeId} splat={splat} data={allowances.data} editing={change} onClose={editor.close} />
+                        </RowEditor>
                       )}
-                      {canEdit && !r.house && !r.replaced && (
-                        <Button variant="secondary" className="min-h-8 px-3" aria-label={`Change actions for ${r.who}`} onClick={() => setEditing({ kind: "replace", rule: r })}>
-                          Change
-                        </Button>
-                      )}
-                    </span>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           ))}
@@ -122,18 +150,15 @@ function AllowanceEditor({ troupeId, splat, data, editing, onClose }: { troupeId
   const [ratings, setRatings] = useState((start?.detail_ratings ?? []).join(", "));
   const [amount, setAmount] = useState(start?.amount.toString() ?? "-1");
   const [minRating, setMinRating] = useState(start?.min_rating.toString() ?? "1");
-  const catalogue = useQuery({
-    queryKey: ["catalogue", splat, null],
-    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat }, query: {} } })),
-    enabled: editing.kind === "new",
-  });
+  // The rule set as written: an allowance is set against the book.
+  const catalogue = useCatalogue(splat, null, { enabled: editing.kind === "new" });
   const categories = (catalogue.data?.categories ?? []).filter((c) => c.rated && !c.derived);
   const traits = (catalogue.data?.traits ?? []).filter((t) => t.category === category).map((t) => t.name);
   const everyone = start !== null && start.trait === null;
 
   const detailRatings = scheme === "per_detail" ? fieldRatings(ratings) : [];
   const body = { scheme, amount: Number(amount), min_rating: Number(minRating), detail_ratings: detailRatings ?? [] };
-  const save = useAction(async () => {
+  const save = useRulesAction(async () => {
     if (editing.kind === "change") {
       await unwrap(
         api.PUT("/api/troupes/{troupe_id}/allowances/{rule_id}", { params: { path: { troupe_id: troupeId, rule_id: editing.rule.id! }, query: { splat } }, body }),
@@ -150,9 +175,11 @@ function AllowanceEditor({ troupeId, splat, data, editing, onClose }: { troupeId
   });
   const ready = amount.trim() !== "" && !Number.isNaN(Number(amount)) && (everyone || !!trait) && detailRatings !== null;
   const kindName = data.action_kinds.find((k) => k.key === actionKind)?.name ?? actionKind;
+  const title = start ? `Actions for ${start.who}` : "Add a trait that changes the allowance";
 
   return (
-    <Card title={start ? `Actions for ${start.who}` : "Add a trait that changes the allowance"}>
+    <section aria-label={title} className="flex flex-col gap-3 rounded-md border border-gold/40 p-3 sm:p-4">
+      <h3 className="text-gold">{title}</h3>
       <form
         className="flex flex-col gap-4"
         onSubmit={(e) => {
@@ -233,6 +260,6 @@ function AllowanceEditor({ troupeId, splat, data, editing, onClose }: { troupeId
           </Button>
         </div>
       </form>
-    </Card>
+    </section>
   );
 }

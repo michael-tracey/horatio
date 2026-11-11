@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation } from "react-router";
 import type { PlayerOut, Preferences } from "../../api/types";
+import { drawCurtains } from "../../components/Curtains";
 import { startSunrise } from "../../components/Sunrise";
 import { useToast } from "../../components/Toast";
 import { Card, ErrorText, Input } from "../../components/ui";
@@ -63,10 +64,16 @@ export function Choice<K extends Key>({ name, label, choices }: { name: K; label
 }
 
 /**
- * Dark or light. Horatio is only ever dark: choosing light lets the sun rise on
- * whoever is at the screen, who is signed out as they turn to ash (Sunrise).
+ * Dark, light or Ultra goth. Horatio is only ever dark: choosing light lets the
+ * sun rise on whoever is at the screen, who is signed out as they turn to ash
+ * (Sunrise). Ultra goth, deep red on matte black, is kept on the account (#635):
+ * velvet curtains close, it is saved behind them, and they open on it. Back to
+ * Dark is a plain switch.
  */
 function Theme() {
+  // A person's settings kept on this device before there were themes have none.
+  const theme = usePreferences().theme ?? "dark";
+  const save = useSaveSetting();
   const toast = useToast();
   const online = useOnline();
   const dawn = () => {
@@ -75,14 +82,27 @@ function Theme() {
     else if (!online) toast({ message: "Light mode needs a connection." });
     else startSunrise();
   };
+  const goth = () => {
+    if (theme === "ultragoth") return;
+    // Saving needs the server: offline, the curtains would open on Dark again.
+    if (!online) toast({ message: "Changing the theme needs a connection." });
+    else drawCurtains(() => save({ theme: "ultragoth" }, "Theme: Ultra goth"));
+  };
+  const dark = () => {
+    if (theme !== "dark") save({ theme: "dark" }, "Theme: Dark");
+  };
   const choice = "min-h-9 px-3 text-sm [&+&]:border-l [&+&]:border-ash";
+  const look = (on: boolean) => `${choice} ${on ? "bg-gold/20 text-gold" : "text-mist hover:text-parchment"}`;
   return (
     <span role="radiogroup" aria-label="Theme" className="inline-flex overflow-hidden rounded-md border border-ash">
-      <button type="button" role="radio" aria-checked="true" className={`${choice} bg-gold/20 text-gold`}>
+      <button type="button" role="radio" aria-checked={theme === "dark"} onClick={dark} className={look(theme === "dark")}>
         Dark
       </button>
-      <button type="button" role="radio" aria-checked="false" onClick={dawn} className={`${choice} text-mist hover:text-parchment`}>
+      <button type="button" role="radio" aria-checked="false" onClick={dawn} className={look(false)}>
         Light
+      </button>
+      <button type="button" role="radio" aria-checked={theme === "ultragoth"} onClick={goth} className={look(theme === "ultragoth")}>
+        Ultra goth
       </button>
     </span>
   );

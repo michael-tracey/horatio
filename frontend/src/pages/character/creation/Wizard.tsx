@@ -4,8 +4,8 @@ import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../../../api/client";
 import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, TraitOut, TraitRefOut } from "../../../api/types";
 import { useClanName } from "../../../components/ClanNames";
-import { Button, Card, ErrorText, Field, Input, Loading, Notice, Select, Textarea } from "../../../components/ui";
-import { useAction, useRatingRefusals, useRefusals, useUnavailable } from "../../../hooks";
+import { Button, Card, ErrorText, Field, Input, Loading, Notice, Textarea } from "../../../components/ui";
+import { useAction, useRatingRefusals, useRefusals, useUnavailable, useRulesAction } from "../../../hooks";
 import { BuildFor } from "../BuildFor";
 import { useCart } from "../cart";
 import { FinishCreation } from "../CartPanel";
@@ -20,6 +20,7 @@ import { detailNeed, fieldSkills } from "../fields";
 import { SetField } from "../Specializations";
 import { CUSTOM_ARCHETYPE, fieldProblems, identityChoices, keyed, spent, traitOf, type Allowed, type Picks } from "./logic";
 import { FromMerits } from "./FromMerits";
+import { IdentitySelect } from "./IdentitySelect";
 import { ClanMerits } from "./ClanMerits";
 import { clanMeritsLine, clanPoints, comesWithClan } from "./clanMerits";
 import { EXTRA_IN_CLAN, IN_CLAN_MERITS, clanChoiceNeeded, clanChoiceOpen, inClanChoices, inClanOpen, inClanShortfalls, makesInClanChoice } from "./inClan";
@@ -31,6 +32,7 @@ import { pageText } from "../../troupe/bookPage";
 import { DomitorPanel, DomitorSummary, useDomitor } from "../Domitor";
 import { generationText } from "../../../generation";
 import { domitorNeeded, dotBudget, ghoulDisciplinesIntro, savedDots } from "./ghoul";
+import { useCatalogue } from "../../../catalogue";
 
 /** A step: the categories it places picks in, and those it decides without picks. */
 type Step = StepRef & { intro?: string };
@@ -135,12 +137,7 @@ export function CreationWizard({ character }: { character: CharacterOut }) {
   const path = { params: { path: { character_id: character.id } } };
   const creation = useQuery({ queryKey: ["creation", character.id], queryFn: () => unwrap(api.GET("/api/characters/{character_id}/creation", path)) });
   const sheet = useQuery({ queryKey: ["sheet", character.id], queryFn: () => unwrap(api.GET("/api/characters/{character_id}/sheet", path)) });
-  const catalogue = useQuery({
-    queryKey: ["catalogue", character.splat, rulesTroupe(character)],
-    queryFn: () =>
-      unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: character.splat }, query: { troupe_id: rulesTroupe(character) } } })),
-    staleTime: 5 * 60_000,
-  });
+  const catalogue = useCatalogue(character.splat, rulesTroupe(character));
   // A ghoul takes its clan and in-clan disciplines from its domitor, chosen on Concept.
   const hasDomitor = useHasDomitor(character.splat);
   const domitor = useDomitor(character, !!hasDomitor);
@@ -684,17 +681,8 @@ function ConceptStep({
   catalogue: CatalogueOut;
   ghoul?: Ghoul;
 }) {
-  const choose = useAction((body: { category: string; name: string }) =>
-    unwrap(
-      api.PUT("/api/characters/{character_id}/traits", {
-        params: { path: { character_id: character.id } },
-        body: { ...body, detail: "", rating: null, teacher: "" },
-      }),
-    ),
-  );
   // "Other…" waits for its name and description before it is saved.
   const [makingOwn, setMakingOwn] = useState(false);
-  const named = useClanName();
   const identity = identityChoices(catalogue, sheet);
   // Clan first, the biggest choice, with what it means under it. A ghoul's clan is its
   // domitor's, set with the domitor.
@@ -702,26 +690,15 @@ function ConceptStep({
   const others = identity.filter((c) => c.key !== "clan");
   const clan = clanOf(sheet);
   const field = (c: (typeof identity)[number]) => (
-    <Field key={c.key} label={c.name}>
-      <Select
-        value={c.key === "archetype" && makingOwn ? CUSTOM_ARCHETYPE : (sheet.traits.find((t) => t.category === c.key)?.name ?? "")}
-        onChange={(e) => {
-          if (!e.target.value) return;
-          const own = c.key === "archetype" && e.target.value === CUSTOM_ARCHETYPE;
-          if (c.key === "archetype") setMakingOwn(own);
-          if (!own) choose.mutate({ category: c.key, name: e.target.value });
-        }}
-      >
-        <option value="">Choose…</option>
-        {catalogue.traits
-          .filter((t) => t.category === c.key)
-          .map((t) => (
-            <option key={t.name} value={t.name}>
-              {named(t.name)}
-            </option>
-          ))}
-      </Select>
-    </Field>
+    <IdentitySelect
+      key={c.key}
+      character={character}
+      choice={c}
+      sheet={sheet}
+      catalogue={catalogue}
+      own={c.key === "archetype" && makingOwn}
+      onOwn={setMakingOwn}
+    />
   );
   return (
     <div className="flex flex-col gap-4">
@@ -744,7 +721,6 @@ function ConceptStep({
       {clan && !ghoul && <ClanChoice character={character} creation={creation} catalogue={catalogue} />}
       {clan && !ghoul && <InClanPicker character={character} sheet={sheet} catalogue={catalogue} />}
       <div className="grid gap-3 sm:grid-cols-2">{others.map(field)}</div>
-      <ErrorText error={choose.error} />
       {(makingOwn || sheet.traits.some((t) => t.category === "archetype" && t.name === CUSTOM_ARCHETYPE)) && (
         <OwnArchetype character={character} sheet={sheet} onSaved={() => setMakingOwn(false)} />
       )}
@@ -1258,7 +1234,7 @@ function CheckedPicks({
 
 /** Change which troupe's rules the character is built by, until a troupe accepts it. */
 function BuildForCharacter({ character }: { character: CharacterOut }) {
-  const change = useAction((troupe_id: string | null) =>
+  const change = useRulesAction((troupe_id: string | null) =>
     unwrap(
       api.PUT("/api/characters/{character_id}/building-troupe", {
         params: { path: { character_id: character.id } },

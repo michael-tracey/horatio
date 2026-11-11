@@ -6185,7 +6185,6 @@
             "title": "Change Cost"
           },
           "derived": {
-            "default": false,
             "title": "Derived",
             "type": "boolean"
           },
@@ -6260,8 +6259,7 @@
           "key",
           "name",
           "group",
-          "rated",
-          "max_rating"
+          "rated"
         ],
         "title": "CategoryOut",
         "type": "object"
@@ -18946,7 +18944,6 @@
             "type": "boolean"
           },
           "summary": {
-            "default": "",
             "title": "Summary",
             "type": "string"
           },
@@ -31387,6 +31384,15 @@
             "title": "Text Size",
             "type": "string"
           },
+          "theme": {
+            "default": "dark",
+            "enum": [
+              "dark",
+              "ultragoth"
+            ],
+            "title": "Theme",
+            "type": "string"
+          },
           "time_zone": {
             "anyOf": [
               {
@@ -34315,7 +34321,6 @@
             "title": "Default"
           },
           "default_house": {
-            "default": false,
             "title": "Default House",
             "type": "boolean"
           },
@@ -44116,12 +44121,10 @@
             "title": "Kind"
           },
           "wording": {
-            "default": "",
             "title": "Wording",
             "type": "string"
           },
           "wording_mode": {
-            "default": "added",
             "enum": [
               "added",
               "replaces"
@@ -44474,7 +44477,6 @@
             "type": "string"
           },
           "needs_field": {
-            "default": false,
             "title": "Needs Field",
             "type": "boolean"
           },
@@ -44532,13 +44534,7 @@
         },
         "required": [
           "category",
-          "name",
-          "description",
-          "page_reference",
-          "fixed_rating",
-          "house_rule",
-          "in_clan",
-          "attribute"
+          "name"
         ],
         "title": "TraitOut",
         "type": "object"

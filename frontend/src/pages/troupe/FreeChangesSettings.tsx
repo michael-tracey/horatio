@@ -3,6 +3,7 @@ import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import { Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { useCatalogue } from "../../catalogue";
 
 type Kind = "none" | "date" | "games";
 type Excluded = { category: string; name: string };
@@ -107,11 +108,8 @@ function FreeChangesForm({
   saving: boolean;
   error: unknown;
 }) {
-  const catalogue = useQuery({
-    queryKey: ["catalogue", "vampire", null],
-    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: "vampire" }, query: {} } })),
-    staleTime: 5 * 60_000,
-  });
+  // The rule set as written, to pick the traits never refunded from.
+  const catalogue = useCatalogue("vampire", null);
   const [category, setCategory] = useState("merits");
   const [name, setName] = useState("");
   const categories = (catalogue.data?.categories ?? []).filter((c) => c.rated && !c.derived);

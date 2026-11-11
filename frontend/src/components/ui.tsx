@@ -105,7 +105,7 @@ function controlClass(className?: string): string {
   return cx(sized ? control.replace("w-full ", "") : control, className);
 }
 
-export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
+export function Input(props: InputHTMLAttributes<HTMLInputElement> & { ref?: Ref<HTMLInputElement> }) {
   return <input {...props} className={controlClass(props.className)} />;
 }
 
@@ -405,21 +405,21 @@ export function SubTabs({ label, tabs, className }: { label: string; tabs: Tab[]
 /**
  * The third level: the parts of one page, set inside it. A small segmented
  * control, quieter than the pills above it, so the two never read as one row
- * wrapped. On a phone it scrolls sideways rather than wrapping.
+ * wrapped. When the parts don't fit on one line they wrap onto more, between
+ * tabs and never inside a label, so every one is in sight, on a phone too.
  */
 export function PageTabs({ label, tabs, className }: { label: string; tabs: Tab[]; className?: string }) {
-  const row = useTabRow<HTMLElement>();
   return (
     // A className of its own replaces the margin below (Tailwind does not let a later margin class win).
-    <nav aria-label={label} {...row} className={cx("max-w-full overflow-x-auto", className ?? "mb-5")}>
-      <div className="inline-flex gap-0.5 rounded-md border border-ash bg-night p-0.5">
+    <nav aria-label={label} className={className ?? "mb-5"}>
+      <div className="inline-flex max-w-full flex-wrap gap-0.5 rounded-md border border-ash bg-night p-0.5">
         {tabs.map((t) => (
           <NavLink
             key={t.to}
             to={t.to}
             end={t.end}
             className={({ isActive }) =>
-              cx("rounded px-2.5 py-1 text-xs whitespace-nowrap", isActive ? "bg-ash text-gold" : "text-mist hover:text-parchment")
+              cx("shrink-0 rounded px-2.5 py-1 text-xs whitespace-nowrap", isActive ? "bg-ash text-gold" : "text-mist hover:text-parchment")
             }
           >
             <span className="inline-flex items-center gap-1.5">

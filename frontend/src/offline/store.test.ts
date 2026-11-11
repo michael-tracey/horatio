@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CharacterListOut } from "../api/types";
+import { catalogueKey } from "../catalogue";
 import { keeping, keptTroupes, recordKey, scenesKey, setKeeping, setKeptFor, tapsWaiting } from "./keep";
 import { memoryShelf } from "./shelf";
 import { dropRestored, forget, keptScenesSummary, refresh, removeKept, removeScenes, restore, save, saveScenes, scenesTouched, type Kept, type KeptScenes } from "./store";
@@ -137,6 +138,23 @@ describe("refreshing what's kept (#619)", () => {
     client.setQueryData(["me"], { id: ME });
     return client;
   }
+
+  it("keeps each character's catalogue under the key the sheet and Play View ask by (#644)", async () => {
+    const shelf = memoryShelf();
+    const client = online();
+    await refresh(client, ME, shelf);
+    expect(client.getQueryData(catalogueKey("vampire", TROUPE))).toBeDefined();
+    const record = shelf.items.get(recordKey(ME)) as Kept;
+    expect(record.queries.map((q) => q.queryKey)).toContainEqual(catalogueKey("vampire", TROUPE));
+  });
+
+  it("keeps the book's catalogue for a character with no troupe, under the book's key", async () => {
+    const client = online();
+    answers["/api/characters"] = [rosa];
+    answers["/api/characters/{character_id}"] = { id: ROSA, splat: "vampire", home_troupe_id: null, building_troupe_id: null };
+    await refresh(client, ME, memoryShelf());
+    expect(client.getQueryCache().find({ queryKey: ["catalogue", "vampire", null], exact: true })?.state.data).toBeDefined();
+  });
 
   it("moves the time Updated when everything came", async () => {
     const shelf = memoryShelf();

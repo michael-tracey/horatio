@@ -13045,17 +13045,14 @@ export interface components {
         CategoryOut: {
             /** Change Cost */
             change_cost?: number | null;
-            /**
-             * Derived
-             * @default false
-             */
-            derived: boolean;
+            /** Derived */
+            derived?: boolean;
             /** Group */
             group: string;
             /** Key */
             key: string;
             /** Max Rating */
-            max_rating: number | null;
+            max_rating?: number | null;
             /** Name */
             name: string;
             /** Points Limit */
@@ -17900,11 +17897,8 @@ export interface components {
             label: string;
             /** Offered */
             offered: boolean;
-            /**
-             * Summary
-             * @default
-             */
-            summary: string;
+            /** Summary */
+            summary?: string;
             /**
              * Troupe Id
              * Format: uuid
@@ -22883,6 +22877,12 @@ export interface components {
              * @enum {string}
              */
             text_size: "normal" | "large";
+            /**
+             * Theme
+             * @default dark
+             * @enum {string}
+             */
+            theme: "dark" | "ultragoth";
             /** Time Zone */
             time_zone?: string | null;
             /**
@@ -23958,11 +23958,8 @@ export interface components {
             clan: string;
             /** Default */
             default?: string | null;
-            /**
-             * Default House
-             * @default false
-             */
-            default_house: boolean;
+            /** Default House */
+            default_house?: boolean;
             /** House */
             house: boolean;
             /** Page */
@@ -27767,17 +27764,13 @@ export interface components {
             book_kind?: string | null;
             /** Kind */
             kind?: string | null;
-            /**
-             * Wording
-             * @default
-             */
-            wording: string;
+            /** Wording */
+            wording?: string;
             /**
              * Wording Mode
-             * @default added
              * @enum {string}
              */
-            wording_mode: "added" | "replaces";
+            wording_mode?: "added" | "replaces";
         };
         /**
          * TraitCheckOut
@@ -27875,34 +27868,31 @@ export interface components {
         /** TraitOut */
         TraitOut: {
             /** Attribute */
-            attribute: string | null;
+            attribute?: string | null;
             /** Category */
             category: string;
             changed?: components["schemas"]["TraitChangeOut"] | null;
             /** Choices */
             choices?: string[] | null;
             /** Description */
-            description: string | null;
+            description?: string | null;
             /** Fixed Rating */
-            fixed_rating: number | null;
+            fixed_rating?: number | null;
             house?: components["schemas"]["HouseOut"] | null;
             /** House Rule */
-            house_rule: string | null;
+            house_rule?: string | null;
             /** In Clan */
-            in_clan: string[] | null;
+            in_clan?: string[] | null;
             /** Instance */
             instance?: string | null;
             /** Kind */
             kind?: string | null;
             /** Name */
             name: string;
-            /**
-             * Needs Field
-             * @default false
-             */
-            needs_field: boolean;
+            /** Needs Field */
+            needs_field?: boolean;
             /** Page Reference */
-            page_reference: string | null;
+            page_reference?: string | null;
             /** Requirement */
             requirement?: string | null;
             /** Weakness */
