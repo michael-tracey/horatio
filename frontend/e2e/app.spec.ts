@@ -141,3 +141,26 @@ test("a page whose file is gone after a deploy reloads once, then says Horatio w
   expect(asked).toBeGreaterThan(0);
   expect(asked).toBeLessThanOrEqual(3);
 });
+
+test("the browser keeps the rules and asks again with their ETag: while they hold, no body comes (#643)", async ({ browser }) => {
+  const { page } = await person(browser, "etag-reader");
+  // What came over the wire for the rules browser's answer, each time it was asked for.
+  const asked: { ifNoneMatch?: string; body: number }[] = [];
+  page.on("requestfinished", async (request) => {
+    if (new URL(request.url()).pathname !== "/api/rules/vampire/browse") return;
+    const [headers, sizes] = await Promise.all([request.allHeaders(), request.sizes()]);
+    asked.push({ ifNoneMatch: headers["if-none-match"], body: sizes.responseBodySize });
+  });
+  await page.goto("/rules");
+  await expect(page.getByTestId("rules-entry").first()).toBeVisible();
+  await expect.poll(() => asked.length).toBe(1);
+  expect(asked[0].ifNoneMatch).toBeUndefined();
+  expect(asked[0].body).toBeGreaterThan(100_000);
+  // Opened again: the app asks again, the browser asks with the ETag it kept, and the
+  // API's 304 brings no body; the browser gives the app the one it kept.
+  await page.reload();
+  await expect(page.getByTestId("rules-entry").first()).toBeVisible();
+  await expect.poll(() => asked.length).toBe(2);
+  expect(asked[1].ifNoneMatch).toMatch(/^W\/"/);
+  expect(asked[1].body).toBe(0);
+});

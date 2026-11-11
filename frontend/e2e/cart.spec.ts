@@ -568,10 +568,21 @@ test("changes on the sheet wait in a cart, and only Spend XP makes them, all or 
   await p.getByLabel("Search Flaws").fill("Archaic");
   await p.getByRole("button", { name: /^Archaic/ }).click();
   await p.getByRole("button", { name: "Add to cart" }).click();
+  // With Archaic in the cart, the Skills panel leaves Computer out once its answer of
+  // what the cart allows comes. Picked before then, as on a slow connection: that
+  // answer waits until Computer is in the cart, so the click no longer races it.
+  let release = () => {};
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await p.route("**/api/characters/*/unavailable", async (route) => {
+    await held;
+    await route.continue();
+  });
   await part("Skills").getByRole("button", { name: "Add" }).click();
   await p.getByLabel("Search Skills").fill("Computer");
   await p.getByRole("button", { name: /^Computer/ }).click();
   await p.getByRole("button", { name: "Add to cart" }).click();
+  release();
+  await p.unrouteAll({ behavior: "wait" });
   await expect(cart.getByRole("listitem").filter({ hasText: "Add Archaic" })).toContainText("An Archaic character cannot have Computer");
   await expect(cart.getByRole("listitem").filter({ hasText: "Add Computer 1" })).not.toContainText("cannot have");
   await expect(p.getByRole("button", { name: "Spend XP" })).toBeDisabled();
