@@ -16,6 +16,7 @@ def test_settings_start_at_their_defaults(client_for: Callable[[], TestClient]) 
     assert shown["ratings"] == "numbers"
     assert shown["quick_notes"] is True
     assert shown["time_zone"] is None
+    assert shown["theme"] == "dark"
     assert person.client.get("/preferences").json() == shown
 
 
@@ -36,6 +37,24 @@ def test_changing_a_setting_keeps_the_rest(
     user = session.scalars(select(User).where(User.email == person.email)).one()
     session.refresh(user)
     assert user.preferences == {"time_zone": "America/New_York"}
+
+
+def test_ultra_goth_is_kept_on_the_account(
+    client_for: Callable[[], TestClient], session: Session
+) -> None:
+    person = sign_up(client_for, "settler")
+    changed = person.client.patch("/preferences", json={"theme": "ultragoth"})
+    assert changed.status_code == 200, changed.text
+    assert person.client.get("/auth/me").json()["preferences"]["theme"] == "ultragoth"
+    user = session.scalars(select(User).where(User.email == person.email)).one()
+    session.refresh(user)
+    assert user.preferences == {"theme": "ultragoth"}
+
+    # Light is never kept: it signs the person out.
+    assert person.client.patch("/preferences", json={"theme": "light"}).status_code == 422
+    person.client.patch("/preferences", json={"theme": "dark"})
+    session.refresh(user)
+    assert user.preferences == {}
 
 
 def test_unknown_settings_and_values_are_refused(client_for: Callable[[], TestClient]) -> None:

@@ -22883,6 +22883,12 @@ export interface components {
              * @enum {string}
              */
             text_size: "normal" | "large";
+            /**
+             * Theme
+             * @default dark
+             * @enum {string}
+             */
+            theme: "dark" | "ultragoth";
             /** Time Zone */
             time_zone?: string | null;
             /**

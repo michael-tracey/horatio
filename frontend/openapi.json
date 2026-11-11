@@ -31387,6 +31387,15 @@
             "title": "Text Size",
             "type": "string"
           },
+          "theme": {
+            "default": "dark",
+            "enum": [
+              "dark",
+              "ultragoth"
+            ],
+            "title": "Theme",
+            "type": "string"
+          },
           "time_zone": {
             "anyOf": [
               {
