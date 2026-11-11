@@ -25,6 +25,7 @@ import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { RetainerPools } from "./RetainerPools";
 import { StatusTab } from "./Status";
 import { TeachingAsks } from "./Teaching";
+import { ThrowsTab } from "./Throws";
 import { DRANK, incapacitated, influenceStanding, latestUndoable, tapsToast, type Damage, type Shown, type ShownEntry, type Tap } from "./tracker";
 import { TrackerStrip } from "./TrackerStrip";
 import { usePlay, type Play, type Sync } from "./usePlay";
@@ -51,6 +52,7 @@ const TABS = [
   // Only for a character with sect status.
   { key: "status", label: "Status" },
   { key: "equipment", label: "Equipment" },
+  { key: "throws", label: "Throws" },
 ] as const;
 type Tab = (typeof TABS)[number]["key"];
 
@@ -62,11 +64,11 @@ const UNNOTED = new Set(["blood", "willpower", "health"]);
  * the Sheet to look things up in; the Tracker, with blood, Willpower, health,
  * Morality and Beast traits as boxes with big buttons to tap, the character's
  * limited uses and the game's log; and Pools, its test pools and powers; with
- * Status for a character with sect status, and Equipment. On every tab but the
- * Tracker, a strip under the tabs shows Blood, Willpower and health, with "−" to
- * spend, and the Pools tab's powers have Use buttons. Each tap says what it
- * did in a toast with Undo, and Undo for the last tap is in the header on every
- * tab. Taps are kept on the phone when there is no signal and sent when it
+ * Status for a character with sect status, Equipment, and Throws for rock, paper,
+ * scissors. On every tab but the Tracker, a strip under the tabs shows Blood,
+ * Willpower and health, with "−" to spend, and the Pools tab's powers have Use
+ * buttons. Each tap says what it did in a toast with Undo, and Undo for the last
+ * tap is in the header on every tab. Taps are kept on the phone when there is no signal and sent when it
  * returns. The Sheet, Pools and Equipment load when the page opens, so the tabs
  * switch at once. The person's settings choose the tab it opens on and whether
  * quick notes start on; the screen stays awake as the header's switch says.
@@ -124,8 +126,9 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
   const undo = (entry: ShownEntry) => (entry.influence?.changed_by_staff ? setChecking(entry) : tap({ kind: "undo", undoes: entry.id }));
   const undoButton = <UndoLast last={shown ? latestUndoable(shown.log) : undefined} undo={undo} />;
 
-  if (view.isPending) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}><Loading /></PlayShell>;
-  if (!shown) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}><ErrorText error={view.error} /></PlayShell>;
+  // Throws needs nothing from the server, so it works before the sheet comes, or with none kept on the phone.
+  if (view.isPending) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}>{tab === "throws" ? <ThrowsTab /> : <Loading />}</PlayShell>;
+  if (!shown) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}>{tab === "throws" ? <ThrowsTab /> : <ErrorText error={view.error} />}</PlayShell>;
 
   const record: RecordTap = (change) => {
     // Influence always asks for the spend's details, for the troupe's influence log.
@@ -154,6 +157,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
         />
       )}
       {tab === "equipment" && <EquipmentTab characterId={characterId} view={shown} tap={tap} />}
+      {tab === "throws" && <ThrowsTab />}
       {tab === "tracker" && (
         <>
           <TeachingAsks characterId={characterId} />
@@ -402,11 +406,11 @@ export function useToldTaps(play: Play): ToldTaps {
   return told;
 }
 
-/** Sheet, Tracker, Pools, (for a character with sect status) Status and Equipment: big tabs across the top, for a thumb. */
+/** Sheet, Tracker, Pools, (for a character with sect status) Status, Equipment and Throws: big tabs across the top, for a thumb. */
 function TabBar({ tab, onChange, status }: { tab: Tab; onChange: (tab: Tab) => void; status: boolean }) {
   const tabs = TABS.filter((t) => t.key !== "status" || status);
   return (
-    <nav className={cx("mx-auto grid max-w-3xl px-1 sm:px-2", tabs.length === 5 ? "grid-cols-5" : "grid-cols-4")} role="tablist" aria-label="Play View">
+    <nav className="mx-auto grid max-w-3xl px-1 sm:px-2" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }} role="tablist" aria-label="Play View">
       {tabs.map((t) => (
         <button
           key={t.key}
@@ -415,7 +419,9 @@ function TabBar({ tab, onChange, status }: { tab: Tab; onChange: (tab: Tab) => v
           aria-selected={tab === t.key}
           onClick={() => onChange(t.key)}
           className={cx(
-            "min-h-11 border-b-2 text-[13px] font-medium sm:text-sm sm:tracking-wide",
+            "min-h-11 border-b-2 font-medium sm:text-sm sm:tracking-wide",
+            // Six across a narrow phone, so "Equipment" still fits.
+            tabs.length > 5 ? "text-xs" : "text-[13px]",
             tab === t.key ? "border-gold text-gold" : "border-transparent text-mist hover:text-parchment",
           )}
         >

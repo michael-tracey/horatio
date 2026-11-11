@@ -31361,7 +31361,8 @@
             "enum": [
               "tracker",
               "sheet",
-              "pools"
+              "pools",
+              "throws"
             ],
             "title": "Play Tab",
             "type": "string"

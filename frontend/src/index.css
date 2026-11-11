@@ -153,6 +153,41 @@ html[data-theme="ultragoth"] .hover\:bg-blood-bright:hover:not(:disabled) {
   }
 }
 
+/* The Throws tab's count-in, each word a beat, and the throw coming up into view.
+   With "reduce motion" set there is no count-in, and the throw just appears. */
+@keyframes throw-beat {
+  from {
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes throw-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.throw-beat {
+  animation: throw-beat 0.25s ease-out both;
+}
+.throw-reveal {
+  animation: throw-reveal 0.3s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .throw-beat,
+  .throw-reveal {
+    animation: none;
+  }
+}
+
 /* The curtains (components/Curtains.tsx), as Ultra goth comes in: red velvet closes
    over the page, and opens on the new theme. Only transforms and opacity move, so
    a phone keeps up. Each panel's folds are gradients a fold wide; a grain drawn in

@@ -22864,7 +22864,7 @@ export interface components {
              * @default tracker
              * @enum {string}
              */
-            play_tab: "tracker" | "sheet" | "pools";
+            play_tab: "tracker" | "sheet" | "pools" | "throws";
             /**
              * Quick Notes
              * @default true

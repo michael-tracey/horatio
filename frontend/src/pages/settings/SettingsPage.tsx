@@ -325,6 +325,7 @@ export function SettingsPage({ player }: { player: PlayerOut }) {
                 ["tracker", "Tracker"],
                 ["sheet", "Sheet"],
                 ["pools", "Pools"],
+                ["throws", "Throws"],
               ]}
             />
           </Setting>

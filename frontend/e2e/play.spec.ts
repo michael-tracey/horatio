@@ -841,6 +841,54 @@ test("online only, nothing is kept: with no signal, the app says it needs a conn
   await expect(p.getByText("The Characters page needs a connection.")).toBeVisible();
 });
 
+test("Throws on the Play View: rock, paper or scissors, the last three kept, with no signal too, and the Play View can open on it (#668)", async ({ browser }) => {
+  const { page: p } = await person(browser, "rps-thrower");
+  await p.getByLabel("Name").fill("Corvina");
+  await p.getByRole("button", { name: "Create" }).click();
+  await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
+  const id = new URL(p.url()).pathname.split("/")[2]!;
+  const thrown = /^(Rock|Paper|Scissors)$/;
+
+  await p.goto(`/play/characters/${id}`);
+  await p.getByRole("tab", { name: "Throws" }).click();
+  const throws = p.getByRole("region", { name: "Throws" });
+  await expect(throws).toContainText("Throw for rock, paper or scissors");
+  await throws.getByRole("button", { name: "Throw" }).click();
+  // The count-in, then the throw, large, with its word.
+  await expect(throws.getByRole("img", { name: thrown })).toBeVisible();
+  const past = throws.getByRole("region", { name: "Last throws" }).getByRole("listitem");
+  await expect(past).toHaveCount(1);
+
+  // Nothing goes to the server, so it throws with no signal.
+  await p.context().setOffline(true);
+  for (const count of [2, 3, 3]) {
+    await throws.getByRole("button", { name: "Throw" }).click();
+    await expect(throws.getByRole("button", { name: "Throw" })).toBeEnabled();
+    await expect(past).toHaveCount(count);
+  }
+  await expect(throws.getByRole("img", { name: thrown })).toBeVisible();
+  await expect(past.first()).toContainText(/Rock|Paper|Scissors/);
+  await p.context().setOffline(false);
+  await p.screenshot({ ...shots("throws"), animations: "disabled" });
+
+  // Settings › the Play View opens on Throws, here in Ultra goth.
+  await p.goto("/account/settings");
+  const saved = p.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.ok());
+  await p.getByRole("radiogroup", { name: "The Play View opens on" }).getByRole("radio", { name: "Throws" }).click();
+  await saved;
+  const goth = await p.request.patch("/api/preferences", { headers: { "X-Horatio": "1" }, data: { theme: "ultragoth" } });
+  expect(goth.status(), await goth.text()).toBe(200);
+  await p.goto(`/play/characters/${id}`);
+  await expect(p.locator("html")).toHaveAttribute("data-theme", "ultragoth");
+  await expect(p.getByRole("tab", { name: "Throws" })).toHaveAttribute("aria-selected", "true");
+  // The last throws stay for the browser tab.
+  await expect(past).toHaveCount(3);
+  await throws.getByRole("button", { name: "Throw" }).click();
+  await expect(throws.getByRole("button", { name: "Throw" })).toBeEnabled();
+  await expect(throws.getByRole("img", { name: thrown })).toBeVisible();
+  await p.screenshot({ ...shots("throws-ultragoth"), animations: "disabled" });
+});
+
 test("Shape of the Beast on the Play View: a Huge fight form adds Healthy levels and Brawl, flight form ends it, and the Scene shows it", async ({ browser }) => {
   const custodian = await person(browser, "beast-custodian");
   makeCustodian(custodian.email);
