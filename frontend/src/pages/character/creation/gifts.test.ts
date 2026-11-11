@@ -12,7 +12,7 @@ const STEPS: StepRef[] = [
 ];
 
 function pool(over: Partial<PoolOut>): PoolOut {
-  return { category: "backgrounds", category_name: "Backgrounds", rating: 3, kind: "picks", allowed: 1, used: 1, remaining: 0, restriction: null, options: null, without_dot: [], because: [], traits: [], ...over };
+  return { category: "backgrounds", category_name: "Backgrounds", rating: 3, kind: "picks", allowed: 1, used: 1, remaining: 0, past_budget: false, restriction: null, options: null, without_dot: [], because: [], traits: [], ...over };
 }
 
 function trait(category: string, name: string, over: Partial<SheetTraitOut> = {}): SheetTraitOut {

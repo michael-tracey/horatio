@@ -48,7 +48,7 @@ The steps follow the book's order. A troupe's house rules can add a step (for a 
 4. **Skills.** Tap the dot for each skill's rating. The counters show what is left to place. Crafts, Performance and Science ask for their field.
 5. **Backgrounds.** The same, for Allies, Contacts, Resources and the rest. Generation is a background: a vampire needs at least one dot of it to go on.
 6. **Disciplines.** Your starting dots go on in-clan disciplines; the step says how many at each rating. Some merits change this, and say so.
-7. **Merits & flaws.** Each comes from its own budget of points, and both are optional. Merits the clan needs are already taken from the merit points, and shown as the clan's.
+7. **Merits & flaws.** Each comes from its own budget of points, and both are optional. Merits the clan needs are already taken from the merit points, and shown as the clan's. Flaws can go past their budget with your Storyteller's OK, but count for nothing more; your sheet flags them for staff to see.
 8. **Review.** A summary of the character, with anything left to do: **Picks left** (each with **Go to** the step), **Still to settle** (for example a rule the sheet breaks), and fields still to give. When everything is placed, **Finish creation** is ready.
 
 ![The wizard's Concept step with Gangrel: Coyote chosen as the clan: its in-clan disciplines, weakness, and the bloodline merit it takes from the merit points](images/players/wizard-concept.png)

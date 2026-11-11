@@ -9,6 +9,7 @@ import { Because } from "./Because";
 import { comesWithClan } from "./clanMerits";
 import { ChoiceSelect } from "../ChoiceSelect";
 import { fieldSkills } from "../fields";
+import { pointsText } from "./logic";
 import type { StepRef } from "./notices";
 import { CategoryMark, HouseWording } from "../../../components/TroupeChange";
 import { bookSummary } from "../../../houseWording";
@@ -119,9 +120,7 @@ function FromBudget({
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2 text-xs text-mist">
         <span>Taken from the same {pool.category_name.toLowerCase()} budget as on Merits &amp; flaws.</span>
-        <Badge tone={pool.remaining > 0 ? "gold" : "mist"}>
-          {pool.used} of {pool.allowed} points
-        </Badge>
+        <Badge tone={pool.remaining > 0 ? "gold" : "mist"}>{pointsText(pool.used, pool.allowed, pool.past_budget)}</Badge>
       </div>
       <ul className="flex flex-col gap-2">
         {shown.map((t) => {
@@ -129,7 +128,8 @@ function FromBudget({
           const points = t.fixed_rating ?? 1;
           const refusal = mine ? undefined : (refusals[t.name] ?? (fixable(t.name) ? barred.data![t.name] : undefined));
           const refused = refusal?.message;
-          const short = !mine && points > pool.remaining;
+          // Flaws can go past their budget, with the Storyteller's OK (p. 85).
+          const short = !mine && !pool.past_budget && points > pool.remaining;
           const unchosen = !mine && !!t.choices?.length && !choices[t.name];
           const id = `from-${pool.category}-${t.name}`.replace(/\W+/g, "-");
           return (

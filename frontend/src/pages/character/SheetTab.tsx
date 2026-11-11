@@ -69,6 +69,7 @@ import { DomitorCard } from "./Domitor";
 import { BuiltTo } from "./BuiltTo";
 import { EmbraceCard } from "./Embrace";
 import { useHasDomitor } from "./splats";
+import { pointsText } from "./creation/logic";
 import { xpTotal } from "./xpTotals";
 import { useCatalogue } from "../../catalogue";
 
@@ -1237,7 +1238,10 @@ function CreationPanel({
     ]);
     const room = p.allowed - used(p);
     return (catalogue?.traits ?? []).filter(
-      (t) => t.category === p.category && (!taken.has(t.name) || takenBack(p, t.name, "")) && (p.kind === "picks" || (t.fixed_rating ?? 1) <= room),
+      (t) =>
+        t.category === p.category &&
+        (!taken.has(t.name) || takenBack(p, t.name, "")) &&
+        (p.kind === "picks" || p.past_budget || (t.fixed_rating ?? 1) <= room),
     );
   };
 
@@ -1264,12 +1268,13 @@ function CreationPanel({
             <ul className="flex flex-col gap-1 text-sm">
               {pools.map((p) => {
                 const n = used(p);
-                const options = locked || n >= p.allowed ? [] : choices(p);
+                // Flaws can go past their budget, with the Storyteller's OK (p. 85).
+                const options = locked || (n >= p.allowed && !p.past_budget) ? [] : choices(p);
                 return (
                   <li key={p.rating}>
                     <span className={n < p.allowed ? "text-gold" : "text-mist"}>
                       {p.kind === "points"
-                        ? `${n} of ${p.allowed} points`
+                        ? pointsText(n, p.allowed, p.past_budget)
                         : `At ${p.rating}: ${n} of ${p.allowed}`}
                     </span>
                     {p.traits.map((t) =>

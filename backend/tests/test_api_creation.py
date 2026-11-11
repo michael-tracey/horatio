@@ -172,6 +172,153 @@ def test_merits_and_flaws_come_from_a_points_budget(troupe: Troupe) -> None:
     assert pool(creation(troupe.player, character_id), "merits", 0)["remaining"] == 1
 
 
+# Hunted 4, Fragile Bones 4 and Dark Secret 1: 9 points of flaws.
+NINE_POINTS_OF_FLAWS = [("Hunted", 4), ("Fragile Bones", 4), ("Dark Secret", 1)]
+
+PAST_LIMIT = "Flaws past the limit need the Storyteller's OK, and count for nothing more. (p. 85)"
+
+
+def set_flaws(person: Person, character_id: str, flaws: list[tuple[str, int]]) -> Any:
+    return person.client.put(
+        f"/characters/{character_id}/creation/categories/flaws",
+        json={"picks": [{"name": n, "rating": r} for n, r in flaws]},
+    )
+
+
+def flagged(person: Person, character_id: str) -> list[tuple[str, str]]:
+    """The sheet's problems with flaws past the limit, as (strength, message)."""
+    return sorted(
+        {
+            (p["strength"], p["message"])
+            for p in sheet(person, character_id)["problems"]
+            if p["message"].endswith(PAST_LIMIT)
+        }
+    )
+
+
+def test_flaws_can_go_past_their_budget_for_staff_to_review(troupe: Troupe) -> None:
+    character_id = creating(troupe)
+
+    for name, _ in NINE_POINTS_OF_FLAWS:
+        assert pick(troupe.player, character_id, "flaws", name).status_code == 200, name
+    state = creation(troupe.player, character_id)
+    flaws = pool(state, "flaws", 0)
+
+    assert (flaws["used"], flaws["allowed"], flaws["remaining"]) == (9, 7, -2)
+    assert flaws["past_budget"] is True
+    assert pool(state, "merits", 0)["past_budget"] is False
+    # Nothing past the limit counts: the sheet has 7 of the 9 points paid out, and
+    # the XP to spend is what it was.
+    found = sheet(troupe.player, character_id)
+    assert (found["xp"]["balance"], found["xp"]["earned"]) == (30, 30)
+    [limit] = [x for x in found["limits"] if x["category"] == "flaws"]
+    assert (limit["used"], limit["limit"]) == (9, 7)
+    # Flagged for staff, in the same words for every flaw.
+    assert flagged(troupe.player, character_id) == [
+        ("review", f"Flaws total 9 points; the limit is 7. {PAST_LIMIT}")
+    ]
+    # The wizard's step saves them as well, and finishing is not held up.
+    assert set_flaws(troupe.player, character_id, NINE_POINTS_OF_FLAWS).status_code == 200
+    build(troupe.player, character_id)
+
+    # Past the limit, a flaw taken after creation pays nothing more.
+    taken = troupe.player.client.put(
+        f"/characters/{character_id}/traits",
+        json={"category": "flaws", "name": "Amnesia", "rating": 1},
+    )
+    assert taken.status_code == 200, taken.text
+    assert taken.json()["sheet"]["xp"]["balance"] == 30
+
+
+def test_merits_never_go_past_their_budget(troupe: Troupe) -> None:
+    character_id = creating(troupe)
+    # Rugged 3, Iron Will 3 and Additional Common Discipline 4: 10 points.
+    merits = [("Rugged", 3), ("Iron Will", 3), ("Additional Common Discipline", 4)]
+
+    refused = troupe.player.client.put(
+        f"/characters/{character_id}/creation/categories/merits",
+        json={"picks": [{"name": n, "rating": r} for n, r in merits]},
+    )
+
+    assert refused.status_code == 409
+    assert refused.json()["detail"] == "That is 10 points; the budget is 7."
+
+
+def test_flaws_past_the_limit_are_no_longer_flagged_once_accepted(troupe: Troupe) -> None:
+    character_id = creating(troupe)
+    assert set_flaws(troupe.player, character_id, NINE_POINTS_OF_FLAWS).status_code == 200
+    build(troupe.player, character_id)
+    assert flagged(troupe.player, character_id)
+
+    asked = troupe.player.client.post(
+        f"/characters/{character_id}/home-troupe", json={"troupe_id": troupe.id}
+    )
+    assert asked.status_code == 201, asked.text
+    approved = troupe.lead.client.post(f"/approvals/{asked.json()['id']}/approve", json={})
+
+    # Kept as they are: staff accepted them with the rest of the sheet.
+    assert approved.status_code == 200, approved.text
+    held = {t["name"] for t in sheet(troupe.player, character_id)["traits"]}
+    assert {"Hunted", "Fragile Bones", "Dark Secret"} <= held
+    assert flagged(troupe.player, character_id) == []
+
+
+def building_for(troupe: Troupe) -> str:
+    """A Brujah built for the troupe, so its house rules apply."""
+    response = troupe.player.client.post(
+        "/characters", json={"splat": "vampire", "name": "Bram", "building_troupe_id": troupe.id}
+    )
+    assert response.status_code == 201, response.text
+    character_id: str = response.json()["id"]
+    troupe.player.client.put(
+        f"/characters/{character_id}/traits",
+        json={"category": "clan", "name": "Brujah", "rating": None},
+    )
+    return character_id
+
+
+def test_a_troupes_own_flaw_budget_is_the_limit(troupe: Troupe) -> None:
+    set_house_creation_rules(
+        troupe.session,
+        uuid.UUID(troupe.id),
+        "vampire",
+        "flaws",
+        [CreationRuleData(category="flaws", points=10)],
+    )
+    character_id = building_for(troupe)
+
+    assert set_flaws(troupe.player, character_id, NINE_POINTS_OF_FLAWS).status_code == 200
+    assert pool(creation(troupe.player, character_id), "flaws", 0)["remaining"] == 1
+    assert flagged(troupe.player, character_id) == []
+
+    eleven = [*NINE_POINTS_OF_FLAWS, ("Addiction (Sedatives)", 2)]
+    assert set_flaws(troupe.player, character_id, eleven).status_code == 200
+    assert flagged(troupe.player, character_id) == [
+        ("review", f"Flaws total 11 points; the limit is 10. {PAST_LIMIT}")
+    ]
+
+
+def test_a_troupe_can_refuse_flaws_past_the_limit(troupe: Troupe) -> None:
+    changed = troupe.lead.client.put(
+        f"/troupes/{troupe.id}/checks/flaws/past-limit", json={"strength": "refuse"}
+    )
+    assert changed.status_code == 200, changed.text
+    character_id = building_for(troupe)
+    assert pick(troupe.player, character_id, "flaws", "Hunted").status_code == 200
+    assert pick(troupe.player, character_id, "flaws", "Slow Healing").status_code == 200  # 7
+
+    refused = pick(troupe.player, character_id, "flaws", "Dark Secret")
+
+    assert refused.status_code == 409
+    assert refused.json()["detail"] == PAST_LIMIT
+    assert set_flaws(troupe.player, character_id, NINE_POINTS_OF_FLAWS).status_code == 409
+    # The wizard greys it out, saying why.
+    refusals = troupe.player.client.get(
+        f"/characters/{character_id}/refusals", params={"category": "flaws"}
+    ).json()
+    assert refusals["Dark Secret"]["message"] == PAST_LIMIT
+
+
 def test_taking_a_pick_back(troupe: Troupe) -> None:
     character_id = creating(troupe)
     pick(troupe.player, character_id, "skills", "Brawl", 4)

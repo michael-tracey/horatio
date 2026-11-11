@@ -2,7 +2,7 @@
 
 import pytest
 
-from horatio.rules.checks import CheckData, matches, violations
+from horatio.rules.checks import CheckData, Context, matches, violations
 from horatio.rules.files import DATA_DIR, load_rule_set
 from horatio.rules.model import SheetTrait
 
@@ -256,6 +256,21 @@ def test_a_broken_more_than_dots_says_what_is_held_against_the_dots() -> None:
         "Holds Ritual 0, Ritual 1 and Ritual 2 with disciplines 2, which allows 2."
     }
     assert found[0].on_sheet.startswith("Holds Ritual 0")
+
+
+def test_over_points_limit_counts_the_points_held_against_the_limit() -> None:
+    check = CheckData(key="a", category="flaws", forbids={"over_points_limit": True})
+    context = Context(points_limits={"flaws": 7})
+    seven = [t("flaws", "Hunted", 4), t("flaws", "Slow Healing", 3)]
+    given = SheetTrait(category="flaws", name="Dark Secret", rating=1, granted_rating=1)
+
+    # One another trait gives does not count.
+    assert violations([check], [*seven, given], context) == []
+    found = violations([check], [*seven, t("flaws", "Dark Secret", 1)], context)
+    assert len(found) == 3
+    assert {v.held for v in found} == {"Flaws total 8 points; the limit is 7."}
+    # A category with no limit never goes past it.
+    assert violations([check], [*seven, t("flaws", "Dark Secret", 1)]) == []
 
 
 def test_a_more_than_dots_table_must_list_whole_numbers() -> None:

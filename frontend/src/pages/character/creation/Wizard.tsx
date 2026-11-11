@@ -18,7 +18,7 @@ import { FreeChoicesStep, withFreeChoices } from "./FreeChoicesStep";
 import { BACKGROUND_MERITS, FOCUS_MERITS, SKILL_MERITS, freedPicks, givenIn, takenAway, unchosenFree } from "./gifts";
 import { detailNeed, fieldSkills } from "../fields";
 import { SetField } from "../Specializations";
-import { CUSTOM_ARCHETYPE, fieldProblems, identityChoices, keyed, spent, traitOf, type Allowed, type Picks } from "./logic";
+import { CUSTOM_ARCHETYPE, fieldProblems, identityChoices, keyed, pointsText, spent, traitOf, type Allowed, type Picks } from "./logic";
 import { FromMerits } from "./FromMerits";
 import { IdentitySelect } from "./IdentitySelect";
 import { ClanMerits } from "./ClanMerits";
@@ -556,6 +556,7 @@ function StepView({
                 title={nameOf(category)}
                 traits={narrowed(category, traitsOf(category)).filter((t) => category !== "merits" || !comesWithClan(t.name, creation))}
                 budget={pools[0].allowed}
+                pastBudget={pools[0].past_budget}
                 given={<ClanMerits character={character} merits={clan} catalogue={catalogue} />}
                 givenPoints={clanPoints({ clan_merits: clan })}
                 picks={mine}
@@ -1045,7 +1046,7 @@ function CharacterSummary({
   // Merits and flaws as their points are spent: those the clan takes, then those picked.
   for (const p of ["merits", "flaws"].flatMap((c) => creation.pools.filter((p) => p.kind === "points" && p.category === c))) {
     const names = [...(p.category === "merits" ? creation.clan_merits.map(named) : []), ...p.traits.map(named)];
-    rows.push([p.category_name, `${names.join(", ") || "None"} (${p.used} of ${p.allowed} points)`]);
+    rows.push([p.category_name, `${names.join(", ") || "None"} (${pointsText(p.used, p.allowed, p.past_budget)})`]);
   }
 
   return (

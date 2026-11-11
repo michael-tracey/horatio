@@ -47,6 +47,9 @@ class PoolOut(BaseModel):
     allowed: int
     used: int
     remaining: int
+    # Picks may go past `allowed` (flaws, with the Storyteller's OK), counting nothing
+    # past it: `remaining` can then be below 0 (p. 85).
+    past_budget: bool = False
     # A fact each trait must have to take a pick here, such as "in_clan".
     restriction: str | None
     # With a restriction, the traits that meet it now (the in-clan disciplines).
@@ -216,6 +219,7 @@ def creation_out(db: DbSession, character: Character) -> CreationOut:
             allowed=p.allowed,
             used=p.used,
             remaining=p.remaining,
+            past_budget=p.past_budget,
             restriction=p.restriction,
             options=creation.options(db, character, p, fits),
             without_dot=[

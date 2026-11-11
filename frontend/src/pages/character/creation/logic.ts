@@ -163,6 +163,21 @@ export function spent(picks: Picks): number {
   return Object.values(picks).reduce((a, b) => a + b, 0);
 }
 
+/**
+ * A budget of points as the wizard says it: "3 of 7 points", or for flaws taken past
+ * it, which count for nothing more (p. 85), "9 points, 7 count toward the budget".
+ * Flaws give no XP in creation (they are free records), so it says nothing of XP:
+ * the one place to change should creation come to pay XP for them.
+ */
+export function pointsText(used: number, allowed: number, pastBudget: boolean): string {
+  return pastBudget && used > allowed ? `${used} points, ${allowed} count toward the budget` : `${used} of ${allowed} points`;
+}
+
+/** What a budget its picks may go past (flaws) says beside it (p. 85). */
+export function pastBudgetText(title: string, allowed: number): string {
+  return `${title} past ${allowed} points need the Storyteller's OK, and count for nothing more (p. 85).`;
+}
+
 /** The archetype a player makes up (p. 86): its detail is the name they give it. */
 export const CUSTOM_ARCHETYPE = "Other…";
 
