@@ -139,7 +139,7 @@ def test_only_a_nagaraja_buys_necromantic_prowess(troupe: Troupe) -> None:
     [prowess] = [t for t in catalogue["traits"] if t["name"] == "Necromantic Prowess"]
     assert prowess["requirement"] == "Nagaraja"
     crafts = next(t for t in catalogue["traits"] if t["name"] == "Crafts")
-    assert (crafts["requirement"], crafts["needs_field"]) == (None, True)
+    assert (crafts.get("requirement"), crafts["needs_field"]) == (None, True)
 
     giovanni = new_character(troupe, troupe.player, "Agnes", clan="Giovanni")
     refused = buy(

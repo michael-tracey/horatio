@@ -90,7 +90,7 @@ def test_the_catalogue_does_not_ask_for_a_detail_where_the_merit_asks_for_choice
 
     royalty = next(t for t in catalogue if t["name"] == "Ventrue Royalty")
     cult = next(t for t in catalogue if t["name"] == "Personal Cult")
-    assert royalty["choices"] is None
+    assert "choices" not in royalty
     assert cult["choices"] == ["Haven", "Herd", "Resources"]
 
 

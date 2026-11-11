@@ -5,7 +5,8 @@ import uuid
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+from pydantic.config import JsonDict
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
 
@@ -34,12 +35,30 @@ from horatio.rules.store import read_troupe_rules, same_subject
 router = APIRouter(prefix="/rules", tags=["rules"])
 
 
-class CategoryOut(BaseModel):
+def no_defaults(schema: JsonDict) -> None:
+    properties = schema.get("properties")
+    if isinstance(properties, dict):
+        for field in properties.values():
+            if isinstance(field, dict):
+                field.pop("default", None)
+
+
+class Lean(BaseModel):
+    """Sent with every field still at its default left out (the routes here set
+    `response_model_exclude_defaults`): most traits have no house rule, no in-clan
+    disciplines, no weakness and so on, and the catalogue was mostly those (#642). Its
+    schema gives no defaults, so the frontend's types have those fields optional, as
+    they are; a missing one means the same as its default."""
+
+    model_config = ConfigDict(json_schema_extra=no_defaults)
+
+
+class CategoryOut(Lean):
     key: str
     name: str
     group: str
     rated: bool
-    max_rating: int | None
+    max_rating: int | None = None
     # Only shown when the character has this choice, e.g. faction needs the Sabbat sect.
     requires: dict[str, str] | None = None
     # XP to swap the choice for another after creation (a focus); None if it cannot be.
@@ -52,7 +71,7 @@ class CategoryOut(BaseModel):
     specializes: dict[str, str] | None = None
 
 
-class HouseOut(BaseModel):
+class HouseOut(Lean):
     """A troupe's own merit or flaw (horatio.house_traits), marked ★ wherever it shows."""
 
     id: uuid.UUID
@@ -72,7 +91,7 @@ class HouseOut(BaseModel):
     in_clan: list[str] = Field(default_factory=list[str])
 
 
-class TraitChangeOut(BaseModel):
+class TraitChangeOut(Lean):
     """A troupe's change to a book trait (horatio.book_traits): banned in the troupe,
     with the reason its players see ("" for none); its own wording, in Markdown ("" for
     none), added to the book's summary or replacing it."""
@@ -86,23 +105,23 @@ class TraitChangeOut(BaseModel):
     book_kind: str | None = None
 
 
-class TraitOut(BaseModel):
+class TraitOut(Lean):
     category: str
     name: str
-    description: str | None
-    page_reference: str | None
+    description: str | None = None
+    page_reference: str | None = None
     # A merit or flaw is always bought at this rating.
-    fixed_rating: int | None
+    fixed_rating: int | None = None
     # Text from a house rule for this trait in the troupe asked about.
-    house_rule: str | None
+    house_rule: str | None = None
     # For a clan: its in-clan disciplines.
-    in_clan: list[str] | None
+    in_clan: list[str] | None = None
     # For a clan: its weakness in a line, and the book's page for it. A bloodline with
     # none of its own has its clan's.
     weakness: str | None = None
     weakness_page: str | None = None
     # For a skill: the attribute it generally goes with (Physical, Social or Mental).
-    attribute: str | None
+    attribute: str | None = None
     # For a trait that grants something the player picks (Personal Cult: which
     # background), or names one of a few in its detail (Stolen Potential: which
     # attribute): the picks, to put in its detail.
@@ -125,14 +144,14 @@ class TraitOut(BaseModel):
     changed: TraitChangeOut | None = None
 
 
-class WrittenRuleRef(BaseModel):
+class WrittenRuleRef(Lean):
     """A troupe's written rule about a trait, to link to where the troupe's players read it."""
 
     id: uuid.UUID
     title: str
 
 
-class CatalogueOut(BaseModel):
+class CatalogueOut(Lean):
     splat: str
     name: str
     categories: list[CategoryOut]
@@ -158,7 +177,7 @@ def splats(db: DbSession, user: CurrentUser) -> list[SplatOut]:
     ]
 
 
-@router.get("/{splat}")
+@router.get("/{splat}", response_model_exclude_defaults=True)
 def catalogue(
     splat: str,
     db: DbSession,
@@ -286,7 +305,7 @@ def house_out(house: HouseTraitData | None) -> HouseOut | None:
 # --- The rules browser --------------------------------------------------------
 
 
-class PriceOut(BaseModel):
+class PriceOut(Lean):
     """A cost rule in words: for one trait, or every trait of its category."""
 
     category: str
@@ -301,7 +320,7 @@ class PriceOut(BaseModel):
     book: str | None = None
 
 
-class TraitCheckOut(BaseModel):
+class TraitCheckOut(Lean):
     """A check, in the words a player reads when a change breaks it: about one trait,
     every trait whose name starts with `prefix`, or (neither) a whole category."""
 
@@ -317,7 +336,7 @@ class TraitCheckOut(BaseModel):
     house: str | None = None
 
 
-class NotAllowedOut(BaseModel):
+class NotAllowedOut(Lean):
     """A trait the troupe does not let anyone buy: a house price of "cannot be bought"
     for it, or for its whole category, that nothing more particular overrides."""
 
@@ -326,7 +345,7 @@ class NotAllowedOut(BaseModel):
     text: str | None
 
 
-class DisciplinePowerOut(BaseModel):
+class DisciplinePowerOut(Lean):
     """A discipline's power at one dot, from the Play View's power reference: a
     short note in our own words."""
 
@@ -336,7 +355,7 @@ class DisciplinePowerOut(BaseModel):
     note: str
 
 
-class RarityOut(BaseModel):
+class RarityOut(Lean):
     """How rare a clan is: in the troupe's setting, or in each sect's as the book has it.
     Its bloodlines are as rare as it."""
 
@@ -351,7 +370,7 @@ class RarityOut(BaseModel):
     default_house: bool = False
 
 
-class RulesBrowserOut(BaseModel):
+class RulesBrowserOut(Lean):
     catalogue: CatalogueOut
     # The troupe whose house rules are applied; None for the book's rules.
     troupe_name: str | None
@@ -364,7 +383,7 @@ class RulesBrowserOut(BaseModel):
     written_rules: list[WrittenRuleOut] = Field(default_factory=list[WrittenRuleOut])
 
 
-@router.get("/{splat}/browse")
+@router.get("/{splat}/browse", response_model_exclude_defaults=True)
 def browse(
     splat: str, db: DbSession, user: CurrentUser, troupe_id: uuid.UUID | None = None
 ) -> RulesBrowserOut:

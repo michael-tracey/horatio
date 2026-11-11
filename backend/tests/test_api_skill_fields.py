@@ -146,7 +146,7 @@ def test_a_missing_field_can_be_given_to_a_pick(troupe: Troupe) -> None:
 
 def test_the_rules_say_which_skills_need_a_field(troupe: Troupe) -> None:
     catalogue = troupe.player.client.get("/rules/vampire").json()
-    marked = sorted(t["name"] for t in catalogue["traits"] if t["needs_field"])
+    marked = sorted(t["name"] for t in catalogue["traits"] if t.get("needs_field"))
     assert marked == sorted(FIELDED)
 
 
