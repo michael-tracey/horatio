@@ -22,7 +22,6 @@ import { incapacitated, latestUndoable, type Damage, type Shown } from "./tracke
 import { useModifiers } from "./useModifiers";
 import { usePlay } from "./usePlay";
 import { useReference } from "./useReference";
-import { usesPlayView } from "./tabs";
 import { useKeepAwake } from "./wakeLock";
 import { useOnline } from "../../offline/connection";
 import { NeedsSignal, ScenesStrip } from "../../offline/KeepScenes";
@@ -118,9 +117,7 @@ export function ScenePage() {
         <ScenesStrip troupeId={troupeId} />
       </header>
       <main className="mx-auto flex max-w-6xl flex-col gap-3 px-4 pt-3">
-        {troupe.data && !usesPlayView(troupe.data) ? (
-          <NotUsed className="py-8 text-center" />
-        ) : !scene.data ? (
+        {!scene.data ? (
           scene.isPending && scene.fetchStatus === "paused" ? (
             <div role="status" className="py-8 text-center">
               <p>This scene isn't kept on this phone, so it needs a connection.</p>
@@ -565,7 +562,7 @@ function SceneCard({ characterId, back, onRemove, onRank }: { characterId: strin
     );
   }
   if (shown.tabs.length === 0) {
-    // Pinned before its troupe switched every tab off.
+    // A PC pinned before its troupe switched every tab off for players (#673).
     return (
       <article className="flex flex-col gap-2 rounded-lg border border-ash bg-dusk p-3" aria-label={shown.character_name}>
         <h2 className="truncate text-lg leading-tight text-gold">{shown.character_name}</h2>

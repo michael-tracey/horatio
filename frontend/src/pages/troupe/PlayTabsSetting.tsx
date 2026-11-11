@@ -13,8 +13,9 @@ const NOTES: Partial<Record<Tab, string>> = {
 
 /**
  * Play View tabs (#673): a switch for each of the Play View's tabs, all on until the
- * troupe switches one off. With every tab off, the troupe doesn't use the Play View,
- * which the card says before that is saved. Staff always see every tab on NPCs.
+ * troupe switches one off. With every tab off, the troupe doesn't use the Play View for
+ * its players, which the card says before that is saved. Staff always see every tab on
+ * NPCs, and run them and scenes whatever is set.
  */
 export function PlayTabsSetting({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
   const save = useAction((play_tabs_off: Tab[]) => unwrap(api.PATCH("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupe.id } }, body: { play_tabs_off } })));
@@ -29,13 +30,13 @@ export function PlayTabsSetting({ troupe, canEdit }: { troupe: TroupeOut; canEdi
   return (
     <Card title="Play View tabs">
       <p className="mb-3 text-sm text-mist">
-        The tabs players see on the Play View at games. Staff always see every tab on NPCs. Turn them all off if the troupe keeps its sheets here but doesn't play from Horatio.
+        The tabs players see on the Play View at games. Staff always see every tab on NPCs. Turn them all off if your players keep their sheets here but don't play from Horatio.
       </p>
       {!canEdit ? (
-        <p className="text-sm">{on.length === 0 ? "The troupe doesn't use the Play View." : on.length === TABS.length ? "Players see every tab." : `Players see ${tabNames(on)}.`}</p>
+        <p className="text-sm">{on.length === 0 ? "The troupe doesn't use the Play View for players." : on.length === TABS.length ? "Players see every tab." : `Players see ${tabNames(on)}.`}</p>
       ) : (
         <div className="flex flex-col gap-2 text-sm">
-          {on.length === 0 && <p className="text-gold">The Play View is off: the troupe doesn't use it. Switch a tab on to use it again.</p>}
+          {on.length === 0 && <p className="text-gold">The Play View is off for players. Staff still run NPCs and scenes. Switch a tab on to give it back to players.</p>}
           {TABS.map(({ key, label }) => (
             <label key={key} className="flex items-start gap-2">
               <input type="checkbox" className="mt-1" checked={on.includes(key) && last !== key} disabled={save.isPending || last !== null} onChange={(e) => change(key, e.target.checked)} />
@@ -46,10 +47,11 @@ export function PlayTabsSetting({ troupe, canEdit }: { troupe: TroupeOut; canEdi
             </label>
           ))}
           {last && (
-            <div role="alertdialog" aria-label="Turn the Play View off" className="mt-1 flex flex-col gap-2 rounded-md border border-blood/60 bg-blood/10 p-3">
+            <div role="alertdialog" aria-label="Turn the Play View off for players" className="mt-1 flex flex-col gap-2 rounded-md border border-blood/60 bg-blood/10 p-3">
               <p>
-                {TABS.find((t) => t.key === last)?.label} is the last tab on. With it off, the troupe doesn't use the Play View: its characters have no Play, check-in doesn't open it, its
-                scenes don't run, and phones don't keep it for games with no signal. Sheets stay as they are, and switching a tab on brings it all back.
+                {TABS.find((t) => t.key === last)?.label} is the last tab on. With it off, the troupe doesn't use the Play View for players: their characters have no Play,
+                check-in doesn't open it, and phones don't keep it for games with no signal. Staff still run NPCs and scenes, with every tab. Sheets stay as they are, and
+                switching a tab on brings it all back.
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -58,7 +60,7 @@ export function PlayTabsSetting({ troupe, canEdit }: { troupe: TroupeOut; canEdi
                     setLast(null);
                   }}
                 >
-                  Turn the Play View off
+                  Turn the Play View off for players
                 </Button>
                 <Button variant="secondary" onClick={() => setLast(null)}>
                   Keep {TABS.find((t) => t.key === last)?.label}

@@ -98,7 +98,7 @@ test("a troupe's house wording on a power shows on the Play View, marked as the 
   await expect(worded).toContainText("Majesty lasts one scene here, not an hour.");
 });
 
-test("a troupe switches Play View tabs off: Pools goes from a player's Play View, and with every tab off its characters have no Play (#673)", async ({ browser }) => {
+test("a troupe switches Play View tabs off: Pools goes from a player's Play View, and with every tab off its PCs have no Play while staff still run NPCs and scenes (#673)", async ({ browser }) => {
   const custodian = await person(browser, "tabs-custodian");
   makeCustodian(custodian.email);
   const lead = await person(browser, "tabs-lead");
@@ -124,6 +124,10 @@ test("a troupe switches Play View tabs off: Pools goes from a player's Play View
   const [request] = await (await l.request.get(`/api/troupes/${troupeId}/approvals`)).json();
   const approved = await l.request.post(`/api/approvals/${request.id}/approve`, { headers, data: {} });
   expect(approved.status(), await approved.text()).toBeLessThan(300);
+  // And an NPC the lead runs.
+  const npc = await l.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: "Folio", wizard: false } });
+  expect(npc.status(), await npc.text()).toBe(201);
+  const folio: string = (await npc.json()).id;
 
   // Every tab is on until the troupe switches one off.
   await p.goto(`/characters/${id}`);
@@ -153,11 +157,12 @@ test("a troupe switches Play View tabs off: Pools goes from a player's Play View
     await expect(box).not.toBeChecked();
   }
   await setting.getByRole("checkbox", { name: "Equipment", exact: true }).click();
-  const asking = setting.getByRole("alertdialog", { name: "Turn the Play View off" });
-  await expect(asking).toContainText("the troupe doesn't use the Play View: its characters have no Play");
+  const asking = setting.getByRole("alertdialog", { name: "Turn the Play View off for players" });
+  await expect(asking).toContainText("the troupe doesn't use the Play View for players: their characters have no Play");
+  await expect(asking).toContainText("Staff still run NPCs and scenes");
   await l.screenshot(shots("play-tabs-last-off"));
-  await asking.getByRole("button", { name: "Turn the Play View off" }).click();
-  await expect(setting.getByText("The Play View is off")).toBeVisible();
+  await asking.getByRole("button", { name: "Turn the Play View off for players" }).click();
+  await expect(setting.getByText("The Play View is off for players.")).toBeVisible();
 
   // The character has no Play button, and its Play View says why.
   await p.goto(`/characters/${id}`);
@@ -165,6 +170,26 @@ test("a troupe switches Play View tabs off: Pools goes from a player's Play View
   await expect(p.getByRole("link", { name: "Play", exact: true })).toHaveCount(0);
   await p.goto(`/play/characters/${id}`);
   await expect(p.getByText("Quire's troupe doesn't use the Play View.")).toBeVisible();
+
+  // The lead still opens the NPC's Play View, with every tab, Pools too.
+  await l.goto(`/characters/${folio}`);
+  await l.getByRole("link", { name: "Play", exact: true }).click();
+  const npcTabs = l.getByRole("tablist", { name: "Play View" });
+  await expect(npcTabs.getByRole("tab", { name: "Pools" })).toBeVisible();
+  await expect(npcTabs.getByRole("tab", { name: "Tracker" })).toBeVisible();
+
+  // And runs a scene with it from At game.
+  await l.goto(`/troupes/${troupeId}/play`);
+  await l.getByRole("link", { name: "Open the scenes" }).click();
+  await expect(l.getByRole("heading", { name: "Scenes", exact: true })).toBeVisible();
+  const sceneId = await openScene(l, troupeId, "The bindery");
+  const pinned = await l.request.put(`/api/troupes/${troupeId}/scenes/${sceneId}/characters/${folio}`, { headers });
+  expect(pinned.status(), await pinned.text()).toBe(200);
+  // A PC with no Play View isn't put in a scene.
+  const refused = await l.request.put(`/api/troupes/${troupeId}/scenes/${sceneId}/characters/${id}`, { headers });
+  expect(refused.status()).toBe(409);
+  await l.reload();
+  await expect(l.getByRole("article", { name: "Folio" })).toContainText("Willpower");
 });
 
 test("at a game, the Play View tracks blood and uses, offline too, and the storytellers reset the troupe", async ({ browser }) => {

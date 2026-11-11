@@ -366,7 +366,8 @@ class PlayView(BaseModel):
     # The game's log, newest first.
     log: list[LogEntryOut]
     # The tabs it shows (horatio.play_tabs): its troupe's, every one on an NPC, none
-    # when its troupe doesn't use the Play View. Status shows only with `status` too.
+    # for a PC whose troupe doesn't use the Play View for players. Status shows only
+    # with `status` too.
     tabs: list[play_tabs.PlayTab] = list(play_tabs.PLAY_TABS)
 
 
@@ -492,8 +493,8 @@ class TroupePlayEntry(BaseModel):
     health_boxes: int
     # The player's lines and veils, as the roster shows them to staff.
     lines_veils: LinesVeils | None = None
-    # Whether it has a Play View: a visitor's home troupe may not use one
-    # (horatio.play_tabs).
+    # Whether it has a Play View: a PC's troupe may not use one for players; an NPC
+    # always has one (horatio.play_tabs).
     play_view: bool = True
 
 

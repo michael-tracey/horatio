@@ -73,23 +73,18 @@ const draftOf = (r: RetainerOut): Draft => ({
   given_disciplines: r.given_disciplines ?? [],
 });
 
-/** A Retainer's links to its NPC's sheet and Play View, for staff who can see it; not
- * the Play View with `playView` false, where the troupe doesn't use one (#673). */
-export function NpcLinks({ retainer, playView = true }: { retainer: RetainerOut; playView?: boolean }) {
+/** A Retainer's links to its NPC's sheet and Play View, for staff who can see it. */
+export function NpcLinks({ retainer }: { retainer: RetainerOut }) {
   if (!retainer.npc_id) return null;
   return (
     <span className="ml-1 text-xs">
       <Link className="text-gold underline" to={`/characters/${retainer.npc_id}`}>
         {retainer.npc_name ?? "NPC"}
       </Link>
-      {playView && (
-        <>
-          {" · "}
-          <Link className="text-gold underline" to={`/play/characters/${retainer.npc_id}`}>
-            Play View
-          </Link>
-        </>
-      )}
+      {" · "}
+      <Link className="text-gold underline" to={`/play/characters/${retainer.npc_id}`}>
+        Play View
+      </Link>
     </span>
   );
 }
@@ -108,7 +103,7 @@ export function RetainerLines({ retainers }: { retainers: RetainerOut[] }) {
 }
 
 /** One Retainer in a list; staff can clear a neglect with `onClear`. */
-function RetainerLine({ retainer: r, onClear, playView }: { retainer: RetainerOut; onClear?: (retainerId: string) => void; playView?: boolean }) {
+function RetainerLine({ retainer: r, onClear }: { retainer: RetainerOut; onClear?: (retainerId: string) => void }) {
   const dates = useDates();
   return (
     <>
@@ -126,7 +121,7 @@ function RetainerLine({ retainer: r, onClear, playView }: { retainer: RetainerOu
         </span>
       )}
       {r.upkeep && <span className="text-mist"> · upkeep {r.upkeep}</span>}
-      <NpcLinks retainer={r} playView={playView} />
+      <NpcLinks retainer={r} />
       {backText(r, dates.date) && <p className="text-xs text-blood-bright">{backText(r, dates.date)}</p>}
       {neglectText(r, dates.date) && (
         <p className="text-xs text-blood-bright">
@@ -178,7 +173,7 @@ export function RetainerSection({ character, retainers, label, merit }: { charac
               editor(draftOf(r))
             ) : (
               <>
-                <RetainerLine retainer={r} onClear={can_link ? (id) => clear.mutate(id) : undefined} playView={character.play_view} />
+                <RetainerLine retainer={r} onClear={can_link ? (id) => clear.mutate(id) : undefined} />
                 {can_edit && editing === null && (r.name || !r.bought) && (
                   <button
                     type="button"

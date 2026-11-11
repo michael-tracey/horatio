@@ -82,8 +82,8 @@ class CharacterOut(BaseModel):
     # What its sheet calls the clan stored as "Assamite" (horatio.clan_names): as the
     # troupe whose rules it plays by does, or Banu Haqim outside any troupe.
     assamite_name: Literal["Banu Haqim", "Assamite"] = "Banu Haqim"
-    # Whether it has a Play View: false when its troupe (its home troupe's, or an NPC's)
-    # has every tab switched off (horatio.play_tabs).
+    # Whether it has a Play View: false for a PC whose troupe has every tab switched off
+    # for its players; an NPC always has one (horatio.play_tabs).
     play_view: bool = True
 
 

@@ -21,10 +21,6 @@ describe("staffActions", () => {
     expect(staffActions({ ...npc, givable: false }, storyteller).doing).toEqual(["play", "equipment", "status", "titles", "listing"]);
   });
 
-  it("offers no Play where the troupe doesn't use the Play View (#673)", () => {
-    expect(staffActions(npc, { ...storyteller, playView: false }).doing).toEqual(["equipment", "status", "titles", "listing", "give", "claim"]);
-  });
-
   it("prints no sheet for a Stock NPC, which has none: only its badge", () => {
     expect(staffActions(npc, storyteller).printing).toEqual(["sheet", "badge"]);
     expect(staffActions({ ...npc, npc_form: "stock", givable: false }, storyteller).printing).toEqual(["badge"]);

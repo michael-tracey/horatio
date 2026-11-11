@@ -2,13 +2,13 @@
 
 A troupe keeps the tabs it has switched off (`Troupe.play_tabs_off`), so every tab
 is on by default, a new one included. With every tab off the troupe doesn't use the
-Play View at all: there is no Play for its characters, NPCs and visitors' own Play
-Views aside, and none of its scenes run. It uses Horatio only to keep sheets.
+Play View for its players: its player characters have no Play. It uses Horatio to
+keep their sheets. Its staff still run NPCs and scenes.
 
-Whose setting applies is the character's: its home troupe's, or while it has none
-the troupe it is built for; an NPC's, its troupe's. A visitor keeps its home
-troupe's tabs at another troupe's game. On an NPC, staff always see every tab, while
-its troupe uses the Play View at all: the setting is about what players see.
+Whose setting applies is a PC's: its home troupe's, or while it has none the troupe
+it is built for. A visitor keeps its home troupe's tabs at another troupe's game.
+The setting is about what players see: on an NPC, staff always see every tab,
+whatever its troupe has set.
 """
 
 import uuid
@@ -27,7 +27,7 @@ PlayTab = Literal["sheet", "tracker", "pools", "status", "equipment"]
 PLAY_TABS: tuple[PlayTab, ...] = get_args(PlayTab)
 
 # Why a character with no Play View isn't run in a scene.
-NO_PLAY_VIEW = "Its troupe doesn't use the Play View."
+NO_PLAY_VIEW = "Its troupe doesn't use the Play View for players."
 
 NAMES: dict[PlayTab, str] = {
     "sheet": "Sheet",
@@ -52,33 +52,30 @@ def tabs_off(off: Iterable[str]) -> list[PlayTab]:
 
 
 def uses_play_view(troupe: Troupe | None) -> bool:
-    """Whether a troupe has any tab on; no troupe has them all."""
+    """Whether a troupe uses the Play View for its players: it has any tab on. No
+    troupe has them all."""
     return troupe is None or bool(tabs_on(troupe.play_tabs_off))
 
 
 def troupe_id_of(character: Character) -> uuid.UUID | None:
-    """The troupe whose setting a character's Play View follows."""
+    """The troupe whose setting a PC's Play View follows; None for an NPC, which
+    follows none."""
     if character.kind == "npc":
-        return character.owner_troupe_id
+        return None
     return character.home_troupe_id or character.building_troupe_id
 
 
 def character_tabs(db: Session, character: Character) -> list[PlayTab]:
-    """The tabs the character's Play View has: none when its troupe doesn't use the
-    Play View, every one on an NPC, else those its troupe has on."""
+    """The tabs the character's Play View has: every one on an NPC, else those its
+    troupe has on, none when it doesn't use the Play View for players."""
     troupe_id = troupe_id_of(character)
     troupe = db.get(Troupe, troupe_id) if troupe_id else None
-    if troupe is None:
-        return list(PLAY_TABS)
-    on = tabs_on(troupe.play_tabs_off)
-    if character.kind == "npc" and on:
-        return list(PLAY_TABS)
-    return on
+    return list(PLAY_TABS) if troupe is None else tabs_on(troupe.play_tabs_off)
 
 
 def without_play_view(db: Session, characters: Iterable[Character]) -> set[uuid.UUID]:
-    """Those of the characters whose troupe doesn't use the Play View, asked of the
-    database once."""
+    """Those of the characters with no Play View, their troupe not using it for its
+    players: PCs only. Asked of the database once."""
     found = {c.id: troupe_id_of(c) for c in characters}
     troupes = {t for t in found.values() if t is not None}
     if not troupes:
@@ -94,18 +91,19 @@ def without_play_view(db: Session, characters: Iterable[Character]) -> set[uuid.
 
 
 def plays(db: Session, character: Character) -> bool:
-    """Whether the character has a Play View: its troupe uses one."""
+    """Whether the character has a Play View: an NPC always, a PC while its troupe
+    uses one for players."""
     return not without_play_view(db, [character])
 
 
 def words(off: Iterable[str]) -> str:
     """The troupe log's account of the setting: "all tabs", "Sheet and Tracker" or
-    "none (the Play View is off)"."""
+    "no tabs, so the Play View is off for players"."""
     on = tabs_on(off)
     if len(on) == len(PLAY_TABS):
         return "all tabs"
     if not on:
-        return "no tabs, so the Play View is off"
+        return "no tabs, so the Play View is off for players"
     named = [NAMES[t] for t in on]
     return named[0] if len(named) == 1 else f"{', '.join(named[:-1])} and {named[-1]}"
 

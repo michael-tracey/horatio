@@ -98,7 +98,7 @@ def test_staff_see_every_tab_on_an_npc(troupe: Troupe) -> None:
     assert plays(troupe.storyteller, bram)
 
 
-def test_every_tab_off_takes_the_play_view_away(troupe: Troupe) -> None:
+def test_every_tab_off_takes_the_play_view_away_from_player_characters(troupe: Troupe) -> None:
     agnes = member_character(troupe, troupe.player, "Agnes")
     bram = npc(troupe, "Bram")
     scene = new_scene(troupe.storyteller, troupe, "The docks")
@@ -106,27 +106,29 @@ def test_every_tab_off_takes_the_play_view_away(troupe: Troupe) -> None:
     switch_off(troupe, *EVERY)
 
     assert logged(troupe)[-1] == (
-        "storyteller set the Play View's tabs for players: no tabs, so the Play View is off."
+        "storyteller set the Play View's tabs for players: no tabs,"
+        " so the Play View is off for players."
     )
-    # Its characters have no Play, NPCs too, and their Play Views no tabs.
+    # Its player characters have no Play, and their Play Views no tabs.
     assert not plays(troupe.player, agnes)
-    assert not plays(troupe.storyteller, bram)
     assert [c["play_view"] for c in ok(troupe.player.client.get("/characters"))] == [False]
     assert tabs(troupe.player, agnes) == []
-    assert tabs(troupe.storyteller, bram) == []
+    # Its staff still run its NPCs, with every tab, at game and in its scenes.
+    assert plays(troupe.storyteller, bram)
+    assert tabs(troupe.storyteller, bram) == EVERY
     at_game = ok(troupe.storyteller.client.get(f"/troupes/{troupe.id}/play"))
     assert {c["character_name"]: c["play_view"] for c in at_game} == {
         "Agnes": False,
-        "Bram": False,
+        "Bram": True,
     }
-    # Nothing is pinned in its scenes.
-    pinned = troupe.storyteller.client.put(
-        f"/troupes/{troupe.id}/scenes/{scene['id']}/characters/{bram}"
-    )
+    base = f"/troupes/{troupe.id}/scenes/{scene['id']}/characters"
+    assert ok(troupe.storyteller.client.put(f"{base}/{bram}"))["characters"] == [bram]
+    # A PC, with no Play View, isn't pinned.
+    pinned = troupe.storyteller.client.put(f"{base}/{agnes}")
     assert pinned.status_code == 409
-    assert pinned.json()["detail"] == "Its troupe doesn't use the Play View."
+    assert pinned.json()["detail"] == "Its troupe doesn't use the Play View for players."
 
-    # One tab back on brings it all back.
+    # One tab back on brings it back.
     switch_off(troupe, "sheet", "tracker", "pools", "status")
     assert plays(troupe.player, agnes)
     assert tabs(troupe.player, agnes) == ["equipment"]

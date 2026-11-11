@@ -26,8 +26,6 @@ import { PlayersTab } from "./PlayersTab";
 import { QuestsTab } from "./QuestsTab";
 import { PlayHere } from "./PlayHere";
 import { PlayTab } from "./PlayTab";
-import { NotUsed } from "../play/NotUsed";
-import { usesPlayView } from "../play/tabs";
 import { ProfileTab } from "./ProfileTab";
 import { abilities, roleLabel } from "./roles";
 import { RosterTab } from "./RosterTab";
@@ -110,8 +108,7 @@ export function TroupePage() {
             tabs: [
               ...(can.running ? [{ to: `${base}/approvals`, label: "Approvals", count: counts.approvals }] : []),
               ...(can.running ? [{ to: `${base}/characters`, label: "Characters", count: counts.characters }] : []),
-              // Not where the troupe doesn't use the Play View (#673).
-              ...(can.running && usesPlayView(t) ? [{ to: `${base}/play`, label: "At game" }] : []),
+              ...(can.running ? [{ to: `${base}/play`, label: "At game" }] : []),
               ...(can.running ? [{ to: `${base}/xp`, label: "Award XP" }] : []),
               ...(can.running ? [{ to: `${base}/titles`, label: "Titles" }] : []),
             ],
@@ -175,7 +172,7 @@ export function TroupePage() {
         {can.running && !t.archived && <Route path="characters/import" element={<TroupeImportPage troupeId={t.id} />} />}
         {can.running && <Route path="players" element={<PlayersTab troupeId={t.id} />} />}
         {can.staff && <Route path="lines-veils" element={<LinesVeilsTab troupeId={t.id} />} />}
-        {can.running && <Route path="play" element={usesPlayView(t) ? <PlayTab troupeId={t.id} /> : <NotUsed />} />}
+        {can.running && <Route path="play" element={<PlayTab troupeId={t.id} />} />}
         {can.running && <Route path="xp" element={<XpAwardsTab troupeId={t.id} />} />}
         {can.running && <Route path="games/:gameId" element={<GameNightPage troupeId={t.id} />} />}
         {/* NPCs were a tab of their own until they joined the Characters list (#556). */}

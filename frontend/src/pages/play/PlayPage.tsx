@@ -62,7 +62,7 @@ const UNNOTED = new Set(["blood", "willpower", "health"]);
  * returns. The Sheet, Pools and Equipment load when the page opens, so the tabs
  * switch at once. The person's settings choose the tab it opens on and whether
  * quick notes start on; the screen stays awake as the header's switch says. Its
- * troupe chooses which tabs show (#673); with none, it doesn't use the Play View.
+ * troupe chooses which tabs show (#673); with none, it doesn't use the Play View for players.
  */
 export function PlayPage() {
   const { characterId = "" } = useParams();

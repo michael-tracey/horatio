@@ -179,11 +179,9 @@ def members(db: Session, troupe_id: uuid.UUID, character_ids: list[uuid.UUID]) -
 
 
 def runnable(db: Session, troupe_id: uuid.UUID, character_ids: list[uuid.UUID]) -> set[uuid.UUID]:
-    """Those of the characters the troupe can run in Play: its members, but none whose
-    troupe doesn't use the Play View (horatio.play_tabs), nor any at all in a troupe
-    that doesn't."""
-    if not play_tabs.uses_play_view(db.get(Troupe, troupe_id)):
-        return set()
+    """Those of the characters the troupe can run in Play: its members, but no PC whose
+    troupe doesn't use the Play View for players, which has none (horatio.play_tabs).
+    NPCs always."""
     found = members(db, troupe_id, character_ids)
     without = play_tabs.without_play_view(db, found)
     return {c.id for c in found if c.id not in without}
