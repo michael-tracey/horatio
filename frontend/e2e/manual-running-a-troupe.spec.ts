@@ -237,7 +237,8 @@ test("screenshots for Running a troupe", async ({ browser }) => {
   await l.getByLabel("Banned in this troupe").check();
   await l.getByLabel("Reason (optional)").fill("Too swingy at our table.");
   await l.getByLabel("House wording").fill("Here, Lucky's retest can't be used on a test to resist a Discipline.");
-  const panel = card(l, "Lucky");
+  // The panel opens under the trait found, inside the list's card.
+  const panel = l.getByRole("region", { name: "Lucky", exact: true });
   await shot(l, "book-trait", panel, 1200);
 
   // Approvals: Hollis asks to make the troupe home.

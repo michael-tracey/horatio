@@ -5,6 +5,7 @@ import type { CostCategoryOut, CostOut, CostsOut } from "../../api/types";
 import { withClanNames } from "../../clanNames";
 import { useClanName } from "../../components/ClanNames";
 import { Explainer } from "../../components/Explainer";
+import { RowEditor, useRowEditor } from "../../components/RowEditor";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
 import { pageText } from "./bookPage";
@@ -23,6 +24,7 @@ type Editing =
   | { kind: "new" }
   | { kind: "replace"; cost: CostOut }
   | { kind: "change"; cost: CostOut };
+const sameEditing = (a: Editing, b: Editing) => JSON.stringify(a) === JSON.stringify(b);
 
 /**
  * The rule set's prices and this troupe's own. A troupe price applies to
@@ -30,7 +32,8 @@ type Editing =
  * their next purchase; what they have already bought keeps what it cost.
  */
 export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
-  const [editing, setEditing] = useState<Editing | null>(null);
+  const editor = useRowEditor<Editing>(sameEditing);
+  const editing = editor.open;
   const [onlyOurs, setOnlyOurs] = useState(false);
   const [query, setQuery] = useState("");
   const { splat, picker } = useHouseSplat(troupeId);
@@ -79,21 +82,22 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
         </p>
       </Explainer>
 
-      {editing && (
-        <PriceEditor key={JSON.stringify(editing)} troupeId={troupeId} splat={splat} data={costs.data} editing={editing} onClose={() => setEditing(null)} />
-      )}
-
       <Card
         title="Costs"
         actions={
           canEdit &&
           !editing && (
-            <Button variant="secondary" onClick={() => setEditing({ kind: "new" })}>
+            <Button variant="secondary" ref={editor.fallback} onClick={(e) => editor.toggle({ kind: "new" }, e.currentTarget)}>
               Add a price
             </Button>
           )
         }
       >
+        {editing?.kind === "new" && (
+          <RowEditor className="mb-4">
+            <PriceEditor troupeId={troupeId} splat={splat} data={costs.data} editing={editing} onClose={editor.close} />
+          </RowEditor>
+        )}
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <Input
             aria-label="Search costs"
@@ -115,46 +119,58 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
               <section key={key}>
                 <h3 className="mb-1 font-sans text-xs tracking-wide text-mist uppercase">{category?.name ?? key}</h3>
                 <ul className="divide-y divide-ash">
-                  {rows.map((c) => (
-                    <li key={c.id ?? `${c.trait}-${JSON.stringify(c.condition)}`} className="flex items-center gap-3 py-2.5 sm:gap-4">
-                      <span className={`min-w-0 flex-1 text-sm ${c.replaced ? "text-mist line-through" : ""}`}>
-                        <span className={c.replaced ? "" : "text-parchment"}>{named(subject(c, category))}</span>
-                        {": "}
-                        <span>{c.price_text}</span>
-                        {c.page && <span className="text-mist"> {pageText(c.page)}</span>}
-                        {c.text && <span className="block text-xs text-mist no-underline">House rule: {c.text}</span>}
-                      </span>
-                      <span className="flex shrink-0 items-center gap-2">
-                        {c.house && <Badge tone="gold">House rule</Badge>}
-                        {c.replaced && <Badge>Replaced here</Badge>}
-                        {canEdit && c.house && c.id && (
-                          <>
-                            <Button variant="secondary" className="min-h-8 px-3" onClick={() => setEditing({ kind: "change", cost: c })}>
-                              Change
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              className="min-h-8 px-2"
-                              aria-label={`Remove the price for ${named(subject(c, category))}`}
-                              onClick={() => remove.mutate(c.id!)}
-                            >
-                              Remove
-                            </Button>
-                          </>
+                  {rows.map((c) => {
+                    const change: Editing = c.house ? { kind: "change", cost: c } : { kind: "replace", cost: c };
+                    const open = editor.isOpen(change);
+                    return (
+                      <li key={c.id ?? `${c.trait}-${JSON.stringify(c.condition)}`}>
+                        <div className="flex items-center gap-3 py-2.5 sm:gap-4">
+                          <span className={`min-w-0 flex-1 text-sm ${c.replaced ? "text-mist line-through" : ""}`}>
+                            <span className={c.replaced ? "" : "text-parchment"}>{named(subject(c, category))}</span>
+                            {": "}
+                            <span>{c.price_text}</span>
+                            {c.page && <span className="text-mist"> {pageText(c.page)}</span>}
+                            {c.text && <span className="block text-xs text-mist no-underline">House rule: {c.text}</span>}
+                          </span>
+                          <span className="flex shrink-0 items-center gap-2">
+                            {c.house && <Badge tone="gold">House rule</Badge>}
+                            {c.replaced && <Badge>Replaced here</Badge>}
+                            {canEdit && c.house && c.id && (
+                              <>
+                                <Button variant="secondary" className="min-h-8 px-3" aria-expanded={open} onClick={(e) => editor.toggle(change, e.currentTarget)}>
+                                  Change
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  className="min-h-8 px-2"
+                                  aria-label={`Remove the price for ${named(subject(c, category))}`}
+                                  onClick={() => remove.mutate(c.id!)}
+                                >
+                                  Remove
+                                </Button>
+                              </>
+                            )}
+                            {canEdit && !c.house && !c.replaced && (c.trait !== null || !category?.per_trait) && (
+                              <Button
+                                variant="secondary"
+                                className="min-h-8 px-3"
+                                aria-label={`Change the price for ${named(subject(c, category))}`}
+                                aria-expanded={open}
+                                onClick={(e) => editor.toggle(change, e.currentTarget)}
+                              >
+                                Change
+                              </Button>
+                            )}
+                          </span>
+                        </div>
+                        {open && (
+                          <RowEditor className="pb-3">
+                            <PriceEditor troupeId={troupeId} splat={splat} data={costs.data} editing={change} onClose={editor.close} />
+                          </RowEditor>
                         )}
-                        {canEdit && !c.house && !c.replaced && (c.trait !== null || !category?.per_trait) && (
-                          <Button
-                            variant="secondary"
-                            className="min-h-8 px-3"
-                            aria-label={`Change the price for ${named(subject(c, category))}`}
-                            onClick={() => setEditing({ kind: "replace", cost: c })}
-                          >
-                            Change
-                          </Button>
-                        )}
-                      </span>
-                    </li>
-                  ))}
+                      </li>
+                    );
+                  })}
                 </ul>
               </section>
             );
@@ -247,7 +263,8 @@ function PriceEditor({ troupeId, splat, data, editing, onClose }: { troupeId: st
     editing.kind === "new" ? "Add a price" : `Price for ${named(subject(editing.cost, cat))}`;
 
   return (
-    <Card title={title}>
+    <section aria-label={title} className="flex flex-col gap-3 rounded-md border border-gold/40 p-3 sm:p-4">
+      <h3 className="text-gold">{title}</h3>
       <form
         className="flex flex-col gap-4"
         onSubmit={(e) => {
@@ -362,7 +379,7 @@ function PriceEditor({ troupeId, splat, data, editing, onClose }: { troupeId: st
           </Button>
         </div>
       </form>
-    </Card>
+    </section>
   );
 }
 
