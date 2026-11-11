@@ -40,6 +40,7 @@ from horatio.models import (
     DisciplinePurchase,
     HomeTroupeChange,
     ReconciliationItem,
+    RuleSet,
     TraitDefinition,
     Troupe,
     TroupeMembership,
@@ -676,13 +677,20 @@ def allowed_settlements(
     return as_difference(item, rows).allowed_settlements()
 
 
+def banked_xp(db: Session, splat: str) -> int | None:
+    """The most creation XP the rule set lets a character keep, if it caps it. Read
+    on its own, not with the rest of the plain rule set: every sheet in creation
+    asks (unbanked_xp), and loading all the rules for it took as long again (#638)."""
+    return db.scalar(select(RuleSet.banked_xp).where(RuleSet.splat == splat))
+
+
 def unbanked_xp(db: Session, character: Character) -> int:
     """Creation XP the character would lose on its first acceptance: everything
     unspent past the rule set's bank. None once a troupe has accepted it, even if it
     has since left: its XP then is XP it was given."""
     if ever_accepted(db, character):
         return 0
-    limit = read_troupe_rules(db, character.splat, None).rule_set.banked_xp
+    limit = banked_xp(db, character.splat)
     if limit is None:
         return 0
     return max(0, xp_balance(db, character) - limit)
@@ -693,7 +701,7 @@ def bank_creation_xp(db: Session, staff: User, character: Character, troupe: Tro
     It is a line of its own, "lost": the character never spent it."""
     lost = unbanked_xp(db, character)
     if lost:
-        kept = read_troupe_rules(db, character.splat, None).rule_set.banked_xp
+        kept = banked_xp(db, character.splat)
         db.add(
             XpEntry(
                 character_id=character.id,
