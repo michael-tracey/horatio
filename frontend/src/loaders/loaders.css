@@ -18,6 +18,11 @@
   color: #9b8fa3;
   font: 14px "Inter", system-ui, sans-serif;
 }
+/* Ultra goth's night and mist (index.css), set by index.html before this shows. */
+html[data-theme="ultragoth"] .splash {
+  background: #0a0909;
+  color: #bba3a6;
+}
 .splash img {
   width: min(224px, 55vw);
   height: auto;

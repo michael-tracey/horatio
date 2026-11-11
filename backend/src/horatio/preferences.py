@@ -5,7 +5,8 @@ them from one device to another.
 settings someone has changed (`users.preferences`), so changing a default here
 changes it for everyone who kept it. The tickets that follow #100 each give a
 setting its effect: #101 ratings, #102 time zone and dates, #104 paper and
-badge size, #105 the Play View, #106 notifications by email, #107 text size.
+badge size, #105 the Play View, #106 notifications by email, #107 text size,
+#635 the theme.
 """
 
 from typing import Any, Literal
@@ -37,6 +38,9 @@ class Preferences(BaseModel):
     play_tab: Literal["tracker", "sheet", "pools"] = "tracker"
     # Normal or larger text, everywhere but on paper (#107).
     text_size: Literal["normal", "large"] = "normal"
+    # Dark, or Ultra goth: deep red on matte black (#635). Light isn't kept: it
+    # only ever signs the person out (the frontend's Sunrise).
+    theme: Literal["dark", "ultragoth"] = "dark"
     # Which notifications also come by email, not only to the bell: each is off
     # until the person turns it on, but announcements (#106,
     # horatio.notification_emails.TOPICS).

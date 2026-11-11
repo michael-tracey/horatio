@@ -1,6 +1,7 @@
 import { lazy } from "react";
 import { createRoutesFromElements, Navigate, Outlet, Route, useParams, useRouteError } from "react-router";
 import { CharacterRouteClanNames as ForCharacter, TroupeRouteClanNames as ForTroupe } from "./components/ClanNames";
+import { CurtainsHost } from "./components/Curtains";
 import { Layout } from "./components/Layout";
 import { LeaveGuard } from "./components/LeaveGuard";
 import { SunriseHost } from "./components/Sunrise";
@@ -19,6 +20,7 @@ import { UpdatePrompt } from "./offline/UpdatePrompt";
 import { RequireSignIn } from "./RequireSignIn";
 import { isLoadFailure, LazyPages, UpdatedMessage } from "./staleBuild";
 import { useTextSize } from "./textSize";
+import { useTheme } from "./useTheme";
 
 // The bigger pages load when first opened, so the first visit (signing in, the
 // character list) downloads less.
@@ -51,6 +53,7 @@ function ToScenes() {
 /** Round every page. */
 function App() {
   useTextSize();
+  useTheme();
   useKeptOnDevice();
   return (
     <ToastProvider>
@@ -59,6 +62,7 @@ function App() {
       <UpdatePrompt />
       <Outlet />
       <SunriseHost />
+      <CurtainsHost />
       <LeaveGuard />
     </ToastProvider>
   );
