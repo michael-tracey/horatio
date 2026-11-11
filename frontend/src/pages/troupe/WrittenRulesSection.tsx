@@ -8,10 +8,11 @@ import { EmptyState } from "../../components/EmptyState";
 import { Explainer } from "../../components/Explainer";
 import { Markdown } from "../../components/Markdown";
 import { Button, Card, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
-import { RULES_QUERY, useRulesAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 import { SECTIONS } from "../rules/rulesBrowser";
 import { RuleAbout } from "./WrittenRulesList";
 import { bySection, sectionLabel, sectionsInUse } from "./writtenRules";
+import { useCatalogue } from "../../catalogue";
 
 type Draft = { section: string; title: string; body: string; category: string; trait: string; page: string };
 
@@ -174,12 +175,7 @@ function RuleEditor({ troupeId, rule, sections, onDone }: { troupeId: string; ru
   const set = (change: Partial<Draft>) => setDraft((d) => ({ ...d, ...change }));
   const sectionList = useId();
   const traitList = useId();
-  const catalogue = useQuery({
-    queryKey: ["catalogue", "vampire", troupeId],
-    meta: RULES_QUERY,
-    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: "vampire" }, query: { troupe_id: troupeId } } })),
-    staleTime: 5 * 60_000,
-  });
+  const catalogue = useCatalogue("vampire", troupeId);
   const categories = SECTIONS.flatMap((s) => s.categories)
     .map((key) => catalogue.data?.categories.find((c) => c.key === key))
     .filter((c) => c !== undefined);

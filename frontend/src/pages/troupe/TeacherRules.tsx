@@ -6,11 +6,12 @@ import { Dialog } from "../../components/Dialog";
 import { EmptyState } from "../../components/EmptyState";
 import { RowEditor, useRowEditor } from "../../components/RowEditor";
 import { Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
-import { RULES_QUERY, useAction } from "../../hooks";
+import { useAction } from "../../hooks";
 import { TraitList } from "./HouseEffects";
 import { Blocks } from "./OwnChecks";
 import { namesIn } from "./ownChecks";
 import { EMPTY, EXAMPLES, draftOf, teachable, toBody, topOf, type Draft, type WhichHow } from "./teacherRules";
+import { useCatalogue } from "../../catalogue";
 
 function numbers(from: number, to: number): number[] {
   return Array.from({ length: to - from + 1 }, (_, i) => from + i);
@@ -149,11 +150,7 @@ function TeacherRuleEditor({ troupeId, editing, onClose }: { troupeId: string; e
     queryKey: ["troupe", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupeId } } })),
   });
-  const catalogue = useQuery({
-    queryKey: ["catalogue", draft.splat, troupeId],
-    meta: RULES_QUERY,
-    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: draft.splat }, query: { troupe_id: troupeId } } })),
-  });
+  const catalogue = useCatalogue(draft.splat, troupeId);
   const built = toBody(draft);
   const body = "body" in built ? built.body : null;
   const preview = usePreview(troupeId, body);

@@ -5,10 +5,11 @@ import { api, unwrap } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Dialog } from "../../components/Dialog";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, PageTitle, Select, Textarea } from "../../components/ui";
-import { RULES_QUERY, useAction } from "../../hooks";
+import { useAction } from "../../hooks";
 import { CharacterPicture } from "../character/Picture";
 import { type NpcKind, groupedKinds, kindPages, resourceText } from "./npcKinds";
 import { allowedPowers, expandPower, INFERNAL_INVESTMENT } from "./stockNpcs";
+import { useCatalogue } from "../../catalogue";
 
 type StockNpc = components["schemas"]["StockNpcOut"];
 type Specialization = components["schemas"]["Specialization"];
@@ -25,12 +26,7 @@ export function StockNpcBuilder({ troupeId }: { troupeId: string }) {
   const character = useQuery({ queryKey: ["character", characterId], queryFn: () => unwrap(api.GET("/api/characters/{character_id}", path)) });
   const stock = useQuery({ queryKey: ["stock-npc", characterId], queryFn: () => unwrap(api.GET("/api/characters/{character_id}/npc/stock", path)) });
   const kinds = useQuery({ queryKey: ["npc-kinds"], queryFn: () => unwrap(api.GET("/api/npc-kinds")), staleTime: Infinity });
-  const catalogue = useQuery({
-    queryKey: ["catalogue", "vampire", troupeId],
-    meta: RULES_QUERY,
-    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: "vampire" }, query: { troupe_id: troupeId } } })),
-    staleTime: 5 * 60_000,
-  });
+  const catalogue = useCatalogue("vampire", troupeId);
   const back = <Link to={`/troupes/${troupeId}/characters?show=npcs`} className="text-sm text-mist hover:text-gold">← NPCs</Link>;
   if (character.isPending || stock.isPending || kinds.isPending || catalogue.isPending) return <Loading />;
   const error = character.error ?? stock.error ?? kinds.error ?? catalogue.error;

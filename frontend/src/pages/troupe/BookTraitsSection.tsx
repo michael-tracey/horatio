@@ -9,11 +9,12 @@ import { RowEditor, useRowEditor } from "../../components/RowEditor";
 import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { HouseWording } from "../../components/TroupeChange";
-import { RULES_QUERY, useRulesAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 import { bookSummary } from "../../houseWording";
 import { pageText } from "./bookPage";
 import { bookTraits, changeSummary, findTraits, kindChoices, requirementNote, SHOWN } from "./bookTraits";
 import { useHouseSplat } from "./HouseSplat";
+import { useCatalogue } from "../../catalogue";
 
 /** The trait whose panel is open, and the row it opened from: a change listed, or a trait found. */
 type Picked = { splat: string; category: string; name: string; from: "changed" | "found" };
@@ -34,11 +35,7 @@ export function BookTraitsSection({ troupeId, canEdit }: { troupeId: string; can
   // The row the panel was opened from, and where it was in its list: kept there while the panel is
   // open, though saving moves it (a trait found comes first once changed) or takes it away.
   const [opened, setOpened] = useState<{ row: BookTraitOut | TraitOut; at: number } | null>(null);
-  const catalogue = useQuery({
-    queryKey: ["catalogue", splat, troupeId],
-    meta: RULES_QUERY,
-    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat }, query: { troupe_id: troupeId } } })),
-  });
+  const catalogue = useCatalogue(splat, troupeId);
   const changes = useQuery({
     queryKey: ["book-traits", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/book-traits", { params: { path: { troupe_id: troupeId } } })),

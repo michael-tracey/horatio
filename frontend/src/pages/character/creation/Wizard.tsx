@@ -5,7 +5,7 @@ import { api, unwrap } from "../../../api/client";
 import type { CatalogueOut, CharacterOut, CreationOut, SheetOut, TraitOut, TraitRefOut } from "../../../api/types";
 import { useClanName } from "../../../components/ClanNames";
 import { Button, Card, ErrorText, Field, Input, Loading, Notice, Textarea } from "../../../components/ui";
-import { RULES_QUERY, useAction, useRatingRefusals, useRefusals, useUnavailable, useRulesAction } from "../../../hooks";
+import { useAction, useRatingRefusals, useRefusals, useUnavailable, useRulesAction } from "../../../hooks";
 import { BuildFor } from "../BuildFor";
 import { useCart } from "../cart";
 import { FinishCreation } from "../CartPanel";
@@ -32,6 +32,7 @@ import { pageText } from "../../troupe/bookPage";
 import { DomitorPanel, DomitorSummary, useDomitor } from "../Domitor";
 import { generationText } from "../../../generation";
 import { domitorNeeded, dotBudget, ghoulDisciplinesIntro, savedDots } from "./ghoul";
+import { useCatalogue } from "../../../catalogue";
 
 /** A step: the categories it places picks in, and those it decides without picks. */
 type Step = StepRef & { intro?: string };
@@ -136,13 +137,7 @@ export function CreationWizard({ character }: { character: CharacterOut }) {
   const path = { params: { path: { character_id: character.id } } };
   const creation = useQuery({ queryKey: ["creation", character.id], queryFn: () => unwrap(api.GET("/api/characters/{character_id}/creation", path)) });
   const sheet = useQuery({ queryKey: ["sheet", character.id], queryFn: () => unwrap(api.GET("/api/characters/{character_id}/sheet", path)) });
-  const catalogue = useQuery({
-    queryKey: ["catalogue", character.splat, rulesTroupe(character)],
-    meta: RULES_QUERY,
-    queryFn: () =>
-      unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: character.splat }, query: { troupe_id: rulesTroupe(character) } } })),
-    staleTime: 5 * 60_000,
-  });
+  const catalogue = useCatalogue(character.splat, rulesTroupe(character));
   // A ghoul takes its clan and in-clan disciplines from its domitor, chosen on Concept.
   const hasDomitor = useHasDomitor(character.splat);
   const domitor = useDomitor(character, !!hasDomitor);
