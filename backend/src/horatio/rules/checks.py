@@ -51,6 +51,13 @@ Condition vocabulary (every key in one table must hold):
                                     native in-clan disciplines (Inept's discipline)
     accepted = true                 a home troupe has accepted the character
     finished = true                 the character's creation is finished
+    over_points_limit = true        the points the sheet holds in the subject's
+                                    category are more than its limit: the
+                                    creation budget of points where the rules give
+                                    one (the troupe's own), else the category's
+                                    points_limit. A merit or flaw is held at its
+                                    value; those another trait gives never count
+                                    (flaws past 7, p. 85)
     npc = true                      the character is an NPC, built by staff
     more_than_dots = { count = { category, name_prefix }, dots = { category, name_prefix },
                        per_dot?, table? }
@@ -121,7 +128,7 @@ Condition = Mapping[str, Any]
 CONDITION_KEYS = frozenset(
     {"clan", "clan_family", "has", "has_any", "has_all", "generation", "on_path", "count",
      "one_below", "parent", "self", "copies", "in_clan", "detail_in_clan", "accepted",
-     "finished", "npc", "more_than_dots",
+     "finished", "npc", "more_than_dots", "over_points_limit",
      "above_in_clan", "same_value", "excess_over_generation", "any_of", "not",
      "kind", "tagged", "dots", "domitor_clan", "domitor_has"}
 )  # fmt: skip
@@ -158,6 +165,9 @@ class Context:
     # none: a condition on Generation never holds for it, and its attributes get no
     # bonus above 10.
     generation: bool = True
+    # The most points the sheet may hold in each category that has a limit (merits,
+    # flaws): the creation budget where the rules give one, else the category's limit.
+    points_limits: Mapping[str, int] = field(default_factory=dict[str, int])
 
 
 NO_CONTEXT = Context()
@@ -247,7 +257,8 @@ class Violation:
     # The trait the subject clashes with, where the check names one (same_value).
     other: str = ""
     # What the sheet holds against the dots, where the check counts them
-    # (more_than_dots, held_text): said on the sheet before the check's message.
+    # (more_than_dots, held_text; over_points_limit, points_text): said on the sheet
+    # before the check's message.
     held: str = ""
 
     @property
@@ -392,6 +403,10 @@ def matches(
             ok = context.finished == test
         elif key == "npc":
             ok = context.npc == test
+        elif key == "over_points_limit":
+            limit = context.points_limits.get(subject.category)
+            over = limit is not None and points_held(sheet, subject.category) > limit
+            ok = over == test
         elif key == "more_than_dots":
             ok = len(counted_by(test, sheet)) > dots_allow(test, dots_of(sheet, test["dots"]))
         elif key == "above_in_clan":
@@ -448,6 +463,20 @@ def matches(
         if not ok:
             return False
     return True
+
+
+def points_held(sheet: Sequence[SheetTrait], category: str) -> int:
+    """For over_points_limit: the points the sheet holds in a category of merits or
+    flaws, each held at its value, leaving out those another trait gives."""
+    return sum(t.rating or 0 for t in sheet if t.category == category and not t.granted)
+
+
+def points_text(category: str, sheet: Sequence[SheetTrait], context: Context) -> str:
+    """For a broken over_points_limit: "Flaws total 9 points; the limit is 7.", said on
+    the sheet before the check's message."""
+    held = points_held(sheet, category)
+    limit = context.points_limits.get(category, 0)
+    return f"{category.replace('_', ' ').capitalize()} total {held} points; the limit is {limit}."
 
 
 def counted_by(test: Mapping[str, Any], sheet: Sequence[SheetTrait]) -> list[SheetTrait]:
@@ -592,6 +621,8 @@ def violations(
                 other = clashing(test, sheet, trait, context) if test else None
                 counting = (check.forbids or {}).get("more_than_dots")
                 held = held_text(counting, sheet) if counting else ""
+                if (check.forbids or {}).get("over_points_limit"):
+                    held = points_text(trait.category, sheet, context)
                 found.append(Violation(check, trait, other.name if other else "", held))
     return found
 

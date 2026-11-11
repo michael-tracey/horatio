@@ -7,7 +7,7 @@ import { Badge, Input, Select } from "../../../components/ui";
 import { applyFilter, filterChoices } from "../traitFilter";
 import { detailNeed } from "../fields";
 import { ChoiceSelect } from "../ChoiceSelect";
-import { canTapDots, clear, fieldProblems, keysOf, traitOf, nextCopy, spent, tapDots, togglePoints, type Picks } from "./logic";
+import { canTapDots, clear, fieldProblems, keysOf, traitOf, nextCopy, pastBudgetText, pointsText, spent, tapDots, togglePoints, type Picks } from "./logic";
 import { HouseWording } from "../../../components/TroupeChange";
 import { bookSummary } from "../../../houseWording";
 
@@ -301,10 +301,13 @@ export function PointsList({
   given,
   givenPoints = 0,
   fields = NO_FIELDS,
+  pastBudget = false,
 }: {
   title: string;
   traits: TraitOut[];
   budget: number;
+  /** Picks may go past the budget (flaws, with the Storyteller's OK), giving nothing more. */
+  pastBudget?: boolean;
   picks: Picks;
   onChange: (picks: Picks) => void;
   /** Traits the rules do not allow this character with these picks, and why. */
@@ -342,13 +345,12 @@ export function PointsList({
       <div className={`flex flex-col gap-2 ${STICKY}`}>
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-base text-gold">{title}</h3>
-          <Badge tone={used < budget ? "gold" : "mist"}>
-            {used} of {budget} points
-          </Badge>
+          <Badge tone={used < budget ? "gold" : "mist"}>{pointsText(used, budget, pastBudget)}</Badge>
         </div>
         <div className="h-1.5 overflow-hidden rounded bg-ash">
-          <div className="h-full bg-gold" style={{ width: `${(100 * used) / budget}%` }} />
+          <div className="h-full bg-gold" style={{ width: `${Math.min(100, (100 * used) / budget)}%` }} />
         </div>
+        {pastBudget && <p className="text-xs text-mist">{pastBudgetText(title, budget)}</p>}
       </div>
       <div className="flex flex-wrap gap-2">
         {filterable && <QuickPicks picks={quick} filter={filter} onFilter={setFilter} title={title} />}
@@ -375,7 +377,7 @@ export function PointsList({
           const points = t.fixed_rating ?? 1;
           const chosen = t.name in picks;
           const barred = chosen ? undefined : unavailable[t.name];
-          const affordable = chosen || (used + points <= budget && !barred);
+          const affordable = chosen || ((pastBudget || used + points <= budget) && !barred);
           return (
             <li key={t.name}>
               <label className={`flex items-start gap-2 rounded px-2 py-1.5 text-sm ${chosen ? "bg-ash/60" : "hover:bg-ash/40"} ${affordable ? "" : "opacity-40"}`}>
@@ -384,7 +386,7 @@ export function PointsList({
                   className="mt-1"
                   checked={chosen}
                   disabled={!affordable}
-                  onChange={() => onChange(togglePoints(picks, budget - givenPoints, t.name, points))}
+                  onChange={() => onChange(togglePoints(picks, pastBudget ? Infinity : budget - givenPoints, t.name, points))}
                 />
                 <span className="min-w-0">
                   <span className="text-parchment">{named(t.name)}</span> <span className="text-gold">({points})</span>

@@ -25,6 +25,54 @@ test("Merits & flaws lists every flaw the character can take, without searching 
   await expect(flaws.getByRole("checkbox")).toHaveCount(count);
 });
 
+test("flaws can go past 7 points, paying 7 XP, and the sheet flags them for staff while merits stay at 7 (#636)", async ({ browser }) => {
+  const { page: p } = await person(browser, "flaws-beyond-7");
+  const id = await creatingVampire(p, "Ninefold Woe", "Brujah", [], {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Resources", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  await p.goto(`/characters/${id}/create/merits`);
+  const flaws = p.getByRole("region", { name: "Flaws", exact: true });
+  await expect(flaws).toContainText("Flaws past 7 points need the Storyteller's OK, and give no more XP (p. 85).");
+  for (const name of ["Hunted", "Fragile Bones"]) {
+    const box = flaws.getByRole("checkbox", { name: new RegExp(`^${name}`) });
+    await box.scrollIntoViewIfNeeded();
+    await box.check();
+  }
+  await expect(flaws).toContainText("8 points, 7 XP paid out");
+  // Past 7 points, a flaw can still be ticked.
+  await flaws.getByLabel("Search Flaws").fill("Dark Secret");
+  const darkSecret = flaws.getByRole("checkbox", { name: /^Dark Secret/ });
+  await expect(darkSecret).toBeEnabled();
+  await darkSecret.check();
+  await expect(flaws).toContainText("9 points, 7 XP paid out");
+  // Merits stop at 7: with 6 taken, a 4-point one is greyed out.
+  const merits = p.getByRole("region", { name: "Merits", exact: true });
+  for (const name of ["Rugged", "Iron Will"]) {
+    await merits.getByLabel("Search Merits").fill(name);
+    await merits.getByRole("checkbox", { name: new RegExp(`^${name}`) }).check();
+  }
+  await merits.getByLabel("Search Merits").fill("Additional Common Discipline");
+  await expect(merits.getByRole("checkbox", { name: /^Additional Common Discipline/ })).toBeDisabled();
+  await expect(merits).toContainText("6 of 7 points");
+
+  await p.getByRole("button", { name: "Save and continue" }).click();
+  await expect(p.getByRole("heading", { name: "Review", exact: true })).toBeVisible({ timeout: 15_000 });
+  const summary = p.getByRole("region", { name: "Summary" });
+  await expect(summary).toContainText(/Flaws.*Dark Secret.*\(9 points, 7 XP paid out\)/);
+  await p.getByRole("button", { name: "Finish creation" }).click();
+  await p.getByRole("button", { name: "Yes, finish creation" }).click();
+  await expect(p.getByRole("heading", { name: "Experience" })).toBeVisible();
+
+  // The sheet pays out 7 and flags the 9 for staff, once.
+  await expect(p.getByRole("list", { name: "Limits" }).getByText("Flaws: 7 of 7 XP paid out", { exact: true })).toBeVisible();
+  const problems = p.locator("section").filter({ has: p.getByRole("heading", { name: "Against the rules" }) });
+  await expect(problems.getByRole("listitem").filter({ hasText: "Flaws total" })).toHaveText([
+    "Flaws total 9 points; the limit is 7. Flaws past the limit need the Storyteller's OK, and give no more XP. (p. 85)",
+  ]);
+});
+
 test("Stolen Potential takes away the focus in the attribute it names, and the character finishes without one (#310)", async ({ browser }) => {
   const { page: p } = await person(browser, "stolen-potential");
   // Wits was chosen on Focuses before the flaw is taken.

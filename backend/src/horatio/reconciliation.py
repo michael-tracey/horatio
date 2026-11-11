@@ -469,7 +469,9 @@ def creation_differences(
         )
 
     for pool in target.values():
-        if pool.remaining < 0:
+        # Flaws past the budget are kept, paying nothing past it: the troupe's check
+        # flags them until it accepts the character.
+        if pool.remaining < 0 and not pool.past_budget:
             excess_items(pool.traits, pool, -pool.remaining)
             continue
         before = current.get((pool.category, pool.rating))

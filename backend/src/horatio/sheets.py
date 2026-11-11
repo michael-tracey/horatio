@@ -533,7 +533,27 @@ def check_context(
         domitor_clan=domitor.clan if domitor is not None else None,
         domitor_powers=domitor.powers if domitor is not None else None,
         generation=SPLATS[character.splat].panels.generation,
+        points_limits=points_limits(rules, sheet),
     )
+
+
+def points_limits(rules: TroupeRules, sheet: Sequence[SheetTrait]) -> dict[str, int]:
+    """The most points a sheet may hold in each category that has a limit (merits,
+    flaws): the creation budget of points where the troupe's rules give one, as the
+    wizard has it (horatio.creation.pools_for: the last rule that holds), else the
+    category's own limit."""
+    limits = {
+        key: c.points_limit
+        for key, c in rules.rule_set.categories.items()
+        if c.points_limit is not None
+    }
+    for rule in rules.creation_rules():
+        if rule.points is None or rule.category not in limits:
+            continue
+        if rule.when and not matches(rule.when, sheet, SheetTrait(category="", name="")):
+            continue
+        limits[rule.category] = rule.points
+    return limits
 
 
 def primary_set(character: Character, native: frozenset[str]) -> frozenset[str]:

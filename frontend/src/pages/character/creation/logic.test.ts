@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogueOut } from "../../../api/types";
 import { detailNeed, fieldSkills } from "../fields";
-import { canTapDots, choiceName, choose, clear, move, copyKey, fieldProblems, identityChoices, isRanking, keyed, keysOf, left, nextCopy, picksLeft, seatPicks, tapDots, togglePoints, traitOf } from "./logic";
+import { canTapDots, choiceName, choose, clear, move, copyKey, fieldProblems, identityChoices, isRanking, keyed, keysOf, left, nextCopy, pastBudgetText, picksLeft, pointsText, seatPicks, tapDots, togglePoints, traitOf } from "./logic";
 
 const SKILLS = { 4: 1, 3: 2, 2: 3, 1: 4 };
 const ATTRIBUTES = { 7: 1, 5: 1, 3: 1 };
@@ -160,6 +160,19 @@ describe("togglePoints", () => {
 
   it("removes on a second toggle", () => {
     expect(togglePoints({ "Acute Sense": 1 }, 7, "Acute Sense", 1)).toEqual({});
+  });
+});
+
+describe("pointsText", () => {
+  it("says the points used of the budget", () => {
+    expect(pointsText(3, 7, false)).toBe("3 of 7 points");
+    expect(pointsText(7, 7, true)).toBe("7 of 7 points");
+  });
+
+  it("says flaws past the budget pay out only the budget (p. 85)", () => {
+    expect(pointsText(9, 7, true)).toBe("9 points, 7 XP paid out");
+    expect(pointsText(11, 10, true)).toBe("11 points, 10 XP paid out");
+    expect(pastBudgetText("Flaws", 7)).toBe("Flaws past 7 points need the Storyteller's OK, and give no more XP (p. 85).");
   });
 });
 
