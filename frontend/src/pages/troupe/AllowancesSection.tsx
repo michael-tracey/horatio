@@ -5,10 +5,11 @@ import type { AllowanceOut, AllowancesOut } from "../../api/types";
 import { Explainer } from "../../components/Explainer";
 import { RowEditor, useRowEditor } from "../../components/RowEditor";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
-import { RULES_QUERY, useRulesAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 import { useHouseSplat } from "./HouseSplat";
 import { InfluenceLookback } from "./InfluenceLookback";
 import { RareDisciplinesSetting } from "./RareDisciplinesSetting";
+import { useCatalogue } from "../../catalogue";
 
 type Scheme = AllowanceOut["scheme"];
 
@@ -149,12 +150,8 @@ function AllowanceEditor({ troupeId, splat, data, editing, onClose }: { troupeId
   const [ratings, setRatings] = useState((start?.detail_ratings ?? []).join(", "));
   const [amount, setAmount] = useState(start?.amount.toString() ?? "-1");
   const [minRating, setMinRating] = useState(start?.min_rating.toString() ?? "1");
-  const catalogue = useQuery({
-    queryKey: ["catalogue", splat, null],
-    meta: RULES_QUERY,
-    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat }, query: {} } })),
-    enabled: editing.kind === "new",
-  });
+  // The rule set as written: an allowance is set against the book.
+  const catalogue = useCatalogue(splat, null, { enabled: editing.kind === "new" });
   const categories = (catalogue.data?.categories ?? []).filter((c) => c.rated && !c.derived);
   const traits = (catalogue.data?.traits ?? []).filter((t) => t.category === category).map((t) => t.name);
   const everyone = start !== null && start.trait === null;

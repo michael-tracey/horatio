@@ -6,7 +6,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetOut, TraitOut } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
-import { RULES_QUERY, useAction, usePreferences, useUnavailable } from "../../hooks";
+import { useAction, usePreferences, useUnavailable } from "../../hooks";
 import { PrintAndBadge } from "./Badge";
 import { NpcPicks } from "./NpcPicks";
 import { DomitorCard } from "./Domitor";
@@ -14,8 +14,10 @@ import { FreeChoicesRow } from "./FreeChoices";
 import { ChoiceSelect } from "./ChoiceSelect";
 import { detailNeed, fieldSkills } from "./fields";
 import { useHasDomitor } from "./splats";
+import { rulesTroupe } from "./rules";
 import { CUSTOM_ARCHETYPE, identityChoices } from "./creation/logic";
 import { MORALITY, heldMorality, moralityLabel, moralityOptions, moveMorality, willpowerAndHealth } from "./morality";
+import { useCatalogue } from "../../catalogue";
 
 type Change = { category: string; name: string; detail?: string; rating: number | null };
 /** A held trait's detail changed in place: a merit's choice, a skill's field (#570). */
@@ -54,13 +56,7 @@ export function NpcBuilder({ character }: { character: CharacterOut }) {
   const path = { params: { path: { character_id: character.id } } };
   const sheet = useQuery({ queryKey: ["sheet", character.id, null], queryFn: () => unwrap(api.GET("/api/characters/{character_id}/sheet", path)) });
   const tally = useQuery({ queryKey: ["tally", character.id], queryFn: () => unwrap(api.GET("/api/characters/{character_id}/npc/tally", path)) });
-  const catalogue = useQuery({
-    queryKey: ["catalogue", character.splat, character.owner_troupe_id],
-    meta: RULES_QUERY,
-    queryFn: () =>
-      unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: character.splat }, query: { troupe_id: character.owner_troupe_id ?? undefined } } })),
-    staleTime: 5 * 60_000,
-  });
+  const catalogue = useCatalogue(character.splat, rulesTroupe(character));
   // What the NPC's kind leaves off the Vampire sheet: a mortal has no Generation or Humanity.
   const kinds = useQuery({ queryKey: ["npc-kinds"], queryFn: () => unwrap(api.GET("/api/npc-kinds")), staleTime: Infinity });
   const panels = kinds.data?.find((k) => k.key === character.npc_kind)?.panels;

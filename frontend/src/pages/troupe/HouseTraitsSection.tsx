@@ -10,8 +10,9 @@ import { HouseMark, HouseSummary } from "../../components/HouseMark";
 import { useToast } from "../../components/Toast";
 import { useClanName } from "../../components/ClanNames";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
-import { RULES_QUERY, useAction, useRulesAction } from "../../hooks";
+import { useAction, useRulesAction } from "../../hooks";
 import { EffectsEditor, HousePreview, useHousePreview } from "./HouseEffects";
+import { useCatalogue } from "../../catalogue";
 
 const AVAILABILITY: Record<HouseTraitIn["availability"], string> = {
   staff: "Given by staff only",
@@ -251,11 +252,7 @@ function HouseTraitEditor({
   const [sample, setSample] = useState("");
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft({ ...draft, [key]: value });
   const body: HouseTraitIn = { ...draft, creation_only: draft.availability === "building" && draft.creation_only };
-  const catalogue = useQuery({
-    queryKey: ["catalogue", draft.splat, troupeId],
-    meta: RULES_QUERY,
-    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: draft.splat }, query: { troupe_id: troupeId } } })),
-  });
+  const catalogue = useCatalogue(draft.splat, troupeId);
   const choices = useQuery({
     queryKey: ["house-trait-choices", troupeId, draft.splat],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/house-traits/choices", { params: { path: { troupe_id: troupeId }, query: { splat: draft.splat } } })),

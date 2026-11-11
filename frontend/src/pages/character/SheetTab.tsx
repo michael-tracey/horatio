@@ -30,7 +30,7 @@ import { houseLabels } from "../../houseTraits";
 import { TraitInfo } from "../../components/TraitInfo";
 import { useClanName } from "../../components/ClanNames";
 import { HEALTH_RULE, healthRows } from "../../health";
-import { RULES_QUERY, useAction } from "../../hooks";
+import { useAction } from "../../hooks";
 import { pipsOf } from "../../ratings";
 import { PowerList } from "../play/ReferenceTabs";
 import { useReference } from "../play/useReference";
@@ -70,6 +70,7 @@ import { BuiltTo } from "./BuiltTo";
 import { EmbraceCard } from "./Embrace";
 import { useHasDomitor } from "./splats";
 import { xpTotal } from "./xpTotals";
+import { useCatalogue } from "../../catalogue";
 
 function useSheet(characterId: string) {
   return useQuery({
@@ -80,23 +81,6 @@ function useSheet(characterId: string) {
           params: { path: { character_id: characterId } },
         }),
       ),
-  });
-}
-
-export function useCatalogue(character: CharacterOut) {
-  return useQuery({
-    queryKey: ["catalogue", character.splat, rulesTroupe(character)],
-    meta: RULES_QUERY,
-    queryFn: () =>
-      unwrap(
-        api.GET("/api/rules/{splat}", {
-          params: {
-            path: { splat: character.splat },
-            query: { troupe_id: rulesTroupe(character) },
-          },
-        }),
-      ),
-    staleTime: 5 * 60_000,
   });
 }
 
@@ -204,7 +188,7 @@ export function SheetTab({
   give?: boolean;
 }) {
   const sheet = useSheet(character.id);
-  const catalogue = useCatalogue(character);
+  const catalogue = useCatalogue(character.splat, rulesTroupe(character));
   const creation = useCreation(character);
   const named = useClanName();
   const needsField = fieldSkills(catalogue.data);

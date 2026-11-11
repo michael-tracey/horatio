@@ -7,11 +7,12 @@ import { useClanName } from "../../components/ClanNames";
 import { Explainer } from "../../components/Explainer";
 import { RowEditor, useRowEditor } from "../../components/RowEditor";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
-import { RULES_QUERY, useRulesAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 import { pageText } from "./bookPage";
 import { useHouseSplat } from "./HouseSplat";
 import { FACTS, flat, linesOf, newLine, overlaps, parseTable, previewRatings, priceAt, sameCondition, SCHEMES, TESTS, toCondition } from "./costs";
 import type { Fact, Line, Pricing, Scheme } from "./costs";
+import { useCatalogue } from "../../catalogue";
 
 /** What a price is about, in a few words: "Path of Blood, Assamite clan". */
 function subject(cost: CostOut, category: CostCategoryOut | undefined): string {
@@ -210,12 +211,8 @@ function PriceEditor({ troupeId, splat, data, editing, onClose }: { troupeId: st
   const fixedCondition = replacesBook || startLines === null;
   const [lines, setLines] = useState<Line[]>(startLines ?? []);
   const cat = data.categories.find((c) => c.key === category);
-  const catalogue = useQuery({
-    // The rule set's own catalogue, for the book ratings of merits and flaws and the clans.
-    queryKey: ["catalogue", splat, null],
-    meta: RULES_QUERY,
-    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat }, query: {} } })),
-  });
+  // The rule set's own catalogue, for the book ratings of merits and flaws and the clans.
+  const catalogue = useCatalogue(splat, null);
   const clans = (catalogue.data?.traits ?? []).filter((t) => t.category === "clan").map((t) => t.name);
   const traits = (catalogue.data?.traits ?? []).filter((t) => t.category === category).map((t) => t.name);
   // A merit or flaw held at one rating, by the book: a fixed price here is its value.

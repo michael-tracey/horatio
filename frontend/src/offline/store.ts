@@ -1,6 +1,7 @@
 import { dehydrate, hashKey, hydrate, type DehydratedState, type QueryClient } from "@tanstack/react-query";
 import { api, ApiError, unwrap } from "../api/client";
 import type { CharacterListOut, Me, PlayView, SceneOut } from "../api/types";
+import { catalogueKey, fetchCatalogue } from "../catalogue";
 import { rulesTroupe } from "../pages/character/rules";
 import {
   clearDevice,
@@ -219,7 +220,8 @@ export async function refresh(client: QueryClient, userId: string, shelf: Shelf 
     const troupeId = rulesTroupe(character.value);
     const splat = character.value.splat;
     await settled([
-      fetch(["catalogue", splat, troupeId], () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat }, query: { troupe_id: troupeId } } }))),
+      // Under the key the sheet and the Play View ask for it by (useCatalogue), so they find it.
+      fetch([...catalogueKey(splat, troupeId)], () => fetchCatalogue(splat, troupeId)),
       ...(c.home_troupe_id ? [fetch(["troupe", c.home_troupe_id], () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: c.home_troupe_id! } } })))] : []),
     ]);
   }

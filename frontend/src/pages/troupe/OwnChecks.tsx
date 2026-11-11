@@ -7,7 +7,7 @@ import { Dialog } from "../../components/Dialog";
 import { EmptyState } from "../../components/EmptyState";
 import { RowEditor, useRowEditor } from "../../components/RowEditor";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
-import { RULES_QUERY, useRulesAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 import { TraitList } from "./HouseEffects";
 import {
   COND_TYPES,
@@ -27,6 +27,7 @@ import {
   type Draft,
   type SubjectHow,
 } from "./ownChecks";
+import { useCatalogue } from "../../catalogue";
 
 const sameCheck = (a: OwnCheckOut | "new", b: OwnCheckOut | "new") => (a === "new" || b === "new" ? a === b : a.id === b.id);
 
@@ -200,11 +201,7 @@ function OwnCheckEditor({ troupeId, editing, onClose }: { troupeId: string; edit
     queryKey: ["troupe", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupeId } } })),
   });
-  const catalogue = useQuery({
-    queryKey: ["catalogue", draft.splat, troupeId],
-    meta: RULES_QUERY,
-    queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: draft.splat }, query: { troupe_id: troupeId } } })),
-  });
+  const catalogue = useCatalogue(draft.splat, troupeId);
   const built = toBody(draft);
   const body = "body" in built ? built.body : null;
   const preview = useOwnCheckPreview(troupeId, body, editing === "new" ? null : editing.id);
