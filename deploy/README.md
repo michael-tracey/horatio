@@ -82,6 +82,43 @@ docker logs --tail 100 horatio-api                   # also in Cloud Logging (gc
 docker exec -it horatio-db psql -U horatio horatio
 ```
 
+## Compression and caching
+
+nginx gzips the app's text responses (`nginx-horatio.conf.j2`): JSON, JavaScript,
+CSS, SVG and the manifest, from 1 KB up. The app itself never compresses. A troupe's
+rules catalogue goes from about 590 KB to 67 KB, and the built frontend's scripts
+and styles from 2.8 MB to 0.8 MB. Ubuntu 22.04's nginx has no Brotli module, so it
+is gzip only. To check it, after a deploy:
+
+```bash
+curl -s -o /dev/null -D - -w 'on the wire: %{size_download} bytes\n' \
+  -H 'Accept-Encoding: gzip' https://horatio.lotslarp.org/sw.js
+```
+
+It shows `content-encoding: gzip`. (Use GET, as here: the app answers `curl -I`'s
+HEAD with 405. The rules catalogue needs a signed-in session, so it answers a bare
+curl with a short 401, too small to compress.)
+
+**BREACH**, an attack that reads a secret out of a compressed HTTPS response by
+having the victim's browser make the same request many times with guesses in it,
+needs a response that carries both a secret and something the attacker put there.
+Horatio has none it can use:
+
+- the session token is only ever in a `Set-Cookie` header, which gzip does not touch,
+  and there is no CSRF token: the app relies on the `X-Horatio` header instead;
+- the links with a secret in them (a new password reset link, an NPC's claim link,
+  a calendar link, a Discord invite) are made by POSTs, which another site cannot
+  send with the `X-Horatio` header, and reset and claim links are shown only then;
+- the one GET with a secret, `/api/calendar/links`, holds nothing but the two links;
+- and the session cookie is `SameSite=Lax`, so another site's requests for the API
+  are made signed out.
+
+The built frontend's files under `/assets/` have the build's hash in their names,
+so the app sends them with `Cache-Control: public, max-age=31536000, immutable`.
+`index.html`, the service worker and the other files that keep their names from
+build to build get `no-cache`: the browser checks each time, and nginx answers 304
+when the file has not changed.
+
 ## What is live
 
 **Custodian → System** shows the commit the running image was built from (linked to

@@ -26,6 +26,18 @@ server {
     add_header Strict-Transport-Security "max-age=31536000" always;
 {% endif %}
 
+    # Compress text: the rules catalogue is over half a megabyte of JSON. The app
+    # never compresses, so nginx does, for the API and the built frontend alike.
+    # Safe from BREACH: see deploy/README.md, "Compression". Ubuntu 22.04's nginx
+    # has no Brotli module, so gzip only.
+    gzip on;
+    gzip_types application/json text/css application/javascript text/javascript
+               image/svg+xml application/manifest+json;
+    gzip_min_length 1024;
+    gzip_comp_level 5;
+    gzip_vary on;
+    gzip_proxied any;
+
     location / {
         proxy_pass http://127.0.0.1:{{ api_port }};
         proxy_set_header Host $host;

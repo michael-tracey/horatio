@@ -74,6 +74,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   keep_awake: true,
   play_tab: "tracker",
   text_size: "normal",
+  theme: "dark",
   email_downtime: false,
   email_downtime_reminders: false,
   email_approvals: false,

@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { BookTraitOut, CategoryOut, TraitOut } from "../../api/types";
 import { EmptyState } from "../../components/EmptyState";
 import { Explainer } from "../../components/Explainer";
+import { RowEditor, useRowEditor } from "../../components/RowEditor";
 import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { HouseWording } from "../../components/TroupeChange";
@@ -14,12 +15,14 @@ import { pageText } from "./bookPage";
 import { bookTraits, changeSummary, findTraits, kindChoices, requirementNote, SHOWN } from "./bookTraits";
 import { useHouseSplat } from "./HouseSplat";
 
-type Picked = { category: string; name: string };
+/** The trait whose panel is open, and the row it opened from: a change listed, or a trait found. */
+type Picked = { splat: string; category: string; name: string; from: "changed" | "found" };
+const samePick = (a: Picked, b: Picked) => a.splat === b.splat && a.category === b.category && a.name === b.name && a.from === b.from;
 
 /**
  * Customise › Rules › Book traits: the troupe's own changes to traits from the book.
  * Storytellers search or browse the catalogue, open a trait, and change it in one
- * panel: ban it, with a reason the players see, give it wording of the troupe's
+ * panel, under the row they opened it from: ban it, with a reason the players see, give it wording of the troupe's
  * own, and move a merit or flaw to another category. Those who already hold a banned trait keep it; they are listed here for
  * staff to deal with one by one.
  */
@@ -27,7 +30,10 @@ export function BookTraitsSection({ troupeId, canEdit }: { troupeId: string; can
   const { splat, picker } = useHouseSplat(troupeId);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
-  const [picked, setPicked] = useState<Picked | null>(null);
+  const editor = useRowEditor<Picked>(samePick);
+  // The row the panel was opened from, and where it was in its list: kept there while the panel is
+  // open, though saving moves it (a trait found comes first once changed) or takes it away.
+  const [opened, setOpened] = useState<{ row: BookTraitOut | TraitOut; at: number } | null>(null);
   const catalogue = useQuery({
     queryKey: ["catalogue", splat, troupeId],
     meta: RULES_QUERY,
@@ -44,7 +50,32 @@ export function BookTraitsSection({ troupeId, canEdit }: { troupeId: string; can
   const traits = bookTraits(catalogue.data.traits, categories);
   const found = query.trim() || category ? findTraits(traits, query, category) : [];
   const changed = changes.data.changes.filter((c) => c.splat === splat);
-  const open = picked && traits.find((t) => t.category === picked.category && t.name === picked.name);
+  const pick = (t: { category: string; name: string }, from: Picked["from"]): Picked => ({ splat, category: t.category, name: t.name, from });
+  const openFrom = (from: Picked["from"]) => (editor.open?.from === from && editor.open.splat === splat ? opened : null);
+  const rows = keepInPlace(changed, openFrom("changed") as { row: BookTraitOut; at: number } | null, sameTrait, undone);
+  const shown = keepInPlace(found.slice(0, SHOWN), openFrom("found") as { row: TraitOut; at: number } | null, sameTrait);
+  const toggle = (row: BookTraitOut | TraitOut, at: number, from: Picked["from"], button: HTMLElement) => {
+    setOpened({ row, at });
+    editor.toggle(pick(row, from), button);
+  };
+  const panel = (t: { category: string; name: string }) => {
+    const trait = traits.find((x) => x.category === t.category && x.name === t.name);
+    return (
+      trait && (
+        <RowEditor className="pt-1 pb-3">
+          <TraitPanel
+            troupeId={troupeId}
+            splat={splat}
+            trait={trait}
+            categories={categories}
+            kinds={kindChoices(changes.data.kinds ?? {}, splat, trait.category)}
+            canEdit={canEdit}
+            onClose={editor.close}
+          />
+        </RowEditor>
+      )
+    );
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -60,27 +91,20 @@ export function BookTraitsSection({ troupeId, canEdit }: { troupeId: string; can
         </p>
       </Explainer>
 
-      {open && (
-        <TraitPanel
-          key={`${splat}/${open.category}/${open.name}`}
-          troupeId={troupeId}
-          splat={splat}
-          trait={open}
-          categories={categories}
-          kinds={kindChoices(changes.data.kinds ?? {}, splat, open.category)}
-          canEdit={canEdit}
-          onClose={() => setPicked(null)}
-        />
-      )}
-
       <Card title="Changed in this troupe">
-        {changed.length === 0 ? (
+        {rows.length === 0 ? (
           <EmptyState title="No book traits changed yet.">Every trait plays as the book has it. Find one below to change it.</EmptyState>
         ) : (
           <ul className="divide-y divide-ash">
-            {changed.map((c) => (
-              <ChangeRow key={`${c.category}/${c.name}`} change={c} onOpen={() => setPicked(c)} />
-            ))}
+            {rows.map((c, at) => {
+              const open = editor.isOpen(pick(c, "changed"));
+              return (
+                <li key={`${c.category}/${c.name}`}>
+                  <ChangeRow change={c} open={open} onToggle={(button) => toggle(c, at, "changed", button)} />
+                  {open && panel(c)}
+                </li>
+              );
+            })}
           </ul>
         )}
       </Card>
@@ -114,6 +138,7 @@ export function BookTraitsSection({ troupeId, canEdit }: { troupeId: string; can
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="min-w-0 flex-1"
+            ref={editor.fallback}
           />
           <Select aria-label="Category" value={category} onChange={(e) => setCategory(e.target.value)} className="sm:w-56">
             <option value="">Every category</option>
@@ -130,21 +155,29 @@ export function BookTraitsSection({ troupeId, canEdit }: { troupeId: string; can
           ) : (
             <>
               <ul className="mt-3 divide-y divide-ash" aria-label="Book traits found">
-                {found.slice(0, SHOWN).map((t) => (
-                  <li key={`${t.category}/${t.name}`}>
-                    <button
-                      type="button"
-                      onClick={() => setPicked(t)}
-                      className="flex min-h-10 w-full flex-wrap items-center gap-x-2 py-1.5 text-left text-sm hover:text-gold"
-                    >
-                      <span className="text-parchment">{t.name}</span>
-                      <span className="text-xs text-mist">{categoryName(categories, t.category)}</span>
-                      {t.changed?.banned && <Badge tone="blood">Banned</Badge>}
-                      {t.changed?.wording && <Badge tone="gold">House wording</Badge>}
-                      {t.changed?.kind && <Badge tone="gold">{t.changed.kind}</Badge>}
-                    </button>
-                  </li>
-                ))}
+                {shown.map((t, at) => {
+                  const open = editor.isOpen(pick(t, "found"));
+                  return (
+                    <li key={`${t.category}/${t.name}`}>
+                      <button
+                        type="button"
+                        aria-expanded={open}
+                        onClick={(e) => toggle(t, at, "found", e.currentTarget)}
+                        className={`flex min-h-10 w-full flex-wrap items-center gap-x-2 py-1.5 text-left text-sm hover:text-gold ${open ? "text-gold" : ""}`}
+                      >
+                        <span className={open ? "text-gold" : "text-parchment"}>{t.name}</span>
+                        <span className="text-xs text-mist">{categoryName(categories, t.category)}</span>
+                        {t.changed?.banned && <Badge tone="blood">Banned</Badge>}
+                        {t.changed?.wording && <Badge tone="gold">House wording</Badge>}
+                        {t.changed?.kind && <Badge tone="gold">{t.changed.kind}</Badge>}
+                        <span className="ml-auto text-xs text-mist" aria-hidden="true">
+                          {open ? "Close" : "Open"}
+                        </span>
+                      </button>
+                      {open && panel(t)}
+                    </li>
+                  );
+                })}
               </ul>
               {found.length > SHOWN && <p className="mt-2 text-xs text-mist">Showing {SHOWN} of {found.length}. Type more to narrow it.</p>}
             </>
@@ -156,9 +189,29 @@ export function BookTraitsSection({ troupeId, canEdit }: { troupeId: string; can
 
 const categoryName = (categories: CategoryOut[], key: string) => categories.find((c) => c.key === key)?.name ?? key;
 
-function ChangeRow({ change, onOpen }: { change: BookTraitOut; onOpen: () => void }) {
+const sameTrait = (a: { category: string; name: string }, b: { category: string; name: string }) => a.category === b.category && a.name === b.name;
+
+/** A change saving has undone: the trait plays as the book has it again. */
+const undone = (c: BookTraitOut): BookTraitOut => ({ ...c, banned: false, ban_reason: "", wording: "", kind: null });
+
+/**
+ * A list as it is now, with the row whose panel is open kept where it was when it
+ * opened, so the panel doesn't jump away: saving can move a trait found (a changed
+ * one comes first), or take a change from the list. A row gone from the list comes
+ * back as `gone` makes it, or, with no `gone`, stays gone, and its panel with it.
+ */
+export function keepInPlace<T>(rows: T[], opened: { row: T; at: number } | null, same: (a: T, b: T) => boolean, gone?: (row: T) => T): T[] {
+  if (!opened) return rows;
+  const now = rows.find((r) => same(r, opened.row));
+  if (!now && !gone) return rows;
+  const rest = rows.filter((r) => !same(r, opened.row));
+  const at = Math.min(opened.at, rest.length);
+  return [...rest.slice(0, at), now ?? gone!(opened.row), ...rest.slice(at)];
+}
+
+function ChangeRow({ change, open, onToggle }: { change: BookTraitOut; open: boolean; onToggle: (button: HTMLElement) => void }) {
   return (
-    <li className="flex flex-col gap-1 py-2.5 text-sm sm:flex-row sm:items-center sm:gap-4">
+    <div className="flex flex-col gap-1 py-2.5 text-sm sm:flex-row sm:items-center sm:gap-4">
       <span className="min-w-0 flex-1">
         <span className="text-parchment">{change.name}</span>
         <span className="text-mist">
@@ -171,11 +224,18 @@ function ChangeRow({ change, onOpen }: { change: BookTraitOut; onOpen: () => voi
             {s}
           </span>
         ))}
+        {changeSummary(change).length === 0 && <span className="block text-xs text-mist">No changes now: it plays as the book has it.</span>}
       </span>
-      <Button variant="secondary" className="self-start" onClick={onOpen} aria-label={`Open ${change.name}`}>
-        Open
+      <Button
+        variant="secondary"
+        className="self-start sm:self-center"
+        onClick={(e) => onToggle(e.currentTarget)}
+        aria-expanded={open}
+        aria-label={`${open ? "Close" : "Open"} ${change.name}`}
+      >
+        {open ? "Close" : "Open"}
       </Button>
-    </li>
+    </div>
   );
 }
 
@@ -199,6 +259,7 @@ function TraitPanel({
   onClose: () => void;
 }) {
   const toast = useToast();
+  const titleId = useId();
   const bookKind = trait.changed?.book_kind ?? trait.kind ?? null;
   const saved = {
     banned: trait.changed?.banned ?? false,
@@ -229,15 +290,15 @@ function TraitPanel({
   const body = kinds.length > 0 ? sent : { ...sent, kind: undefined };
   const dirty = (Object.keys(saved) as (keyof typeof saved)[]).some((k) => sent[k] !== saved[k]);
   return (
-    <Card
-      title={trait.name}
-      actions={
-        <Button variant="ghost" onClick={onClose}>
+    <section aria-labelledby={titleId} className="rounded-md border border-gold/50 bg-night/30 p-3 sm:p-4">
+      <header className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h3 id={titleId} className="text-gold">
+          {trait.name}
+        </h3>
+        <Button variant="ghost" className="min-h-8 px-2" onClick={onClose}>
           Close
         </Button>
-      }
-      className="border-gold/50"
-    >
+      </header>
       <p className="text-sm text-mist">
         {categoryName(categories, trait.category)}
         {trait.page_reference && ` · ${pageText(trait.page_reference)}`}
@@ -341,6 +402,6 @@ function TraitPanel({
         </div>
       )}
       <ErrorText error={save.error} />
-    </Card>
+    </section>
   );
 }

@@ -4,6 +4,7 @@ import { api, unwrap } from "../../api/client";
 import type { TeacherRuleIn, TeacherRuleOut } from "../../api/types";
 import { Dialog } from "../../components/Dialog";
 import { EmptyState } from "../../components/EmptyState";
+import { RowEditor, useRowEditor } from "../../components/RowEditor";
 import { Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { RULES_QUERY, useAction } from "../../hooks";
 import { TraitList } from "./HouseEffects";
@@ -15,6 +16,8 @@ function numbers(from: number, to: number): number[] {
   return Array.from({ length: to - from + 1 }, (_, i) => from + i);
 }
 
+const sameRule = (a: TeacherRuleOut | "new", b: TeacherRuleOut | "new") => (a === "new" || b === "new" ? a === b : a.id === b.id);
+
 /**
  * The troupe's teacher rules, under Customise › Rules › Teachers: kinds of trait that
  * need a teacher here beyond discipline dots. None by default, and then nothing
@@ -22,7 +25,8 @@ function numbers(from: number, to: number): number[] {
  * troupe's log, and the players' House rules tab lists them.
  */
 export function TeacherRules({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
-  const [editing, setEditing] = useState<TeacherRuleOut | "new" | null>(null);
+  const editor = useRowEditor<TeacherRuleOut | "new">(sameRule);
+  const editing = editor.open;
   const [removing, setRemoving] = useState<TeacherRuleOut | null>(null);
   const list = useQuery({
     queryKey: ["teacher-rules", troupeId],
@@ -38,7 +42,7 @@ export function TeacherRules({ troupeId, canEdit }: { troupeId: string; canEdit:
       actions={
         canEdit &&
         !editing && (
-          <Button variant="secondary" onClick={() => setEditing("new")}>
+          <Button variant="secondary" ref={editor.fallback} onClick={(e) => editor.toggle("new", e.currentTarget)}>
             Add a rule
           </Button>
         )
@@ -48,10 +52,14 @@ export function TeacherRules({ troupeId, canEdit }: { troupeId: string; canEdit:
         Discipline dots need a teacher by the book. Rules here ask one for other traits too. A player buying a matching trait picks a teacher from the
         troupe's characters who qualify, or names an NPC for you to approve, and the purchase waits on the Approvals tab.
       </p>
-      {editing && <TeacherRuleEditor key={editing === "new" ? "new" : editing.id} troupeId={troupeId} editing={editing} onClose={() => setEditing(null)} />}
+      {editing === "new" && (
+        <RowEditor className="mb-4">
+          <TeacherRuleEditor troupeId={troupeId} editing="new" onClose={editor.close} />
+        </RowEditor>
+      )}
       {list.isPending && <Loading />}
       <ErrorText error={list.error} />
-      {list.data?.length === 0 && !editing && (
+      {list.data?.length === 0 && editing !== "new" && (
         <EmptyState title="No teacher rules.">{canEdit ? "Only discipline dots need a teacher. Add a rule to ask one for more." : "Only discipline dots need a teacher."}</EmptyState>
       )}
       {list.data && list.data.length > 0 && (
@@ -62,7 +70,13 @@ export function TeacherRules({ troupeId, canEdit }: { troupeId: string; canEdit:
                 <span className="min-w-48 flex-1 text-sm text-parchment">{r.text}</span>
                 {canEdit && (
                   <span className="flex shrink-0 flex-wrap items-center gap-2">
-                    <Button variant="secondary" className="min-h-8 px-3" aria-label={`Change: ${r.text}`} onClick={() => setEditing(r)}>
+                    <Button
+                      variant="secondary"
+                      className="min-h-8 px-3"
+                      aria-label={`Change: ${r.text}`}
+                      aria-expanded={editor.isOpen(r)}
+                      onClick={(e) => editor.toggle(r, e.currentTarget)}
+                    >
                       Change
                     </Button>
                     <Button variant="ghost" className="min-h-8 px-2" aria-label={`Remove: ${r.text}`} onClick={() => setRemoving(r)}>
@@ -72,6 +86,11 @@ export function TeacherRules({ troupeId, canEdit }: { troupeId: string; canEdit:
                 )}
               </div>
               {r.problem && <p className="text-xs text-blood-bright">Not applied: {r.problem}</p>}
+              {editor.isOpen(r) && (
+                <RowEditor className="pt-2">
+                  <TeacherRuleEditor troupeId={troupeId} editing={r} onClose={editor.close} />
+                </RowEditor>
+              )}
             </li>
           ))}
         </ul>
@@ -151,7 +170,7 @@ function TeacherRuleEditor({ troupeId, editing, onClose }: { troupeId: string; e
   const title = editing === "new" ? "A new teacher rule" : "Change the teacher rule";
 
   return (
-    <section aria-label={title} className="mb-4 flex flex-col gap-4 rounded-md border border-gold/40 p-3 sm:p-4">
+    <section aria-label={title} className="flex flex-col gap-4 rounded-md border border-gold/40 p-3 sm:p-4">
       <h3 className="text-gold">{title}</h3>
       {unreadable && <p className="text-sm text-blood-bright">The form cannot show this rule's condition. Build it again, or keep it as it is.</p>}
       {!cat && <Loading />}
