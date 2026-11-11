@@ -54,7 +54,7 @@ GROUPS: dict[AuditGroup, tuple[str, tuple[str, ...]]] = {
     AuditGroup.XP: ("XP", ("xp.", "troupe.starting_xp", "troupe.xp_", "downtime.completion_xp")),
     AuditGroup.SHEETS: (
         "Sheets",
-        ("sheet.", "character.", "picture.", "identity.", "retainer.", "embrace."),
+        ("sheet.", "character.", "picture.", "identity.", "retainer.", "embrace.", "bond."),
     ),
     AuditGroup.CREATION: ("Character creation", ("creation.",)),
     AuditGroup.STATUS: ("Status", ("status.", "troupe.status_by", "troupe.status_at_checkin")),
