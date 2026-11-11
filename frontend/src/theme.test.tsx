@@ -100,14 +100,23 @@ describe("the signed-in person's theme", () => {
   });
 });
 
-/** Ultra goth's colours, as index.css has them. */
-function ultraGoth(): Record<string, string> {
+/**
+ * A theme's colours, as index.css has them: its tokens, and the colour a blood
+ * button turns as it is pointed at (`hover:bg-blood-bright`, held darker by a rule).
+ */
+function palette(tokens: RegExp, hover: RegExp): Record<string, string> {
   const css = readFileSync(join(__dirname, "index.css"), "utf8");
-  const block = /html\[data-theme="ultragoth"\] \{([^}]*)\}/.exec(css)![1]!;
+  const block = tokens.exec(css)![1]!;
   const colours = Object.fromEntries([...block.matchAll(/--color-([a-z-]+):\s*(#[0-9a-f]{6})/g)].map((m) => [m[1]!, m[2]!]));
-  colours["blood-hover"] = /\.hover\\:bg-blood-bright:hover[^{]*\{\s*background-color:\s*(#[0-9a-f]{6})/.exec(css)![1]!;
+  colours["blood-hover"] = hover.exec(css)![1]!;
   return colours;
 }
+const pointedAt = (scope: string) => new RegExp(`^${scope}\\.hover\\\\:bg-blood-bright:hover[^{]*\\{\\s*background-color:\\s*(#[0-9a-f]{6})`, "m");
+const THEMES = {
+  Dark: palette(/@theme \{([^}]*)\}/, pointedAt("")),
+  "Ultra goth": palette(/html\[data-theme="ultragoth"\] \{([^}]*)\}/, pointedAt('html\\[data-theme="ultragoth"\\] ')),
+};
+const BAR = { Dark: BAR_COLOUR.dark, "Ultra goth": BAR_COLOUR.ultragoth };
 
 const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 const hex = (c: number[]) => `#${c.map((v) => Math.round(v).toString(16).padStart(2, "0")).join("")}`;
@@ -122,9 +131,9 @@ const contrast = (a: string, b: string) => {
 /** A colour at `alpha` over another, as bg-gold/20 shows on dusk. */
 const over = (top: string, alpha: number, under: string) => hex(rgb(top).map((v, i) => v * alpha + rgb(under)[i]! * (1 - alpha)));
 
-describe("Ultra goth's colours", () => {
-  const c = ultraGoth();
+describe.each(Object.entries(THEMES))("%s's colours", (theme, c) => {
   const grounds = { night: c.night!, dusk: c.dusk!, ash: c.ash! };
+  const nightAndDusk = { night: c.night!, dusk: c.dusk! };
 
   it("has every colour Dark has", () => {
     expect(Object.keys(c).sort()).toEqual(["ash", "blood", "blood-bright", "blood-hover", "dusk", "gold", "line", "mist", "night", "parchment"]);
@@ -133,28 +142,36 @@ describe("Ultra goth's colours", () => {
   it("keeps text at 4.5:1 on every background it sits on", () => {
     for (const text of ["parchment", "mist", "gold", "blood-bright"])
       for (const [name, ground] of Object.entries(grounds)) expect(contrast(c[text]!, ground), `${text} on ${name}`).toBeGreaterThanOrEqual(4.5);
-    for (const ground of [c.night!, c.dusk!]) {
-      // A chosen button, a note, a warning.
-      expect(contrast(c.gold!, over(c.gold!, 0.2, ground))).toBeGreaterThanOrEqual(4.5);
-      expect(contrast(c.parchment!, over(c.gold!, 0.1, ground))).toBeGreaterThanOrEqual(4.5);
-      expect(contrast(c["blood-bright"]!, over(c.blood!, 0.1, ground))).toBeGreaterThanOrEqual(4.5);
-      expect(contrast(c.parchment!, over(c.blood!, 0.15, ground))).toBeGreaterThanOrEqual(4.5);
+    for (const [name, ground] of Object.entries(nightAndDusk)) {
+      // A chosen button, a note, a warning, a refusal in its box.
+      expect(contrast(c.gold!, over(c.gold!, 0.2, ground)), `gold on gold/20 over ${name}`).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(c.parchment!, over(c.gold!, 0.1, ground)), `parchment on gold/10 over ${name}`).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(c["blood-bright"]!, over(c.blood!, 0.1, ground)), `blood-bright on blood/10 over ${name}`).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(c["blood-bright"]!, over(c.blood!, 0.15, ground)), `blood-bright on blood/15 over ${name}`).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(c.parchment!, over(c.blood!, 0.15, ground)), `parchment on blood/15 over ${name}`).toBeGreaterThanOrEqual(4.5);
     }
+    // A removed line in a backstory's changes.
+    expect(contrast(c.mist!, over(c.blood!, 0.2, c.dusk!)), "mist on blood/20 over dusk").toBeGreaterThanOrEqual(4.5);
     // A button on blood, and pointed at.
-    expect(contrast(c.parchment!, c.blood!)).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(c.parchment!, c["blood-hover"]!)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(c.parchment!, c.blood!), "parchment on blood").toBeGreaterThanOrEqual(4.5);
+    expect(contrast(c.parchment!, c["blood-hover"]!), "parchment on a blood button pointed at").toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("turns a blood button darker as it is pointed at, not brighter", () => {
+    expect(luminance(c["blood-hover"]!)).toBeLessThan(luminance(c.blood!));
   });
 
   it("keeps lines and filled boxes at 3:1 on night and dusk", () => {
-    for (const ground of [c.night!, c.dusk!]) {
-      expect(contrast(c.line!, ground)).toBeGreaterThanOrEqual(3);
-      expect(contrast(c.blood!, ground)).toBeGreaterThanOrEqual(3);
-      expect(contrast(c.mist!, ground)).toBeGreaterThanOrEqual(3);
-      expect(contrast(over(c.gold!, 0.7, ground), ground)).toBeGreaterThanOrEqual(3);
+    for (const [name, ground] of Object.entries(nightAndDusk)) {
+      expect(contrast(c.line!, ground), `line on ${name}`).toBeGreaterThanOrEqual(3);
+      expect(contrast(c.blood!, ground), `a Blood box on ${name}`).toBeGreaterThanOrEqual(3);
+      expect(contrast(c.mist!, ground), `a mist box on ${name}`).toBeGreaterThanOrEqual(3);
+      expect(contrast(over(c.gold!, 0.7, ground), ground), `a gold/70 box on ${name}`).toBeGreaterThanOrEqual(3);
+      expect(contrast(c.gold!, ground), `the focus ring on ${name}`).toBeGreaterThanOrEqual(3);
     }
   });
 
   it("paints the browser's bar in its night", () => {
-    expect(BAR_COLOUR.ultragoth).toBe(c.night);
+    expect(BAR[theme as keyof typeof BAR]).toBe(c.night);
   });
 });
