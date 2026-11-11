@@ -12,6 +12,7 @@ from sqlalchemy import Select, select
 
 from horatio import (
     backstories,
+    bonds,
     character_filter,
     npc_gifts,
     pictures,
@@ -848,6 +849,15 @@ MESSAGES: dict[str, str] = {
     "nomination.published": "{actor} published {cycle}'s Player Nominations ({count}).",
     "nomination.published_more": "{actor} published {count} more of {cycle}'s Player Nominations.",
     "house.remembrances": "{actor} switched Remembrances {setting}.",
+    "house.blood_bonds": "{actor} set Blood bonds to {setting}.",
+    "bond.drink": "{actor} recorded {character} drinking {regnant}'s blood on {night}, {source}:"
+    " {level}{again}.",
+    "bond.entered": "{actor} entered {character}'s bond to {regnant}, at {level} from {night}:"
+    " {reason}",
+    "bond.wiped": "{character}'s lesser bond to {regnant} was wiped away by the full bond to"
+    " {full}.",
+    "bond.broken": "{actor} broke {character}'s bond to {regnant}: {reason}",
+    "bond.known": "{actor} marked {character}'s bond to {regnant} {known} to the regnant.",
     "remembrance.opened": "{actor} opened remembrances for {character}, asked in {cycle}.",
     "remembrance.asked": "{actor} asked for remembrances of {character}.",
     "remembrance.removed": "{actor} removed a memory of {remembered} from {cycle}{because}:"
@@ -939,7 +949,7 @@ def log(
     query = (
         select(AuditEvent, User.display_name)
         .outerjoin(User, AuditEvent.actor_id == User.id)
-        .where(AuditEvent.troupe_id == troupe_id)
+        .where(AuditEvent.troupe_id == troupe_id, ~bonds.hidden_events())
         .order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc())
         .limit(min(max(limit, 1), 500))
     )

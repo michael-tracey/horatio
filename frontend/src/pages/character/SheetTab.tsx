@@ -49,6 +49,7 @@ import { FreeChoicesRow } from "./FreeChoices";
 import { GivePanel } from "./GivePanel";
 import { HouseTraitsCard } from "./HouseTraitsCard";
 import { HeldLocationsCard } from "./HeldLocationsCard";
+import { BondsCard } from "./BondsCard";
 import { LocationsCard } from "./LocationsCard";
 import { rulesTroupe } from "./rules";
 import { fieldSkills } from "./fields";
@@ -718,6 +719,7 @@ export function SheetTab({
         {!mine && <HouseTraitsCard characterId={character.id} sheet={s} />}
         {!mine && <LocationsCard characterId={character.id} />}
         <HeldLocationsCard characterId={character.id} mine={mine} />
+        <BondsCard characterId={character.id} name={character.name} mine={mine} />
         {(character.creation_complete || !mine) && (
           <TroupesCard character={character} sheet={s} mine={mine} />
         )}

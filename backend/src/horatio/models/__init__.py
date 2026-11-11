@@ -15,6 +15,7 @@ from horatio.models.backstories import (
     BackstoryQuestionSet,
 )
 from horatio.models.base import Base
+from horatio.models.bonds import BloodBond, BondEntry
 from horatio.models.characters import (
     AppliedHouseTrait,
     Character,
@@ -123,6 +124,8 @@ from horatio.models.yorick_imports import YorickImport
 __all__ = [
     "WrittenRule",
     "Backstory",
+    "BloodBond",
+    "BondEntry",
     "BackstoryAnswer",
     "BackstoryFeedback",
     "BackstoryQuestion",

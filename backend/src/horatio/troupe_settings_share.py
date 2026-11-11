@@ -650,6 +650,20 @@ SETTINGS: dict[str, Setting] = {
             ),
         ),
         Setting("items_expire", "at_game", "Items can expire", bool, on_off),
+        Setting(
+            "blood_bonds",
+            "at_game",
+            "Blood bonds",
+            Literal["off", "staff", "players_report", "players_manage"],
+            chosen(
+                {
+                    "off": "Off",
+                    "staff": "Staff manages",
+                    "players_report": "Players report and staff approves",
+                    "players_manage": "Players manage",
+                }
+            ),
+        ),
         Setting("player_nominations", "downtimes", "Player Nominations", bool, on_off),
         Setting("remembrances", "downtimes", "Remembrances", bool, on_off),
         Setting(
@@ -808,6 +822,7 @@ NOT_EXPORTED_TABLES: dict[str, str] = {
     "backstories": PLAY,
     "backstory_feedback": PLAY,
     "backstory_question_sets": "backstory question sets aren't carried",
+    "blood_bonds": PLAY,
     "calendar_feeds": "people's own calendar links",
     "character_titles": PLAY,
     "characters": PLAY,
@@ -2284,6 +2299,7 @@ def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, Setti
             "starting_blood",
             "diablerie_flaws",
             "items_expire",
+            "blood_bonds",
             "player_nominations",
             "remembrances",
             "assamite_name",

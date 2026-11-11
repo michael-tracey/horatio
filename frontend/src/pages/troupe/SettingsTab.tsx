@@ -6,6 +6,7 @@ import type { TroupeOut } from "../../api/types";
 import { Card, ErrorText, Loading } from "../../components/ui";
 import { useAction, useRulesAction } from "../../hooks";
 import { BadgeSetting } from "./BadgeSetting";
+import { BloodBondsSetting } from "./BloodBondsSetting";
 import { ClanNamesSetting } from "./ClanNamesSetting";
 import { DiablerieFlaws } from "./DiablerieFlaws";
 import { FeedingSetting } from "./FeedingSetting";
@@ -66,6 +67,7 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
         <StartingBlood troupeId={troupe.id} canEdit={canEdit} />
         <DiablerieFlaws troupeId={troupe.id} canEdit={canEdit} />
         <ItemExpirySetting troupe={troupe} canEdit={canEdit} />
+        <BloodBondsSetting troupe={troupe} canEdit={canEdit} />
       </Group>
       <Group title="Downtimes">
         <NominationsSetting troupe={troupe} canEdit={canEdit} />
