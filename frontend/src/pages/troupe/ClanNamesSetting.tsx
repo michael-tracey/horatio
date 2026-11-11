@@ -3,7 +3,7 @@ import { api, unwrap } from "../../api/client";
 import type { ClanName } from "../../clanNames";
 import { useToast } from "../../components/Toast";
 import { Card, ErrorText } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 
 const NAMES: { value: ClanName; meaning: string }[] = [
   { value: "Banu Haqim", meaning: "The clan's name in later World of Darkness books: Banu Haqim: Vizier, Kiss of the Asp (Banu Haqim)." },
@@ -24,7 +24,7 @@ export function ClanNamesSetting({ troupeId, canEdit }: { troupeId: string; canE
   const path = { params: { path: { troupe_id: troupeId } } };
   const troupe = useQuery({ queryKey: ["troupe", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", path)) });
   const toast = useToast();
-  const save = useAction(async (assamite: ClanName) => {
+  const save = useRulesAction(async (assamite: ClanName) => {
     await unwrap(api.PUT("/api/troupes/{troupe_id}/clan-names", { ...path, body: { assamite } }));
     toast({ message: clanNamesChangeText(assamite) });
   });

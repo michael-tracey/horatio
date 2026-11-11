@@ -1,4 +1,4 @@
-import { partialMatchKey, useIsMutating, useMutation, useQueries, useQuery, useQueryClient, type Query, type QueryKey } from "@tanstack/react-query";
+import { hashKey, partialMatchKey, useIsMutating, useMutation, useQueries, useQuery, useQueryClient, type Query, type QueryKey } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { api, ApiError, unwrap } from "./api/client";
 import type { Me, Preferences } from "./api/types";
@@ -126,6 +126,11 @@ export function useSetPreferences() {
   });
 }
 
+/** Marks a query of a troupe's rules (the catalogue, `/api/rules/{splat}`): a change
+ * made in the app (useAction) asks it again only if it says it changes them (`rules`). A
+ * trait bought or picked can't, and the catalogue is the biggest answer there is (#638). */
+export const RULES_QUERY = { rules: true } as const;
+
 /**
  * A change that, when it succeeds, refreshes everything on screen. Horatio's
  * data is small and interlinked (a purchase changes the sheet, the XP, the
@@ -134,8 +139,17 @@ export function useSetPreferences() {
  * `first` names the queries that show the change itself (the sheet, after Spend
  * XP). They are asked again before the rest, on their own: the API is one process,
  * and an answer asked for alongside twenty others waits behind all of them.
+ *
+ * But for the rules (RULES_QUERY): those are asked again only by a change that says
+ * it changes them, with `rules`: one to a troupe's house rules or settings, or to which
+ * troupe's rules a character plays by. And `answered` names queries the change's own
+ * answer has already put right (the sheet a trait change sends back): not asked again.
  */
-export function useAction<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>, first: QueryKey[] = []) {
+export function useAction<TArgs, TResult>(
+  fn: (args: TArgs) => Promise<TResult>,
+  first: QueryKey[] = [],
+  { rules = false, answered = [] }: { rules?: boolean; answered?: QueryKey[] } = {},
+) {
   const client = useQueryClient();
   return useMutation({
     mutationFn: fn,
@@ -144,7 +158,8 @@ export function useAction<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>,
       // keeps the request it started before this change, and shows stale data. One
       // keyed by the sheet it is for (`of` in useUnavailable) is asked afresh under a
       // new key once the sheet changes: asking again under the old one is wasted.
-      const changed = (q: Query) => !q.meta?.bySheet;
+      const settled = new Set(answered.map((key) => hashKey(key)));
+      const changed = (q: Query) => !q.meta?.bySheet && (rules || !q.meta?.rules) && !settled.has(q.queryHash);
       const leading = (q: Query) => first.some((key) => partialMatchKey(q.queryKey, key));
       if (first.length) await client.invalidateQueries({ predicate: (q) => changed(q) && leading(q) });
       const rest = { predicate: (q: Query) => changed(q) && !leading(q) };
@@ -152,6 +167,12 @@ export function useAction<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>,
       await client.invalidateQueries(rest);
     },
   });
+}
+
+/** A change to the rules (useAction with `rules`): a troupe's house rules or settings,
+ * or which troupe's rules a character plays by. The catalogue is asked again with the rest. */
+export function useRulesAction<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>, first: QueryKey[] = []) {
+  return useAction(fn, first, { rules: true });
 }
 
 /**

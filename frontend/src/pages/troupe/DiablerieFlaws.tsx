@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import { Button, Card, ErrorText } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 
 type Setting = "leave" | "remove" | "keep_xp";
 
@@ -29,7 +29,7 @@ export function DiablerieFlaws({ troupeId, canEdit }: { troupeId: string; canEdi
   const path = { params: { path: { troupe_id: troupeId } } };
   const troupe = useQuery({ queryKey: ["troupe", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", path)) });
   const [editing, setEditing] = useState<Setting | null>(null);
-  const save = useAction(async (setting: Setting) => {
+  const save = useRulesAction(async (setting: Setting) => {
     await unwrap(api.PUT("/api/troupes/{troupe_id}/diablerie-flaws", { ...path, body: { setting } }));
     setEditing(null);
   });

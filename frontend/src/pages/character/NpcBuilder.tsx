@@ -6,7 +6,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CatalogueOut, CharacterOut, SheetOut, TraitOut } from "../../api/types";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
-import { useAction, usePreferences, useUnavailable } from "../../hooks";
+import { RULES_QUERY, useAction, usePreferences, useUnavailable } from "../../hooks";
 import { PrintAndBadge } from "./Badge";
 import { NpcPicks } from "./NpcPicks";
 import { DomitorCard } from "./Domitor";
@@ -56,6 +56,7 @@ export function NpcBuilder({ character }: { character: CharacterOut }) {
   const tally = useQuery({ queryKey: ["tally", character.id], queryFn: () => unwrap(api.GET("/api/characters/{character_id}/npc/tally", path)) });
   const catalogue = useQuery({
     queryKey: ["catalogue", character.splat, character.owner_troupe_id],
+    meta: RULES_QUERY,
     queryFn: () =>
       unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: character.splat }, query: { troupe_id: character.owner_troupe_id ?? undefined } } })),
     staleTime: 5 * 60_000,

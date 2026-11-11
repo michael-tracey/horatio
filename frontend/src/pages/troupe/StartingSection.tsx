@@ -5,7 +5,7 @@ import { api, unwrap } from "../../api/client";
 import type { StartingCategoryOut, StartingRule } from "../../api/types";
 import { Explainer } from "../../components/Explainer";
 import { Badge, Button, Card, ErrorText, Input, Loading } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useAction, useRulesAction } from "../../hooks";
 import { ClanRarity } from "./ClanRarity";
 import { DefaultBloodlines } from "./DefaultBloodlines";
 import { useHouseSplat } from "./HouseSplat";
@@ -141,7 +141,7 @@ export function StartingBlood({ troupeId, canEdit }: { troupeId: string; canEdit
   const [editing, setEditing] = useState(false);
   const [full, setFull] = useState(true);
   const [blood, setBlood] = useState(5);
-  const save = useAction(async () => {
+  const save = useRulesAction(async () => {
     await unwrap(api.PUT("/api/troupes/{troupe_id}/starting-blood", { ...path, body: { blood: full ? null : blood } }));
     setEditing(false);
   });
@@ -214,7 +214,7 @@ export function StartingBlood({ troupeId, canEdit }: { troupeId: string; canEdit
 function CategoryRow({ troupeId, splat, category, canEdit }: { troupeId: string; splat: string; category: StartingCategoryOut; canEdit: boolean }) {
   const [editing, setEditing] = useState(false);
   const path = { params: { path: { troupe_id: troupeId, category: category.key }, query: { splat } } };
-  const reset = useAction(() => unwrap(api.DELETE("/api/troupes/{troupe_id}/creation/{category}", path)));
+  const reset = useRulesAction(() => unwrap(api.DELETE("/api/troupes/{troupe_id}/creation/{category}", path)));
   return (
     <li className="py-2.5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -258,7 +258,7 @@ function StartingEditor({ troupeId, splat, category, onClose }: { troupeId: stri
     })),
   );
   const update = (i: number, change: Partial<Row>) => setRows(rows.map((r, j) => (j === i ? { ...r, ...change } : r)));
-  const save = useAction(async () => {
+  const save = useRulesAction(async () => {
     await unwrap(
       api.PUT("/api/troupes/{troupe_id}/creation/{category}", {
         params: { path: { troupe_id: troupeId, category: category.key }, query: { splat } },

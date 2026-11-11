@@ -6,7 +6,7 @@ import type { components } from "../../api/schema";
 import { Dialog } from "../../components/Dialog";
 import { AtHandle, PersonPicker } from "../../components/PersonPicker";
 import { Button, Empty, ErrorText, Field, Loading, Textarea } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 import { roleLabel } from "../troupe/roles";
 
 type MovePreview = components["schemas"]["MovePreview"];
@@ -36,7 +36,7 @@ export function MoveCharacter({
   const review = useMutation({
     mutationFn: () => unwrap(api.GET("/api/characters/{character_id}/move", { params: { path: { character_id: characterId }, query: { handle } } })),
   });
-  const move = useAction(async () => {
+  const move = useRulesAction(async () => {
     await unwrap(api.POST("/api/characters/{character_id}/move", { params: { path: { character_id: characterId } }, body: { handle, reason } }));
     onDone();
   });

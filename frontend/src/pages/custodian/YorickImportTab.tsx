@@ -5,7 +5,7 @@ import { api, unwrap } from "../../api/client";
 import { Dialog } from "../../components/Dialog";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, Select } from "../../components/ui";
 import { useDates } from "../../dates";
-import { useAction } from "../../hooks";
+import { useAction, useRulesAction } from "../../hooks";
 import { manualLink } from "../../manualLink";
 import { categoryWord, OUTCOMES, unmatchedLines, type ReportCharacter, type UnmatchedLine, type YorickImport, type YorickReport } from "./yorickImport";
 
@@ -569,7 +569,7 @@ function NamesCard({ state }: { state: YorickImport }) {
 function ImportCard({ state }: { state: YorickImport }) {
   const [confirming, setConfirming] = useState(false);
   const [withoutBackup, setWithoutBackup] = useState(false);
-  const run = useAction(() =>
+  const run = useRulesAction(() =>
     unwrap(api.POST("/api/yorick-imports/{troupe_id}/import", { params: { path: { troupe_id: state.troupe_id } }, body: { without_backup: withoutBackup } })),
   );
   const blocked = state.cannot_import ?? (!state.backups_available && !withoutBackup ? "Backups are not set up here: tick to go ahead without one." : null);

@@ -30,7 +30,7 @@ import { houseLabels } from "../../houseTraits";
 import { TraitInfo } from "../../components/TraitInfo";
 import { useClanName } from "../../components/ClanNames";
 import { HEALTH_RULE, healthRows } from "../../health";
-import { useAction } from "../../hooks";
+import { RULES_QUERY, useAction } from "../../hooks";
 import { pipsOf } from "../../ratings";
 import { PowerList } from "../play/ReferenceTabs";
 import { useReference } from "../play/useReference";
@@ -86,6 +86,7 @@ function useSheet(characterId: string) {
 export function useCatalogue(character: CharacterOut) {
   return useQuery({
     queryKey: ["catalogue", character.splat, rulesTroupe(character)],
+    meta: RULES_QUERY,
     queryFn: () =>
       unwrap(
         api.GET("/api/rules/{splat}", {

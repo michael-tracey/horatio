@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { api, unwrap } from "../../../api/client";
 import type { CatalogueOut, CharacterOut, ClanMeritOut } from "../../../api/types";
 import { useClanName } from "../../../components/ClanNames";
@@ -20,6 +21,8 @@ export function ClanMerits({ character, merits, catalogue }: { character: Charac
     ),
   );
   const named = useClanName();
+  // The choice made shows at once, while it is saved and the page read again (#638).
+  const [tapped, setTapped] = useState<{ name: string; detail: string } | null>(null);
   if (!merits.length) return null;
   return (
     <section aria-label="From the clan" className="flex flex-col gap-1">
@@ -37,9 +40,13 @@ export function ClanMerits({ character, merits, catalogue }: { character: Charac
                   <Select
                     aria-label={`${m.name}: which?`}
                     className="mt-1 h-8 w-auto py-0"
-                    value={m.detail}
+                    value={tapped?.name === m.name ? tapped.detail : m.detail}
                     disabled={choose.isPending}
-                    onChange={(e) => choose.mutate({ name: m.name, detail: e.target.value })}
+                    onChange={(e) => {
+                      const picked = { name: m.name, detail: e.target.value };
+                      setTapped(picked);
+                      choose.mutate(picked, { onSettled: () => setTapped(null) });
+                    }}
                   >
                     <option value="">Which?</option>
                     {choices.map((c) => (

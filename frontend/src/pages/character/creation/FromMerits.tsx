@@ -88,6 +88,8 @@ function FromBudget({
   const refusals = useRefusals(character.id, pool.category).data ?? {};
   // A choice the merit asks for (Bonds of Stolen Vitae: which discipline), before it is taken.
   const [choices, setChoices] = useState<Record<string, string>>({});
+  // The one switched shows so at once, while it is saved and the page read again (#638).
+  const [tapped, setTapped] = useState<{ name: string; on: boolean } | null>(null);
   const held = (name: string) => sheet.traits.find((t) => t.category === pool.category && t.name === name && (t.rating ?? 0) > 0);
   const change = useAction(async ({ trait, on }: { trait: TraitOut; on: boolean }) => {
     const path = { params: { path: { character_id: character.id } } };
@@ -138,9 +140,12 @@ function FromBudget({
                   type="checkbox"
                   role="switch"
                   className="mt-1"
-                  checked={!!mine}
+                  checked={tapped?.name === t.name ? tapped.on : !!mine}
                   disabled={change.isPending || (!mine && (!!refused || short || unchosen))}
-                  onChange={(e) => change.mutate({ trait: t, on: e.target.checked })}
+                  onChange={(e) => {
+                    setTapped({ name: t.name, on: e.target.checked });
+                    change.mutate({ trait: t, on: e.target.checked }, { onSettled: () => setTapped(null) });
+                  }}
                   aria-describedby={t.description ? `${id}-about` : undefined}
                 />
                 <div className="min-w-0">

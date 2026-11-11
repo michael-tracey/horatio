@@ -4,7 +4,7 @@ import { api, unwrap } from "../../api/client";
 import type { ClanRarityOut } from "../../api/types";
 import { useClanName } from "../../components/ClanNames";
 import { Button, Card, ErrorText, Loading, Select } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 
 const RARITIES = ["common", "uncommon", "rare", "restricted"] as const;
 
@@ -35,7 +35,7 @@ export function ClanRarity({ troupeId, canEdit }: { troupeId: string; canEdit: b
   const rarity = useQuery({ queryKey: ["clan-rarity", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/clan-rarity", path)) });
   const [editing, setEditing] = useState<Record<string, string> | null>(null);
   const named = useClanName();
-  const save = useAction(async (rarities: Record<string, string>) => {
+  const save = useRulesAction(async (rarities: Record<string, string>) => {
     await unwrap(api.PUT("/api/troupes/{troupe_id}/clan-rarity", { ...path, body: { rarities: rarities as Record<string, (typeof RARITIES)[number]> } }));
     setEditing(null);
   });

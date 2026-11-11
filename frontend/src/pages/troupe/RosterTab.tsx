@@ -21,6 +21,7 @@ import { FORM_NAMES, filterNpcs, kindsIn, type NpcFilter, type NpcForm } from ".
 import { ageRank, clanText, nextSort, showOf, shows, sortRows, type Show, type Sort } from "./roster";
 import { StaffActions, TitlePill, useStaffing } from "./StaffActions";
 import type { Staffing } from "./staffActions";
+import { RULES_QUERY } from "../../hooks";
 
 /** What the list is called, in its count, for each choice of Show. */
 const SHOW_NAMES: Record<Show, [string, string]> = {
@@ -43,6 +44,7 @@ export function RosterTab({ troupeId, canEmail = false }: { troupeId: string; ca
   const roster = useQuery({ queryKey: ["roster", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/characters", path)) });
   const catalogue = useQuery({
     queryKey: ["catalogue", "vampire", troupeId],
+    meta: RULES_QUERY,
     queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: "vampire" }, query: { troupe_id: troupeId } } })),
     staleTime: 5 * 60_000,
   });

@@ -35,6 +35,8 @@ export function InClanPicker({ character, sheet, catalogue }: { character: Chara
   const refusals = refusing.data;
   const refused = refusals ?? {};
   const [wanted, setWanted] = useState<string | null>(null);
+  // The one ticked or unticked shows so at once, while it is saved and the page read again (#638).
+  const [tapped, setTapped] = useState<{ name: string; on: boolean } | null>(null);
   const path = { params: { path: { character_id: character.id } } };
   const toggle = useAction((body: { name: string; on: boolean }) =>
     unwrap(
@@ -94,7 +96,7 @@ export function InClanPicker({ character, sheet, catalogue }: { character: Chara
       <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
         {options.map((name) => {
           const from = given.get(name);
-          const held = chosen.includes(name) || !!from;
+          const held = tapped?.name === name ? tapped.on : chosen.includes(name) || !!from;
           return (
             <label key={name} className="flex items-center gap-2 text-sm">
               <input
@@ -102,10 +104,11 @@ export function InClanPicker({ character, sheet, catalogue }: { character: Chara
                 checked={held}
                 disabled={busy || !!from}
                 onChange={(e) => {
-                  if (!e.target.checked) return toggle.mutate({ name, on: false });
-                  if (whenTapped(name, refused) === "swap") return setWanted(name);
-                  setWanted(null);
-                  toggle.mutate({ name, on: true });
+                  const on = e.target.checked;
+                  if (on && whenTapped(name, refused) === "swap") return setWanted(name);
+                  if (on) setWanted(null);
+                  setTapped({ name, on });
+                  toggle.mutate({ name, on }, { onSettled: () => setTapped(null) });
                 }}
               />
               <span>

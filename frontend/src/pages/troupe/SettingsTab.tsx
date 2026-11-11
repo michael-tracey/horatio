@@ -4,7 +4,7 @@ import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { TroupeOut } from "../../api/types";
 import { Card, ErrorText, Loading } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { RULES_QUERY, useAction, useRulesAction } from "../../hooks";
 import { BadgeSetting } from "./BadgeSetting";
 import { ClanNamesSetting } from "./ClanNamesSetting";
 import { DiablerieFlaws } from "./DiablerieFlaws";
@@ -116,11 +116,12 @@ export function sectsText(allowed: string[]) {
 function SectsCard({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
   const catalogue = useQuery({
     queryKey: ["catalogue", "vampire", null],
+    meta: RULES_QUERY,
     queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: "vampire" }, query: {} } })),
     staleTime: 5 * 60_000,
     enabled: canEdit,
   });
-  const save = useAction((allowed_sects: string[]) =>
+  const save = useRulesAction((allowed_sects: string[]) =>
     unwrap(api.PATCH("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupe.id } }, body: { allowed_sects } })),
   );
   const allowed = troupe.allowed_sects;

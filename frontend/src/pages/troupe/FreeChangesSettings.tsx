@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import { Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { RULES_QUERY, useAction } from "../../hooks";
 
 type Kind = "none" | "date" | "games";
 type Excluded = { category: string; name: string };
@@ -109,6 +109,7 @@ function FreeChangesForm({
 }) {
   const catalogue = useQuery({
     queryKey: ["catalogue", "vampire", null],
+    meta: RULES_QUERY,
     queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: "vampire" }, query: {} } })),
     staleTime: 5 * 60_000,
   });

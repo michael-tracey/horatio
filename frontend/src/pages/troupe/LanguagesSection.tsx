@@ -5,7 +5,7 @@ import { api, unwrap } from "../../api/client";
 import type { LanguagesOut } from "../../api/types";
 import { useToast } from "../../components/Toast";
 import { Button, Card, ErrorText, Input, Loading } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 import { chartFor, LANGUAGE_MODES, type LanguageMode, ratingsOf, readFigures, startingFigures } from "./languages";
 
 type Choice = { mode: LanguageMode; custom: number[] | null; natural_doubles: boolean };
@@ -20,7 +20,7 @@ export function LanguagesSection({ troupeId, canEdit }: { troupeId: string; canE
   const path = { params: { path: { troupe_id: troupeId } } };
   const toast = useToast();
   const languages = useQuery({ queryKey: ["languages", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/languages", path)) });
-  const save = useAction((body: Choice) => unwrap(api.PUT("/api/troupes/{troupe_id}/languages", { ...path, body })));
+  const save = useRulesAction((body: Choice) => unwrap(api.PUT("/api/troupes/{troupe_id}/languages", { ...path, body })));
   if (languages.isPending) return <Loading />;
   if (languages.error) return <ErrorText error={languages.error} />;
   return (
