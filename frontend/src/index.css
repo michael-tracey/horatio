@@ -11,11 +11,44 @@
   --color-line: #756a7d;
   --color-mist: #9b8fa3;
   --color-parchment: #ede4d3;
-  --color-blood: #a3253a;
-  --color-blood-bright: #c8384f;
+  /* Blood fills buttons, Blood boxes and red borders: at least 3:1 on night
+     (3.30) and dusk (3.03), with parchment on it still 4.52:1. Blood-bright is
+     red text, at least 4.5:1 on night (5.81), dusk (5.33) and ash (4.58).
+     theme.test.tsx checks each pair (#650). */
+  --color-blood: #c02c44;
+  --color-blood-bright: #e96278;
   --color-gold: #c9a24a;
   --font-display: "Cinzel", "Georgia", serif;
   --font-sans: "Inter", system-ui, sans-serif;
+}
+
+/* Ultra goth (#635): deep red on matte black, chosen in Settings › Appearance.
+   The same tokens, so every screen follows: bone white for text, a lighter blood
+   red in gold's place (headings, links, what is chosen), deep red for buttons,
+   Blood and borders. At least Dark's contrast, by theme.test.ts: bone 16.1:1 on
+   night, 15.3 on dusk, 13.6 on ash; mist 8.4 / 8.0 / 7.1; gold 6.3 / 6.0 / 5.3,
+   and 4.6 on its own 20% fill (a chosen button); blood-bright 7.2 / 6.8 / 6.1;
+   bone on blood 5.0; line 4.0 on night, 3.8 on dusk; a box filled with blood 3.2
+   on night, 3.0 on dusk. */
+html[data-theme="ultragoth"] {
+  --color-night: #0a0909;
+  --color-dusk: #131011;
+  --color-ash: #241b1d;
+  --color-line: #8a666c;
+  --color-mist: #bba3a6;
+  --color-parchment: #efe6dc;
+  --color-blood: #bf172e;
+  --color-blood-bright: #ff6b6b;
+  --color-gold: #f95a63;
+}
+/* Blood-bright is bright enough to read on black, so too bright for parchment
+   on it: a blood button goes deeper as it's pointed at instead (parchment 5.77:1
+   in Dark, bone 7.1:1 in Ultra goth). */
+.hover\:bg-blood-bright:hover:not(:disabled) {
+  background-color: #a3253a;
+}
+html[data-theme="ultragoth"] .hover\:bg-blood-bright:hover:not(:disabled) {
+  background-color: #96101f;
 }
 
 /* A round tap button greyed out (+ at the most): no fill and a faint edge, so it
@@ -117,5 +150,192 @@
   }
   .feed-after {
     animation-delay: 0s;
+  }
+}
+
+/* The curtains (components/Curtains.tsx), as Ultra goth comes in: red velvet closes
+   over the page, and opens on the new theme. Only transforms and opacity move, so
+   a phone keeps up. Each panel's folds are gradients a fold wide; a grain drawn in
+   SVG gives the velvet its pile, and the hem a gold fringe. */
+.curtains {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  overflow: hidden;
+  touch-action: none;
+  --fold: clamp(34px, 9vw, 96px);
+}
+.curtain {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 51%;
+  transform-origin: top;
+  will-change: transform;
+  background-color: #5a0a14;
+  background-image:
+    linear-gradient(to bottom, rgb(0 0 0 / 0.6), rgb(0 0 0 / 0) 24%, rgb(0 0 0 / 0) 66%, rgb(0 0 0 / 0.6)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8 .05' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0) 0, rgb(0 0 0 / 0.3) calc(var(--fold) * 0.85), rgb(0 0 0 / 0) calc(var(--fold) * 1.7)),
+    repeating-linear-gradient(
+      90deg,
+      #2b0308 0,
+      #5a0a15 calc(var(--fold) * 0.2),
+      #9a1528 calc(var(--fold) * 0.42),
+      #c8253d calc(var(--fold) * 0.52),
+      #8c1223 calc(var(--fold) * 0.64),
+      #4a0710 calc(var(--fold) * 0.84),
+      #2b0308 var(--fold)
+    );
+  background-size: auto, 180px 180px, auto, auto;
+}
+.curtain-left {
+  left: 0;
+  box-shadow: 14px 0 34px rgb(0 0 0 / 0.6);
+}
+.curtain-right {
+  right: 0;
+  box-shadow: -14px 0 34px rgb(0 0 0 / 0.6);
+  /* The folds run the other way, as they would on the other half. */
+  background-position: 0 0, 0 0, right 0 top 0, right 0 top 0;
+}
+/* The hem: a gold braid and its fringe. */
+.curtain::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: clamp(14px, 2.8vh, 28px);
+  background:
+    linear-gradient(to bottom, #f2d57e, #b8862b 22%, #6b4a12 30%, transparent 30%),
+    repeating-linear-gradient(90deg, #e2b54e 0 2px, #8a6418 2px 3px, #c99a36 3px 5px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 65%, transparent);
+  mask-image: linear-gradient(to bottom, #000 65%, transparent);
+}
+/* A stage light on the closed curtains, while the theme changes behind them. */
+.curtain-light {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(ellipse 55% 60% at 50% 58%, rgb(255 190 170 / 0.16), rgb(255 190 170 / 0) 70%);
+}
+.curtain-valance {
+  position: absolute;
+  top: 0;
+  left: 0;
+  filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.55));
+  will-change: transform;
+}
+.curtain-tassel {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+}
+.curtain-fade {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 45%, #6a0c19, #2b0308 75%);
+}
+
+.curtains-closing .curtain-left {
+  animation: curtain-close-left 1.15s cubic-bezier(0.55, 0.05, 0.35, 1) both;
+}
+.curtains-closing .curtain-right {
+  animation: curtain-close-right 1.15s cubic-bezier(0.55, 0.05, 0.35, 1) both;
+}
+.curtains-closing .curtain-valance {
+  animation: valance-drop 0.5s cubic-bezier(0.3, 0.8, 0.4, 1) both;
+}
+.curtains-closed .curtain-light {
+  animation: curtain-light 0.65s ease-in-out both;
+}
+.curtains-opening .curtain-left {
+  animation: curtain-open-left 1.35s cubic-bezier(0.6, 0, 0.3, 1) both;
+}
+.curtains-opening .curtain-right {
+  animation: curtain-open-right 1.35s cubic-bezier(0.6, 0, 0.3, 1) both;
+}
+.curtains-opening .curtain-tassel {
+  animation: tassel-swing 1.2s ease-in-out both;
+}
+.curtains-opening .curtain-valance {
+  animation: valance-rise 0.4s ease-in 1.2s both;
+}
+.curtains-closing .curtain-fade {
+  animation: feed-fade 0.25s ease-out both;
+}
+.curtains-opening .curtain-fade {
+  animation: feed-fade 0.3s ease-in reverse both;
+}
+
+/* The bottom of each curtain trails its top a little as it moves. */
+@keyframes curtain-close-left {
+  from {
+    transform: translateX(-101%);
+  }
+  55% {
+    transform: translateX(-34%) skewX(-2.5deg);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes curtain-close-right {
+  from {
+    transform: translateX(101%);
+  }
+  55% {
+    transform: translateX(34%) skewX(2.5deg);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes curtain-open-left {
+  from {
+    transform: none;
+  }
+  45% {
+    transform: translateX(-52%) skewX(2.5deg);
+  }
+  to {
+    transform: translateX(-101%);
+  }
+}
+@keyframes curtain-open-right {
+  from {
+    transform: none;
+  }
+  45% {
+    transform: translateX(52%) skewX(-2.5deg);
+  }
+  to {
+    transform: translateX(101%);
+  }
+}
+@keyframes valance-drop {
+  from {
+    transform: translateY(-100%);
+  }
+}
+@keyframes valance-rise {
+  to {
+    transform: translateY(-100%);
+  }
+}
+@keyframes curtain-light {
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes tassel-swing {
+  25% {
+    transform: rotate(7deg);
+  }
+  55% {
+    transform: rotate(-4deg);
+  }
+  80% {
+    transform: rotate(1.5deg);
   }
 }

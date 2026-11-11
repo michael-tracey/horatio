@@ -283,7 +283,8 @@ def serve_frontend(dist: Path, target: FastAPI = app) -> None:
 
     # index.html names the current build's files, so the browser checks for it
     # every time; those files' names change with their contents, so they never
-    # need checking again.
+    # need checking again. The rest keep their names from build to build (the
+    # service worker, the manifest, the icons), so they are checked every time too.
     fresh = {"Cache-Control": "no-cache"}
     hashed = {"Cache-Control": "public, max-age=31536000, immutable"}
 
@@ -307,7 +308,7 @@ def serve_frontend(dist: Path, target: FastAPI = app) -> None:
             and candidate.is_relative_to(dist.resolve())
             and candidate != (dist / "index.html").resolve()
         ):
-            return FileResponse(candidate, headers=hashed if path.startswith("assets/") else None)
+            return FileResponse(candidate, headers=hashed if path.startswith("assets/") else fresh)
         # A file that is gone (an old build's page, after a deploy) is not an app
         # route: answering with index.html would hand the browser HTML where it
         # asked for a script.

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, PASSWORD, shots, person, characterTab, makeCustodian } from "./support";
+import { closeContextsAfterEach, run, PASSWORD, shots, person, characterTab, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES } from "./support";
 
 /** A person's account and settings: handle, password, dates, text size, notifications and the Play View. */
 
@@ -348,6 +348,95 @@ test("light mode lets the sun rise, and the person at the screen goes to ash, si
   // Truly signed out: the account is behind sign-in again.
   await page.goto("/account/settings");
   await expect(page).toHaveURL(/\/sign-in/);
+});
+
+test("Ultra goth: velvet curtains close, it is saved behind them, and they open on deep red; Dark switches straight back", async ({ browser }) => {
+  const { page } = await person(browser, "goth-curtains");
+  // What the page shows as it is read, before the app starts: no flash of Dark on a reload.
+  await page.context().addInitScript(() => {
+    document.addEventListener("readystatechange", () => {
+      if (document.readyState === "interactive") (window as unknown as { themeAtLoad: string | null }).themeAtLoad = document.documentElement.getAttribute("data-theme");
+    });
+  });
+  await page.goto("/account/settings");
+  const theme = page.getByRole("radiogroup", { name: "Theme" });
+  const html = page.locator("html");
+  const bar = page.locator('meta[name="theme-color"]');
+  await expect(theme.getByRole("radio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
+  await expect(html).not.toHaveAttribute("data-theme");
+  const night = () => page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
+  expect(await night()).toBe("rgb(20, 16, 22)");
+
+  const saved = () => page.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.ok());
+  const goth = saved();
+  await theme.getByRole("radio", { name: "Ultra goth" }).click();
+  const curtains = page.getByTestId("curtains");
+  await expect(curtains).toHaveAttribute("data-phase", "closing");
+  await expect(curtains).toHaveAttribute("data-phase", "opening", { timeout: 10_000 });
+  await expect(html).toHaveAttribute("data-theme", "ultragoth");
+  await expect(curtains).toHaveCount(0, { timeout: 10_000 });
+  await goth;
+  await expect(theme.getByRole("radio", { name: "Ultra goth" })).toHaveAttribute("aria-checked", "true");
+  await expect(bar).toHaveAttribute("content", "#0a0909");
+  expect(await night()).toBe("rgb(10, 9, 9)");
+
+  // Kept on the account, and on the device: set before the app starts.
+  await page.reload();
+  await expect(theme.getByRole("radio", { name: "Ultra goth" })).toHaveAttribute("aria-checked", "true");
+  expect(await page.evaluate(() => (window as unknown as { themeAtLoad: string | null }).themeAtLoad)).toBe("ultragoth");
+  await expect(html).toHaveAttribute("data-theme", "ultragoth");
+  await page.screenshot(shots("ultragoth-settings"));
+
+  // Back to Dark at once, with no curtains.
+  const dark = saved();
+  await theme.getByRole("radio", { name: "Dark" }).click();
+  await expect(html).not.toHaveAttribute("data-theme");
+  await expect(curtains).toHaveCount(0);
+  await expect(bar).toHaveAttribute("content", "#141016");
+  await dark;
+  await page.reload();
+  await expect(theme.getByRole("radio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
+  expect(await page.evaluate(() => (window as unknown as { themeAtLoad: string | null }).themeAtLoad)).toBeNull();
+});
+
+test("Ultra goth fades in with reduced motion, and reads on the sheet, the Play View and a troupe's page", async ({ browser }) => {
+  const { page, email, handle } = await person(browser, "goth-screens", { reducedMotion: "reduce" });
+  makeCustodian(email);
+  const headers = { "X-Horatio": "1" };
+  const troupeName = `Court of Velvet ${run}`;
+  const made = await page.request.post("/api/troupes", { headers, data: { name: troupeName, lead_handle: handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const id = await builtVampire(page, "Velvetine", "Brujah", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+
+  // A short fade to velvet and back, not the curtains.
+  await page.goto("/account/settings");
+  await page.getByRole("radiogroup", { name: "Theme" }).getByRole("radio", { name: "Ultra goth" }).click();
+  const curtains = page.getByTestId("curtains");
+  await expect(curtains.locator(".curtain-fade")).toBeAttached();
+  await expect(curtains.locator(".curtain")).toHaveCount(0);
+  await expect(curtains).toHaveCount(0, { timeout: 5_000 });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "ultragoth");
+
+  await page.goto(`/characters/${id}`);
+  await expect(page.getByRole("heading", { name: "Velvetine" })).toBeVisible();
+  await expect(page.getByText("Brawl").first()).toBeVisible();
+  await page.screenshot(shots("ultragoth-sheet"));
+  await page.goto(`/play/characters/${id}`);
+  await expect(page.getByRole("tab", { name: "Tracker" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "ultragoth");
+  await page.screenshot(shots("ultragoth-play"));
+  await page.getByRole("tab", { name: "Pools" }).click();
+  await page.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  await expect(page.getByRole("dialog", { name: "Forms, powers and modifiers" })).toBeVisible();
+  await page.screenshot({ path: shots("ultragoth-play-drawer").path });
+  await page.goto(`/troupes/${troupeId}`);
+  await expect(page.getByRole("heading", { name: troupeName })).toBeVisible();
+  await page.screenshot(shots("ultragoth-troupe"));
 });
 
 test("the Play View opens as the settings say", async ({ browser }) => {
