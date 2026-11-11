@@ -262,6 +262,39 @@ test("a troupe's players read its house rules: a price the lead changes shows th
   await p.screenshot(shots("house-rules"));
 });
 
+test("on a phone the house rules tabs wrap onto more rows, so Teachers shows without scrolling sideways, and Tab walks across the rows (#649)", async ({ browser }) => {
+  const custodian = await person(browser, "tabwrap-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "tabwrap-lead", { viewport: { width: 360, height: 780 }, isMobile: true, hasTouch: true });
+  const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: `Wrapped Tabs ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules`);
+  const tabs = l.getByRole("navigation", { name: "House rules" });
+  const teachers = tabs.getByRole("link", { name: "Teachers", exact: true });
+  await expect(teachers).toBeInViewport();
+  expect(await l.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  expect(await tabs.evaluate((nav) => nav.scrollWidth <= nav.clientWidth)).toBe(true);
+  // More than one row, and the longest label still on one line.
+  const checks = (await tabs.getByRole("link", { name: "Checks", exact: true }).boundingBox())!;
+  const longest = (await tabs.getByRole("link", { name: "House merits and flaws", exact: true }).boundingBox())!;
+  const last = (await teachers.boundingBox())!;
+  expect(last.y).toBeGreaterThan(checks.y);
+  expect(longest.height).toBe(checks.height);
+
+  // The keyboard goes through every tab in order, across the rows.
+  await tabs.getByRole("link", { name: "Free changes", exact: true }).focus();
+  await l.keyboard.press("Tab");
+  await expect(teachers).toBeFocused();
+  await l.keyboard.press("Enter");
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/rules/teachers$`));
+  await expect(teachers).toHaveAttribute("aria-current", "page");
+  await expect(teachers).toBeInViewport();
+  await l.screenshot(shots("house-rules-tabs-phone"));
+});
+
 test("a lead prices skills at 1× for Generation background 2, and a Generation ●● character pays that in the cart (#522)", async ({ browser }) => {
   const custodian = await person(browser, "genprice-custodian");
   makeCustodian(custodian.email);
