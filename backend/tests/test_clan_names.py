@@ -6,10 +6,8 @@ from collections.abc import Callable
 from typing import Any
 
 import pytest
-from alembic import command
-from alembic.config import Config
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine, select, text
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from horatio.clan_names import shown, troupe_name
@@ -167,49 +165,6 @@ def test_a_notification_names_the_clan_as_the_troupe_calls_it_then(
         "test.after": "An Assamite was Embraced.",
         "test.no_troupe": "Banu Haqim, everywhere.",
     }
-
-
-def test_the_migration_keeps_assamite_for_troupes_that_were_there(
-    engine: Engine, alembic_config: Config
-) -> None:
-    """Migration 0128: a troupe made before it sees no change; one made after starts
-    with Banu Haqim."""
-    command.downgrade(alembic_config, "0127")
-    user, older = uuid.uuid4(), uuid.uuid4()
-    newer = uuid.uuid4()
-    try:
-        with engine.begin() as connection:
-            connection.execute(
-                text(
-                    "insert into users (id, email, display_name, handle)"
-                    " values (:id, 'clan-names@example.com', 'Namer', 'clan_namer')"
-                ),
-                {"id": user},
-            )
-            connection.execute(
-                text("insert into troupes (id, name, lead_user_id) values (:id, 'Alamut', :lead)"),
-                {"id": older, "lead": user},
-            )
-
-        command.upgrade(alembic_config, "head")
-
-        with engine.begin() as connection:
-            connection.execute(
-                text("insert into troupes (id, name, lead_user_id) values (:id, 'Masyaf', :lead)"),
-                {"id": newer, "lead": user},
-            )
-            names = dict(
-                connection.execute(
-                    text("select id, assamite_name from troupes where lead_user_id = :lead"),
-                    {"lead": user},
-                ).all()
-            )
-        assert names == {older: "Assamite", newer: "Banu Haqim"}
-    finally:
-        command.upgrade(alembic_config, "head")
-        with engine.begin() as connection:
-            connection.execute(text("delete from troupes where lead_user_id = :id"), {"id": user})
-            connection.execute(text("delete from users where id = :id"), {"id": user})
 
 
 # --- the rules are unchanged ------------------------------------------------------------

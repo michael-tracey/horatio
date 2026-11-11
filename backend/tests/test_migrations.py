@@ -460,3 +460,47 @@ def test_the_retired_titles_migration_gives_up_the_titles_retired_characters_hol
                 ("users", "id", user),
             ):
                 connection.execute(text(f"delete from {table} where {column} = :id"), {"id": value})
+
+
+def test_the_migration_keeps_assamite_for_troupes_that_were_there(
+    engine: Engine, alembic_config: Config
+) -> None:
+    """Migration 0128 (issue #430): a troupe made before it sees no change; one made
+    after starts with Banu Haqim. Not beside the other tests of #430: their
+    `without_bank` holds a lock on rule_sets that downgrading past 0162 waits for."""
+    command.downgrade(alembic_config, "0127")
+    user, older = uuid.uuid4(), uuid.uuid4()
+    newer = uuid.uuid4()
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "insert into users (id, email, display_name, handle)"
+                    " values (:id, 'clan-names@example.com', 'Namer', 'clan_namer')"
+                ),
+                {"id": user},
+            )
+            connection.execute(
+                text("insert into troupes (id, name, lead_user_id) values (:id, 'Alamut', :lead)"),
+                {"id": older, "lead": user},
+            )
+
+        command.upgrade(alembic_config, "head")
+
+        with engine.begin() as connection:
+            connection.execute(
+                text("insert into troupes (id, name, lead_user_id) values (:id, 'Masyaf', :lead)"),
+                {"id": newer, "lead": user},
+            )
+            names = dict(
+                connection.execute(
+                    text("select id, assamite_name from troupes where lead_user_id = :lead"),
+                    {"lead": user},
+                ).all()
+            )
+        assert names == {older: "Assamite", newer: "Banu Haqim"}
+    finally:
+        command.upgrade(alembic_config, "head")
+        with engine.begin() as connection:
+            connection.execute(text("delete from troupes where lead_user_id = :id"), {"id": user})
+            connection.execute(text("delete from users where id = :id"), {"id": user})
