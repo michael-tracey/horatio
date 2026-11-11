@@ -775,6 +775,7 @@ NOT_EXPORTED_COLUMNS: dict[str, str] = {
     "contact_id": "its staff are its own",
     "seated_clans": "its court is its own (titles and seats aren't carried)",
     "free_changes_since": "set to the time of import when free changes are switched on",
+    "rules_version": "kept by the database, changing with the troupe's rules",
 }
 
 # The tables that belong to a troupe and are exported, each in its section.

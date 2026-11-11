@@ -1,12 +1,15 @@
 """Rule sets in the database: loading the generic rules in, and reading troupe rules out."""
 
 import uuid
+from collections import OrderedDict
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
 from functools import wraps
+from threading import Lock
 from typing import Any, Concatenate
 
 from sqlalchemy import delete, select
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Session
 
 from horatio.models import (
@@ -774,13 +777,65 @@ def remove_house_rule(session: Session, troupe_id: uuid.UUID, rule_id: uuid.UUID
 def read_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None) -> TroupeRules:
     """The rules a character of `splat` plays by in `troupe_id`, or the plain rule
     set when `troupe_id` is None (a character with no home troupe). Read once per
-    session: rules change only through this module, which forgets them."""
+    session: rules change only through this module, which forgets them. Kept by the
+    process between sessions too (`kept_rules`)."""
     cache: dict[tuple[str, uuid.UUID | None], TroupeRules] = session.info.setdefault(
         RULES_CACHE, {}
     )
     if (splat, troupe_id) not in cache:
-        cache[(splat, troupe_id)] = load_troupe_rules(session, splat, troupe_id)
+        cache[(splat, troupe_id)] = kept_rules(session, splat, troupe_id)
     return cache[(splat, troupe_id)]
+
+
+def rules_version(session: Session, splat: str, troupe_id: uuid.UUID | None) -> str:
+    """What the rules `read_troupe_rules` gives are at: it changes whenever anything
+    they are read from does, in the same transaction. The database changes it
+    (migration 0162): the rule set's whenever a row of the book's rules does, the
+    troupe's whenever its own row or a row of its rules does, written and teacher
+    rules included. NoResultFound for a splat or troupe there is none of."""
+    book = select(RuleSet.rules_version).where(RuleSet.splat == splat)
+    if troupe_id is None:
+        return session.scalars(book).one().hex
+    found, troupe = session.execute(
+        select(book.scalar_subquery(), Troupe.rules_version).where(Troupe.id == troupe_id)
+    ).one()
+    if found is None:
+        raise NoResultFound(f"no rules for {splat!r}")
+    return f"{found.hex}.{troupe.hex}"
+
+
+# The rules each process keeps, by splat and troupe, with the version they were read
+# at; the least recently read go first once there are more than KEPT_SIZE. One
+# troupe's are a few megabytes.
+KEPT_SIZE = 32
+kept: OrderedDict[tuple[str, uuid.UUID | None], tuple[str, TroupeRules]] = OrderedDict()
+kept_lock = Lock()
+
+
+def kept_rules(session: Session, splat: str, troupe_id: uuid.UUID | None) -> TroupeRules:
+    """The rules as `read_troupe_rules` gives them, kept by the process while their
+    version stays the same: a version read with a change no one has committed yet is
+    new, and never seen again if that change is rolled back. The rules are frozen
+    dataclasses that nothing changes once loaded, so sessions and threads share them;
+    each troupe has its own, as answers worked out from them are kept on them
+    (RuleSetData.remembered)."""
+    try:
+        version = rules_version(session, splat, troupe_id)
+    except NoResultFound:
+        return load_troupe_rules(session, splat, troupe_id)
+    key = (splat, troupe_id)
+    with kept_lock:
+        found = kept.get(key)
+        if found is not None and found[0] == version:
+            kept.move_to_end(key)
+            return found[1]
+    rules = load_troupe_rules(session, splat, troupe_id)
+    with kept_lock:
+        kept[key] = (version, rules)
+        kept.move_to_end(key)
+        while len(kept) > KEPT_SIZE:
+            kept.popitem(last=False)
+    return rules
 
 
 def load_troupe_rules(session: Session, splat: str, troupe_id: uuid.UUID | None) -> TroupeRules:

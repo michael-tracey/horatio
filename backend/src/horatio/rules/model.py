@@ -32,6 +32,7 @@ DEFAULT_MAX_RATING = 20
 T = TypeVar("T")
 # Answers a rule set remembers before it forgets them all and starts again.
 MEMO_SIZE = 512
+NOT_WORKED_OUT = object()
 
 
 @dataclass(frozen=True)
@@ -314,14 +315,19 @@ class RuleSetData:
 
     def remembered(self, key: Hashable, work_out: Callable[[], T]) -> T:
         """The answer for `key`, worked out once and kept as long as these rules
-        are (a database session): what a sheet's grants price, say, which judging
-        a category asks again for every trait in it. Only for answers that are
-        plain values, as every caller gets the same one."""
-        if key not in self.memo:
-            if len(self.memo) >= MEMO_SIZE:
-                self.memo.clear()
-            self.memo[key] = work_out()
-        return self.memo[key]
+        are (kept by the process while they stay the same, horatio.rules.store):
+        what a sheet's grants price, say, which judging a category asks again for
+        every trait in it. Only for answers that are plain values and depend on
+        nothing but these rules and the key, as every caller, in any session or
+        thread, gets the same one."""
+        memo = self.memo
+        found = memo.get(key, NOT_WORKED_OUT)
+        if found is NOT_WORKED_OUT:
+            found = work_out()
+            if len(memo) >= MEMO_SIZE:
+                memo.clear()
+            memo[key] = found
+        return found
 
     @cached_property
     def kinds(self) -> Mapping[tuple[str, str], str]:
