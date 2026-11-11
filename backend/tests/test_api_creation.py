@@ -175,7 +175,7 @@ def test_merits_and_flaws_come_from_a_points_budget(troupe: Troupe) -> None:
 # Hunted 4, Fragile Bones 4 and Dark Secret 1: 9 points of flaws.
 NINE_POINTS_OF_FLAWS = [("Hunted", 4), ("Fragile Bones", 4), ("Dark Secret", 1)]
 
-PAST_LIMIT = "Flaws past the limit need the Storyteller's OK, and give no more XP. (p. 85)"
+PAST_LIMIT = "Flaws past the limit need the Storyteller's OK, and count for nothing more. (p. 85)"
 
 
 def set_flaws(person: Person, character_id: str, flaws: list[tuple[str, int]]) -> Any:

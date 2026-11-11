@@ -169,10 +169,10 @@ describe("pointsText", () => {
     expect(pointsText(7, 7, true)).toBe("7 of 7 points");
   });
 
-  it("says flaws past the budget pay out only the budget (p. 85)", () => {
-    expect(pointsText(9, 7, true)).toBe("9 points, 7 XP paid out");
-    expect(pointsText(11, 10, true)).toBe("11 points, 10 XP paid out");
-    expect(pastBudgetText("Flaws", 7)).toBe("Flaws past 7 points need the Storyteller's OK, and give no more XP (p. 85).");
+  it("says flaws past the budget count only up to it (p. 85)", () => {
+    expect(pointsText(9, 7, true)).toBe("9 points, 7 count toward the budget");
+    expect(pointsText(11, 10, true)).toBe("11 points, 10 count toward the budget");
+    expect(pastBudgetText("Flaws", 7)).toBe("Flaws past 7 points need the Storyteller's OK, and count for nothing more (p. 85).");
   });
 });
 
