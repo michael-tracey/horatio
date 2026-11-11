@@ -331,8 +331,11 @@ test("staff Embrace a ghoul: it becomes a vampire in XP debt, the cart waits, an
   for (const [category, picks] of Object.entries(build))
     await send(p, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
   await send(p, "POST", `/api/characters/${id}/creation/complete`, {});
+  // Her merits took 4 of her 30 XP (p. 106); the other 26 go on Mental 10 and Social 6
+  // at 3 XP a dot, and Stealth and Survival at 1 each.
   await send(p, "PUT", `/api/characters/${id}/traits`, { category: "attributes", name: "Mental", rating: 10 });
-  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "attributes", name: "Social", rating: 8 });
+  await send(p, "PUT", `/api/characters/${id}/traits`, { category: "attributes", name: "Social", rating: 6 });
+  for (const skill of ["Stealth", "Survival"]) await send(p, "PUT", `/api/characters/${id}/traits`, { category: "skills", name: skill, rating: 1 });
   const asked = await send(p, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
   await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
 
