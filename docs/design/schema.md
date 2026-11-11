@@ -666,6 +666,13 @@ Recorded here for review; each is easy to change.
   - Differences in starting traits are not reconciled.
 - Flaws taken at creation are free records: they do not give XP. Bought
   later, a flaw gives XP back as before.
+- Merits never go past their budget. Flaws can, with the Storyteller's OK, and
+  count for nothing past it (MET: VTM pp. 85, 235): the wizard says "9 points, 7
+  count toward the budget" (`pointsText`), and once creation is finished the
+  sheet's Experience card "7 of 7 XP paid out". The `flaws/past-limit` check (review) flags them on the sheet until
+  a home troupe accepts the character, and a troupe can make it refuse. The
+  limit is the troupe's creation budget for flaws, else the category's
+  `points_limit`. Reconciling leaves flaws past the budget as they are.
 
 **Troupe standing, deleting characters, and the troupe log**
 

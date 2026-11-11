@@ -30547,6 +30547,11 @@
             ],
             "title": "Options"
           },
+          "past_budget": {
+            "default": false,
+            "title": "Past Budget",
+            "type": "boolean"
+          },
           "rating": {
             "title": "Rating",
             "type": "integer"

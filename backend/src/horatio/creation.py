@@ -7,6 +7,10 @@ from a budget of points instead. Picks follow the character's troupe rules —
 its home troupe's, or the plain rule set before it has one. Finishing needs
 every pick placed; points may be left unspent. After that, dots come from XP.
 
+Merits never go past their budget. Flaws can, with the Storyteller's OK, but give
+nothing past it (MET: VTM pp. 85, 235): a check flags them for staff until a home
+troupe accepts the character, and a troupe can make it refuse instead.
+
 A pick can only go on a trait with no purchased dots, and can only be taken
 back while the trait still has none, so free and paid dots never get tangled.
 """
@@ -42,6 +46,10 @@ from horatio.sheets import (
     unprocessable,
 )
 
+# Budgets of points that picks may go past: flaws, with the Storyteller's OK, paying
+# nothing more (p. 85). The check that flags them is in the rule set's checks.
+PAST_BUDGET = frozenset({"flaws"})
+
 
 @dataclass
 class Pool:
@@ -68,6 +76,11 @@ class Pool:
     @property
     def remaining(self) -> int:
         return self.allowed - self.used
+
+    @property
+    def past_budget(self) -> bool:
+        """Whether picks may go past the budget (flaws), counting nothing past it."""
+        return self.kind == "points" and self.category in PAST_BUDGET
 
 
 def pool_key(rule: CreationRuleData) -> tuple[str, int]:
@@ -503,7 +516,7 @@ def place_pick(
         fixed = held_at(db, character, category, definition.name)
         rating = fixed if fixed is not None else rating
         pool = points_pool
-        if rating > pool.remaining:
+        if rating > pool.remaining and not pool.past_budget:
             raise conflict(f"That needs {rating} points; {pool.remaining} are left.")
     else:
         pool = all_pools.get((category, rating))
@@ -651,7 +664,7 @@ def set_category_picks(
     if is_points:
         assert points is not None
         given = clan.points if clan is not None else 0
-        if sum(wanted.values()) + given > points.allowed:
+        if sum(wanted.values()) + given > points.allowed and not points.past_budget:
             with_clan = f", with the clan's {given}" if given else ""
             raise conflict(
                 f"That is {sum(wanted.values()) + given} points{with_clan};"
@@ -748,7 +761,7 @@ def complete(db: Session, player: User, character: Character) -> None:
         )
     # Points overspent: the clan's merits can take more than is left, when the setting
     # changes after the merits are picked (a house rule, another troupe to build for).
-    spent = [p for p in every if p.kind == "points" and p.remaining < 0]
+    spent = [p for p in every if p.kind == "points" and p.remaining < 0 and not p.past_budget]
     if spent:
         found = clan_merits.held(db, character)
 

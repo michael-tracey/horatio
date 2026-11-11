@@ -890,6 +890,19 @@ forbids = { self = { rating = { gte = 7 } } }
 message = "Humanity cannot go above 6."
 page = "108"
 
+# Flaws past 7 points (or the troupe's own budget for them) can be taken with the
+# Storyteller's permission, but give no more than 7 XP (pp. 85, 235); merits never go
+# past theirs. Creation lets them through and flags them here, for staff to settle
+# when they accept the character, which reviews the whole sheet. A troupe can make it
+# refuse.
+[[checks]]
+key = "flaws/past-limit"
+category = "flaws"
+forbids = { over_points_limit = true, accepted = false }
+strength = "review"
+message = "Flaws past the limit need the Storyteller's OK, and count for nothing more."
+page = "85"
+
 # --- taking a trait more than once (p. 236) ---------------------------------------
 
 [[checks]]

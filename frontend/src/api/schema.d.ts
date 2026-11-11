@@ -22482,6 +22482,11 @@ export interface components {
             kind: string;
             /** Options */
             options?: string[] | null;
+            /**
+             * Past Budget
+             * @default false
+             */
+            past_budget: boolean;
             /** Rating */
             rating: number;
             /** Remaining */
