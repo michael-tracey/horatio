@@ -14,7 +14,7 @@ from horatio import audit, downtimes, pictures, remembrances, social_age
 from horatio.api.downtimes import my_participation, staff_troupe
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Character, CycleParticipant, DowntimeCycle, Troupe, User
-from horatio.permissions import TroupeAction, visible_character
+from horatio.permissions import TroupeAction, allows, troupe_role, visible_character
 
 router = APIRouter(tags=["remembrances"])
 
@@ -70,7 +70,8 @@ class RememberedMonthOut(BaseModel):
 class CharacterRemembrancesOut(BaseModel):
     # Its home troupe uses Remembrances now. Off, only what was published shows.
     on: bool
-    # None asked or opened; its player asked, for staff to confirm; or open.
+    # None asked or opened; its player asked, for staff to confirm; or open. Its
+    # player's asking shows only to them and the running staff it asks.
     state: Literal["none", "asked", "open"]
     # The cycle that asks for memories, or would if they were opened now; None for
     # the next one to open.
@@ -115,12 +116,25 @@ def my_remembrances_out(
     )
 
 
+def hears_asking(db: DbSession, user: User, character: Character) -> bool:
+    """Whether `user` sees that the character's player asked for remembrances: its
+    player, the custodian, and the home troupe's running staff, who are told."""
+    if character.player_id == user.id or user.is_custodian:
+        return True
+    troupe = db.get(Troupe, character.home_troupe_id) if character.home_troupe_id else None
+    return troupe is not None and allows(troupe_role(db, user, troupe), TroupeAction.MANAGE_CYCLES)
+
+
 def character_remembrances_out(
     db: DbSession, user: User, character: Character
 ) -> CharacterRemembrancesOut:
     troupe = db.get(Troupe, character.home_troupe_id) if character.home_troupe_id else None
     on = troupe is not None and remembrances.on(troupe) and character.kind == "pc"
     found = remembrances.of(db, character)
+    if found is not None and found.opened_at is None and not hears_asking(db, user, character):
+        # Asking is between its player and staff. Shown to anyone else, it would say the
+        # character has left play, which may not be known yet (#659).
+        found = None
     state: Literal["none", "asked", "open"] = (
         "none" if found is None else "open" if found.opened_at is not None else "asked"
     )

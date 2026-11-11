@@ -36,8 +36,11 @@ import {
 /** How many entries show at first, and how many more each tap: a phone draws a long list slowly. */
 const PAGE = 50;
 
-/** The rules hardly change: ask once a visit, and filter here. */
-const STALE_MS = 60 * 60_000;
+/** The rules hardly change: ask again after five minutes, which costs little, as the
+ * browser keeps them and the API answers 304 Not Modified while they hold (#643);
+ * kept for an hour once the page is left, and filtered here. */
+const STALE_MS = 5 * 60_000;
+const KEPT_MS = 60 * 60_000;
 
 /**
  * Every trait, power, ritual, merit and flaw, with its book page and a short
@@ -76,7 +79,7 @@ export function RulesPage() {
     queryFn: () =>
       unwrap(api.GET("/api/rules/{splat}/browse", { params: { path: { splat }, query: { troupe_id: troupeId || undefined } } })),
     staleTime: STALE_MS,
-    gcTime: STALE_MS,
+    gcTime: KEPT_MS,
     placeholderData: keepPreviousData,
   });
   const data = rules.data;
