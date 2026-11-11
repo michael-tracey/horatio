@@ -213,9 +213,14 @@ test("a house merit's effects: the ST builds Old Money from blocks, previews it,
   // On the sheet: Resources 2, given by the merit, and the merit marked ★ with what it does.
   const merits = part("Merits and Flaws");
   await expect(merits).toContainText(`★House merit of ${troupeName}`);
-  await merits.getByRole("button", { name: "Old Money", exact: true }).click();
-  await expect(merits).toContainText("The family fortune, still in trust.");
-  await expect(merits).toContainText(`What it does: ${summary}`);
+  // Spending refetches the whole page after the sheet, which can close the merit
+  // opened in between: open it again until it stays open.
+  const description = merits.getByText("The family fortune, still in trust.");
+  await expect(async () => {
+    if (!(await description.isVisible())) await merits.getByRole("button", { name: "Old Money", exact: true }).click();
+    await expect(description).toBeVisible({ timeout: 1_000 });
+    await expect(merits).toContainText(`What it does: ${summary}`, { timeout: 1_000 });
+  }).toPass();
   const resources = part("Backgrounds").locator("div").filter({ hasText: /^Resources/ }).first();
   await expect(resources).toContainText("+2 from Old Money");
   await p.screenshot(shots("house-effects-sheet"));

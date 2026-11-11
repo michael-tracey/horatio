@@ -207,6 +207,10 @@ class Troupe(Imported, Record):
     # adjustments, the monthly cap and absentee games, as GameXpSettings writes it.
     # Empty is the book's way: the session XP for everyone there, warned past 10 a month.
     game_xp: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # Changed by the database whenever this row or anything its rules are read from
+    # changes (migration 0162), so each process can keep them: read it with
+    # horatio.rules.store.rules_version, as a row loaded before a change keeps the old.
+    rules_version: Mapped[uuid.UUID] = mapped_column(server_default=text("gen_random_uuid()"))
 
 
 class ScheduledGame(Record):

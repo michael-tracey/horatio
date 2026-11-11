@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -43,6 +43,10 @@ class RuleSet(Record):
     # written in the rule set's equipment file. Its qualities and sample items are
     # in `equipment_qualities` and `equipment_templates`.
     equipment: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # Changed by the database whenever anything the book's rules are read from changes
+    # (migration 0162), so each process can keep them: read it with
+    # horatio.rules.store.rules_version, as a row loaded before a change keeps the old.
+    rules_version: Mapped[uuid.UUID] = mapped_column(server_default=text("gen_random_uuid()"))
 
 
 class TraitCategory(Record):
