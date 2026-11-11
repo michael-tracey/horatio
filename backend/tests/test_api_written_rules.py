@@ -161,18 +161,18 @@ def test_a_rule_linked_to_a_trait_shows_on_its_details_and_in_the_rules_browser(
     ).json()
     lucky = next(t for t in catalogue["traits"] if t["name"] == "Lucky")
     assert lucky["written_rules"] == [{"id": rule["id"], "title": "Royalty and acquired items"}]
-    assert (
-        next(t for t in catalogue["traits"] if t["name"] == "Code of Honor")["written_rules"] == []
+    assert "written_rules" not in next(
+        t for t in catalogue["traits"] if t["name"] == "Code of Honor"
     )
     # Without the troupe, the book's alone.
     book = troupe.player.client.get("/rules/vampire", params={"category": "merits"}).json()
-    assert next(t for t in book["traits"] if t["name"] == "Lucky")["written_rules"] == []
+    assert "written_rules" not in next(t for t in book["traits"] if t["name"] == "Lucky")
 
     browsed = troupe.player.client.get(
         "/rules/vampire/browse", params={"troupe_id": troupe.id}
     ).json()
     assert [r["title"] for r in browsed["written_rules"]] == ["Royalty and acquired items"]
-    assert troupe.player.client.get("/rules/vampire/browse").json()["written_rules"] == []
+    assert "written_rules" not in troupe.player.client.get("/rules/vampire/browse").json()
 
     # The link can be taken off.
     unlinked = change(troupe.lead, troupe, rule["id"], title="Royalty and acquired items")

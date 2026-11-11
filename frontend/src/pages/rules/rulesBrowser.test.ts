@@ -95,6 +95,21 @@ describe("entries", () => {
     const by = new Map(entries(data()).map((e) => [e.name, e]));
     expect(by.get("Toreador: Volgirre")?.rarity?.text).toBe("Common");
   });
+
+  it("reads a trait sent without its empty fields as one kept from before with them null (#642)", () => {
+    const kept = data();
+    const lean = (t: TraitOut) => Object.fromEntries(Object.entries(t).filter(([, v]) => v !== null)) as TraitOut;
+    const sent = data({
+      catalogue: { ...kept.catalogue, traits: kept.catalogue.traits.map(lean) },
+      rarities: [{ clan: "Toreador", text: "Common", page: "403", house: false }],
+    });
+    expect(sent.catalogue.traits.find((t) => t.name === "Auspex")).toEqual({ category: "disciplines", name: "Auspex" });
+    const shown = (read: RulesBrowserOut) => entries(read).map(({ trait, rarity, ...rest }) => ({ ...rest, trait: !!trait, rarity: rarity?.text }));
+    expect(shown(sent)).toEqual(shown(kept));
+    for (const filters of [{ ...none, clan: "Toreador" }, { ...none, rating: 2 }, { ...none, query: "toreador" }]) {
+      expect(names(applyFilters(entries(sent), filters))).toEqual(names(applyFilters(entries(kept), filters)));
+    }
+  });
 });
 
 describe("applyFilters", () => {

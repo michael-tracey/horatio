@@ -315,7 +315,7 @@ def test_the_catalogue_lists_traits_with_house_rule_text(troupe: Troupe, session
 
     acute = next(t for t in plain["traits"] if t["name"] == "Acute Sense")
     assert acute["fixed_rating"] == 1
-    assert acute["house_rule"] is None
+    assert "house_rule" not in acute
     assert next(t for t in ours["traits"] if t["name"] == "Acute Sense")["house_rule"] == (
         "Rare in our city"
     )

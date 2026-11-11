@@ -104,5 +104,5 @@ def test_the_quote_shows_the_capped_payout(troupe: Troupe) -> None:
 def test_the_catalogue_states_the_limits(troupe: Troupe) -> None:
     categories = troupe.player.client.get("/rules/vampire").json()["categories"]
 
-    found = {c["key"]: c["points_limit"] for c in categories}
+    found = {c["key"]: c.get("points_limit") for c in categories}
     assert (found["merits"], found["flaws"], found["skills"]) == (7, 7, None)

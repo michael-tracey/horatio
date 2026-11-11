@@ -124,5 +124,5 @@ def test_the_fee_is_not_a_price_difference_when_moving_home(
 def test_the_catalogue_says_focuses_cost_ten_to_change(troupe: Troupe) -> None:
     categories = troupe.player.client.get("/rules/vampire").json()["categories"]
 
-    costs = {c["key"]: c["change_cost"] for c in categories}
+    costs = {c["key"]: c.get("change_cost") for c in categories}
     assert (costs["focus_physicals"], costs["focus_mentals"], costs["skills"]) == (10, 10, None)

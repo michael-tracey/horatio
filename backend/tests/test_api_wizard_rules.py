@@ -94,7 +94,7 @@ def test_every_clan_says_its_weakness_and_where_the_book_has_it(troupe: Troupe) 
     assert clans["Toreador: Ishtarri"]["weakness"].startswith("Instead of the Toreador weakness")
     assert clans["Toreador: Ishtarri"]["weakness_page"] == "61"
     # Only clans have one.
-    assert all(t["weakness"] is None for t in traits if t["category"] != "clan")
+    assert all("weakness" not in t for t in traits if t["category"] != "clan")
 
 
 # --- traits for one sect -----------------------------------------------------------------------

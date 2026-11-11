@@ -60,7 +60,7 @@ export function DotGrid({
   showTitle?: boolean;
   /** Split the rows under headings, such as skills by attribute. Traits no
    * section claims go last, under "Other". */
-  sections?: { order: string[]; of: (trait: TraitOut) => string | null };
+  sections?: { order: string[]; of: (trait: TraitOut) => string | null | undefined };
   traits: TraitOut[];
   picks: Picks;
   onChange: (picks: Picks) => void;

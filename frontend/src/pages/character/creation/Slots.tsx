@@ -61,7 +61,7 @@ export function SlotGrid({
   picks: Picks;
   onChange: (picks: Picks) => void;
   /** Group each slot's choices under headings, such as skills by attribute. */
-  sections?: { order: string[]; of: (trait: TraitOut) => string | null };
+  sections?: { order: string[]; of: (trait: TraitOut) => string | null | undefined };
   /** The field each picked Crafts, Performance or Science is for, by pick (see logic's `copyKey`). */
   details?: Record<string, string>;
   onDetail?: (name: string, detail: string) => void;
