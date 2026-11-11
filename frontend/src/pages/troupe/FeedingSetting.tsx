@@ -3,7 +3,7 @@ import { api, unwrap } from "../../api/client";
 import type { TroupeOut } from "../../api/types";
 import { useToast } from "../../components/Toast";
 import { Card, ErrorText } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 
 export type Setting = { feeding: TroupeOut["feeding"]; resonance: boolean; territories: boolean; rack: boolean };
 
@@ -58,7 +58,7 @@ export function FeedingSetting({ troupeId, canEdit }: { troupeId: string; canEdi
   const path = { params: { path: { troupe_id: troupeId } } };
   const troupe = useQuery({ queryKey: ["troupe", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", path)) });
   const toast = useToast();
-  const save = useAction(async ({ before, after }: { before: Setting; after: Setting }) => {
+  const save = useRulesAction(async ({ before, after }: { before: Setting; after: Setting }) => {
     await unwrap(api.PUT("/api/troupes/{troupe_id}/feeding", { ...path, body: after }));
     toast({ message: feedingChangeText(before, after) });
   });

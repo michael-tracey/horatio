@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "../../api/client";
 import { Card, ErrorText } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 
 /** House option: the troupe's sect recognises the pursuit of Golconda, so Golconda Seekers hold the innate status Enlightened (Vol. 2, p. 267). Off unless switched on. */
 export function GolcondaSetting({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
   const path = { params: { path: { troupe_id: troupeId } } };
   const troupe = useQuery({ queryKey: ["troupe", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", path)) });
-  const save = useAction((on: boolean) => unwrap(api.PUT("/api/troupes/{troupe_id}/golconda", { ...path, body: { on } })));
+  const save = useRulesAction((on: boolean) => unwrap(api.PUT("/api/troupes/{troupe_id}/golconda", { ...path, body: { on } })));
   if (!troupe.data) return null;
   const on = troupe.data.golconda_enlightened;
   return (

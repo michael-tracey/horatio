@@ -4,7 +4,7 @@ import { api, unwrap } from "../../api/client";
 import type { CharacterOut } from "../../api/types";
 import { Dialog } from "../../components/Dialog";
 import { Button, ErrorText, Loading } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 import { withdrawnText } from "./leaveHome";
 
 /**
@@ -54,7 +54,7 @@ function Confirm({
     queryKey: ["leaving", character.id, troupeId],
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/troupes/{troupe_id}/leaving", path)),
   });
-  const leave = useAction(() => unwrap(api.DELETE("/api/characters/{character_id}/troupes/{troupe_id}", path)));
+  const leave = useRulesAction(() => unwrap(api.DELETE("/api/characters/{character_id}/troupes/{troupe_id}", path)));
 
   // Once it has left, asking again fails; what it said before still stands.
   if (!found.data) return found.error ? <ErrorText error={found.error} /> : <Loading />;

@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "../../api/client";
 import { Card, ErrorText } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 
 /** Optional rule: a dot of a rare discipline, learned from a teacher, takes two downtime actions (MET: VtM core p. 113). Off unless switched on. */
 export function RareDisciplinesSetting({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
   const path = { params: { path: { troupe_id: troupeId } } };
   const troupe = useQuery({ queryKey: ["troupe", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", path)) });
-  const save = useAction((on: boolean) => unwrap(api.PUT("/api/troupes/{troupe_id}/rare-disciplines", { ...path, body: { on } })));
+  const save = useRulesAction((on: boolean) => unwrap(api.PUT("/api/troupes/{troupe_id}/rare-disciplines", { ...path, body: { on } })));
   if (!troupe.data) return null;
   const on = troupe.data.rare_disciplines_two_actions;
   return (

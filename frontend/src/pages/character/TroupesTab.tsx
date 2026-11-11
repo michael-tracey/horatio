@@ -6,7 +6,7 @@ import type { CharacterOut, DifferenceOut, XpStandingOut } from "../../api/types
 import { EmptyState } from "../../components/EmptyState";
 import { InfoButton } from "../../components/InfoButton";
 import { Button, Card, ErrorText, Field, Loading, Notice, Select, Textarea } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useAction, useRulesAction } from "../../hooks";
 import { describeDifference, settlementLabel } from "../../settlements";
 import { useBackstoryStanding } from "./BackstoryTab";
 import { BuiltTo } from "./BuiltTo";
@@ -41,10 +41,10 @@ export function TroupesTab({ character }: { character: CharacterOut }) {
   const [joining, setJoining] = useState("");
 
   const join = useAction((troupe_id: string) => unwrap(api.POST("/api/characters/{character_id}/troupes", { ...path, body: { troupe_id } })));
-  const leave = useAction((troupe_id: string) =>
+  const leave = useRulesAction((troupe_id: string) =>
     unwrap(api.DELETE("/api/characters/{character_id}/troupes/{troupe_id}", { params: { path: { character_id: character.id, troupe_id } } })),
   );
-  const withdraw = useAction(() => unwrap(api.DELETE("/api/characters/{character_id}/home-troupe", path)));
+  const withdraw = useRulesAction(() => unwrap(api.DELETE("/api/characters/{character_id}/home-troupe", path)));
 
   if (memberships.isPending || troupes.isPending || sheet.isPending) return <Loading />;
   const memberIds = new Set(memberships.data?.map((m) => m.troupe_id));
@@ -220,7 +220,7 @@ function HomeTroupe({
     if (troupeId) preview.mutate(troupeId);
     // Only for the troupe the page opened with; choosing another previews it on change.
   }, []);
-  const request = useAction(() =>
+  const request = useRulesAction(() =>
     unwrap(
       api.POST("/api/characters/{character_id}/home-troupe", {
         ...path,

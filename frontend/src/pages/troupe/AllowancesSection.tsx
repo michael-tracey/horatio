@@ -5,7 +5,7 @@ import type { AllowanceOut, AllowancesOut } from "../../api/types";
 import { Explainer } from "../../components/Explainer";
 import { RowEditor, useRowEditor } from "../../components/RowEditor";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { RULES_QUERY, useRulesAction } from "../../hooks";
 import { useHouseSplat } from "./HouseSplat";
 import { InfluenceLookback } from "./InfluenceLookback";
 import { RareDisciplinesSetting } from "./RareDisciplinesSetting";
@@ -34,7 +34,7 @@ export function AllowancesSection({ troupeId, canEdit }: { troupeId: string; can
     queryKey: ["allowances", troupeId, splat],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/allowances", { params: { path: { troupe_id: troupeId }, query: { splat } } })),
   });
-  const remove = useAction((id: string) =>
+  const remove = useRulesAction((id: string) =>
     unwrap(api.DELETE("/api/troupes/{troupe_id}/allowances/{rule_id}", { params: { path: { troupe_id: troupeId, rule_id: id }, query: { splat } } })),
   );
   if (allowances.isPending) return <Loading />;
@@ -151,6 +151,7 @@ function AllowanceEditor({ troupeId, splat, data, editing, onClose }: { troupeId
   const [minRating, setMinRating] = useState(start?.min_rating.toString() ?? "1");
   const catalogue = useQuery({
     queryKey: ["catalogue", splat, null],
+    meta: RULES_QUERY,
     queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat }, query: {} } })),
     enabled: editing.kind === "new",
   });
@@ -160,7 +161,7 @@ function AllowanceEditor({ troupeId, splat, data, editing, onClose }: { troupeId
 
   const detailRatings = scheme === "per_detail" ? fieldRatings(ratings) : [];
   const body = { scheme, amount: Number(amount), min_rating: Number(minRating), detail_ratings: detailRatings ?? [] };
-  const save = useAction(async () => {
+  const save = useRulesAction(async () => {
     if (editing.kind === "change") {
       await unwrap(
         api.PUT("/api/troupes/{troupe_id}/allowances/{rule_id}", { params: { path: { troupe_id: troupeId, rule_id: editing.rule.id! }, query: { splat } }, body }),

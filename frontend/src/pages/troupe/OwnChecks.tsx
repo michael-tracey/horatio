@@ -7,7 +7,7 @@ import { Dialog } from "../../components/Dialog";
 import { EmptyState } from "../../components/EmptyState";
 import { RowEditor, useRowEditor } from "../../components/RowEditor";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { RULES_QUERY, useRulesAction } from "../../hooks";
 import { TraitList } from "./HouseEffects";
 import {
   COND_TYPES,
@@ -60,7 +60,7 @@ export function OwnChecks({ troupeId, canEdit }: { troupeId: string; canEdit: bo
     queryKey: ["own-checks", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/house-checks", { params: { path: { troupe_id: troupeId } } })),
   });
-  const remove = useAction((id: string) =>
+  const remove = useRulesAction((id: string) =>
     unwrap(api.DELETE("/api/troupes/{troupe_id}/house-checks/{check_id}", { params: { path: { troupe_id: troupeId, check_id: id } } })),
   );
 
@@ -202,12 +202,13 @@ function OwnCheckEditor({ troupeId, editing, onClose }: { troupeId: string; edit
   });
   const catalogue = useQuery({
     queryKey: ["catalogue", draft.splat, troupeId],
+    meta: RULES_QUERY,
     queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: draft.splat }, query: { troupe_id: troupeId } } })),
   });
   const built = toBody(draft);
   const body = "body" in built ? built.body : null;
   const preview = useOwnCheckPreview(troupeId, body, editing === "new" ? null : editing.id);
-  const save = useAction(async () => {
+  const save = useRulesAction(async () => {
     if (!body) return;
     if (editing === "new") await unwrap(api.POST("/api/troupes/{troupe_id}/house-checks", { params: { path: { troupe_id: troupeId } }, body }));
     else

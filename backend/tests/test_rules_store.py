@@ -13,9 +13,15 @@ from horatio.models import CostRule, TraitCategory, TraitDefinition, Troupe, Use
 from horatio.rules.files import DATA_DIR, load_rule_set
 from horatio.rules.model import CostRuleData, SheetTrait
 from horatio.rules.pricing import trait_cost
-from horatio.rules.store import add_house_rule, read_troupe_rules, sync_rule_set
+from horatio.rules.store import (
+    add_house_rule,
+    change_book_trait,
+    read_troupe_rules,
+    sync_rule_set,
+)
 
 VAMPIRE = load_rule_set(DATA_DIR / "bns_met_vampire.toml")
+GHOUL = load_rule_set(DATA_DIR / "bns_met_ghoul.toml")
 
 
 def normalised(rules: Sequence[CostRuleData]) -> list[str]:
@@ -94,6 +100,26 @@ def test_reloading_the_rule_set_keeps_house_rules(session: Session) -> None:
     sync_rule_set(session, VAMPIRE)
 
     assert len(read_troupe_rules(session, "vampire", troupe.id).house_rules) == 1
+
+
+def test_a_troupes_changes_to_book_traits_stay_with_their_rule_set(session: Session) -> None:
+    vampire, ghoul = sync_rule_set(session, VAMPIRE), sync_rule_set(session, GHOUL)
+    troupe = make_troupe(session, "ours")
+
+    def lucky(rule_set_id: object) -> TraitDefinition:
+        return session.scalars(
+            select(TraitDefinition)
+            .join(TraitCategory)
+            .where(TraitCategory.rule_set_id == rule_set_id, TraitDefinition.name == "Lucky")
+        ).one()
+
+    change_book_trait(session, troupe.id, lucky(vampire.id).id, {"banned": True})
+    change_book_trait(session, troupe.id, lucky(ghoul.id).id, {"wording": "Once a game"})
+
+    vampires = read_troupe_rules(session, "vampire", troupe.id).trait_changes
+    ghouls = read_troupe_rules(session, "ghoul", troupe.id).trait_changes
+    assert [(c.banned, c.wording) for c in vampires.values()] == [(True, "")]
+    assert [(c.banned, c.wording) for c in ghouls.values()] == [(False, "Once a game")]
 
 
 def test_a_house_rule_for_all_merits_is_refused(session: Session) -> None:

@@ -9,7 +9,7 @@ import { RowEditor, useRowEditor } from "../../components/RowEditor";
 import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { HouseWording } from "../../components/TroupeChange";
-import { useAction } from "../../hooks";
+import { RULES_QUERY, useRulesAction } from "../../hooks";
 import { bookSummary } from "../../houseWording";
 import { pageText } from "./bookPage";
 import { bookTraits, changeSummary, findTraits, kindChoices, requirementNote, SHOWN } from "./bookTraits";
@@ -36,6 +36,7 @@ export function BookTraitsSection({ troupeId, canEdit }: { troupeId: string; can
   const [opened, setOpened] = useState<{ row: BookTraitOut | TraitOut; at: number } | null>(null);
   const catalogue = useQuery({
     queryKey: ["catalogue", splat, troupeId],
+    meta: RULES_QUERY,
     queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat }, query: { troupe_id: troupeId } } })),
   });
   const changes = useQuery({
@@ -276,7 +277,7 @@ function TraitPanel({
   const own = (checks.data ?? []).filter((c) => c.category === trait.category && c.about === trait.name && !c.key.endsWith("/requirement"));
   const [draft, setDraft] = useState(saved);
   const set = (next: Partial<typeof draft>) => setDraft((d) => ({ ...d, ...next }));
-  const save = useAction((body: Omit<typeof draft, "kind"> & { kind?: string }) =>
+  const save = useRulesAction((body: Omit<typeof draft, "kind"> & { kind?: string }) =>
     unwrap(
       api.PUT("/api/troupes/{troupe_id}/book-traits", {
         params: { path: { troupe_id: troupeId } },

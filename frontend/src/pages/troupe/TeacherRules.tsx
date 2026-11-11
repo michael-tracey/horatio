@@ -6,7 +6,7 @@ import { Dialog } from "../../components/Dialog";
 import { EmptyState } from "../../components/EmptyState";
 import { RowEditor, useRowEditor } from "../../components/RowEditor";
 import { Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { RULES_QUERY, useAction } from "../../hooks";
 import { TraitList } from "./HouseEffects";
 import { Blocks } from "./OwnChecks";
 import { namesIn } from "./ownChecks";
@@ -151,6 +151,7 @@ function TeacherRuleEditor({ troupeId, editing, onClose }: { troupeId: string; e
   });
   const catalogue = useQuery({
     queryKey: ["catalogue", draft.splat, troupeId],
+    meta: RULES_QUERY,
     queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: draft.splat }, query: { troupe_id: troupeId } } })),
   });
   const built = toBody(draft);

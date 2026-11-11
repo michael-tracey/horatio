@@ -5,7 +5,7 @@ import { api, unwrap } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Dialog } from "../../components/Dialog";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, PageTitle, Select, Textarea } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { RULES_QUERY, useAction } from "../../hooks";
 import { CharacterPicture } from "../character/Picture";
 import { type NpcKind, groupedKinds, kindPages, resourceText } from "./npcKinds";
 import { allowedPowers, expandPower, INFERNAL_INVESTMENT } from "./stockNpcs";
@@ -27,6 +27,7 @@ export function StockNpcBuilder({ troupeId }: { troupeId: string }) {
   const kinds = useQuery({ queryKey: ["npc-kinds"], queryFn: () => unwrap(api.GET("/api/npc-kinds")), staleTime: Infinity });
   const catalogue = useQuery({
     queryKey: ["catalogue", "vampire", troupeId],
+    meta: RULES_QUERY,
     queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat: "vampire" }, query: { troupe_id: troupeId } } })),
     staleTime: 5 * 60_000,
   });

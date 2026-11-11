@@ -3,7 +3,7 @@ import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { DefaultBloodlinesOut } from "../../api/types";
 import { Button, Card, ErrorText, Loading, Select } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 
 type Row = DefaultBloodlinesOut["clans"][number];
 
@@ -32,7 +32,7 @@ export function DefaultBloodlines({ troupeId, canEdit }: { troupeId: string; can
     queryKey: ["default-bloodlines", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/default-bloodlines", path)),
   });
-  const save = useAction((chosen: Record<string, string>) =>
+  const save = useRulesAction((chosen: Record<string, string>) =>
     unwrap(api.PUT("/api/troupes/{troupe_id}/default-bloodlines", { ...path, body: { defaults: chosen } })),
   );
   if (defaults.isPending) return <Loading />;

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { Badge, Button, Card, Empty, ErrorText, Loading, PageTabs, Textarea } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { useRulesAction } from "../../hooks";
 import { kindGroups, kindLabel, kindSlug } from "./specializations";
 
 /**
@@ -59,7 +59,7 @@ type TroupeKind = { category: string; name: string; group: string; parent_name: 
 function KindCard({ troupeId, kind, canEdit }: { troupeId: string; kind: TroupeKind; canEdit: boolean }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState((kind.troupe ?? []).join("\n"));
-  const save = useAction((names: string[]) =>
+  const save = useRulesAction((names: string[]) =>
     unwrap(
       api.PUT("/api/troupes/{troupe_id}/specializations/{category}", {
         params: { path: { troupe_id: troupeId, category: kind.category } },

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from horatio.models import AuditEvent, Character, TroupeMembership, User
 from horatio.rules.model import CostRuleData
-from horatio.rules.store import add_house_rule
+from horatio.rules.store import RULES_CACHE, add_house_rule, forget_rules
 from horatio.sheets import freeze_sheet
 from tests.api_helpers import Person, Troupe, new_character, without_starting_traits
 
@@ -68,6 +68,21 @@ def test_new_characters_start_with_30_xp(troupe: Troupe) -> None:
     assert [(e["kind"], e["amount"], e["reason"]) for e in history] == [
         ("award", 30, "Starting experience")
     ]
+
+
+def test_a_sheet_in_creation_reads_only_the_rules_it_plays_by(
+    troupe: Troupe, session: Session
+) -> None:
+    """What creation XP a first acceptance would lose is read on its own, not by
+    loading the plain rule set beside the troupe's (#638)."""
+    response = troupe.player.client.post(
+        "/characters", json={"splat": "vampire", "name": "Bram", "building_troupe_id": troupe.id}
+    )
+    character_id = response.json()["id"]
+    forget_rules(session)
+
+    assert sheet(troupe.player, character_id)["xp"]["unbanked"] == 25
+    assert set(session.info[RULES_CACHE]) == {("vampire", uuid.UUID(troupe.id))}
 
 
 def test_buying_a_skill(troupe: Troupe) -> None:

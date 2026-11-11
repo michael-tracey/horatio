@@ -7,7 +7,7 @@ import { useClanName } from "../../components/ClanNames";
 import { Explainer } from "../../components/Explainer";
 import { RowEditor, useRowEditor } from "../../components/RowEditor";
 import { Badge, Button, Card, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
-import { useAction } from "../../hooks";
+import { RULES_QUERY, useRulesAction } from "../../hooks";
 import { pageText } from "./bookPage";
 import { useHouseSplat } from "./HouseSplat";
 import { FACTS, flat, linesOf, newLine, overlaps, parseTable, previewRatings, priceAt, sameCondition, SCHEMES, TESTS, toCondition } from "./costs";
@@ -42,7 +42,7 @@ export function CostsSection({ troupeId, canEdit }: { troupeId: string; canEdit:
     queryKey: ["costs", troupeId, splat],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/costs", { params: { path: { troupe_id: troupeId }, query: { splat } } })),
   });
-  const remove = useAction((id: string) =>
+  const remove = useRulesAction((id: string) =>
     unwrap(api.DELETE("/api/troupes/{troupe_id}/costs/{cost_id}", { params: { path: { troupe_id: troupeId, cost_id: id }, query: { splat } } })),
   );
   if (costs.isPending) return <Loading />;
@@ -213,6 +213,7 @@ function PriceEditor({ troupeId, splat, data, editing, onClose }: { troupeId: st
   const catalogue = useQuery({
     // The rule set's own catalogue, for the book ratings of merits and flaws and the clans.
     queryKey: ["catalogue", splat, null],
+    meta: RULES_QUERY,
     queryFn: () => unwrap(api.GET("/api/rules/{splat}", { params: { path: { splat }, query: {} } })),
   });
   const clans = (catalogue.data?.traits ?? []).filter((t) => t.category === "clan").map((t) => t.name);
@@ -229,7 +230,7 @@ function PriceEditor({ troupeId, splat, data, editing, onClose }: { troupeId: st
   const built = fixedCondition ? { condition: start?.condition ?? null } : toCondition(lines);
   const condition = "condition" in built ? built.condition : null;
   const body = { scheme, rate: pricing.rate, table: pricing.table, text };
-  const save = useAction(async () => {
+  const save = useRulesAction(async () => {
     if (editing.kind === "change") {
       await unwrap(
         api.PUT("/api/troupes/{troupe_id}/costs/{cost_id}", {
