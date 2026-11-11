@@ -105,7 +105,7 @@ function controlClass(className?: string): string {
   return cx(sized ? control.replace("w-full ", "") : control, className);
 }
 
-export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
+export function Input(props: InputHTMLAttributes<HTMLInputElement> & { ref?: Ref<HTMLInputElement> }) {
   return <input {...props} className={controlClass(props.className)} />;
 }
 

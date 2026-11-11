@@ -643,6 +643,49 @@ test("a lead makes Soul Shard a general flaw on the Book traits page, and a play
   await expect(categories.getByRole("listitem").filter({ hasText: "Soul Shard" })).toContainText("General here; Sabbat in the book.");
 });
 
+test("a lead opens a book trait from far down the list: its panel opens under it with the focus, and the focus goes back to the row as it closes (#648)", async ({ browser }) => {
+  const custodian = await person(browser, "farrow-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "farrow-lead");
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers: { "X-Horatio": "1" }, data: { name: `Hall of Far Rows ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+
+  // Every merit, forty of them shown: the lead opens the last.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/rules/book-traits`);
+  await l.getByLabel("Category", { exact: true }).selectOption({ label: "Merits" });
+  await expect(l.getByText(/^Showing 40 of \d+\./)).toBeVisible();
+  const found = l.getByRole("list", { name: "Book traits found" });
+  const last = found.getByRole("listitem").last();
+  const name = (await last.getByRole("button").locator("span").first().textContent())!;
+  const row = found.getByRole("button", { name: `${name} Merits` });
+  await row.click();
+
+  // Its panel opens under it, on screen, with the focus in it.
+  const item = found.getByRole("listitem").filter({ has: l.getByRole("button", { name: `${name} Merits` }) });
+  const panel = item.getByRole("region", { name, exact: true });
+  await expect(panel).toBeInViewport();
+  await expect(row).toHaveAttribute("aria-expanded", "true");
+  await expect(panel.getByLabel("Banned in this troupe")).toBeFocused();
+  await expect(l.getByRole("region", { name, exact: true })).toHaveCount(1);
+
+  // A change saved keeps the panel where it is, though the trait now comes first among those found.
+  await panel.getByLabel("House wording").fill("Here it needs a storyteller's nod first.");
+  await panel.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(l.getByText(`Saved: ${name} in this troupe`)).toBeVisible();
+  await expect(row).toContainText("House wording");
+  await expect(found.getByRole("listitem").last()).toContainText(name);
+  await expect(panel).toBeInViewport();
+
+  // Closed, the focus is back on its row.
+  await panel.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(panel).toHaveCount(0);
+  await expect(row).toBeFocused();
+  await expect(row).toHaveAttribute("aria-expanded", "false");
+});
+
 test("a lead exports one troupe's settings and imports them into another, leaving out a section and renaming the troupe in its house wording (#521)", async ({ browser }) => {
   const custodian = await person(browser, "sharing-custodian");
   makeCustodian(custodian.email);
