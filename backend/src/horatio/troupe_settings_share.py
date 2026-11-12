@@ -46,6 +46,8 @@ from horatio import (
     audit,
     backstories,
     book_traits,
+    boon_standings,
+    boons,
     downtimes,
     feeding,
     free_changes,
@@ -501,6 +503,14 @@ def retainer_words(value: Any) -> str:
     return "; ".join(f for f in found if f) or "None"
 
 
+def boon_weights_words(value: Any) -> str:
+    """What each kind of boon weighs in the standings (horatio.boon_standings)."""
+    if not value:
+        return "As the defaults"
+    weights = {**boon_standings.DEFAULT_WEIGHTS, **value}
+    return ", ".join(f"{boons.KINDS[k]} {float(w):g}" for k, w in weights.items())
+
+
 def game_xp_words(value: Any) -> str:
     found = game_xp.GameXpSettings.model_validate(value or {})
     return "; ".join(
@@ -666,6 +676,13 @@ SETTINGS: dict[str, Setting] = {
             ),
         ),
         Setting("boons", "at_game", "Boons", bool, on_off),
+        Setting(
+            "boon_weights",
+            "at_game",
+            "Boon weights",
+            dict[Literal["trivial", "minor", "major", "blood", "life"], float],
+            boon_weights_words,
+        ),
         Setting(
             "play_tabs_off",
             "at_game",
@@ -2322,6 +2339,14 @@ def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, Setti
             # Set as their editors set them: the value alone, checked by its type.
             if key in values:
                 setattr(troupe, key, values[key])
+        if touched("boon_weights"):
+            given = values["boon_weights"] or {}
+            boon_standings.set_weights(
+                db,
+                user,
+                troupe,
+                {k: float(given.get(k, w)) for k, w in boon_standings.DEFAULT_WEIGHTS.items()},
+            )
         if touched("play_tabs_off"):
             play_tabs.set_tabs_off(db, user, troupe, values["play_tabs_off"])
         if touched("game_xp"):
