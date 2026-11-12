@@ -2273,6 +2273,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/leaving/warnings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Leaving Warnings
+         * @description What the retire dialog, and changing why a character left, warn of before it
+         *     tells other players something they haven't been told (#748): its player's, and its
+         *     home troupe's running staff's, each as they may know of it.
+         */
+        get: operations["leaving_warnings_api_characters__character_id__leaving_warnings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/location-requests": {
         parameters: {
             query?: never;
@@ -21388,6 +21410,37 @@ export interface components {
             /** Titles */
             titles: string[];
         };
+        /** LeavingSharersOut */
+        LeavingSharersOut: {
+            /** Background */
+            background: string;
+            /** Name */
+            name: string;
+            /** Others */
+            others: string[];
+            /** Troupe */
+            troupe: string;
+        };
+        /** LeavingThrallOut */
+        LeavingThrallOut: {
+            /** Name */
+            name: string;
+            /** Troupe */
+            troupe: string;
+        };
+        /**
+         * LeavingWarningsOut
+         * @description What retiring the character, or saying it met Final Death, could tell others
+         *     (horatio.retiring), as the reader may know of it.
+         */
+        LeavingWarningsOut: {
+            /** Shared */
+            shared: components["schemas"]["LeavingSharersOut"][];
+            /** Staff */
+            staff: boolean;
+            /** Thralls */
+            thralls: components["schemas"]["LeavingThrallOut"][];
+        };
         /** LedTroupe */
         LedTroupe: {
             /**
@@ -37072,6 +37125,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CharacterOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    leaving_warnings_api_characters__character_id__leaving_warnings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeavingWarningsOut"];
                 };
             };
             /** @description Validation Error */

@@ -607,6 +607,8 @@ Whatever the reason, retiring gives up every title the character holds, in each 
 
 Add a **Note** for the character's log if you like, and choose whether to list it under **No longer with us** on the Who's Who of its troupes, where their players and staff see its name, clan, social age, player and why it left. It's listed by default, except when Inactive. Then press **Retire** and the character's name.
 
+The dialog warns you first if it would tell others something they haven't been told: if your character meets Final Death while holding a blood bond you know of, listing it (or asking for remembrances) tells the thrall's player now, though the bond fades unfelt for a month; and if it has dots in a shared background with others, they see it left once its dots are withdrawn. It's a warning only: the choice is yours.
+
 > **If your troupe uses this:** with Remembrances, tick **Ask the storytellers to open remembrances in the next downtime**, and the troupe is asked for memories of the character once they confirm. The retired character's page keeps a **Remembrances** card with what the troupe wrote, newest month first, without names.
 
 A retired character is hidden from everyday lists and out of all downtimes, and its sheet can no longer change, but it's kept with its full history, and stays on your Characters page marked **Retired**. Its page shows why it left; you, or its home troupe's storytellers, can **Change…** that, or whether it's listed, later. There's no way to bring a retired character back into play from the app.
