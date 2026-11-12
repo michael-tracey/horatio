@@ -167,7 +167,7 @@ function Trends({ s }: { s: Statistics }) {
     <div className="flex flex-wrap items-center gap-2 text-sm text-mist">
       <label className="flex items-center gap-1">
         From
-        <select className="rounded-md border border-ash bg-night px-1 py-0.5 text-parchment" value={periods[0]?.key ?? ""} onChange={(e) => setFrom(e.target.value)}>
+        <select aria-label="From" className="rounded-md border border-ash bg-night px-1 py-0.5 text-parchment" value={periods[0]?.key ?? ""} onChange={(e) => setFrom(e.target.value)}>
           {whole.periods.map((p) => (
             <option key={p.key} value={p.key}>
               {p.label}
@@ -177,7 +177,7 @@ function Trends({ s }: { s: Statistics }) {
       </label>
       <label className="flex items-center gap-1">
         to
-        <select className="rounded-md border border-ash bg-night px-1 py-0.5 text-parchment" value={periods.at(-1)?.key ?? ""} onChange={(e) => setTo(e.target.value)}>
+        <select aria-label="To" className="rounded-md border border-ash bg-night px-1 py-0.5 text-parchment" value={periods.at(-1)?.key ?? ""} onChange={(e) => setTo(e.target.value)}>
           {whole.periods.map((p) => (
             <option key={p.key} value={p.key}>
               {p.label}
@@ -217,7 +217,7 @@ function Trends({ s }: { s: Statistics }) {
           const x = scaleBand(
             periods.map((q) => q.key),
             [p.left, p.left + p.width],
-          ).padding(measure === "open" ? 0 : 0.2);
+          ).padding(measure === "open" && periods.length > 1 ? 0 : 0.2);
           const y = scaleLinear([0, Math.max(1, ...totals)], [p.top + p.height, p.top]).nice();
           const every = Math.max(1, Math.ceil(periods.length / Math.max(2, Math.floor(p.width / 64))));
           const label = (key: string) => {
@@ -232,7 +232,8 @@ function Trends({ s }: { s: Statistics }) {
               { label: `${what} in all`, value: formatValue(totals[i]!) },
             ],
           });
-          if (measure === "open") {
+          // Open debt is an area; with a single period there is no width to fill, so it is a column.
+          if (measure === "open" && periods.length > 1) {
             const rows = periods.map((_, i) => Object.fromEntries(shown.map((k) => [k.value, values(k.value)[i]!])) as Record<BoonKind, number>);
             const layers = stack<Record<BoonKind, number>, BoonKind>().keys(shown.map((k) => k.value))(rows);
             const shape = area<[number, number]>()
@@ -380,7 +381,7 @@ function Network({ s, troupeId }: { s: Statistics; troupeId: string }) {
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-mist">
         <label className="flex items-center gap-1">
           Clan
-          <select className={select} value={clan ?? ""} onChange={(e) => setClan(e.target.value || null)}>
+          <select aria-label="Clan" className={select} value={clan ?? ""} onChange={(e) => setClan(e.target.value || null)}>
             <option value="">All</option>
             {clans.map((c) => (
               <option key={c} value={c}>
@@ -392,7 +393,7 @@ function Network({ s, troupeId }: { s: Statistics; troupeId: string }) {
         {sects.length > 1 && (
           <label className="flex items-center gap-1">
             Sect
-            <select className={select} value={sect ?? ""} onChange={(e) => setSect(e.target.value || null)}>
+            <select aria-label="Sect" className={select} value={sect ?? ""} onChange={(e) => setSect(e.target.value || null)}>
               <option value="">All</option>
               {sects.map((c) => (
                 <option key={c} value={c}>
@@ -428,7 +429,7 @@ function Network({ s, troupeId }: { s: Statistics; troupeId: string }) {
         </fieldset>
         <label className="flex items-center gap-1">
           Weight at least
-          <input type="number" min={0} step={0.5} className={`${select} w-16`} value={minWeight} onChange={(e) => setMinWeight(Math.max(0, Number(e.target.value) || 0))} />
+          <input type="number" aria-label="Weight at least" min={0} step={0.5} className={`${select} w-16`} value={minWeight} onChange={(e) => setMinWeight(Math.max(0, Number(e.target.value) || 0))} />
         </label>
         <Segmented
           label="Colour circles by"
