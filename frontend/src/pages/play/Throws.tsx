@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../../components/ui";
 import { useDates } from "../../dates";
+import { ChallengeSetup, ChallengeTests, TheirThrow, type Challenging } from "./Challenge";
+import { expecting } from "./challenge";
 import { HORATIO_IMAGES, ThrowFace, type ThrowImages } from "./throwImages";
 import { COUNT_IN_STEP_MS, countIn, fairThrow, readThrows, remember, THROW_NAMES, type Throw, type Thrown } from "./throws";
 
@@ -36,7 +38,16 @@ export type Throwing = {
  * (none with reduced motion), then the reveal, with the last few throws kept for
  * this browser tab. Nothing goes to the server, so it works with no signal.
  */
-export function useThrows({ pick = fairThrow, storage = keptStorage() }: { pick?: () => Throw; storage?: Storage | null } = {}): Throwing {
+export function useThrows({
+  pick = fairThrow,
+  storage = keptStorage(),
+  onThrown,
+}: {
+  pick?: () => Throw;
+  storage?: Storage | null;
+  /** Told of each throw as it is revealed: a challenge from the Pools tab takes it as its test (#698). */
+  onThrown?: (thrown: Thrown) => void;
+} = {}): Throwing {
   const [past, setPast] = useState<Thrown[]>(() => {
     try {
       return readThrows(storage?.getItem(KEY) ?? null);
@@ -47,6 +58,8 @@ export function useThrows({ pick = fairThrow, storage = keptStorage() }: { pick?
   const [shown, setShown] = useState<Thrown | null>(past[0] ?? null);
   const [counting, setCounting] = useState<string | null>(null);
   const timers = useRef<number[]>([]);
+  const told = useRef(onThrown);
+  told.current = onThrown;
 
   useEffect(() => {
     try {
@@ -66,6 +79,7 @@ export function useThrows({ pick = fairThrow, storage = keptStorage() }: { pick?
       setCounting(null);
       setShown(thrown);
       setPast((p) => remember(p, thrown));
+      told.current?.(thrown);
     };
     const steps = countIn(reducedMotion());
     if (!steps.length) return reveal();
@@ -82,13 +96,32 @@ export function useThrows({ pick = fairThrow, storage = keptStorage() }: { pick?
  * The Play View's Throws tab (#668): a big Throw button for rock, paper or
  * scissors, the throw shown large enough to hold out across a table, and the last
  * three with their times. Tests are settled at the table: each player throws on
- * their own phone and they show each other their screens.
+ * their own phone and they show each other their screens. A pool thrown from the
+ * Pools tab (#698) comes with what the book says each throw means for it.
  */
-export function ThrowsTab({ images = HORATIO_IMAGES }: { images?: ThrowImages }) {
-  const { shown, counting, past, throwNow } = useThrows();
+export function ThrowsTab({
+  images = HORATIO_IMAGES,
+  challenging,
+  willpower,
+  spendWillpower,
+}: {
+  images?: ThrowImages;
+  /** The challenge a pool from the Pools tab started, if any. */
+  challenging?: Challenging;
+  /** Willpower now, and spending one for a retest, when the sheet is here. */
+  willpower?: number;
+  spendWillpower?: () => void;
+}) {
+  const c = challenging?.challenge ?? null;
+  const update = challenging?.update;
+  const { shown, counting, past, throwNow } = useThrows({
+    // A throw while the challenge waits for one is its test; any other is a throw like before.
+    onThrown: (thrown) => update?.((now) => (now && expecting(now) ? { ...now, pending: thrown.throw } : now)),
+  });
   const dates = useDates();
   return (
     <section aria-label="Throws" className="flex flex-col items-center gap-4">
+      {c && update && <ChallengeSetup c={c} update={update} />}
       <div aria-live="polite" className="flex min-h-[min(92vw,24rem)] w-full flex-col items-center justify-center rounded-lg border border-ash bg-dusk p-4 text-center">
         {counting ? (
           <p key={counting} className="throw-beat font-display text-5xl text-gold sm:text-6xl">
@@ -105,6 +138,8 @@ export function ThrowsTab({ images = HORATIO_IMAGES }: { images?: ThrowImages })
       <Button className="min-h-16 w-full max-w-sm font-display text-2xl! tracking-wide" onClick={throwNow} disabled={!!counting}>
         Throw
       </Button>
+      {c && update && <TheirThrow c={c} update={update} images={images} />}
+      {c && update && <ChallengeTests c={c} update={update} images={images} willpower={willpower} spendWillpower={spendWillpower} />}
       {past.length > 0 && (
         <section aria-labelledby="throws-past" className="w-full max-w-sm">
           <h2 id="throws-past" className="text-sm text-mist">

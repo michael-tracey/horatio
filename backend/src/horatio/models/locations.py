@@ -12,8 +12,9 @@ from horatio.models.base import Record
 class Location(Record):
     """A Stock Location, or a character's Haven placed on the list (CONTEXT.md:
     Location). The troupe's storytellers and assistant storytellers keep it
-    (horatio.locations), which records each change in the audit log; players
-    never see the record."""
+    (horatio.locations), which records each change in the audit log. Players never
+    see the record, except a Haven's owner, who sees and edits part of their own
+    (horatio.locations, "a player's own Haven")."""
 
     __tablename__ = "locations"
     __table_args__ = (
@@ -69,6 +70,8 @@ class Location(Record):
     influence_type: Mapped[str | None]
     influence_area: Mapped[str] = mapped_column(default="", server_default="")
     address: Mapped[str] = mapped_column(default="", server_default="")
+    # What it is like: a Haven's owner writes it; staff see it too.
+    description: Mapped[str] = mapped_column(default="", server_default="")
     web_address: Mapped[str] = mapped_column(default="", server_default="")
     map_link: Mapped[str] = mapped_column(default="", server_default="")
     feeding_block: Mapped[str] = mapped_column(default="", server_default="")

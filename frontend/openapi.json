@@ -18769,6 +18769,49 @@
         "title": "HandleIn",
         "type": "object"
       },
+      "HavenAdvantageChoiceOut": {
+        "properties": {
+          "allowed": {
+            "title": "Allowed",
+            "type": "boolean"
+          },
+          "free": {
+            "title": "Free",
+            "type": "boolean"
+          },
+          "free_with": {
+            "title": "Free With",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "needs": {
+            "title": "Needs",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "page",
+          "text",
+          "needs",
+          "allowed",
+          "free_with",
+          "free"
+        ],
+        "title": "HavenAdvantageChoiceOut",
+        "type": "object"
+      },
       "HavenAdvantageOut": {
         "properties": {
           "free_with": {
@@ -18800,6 +18843,78 @@
           "free_with"
         ],
         "title": "HavenAdvantageOut",
+        "type": "object"
+      },
+      "HavenNegativeOut": {
+        "properties": {
+          "effect": {
+            "title": "Effect",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "level",
+          "effect"
+        ],
+        "title": "HavenNegativeOut",
+        "type": "object"
+      },
+      "HavenOut": {
+        "properties": {
+          "advantages": {
+            "items": {
+              "$ref": "#/components/schemas/HavenAdvantageChoiceOut"
+            },
+            "title": "Advantages",
+            "type": "array"
+          },
+          "cannot_create": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cannot Create"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "dots": {
+            "title": "Dots",
+            "type": "integer"
+          },
+          "haven": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OwnHavenOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "character_name",
+          "dots",
+          "advantages",
+          "haven",
+          "cannot_create"
+        ],
+        "title": "HavenOut",
         "type": "object"
       },
       "Health": {
@@ -23061,6 +23176,12 @@
             "title": "Damaged Off",
             "type": "array"
           },
+          "description": {
+            "default": "",
+            "maxLength": 5000,
+            "title": "Description",
+            "type": "string"
+          },
           "elysium_since": {
             "anyOf": [
               {
@@ -23348,6 +23469,10 @@
             "title": "Damaged Off",
             "type": "array"
           },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
           "elysium_qualities": {
             "anyOf": [
               {
@@ -23584,6 +23709,7 @@
           "influence_type",
           "influence_area",
           "address",
+          "description",
           "web_address",
           "map_link",
           "feeding_block",
@@ -23676,6 +23802,12 @@
             },
             "title": "Damaged Off",
             "type": "array"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 5000,
+            "title": "Description",
+            "type": "string"
           },
           "elysium_since": {
             "anyOf": [
@@ -23978,6 +24110,10 @@
             "title": "Damaged Off",
             "type": "array"
           },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
           "elysium_qualities": {
             "anyOf": [
               {
@@ -24207,6 +24343,7 @@
           "influence_type",
           "influence_area",
           "address",
+          "description",
           "web_address",
           "map_link",
           "feeding_block",
@@ -28904,6 +29041,151 @@
           "purpose"
         ],
         "title": "OwnEntryOut",
+        "type": "object"
+      },
+      "OwnHavenIn": {
+        "properties": {
+          "address": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Address",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 5000,
+            "title": "Description",
+            "type": "string"
+          },
+          "haven_advantages": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Advantages",
+            "type": "array"
+          },
+          "map_link": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Map Link",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "OwnHavenIn",
+        "type": "object"
+      },
+      "OwnHavenOut": {
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "haven_advantages": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Advantages",
+            "type": "array"
+          },
+          "haven_free": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Free",
+            "type": "array"
+          },
+          "haven_over": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Haven Over"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "standard",
+              "prestige",
+              "iconic",
+              "haven"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "map_link": {
+            "title": "Map Link",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "negatives": {
+            "items": {
+              "$ref": "#/components/schemas/HavenNegativeOut"
+            },
+            "title": "Negatives",
+            "type": "array"
+          },
+          "read_only": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read Only"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_name",
+          "name",
+          "kind",
+          "description",
+          "address",
+          "map_link",
+          "haven_advantages",
+          "haven_free",
+          "haven_over",
+          "negatives",
+          "read_only",
+          "updated_at"
+        ],
+        "title": "OwnHavenOut",
         "type": "object"
       },
       "OwnLocationQualityIn": {
@@ -38478,6 +38760,10 @@
             "title": "Damaged Off",
             "type": "array"
           },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
           "elysium_qualities": {
             "anyOf": [
               {
@@ -38714,6 +39000,7 @@
           "influence_type",
           "influence_area",
           "address",
+          "description",
           "web_address",
           "map_link",
           "feeding_block",
@@ -55670,6 +55957,154 @@
         "summary": "Give Npc",
         "tags": [
           "npcs"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/haven": {
+      "get": {
+        "description": "The character's Haven as its player keeps it, and the advantages to choose from.",
+        "operationId": "read_haven_api_characters__character_id__haven_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HavenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Haven",
+        "tags": [
+          "locations"
+        ]
+      },
+      "post": {
+        "description": "Put the character's Haven on its home troupe's list of locations.",
+        "operationId": "add_haven_api_characters__character_id__haven_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnHavenIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HavenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Haven",
+        "tags": [
+          "locations"
+        ]
+      },
+      "put": {
+        "description": "Change the owner's part of the character's Haven: the rest stays as staff set it.",
+        "operationId": "change_haven_api_characters__character_id__haven_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnHavenIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HavenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Haven",
+        "tags": [
+          "locations"
         ]
       }
     },
