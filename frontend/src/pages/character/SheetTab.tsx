@@ -61,6 +61,7 @@ import {
   useSpecializations,
 } from "./Specializations";
 import { IdentityPanel } from "./Identities";
+import { HavenPanel } from "./Haven";
 import { BuyAnotherRetainer, RetainerSection, useRetainers } from "./Retainers";
 import { addsRetainers, givingMerits, isRetainersRow, placeRetainers, sectionLabel } from "./retainers";
 import { PowerChoices } from "./PowerChoices";
@@ -575,6 +576,9 @@ export function SheetTab({
                               ),
                               !inCart(t) && t.category === "backgrounds" && t.name === "Alternate Identity" && (
                                 <IdentityPanel key={`${t.id}/identity`} character={character} detail={t.detail} />
+                              ),
+                              mine && !inCart(t) && t.category === "backgrounds" && t.name === "Haven" && (
+                                <HavenPanel key={`${t.id}/haven`} character={character} />
                               ),
                               !inCart(t) && t.category === "disciplines" && (
                                 <PowerChoices key={`${t.id}/choices`} characterId={character.id} discipline={t.name} />

@@ -1,7 +1,8 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PowerSwitch } from "../../api/types";
 import { PowersBanner, PowersList } from "./Powers";
+import { switchKey } from "./powers";
 
 afterEach(cleanup);
 
@@ -52,5 +53,38 @@ describe("notes another power adds to a switch (#601)", () => {
   it("adds nothing to a switch without them", () => {
     render(<PowersList powers={[power({})]} tap={tap} />);
     expect(screen.queryByText(/Quickness/)).toBeNull();
+  });
+});
+
+describe("an Off button for each power in the banner (#697)", () => {
+  const might = power({ key: "Might", name: "Might", origin: "Potence 1", notes: [], on: true });
+  const flesh = power({ key: "Flesh of Marble", name: "Protean: Flesh of Marble", origin: "Protean 4", notes: [], on: true, picked: ["Rugged", "Hardened"] });
+
+  it("gives each power on its own Off button, which switches only that power off", () => {
+    const taps = vi.fn();
+    render(<PowersBanner powers={[{ ...celerity, on: true }, might, { ...meld, on: true }]} tap={taps} />);
+    const banner = screen.getByRole("region", { name: "Switched on now" });
+    const rows = within(within(banner).getByRole("list", { name: "Powers on" })).getAllByRole("listitem");
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!.textContent).toContain("On: Celerity");
+    expect(rows[0]!.textContent).toContain("For the turn: 1 Blood activates every Celerity power you have.");
+    fireEvent.click(within(banner).getByRole("button", { name: "Switch Might off" }));
+    expect(taps).toHaveBeenCalledTimes(1);
+    expect(taps).toHaveBeenCalledWith({ kind: "change", tracker: switchKey("Might"), amount: -1 });
+    // The form keeps its own way back.
+    expect(within(banner).getByRole("button", { name: "Turn back" })).toBeTruthy();
+  });
+
+  it("names a power's picks on its Off button", () => {
+    render(<PowersBanner powers={[flesh]} tap={tap} />);
+    expect(screen.getByRole("button", { name: "Switch Protean: Flesh of Marble (Rugged, Hardened) off" })).toBeTruthy();
+  });
+
+  it("keeps to names and Off buttons with more than three on", () => {
+    const many = ["A", "B", "C", "D"].map((n) => power({ key: n, name: n, on: true, added: [quickness] }));
+    render(<PowersBanner powers={many} tap={tap} />);
+    expect(screen.getAllByRole("button", { name: /^Switch . off$/ })).toHaveLength(4);
+    expect(screen.queryByText(/Quickness/)).toBeNull();
+    expect(screen.queryByText(/For the turn/)).toBeNull();
   });
 });
