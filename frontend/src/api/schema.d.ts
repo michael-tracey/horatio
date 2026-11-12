@@ -17758,6 +17758,8 @@ export interface components {
         };
         /** HavenAdvantageOut */
         HavenAdvantageOut: {
+            /** Free With */
+            free_with: string;
             /** Name */
             name: string;
             /** Needs */
@@ -19583,6 +19585,8 @@ export interface components {
         LocationCharacter: {
             /** Haven */
             haven: number;
+            /** Haven Free */
+            haven_free: string[];
             /**
              * Id
              * Format: uuid
@@ -19633,7 +19637,11 @@ export interface components {
             forfeit?: string | null;
             /** Haven Advantages */
             haven_advantages: string[];
+            /** Haven Free */
+            haven_free: string[];
             haven_of: components["schemas"]["LocationPerson"] | null;
+            /** Haven Over */
+            haven_over: string | null;
             heir: components["schemas"]["LocationPerson"] | null;
             /**
              * Id
@@ -19877,7 +19885,11 @@ export interface components {
             forfeit?: string | null;
             /** Haven Advantages */
             haven_advantages: string[];
+            /** Haven Free */
+            haven_free: string[];
             haven_of: components["schemas"]["LocationPerson"] | null;
+            /** Haven Over */
+            haven_over: string | null;
             heir: components["schemas"]["LocationPerson"] | null;
             /**
              * Id
@@ -25441,7 +25453,11 @@ export interface components {
             forfeit?: string | null;
             /** Haven Advantages */
             haven_advantages: string[];
+            /** Haven Free */
+            haven_free: string[];
             haven_of: components["schemas"]["LocationPerson"] | null;
+            /** Haven Over */
+            haven_over: string | null;
             heir: components["schemas"]["LocationPerson"] | null;
             /**
              * Id

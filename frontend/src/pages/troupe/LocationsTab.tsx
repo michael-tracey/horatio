@@ -357,6 +357,11 @@ function One({ troupeId, locations, catalogue, questsOn }: Props & { questsOn: b
               onQuest={questsOn ? () => navigate(`/troupes/${troupeId}/quests/new?location=${locationId}`) : undefined}
             />
           )}
+          {location.data.haven_over && (
+            <Card title="Too many advantages">
+              <p className="text-sm text-blood-bright">{location.data.haven_over}</p>
+            </Card>
+          )}
           {location.data.forfeit && (
             <Card title="Forfeit">
               <p className="text-sm text-blood-bright">{location.data.forfeit}</p>
@@ -502,6 +507,7 @@ function Record({ location: l, catalogue, onEdit, onQuest }: { location: Locatio
             {l.haven_advantages.map((a) => (
               <li key={a}>
                 <span className="text-parchment">{a}</span>
+                {l.haven_free.includes(a) && <span className="text-mist"> (free with {advantage(a)?.free_with ?? "a skill"})</span>}
                 {advantage(a) && <span className="text-mist"> — {advantage(a)!.text}</span>}
               </li>
             ))}

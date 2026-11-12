@@ -122,6 +122,8 @@ class HavenAdvantage:
     text: str
     # A skill needed to take it.
     needs: str = ""
+    # A skill that gives it free: with it, the advantage doesn't use a dot.
+    free_with: str = ""
 
 
 @dataclass(frozen=True)
@@ -267,7 +269,9 @@ def catalogue_from(raw: Mapping[str, Any]) -> Catalogue:
         for n in raw["negatives"]
     }
     advantages = {
-        a["name"]: HavenAdvantage(a["name"], a["page"], a["text"], a.get("needs", ""))
+        a["name"]: HavenAdvantage(
+            a["name"], a["page"], a["text"], a.get("needs", ""), a.get("free_with", "")
+        )
         for a in raw["haven_advantages"]
     }
     pages = {k: v for k, v in raw.items() if k.endswith("_page") and isinstance(v, str)}

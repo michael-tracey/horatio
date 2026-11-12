@@ -27,6 +27,8 @@ function location(change: Partial<LocationOut>): LocationOut {
     locked: false,
     haven_of: null,
     haven_advantages: [],
+    haven_free: [],
+    haven_over: null,
     elysium_since: null,
     elysium_qualities: null,
     notes: "",

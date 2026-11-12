@@ -2,15 +2,16 @@
 havens, with qualities from the catalogue as the troupe plays it, the quality
 limits, negatives kept secret, conglomerates and the control limit."""
 
+import uuid
 from collections.abc import Callable
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import update
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
-from horatio.models import Location
+from horatio.models import CharacterTrait, Location, TraitCategory, TraitDefinition
 from tests.api_helpers import Person, Troupe
 from tests.test_api_downtimes import member_character
 
@@ -434,6 +435,82 @@ def test_security_is_free_on_a_haven_of_someone_with_the_skill(scene: Scene) -> 
         "Free for Agnes, whose Haven this is, with Security (Vol. II Issue 1, p. 123)."
     )
     assert free["Firewall"] == "Free on a Haven of someone with Computer (Vol. II Issue 1, p. 122)."
+
+
+def test_the_security_advantage_is_free_with_the_security_skill(scene: Scene) -> None:
+    """#681: Security doesn't use a dot of Haven for someone with the skill (p. 102)."""
+    scene.give(scene.agnes, "backgrounds", "Haven", 2)
+    three = ["Library", "Luxury", "Security"]
+    without = scene.add(
+        name="Agnes's flat", kind="haven", rating=2, haven_of_id=scene.agnes, haven_advantages=three
+    )
+    assert without.status_code == 422
+    assert without.json()["detail"] == (
+        "Agnes has Haven 2: one advantage for each dot (MET: VTM, p. 102). "
+        "This Haven has 3 that use a dot: drop 1."
+    )
+
+    scene.give(scene.agnes, "skills", "Security", 1)
+    catalogue = scene.troupe.storyteller.client.get(f"{scene.path}/catalogue").json()
+    security = next(a for a in catalogue["haven_advantages"] if a["name"] == "Security")
+    assert security["free_with"] == "Security"
+    agnes = next(c for c in catalogue["characters"] if c["id"] == scene.agnes)
+    assert (agnes["haven"], agnes["haven_free"]) == (2, ["Security"])
+
+    flat = scene.added(
+        name="Agnes's flat", kind="haven", rating=2, haven_of_id=scene.agnes, haven_advantages=three
+    )
+    assert (flat["haven_free"], flat["haven_over"]) == (["Security"], None)
+    # Free or not, a fourth is one too many.
+    four = scene.change(flat, haven_advantages=[*three, "Size"])
+    assert four.status_code == 422
+    assert four.json()["detail"] == (
+        "Agnes has Haven 2: one advantage for each dot, plus Security free (MET: VTM, p. 102). "
+        "This Haven has 3 that use a dot: drop 1."
+    )
+
+
+def test_a_haven_over_its_dots_keeps_its_advantages_and_warns_staff(
+    scene: Scene, session: Session
+) -> None:
+    """#681: losing the skill leaves the Haven as it is, with a warning; nothing is
+    taken off by itself, and staff can still change the rest of it."""
+    scene.give(scene.agnes, "backgrounds", "Haven", 1)
+    scene.give(scene.agnes, "skills", "Security", 1)
+    flat = scene.added(
+        name="Agnes's flat",
+        kind="haven",
+        rating=1,
+        haven_of_id=scene.agnes,
+        haven_advantages=["Luxury", "Security"],
+    )
+    security = (
+        select(TraitDefinition.id)
+        .join(TraitCategory, TraitCategory.id == TraitDefinition.category_id)
+        .where(TraitCategory.key == "skills", TraitDefinition.name == "Security")
+    )
+    session.execute(
+        delete(CharacterTrait).where(
+            CharacterTrait.character_id == uuid.UUID(scene.agnes),
+            CharacterTrait.trait_definition_id.in_(security),
+        )
+    )
+    session.flush()
+    session.expire_all()
+
+    read = scene.troupe.storyteller.client.get(f"/locations/{flat['id']}").json()
+    assert read["haven_advantages"] == ["Luxury", "Security"]
+    assert read["haven_free"] == []
+    assert read["haven_over"] == (
+        "Agnes has Haven 1: one advantage for each dot (MET: VTM, p. 102). "
+        "This Haven has 2 that use a dot: drop 1."
+    )
+    renamed = scene.change(flat, address="12 Elm St")
+    assert renamed.status_code == 200, renamed.text
+    assert renamed.json()["haven_over"] is not None
+    dropped = scene.change(flat, haven_advantages=["Luxury"])
+    assert dropped.status_code == 200, dropped.text
+    assert dropped.json()["haven_over"] is None
 
 
 # --- Elysium ---------------------------------------------------------------------------
