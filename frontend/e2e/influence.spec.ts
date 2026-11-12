@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, undoInHeader, characterTab, chooseDots } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, undoInHeader, characterTab, chooseDots, topBar } from "./support";
 
 /** Influence: the troupe's log, Gossip, and attacks. */
 
@@ -14,7 +14,7 @@ test("storytellers log influence for PCs, NPCs and names only, and a player read
   const player = await person(browser, "infl-player");
   const troupeName = `Court of Ledgers ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -61,7 +61,7 @@ test("storytellers log influence for PCs, NPCs and names only, and a player read
   // The lead accepts Corvin, keeps an NPC, and opens a cycle.
   const l = lead.page;
   await l.reload();
-  await l.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(l)).getByRole("link", { name: "Troupes" }).click();
   await l.getByRole("link", { name: troupeName }).click();
   await expect(l.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(l.url()).pathname.split("/")[2]!;
@@ -177,7 +177,7 @@ test("influence spent at a game goes in the troupe's influence log, and comes of
   const player = await person(browser, "game-infl-player");
   const troupeName = `Court of Whispers ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -185,7 +185,7 @@ test("influence spent at a game goes in the troupe's influence log, and comes of
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
   await backstoryOptional(custodian.page, troupeName);
   const l = lead.page;
-  await l.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(l)).getByRole("link", { name: "Troupes" }).click();
   await l.getByRole("link", { name: troupeName }).click();
   await expect(l.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(l.url()).pathname.split("/")[2]!;
@@ -316,7 +316,7 @@ test("Gossip is filled from the influence log, and a discovery block hides an en
   const player = await person(browser, "gossip-player");
   const troupeName = `Court of Rumours ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -324,7 +324,7 @@ test("Gossip is filled from the influence log, and a discovery block hides an en
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
   await backstoryOptional(custodian.page, troupeName);
   const l = lead.page;
-  await l.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(l)).getByRole("link", { name: "Troupes" }).click();
   await l.getByRole("link", { name: troupeName }).click();
   await expect(l.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(l.url()).pathname.split("/")[2]!;
@@ -467,7 +467,7 @@ test("a storyteller resolves an attack, its target's Defend taken off, and the t
   const lead = await person(browser, "attack-lead");
   const troupeName = `Court of Knives ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -476,7 +476,7 @@ test("a storyteller resolves an attack, its target's Defend taken off, and the t
 
   // Two NPCs, made straight through the API: Isolde with Elite 4, Vasquez with Elite 3.
   const p = lead.page;
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(p.url()).pathname.split("/")[2]!;
@@ -550,7 +550,7 @@ test("staff chart the influence log: a heatmap cell opens its entries, and an At
   const lead = await person(browser, "inflchart-lead");
   const troupeName = `Court of Charts ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -558,7 +558,7 @@ test("staff chart the influence log: a heatmap cell opens its entries, and an At
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
 
   const p = lead.page;
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(p.url()).pathname.split("/")[2]!;
