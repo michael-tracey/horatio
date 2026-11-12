@@ -213,7 +213,7 @@ def test_status_over_time_is_worked_back_from_what_is_held_now(troupe: Troupe) -
 
 
 def migration() -> ModuleType:
-    path = Path(__file__).parent.parent / "migrations" / "versions" / "0178_title_history.py"
+    path = Path(__file__).parent.parent / "migrations" / "versions" / "0186_title_history.py"
     spec = importlib.util.spec_from_file_location("title_history_migration", path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -304,7 +304,7 @@ def test_names_in_a_retiring_list_match_titles_with_and_in_their_name() -> None:
 
 
 def test_the_migration_backfills_from_the_log(engine: Engine, alembic_config: Config) -> None:
-    command.downgrade(alembic_config, "0177")
+    command.downgrade(alembic_config, "0181")
     user, court_, varga = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
     try:
         with engine.begin() as connection:

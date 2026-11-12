@@ -2,8 +2,8 @@
 court over time (issue #712); those from before are recovered from the audit log. And a
 troupe setting for whether its players see it.
 
-Revision ID: 0178
-Revises: 0177
+Revision ID: 0186
+Revises: 0181
 Create Date: 2026-11-12 18:00:00.000000
 """
 
@@ -16,8 +16,8 @@ from typing import Any
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0178"
-down_revision: str | None = "0177"
+revision: str = "0186"
+down_revision: str | None = "0181"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

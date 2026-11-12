@@ -11,7 +11,7 @@ so a troupe can see its court over time. horatio.titles writes it at every chang
   character was deleted; the holding stays under its name).
 
 Holdings from before this was kept were recovered from the audit log by the
-migration that began it (0178_title_history.replay), and marked `backfilled`.
+migration that began it (0186_title_history.replay), and marked `backfilled`.
 
 Real dates are always kept; staff may add the in-game dates.
 """
