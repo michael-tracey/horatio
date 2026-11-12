@@ -5512,6 +5512,68 @@
         "title": "BookTraitsOut",
         "type": "object"
       },
+      "BoonAcrossOut": {
+        "properties": {
+          "crossing": {
+            "title": "Crossing",
+            "type": "integer"
+          },
+          "crossing_weight": {
+            "title": "Crossing Weight",
+            "type": "number"
+          },
+          "most": {
+            "items": {
+              "$ref": "#/components/schemas/BoonTallyOut"
+            },
+            "title": "Most",
+            "type": "array"
+          },
+          "of": {
+            "title": "Of",
+            "type": "integer"
+          },
+          "pairs": {
+            "items": {
+              "$ref": "#/components/schemas/BoonPairOut"
+            },
+            "title": "Pairs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "crossing",
+          "crossing_weight",
+          "of",
+          "pairs",
+          "most"
+        ],
+        "title": "BoonAcrossOut",
+        "type": "object"
+      },
+      "BoonBandOut": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "label",
+          "count",
+          "weight"
+        ],
+        "title": "BoonBandOut",
+        "type": "object"
+      },
       "BoonChangeOut": {
         "properties": {
           "after": {
@@ -5533,6 +5595,33 @@
           "after"
         ],
         "title": "BoonChangeOut",
+        "type": "object"
+      },
+      "BoonCollectorOut": {
+        "properties": {
+          "called_in": {
+            "title": "Called In",
+            "type": "number"
+          },
+          "open": {
+            "title": "Open",
+            "type": "number"
+          },
+          "rate": {
+            "title": "Rate",
+            "type": "integer"
+          },
+          "who": {
+            "$ref": "#/components/schemas/BoonStandingPartyOut"
+          }
+        },
+        "required": [
+          "who",
+          "called_in",
+          "open",
+          "rate"
+        ],
+        "title": "BoonCollectorOut",
         "type": "object"
       },
       "BoonEditIn": {
@@ -5725,6 +5814,39 @@
         "title": "BoonEventOut",
         "type": "object"
       },
+      "BoonGroupOut": {
+        "properties": {
+          "characters": {
+            "title": "Characters",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "net": {
+            "title": "Net",
+            "type": "number"
+          },
+          "owed": {
+            "title": "Owed",
+            "type": "number"
+          },
+          "owes": {
+            "title": "Owes",
+            "type": "number"
+          }
+        },
+        "required": [
+          "label",
+          "characters",
+          "owes",
+          "owed",
+          "net"
+        ],
+        "title": "BoonGroupOut",
+        "type": "object"
+      },
       "BoonKindCount": {
         "properties": {
           "count": {
@@ -5750,6 +5872,41 @@
         "title": "BoonKindCount",
         "type": "object"
       },
+      "BoonKindLineOut": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "trivial",
+              "minor",
+              "major",
+              "blood",
+              "life"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "number"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "kind",
+          "weight",
+          "count",
+          "total"
+        ],
+        "title": "BoonKindLineOut",
+        "type": "object"
+      },
       "BoonLedgerIn": {
         "properties": {
           "on": {
@@ -5761,6 +5918,37 @@
           "on"
         ],
         "title": "BoonLedgerIn",
+        "type": "object"
+      },
+      "BoonMutualOut": {
+        "properties": {
+          "back": {
+            "title": "Back",
+            "type": "number"
+          },
+          "first": {
+            "$ref": "#/components/schemas/BoonStandingPartyOut"
+          },
+          "net": {
+            "title": "Net",
+            "type": "number"
+          },
+          "owes": {
+            "title": "Owes",
+            "type": "number"
+          },
+          "second": {
+            "$ref": "#/components/schemas/BoonStandingPartyOut"
+          }
+        },
+        "required": [
+          "first",
+          "second",
+          "owes",
+          "back",
+          "net"
+        ],
+        "title": "BoonMutualOut",
         "type": "object"
       },
       "BoonNoteIn": {
@@ -5775,6 +5963,39 @@
           "note"
         ],
         "title": "BoonNoteIn",
+        "type": "object"
+      },
+      "BoonOfficerOut": {
+        "properties": {
+          "owe_them": {
+            "items": {
+              "$ref": "#/components/schemas/BoonTallyOut"
+            },
+            "title": "Owe Them",
+            "type": "array"
+          },
+          "standing": {
+            "$ref": "#/components/schemas/BoonStandingOut"
+          },
+          "they_owe": {
+            "items": {
+              "$ref": "#/components/schemas/BoonTallyOut"
+            },
+            "title": "They Owe",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "standing",
+          "owe_them",
+          "they_owe"
+        ],
+        "title": "BoonOfficerOut",
         "type": "object"
       },
       "BoonOut": {
@@ -5920,6 +6141,29 @@
         "title": "BoonOut",
         "type": "object"
       },
+      "BoonPairOut": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "label",
+          "count",
+          "weight"
+        ],
+        "title": "BoonPairOut",
+        "type": "object"
+      },
       "BoonPartyIn": {
         "description": "One side of a boon: a character in the troupe, or a name only.",
         "properties": {
@@ -6053,6 +6297,413 @@
         "title": "BoonSettleIn",
         "type": "object"
       },
+      "BoonSettledKindOut": {
+        "properties": {
+          "called_in": {
+            "title": "Called In",
+            "type": "integer"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "forgiven": {
+            "title": "Forgiven",
+            "type": "integer"
+          },
+          "ignored": {
+            "title": "Ignored",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "trivial",
+              "minor",
+              "major",
+              "blood",
+              "life"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "median_months": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Months"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "kind",
+          "count",
+          "weight",
+          "called_in",
+          "forgiven",
+          "ignored",
+          "median_months"
+        ],
+        "title": "BoonSettledKindOut",
+        "type": "object"
+      },
+      "BoonSettlingOut": {
+        "properties": {
+          "by_clan": {
+            "items": {
+              "$ref": "#/components/schemas/BoonBandOut"
+            },
+            "title": "By Clan",
+            "type": "array"
+          },
+          "by_kind": {
+            "items": {
+              "$ref": "#/components/schemas/BoonSettledKindOut"
+            },
+            "title": "By Kind",
+            "type": "array"
+          },
+          "calls_in": {
+            "items": {
+              "$ref": "#/components/schemas/BoonCollectorOut"
+            },
+            "title": "Calls In",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "leaves": {
+            "items": {
+              "$ref": "#/components/schemas/BoonCollectorOut"
+            },
+            "title": "Leaves",
+            "type": "array"
+          },
+          "median_months": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Months"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "count",
+          "weight",
+          "median_months",
+          "by_kind",
+          "by_clan",
+          "calls_in",
+          "leaves"
+        ],
+        "title": "BoonSettlingOut",
+        "type": "object"
+      },
+      "BoonStandingOut": {
+        "properties": {
+          "net": {
+            "title": "Net",
+            "type": "number"
+          },
+          "owed": {
+            "title": "Owed",
+            "type": "number"
+          },
+          "owed_count": {
+            "title": "Owed Count",
+            "type": "integer"
+          },
+          "owes": {
+            "title": "Owes",
+            "type": "number"
+          },
+          "owes_count": {
+            "title": "Owes Count",
+            "type": "integer"
+          },
+          "who": {
+            "$ref": "#/components/schemas/BoonStandingPartyOut"
+          }
+        },
+        "required": [
+          "who",
+          "owes",
+          "owed",
+          "net",
+          "owes_count",
+          "owed_count"
+        ],
+        "title": "BoonStandingOut",
+        "type": "object"
+      },
+      "BoonStandingPartyOut": {
+        "description": "Someone in the standings: a character (with what Horatio knows of them), or a\nname only.",
+        "properties": {
+          "age": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "standing": {
+            "anyOf": [
+              {
+                "enum": [
+                  "active",
+                  "final_death",
+                  "off_field",
+                  "inactive",
+                  "retired"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Standing"
+          },
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "character_id",
+          "standing",
+          "clan",
+          "age",
+          "sect",
+          "titles"
+        ],
+        "title": "BoonStandingPartyOut",
+        "type": "object"
+      },
+      "BoonStandingTotalsOut": {
+        "properties": {
+          "departed": {
+            "title": "Departed",
+            "type": "integer"
+          },
+          "name_only": {
+            "title": "Name Only",
+            "type": "integer"
+          },
+          "open": {
+            "title": "Open",
+            "type": "integer"
+          },
+          "pending": {
+            "title": "Pending",
+            "type": "integer"
+          },
+          "settled": {
+            "title": "Settled",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "open",
+          "departed",
+          "settled",
+          "pending",
+          "name_only"
+        ],
+        "title": "BoonStandingTotalsOut",
+        "type": "object"
+      },
+      "BoonStandingsOut": {
+        "properties": {
+          "across_clans": {
+            "$ref": "#/components/schemas/BoonAcrossOut"
+          },
+          "across_sects": {
+            "$ref": "#/components/schemas/BoonAcrossOut"
+          },
+          "ages": {
+            "items": {
+              "$ref": "#/components/schemas/BoonGroupOut"
+            },
+            "title": "Ages",
+            "type": "array"
+          },
+          "by_kind": {
+            "items": {
+              "$ref": "#/components/schemas/BoonKindLineOut"
+            },
+            "title": "By Kind",
+            "type": "array"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/BoonStandingOut"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/BoonGroupOut"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "court": {
+            "items": {
+              "$ref": "#/components/schemas/BoonOfficerOut"
+            },
+            "title": "Court",
+            "type": "array"
+          },
+          "debt_age": {
+            "items": {
+              "$ref": "#/components/schemas/BoonBandOut"
+            },
+            "title": "Debt Age",
+            "type": "array"
+          },
+          "mutual": {
+            "items": {
+              "$ref": "#/components/schemas/BoonMutualOut"
+            },
+            "title": "Mutual",
+            "type": "array"
+          },
+          "scope": {
+            "enum": [
+              "active",
+              "everyone"
+            ],
+            "title": "Scope",
+            "type": "string"
+          },
+          "sects": {
+            "items": {
+              "$ref": "#/components/schemas/BoonGroupOut"
+            },
+            "title": "Sects",
+            "type": "array"
+          },
+          "settling": {
+            "$ref": "#/components/schemas/BoonSettlingOut"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/BoonStandingTotalsOut"
+          },
+          "weights": {
+            "$ref": "#/components/schemas/BoonWeightsOut"
+          }
+        },
+        "required": [
+          "scope",
+          "weights",
+          "totals",
+          "by_kind",
+          "characters",
+          "court",
+          "clans",
+          "ages",
+          "sects",
+          "debt_age",
+          "settling",
+          "across_clans",
+          "across_sects",
+          "mutual"
+        ],
+        "title": "BoonStandingsOut",
+        "type": "object"
+      },
+      "BoonTallyOut": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          },
+          "who": {
+            "$ref": "#/components/schemas/BoonStandingPartyOut"
+          }
+        },
+        "required": [
+          "who",
+          "count",
+          "weight"
+        ],
+        "title": "BoonTallyOut",
+        "type": "object"
+      },
       "BoonTradeIn": {
         "properties": {
           "creditor": {
@@ -6069,6 +6720,88 @@
           "creditor"
         ],
         "title": "BoonTradeIn",
+        "type": "object"
+      },
+      "BoonWeightsIn": {
+        "description": "What each kind of boon weighs: every kind, more than 0 and at most 100.",
+        "properties": {
+          "blood": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 100.0,
+            "title": "Blood",
+            "type": "number"
+          },
+          "life": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 100.0,
+            "title": "Life",
+            "type": "number"
+          },
+          "major": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 100.0,
+            "title": "Major",
+            "type": "number"
+          },
+          "minor": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 100.0,
+            "title": "Minor",
+            "type": "number"
+          },
+          "trivial": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 100.0,
+            "title": "Trivial",
+            "type": "number"
+          }
+        },
+        "required": [
+          "trivial",
+          "minor",
+          "major",
+          "blood",
+          "life"
+        ],
+        "title": "BoonWeightsIn",
+        "type": "object"
+      },
+      "BoonWeightsOut": {
+        "properties": {
+          "blood": {
+            "title": "Blood",
+            "type": "number"
+          },
+          "defaults": {
+            "title": "Defaults",
+            "type": "boolean"
+          },
+          "life": {
+            "title": "Life",
+            "type": "number"
+          },
+          "major": {
+            "title": "Major",
+            "type": "number"
+          },
+          "minor": {
+            "title": "Minor",
+            "type": "number"
+          },
+          "trivial": {
+            "title": "Trivial",
+            "type": "number"
+          }
+        },
+        "required": [
+          "trivial",
+          "minor",
+          "major",
+          "blood",
+          "life",
+          "defaults"
+        ],
+        "title": "BoonWeightsOut",
         "type": "object"
       },
       "BreakIn": {
@@ -72537,6 +73270,118 @@
           }
         },
         "summary": "Set Boon Ledger",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boon-standings": {
+      "get": {
+        "description": "Where everyone stands in the troupe's boon ledger, now: totals, open boons by\nkind, each party's net, the court, clans, ages and sects, how old open debt is,\nhow boons get settled, boons across clan and sect lines, and those who owe each\nother. \"active\" leaves out boons that involve someone dead or off-field.",
+        "operationId": "boon_standings_api_troupes__troupe_id__boon_standings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "default": "active",
+              "enum": [
+                "active",
+                "everyone"
+              ],
+              "title": "Scope",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonStandingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Boon Standings",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boon-weights": {
+      "put": {
+        "description": "What each kind of boon weighs in the troupe's standings.",
+        "operationId": "set_boon_weights_api_troupes__troupe_id__boon_weights_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoonWeightsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonWeightsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Boon Weights",
         "tags": [
           "boons"
         ]

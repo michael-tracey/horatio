@@ -7388,6 +7388,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/boon-standings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boon Standings
+         * @description Where everyone stands in the troupe's boon ledger, now: totals, open boons by
+         *     kind, each party's net, the court, clans, ages and sects, how old open debt is,
+         *     how boons get settled, boons across clan and sect lines, and those who owe each
+         *     other. "active" leaves out boons that involve someone dead or off-field.
+         */
+        get: operations["boon_standings_api_troupes__troupe_id__boon_standings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boon-weights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Boon Weights
+         * @description What each kind of boon weighs in the troupe's standings.
+         */
+        put: operations["set_boon_weights_api_troupes__troupe_id__boon_weights_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/boons": {
         parameters: {
             query?: never;
@@ -13239,6 +13282,28 @@ export interface components {
                 };
             };
         };
+        /** BoonAcrossOut */
+        BoonAcrossOut: {
+            /** Crossing */
+            crossing: number;
+            /** Crossing Weight */
+            crossing_weight: number;
+            /** Most */
+            most: components["schemas"]["BoonTallyOut"][];
+            /** Of */
+            of: number;
+            /** Pairs */
+            pairs: components["schemas"]["BoonPairOut"][];
+        };
+        /** BoonBandOut */
+        BoonBandOut: {
+            /** Count */
+            count: number;
+            /** Label */
+            label: string;
+            /** Weight */
+            weight: number;
+        };
         /** BoonChangeOut */
         BoonChangeOut: {
             /** After */
@@ -13247,6 +13312,16 @@ export interface components {
             before: string;
             /** Field */
             field: string;
+        };
+        /** BoonCollectorOut */
+        BoonCollectorOut: {
+            /** Called In */
+            called_in: number;
+            /** Open */
+            open: number;
+            /** Rate */
+            rate: number;
+            who: components["schemas"]["BoonStandingPartyOut"];
         };
         /**
          * BoonEditIn
@@ -13296,6 +13371,19 @@ export interface components {
             /** Note */
             note: string;
         };
+        /** BoonGroupOut */
+        BoonGroupOut: {
+            /** Characters */
+            characters: number;
+            /** Label */
+            label: string;
+            /** Net */
+            net: number;
+            /** Owed */
+            owed: number;
+            /** Owes */
+            owes: number;
+        };
         /** BoonKindCount */
         BoonKindCount: {
             /** Count */
@@ -13306,15 +13394,50 @@ export interface components {
              */
             kind: "trivial" | "minor" | "major" | "blood" | "life";
         };
+        /** BoonKindLineOut */
+        BoonKindLineOut: {
+            /** Count */
+            count: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "trivial" | "minor" | "major" | "blood" | "life";
+            /** Total */
+            total: number;
+            /** Weight */
+            weight: number;
+        };
         /** BoonLedgerIn */
         BoonLedgerIn: {
             /** On */
             on: boolean;
         };
+        /** BoonMutualOut */
+        BoonMutualOut: {
+            /** Back */
+            back: number;
+            first: components["schemas"]["BoonStandingPartyOut"];
+            /** Net */
+            net: number;
+            /** Owes */
+            owes: number;
+            second: components["schemas"]["BoonStandingPartyOut"];
+        };
         /** BoonNoteIn */
         BoonNoteIn: {
             /** Note */
             note: string;
+        };
+        /** BoonOfficerOut */
+        BoonOfficerOut: {
+            /** Owe Them */
+            owe_them: components["schemas"]["BoonTallyOut"][];
+            standing: components["schemas"]["BoonStandingOut"];
+            /** They Owe */
+            they_owe: components["schemas"]["BoonTallyOut"][];
+            /** Title */
+            title: string;
         };
         /** BoonOut */
         BoonOut: {
@@ -13365,6 +13488,15 @@ export interface components {
             submitted_at: string;
             /** Submitted By */
             submitted_by: string | null;
+        };
+        /** BoonPairOut */
+        BoonPairOut: {
+            /** Count */
+            count: number;
+            /** Label */
+            label: string;
+            /** Weight */
+            weight: number;
         };
         /**
          * BoonPartyIn
@@ -13417,6 +13549,130 @@ export interface components {
              */
             note: string;
         };
+        /** BoonSettledKindOut */
+        BoonSettledKindOut: {
+            /** Called In */
+            called_in: number;
+            /** Count */
+            count: number;
+            /** Forgiven */
+            forgiven: number;
+            /** Ignored */
+            ignored: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "trivial" | "minor" | "major" | "blood" | "life";
+            /** Median Months */
+            median_months: number | null;
+            /** Weight */
+            weight: number;
+        };
+        /** BoonSettlingOut */
+        BoonSettlingOut: {
+            /** By Clan */
+            by_clan: components["schemas"]["BoonBandOut"][];
+            /** By Kind */
+            by_kind: components["schemas"]["BoonSettledKindOut"][];
+            /** Calls In */
+            calls_in: components["schemas"]["BoonCollectorOut"][];
+            /** Count */
+            count: number;
+            /** Leaves */
+            leaves: components["schemas"]["BoonCollectorOut"][];
+            /** Median Months */
+            median_months: number | null;
+            /** Weight */
+            weight: number;
+        };
+        /** BoonStandingOut */
+        BoonStandingOut: {
+            /** Net */
+            net: number;
+            /** Owed */
+            owed: number;
+            /** Owed Count */
+            owed_count: number;
+            /** Owes */
+            owes: number;
+            /** Owes Count */
+            owes_count: number;
+            who: components["schemas"]["BoonStandingPartyOut"];
+        };
+        /**
+         * BoonStandingPartyOut
+         * @description Someone in the standings: a character (with what Horatio knows of them), or a
+         *     name only.
+         */
+        BoonStandingPartyOut: {
+            /** Age */
+            age: string | null;
+            /** Character Id */
+            character_id: string | null;
+            /** Clan */
+            clan: string | null;
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Sect */
+            sect: string | null;
+            /** Standing */
+            standing: ("active" | "final_death" | "off_field" | "inactive" | "retired") | null;
+            /** Titles */
+            titles: string[];
+        };
+        /** BoonStandingTotalsOut */
+        BoonStandingTotalsOut: {
+            /** Departed */
+            departed: number;
+            /** Name Only */
+            name_only: number;
+            /** Open */
+            open: number;
+            /** Pending */
+            pending: number;
+            /** Settled */
+            settled: number;
+        };
+        /** BoonStandingsOut */
+        BoonStandingsOut: {
+            across_clans: components["schemas"]["BoonAcrossOut"];
+            across_sects: components["schemas"]["BoonAcrossOut"];
+            /** Ages */
+            ages: components["schemas"]["BoonGroupOut"][];
+            /** By Kind */
+            by_kind: components["schemas"]["BoonKindLineOut"][];
+            /** Characters */
+            characters: components["schemas"]["BoonStandingOut"][];
+            /** Clans */
+            clans: components["schemas"]["BoonGroupOut"][];
+            /** Court */
+            court: components["schemas"]["BoonOfficerOut"][];
+            /** Debt Age */
+            debt_age: components["schemas"]["BoonBandOut"][];
+            /** Mutual */
+            mutual: components["schemas"]["BoonMutualOut"][];
+            /**
+             * Scope
+             * @enum {string}
+             */
+            scope: "active" | "everyone";
+            /** Sects */
+            sects: components["schemas"]["BoonGroupOut"][];
+            settling: components["schemas"]["BoonSettlingOut"];
+            totals: components["schemas"]["BoonStandingTotalsOut"];
+            weights: components["schemas"]["BoonWeightsOut"];
+        };
+        /** BoonTallyOut */
+        BoonTallyOut: {
+            /** Count */
+            count: number;
+            /** Weight */
+            weight: number;
+            who: components["schemas"]["BoonStandingPartyOut"];
+        };
         /** BoonTradeIn */
         BoonTradeIn: {
             creditor: components["schemas"]["BoonPartyIn"];
@@ -13425,6 +13681,37 @@ export interface components {
              * @default
              */
             note: string;
+        };
+        /**
+         * BoonWeightsIn
+         * @description What each kind of boon weighs: every kind, more than 0 and at most 100.
+         */
+        BoonWeightsIn: {
+            /** Blood */
+            blood: number;
+            /** Life */
+            life: number;
+            /** Major */
+            major: number;
+            /** Minor */
+            minor: number;
+            /** Trivial */
+            trivial: number;
+        };
+        /** BoonWeightsOut */
+        BoonWeightsOut: {
+            /** Blood */
+            blood: number;
+            /** Defaults */
+            defaults: boolean;
+            /** Life */
+            life: number;
+            /** Major */
+            major: number;
+            /** Minor */
+            minor: number;
+            /** Trivial */
+            trivial: number;
         };
         /** BreakIn */
         BreakIn: {
@@ -44932,6 +45219,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    boon_standings_api_troupes__troupe_id__boon_standings_get: {
+        parameters: {
+            query?: {
+                scope?: "active" | "everyone";
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonStandingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_boon_weights_api_troupes__troupe_id__boon_weights_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonWeightsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonWeightsOut"];
                 };
             };
             /** @description Validation Error */
