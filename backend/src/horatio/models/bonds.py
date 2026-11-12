@@ -20,6 +20,7 @@ class BloodBond(Record):
         CheckConstraint("(regnant_id is null) <> (regnant_name = '')", name="regnant"),
         CheckConstraint("thrall_id <> regnant_id", name="not_own_regnant"),
         CheckConstraint("(status in ('ended', 'broken')) = (ended_at is not null)", name="ended"),
+        CheckConstraint("(status = 'fading') <= (fades_on is not null)", name="fading"),
     )
 
     # The troupe whose running staff keep it, and whose Blood bonds setting says
@@ -42,6 +43,18 @@ class BloodBond(Record):
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     ended_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     ended_reason: Mapped[str] = mapped_column(default="", server_default="")
+    # A fading bond (#662): the day it ends, and why it fades ("regnant_died": its
+    # regnant met Final Death, so it fades over a month, p. 296). The thrall still
+    # feels it until then, and their player is told only that it faded, never why.
+    fades_on: Mapped[date | None] = mapped_column(Date)
+    fade_reason: Mapped[str] = mapped_column(default="", server_default="")
+    # When the thrall's player was told a faded bond had faded: until then their
+    # character's sheet shows it as it was. Set at once for a thrall with no player.
+    thrall_told_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Its thrall met Final Death and the regnant's player knew of the bond: they go on
+    # seeing it as it was, for the regnant has no sense of the thrall's death, until
+    # staff clear it.
+    kept_for_regnant: Mapped[bool] = mapped_column(default=False, server_default="false")
     created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
 
 

@@ -10,7 +10,7 @@ from typing import Literal
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
-from sqlalchemy import or_, select
+from sqlalchemy import and_, or_, select
 
 from horatio import bonds
 from horatio.api.downtimes import staff_troupe
@@ -70,6 +70,12 @@ class KnownIn(BaseModel):
     known: bool
 
 
+class FadeIn(BaseModel):
+    # The day a fading bond ends: today or before ends it now.
+    fades_on: date
+    reason: str = Field(max_length=2000)
+
+
 class PartyOut(BaseModel):
     # The character, or None for a name only.
     character_id: uuid.UUID | None
@@ -102,6 +108,14 @@ class BondOut(BaseModel):
     known_to_regnant: bool
     ended_at: datetime | None
     ended_reason: str
+    # A fading bond's last day; and for one fading or faded, why ("regnant_died").
+    fades_on: date | None = None
+    fade_reason: str = ""
+    # A faded bond's thrall's player was told that it faded; until then their
+    # character's sheet shows it as it was.
+    thrall_told: bool = False
+    # Its thrall died, and the regnant's player still sees it as it was.
+    kept_for_regnant: bool = False
     # The last night it was drunk from, if any drink is logged.
     last_drink: date | None
     entries: list[BondEntryOut]
@@ -243,6 +257,10 @@ def bond_out(db: DbSession, bond: BloodBond) -> BondOut:
         known_to_regnant=bond.known_to_regnant,
         ended_at=bond.ended_at,
         ended_reason=bond.ended_reason,
+        fades_on=bond.fades_on,
+        fade_reason=bond.fade_reason,
+        thrall_told=bond.thrall_told_at is not None,
+        kept_for_regnant=bond.kept_for_regnant,
         last_drink=max(drinks) if drinks else None,
         entries=[
             BondEntryOut(
@@ -291,6 +309,8 @@ def bonds_troupe(db: DbSession, user: User, troupe_id: uuid.UUID) -> Troupe:
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_BONDS)
     if not bonds.tracked(troupe):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "This troupe doesn't track blood bonds.")
+    # Fading bonds whose day has come end before anyone looks at them.
+    bonds.settle_fades(db, [troupe.id])
     return troupe
 
 
@@ -321,6 +341,7 @@ def set_blood_bonds(
 def troupe_bonds(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> TroupeBondsOut:
     """Every bond the troupe keeps, with its log, for its running staff."""
     troupe = bonds_troupe(db, user, troupe_id)
+    db.commit()
     found = [
         bond_out(db, b)
         for b in db.scalars(select(BloodBond).where(BloodBond.troupe_id == troupe.id))
@@ -425,6 +446,31 @@ def set_known(
     troupe = bonds_troupe(db, user, troupe_id)
     bond = troupe_bond(db, troupe, bond_id)
     bonds.set_known(db, user, bond, body.known)
+    db.commit()
+    return bond_out(db, bond)
+
+
+@router.put("/troupes/{troupe_id}/bonds/{bond_id}/fade")
+def set_fade(
+    troupe_id: uuid.UUID, bond_id: uuid.UUID, body: FadeIn, db: DbSession, user: CurrentUser
+) -> BondOut:
+    """Move the day a fading bond ends, with the reason: to today or before, it ends
+    now, as faded."""
+    troupe = bonds_troupe(db, user, troupe_id)
+    bond = troupe_bond(db, troupe, bond_id)
+    bonds.set_fade(db, user, bond, body.fades_on, body.reason)
+    db.commit()
+    return bond_out(db, bond)
+
+
+@router.post("/troupes/{troupe_id}/bonds/{bond_id}/clear-kept")
+def clear_kept(
+    troupe_id: uuid.UUID, bond_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> BondOut:
+    """Stop showing the regnant's player a bond whose thrall died."""
+    troupe = bonds_troupe(db, user, troupe_id)
+    bond = troupe_bond(db, troupe, bond_id)
+    bonds.clear_kept(db, user, bond)
     db.commit()
     return bond_out(db, bond)
 
@@ -559,13 +605,30 @@ def answer_report(
 def character_bonds(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> CharacterBondsOut:
     """The bonds still felt that the character is in, as the caller may know of
     them: all of them for the running staff of the troupe that keeps one; its
-    player's own as thrall; and as regnant, only those known to the regnant."""
+    player's own as thrall; and as regnant, only those known to the regnant. A
+    fading bond shows to the thrall's player just as before, and one that has faded
+    too, until they are told it faded; one whose thrall died, to the regnant's player
+    who knew of it, until staff clear it (#662)."""
     character = visible_character(db, user, character_id)
+    mine = or_(BloodBond.thrall_id == character.id, BloodBond.regnant_id == character.id)
+    troupe_ids = db.scalars(select(BloodBond.troupe_id).where(mine).distinct()).all()
+    if troupe_ids:
+        bonds.settle_fades(db, troupe_ids)
+        db.commit()
     found = db.scalars(
         select(BloodBond)
         .where(
-            or_(BloodBond.thrall_id == character.id, BloodBond.regnant_id == character.id),
-            BloodBond.status.in_(bonds.OPEN),
+            mine,
+            or_(
+                BloodBond.status.in_(bonds.OPEN),
+                and_(
+                    BloodBond.status == "ended",
+                    or_(
+                        and_(BloodBond.fade_reason != "", BloodBond.thrall_told_at.is_(None)),
+                        BloodBond.kept_for_regnant,
+                    ),
+                ),
+            ),
         )
         .order_by(BloodBond.created_at)
     ).all()
@@ -579,7 +642,12 @@ def character_bonds(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -
     for bond in found:
         troupe = troupes[bond.troupe_id]
         thrall, regnant = bonds.parties(db, bond)
-        if not bonds.shown_to(db, user, bond, troupe, thrall.character, regnant.character):
+        if bond.status in bonds.OPEN:
+            if not bonds.shown_to(db, user, bond, troupe, thrall.character, regnant.character):
+                continue
+        elif not (
+            bonds.tracked(troupe) and bonds.as_felt(user, bond, thrall.character, regnant.character)
+        ):
             continue
         level = bonds.level(db, bond)
         if bond.thrall_id == character.id:
