@@ -219,6 +219,10 @@ class Troupe(Imported, Record):
     portrait_id: Mapped[uuid.UUID | None]
     portrait_crop: Mapped[dict[str, float] | None] = mapped_column(JSONB)
     banner_id: Mapped[uuid.UUID | None]
+    # Its own rock, paper and scissors for the Throws tab (horatio.api.throw_images,
+    # issue #670): {"name", "rock", "paper", "scissors"}, each picture the id its
+    # files are kept under (horatio.pictures). Offered only with all three.
+    throw_images: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
     # Links, schedule, venue, setting, new players, age and content: all optional
     # text, kept as horatio.troupe_profiles.Profile writes it.
     profile: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")

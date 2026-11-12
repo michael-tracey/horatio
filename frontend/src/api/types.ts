@@ -157,6 +157,7 @@ export type XpStandingOut = Schemas["XpStandingOut"];
 export type LeavingOut = Schemas["LeavingOut"];
 export type WithdrawnOut = Schemas["WithdrawnOut"];
 export type TroupeProfileOut = Schemas["TroupeProfileOut"];
+export type ThrowImagesOut = Schemas["ThrowImagesOut"];
 export type TroupeProfileIn = Schemas["TroupeProfileIn"];
 export type ScheduledGameOut = Schemas["ScheduledGameOut"];
 export type GameRsvpsOut = Schemas["GameRsvpsOut"];

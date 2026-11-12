@@ -17,6 +17,7 @@ import { GameXpCard } from "./GameXpSettings";
 import { GolcondaSetting } from "./GolcondaSetting";
 import { ItemExpirySetting } from "./ItemExpirySetting";
 import { PlayTabsSetting } from "./PlayTabsSetting";
+import { ThrowImagesSetting } from "./ThrowImagesSetting";
 import { NominationsSetting } from "../nominations/NominationsSetting";
 import { RemembrancesSetting } from "../nominations/RemembrancesSetting";
 import { ExperienceDefaults, StartingBlood } from "./StartingSection";
@@ -68,6 +69,7 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
       </Group>
       <Group title="At game">
         <PlayTabsSetting troupe={troupe} canEdit={canEdit} />
+        <ThrowImagesSetting troupe={troupe} canEdit={canEdit} />
         <BadgeSetting troupe={troupe} canEdit={canEdit} />
         <StartingBlood troupeId={troupe.id} canEdit={canEdit} />
         <DiablerieFlaws troupeId={troupe.id} canEdit={canEdit} />
