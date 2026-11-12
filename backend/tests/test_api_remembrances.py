@@ -155,6 +155,27 @@ def test_a_player_asks_as_they_retire_and_staff_open_them_in_the_open_cycle(
     assert any(m.startswith("assistant opened remembrances for Agnes") for m in log)
 
 
+def test_another_player_never_sees_the_asking(troupe: Troupe) -> None:
+    """Asking is between the player and staff: to the troupe's other players it would
+    say the character has left play, which it may not tell them (#659)."""
+    agnes, _, corin = the_troupe(troupe)
+    open_cycle(troupe, new_cycle(troupe))
+    response = troupe.player.client.post(
+        f"/characters/{agnes}/retire",
+        json={"reason": "final_death", "note": "", "listed": False, "remembrances": True},
+    )
+    assert response.status_code == 200, response.text
+    assert standing(troupe.player, agnes).json()["state"] == "asked"
+    assert standing(troupe.assistant, agnes).json()["state"] == "asked"
+    # Corin's player, and a narrator, see what they would of an active character.
+    for person in (troupe.stranger, troupe.narrator):
+        got = standing(person, agnes).json()
+        assert got == standing(person, corin).json() and got["state"] == "none"
+    # Once staff open them, the troupe is asked, so everyone sees it.
+    assert open_for(troupe.assistant, agnes).status_code == 200
+    assert standing(troupe.stranger, agnes).json()["state"] == "open"
+
+
 def test_staff_open_them_as_they_retire_one_and_an_active_one_has_none(troupe: Troupe) -> None:
     _, _, corin = the_troupe(troupe)
     # Only a character who has left play.

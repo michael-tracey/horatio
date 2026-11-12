@@ -4,13 +4,15 @@ and all of it at once for the rules browser, as played in one troupe."""
 import uuid
 from typing import Any, Literal
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.config import JsonDict
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
+from sqlalchemy.orm import Session
 
 from horatio import written_rules
+from horatio.api.etags import revalidate, rules_tag
 from horatio.api.written_rules import WrittenRuleOut, rules_out
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.clan_merits import book_defaults
@@ -180,6 +182,8 @@ def splats(db: DbSession, user: CurrentUser) -> list[SplatOut]:
 @router.get("/{splat}", response_model_exclude_defaults=True)
 def catalogue(
     splat: str,
+    request: Request,
+    response: Response,
     db: DbSession,
     user: CurrentUser,
     category: str | None = None,
@@ -187,7 +191,17 @@ def catalogue(
 ) -> CatalogueOut:
     """The rule set's categories and traits, with any house-rule text from `troupe_id`.
     A troupe that takes only some sects does not see traits for the others (the
-    Sabbat's Rituals), nor a category left empty without them."""
+    Sabbat's Rituals), nor a category left empty without them. The same for everyone
+    signed in, so its ETag is the rules' version and `category` (horatio.api.etags):
+    a browser that has it already gets 304 Not Modified."""
+    version = rules_tag(db, splat, troupe_id)
+    revalidate(request, response, "catalogue", splat, str(troupe_id), version, repr(category))
+    return catalogue_of(db, splat, category=category, troupe_id=troupe_id)
+
+
+def catalogue_of(
+    db: Session, splat: str, *, category: str | None = None, troupe_id: uuid.UUID | None = None
+) -> CatalogueOut:
     troupe = db.get(Troupe, troupe_id) if troupe_id is not None else None
     if troupe_id is not None and troupe is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
@@ -385,19 +399,28 @@ class RulesBrowserOut(Lean):
 
 @router.get("/{splat}/browse", response_model_exclude_defaults=True)
 def browse(
-    splat: str, db: DbSession, user: CurrentUser, troupe_id: uuid.UUID | None = None
+    splat: str,
+    request: Request,
+    response: Response,
+    db: DbSession,
+    user: CurrentUser,
+    troupe_id: uuid.UUID | None = None,
 ) -> RulesBrowserOut:
     """Every trait of the rule set with what the rules browser shows beside it: its
     prices, the checks about it, its powers and a clan's rarity, all read from the
     rules already loaded. Given `troupe_id`, as played there: its house prices, checks,
     merits and flaws and clan rarities, and the traits it does not allow. Anyone
-    signed in may read it, as they may the troupe's house rules."""
+    signed in may read it, as they may the troupe's house rules. Its ETag is the
+    rules' version, as the catalogue's: its troupe's name, rarities and default
+    bloodlines are on the troupe's row, which changes it too."""
+    version = rules_tag(db, splat, troupe_id)
     troupe = db.get(Troupe, troupe_id) if troupe_id is not None else None
     if troupe_id is not None and (
         troupe is None or (troupe.archived_at is not None and not user.is_custodian)
     ):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
-    found = catalogue(splat, db, user, troupe_id=troupe_id)
+    revalidate(request, response, "browse", splat, str(troupe_id), version)
+    found = catalogue_of(db, splat, troupe_id=troupe_id)
     rules = read_troupe_rules(db, splat, troupe_id)
     rule_set = rules.rule_set
     # Archived house merits are for the characters that hold them, not to read about.
