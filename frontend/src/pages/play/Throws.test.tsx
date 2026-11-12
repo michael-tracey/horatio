@@ -173,7 +173,8 @@ describe("throwing by flipping the phone (#669)", () => {
     expect(screen.queryByRole("button", { name: "Turn on flipping the phone" })).toBeNull();
   });
 
-  it("offers the switch once the sensor reads, and a flip throws at once, with a buzz", () => {
+  it("offers the switch once the sensor reads, and a flip counts in like the button, then throws with a buzz (#756)", () => {
+    vi.useFakeTimers();
     motion(false);
     const vibrate = vi.fn();
     vi.stubGlobal("navigator", { ...navigator, vibrate });
@@ -181,11 +182,24 @@ describe("throwing by flipping the phone (#669)", () => {
     orient(0);
     expect((screen.getByRole("checkbox", { name: "Throw by flipping" }) as HTMLInputElement).checked).toBe(true);
     flipOver();
-    // No count-in: the screen was face down, so the throw shows as it comes up.
+    // As the screen comes back up it counts in, as the Throw button does.
+    expect(screen.getByText("Rock…")).toBeTruthy();
+    expect(screen.queryByRole("img", { name: THROWN })).toBeNull();
+    expect(vibrate).not.toHaveBeenCalled();
+    act(() => void vi.advanceTimersByTime(1000));
     expect(screen.queryByText("Rock…")).toBeNull();
     expect(screen.getByRole("img", { name: THROWN })).toBeTruthy();
     expect(vibrate).toHaveBeenCalledOnce();
     expect(screen.getByRole("list").children).toHaveLength(1);
+  });
+
+  it("shows a flip's throw straight away with reduced motion", () => {
+    motion(true);
+    shown();
+    orient(0);
+    flipOver();
+    expect(screen.queryByText("Rock…")).toBeNull();
+    expect(screen.getByRole("img", { name: THROWN })).toBeTruthy();
   });
 
   it("doesn't throw by flipping once switched off, and remembers that on this device", () => {

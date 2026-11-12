@@ -37,9 +37,10 @@ export type Throwing = {
   /** The last few throws, newest first, the one on show among them. */
   past: Thrown[];
   /**
-   * Throw now. The Throw button calls it, and so does a flip of the phone (#669),
-   * which reveals at once, with a short buzz, so the throw is showing as the screen
-   * comes back up. Does nothing while a throw is counting in.
+   * Throw now. The Throw button calls it, and so does a flip of the phone (#669):
+   * the throw is picked at once, the count-in plays as the screen comes back up
+   * (#756), and the reveal brings a short buzz. Does nothing while a throw is
+   * counting in.
    */
   throwNow: (how?: { flipped?: boolean }) => void;
 };
@@ -93,8 +94,9 @@ export function useThrows({
       told.current?.(thrown);
       if (how?.flipped) buzz();
     };
-    // A flip has no count-in: the phone was face down for it.
-    const steps = how?.flipped ? [] : countIn(reducedMotion());
+    // A flip counts in as the Throw button does, from the moment the phone comes
+    // back face up (#756), so both players see "Rock… Paper… Scissors…" together.
+    const steps = countIn(reducedMotion());
     if (!steps.length) return reveal();
     setShown(null);
     setCounting(steps[0]!);
