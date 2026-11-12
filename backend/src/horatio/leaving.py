@@ -53,20 +53,32 @@ def retire(
     db: Session, user: User, character: Character, reason: Reason | None, note: str, listed: bool
 ) -> None:
     """Retire the character, for `reason`: listed on the Who's Who if `listed`, which
-    needs a reason. It gives up every title it holds, whatever the reason."""
+    needs a reason. It gives up every title it holds, whatever the reason. At Final
+    Death, the bonds it is regnant of start to fade, and those it is bound by end
+    (horatio.bonds)."""
+    from horatio import bonds  # imports horatio.sheets, which imports this module
+
     character.status = "retired"
     character.left_reason = reason
     character.left_listed = listed and reason is not None
     log(db, user, "character.retired", character, note)
     titles.give_up_on_retiring(db, user, character)
+    if reason == "final_death":
+        bonds.final_death(db, user, character)
 
 
 def change(
     db: Session, user: User, character: Character, reason: Reason, note: str, listed: bool
 ) -> None:
-    """Change why a retired character left, or whether the Who's Who lists it."""
+    """Change why a retired character left, or whether the Who's Who lists it. Changed
+    to Final Death, its bonds fade or end as if it died now; changed from it, those
+    still fading are felt again (horatio.bonds)."""
+    from horatio import bonds  # imports horatio.sheets, which imports this module
+
     if (character.left_reason, character.left_listed) == (reason, listed) and not note.strip():
         return
+    was = character.left_reason
     character.left_reason = reason
     character.left_listed = listed
     log(db, user, "character.leaving", character, note)
+    bonds.leaving_changed(db, user, character, was, reason)

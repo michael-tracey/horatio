@@ -90,6 +90,13 @@ export function statusText(bond: Pick<BondOut, "status" | "ended_reason">): stri
 
 export const isOpen = (bond: Pick<BondOut, "status">) => bond.status === "active" || bond.status === "fading";
 
+/** A faded bond whose thrall's player isn't told yet: their sheet still shows it (#662). */
+export const untold = (bond: Pick<BondOut, "status" | "fade_reason" | "thrall_told">) => bond.status === "ended" && !!bond.fade_reason && !bond.thrall_told;
+
+/** A bond staff still have something to watch: one felt, one a player still sees as it was. */
+export const watched = (bond: Pick<BondOut, "status" | "fade_reason" | "thrall_told" | "kept_for_regnant">) =>
+  isOpen(bond) || untold(bond) || !!bond.kept_for_regnant;
+
 /** The bonds grouped under each thrall, or each regnant, by name; open bonds first in each group. */
 export function groupBonds(bonds: BondOut[], by: "thrall" | "regnant"): { name: string; bonds: BondOut[] }[] {
   const groups = new Map<string, { name: string; bonds: BondOut[] }>();
