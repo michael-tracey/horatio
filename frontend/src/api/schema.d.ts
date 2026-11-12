@@ -1130,6 +1130,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/bonds/{bond_id}/meetings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Meeting
+         * @description Its player logs the character meeting the other side of a bond it is in (#665):
+         *     it counts now, or waits on staff, by the troupe's setting (horatio.bonds).
+         */
+        post: operations["report_meeting_api_characters__character_id__bonds__bond_id__meetings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/boons": {
         parameters: {
             query?: never;
@@ -7480,6 +7501,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/confirm-change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Change
+         * @description Staff confirm the change time has brought a bond, in a troupe where players
+         *     report and staff approve (#665): it drops to two drinks, or ends.
+         */
+        post: operations["confirm_change_api_troupes__troupe_id__bonds__bond_id__confirm_change_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/bonds/{bond_id}/drinks": {
         parameters: {
             query?: never;
@@ -7577,6 +7619,27 @@ export interface paths {
          */
         put: operations["set_known_api_troupes__troupe_id__bonds__bond_id__known_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/meetings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Meeting
+         * @description Log the thrall and regnant meeting, such as in a downtime: it keeps a lesser bond
+         *     from ending (#665).
+         */
+        post: operations["add_meeting_api_troupes__troupe_id__bonds__bond_id__meetings_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13555,9 +13618,15 @@ export interface components {
         };
         /**
          * BondAskOut
-         * @description A drink a player reported, for staff to approve (horatio.bonds).
+         * @description A drink a player reported, or a meeting (#665), for staff to approve
+         *     (horatio.bonds).
          */
         BondAskOut: {
+            /**
+             * Kind
+             * @default drink
+             */
+            kind: string;
             /**
              * Night
              * Format: date
@@ -13648,8 +13717,11 @@ export interface components {
             known_to_regnant: boolean;
             /** Last Drink */
             last_drink: string | null;
+            /** Last Met */
+            last_met?: string | null;
             /** Level */
             level: number;
+            next_change?: components["schemas"]["horatio__api__bonds__ChangeOut"] | null;
             regnant: components["schemas"]["PartyOut"];
             /** Status */
             status: string;
@@ -13679,6 +13751,12 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /**
+             * Kind
+             * @default drink
+             * @enum {string}
+             */
+            kind: "drink" | "meeting";
             /**
              * Night
              * Format: date
@@ -14685,12 +14763,6 @@ export interface components {
              * @default
              */
             staff_note: string;
-        };
-        /** ChangeOut */
-        ChangeOut: {
-            /** Cost */
-            cost: number;
-            sheet: components["schemas"]["SheetOut"];
         };
         /** ChannelIn */
         ChannelIn: {
@@ -17062,6 +17134,11 @@ export interface components {
              */
             note: string;
             /**
+             * Override
+             * @default
+             */
+            override: string;
+            /**
              * Source
              * @default staff
              * @enum {string}
@@ -17532,6 +17609,11 @@ export interface components {
              * Format: date
              */
             night: string;
+            /**
+             * Override
+             * @default
+             */
+            override: string;
             /** Reason */
             reason: string;
             regnant: components["schemas"]["PartyIn"];
@@ -21985,6 +22067,28 @@ export interface components {
             next_handle_change: string | null;
             preferences: components["schemas"]["Preferences"];
         };
+        /**
+         * MeetingIn
+         * @description The thrall and regnant met, which keeps a lesser bond from ending (#665).
+         */
+        MeetingIn: {
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Source
+             * @default staff
+             * @enum {string}
+             */
+            source: "game" | "downtime" | "staff";
+        };
         /** MemberOut */
         MemberOut: {
             /**
@@ -22598,6 +22702,11 @@ export interface components {
              * @default
              */
             note: string;
+            /**
+             * Override
+             * @default
+             */
+            override: string;
             regnant: components["schemas"]["PartyIn"];
             /**
              * Source
@@ -24436,6 +24545,25 @@ export interface components {
             name: string;
             /** Retired */
             retired: boolean;
+        };
+        /** PlayerMeetingIn */
+        PlayerMeetingIn: {
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Source
+             * @default game
+             * @enum {string}
+             */
+            source: "game" | "downtime";
         };
         /** PlayerNominationsIn */
         PlayerNominationsIn: {
@@ -28261,6 +28389,11 @@ export interface components {
          */
         SheetBondOut: {
             /**
+             * Can Meet
+             * @default false
+             */
+            can_meet: boolean;
+            /**
              * Id
              * Format: uuid
              */
@@ -31808,6 +31941,24 @@ export interface components {
             /** Willpower */
             willpower: number;
         };
+        /**
+         * ChangeOut
+         * @description What time does next to a bond (#665): it drops to two drinks, or ends, on a day.
+         */
+        horatio__api__bonds__ChangeOut: {
+            /** Due */
+            due: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "drop" | "end";
+            /**
+             * On
+             * Format: date
+             */
+            on: string;
+        };
         /** AppliedOut */
         horatio__api__downtime_effects__AppliedOut: {
             /** Character Name */
@@ -31933,6 +32084,12 @@ export interface components {
             free: boolean;
             /** Reason */
             reason: string;
+        };
+        /** ChangeOut */
+        horatio__api__sheets__ChangeOut: {
+            /** Cost */
+            cost: number;
+            sheet: components["schemas"]["SheetOut"];
         };
         /** DetailChange */
         horatio__api__specializations__DetailChange: {
@@ -34032,6 +34189,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BondReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_meeting_api_characters__character_id__bonds__bond_id__meetings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                bond_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlayerMeetingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportedOut"];
                 };
             };
             /** @description Validation Error */
@@ -39187,7 +39380,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChangeOut"];
+                    "application/json": components["schemas"]["horatio__api__sheets__ChangeOut"];
                 };
             };
             /** @description Validation Error */
@@ -39222,7 +39415,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChangeOut"];
+                    "application/json": components["schemas"]["horatio__api__sheets__ChangeOut"];
                 };
             };
             /** @description Validation Error */
@@ -39257,7 +39450,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChangeOut"];
+                    "application/json": components["schemas"]["horatio__api__sheets__ChangeOut"];
                 };
             };
             /** @description Validation Error */
@@ -46461,6 +46654,38 @@ export interface operations {
             };
         };
     };
+    confirm_change_api_troupes__troupe_id__bonds__bond_id__confirm_change_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                bond_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BondOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     add_drink_api_troupes__troupe_id__bonds__bond_id__drinks_post: {
         parameters: {
             query?: never;
@@ -46625,6 +46850,42 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BondOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_meeting_api_troupes__troupe_id__bonds__bond_id__meetings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                bond_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeetingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

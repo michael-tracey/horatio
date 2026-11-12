@@ -127,6 +127,8 @@ Where the troupe lets players report drinks, **Report a drink** on that card say
 
 Until it's decided you can **Withdraw** it. The other character's player isn't told of a bond unless they're its regnant and know of it; reporting one as the regnant tells Horatio you know. You can't report a night to come, one before the character was made in Horatio, or a drink from someone else while your character holds a full bond, which makes them immune to other bonds (Errata, p. 295).
 
+A bond fades if it isn't kept up (p. 296): a full bond drops to two drinks after three months without drinking, a two-drink bond ends after six months without your characters meeting, and a one-drink bond after a year. Games you both checked in at count as meeting. Where your troupe lets players report drinks, **Log a meeting with …** on the card records one the storytellers wouldn't know of, such as in a downtime; it counts at once, or waits for the storytellers where they approve drinks. You hear that a bond weakened or faded with the troupe's downtime results.
+
 ![A character's Sheet tab: its parts on the left, and Print, Experience and the cart on the right](images/players/sheet.png)
 
 ### Trait details

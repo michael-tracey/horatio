@@ -79,6 +79,8 @@ describe("drinks players report", () => {
 
   it("reads as the drink, and where it stands", () => {
     expect(reportLine(report, "3 Nov 2026")).toBe("Agnes drank Bram's blood on 3 Nov 2026");
+    // A meeting a player logged (#665).
+    expect(reportLine({ ...report, kind: "meeting" }, "3 Nov 2026")).toBe("Agnes and Bram met on 3 Nov 2026");
     expect(reportState({ ...report, status: "pending", waiting_on: "staff" })).toBe("Waiting for the storytellers");
     expect(reportState({ ...report, status: "pending", waiting_on: "thrall" })).toBe("Waiting for Agnes's player to confirm");
     expect(reportState({ ...report, status: "approved", waiting_on: "staff" })).toBe("Counted");

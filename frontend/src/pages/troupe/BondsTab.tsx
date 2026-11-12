@@ -95,6 +95,14 @@ export function BondsTab({ troupeId }: { troupeId: string }) {
           thrall&apos;s player sees their own bonds; a regnant&apos;s player
           sees one only once it&apos;s marked known to them.
         </p>
+        <p className="mb-3 text-sm text-mist">
+          With time a full bond drops to two drinks after three months without
+          drinking, a two-drink bond ends after six months without the two
+          meeting, and a one-drink bond after a year (p. 296). Games both check
+          in at count as meeting; log others, such as one in a downtime. A
+          thrall&apos;s player learns of a change with the next downtime
+          results.
+        </p>
         {adding === "drink" && (
           <NewDrinkForm
             troupeId={troupeId}
@@ -183,7 +191,9 @@ function BondRow({
   by: By;
 }) {
   const dates = useDates();
-  const [doing, setDoing] = useState<"drink" | "break" | "fade" | null>(null);
+  const [doing, setDoing] = useState<
+    "drink" | "meeting" | "break" | "fade" | null
+  >(null);
   const [log, setLog] = useState(false);
   const path = { params: { path: { troupe_id: troupeId, bond_id: bond.id } } };
   const known = useAction((on: boolean) =>
@@ -199,6 +209,15 @@ function BondRow({
       api.POST("/api/troupes/{troupe_id}/bonds/{bond_id}/clear-kept", path),
     ),
   );
+  const confirm = useAction(() =>
+    unwrap(
+      api.POST(
+        "/api/troupes/{troupe_id}/bonds/{bond_id}/confirm-change",
+        path,
+      ),
+    ),
+  );
+  const change = bond.next_change;
   const open = isOpen(bond);
   const label = `${bond.thrall.name} bound to ${bond.regnant.name}`;
   const other = by === "thrall" ? bond.regnant : bond.thrall;
@@ -233,12 +252,23 @@ function BondRow({
               · last drink {dates.day(bond.last_drink)}
             </span>
           )}
+          {bond.last_met && bond.last_met !== bond.last_drink && (
+            <span className="text-mist">
+              {" "}
+              · last met {dates.day(bond.last_met)}
+            </span>
+          )}
         </p>
         {open && doing === null && (
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={() => setDoing("drink")}>
               Add a drink
             </Button>
+            {bond.status === "active" && (
+              <Button variant="secondary" onClick={() => setDoing("meeting")}>
+                Log a meeting
+              </Button>
+            )}
             {bond.status === "fading" && (
               <Button variant="secondary" onClick={() => setDoing("fade")}>
                 Change the fade
@@ -250,6 +280,33 @@ function BondRow({
           </div>
         )}
       </div>
+      {change && !change.due && (
+        <p className="text-xs text-mist">
+          {change.kind === "drop"
+            ? `Drops to two drinks on ${dates.day(change.on)} unless ${bond.thrall.name} drinks again.`
+            : `Ends on ${dates.day(change.on)} unless the two meet.`}
+        </p>
+      )}
+      {change?.due && (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-gold">
+          <span>
+            Due since {dates.day(change.on)}:{" "}
+            {change.kind === "drop"
+              ? "it drops to two drinks"
+              : "it ends, the two kept apart"}{" "}
+            (p. 296). Players report and staff approve here, so it waits for
+            you.
+          </span>
+          <Button
+            variant="secondary"
+            disabled={confirm.isPending}
+            onClick={() => confirm.mutate(undefined)}
+          >
+            Confirm
+          </Button>
+        </div>
+      )}
+      <ErrorText error={confirm.error} />
       {bond.status === "fading" && (
         <p className="text-xs text-mist">
           {bond.thrall.name}&apos;s player sees the bond as it was until it ends
@@ -294,6 +351,13 @@ function BondRow({
       <ErrorText error={known.error} />
       {doing === "drink" && (
         <DrinkForm
+          troupeId={troupeId}
+          bond={bond}
+          onDone={() => setDoing(null)}
+        />
+      )}
+      {doing === "meeting" && (
+        <MeetingForm
           troupeId={troupeId}
           bond={bond}
           onDone={() => setDoing(null)}
@@ -387,6 +451,39 @@ function DrinkFields({
   );
 }
 
+/**
+ * Staff recording a drink, or entering a bond, while a full bond to someone else makes
+ * the thrall immune (Errata, p. 295): the server refuses with why, and staff can give a
+ * reason to record it anyway (#665).
+ */
+function immune(error: unknown): boolean {
+  return error instanceof Error && error.message.includes("immune");
+}
+
+function Override({
+  error,
+  value,
+  onChange,
+}: {
+  error: unknown;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  if (!immune(error) && !value) return null;
+  return (
+    <Field
+      label="Reason to record it anyway"
+      hint="A full bond makes the thrall immune to other bonds until it drops."
+    >
+      <Input
+        maxLength={2000}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </Field>
+  );
+}
+
 function useDrink(dates: ReturnType<typeof useDates>) {
   const [drink, setDrink] = useState<{
     night: string;
@@ -449,6 +546,7 @@ function NewDrinkForm({
   const [thrall, setThrall] = useState({ who: "", name: "" });
   const [regnant, setRegnant] = useState({ who: "", name: "" });
   const [drink, setDrink] = useDrink(dates);
+  const [override, setOverride] = useState("");
   const t = partyIn(thrall.who, thrall.name);
   const r = partyIn(regnant.who, regnant.name);
   const save = useAction(async () => {
@@ -456,7 +554,7 @@ function NewDrinkForm({
     const bond = await unwrap(
       api.POST("/api/troupes/{troupe_id}/bonds/drinks", {
         params: { path: { troupe_id: troupeId } },
-        body: { thrall: t, regnant: r, ...drink },
+        body: { thrall: t, regnant: r, ...drink, override },
       }),
     );
     toast({
@@ -482,6 +580,7 @@ function NewDrinkForm({
       />
       <DrinkFields {...drink} set={setDrink} />
       <ErrorText error={save.error} />
+      <Override error={save.error} value={override} onChange={setOverride} />
       <div className="flex flex-wrap gap-2">
         <Button
           type="submit"
@@ -512,6 +611,7 @@ function EnterForm({
   const [level, setLevel] = useState(1);
   const [night, setNight] = useState(today(dates));
   const [reason, setReason] = useState("");
+  const [override, setOverride] = useState("");
   const t = partyIn(thrall.who, thrall.name);
   const r = partyIn(regnant.who, regnant.name);
   const save = useAction(async () => {
@@ -519,7 +619,7 @@ function EnterForm({
     await unwrap(
       api.POST("/api/troupes/{troupe_id}/bonds", {
         params: { path: { troupe_id: troupeId } },
-        body: { thrall: t, regnant: r, level, night, reason },
+        body: { thrall: t, regnant: r, level, night, reason, override },
       }),
     );
     onDone();
@@ -576,6 +676,7 @@ function EnterForm({
         />
       </Field>
       <ErrorText error={save.error} />
+      <Override error={save.error} value={override} onChange={setOverride} />
       <div className="flex flex-wrap gap-2">
         <Button
           type="submit"
@@ -603,11 +704,12 @@ function DrinkForm({
   const dates = useDates();
   const toast = useToast();
   const [drink, setDrink] = useDrink(dates);
+  const [override, setOverride] = useState("");
   const save = useAction(async () => {
     const after = await unwrap(
       api.POST("/api/troupes/{troupe_id}/bonds/{bond_id}/drinks", {
         params: { path: { troupe_id: troupeId, bond_id: bond.id } },
-        body: drink,
+        body: { ...drink, override },
       }),
     );
     toast({
@@ -626,9 +728,58 @@ function DrinkForm({
     >
       <DrinkFields {...drink} set={setDrink} />
       <ErrorText error={save.error} />
+      <Override error={save.error} value={override} onChange={setOverride} />
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={save.isPending || !drink.night}>
           Add the drink
+        </Button>
+        <Button type="button" variant="ghost" onClick={onDone}>
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/** Log the two meeting, such as in a downtime: it keeps a lesser bond from ending (#665). */
+function MeetingForm({
+  troupeId,
+  bond,
+  onDone,
+}: {
+  troupeId: string;
+  bond: BondOut;
+  onDone: () => void;
+}) {
+  const dates = useDates();
+  const [meeting, setMeeting] = useDrink(dates);
+  const save = useAction(async () => {
+    await unwrap(
+      api.POST("/api/troupes/{troupe_id}/bonds/{bond_id}/meetings", {
+        params: { path: { troupe_id: troupeId, bond_id: bond.id } },
+        body: meeting,
+      }),
+    );
+    onDone();
+  });
+  return (
+    <form
+      aria-label={`Log a meeting: ${bond.thrall.name} and ${bond.regnant.name}`}
+      className="flex flex-col gap-3 rounded-md border border-ash p-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save.mutate(undefined);
+      }}
+    >
+      <p className="text-xs text-mist">
+        Meeting or speaking keeps a lesser bond from ending; it changes no
+        level. Games both checked in at count already.
+      </p>
+      <DrinkFields {...meeting} set={setMeeting} />
+      <ErrorText error={save.error} />
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" disabled={save.isPending || !meeting.night}>
+          Log the meeting
         </Button>
         <Button type="button" variant="ghost" onClick={onDone}>
           Cancel
@@ -804,10 +955,15 @@ function EntryRow({
     );
     setDoing(null);
   });
+  const told = SOURCES.find((s) => s.value === e.source)?.label.toLowerCase();
   const what =
     e.kind === "entered"
       ? `entered at ${levelName(e.level ?? 1).toLowerCase()}`
-      : `a drink, ${SOURCES.find((s) => s.value === e.source)?.label.toLowerCase()}`;
+      : e.kind === "dropped"
+        ? "dropped to two drinks, three months without drinking"
+        : e.kind === "meeting"
+          ? `met, ${told}`
+          : `a drink, ${told}`;
   return (
     <li aria-label={`${dates.day(e.night)}: ${what}`}>
       {dates.day(e.night)}: {what}
