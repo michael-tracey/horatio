@@ -990,6 +990,64 @@ test("Throws on the Play View: rock, paper or scissors, the last three kept, wit
   await p.screenshot({ ...shots("throws-ultragoth"), animations: "disabled" });
 });
 
+test("throwing a pool from the Pools tab: the overbid, a tie on pools, a Willpower retest from the tracker and their overbid (#698)", async ({ browser }) => {
+  const { page: p } = await person(browser, "pool-thrower");
+  const id = await builtVampire(p, "Ferrante", "Brujah", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Potence", 2], ["Celerity", 1], ["Presence", 1]] });
+  await p.goto(`/play/characters/${id}?tab=pools`);
+  const dodge = p.getByRole("main").getByRole("listitem").filter({ hasText: /^Dodge/ }).first();
+  await expect(dodge).toBeVisible();
+  const pool = Number(await dodge.locator("strong").first().textContent());
+
+  // Throw takes Dodge to the Throws tab, defending; their pool is double, so they can overbid.
+  await dodge.getByRole("button", { name: "Throw Dodge" }).click();
+  await expect(p.getByRole("tab", { name: "Throws" })).toHaveAttribute("aria-selected", "true");
+  const challenge = p.getByRole("region", { name: "Challenge" });
+  await expect(challenge).toContainText("Throwing Dodge");
+  await expect(challenge.getByRole("button", { name: "You defend" })).toHaveAttribute("aria-pressed", "true");
+  await challenge.getByLabel("Their pool").fill(String(pool * 2));
+  await expect(challenge).toContainText("They can overbid: their pool is at least double yours");
+  await expect(challenge).toContainText(`A tie goes to them: their ${pool * 2} is greater than your ${pool}.`);
+
+  const throws = p.getByRole("region", { name: "Throws" });
+  const thrown = /^(Rock|Paper|Scissors)$/;
+  const beaten: Record<string, string> = { Rock: "Scissors", Paper: "Rock", Scissors: "Paper" };
+  const beats: Record<string, string> = { Rock: "Paper", Paper: "Scissors", Scissors: "Rock" };
+  /** Throws, then taps what the other side showed: the same, one this throw beats, or one that beats it. */
+  const throwAgainst = async (theirs: "same" | "beaten" | "beats") => {
+    await throws.getByRole("button", { name: "Throw", exact: true }).click();
+    const mine = (await throws.getByRole("img", { name: thrown }).getAttribute("aria-label"))!;
+    const shown = theirs === "same" ? mine : theirs === "beaten" ? beaten[mine]! : beats[mine]!;
+    await throws.getByRole("button", { name: `They showed ${shown}` }).click();
+  };
+  const result = throws.getByRole("region", { name: "Tests and retests" }).getByRole("status");
+
+  // A tie goes to the greater pool: theirs.
+  await throwAgainst("same");
+  await expect(result).toContainText("You lose: their action succeeds");
+  await expect(result).toContainText("So far");
+
+  // Willpower for the retest comes off the tracker, and the challenge waits through a look at it.
+  await throws.getByRole("button", { name: /^Spend 1 Willpower to retest/ }).click();
+  await expect(throws.getByText("Retest with Willpower: throw again.")).toBeVisible();
+  await p.getByRole("tab", { name: "Tracker" }).click();
+  await expect(p.getByLabel(/^Willpower: \d+ of \d+$/)).toBeVisible();
+  const [left, most] = ((await p.getByLabel(/^Willpower: \d+ of \d+$/).getAttribute("aria-label"))!.match(/\d+/g) ?? []).map(Number);
+  expect(left).toBe(most! - 1);
+  await p.getByRole("tab", { name: "Throws" }).click();
+  await expect(throws.getByText("Retest with Willpower: throw again.")).toBeVisible();
+
+  // Won outright on the retest; then their overbid's free retest, which they win: it stands.
+  await throwAgainst("beaten");
+  await expect(result).toContainText("You win: their action fails");
+  await throws.getByRole("button", { name: "Their overbid retest" }).click();
+  await throwAgainst("beats");
+  await expect(result).toContainText("You lose: their action succeeds");
+  await expect(result).not.toContainText("exceptional");
+  await expect(result).toContainText("This stands");
+  await expect(throws.getByRole("list", { name: "Tests" }).getByRole("listitem")).toHaveCount(3);
+  await p.screenshot({ ...shots("throws-pool"), animations: "disabled" });
+});
+
 test("Shape of the Beast on the Play View: a Huge fight form adds Healthy levels and Brawl, flight form ends it, and the Scene shows it", async ({ browser }) => {
   const custodian = await person(browser, "beast-custodian");
   makeCustodian(custodian.email);
