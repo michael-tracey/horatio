@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useId, useState, type FormEvent } from "react";
+import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { PlayBoonIn, PlayBoonOut, PlayBoonsOut, PlayReportOut } from "../../api/types";
+import type { HarpyLedgerOut, PlayBoonIn, PlayBoonOut, PlayBoonsOut, PlayReportOut } from "../../api/types";
 import { disgracedText } from "../../boonStatus";
 import { BOON_PAGE, KINDS, kindName, type BoonKind } from "../../boons";
 import { DateInput } from "../../components/DateInput";
@@ -33,6 +34,9 @@ export function BoonsTab({ characterId, name, online }: { characterId: string; n
       <Loaded query={query}>
         {(boons) => (
           <>
+            {(boons.harpy ?? []).map((h) => (
+              <HarpyCard key={h.troupe_id} characterId={characterId} name={name} ledger={h} online={online} />
+            ))}
             <Report characterId={characterId} name={name} boons={boons} online={online} />
             {boons.reports && boons.reports.length > 0 && <Reports reports={boons.reports} name={name} troupe={boons.troupe_name} />}
             {boons.owes && <Side title={`${name} owes`} empty={`${name} owes no boons in the ledger.`} boons={boons.owes} owes name={name} characterId={characterId} online={online} />}
@@ -43,6 +47,26 @@ export function BoonsTab({ characterId, name, online }: { characterId: string; n
         )}
       </Loaded>
     </section>
+  );
+}
+
+/** For the troupe's Harpy (#688): a way to the ledger they keep, and how many boons wait for review. */
+function HarpyCard({ characterId, name, ledger, online }: { characterId: string; name: string; ledger: HarpyLedgerOut; online: boolean }) {
+  const full = ledger.access === "full";
+  return (
+    <Card title={`${name}, Harpy of ${ledger.troupe_name}`}>
+      <p className="text-sm text-mist">
+        {full ? "You keep the troupe's boon ledger: register, edit and settle boons, and review what players report." : "You review the boons players report."}
+        {ledger.to_review > 0 ? ` ${ledger.to_review} to review.` : " Nothing waits for review."}
+      </p>
+      {online ? (
+        <Link to={`/play/characters/${characterId}/ledger`} className="mt-2 inline-flex min-h-10 items-center text-sm text-gold underline hover:text-parchment">
+          {full ? "Open the boon ledger" : "Review boons"}
+        </Link>
+      ) : (
+        <p className="mt-2 text-xs text-mist">The ledger needs a signal.</p>
+      )}
+    </Card>
   );
 }
 

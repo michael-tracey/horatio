@@ -1955,6 +1955,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/harpy-ledgers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Harpy Ledgers
+         * @description The ledgers the character's player keeps as it, the troupe's Harpy (#688): for
+         *     the Harpy's own page, linked from the Play View's Boons tab.
+         */
+        get: operations["character_harpy_ledgers_api_characters__character_id__harpy_ledgers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/haven": {
         parameters: {
             query?: never;
@@ -7848,6 +7869,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/boon-harpy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Boon Harpy
+         * @description How far the troupe's Harpy reaches into its boon ledger (#688): not at all, the
+         *     review queue and word of each boon players report, or the full ledger.
+         */
+        put: operations["set_boon_harpy_api_troupes__troupe_id__boon_harpy_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/boon-ledger": {
         parameters: {
             query?: never;
@@ -7998,7 +8040,8 @@ export interface paths {
         /**
          * Register
          * @description Register boons in the ledger: one, or a whole game's at once, each row as many
-         *     times as its count. All or none: a row that can't be registered stops them all.
+         *     times as its count. All or none: a row that can't be registered stops them all. A
+         *     Harpy (#688) registers them as their character, with no staff note.
          */
         post: operations["register_api_troupes__troupe_id__boons_post"];
         delete?: never;
@@ -8016,7 +8059,8 @@ export interface paths {
         };
         /**
          * One Boon
-         * @description A boon with its log.
+         * @description A boon with its log. A Harpy given only the review queue (#688) opens only the
+         *     boons in it.
          */
         get: operations["one_boon_api_troupes__troupe_id__boons__boon_id__get"];
         put?: never;
@@ -8027,7 +8071,8 @@ export interface paths {
         /**
          * Edit
          * @description Correct what a boon says, with a note. Its log keeps each field before and
-         *     after, which only the troupe's storytellers and assistant storytellers see.
+         *     after, which only the troupe's storytellers and assistant storytellers see. A Harpy
+         *     (#688) edits as their character, and never the staff note.
          */
         patch: operations["edit_api_troupes__troupe_id__boons__boon_id__patch"];
         trace?: never;
@@ -14476,6 +14521,14 @@ export interface components {
             /** Owes */
             owes: number;
         };
+        /** BoonHarpyIn */
+        BoonHarpyIn: {
+            /**
+             * Access
+             * @enum {string}
+             */
+            access: "none" | "submissions" | "full";
+        };
         /** BoonKindCount */
         BoonKindCount: {
             /** Count */
@@ -14712,6 +14765,11 @@ export interface components {
         BoonReviewOut: {
             /** Boons */
             boons: components["schemas"]["BoonOut"][];
+            /**
+             * Characters
+             * @default []
+             */
+            characters: components["schemas"]["CharacterChoice-Output"][];
         };
         /** BoonSettleIn */
         BoonSettleIn: {
@@ -19881,6 +19939,26 @@ export interface components {
             /** Handle */
             handle: string;
         };
+        /**
+         * HarpyLedgerOut
+         * @description A ledger the character keeps as its troupe's Harpy (#688).
+         */
+        HarpyLedgerOut: {
+            /**
+             * Access
+             * @enum {string}
+             */
+            access: "submissions" | "full";
+            /** To Review */
+            to_review: number;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
         /** HavenAdvantageChoiceOut */
         HavenAdvantageChoiceOut: {
             /** Allowed */
@@ -24882,6 +24960,11 @@ export interface components {
             can_report: boolean;
             /** Characters */
             characters: components["schemas"]["CharacterChoice-Output"][];
+            /**
+             * Harpy
+             * @default []
+             */
+            harpy: components["schemas"]["HarpyLedgerOut"][];
             /** Owed */
             owed: components["schemas"]["PlayBoonOut"][] | null;
             /** Owes */
@@ -31459,6 +31542,12 @@ export interface components {
              */
             blood_bonds: "off" | "staff" | "players_report" | "players_manage";
             /**
+             * Boon Harpy
+             * @default none
+             * @enum {string}
+             */
+            boon_harpy: "none" | "submissions" | "full";
+            /**
              * Boon Players See
              * @default intake
              * @enum {string}
@@ -36680,6 +36769,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    character_harpy_ledgers_api_characters__character_id__harpy_ledgers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HarpyLedgerOut"][];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -48106,6 +48226,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BoonGameOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_boon_harpy_api_troupes__troupe_id__boon_harpy_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonHarpyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
                 };
             };
             /** @description Validation Error */

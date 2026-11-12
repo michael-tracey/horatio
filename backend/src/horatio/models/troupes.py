@@ -40,6 +40,7 @@ class Troupe(Imported, Record):
             name="blood_bonds",
         ),
         CheckConstraint("boon_players_see in ('intake', 'owes', 'owed')", name="boon_players_see"),
+        CheckConstraint("boon_harpy in ('none', 'submissions', 'full')", name="boon_harpy"),
     )
 
     name: Mapped[str]
@@ -177,6 +178,10 @@ class Troupe(Imported, Record):
     # Boons its players report wait for review by its running staff (and the Harpy,
     # #688) before they stand (horatio.boon_reviews, #687); off, they stand at once.
     boon_review: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # The Harpy's access to the ledger (horatio.boon_harpy, #688): "none"; "submissions",
+    # the review queue and word of each boon its players report; or "full", the whole
+    # ledger, to register, edit and settle boons like its staff.
+    boon_harpy: Mapped[str] = mapped_column(default="none", server_default="none")
     # The court over time (horatio.title_history, #712): whether its players see who
     # held each title and when. Its staff always do.
     court_history_players: Mapped[bool] = mapped_column(default=False, server_default="false")

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { closeContextsAfterEach, run, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, shots } from "./support";
 
-/** Boons: the troupe's ledger, for its running staff: registering a game's boons at once, settling, editing and trading them, each with its own log; the boon standings; the Play View's Boons tab, where players report boons and see what the troupe lets them (#686); and review, where reports wait for staff to accept them (#687). */
+/** Boons: the troupe's ledger, for its running staff: registering a game's boons at once, settling, editing and trading them, each with its own log; the boon standings; the Play View's Boons tab, where players report boons and see what the troupe lets them (#686); review, where reports wait for staff to accept them (#687); and the Harpy keeping the ledger as their character (#688). */
 
 closeContextsAfterEach();
 
@@ -398,4 +398,86 @@ test("held for review, a player's report waits, flagged for its unlinked name, u
   await p.reload();
   await expect(p.getByRole("region", { name: "Boons" }).getByRole("form", { name: "Report a boon" })).toBeVisible();
   await expect(p.getByRole("list", { name: "Your reports" })).toHaveCount(0);
+});
+
+test("the Harpy keeps the ledger from the Play View as their character, and never sees what an edit changed (#688)", async ({ browser }) => {
+  const custodian = await person(browser, "bharpy-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "bharpy-lead");
+  const harpy = await person(browser, "bharpy-harpy");
+  const player = await person(browser, "bharpy-player");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Debts Kept ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  const build = { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]] as [string, number][], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] as [string, number][] };
+  const home = async (page: Page, name: string) => {
+    const id = await builtVampire(page, name, "Brujah", build);
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    return id;
+  };
+  const philippa = await home(harpy.page, "Philippa Quill");
+  await home(player.page, "Edric Thorne");
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/boon-ledger`, { on: true });
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/characters/${philippa}/titles`, { titles: ["Harpy"] });
+
+  // The lead gives the Harpy the full ledger.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}/settings`);
+  const full = l.getByRole("radio", { name: /^The full ledger/ });
+  await full.check();
+  await expect(l.getByText("Saved: The Harpy keeps the full ledger, and reviews the boons players report.")).toBeVisible();
+  await expect(full).toBeChecked();
+
+  // Philippa's player opens the ledger from her Play View's Boons tab, and registers a boon.
+  const h = harpy.page;
+  await h.goto(`/play/characters/${philippa}?tab=boons`);
+  const card = h.getByRole("region", { name: "Boons" }).getByText(`Philippa Quill, Harpy of Debts Kept ${run}`);
+  await expect(card).toBeVisible();
+  await h.getByRole("link", { name: "Open the boon ledger" }).click();
+  await expect(h.getByRole("heading", { name: "The boon ledger" })).toBeVisible();
+  await expect(h.getByText(`As Harpy of Debts Kept ${run}.`)).toBeVisible();
+  await h.getByRole("button", { name: "Register boons" }).click();
+  const entry = h.getByRole("form", { name: "Register boons" });
+  await entry.getByLabel("Date for new rows").fill("2026-10-03");
+  const row = entry.getByRole("listitem", { name: "Boon 1" });
+  await row.getByRole("combobox", { name: "Debtor" }).fill("Edric");
+  await row.getByRole("listbox", { name: "Characters" }).getByRole("option", { name: /Edric Thorne/ }).click();
+  await row.getByRole("combobox", { name: "Creditor" }).fill("Lady Ashgrove");
+  await row.getByRole("listbox", { name: "Characters" }).getByRole("option", { name: /name only/ }).click();
+  await row.getByLabel("Reason").fill("Safe passage");
+  await entry.getByRole("button", { name: "Register the boon" }).click();
+  await expect(h.getByText("Registered a boon.")).toBeVisible();
+
+  // She corrects it, with a note: her log shows the edit as hers, not what it changed.
+  const boons = h.getByRole("list", { name: "Boons" });
+  const debt = boons.getByRole("listitem", { name: "Edric Thorne owes Lady Ashgrove, minor" });
+  await debt.getByRole("button", { name: "Open" }).click();
+  await debt.getByRole("button", { name: "Edit" }).click();
+  const edit = debt.getByRole("form", { name: "Edit: Edric Thorne owes Lady Ashgrove" });
+  await expect(edit.getByLabel("Staff note")).toHaveCount(0);
+  await edit.getByLabel("Kind").selectOption("major");
+  await edit.getByLabel("Why the edit").fill("Misheard at Elysium");
+  await edit.getByRole("button", { name: "Save the edit" }).click();
+  const theirs = boons.getByRole("listitem", { name: "Edric Thorne owes Lady Ashgrove, major" });
+  const theirLog = theirs.getByRole("list", { name: "Log of Edric Thorne owes Lady Ashgrove" });
+  await expect(theirLog).toContainText("Misheard at Elysium");
+  await expect(theirLog).toContainText("Philippa Quill");
+  await expect(theirLog).not.toContainText("Kind: Minor → Major");
+  await h.screenshot(shots("harpy-ledger"));
+
+  // The lead sees the same edit, what it changed, and that Philippa made it.
+  await l.goto(`/troupes/${troupe.id}/boons`);
+  const staffRow = l.getByRole("list", { name: "Boons" }).getByRole("listitem", { name: "Edric Thorne owes Lady Ashgrove, major" });
+  await staffRow.getByRole("button", { name: "Open" }).click();
+  const staffLog = staffRow.getByRole("list", { name: "Log of Edric Thorne owes Lady Ashgrove" });
+  await expect(staffLog).toContainText("Kind: Minor → Major");
+  await expect(staffLog).toContainText("as Philippa Quill");
 });

@@ -30,6 +30,7 @@ const CharacterPage = lazy(() => import("./pages/character/CharacterPage").then(
 const CustodianPage = lazy(() => import("./pages/custodian/CustodianPage").then((m) => ({ default: m.CustodianPage })));
 const CyclePage = lazy(() => import("./pages/troupe/CyclePage").then((m) => ({ default: m.CyclePage })));
 const PlayPage = lazy(() => import("./pages/play/PlayPage").then((m) => ({ default: m.PlayPage })));
+const HarpyLedgerPage = lazy(() => import("./pages/play/HarpyLedgerPage").then((m) => ({ default: m.HarpyLedgerPage })));
 const ScenePage = lazy(() => import("./pages/play/ScenePage").then((m) => ({ default: m.ScenePage })));
 const ScenesPage = lazy(() => import("./pages/play/ScenesPage").then((m) => ({ default: m.ScenesPage })));
 const PlayerPage = lazy(() => import("./pages/PlayerPage").then((m) => ({ default: m.PlayerPage })));
@@ -93,6 +94,7 @@ export const routes = createRoutesFromElements(
       {/* Found by tapping the clan symbol seven times (#537): no link leads here for a player. */}
       <Route path="/print/characters/:characterId/jyhad" element={<ForCharacter><JyhadCardPage /></ForCharacter>} />
       <Route path="/play/characters/:characterId" element={<ForCharacter><PlayPage /></ForCharacter>} />
+      <Route path="/play/characters/:characterId/ledger" element={<ForCharacter><HarpyLedgerPage /></ForCharacter>} />
       <Route path="/play/troupes/:troupeId/scenes" element={<ForTroupe><ScenesPage /></ForTroupe>} />
       <Route path="/play/troupes/:troupeId/scenes/:sceneId" element={<ForTroupe><ScenePage /></ForTroupe>} />
       {/* The one scene per troupe from before scenes were named (issue #231). */}

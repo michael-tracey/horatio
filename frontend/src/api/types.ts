@@ -232,6 +232,7 @@ export type PlayBoonsOut = Schemas["PlayBoonsOut"];
 export type PlayBoonOut = Schemas["PlayBoonOut"];
 export type PlayReportOut = Schemas["PlayReportOut"];
 export type BoonReviewOut = Schemas["BoonReviewOut"];
+export type HarpyLedgerOut = Schemas["HarpyLedgerOut"];
 export type LinkOut = Schemas["LinkOut"];
 export type PlayBoonIn = Schemas["PlayBoonIn"];
 export type BoonStandingsOut = Schemas["BoonStandingsOut"];

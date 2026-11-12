@@ -9,13 +9,14 @@ from typing import Literal
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
-from sqlalchemy import or_, select
+from sqlalchemy import and_, or_, select
 
-from horatio import boon_reviews, boon_status, boons
+from horatio import boon_harpy, boon_reviews, boon_status, boons
 from horatio.api.downtimes import staff_troupe
 from horatio.api.influence_log import CharacterChoice
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
+from horatio.boon_harpy import Keeper
 from horatio.models import (
     Boon,
     BoonEvent,
@@ -245,14 +246,17 @@ def users_of(db: DbSession, ids: Iterable[uuid.UUID | None]) -> dict[uuid.UUID, 
     return {u.id: u.display_name for u in db.scalars(select(User).where(User.id.in_(wanted)))}
 
 
-def party_out(character: Character | None, name: str) -> BoonPartyOut:
+def party_out(character: Character | None, name: str, reasons: bool = True) -> BoonPartyOut:
+    """One side of a boon. Without `reasons`, for a Harpy (#688), a retired character
+    is shown as retired, not why."""
     if character is None:
         return BoonPartyOut(character_id=None, name=name, kind=None, standing=None)
+    found = boons.standing(character)
     return BoonPartyOut(
         character_id=character.id,
         name=character.name,
         kind=character.kind,
-        standing=boons.standing(character),  # type: ignore[arg-type]  # a known reason
+        standing=found if reasons or found == "active" else "retired",  # type: ignore[arg-type]  # a known reason
     )
 
 
@@ -261,13 +265,17 @@ def boon_out(
     characters: Mapping[uuid.UUID, Character],
     users: Mapping[uuid.UUID, str],
     disgraced: Collection[uuid.UUID] = frozenset(),
+    keeper: Keeper | None = None,
 ) -> BoonOut:
+    """The boon as `keeper` sees it: staff (the default) see everything; a Harpy (#688)
+    never its staff note, who entered it, or why a character on it retired."""
+    harpy = keeper is not None and not keeper.staff
     debtor = characters.get(boon.debtor_id) if boon.debtor_id else None
     creditor = characters.get(boon.creditor_id) if boon.creditor_id else None
     return BoonOut(
         id=boon.id,
-        debtor=party_out(debtor, boon.debtor_name),
-        creditor=party_out(creditor, boon.creditor_name),
+        debtor=party_out(debtor, boon.debtor_name, not harpy),
+        creditor=party_out(creditor, boon.creditor_name, not harpy),
         kind=boon.kind,  # type: ignore[arg-type]  # checked by the database
         made_on=boon.made_on,
         reason=boon.reason,
@@ -277,25 +285,32 @@ def boon_out(
         settled_how=boon.settled_how,  # type: ignore[arg-type]  # checked by the database
         closed_at=boon.closed_at,
         closed_note=boon.closed_note,
-        staff_note=boon.staff_note,
+        staff_note="" if harpy else boon.staff_note,
         departed=boon.state == "registered"
-        and (boons.departed(debtor) or boons.departed(creditor)),
+        and (boons.departed(debtor, not harpy) or boons.departed(creditor, not harpy)),
         creditor_disgraced=boon.state == "registered" and boon.creditor_id in disgraced,
-        submitted_by=users.get(boon.submitted_by) if boon.submitted_by else None,
+        submitted_by=users.get(boon.submitted_by) if boon.submitted_by and not harpy else None,
         submitted_at=boon.created_at,
     )
 
 
 def event_out(
-    line: BoonEvent, users: Mapping[uuid.UUID, str], names: Mapping[uuid.UUID, str], diffs: bool
+    line: BoonEvent,
+    users: Mapping[uuid.UUID, str],
+    names: Mapping[uuid.UUID, str],
+    diffs: bool,
+    harpy: bool = False,
 ) -> BoonEventOut:
+    """A line of the boon's log. Only those who see what edits changed get an edit's
+    changes; a Harpy (#688) sees the character a line was done as, never who did it
+    out of game."""
     shown = diffs or line.kind != "edited"
     return BoonEventOut(
         id=line.id,
         kind=line.kind,  # type: ignore[arg-type]  # checked by the database
         note=line.note,
         at=line.created_at,
-        by=users.get(line.actor_id) if line.actor_id else None,
+        by=users.get(line.actor_id) if line.actor_id and not harpy else None,
         as_character=names.get(line.as_character_id) if line.as_character_id else None,
         changes=[BoonChangeOut(field=f, before=b, after=a) for f, (b, a) in line.changes.items()]
         if shown
@@ -316,9 +331,12 @@ def flag_out(f: BoonFlag, users: Mapping[uuid.UUID, str]) -> BoonFlagOut:
     )
 
 
-def full_out(db: DbSession, user: User, troupe: Troupe, boon: Boon) -> BoonOut:
+def full_out(
+    db: DbSession, user: User, troupe: Troupe, boon: Boon, keeper: Keeper | None = None
+) -> BoonOut:
     """The boon with its log and its flags, its changes shown as far as `user` may see
-    them."""
+    them, as `keeper` sees it (staff by default)."""
+    harpy = keeper is not None and not keeper.staff
     lines = boons.events_of(db, boon)
     flags = boon_reviews.raised(db, [boon.id])
     users = users_of(
@@ -330,9 +348,11 @@ def full_out(db: DbSession, user: User, troupe: Troupe, boon: Boon) -> BoonOut:
         if acting
         else {}
     )
-    out = boon_out(boon, characters_of(db, [boon]), users, standing_disgraced(db, [boon]))
+    out = boon_out(
+        boon, characters_of(db, [boon]), users, standing_disgraced(db, [boon]), keeper=keeper
+    )
     diffs = boons.sees_changes(db, user, troupe)
-    out.events = [event_out(e, users, names, diffs) for e in lines]
+    out.events = [event_out(e, users, names, diffs, harpy) for e in lines]
     out.flags = [flag_out(f, users) for f in flags]
     return out
 
@@ -342,13 +362,21 @@ def standing_disgraced(db: DbSession, found: Iterable[Boon]) -> set[uuid.UUID]:
     return boon_status.disgraced(db, (b.creditor_id for b in found if b.state == "registered"))
 
 
-def ledger_troupe(db: DbSession, user: User, troupe_id: uuid.UUID) -> Troupe:
-    """The troupe, for its running staff, while it keeps a ledger. Switched off, there
-    is nothing to see."""
-    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_BOONS)
+def ledger_troupe(
+    db: DbSession, user: User, troupe_id: uuid.UUID, need: str = "full"
+) -> tuple[Troupe, Keeper]:
+    """The troupe, and who `user` works its ledger as (horatio.boon_harpy.keeper): its
+    running staff, or a Harpy, as far as the troupe's setting lets them (`need`), while
+    it keeps a ledger. Switched off, there is nothing to see."""
+    troupe = db.get(Troupe, troupe_id)
+    keeper = boon_harpy.keeper(db, user, troupe, need) if troupe is not None else None
+    if troupe is None or keeper is None:
+        # Refused as staff's pages refuse anyone else.
+        staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_BOONS)
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
     if not boons.tracked(troupe):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "This troupe doesn't keep a boon ledger.")
-    return troupe
+    return troupe, keeper
 
 
 def troupe_boon(db: DbSession, troupe: Troupe, boon_id: uuid.UUID) -> Boon:
@@ -358,8 +386,30 @@ def troupe_boon(db: DbSession, troupe: Troupe, boon_id: uuid.UUID) -> Boon:
     return boon
 
 
-def side(db: DbSession, troupe: Troupe, given: BoonPartyIn, which: str) -> boons.Party:
+def side(
+    db: DbSession, troupe: Troupe, given: BoonPartyIn, which: str, keeper: Keeper | None = None
+) -> boons.Party:
+    """The side as named. A Harpy (#688) names only the characters they may pick
+    (`harpy_choices`); anyone else by name."""
+    if (
+        keeper is not None
+        and not keeper.staff
+        and given.character_id is not None
+        and given.character_id not in {c.id for c in harpy_choices(db, troupe)}
+    ):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            f"Name the {which} by name: staff link it to a character.",
+        )
     return boons.party(db, troupe, given.character_id, given.name, which)
+
+
+def no_staff_note(keeper: Keeper, note: str | None) -> None:
+    """A boon's staff note is its storytellers' and assistant storytellers' alone."""
+    if not keeper.staff and note:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Only the troupe's staff write a boon's staff note."
+        )
 
 
 def choices(db: DbSession, troupe: Troupe) -> list[CharacterChoice]:
@@ -376,6 +426,35 @@ def choices(db: DbSession, troupe: Troupe) -> list[CharacterChoice]:
     return [CharacterChoice(id=c.id, name=c.name, kind=c.kind, in_troupe=True) for c in found]
 
 
+def harpy_choices(db: DbSession, troupe: Troupe) -> list[CharacterChoice]:
+    """The characters a Harpy (#688) may pick: the troupe's player characters, at home
+    or visiting, retired ones too, and the NPCs its ledger already names. Any other NPC
+    stays unknown to them: they name it by name, for staff to link."""
+    named = (
+        select(Boon.debtor_id)
+        .where(Boon.troupe_id == troupe.id)
+        .union(select(Boon.creditor_id).where(Boon.troupe_id == troupe.id))
+    )
+    members = select(TroupeMembership.character_id).where(
+        TroupeMembership.troupe_id == troupe.id, TroupeMembership.left_at.is_(None)
+    )
+    found = db.scalars(
+        select(Character)
+        .where(
+            or_(
+                and_(Character.id.in_(members), Character.kind == "pc"),
+                and_(Character.owner_troupe_id == troupe.id, Character.id.in_(named)),
+            )
+        )
+        .order_by(Character.name)
+    )
+    return [CharacterChoice(id=c.id, name=c.name, kind=c.kind, in_troupe=True) for c in found]
+
+
+def choices_for(db: DbSession, troupe: Troupe, keeper: Keeper) -> list[CharacterChoice]:
+    return choices(db, troupe) if keeper.staff else harpy_choices(db, troupe)
+
+
 # --- the setting --------------------------------------------------------------------------
 
 
@@ -387,6 +466,26 @@ def set_boon_ledger(
     registered is kept, and comes back when it is switched on again."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
     boons.set_setting(db, user, troupe, body.on)
+    db.commit()
+    return troupe_out(db, user, troupe)
+
+
+HarpyAccess = Literal["none", "submissions", "full"]
+
+
+class BoonHarpyIn(BaseModel):
+    # The Harpy's access to the ledger: none, the review queue, or the full ledger.
+    access: HarpyAccess
+
+
+@router.put("/troupes/{troupe_id}/boon-harpy")
+def set_boon_harpy(
+    troupe_id: uuid.UUID, body: BoonHarpyIn, db: DbSession, user: CurrentUser
+) -> TroupeOut:
+    """How far the troupe's Harpy reaches into its boon ledger (#688): not at all, the
+    review queue and word of each boon players report, or the full ledger."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    boon_harpy.set_access(db, user, troupe, body.access)
     db.commit()
     return troupe_out(db, user, troupe)
 
@@ -410,7 +509,8 @@ def troupe_boons(
     both parties in play), departed (standing, but someone on it is dead or
     off-field), settled, void, pending, or all. Narrowed to those a character or a
     name is on, of a kind, or made between two nights."""
-    troupe = ledger_troupe(db, user, troupe_id)
+    troupe, keeper = ledger_troupe(db, user, troupe_id)
+    reasons = keeper.staff
     every = list(
         db.scalars(
             select(Boon)
@@ -433,21 +533,26 @@ def troupe_boons(
         return made_to is None or b.made_on <= made_to
 
     narrowed = [b for b in every if matches(b)]
-    shown = [b for b in narrowed if boons.in_view(b, characters, view)]
+    shown = [b for b in narrowed if boons.in_view(b, characters, view, reasons)]
     users = users_of(db, (b.submitted_by for b in shown))
     disgraced = standing_disgraced(db, shown)
     return TroupeBoonsOut(
-        boons=[boon_out(b, characters, users, disgraced) for b in shown],
-        counts=boons.counts(narrowed, characters),
-        characters=choices(db, troupe),
+        boons=[boon_out(b, characters, users, disgraced, keeper=keeper) for b in shown],
+        counts=boons.counts(narrowed, characters, reasons),
+        characters=choices_for(db, troupe, keeper),
     )
 
 
 @router.get("/troupes/{troupe_id}/boons/{boon_id}")
 def one_boon(troupe_id: uuid.UUID, boon_id: uuid.UUID, db: DbSession, user: CurrentUser) -> BoonOut:
-    """A boon with its log."""
-    troupe = ledger_troupe(db, user, troupe_id)
-    return full_out(db, user, troupe, troupe_boon(db, troupe, boon_id))
+    """A boon with its log. A Harpy given only the review queue (#688) opens only the
+    boons in it."""
+    troupe, keeper = ledger_troupe(db, user, troupe_id, "submissions")
+    boon = troupe_boon(db, troupe, boon_id)
+    queue_only = not keeper.staff and not boon_harpy.reaches(troupe, "full")
+    if queue_only and boon.id not in {b.id for b in boon_reviews.queue(db, troupe)}:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such boon.")
+    return full_out(db, user, troupe, boon, keeper)
 
 
 @router.post("/troupes/{troupe_id}/boons", status_code=status.HTTP_201_CREATED)
@@ -455,8 +560,9 @@ def register(
     troupe_id: uuid.UUID, body: RegisterBoonsIn, db: DbSession, user: CurrentUser
 ) -> list[BoonOut]:
     """Register boons in the ledger: one, or a whole game's at once, each row as many
-    times as its count. All or none: a row that can't be registered stops them all."""
-    troupe = ledger_troupe(db, user, troupe_id)
+    times as its count. All or none: a row that can't be registered stops them all. A
+    Harpy (#688) registers them as their character, with no staff note."""
+    troupe, keeper = ledger_troupe(db, user, troupe_id)
     if body.game_id is not None:
         game = db.get(ScheduledGame, body.game_id)
         if game is None or game.troupe_id != troupe.id or game.starts_at > datetime.now(UTC):
@@ -467,8 +573,9 @@ def register(
     # Every row is checked before any is written.
     for number, given in enumerate(body.boons, start=1):
         try:
-            debtor = side(db, troupe, given.debtor, "debtor")
-            creditor = side(db, troupe, given.creditor, "creditor")
+            no_staff_note(keeper, given.staff_note.strip())
+            debtor = side(db, troupe, given.debtor, "debtor", keeper)
+            creditor = side(db, troupe, given.creditor, "creditor", keeper)
             terms = boons.check_new(
                 debtor,
                 creditor,
@@ -490,14 +597,23 @@ def register(
     made: list[Boon] = []
     for debtor, creditor, terms, count in rows:
         made += boons.register(
-            db, user, troupe, debtor, creditor, terms, count, body.note, game_id=body.game_id
+            db,
+            user,
+            troupe,
+            debtor,
+            creditor,
+            terms,
+            count,
+            body.note,
+            as_character=keeper.character,
+            game_id=body.game_id,
         )
     boon_reviews.flag_new(db, troupe, made)
     db.commit()
     characters = characters_of(db, made)
     users = users_of(db, [user.id])
     disgraced = standing_disgraced(db, made)
-    return [boon_out(b, characters, users, disgraced) for b in made]
+    return [boon_out(b, characters, users, disgraced, keeper=keeper) for b in made]
 
 
 @router.patch("/troupes/{troupe_id}/boons/{boon_id}")
@@ -505,9 +621,12 @@ def edit(
     troupe_id: uuid.UUID, boon_id: uuid.UUID, body: BoonEditIn, db: DbSession, user: CurrentUser
 ) -> BoonOut:
     """Correct what a boon says, with a note. Its log keeps each field before and
-    after, which only the troupe's storytellers and assistant storytellers see."""
-    troupe = ledger_troupe(db, user, troupe_id)
+    after, which only the troupe's storytellers and assistant storytellers see. A Harpy
+    (#688) edits as their character, and never the staff note."""
+    troupe, keeper = ledger_troupe(db, user, troupe_id)
     boon = troupe_boon(db, troupe, boon_id)
+    # A Harpy never sees the staff note, so sends none; one they send is refused.
+    no_staff_note(keeper, (body.staff_note or "").strip())
     terms = body.model_dump(
         exclude_none=True,
         include={"kind", "made_on", "reason", "conditions", "notify_on_trade", "staff_note"},
@@ -517,12 +636,13 @@ def edit(
         user,
         boon,
         body.note,
-        debtor=side(db, troupe, body.debtor, "debtor") if body.debtor else None,
-        creditor=side(db, troupe, body.creditor, "creditor") if body.creditor else None,
-        terms=terms,
+        debtor=side(db, troupe, body.debtor, "debtor", keeper) if body.debtor else None,
+        creditor=side(db, troupe, body.creditor, "creditor", keeper) if body.creditor else None,
+        terms=terms if keeper.staff else {k: v for k, v in terms.items() if k != "staff_note"},
+        as_character=keeper.character,
     )
     db.commit()
-    return full_out(db, user, troupe, boon)
+    return full_out(db, user, troupe, boon, keeper)
 
 
 @router.post("/troupes/{troupe_id}/boons/{boon_id}/trade")
@@ -531,11 +651,12 @@ def trade(
 ) -> BoonOut:
     """Its creditor traded it: another holds it now. If its conditions ask, its
     debtor's player is told."""
-    troupe = ledger_troupe(db, user, troupe_id)
+    troupe, keeper = ledger_troupe(db, user, troupe_id)
     boon = troupe_boon(db, troupe, boon_id)
-    boons.trade(db, user, boon, side(db, troupe, body.creditor, "creditor"), body.note)
+    to = side(db, troupe, body.creditor, "creditor", keeper)
+    boons.trade(db, user, boon, to, body.note, keeper.character)
     db.commit()
-    return full_out(db, user, troupe, boon)
+    return full_out(db, user, troupe, boon, keeper)
 
 
 @router.post("/troupes/{troupe_id}/boons/{boon_id}/pass-on")
@@ -544,11 +665,12 @@ def pass_on(
 ) -> BoonOut:
     """Move the debtor's or the creditor's side of a standing boon to another, such
     as a broodmate after a death."""
-    troupe = ledger_troupe(db, user, troupe_id)
+    troupe, keeper = ledger_troupe(db, user, troupe_id)
     boon = troupe_boon(db, troupe, boon_id)
-    boons.pass_on(db, user, boon, body.side, side(db, troupe, body.to, body.side), body.note)
+    to = side(db, troupe, body.to, body.side, keeper)
+    boons.pass_on(db, user, boon, body.side, to, body.note, keeper.character)
     db.commit()
-    return full_out(db, user, troupe, boon)
+    return full_out(db, user, troupe, boon, keeper)
 
 
 @router.post("/troupes/{troupe_id}/boons/{boon_id}/settle")
@@ -556,11 +678,11 @@ def settle(
     troupe_id: uuid.UUID, boon_id: uuid.UUID, body: BoonSettleIn, db: DbSession, user: CurrentUser
 ) -> BoonOut:
     """The boon is settled: called in, forgiven, or formally ignored (p. 397)."""
-    troupe = ledger_troupe(db, user, troupe_id)
+    troupe, keeper = ledger_troupe(db, user, troupe_id)
     boon = troupe_boon(db, troupe, boon_id)
-    boons.settle(db, user, boon, body.how, body.note)
+    boons.settle(db, user, boon, body.how, body.note, as_character=keeper.character)
     db.commit()
-    return full_out(db, user, troupe, boon)
+    return full_out(db, user, troupe, boon, keeper)
 
 
 @router.post("/troupes/{troupe_id}/boons/{boon_id}/void")
@@ -568,11 +690,11 @@ def void(
     troupe_id: uuid.UUID, boon_id: uuid.UUID, body: BoonNoteIn, db: DbSession, user: CurrentUser
 ) -> BoonOut:
     """The boon never stood, or no longer counts, with a note: entered by mistake, say."""
-    troupe = ledger_troupe(db, user, troupe_id)
+    troupe, keeper = ledger_troupe(db, user, troupe_id)
     boon = troupe_boon(db, troupe, boon_id)
-    boons.void(db, user, boon, body.note)
+    boons.void(db, user, boon, body.note, keeper.character)
     db.commit()
-    return full_out(db, user, troupe, boon)
+    return full_out(db, user, troupe, boon, keeper)
 
 
 @router.post("/troupes/{troupe_id}/boons/{boon_id}/reopen")
@@ -580,11 +702,11 @@ def reopen(
     troupe_id: uuid.UUID, boon_id: uuid.UUID, body: BoonNoteIn, db: DbSession, user: CurrentUser
 ) -> BoonOut:
     """A settled or void boon stands again, with a note."""
-    troupe = ledger_troupe(db, user, troupe_id)
+    troupe, keeper = ledger_troupe(db, user, troupe_id)
     boon = troupe_boon(db, troupe, boon_id)
-    boons.reopen(db, user, boon, body.note)
+    boons.reopen(db, user, boon, body.note, keeper.character)
     db.commit()
-    return full_out(db, user, troupe, boon)
+    return full_out(db, user, troupe, boon, keeper)
 
 
 # --- on the sheet -------------------------------------------------------------------------
@@ -722,6 +844,17 @@ class PlayReportOut(BaseModel):
     rejected_at: datetime | None
 
 
+class HarpyLedgerOut(BaseModel):
+    """A ledger the character keeps as its troupe's Harpy (#688)."""
+
+    troupe_id: uuid.UUID
+    troupe_name: str
+    # How far the troupe lets the Harpy reach: the review queue, or the full ledger.
+    access: Literal["submissions", "full"]
+    # Boons waiting for review or flagged.
+    to_review: int
+
+
 class PlayBoonsOut(BaseModel):
     troupe_id: uuid.UUID
     troupe_name: str
@@ -739,6 +872,8 @@ class PlayBoonsOut(BaseModel):
     # Its boons reported here that wait for review, or weren't accepted in the last
     # REJECTED_SHOWN days (#687).
     reports: list[PlayReportOut] = []
+    # The ledgers its player keeps as the Harpy (#688), for the character's player.
+    harpy: list[HarpyLedgerOut] = []
 
 
 def play_ledger(db: DbSession, user: User, character_id: uuid.UUID) -> tuple[Character, Troupe]:
@@ -902,7 +1037,33 @@ def play_out(
         owed=side(False) if sees == "owed" else None,
         characters=play_choices(db, troupe, character) if playing else [],
         reports=reports_of(db, troupe, character),
+        harpy=harpy_ledgers(db, user, character),
     )
+
+
+def harpy_ledgers(db: DbSession, user: User, character: Character) -> list[HarpyLedgerOut]:
+    """The ledgers the character's player keeps as it, the troupe's Harpy (#688)."""
+    if character.player_id != user.id:
+        return []
+    return [
+        HarpyLedgerOut(
+            troupe_id=t.id,
+            troupe_name=t.name,
+            access=t.boon_harpy,  # type: ignore[arg-type]  # not "none", as found
+            to_review=len(boon_reviews.queue(db, t)),
+        )
+        for t in boon_harpy.offices_of(db, character)
+    ]
+
+
+@router.get("/characters/{character_id}/harpy-ledgers")
+def character_harpy_ledgers(
+    character_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> list[HarpyLedgerOut]:
+    """The ledgers the character's player keeps as it, the troupe's Harpy (#688): for
+    the Harpy's own page, linked from the Play View's Boons tab."""
+    character = visible_character(db, user, character_id)
+    return harpy_ledgers(db, user, character)
 
 
 @router.get("/characters/{character_id}/play-boons")
@@ -954,6 +1115,7 @@ def report_boon(
         pending=boon_reviews.held(troupe),
     )
     boon_reviews.flag_new(db, troupe, made)
+    boon_harpy.tell(db, troupe, made, character)
     db.commit()
     return play_out(db, user, troupe, character, player_sees(troupe, character))
 
