@@ -847,6 +847,18 @@ The four settings:
 
 Changing the setting leaves drinks already waiting where they are. **Characters › Bonds** lists every drink still waiting, whoever it waits on, to approve or decline there too. In any mode, a drink in a bond's **Drinks log** can be changed (its night and note) or taken out with a reason; taking out the last one removes the bond. Players can't record a night to come, one before the character was made in Horatio, or a drink while their character holds a full bond to someone else.
 
+#### When a regnant or a thrall meets Final Death
+
+"If a regnant is killed, the bond will slowly fade over the next month" (MET: VTM p. 296). When a character is retired with **Final Death** (or why it left is changed to Final Death), each bond it's the regnant of starts **fading**. On **Characters › Bonds** it says so, with the day it ends, 30 days on. **Change the fade** moves that day, with a reason; choose today to end it now.
+
+The thrall still feels the bond all that month, so nothing their player sees changes: the bond stays on their sheet as it was, with no notification and nothing in their character's log. The fade goes only in the troupe's log. On the day, the bond ends as faded, but the thrall's sheet still shows it until their player is told, with the troupe's next downtime results: "Agnes's bond to Bram has faded", never why. **Characters › Bonds** marks a faded bond whose thrall isn't told yet.
+
+Retiring a regnant **Off-field** or **Inactive** leaves its bonds alone. If you change a regnant's Final Death to something else, its bonds still fading are felt again; those already faded stay ended.
+
+A thrall's Final Death ends its bonds. A regnant has no sense of a thrall's death, so a regnant's player who knew of the bond goes on seeing it as it was; **Stop showing the regnant** clears it when the regnant would know.
+
+Players can still learn of a death in other ways, which are yours to choose: listing the character under **No longer with us** on the Who's Who, opening Remembrances for it, or logging the withdrawal of its dots from a shared background. Hold off on these until its bonds have faded if the thralls shouldn't know yet.
+
 ### Approving backstories
 
 Storytellers and assistant storytellers read a character's backstory on its **Backstory** tab, or opened in its home troupe request. Under **Your reading**:

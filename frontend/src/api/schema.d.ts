@@ -1054,7 +1054,10 @@ export interface paths {
          * Character Bonds
          * @description The bonds still felt that the character is in, as the caller may know of
          *     them: all of them for the running staff of the troupe that keeps one; its
-         *     player's own as thrall; and as regnant, only those known to the regnant.
+         *     player's own as thrall; and as regnant, only those known to the regnant. A
+         *     fading bond shows to the thrall's player just as before, and one that has faded
+         *     too, until they are told it faded; one whose thrall died, to the regnant's player
+         *     who knew of it, until staff clear it (#662).
          */
         get: operations["character_bonds_api_characters__character_id__bonds_get"];
         put?: never;
@@ -7384,6 +7387,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/clear-kept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Clear Kept
+         * @description Stop showing the regnant's player a bond whose thrall died.
+         */
+        post: operations["clear_kept_api_troupes__troupe_id__bonds__bond_id__clear_kept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/bonds/{bond_id}/drinks": {
         parameters: {
             query?: never;
@@ -7440,6 +7463,27 @@ export interface paths {
          *     in its log goes too.
          */
         post: operations["remove_entry_api_troupes__troupe_id__bonds__bond_id__entries__entry_id__remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/fade": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Fade
+         * @description Move the day a fading bond ends, with the reason: to today or before, it ends
+         *     now, as faded.
+         */
+        put: operations["set_fade_api_troupes__troupe_id__bonds__bond_id__fade_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -13261,10 +13305,22 @@ export interface components {
             /** Entries */
             entries: components["schemas"]["BondEntryOut"][];
             /**
+             * Fade Reason
+             * @default
+             */
+            fade_reason: string;
+            /** Fades On */
+            fades_on?: string | null;
+            /**
              * Id
              * Format: uuid
              */
             id: string;
+            /**
+             * Kept For Regnant
+             * @default false
+             */
+            kept_for_regnant: boolean;
             /** Known To Regnant */
             known_to_regnant: boolean;
             /** Last Drink */
@@ -13275,6 +13331,11 @@ export interface components {
             /** Status */
             status: string;
             thrall: components["schemas"]["PartyOut"];
+            /**
+             * Thrall Told
+             * @default false
+             */
+            thrall_told: boolean;
         };
         /**
          * BondReportOut
@@ -17465,6 +17526,16 @@ export interface components {
             note: string;
             /** On */
             on: string | null;
+        };
+        /** FadeIn */
+        FadeIn: {
+            /**
+             * Fades On
+             * Format: date
+             */
+            fades_on: string;
+            /** Reason */
+            reason: string;
         };
         /** FeedingAdjustmentIn */
         FeedingAdjustmentIn: {
@@ -45232,6 +45303,38 @@ export interface operations {
             };
         };
     };
+    clear_kept_api_troupes__troupe_id__bonds__bond_id__clear_kept_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                bond_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BondOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     add_drink_api_troupes__troupe_id__bonds__bond_id__drinks_post: {
         parameters: {
             query?: never;
@@ -45329,6 +45432,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EntryRemovedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_fade_api_troupes__troupe_id__bonds__bond_id__fade_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                bond_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FadeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BondOut"];
                 };
             };
             /** @description Validation Error */

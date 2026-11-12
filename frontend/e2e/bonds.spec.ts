@@ -165,3 +165,64 @@ test("players report a drink for staff to approve; under Players manage the thra
   await r.goto(`/characters/${corentin}`);
   await expect(r.getByRole("list", { name: "Bound to you" })).toContainText("Séverine Arlaud: first drink");
 });
+
+test("a dead regnant's bond fades: staff see the day it ends, and the thrall's sheet doesn't change (#662)", async ({ browser }) => {
+  const custodian = await person(browser, "fade-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "fade-lead");
+  const thrall = await person(browser, "fade-thrall");
+  const regnant = await person(browser, "fade-regnant");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Ashen Vigil ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  const build = { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]] as [string, number][], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] as [string, number][] };
+  const home = async (page: Page, name: string) => {
+    const id = await builtVampire(page, name, "Brujah", build);
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    return id;
+  };
+  const solene = await home(thrall.page, "Solene Ardoise");
+  const hale = await home(regnant.page, "Malachai Hale");
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/blood-bonds`, { setting: "staff" });
+  for (const night of ["2026-10-03", "2026-10-10"]) {
+    await send(lead.page, "POST", `/api/troupes/${troupe.id}/bonds/drinks`, { thrall: { character_id: solene }, regnant: { character_id: hale }, night, source: "game" });
+  }
+
+  // Solene's player sees two drinks.
+  const t = thrall.page;
+  await t.goto(`/characters/${solene}`);
+  const bound = t.getByRole("list", { name: "Bound to" });
+  await expect(bound).toContainText("Bound to Malachai Hale");
+  const before = (await bound.textContent()) ?? "";
+
+  // Malachai meets Final Death: his player retires him.
+  await send(regnant.page, "POST", `/api/characters/${hale}/retire`, { reason: "final_death", note: "Sunrise", listed: false });
+
+  // Staff see the bond fading, with the day it ends.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}/bonds`);
+  const bond = l.getByRole("listitem", { name: "Solene Ardoise bound to Malachai Hale" });
+  await expect(bond).toContainText("Fading: Malachai Hale met Final Death, and it ends on");
+  // Solene's player sees nothing change.
+  await t.reload();
+  await expect(bound).toHaveText(before);
+
+  // Staff end it today, as the 30 days running out would: it has faded, but Solene's
+  // player isn't told until the next downtime results, so her sheet still shows it.
+  await bond.getByRole("button", { name: "Change the fade" }).click();
+  const fade = bond.getByRole("form", { name: "Change the fade of Solene Ardoise's bond to Malachai Hale" });
+  await fade.getByRole("button", { name: "Today" }).click();
+  await fade.getByLabel("Reason").fill("The story moves on");
+  await fade.getByRole("button", { name: "Save the fade" }).click();
+  await expect(bond).toContainText("Ended: Faded: its regnant met Final Death.");
+  await expect(bond).toContainText("Solene Ardoise's player isn't told yet");
+  await t.reload();
+  await expect(bound).toHaveText(before);
+});
