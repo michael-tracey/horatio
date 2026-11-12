@@ -34,6 +34,7 @@ from sqlalchemy.orm import Session
 
 from horatio import (
     audit,
+    auto_bonds,
     backstories,
     bonds,
     creation_xp,
@@ -851,6 +852,8 @@ def approve_change(
     if character.kind == "pc":
         # The Haven its player named before any troupe accepted it goes on this list.
         locations.place_haven_draft(db, character, troupe)
+    # Bonds it holds by rule, to a domitor or from ghoul Retainers, go in its bonds.
+    auto_bonds.accepted(db, staff, character)
     if reopen:
         # The new troupe gives more starting dots: let the player place them.
         character.creation_completed_at = None

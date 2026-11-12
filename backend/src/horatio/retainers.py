@@ -31,7 +31,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit
+from horatio import audit, auto_bonds
 from horatio.models import Character, Retainer, ScheduledGame, Troupe, User
 from horatio.permissions import (
     TroupeAction,
@@ -447,6 +447,8 @@ def replace(
             audit.record(db, user, "retainer.removed", **log, name=row.name, dots=row.dots)
             db.delete(row)
     db.flush()
+    # A vampire's ghoul Retainers are fully bound to them (p. 296).
+    auto_bonds.retainers_saved(db, user, character)
     return read(db, character)
 
 

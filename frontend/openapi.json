@@ -18261,6 +18261,22 @@
         "title": "FillTableItem",
         "type": "object"
       },
+      "FilledOut": {
+        "properties": {
+          "added": {
+            "items": {
+              "$ref": "#/components/schemas/BondOut"
+            },
+            "title": "Added",
+            "type": "array"
+          }
+        },
+        "required": [
+          "added"
+        ],
+        "title": "FilledOut",
+        "type": "object"
+      },
       "FilterCondition": {
         "additionalProperties": false,
         "description": "One condition of a character filter; see horatio.character_filter.",
@@ -23921,6 +23937,48 @@
           "counted"
         ],
         "title": "KindOut",
+        "type": "object"
+      },
+      "KnownBondOut": {
+        "properties": {
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "regnant": {
+            "$ref": "#/components/schemas/PartyOut"
+          },
+          "thrall": {
+            "$ref": "#/components/schemas/PartyOut"
+          },
+          "why": {
+            "enum": [
+              "embrace",
+              "domitor",
+              "retainer"
+            ],
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "why",
+          "thrall",
+          "regnant",
+          "level",
+          "night",
+          "reason"
+        ],
+        "title": "KnownBondOut",
         "type": "object"
       },
       "KnownIn": {
@@ -73817,6 +73875,96 @@
           }
         },
         "summary": "Record Drink",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/bonds/known": {
+      "get": {
+        "description": "The bonds Horatio can work out for the troupe that it doesn't keep yet: from its\ncharacters' Embraces, ghouls' domitors and vampires' ghoul Retainers (#663).",
+        "operationId": "known_bonds_api_troupes__troupe_id__bonds_known_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/KnownBondOut"
+                  },
+                  "title": "Response Known Bonds Api Troupes  Troupe Id  Bonds Known Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Known Bonds",
+        "tags": [
+          "bonds"
+        ]
+      },
+      "post": {
+        "description": "Add every bond `known_bonds` lists, and say which were added.",
+        "operationId": "fill_in_bonds_api_troupes__troupe_id__bonds_known_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilledOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Fill In Bonds",
         "tags": [
           "bonds"
         ]

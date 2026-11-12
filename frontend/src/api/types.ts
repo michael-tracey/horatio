@@ -192,7 +192,8 @@ export type HistoryEntryOut = Schemas["HistoryEntryOut"];
 export type InfluenceHistoryOut = Schemas["InfluenceHistoryOut"];
 export type LogStandingOut = Schemas["LogStandingOut"];
 export type CycleUseOut = Schemas["CycleUseOut"];
-export type CharacterChoice = Schemas["InfluenceChoicesOut"]["characters"][number];
+export type CharacterChoice =
+  Schemas["InfluenceChoicesOut"]["characters"][number];
 export type CycleChoice = Schemas["CycleChoice"];
 export type GameChoice = Schemas["GameChoice"];
 export type LookupOut = Schemas["LookupOut"];
@@ -210,6 +211,7 @@ export type BondOut = Schemas["BondOut"];
 export type TroupeBondsOut = Schemas["TroupeBondsOut"];
 export type CharacterBondsOut = Schemas["CharacterBondsOut"];
 export type BondReportOut = Schemas["BondReportOut"];
+export type KnownBondOut = Schemas["KnownBondOut"];
 export type ReportTroupeOut = Schemas["ReportTroupeOut"];
 export type BoonOut = Schemas["BoonOut"];
 export type BoonEventOut = Schemas["BoonEventOut"];

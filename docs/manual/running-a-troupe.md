@@ -848,6 +848,18 @@ The four settings:
 
 Changing the setting leaves drinks already waiting where they are. **Characters › Bonds** lists every drink still waiting, whoever it waits on, to approve or decline there too. In any mode, a drink in a bond's **Drinks log** can be changed (its night and note) or taken out with a reason; taking out the last one removes the bond. Players can't record a night to come, one before the character was made in Horatio, or a drink while their character holds a full bond to someone else.
 
+#### Bonds Horatio knows by rule
+
+Some bonds need no one to record them, and Horatio adds them itself while the setting isn't **Off**:
+
+- **The Embrace**: every childe has a one-drink bond to their sire, since the Embrace itself is a drink of the sire's blood (MET: VTM p. 295). Running an Embrace on a ghoul's sheet adds it, from the night of the Embrace.
+- **A ghoul's domitor**: a ghoul is fully bound to their domitor (p. 296). Setting a ghoul's domitor adds the full bond; a ghoul made before any troupe accepted it gets it when its home troupe accepts it. Changing the domitor ends the bond to the old one, since the book has a ghoul change domitor only once that bond has faded, and adds the new.
+- **Ghoul Retainers**: a vampire's ghoul Retainer is fully bound to them. The bond is by the Retainer's name until you link the Retainer to an NPC, when it moves to the NPC. The vampire's player made the Retainer a ghoul, so this one is known to them; the others aren't until you mark them known.
+
+None is added if the two already have a bond, if a full bond to someone else makes the thrall immune, or if either side is retired. Each goes in the logs with the book's reason.
+
+For characters from before the troupe tracked bonds, **Characters › Bonds** shows **Fill in known bonds**: the bonds Horatio can work out from Embraces, domitors and ghoul Retainers that the troupe doesn't keep yet. Look the list over and add them all at once; once they're in, it goes away.
+
 #### When a regnant or a thrall meets Final Death
 
 "If a regnant is killed, the bond will slowly fade over the next month" (MET: VTM p. 296). When a character is retired with **Final Death** (or why it left is changed to Final Death), each bond it's the regnant of starts **fading**. On **Characters › Bonds** it says so, with the day it ends, 30 days on. **Change the fade** moves that day, with a reason; choose today to end it now.
