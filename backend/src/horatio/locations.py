@@ -4,6 +4,9 @@ assistant storytellers keep them; players never see the record (#326 shows a
 controller the names of their locations, and what their qualities give them).
 A Haven's owner sees their own Haven, and sets its name, description, address,
 map link and advantages (#682): the same rules and log as staff's changes.
+Before any troupe has accepted the character, there is no list to put it on: its
+player keeps a draft with the character (#683), by the same rules, and the first
+troupe to accept the character puts it on its list.
 
 The rules (MET: VTM Vol. II Issue 1, pp. 117-133), as horatio.rules.locations has
 them for the troupe:
@@ -37,6 +40,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
+from fastapi import HTTPException
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
@@ -805,6 +809,114 @@ def save_own_haven(
     draft.haven_advantages = list(own.haven_advantages)
     saved, _ = save(db, actor, troupe, location, draft)
     return saved
+
+
+# --- a Haven named before any troupe accepted its owner (#683) ------------------------------
+
+
+def building_troupe(db: Session, character: Character) -> Troupe | None:
+    """The troupe the character is being built for, if any: its rules apply."""
+    if character.building_troupe_id is None:
+        return None
+    return db.get(Troupe, character.building_troupe_id)
+
+
+def draft_rules(db: Session, character: Character) -> LocationRules:
+    """The catalogue a draft Haven is judged by: the home troupe's, else the troupe
+    it is being built for, else the book's."""
+    troupe = (
+        db.get(Troupe, character.home_troupe_id)
+        if character.home_troupe_id
+        else building_troupe(db, character)
+    )
+    if troupe is None:
+        return catalogue.played(catalogue.load_catalogue(), [], [])
+    return rules_for(db, troupe)
+
+
+def haven_draft(character: Character) -> OwnHaven | None:
+    """The Haven its player named before a troupe accepted the character, if any."""
+    found = character.haven_draft
+    if not found:
+        return None
+    return OwnHaven(
+        name=str(found.get("name", "")),
+        description=str(found.get("description", "")),
+        address=str(found.get("address", "")),
+        map_link=str(found.get("map_link", "")),
+        haven_advantages=[str(a) for a in found.get("haven_advantages", [])],
+    )
+
+
+def cannot_draft(db: Session, character: Character) -> str | None:
+    """Why the owner can't keep a draft Haven, if they can't: a draft is only for a
+    character no troupe has accepted yet, whose Haven has no troupe's list to go on."""
+    if character.status == "retired":
+        return f"{character.name} is retired."
+    if character.home_troupe_id is not None:
+        return f"A troupe has accepted {character.name}: put the Haven on its list instead."
+    if own_havens(db, character):
+        return f"{character.name} already has a Haven."
+    if rating_of(db, character, "backgrounds", HAVEN) < 1:
+        return f"{character.name} has no Haven background."
+    return None
+
+
+def save_haven_draft(db: Session, actor: User, character: Character, own: OwnHaven) -> None:
+    """Keep the Haven its player names before any troupe accepts the character, by
+    the rules a Haven on the list keeps: the first troupe to accept it puts it there."""
+    if reason := cannot_draft(db, character):
+        raise conflict(reason)
+    rules = draft_rules(db, character)
+    draft = tidied(
+        Draft(
+            name=own.name,
+            kind="haven",
+            rating=1,
+            haven_of_id=character.id,
+            description=own.description,
+            address=own.address,
+            map_link=own.map_link,
+            haven_advantages=list(own.haven_advantages),
+        )
+    )
+    if not draft.name:
+        raise unprocessable("Give the Haven a name.")
+    # A map link kept from before is left as it is, as on the list (checked_links).
+    before = haven_draft(character)
+    if draft.map_link != (before.map_link if before else ""):
+        links.optional_web_address(draft.map_link, MAP_LINK)
+    if reason := haven_problem(rules, draft):
+        raise unprocessable(reason)
+    checked_haven(db, rules, character, draft)
+    character.haven_draft = {
+        "name": draft.name,
+        "description": draft.description,
+        "address": draft.address,
+        "map_link": draft.map_link,
+        "haven_advantages": list(draft.haven_advantages),
+    }
+    db.flush()
+    audit.record(db, actor, "creation.haven", character_id=character.id)
+
+
+def place_haven_draft(db: Session, character: Character, troupe: Troupe) -> Location | None:
+    """On a troupe's acceptance, put the Haven its player named in creation on that
+    troupe's list, as the player's own change, and clear the draft. A draft that no
+    longer fits (a dot of Haven gone, its name taken in the troupe) stays for the
+    player to fix from the sheet: acceptance never fails over it."""
+    own = haven_draft(character)
+    if own is None or cannot_create(db, character, troupe) is not None:
+        return None
+    player = db.get_one(User, character.player_id)
+    try:
+        with db.begin_nested():
+            placed = save_own_haven(db, player, character, troupe, None, own)
+    except HTTPException:
+        return None
+    character.haven_draft = None
+    db.flush()
+    return placed
 
 
 # --- its log ----------------------------------------------------------------------------------

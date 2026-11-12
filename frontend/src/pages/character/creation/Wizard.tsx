@@ -21,6 +21,8 @@ import { SetField } from "../Specializations";
 import { CUSTOM_ARCHETYPE, fieldProblems, identityChoices, keyed, pointsText, spent, traitOf, xpText, xpWith, type Allowed, type Picks } from "./logic";
 import { FromMerits } from "./FromMerits";
 import { IdentitySelect } from "./IdentitySelect";
+import { WizardHaven } from "../Haven";
+import { havenDots } from "../haven";
 import { ClanMerits } from "./ClanMerits";
 import { clanMeritsLine, clanPoints, comesWithClan } from "./clanMerits";
 import { EXTRA_IN_CLAN, IN_CLAN_MERITS, clanChoiceNeeded, clanChoiceOpen, inClanChoices, inClanOpen, inClanShortfalls, makesInClanChoice } from "./inClan";
@@ -646,6 +648,7 @@ function StepView({
           {!ghoul && <MoveStartingDots character={character} creation={creation} picks={picks.disciplines ?? {}} />}
         </div>
       )}
+      {step.key === "backgrounds" && havenDots(sheet) > 0 && <WizardHaven character={character} />}
       {/* What merits and flaws change on this step: below its picks, folded (#545). */}
       {FROM_MERITS[step.key] && step.key !== "concept" && (
         <Optional label={OPTIONAL[step.key]!} open={fromMeritTaken(sheet, step.key) || here.some((n) => !!n.trait && inFold(step.key, n.trait))} className="mt-6">

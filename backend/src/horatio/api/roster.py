@@ -658,6 +658,7 @@ MESSAGES: dict[str, str] = {
     "creation.unpick": "{actor} took back {character}'s creation pick of {name}.",
     "creation.set_category": "{actor} set {character}'s starting {category}: {picks}.",
     "creation.complete": "{actor} finished creating {character}.",
+    "creation.haven": "{actor} named {character}'s Haven, for the troupe that accepts them.",
     "account.reset_link": "{actor} made a password reset link for {member}.",
     "account.reset_sent": "{actor} emailed {member} their reset link.",
     "account.reset_sent.self": "Horatio emailed {member} the reset link they asked for.",

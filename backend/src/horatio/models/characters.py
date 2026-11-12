@@ -118,6 +118,11 @@ class Character(Imported, Record):
     # When its free changes as a new character ended and its player was told
     # (horatio.free_changes); None while they are open, or if it never had any.
     free_changes_ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # The Haven its player named before any troupe accepted it (horatio.locations,
+    # issue #683): {"name", "description", "address", "map_link", "haven_advantages"}.
+    # A first acceptance puts it on that troupe's list of locations and clears it;
+    # None for none.
+    haven_draft: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
 class CharacterTrait(Record):
