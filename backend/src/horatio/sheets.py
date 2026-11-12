@@ -2755,6 +2755,13 @@ def decide(
             diablerie_rules.approve_asked(db, staff, character, approval, diablerie)
         else:
             diablerie_rules.declined(db, character, approval)
+    elif approval.kind == "bond_drink":
+        from horatio import bonds  # imports this module
+
+        if approve:
+            bonds.approved(db, staff, approval)
+        else:
+            bonds.declined(db, staff, approval, note)
     elif approve and approval.kind == "discipline":
         bought = db.scalars(
             select(DisciplinePurchase).where(DisciplinePurchase.approval_id == approval.id)
@@ -2903,6 +2910,10 @@ def withdraw(db: Session, player: User, approval: Approval) -> Approval:
         undo_discipline(
             db, player, lock_character(db, approval.character_id), approval, "withdrawn"
         )
+    elif approval.kind == "bond_drink":
+        from horatio import bonds  # imports this module
+
+        bonds.withdrawn(db, approval)
     approval.status = "withdrawn"
     approval.decided_at = datetime.now(UTC)
     db.flush()

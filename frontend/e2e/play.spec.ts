@@ -990,6 +990,49 @@ test("Throws on the Play View: rock, paper or scissors, the last three kept, wit
   await p.screenshot({ ...shots("throws-ultragoth"), animations: "disabled" });
 });
 
+test("throwing by flipping the phone face down and back up, on a phone, and switching it off (#669)", async ({ browser }) => {
+  test.skip(test.info().project.name !== "phone", "the phone's orientation sensor");
+  const { page: p } = await person(browser, "phone-flipper");
+  await p.getByLabel("Name").fill("Lisandra");
+  await p.getByRole("button", { name: "Create" }).click();
+  await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
+  const id = new URL(p.url()).pathname.split("/")[2]!;
+  /** Readings from the orientation sensor, as the phone sends them: beta front to back, gamma side to side. */
+  const orient = (betas: number[]) =>
+    p.evaluate((bs) => {
+      for (const beta of bs) window.dispatchEvent(new DeviceOrientationEvent("deviceorientation", { beta, gamma: 0, alpha: 0 }));
+    }, betas);
+  const flip = [0, 60, 120, 180, 170, 120, 60, 0];
+
+  await p.goto(`/play/characters/${id}`);
+  await p.getByRole("tab", { name: "Throws" }).click();
+  const throws = p.getByRole("region", { name: "Throws" });
+  await expect(throws.getByRole("button", { name: "Throw" })).toBeVisible();
+  // Offered once the sensor reads, on unless turned off.
+  await orient([0]);
+  const flipping = throws.getByRole("checkbox", { name: "Throw by flipping" });
+  await expect(flipping).toBeChecked();
+  await expect(throws).toContainText("Flip the phone face down and back up to throw.");
+
+  // A flip throws, at once: no count-in, the throw showing as the screen comes up.
+  await orient(flip);
+  await expect(throws.getByRole("img", { name: /^(Rock|Paper|Scissors)$/ })).toBeVisible();
+  const past = throws.getByRole("region", { name: "Last throws" }).getByRole("listitem");
+  await expect(past).toHaveCount(1);
+  // Tilting it to read isn't a flip.
+  await orient([0, 40, 90, 120, 90, 40, 0]);
+  await p.waitForTimeout(1500);
+  await expect(past).toHaveCount(1);
+
+  // Switched off, flips throw nothing, and it stays off on this phone.
+  await flipping.uncheck();
+  await orient(flip);
+  await p.waitForTimeout(300);
+  await expect(past).toHaveCount(1);
+  await p.goto("/account/settings");
+  await expect(p.getByRole("checkbox", { name: "Throw by flipping" })).not.toBeChecked();
+});
+
 test("throwing a pool from the Pools tab: the overbid, a tie on pools, a Willpower retest from the tracker and their overbid (#698)", async ({ browser }) => {
   const { page: p } = await person(browser, "pool-thrower");
   const id = await builtVampire(p, "Ferrante", "Brujah", { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Generation", 3], ["Herd", 2], ["Fame", 1]], disciplines: [["Potence", 2], ["Celerity", 1], ["Presence", 1]] });
