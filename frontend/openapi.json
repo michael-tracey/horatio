@@ -7606,6 +7606,81 @@
         "title": "BoonTallyOut",
         "type": "object"
       },
+      "BoonTalonsOut": {
+        "properties": {
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/TalonChoice"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "role": {
+            "enum": [
+              "harpy",
+              "staff"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "talons": {
+            "items": {
+              "$ref": "#/components/schemas/TalonOut"
+            },
+            "title": "Talons",
+            "type": "array"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "word": {
+            "enum": [
+              "Lesser Harpies",
+              "Talons"
+            ],
+            "title": "Word",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "enabled",
+          "word",
+          "role",
+          "talons",
+          "choices"
+        ],
+        "title": "BoonTalonsOut",
+        "type": "object"
+      },
+      "BoonTalonsSettingIn": {
+        "properties": {
+          "on": {
+            "title": "On",
+            "type": "boolean"
+          },
+          "word": {
+            "default": "Lesser Harpies",
+            "enum": [
+              "Lesser Harpies",
+              "Talons"
+            ],
+            "title": "Word",
+            "type": "string"
+          }
+        },
+        "required": [
+          "on"
+        ],
+        "title": "BoonTalonsSettingIn",
+        "type": "object"
+      },
       "BoonTradeIn": {
         "properties": {
           "creditor": {
@@ -20913,7 +20988,7 @@
         "type": "object"
       },
       "HarpyLedgerOut": {
-        "description": "A ledger the character keeps as its troupe's Harpy (#688).",
+        "description": "A ledger the character keeps as its troupe's Harpy (#688), or as one of its\nLesser Harpies (#689).",
         "properties": {
           "access": {
             "enum": [
@@ -20921,6 +20996,45 @@
               "full"
             ],
             "title": "Access",
+            "type": "string"
+          },
+          "can_add": {
+            "default": true,
+            "title": "Can Add",
+            "type": "boolean"
+          },
+          "can_audit": {
+            "default": true,
+            "title": "Can Audit",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "default": true,
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "can_review": {
+            "default": true,
+            "title": "Can Review",
+            "type": "boolean"
+          },
+          "gives_access": {
+            "default": false,
+            "title": "Gives Access",
+            "type": "boolean"
+          },
+          "role": {
+            "default": "harpy",
+            "enum": [
+              "harpy",
+              "talon"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "talon_word": {
+            "default": "Lesser Harpy",
+            "title": "Talon Word",
             "type": "string"
           },
           "to_review": {
@@ -47521,6 +47635,101 @@
         "title": "TallyPartOut",
         "type": "object"
       },
+      "TalonChoice": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lesser_harpy": {
+            "title": "Lesser Harpy",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "lesser_harpy"
+        ],
+        "title": "TalonChoice",
+        "type": "object"
+      },
+      "TalonIn": {
+        "properties": {
+          "can_add": {
+            "default": false,
+            "title": "Can Add",
+            "type": "boolean"
+          },
+          "can_audit": {
+            "default": false,
+            "title": "Can Audit",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "default": false,
+            "title": "Can Edit",
+            "type": "boolean"
+          }
+        },
+        "title": "TalonIn",
+        "type": "object"
+      },
+      "TalonOut": {
+        "properties": {
+          "can_add": {
+            "title": "Can Add",
+            "type": "boolean"
+          },
+          "can_audit": {
+            "title": "Can Audit",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "given_at": {
+            "format": "date-time",
+            "title": "Given At",
+            "type": "string"
+          },
+          "given_by": {
+            "title": "Given By",
+            "type": "string"
+          },
+          "in_play": {
+            "title": "In Play",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "can_add",
+          "can_edit",
+          "can_audit",
+          "given_by",
+          "given_at",
+          "in_play"
+        ],
+        "title": "TalonOut",
+        "type": "object"
+      },
       "TapIn": {
         "description": "One tap, as the device made it.",
         "properties": {
@@ -50732,6 +50941,20 @@
           "boon_review": {
             "default": false,
             "title": "Boon Review",
+            "type": "boolean"
+          },
+          "boon_talon_word": {
+            "default": "Lesser Harpies",
+            "enum": [
+              "Lesser Harpies",
+              "Talons"
+            ],
+            "title": "Boon Talon Word",
+            "type": "string"
+          },
+          "boon_talons": {
+            "default": false,
+            "title": "Boon Talons",
             "type": "boolean"
           },
           "boons": {
@@ -78237,6 +78460,220 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/boon-talons": {
+      "get": {
+        "description": "Who has access to the ledger as a Lesser Harpy, with what each may do: for the\nHarpy, who gives it, and for the troupe's running staff.",
+        "operationId": "boon_talons_list_api_troupes__troupe_id__boon_talons_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonTalonsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Boon Talons List",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boon-talons-setting": {
+      "put": {
+        "description": "Whether the troupe's Harpy may give others access to its boon ledger (#689),\nand what it calls them. Only used while the Harpy has the full ledger.",
+        "operationId": "set_boon_talons_api_troupes__troupe_id__boon_talons_setting_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoonTalonsSettingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Boon Talons",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boon-talons/{character_id}": {
+      "delete": {
+        "description": "Take a character's access to the ledger away: the Harpy, as their character, or\nthe troupe's running staff. Logged.",
+        "operationId": "take_talon_api_troupes__troupe_id__boon_talons__character_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonTalonsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Take Talon",
+        "tags": [
+          "boons"
+        ]
+      },
+      "put": {
+        "description": "The Harpy gives a character access to the ledger, or changes what it allows,\nas their character. Logged.",
+        "operationId": "give_talon_api_troupes__troupe_id__boon_talons__character_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TalonIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonTalonsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Give Talon",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/boon-weights": {
       "put": {
         "description": "What each kind of boon weighs in the troupe's standings.",
@@ -78495,7 +78932,7 @@
     },
     "/api/troupes/{troupe_id}/boons/{boon_id}": {
       "get": {
-        "description": "A boon with its log. A Harpy given only the review queue (#688) opens only the\nboons in it.",
+        "description": "A boon with its log. A Harpy given only the review queue (#688) opens only the\nboons in it; a Lesser Harpy (#689) any boon.",
         "operationId": "one_boon_api_troupes__troupe_id__boons__boon_id__get",
         "parameters": [
           {

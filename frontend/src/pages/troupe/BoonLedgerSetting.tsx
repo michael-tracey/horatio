@@ -5,6 +5,7 @@ import { BOON_PAGE } from "../../boons";
 import { useToast } from "../../components/Toast";
 import { Card, ErrorText } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { TalonsSetting } from "./BoonTalons";
 
 /**
  * Whether the troupe keeps a boon ledger (#685): off by default. On, its running staff
@@ -51,11 +52,15 @@ export function BoonLedgerSetting({ troupe, canEdit }: { troupe: TroupeOut; canE
           {on && <PlayersSetting troupe={troupe} />}
           {on && <ReviewSetting troupe={troupe} />}
           {on && <HarpySetting troupe={troupe} />}
+          {on && <TalonsSetting troupe={troupe} />}
         </div>
       )}
       {!canEdit && on && <p className="mt-2 text-sm">{PLAYERS_SEE.find((p) => p.value === troupe.boon_players_see)?.summary}</p>}
       {!canEdit && on && troupe.boon_review && <p className="mt-1 text-sm">Boons players report wait for review before they stand.</p>}
       {!canEdit && on && <p className="mt-1 text-sm">{HARPY.find((h) => h.value === (troupe.boon_harpy ?? "none"))?.summary}</p>}
+      {!canEdit && on && troupe.boon_talons && troupe.boon_harpy === "full" && (
+        <p className="mt-1 text-sm">The Harpy may give others access to the ledger, as {troupe.boon_talon_word ?? "Lesser Harpies"}.</p>
+      )}
     </Card>
   );
 }
