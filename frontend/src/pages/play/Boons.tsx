@@ -49,14 +49,21 @@ export function BoonsTab({ characterId, name, online }: { characterId: string; n
   );
 }
 
-/** For the troupe's Harpy (#688): a way to the ledger they keep, and how many boons wait for review. */
+/** For the troupe's Harpy (#688), or one of its Lesser Harpies (#689): a way to the ledger they keep, and how many boons wait for review. */
 function HarpyCard({ characterId, name, ledger, online }: { characterId: string; name: string; ledger: HarpyLedgerOut; online: boolean }) {
   const full = ledger.access === "full";
+  const talon = ledger.role === "talon";
+  const reviews = ledger.can_review ?? true;
+  const does = talon
+    ? `You keep the troupe's boon ledger as far as the Harpy lets you: see it${ledger.can_add ? ", add boons" : ""}${ledger.can_edit ? ", edit and settle them, and review what players report" : ""}.`
+    : full
+      ? "You keep the troupe's boon ledger: register, edit and settle boons, and review what players report."
+      : "You review the boons players report.";
   return (
-    <Card title={`${name}, Harpy of ${ledger.troupe_name}`}>
+    <Card title={`${name}, ${talon ? (ledger.talon_word ?? "Lesser Harpy") : "Harpy"} of ${ledger.troupe_name}`}>
       <p className="text-sm text-mist">
-        {full ? "You keep the troupe's boon ledger: register, edit and settle boons, and review what players report." : "You review the boons players report."}
-        {ledger.to_review > 0 ? ` ${ledger.to_review} to review.` : " Nothing waits for review."}
+        {does}
+        {reviews && (ledger.to_review > 0 ? ` ${ledger.to_review} to review.` : " Nothing waits for review.")}
       </p>
       {online ? (
         <Link to={`/play/characters/${characterId}/ledger`} className="mt-2 inline-flex min-h-10 items-center text-sm text-gold underline hover:text-parchment">
