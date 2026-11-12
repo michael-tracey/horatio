@@ -3960,6 +3960,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/vaulderies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Vaulderie
+         * @description Its player reports a Vaulderie the character took part in: it waits for the
+         *     troupe's running staff to approve it.
+         */
+        post: operations["report_vaulderie_api_characters__character_id__vaulderies_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/vaulderies/{vaulderie_id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw Vaulderie
+         * @description Take back a Vaulderie its player reported, while it waits.
+         */
+        post: operations["withdraw_vaulderie_api_characters__character_id__vaulderies__vaulderie_id__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/vinculum": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Vinculum
+         * @description The Vinculum ratings the character feels, as the reader may know of them, and
+         *     for its player, where they can report its Vaulderies and those they reported.
+         */
+        get: operations["character_vinculum_api_characters__character_id__vinculum_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/visible-note": {
         parameters: {
             query?: never;
@@ -11061,6 +11123,127 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/vaulderies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Vaulderie
+         * @description Record a Vaulderie: it counts at once, and lowers each participant's blood bonds
+         *     the troupe keeps a step (the Errata's p. 434).
+         */
+        post: operations["record_vaulderie_api_troupes__troupe_id__vaulderies_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/vaulderies/{vaulderie_id}/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decide Vaulderie
+         * @description Approve a Vaulderie a player reported, or decline it with the reason.
+         */
+        post: operations["decide_vaulderie_api_troupes__troupe_id__vaulderies__vaulderie_id__decide_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/vaulderies/{vaulderie_id}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove Vaulderie
+         * @description Take a recorded Vaulderie out, with the reason: it no longer counts toward
+         *     ratings. The bonds it lowered stay lowered.
+         */
+        post: operations["remove_vaulderie_api_troupes__troupe_id__vaulderies__vaulderie_id__remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/vinculum": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Troupe Vinculum
+         * @description The troupe's Vaulderies, background ties and every rating now, for its running
+         *     staff.
+         */
+        get: operations["troupe_vinculum_api_troupes__troupe_id__vinculum_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/vinculum/ties": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Tie
+         * @description Enter a background tie: two who shared Vaulderies before Horatio, at a rating
+         *     on a night (p. 435's example).
+         */
+        post: operations["add_tie_api_troupes__troupe_id__vinculum_ties_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/vinculum/ties/{tie_id}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Remove Tie */
+        post: operations["remove_tie_api_troupes__troupe_id__vinculum_ties__tie_id__remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/waiting": {
         parameters: {
             query?: never;
@@ -15547,6 +15730,18 @@ export interface components {
             troupe_name: string | null;
             /** Why */
             why: string | null;
+        };
+        /**
+         * CharacterVinculumOut
+         * @description For a character's Bonds card (#666).
+         */
+        CharacterVinculumOut: {
+            /** Ratings */
+            ratings: components["schemas"]["VinculumOut"][];
+            /** Report To */
+            report_to: components["schemas"]["VaulderieTroupeOut"][];
+            /** Reports */
+            reports: components["schemas"]["VaulderieOut"][];
         };
         /**
          * CharacterXpIn
@@ -24544,6 +24739,11 @@ export interface components {
             retainers: components["schemas"]["RetainerOut"][];
             /** Traits */
             traits: components["schemas"]["PlayTrait"][];
+            /**
+             * Vinculum
+             * @default []
+             */
+            vinculum: components["schemas"]["VinculumLine"][];
         };
         /**
          * PlayStatusOut
@@ -24982,6 +25182,37 @@ export interface components {
              * @default false
              */
             suspended: boolean;
+        };
+        /** PlayerVaulderieIn */
+        PlayerVaulderieIn: {
+            /**
+             * False Sabbat
+             * @default false
+             */
+            false_sabbat: boolean;
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            officiant?: components["schemas"]["PartyIn"] | null;
+            /** Others */
+            others: components["schemas"]["VaulderieParticipantIn"][];
+            /**
+             * Source
+             * @default game
+             */
+            source: string;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
         };
         /**
          * PoolChange
@@ -30693,6 +30924,16 @@ export interface components {
              * @enum {string}
              */
             setting: "off" | "staff" | "players_report" | "players_manage";
+            /**
+             * Vaulderies Waiting
+             * @default 0
+             */
+            vaulderies_waiting: number;
+            /**
+             * Vinculum
+             * @default false
+             */
+            vinculum: boolean;
         };
         /** TroupeBoonSummaryOut */
         TroupeBoonSummaryOut: {
@@ -31243,6 +31484,23 @@ export interface components {
             /** Qualities */
             qualities: components["schemas"]["EquipmentItemQuality"][];
         };
+        /**
+         * TroupeVinculumOut
+         * @description A Sabbat troupe's Vinculum, for its running staff: its Vaulderies (newest first,
+         *     those waiting first of all), its background ties, and every rating now.
+         */
+        TroupeVinculumOut: {
+            /** Characters */
+            characters: components["schemas"]["CharacterChoice-Output"][];
+            /** People */
+            people: components["schemas"]["VinculumPersonOut"][];
+            /** Ratings */
+            ratings: components["schemas"]["VinculumRatingOut"][];
+            /** Ties */
+            ties: components["schemas"]["VinculumTieOut"][];
+            /** Vaulderies */
+            vaulderies: components["schemas"]["VaulderieOut"][];
+        };
         /** UnavailableIn */
         UnavailableIn: {
             /** Categories */
@@ -31362,6 +31620,105 @@ export interface components {
             /** Play */
             play: string;
         };
+        /** VaulderieDecideIn */
+        VaulderieDecideIn: {
+            /** Approve */
+            approve: boolean;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /** VaulderieIn */
+        VaulderieIn: {
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            officiant?: components["schemas"]["PartyIn"] | null;
+            /** Participants */
+            participants: components["schemas"]["VaulderieParticipantIn"][];
+            /**
+             * Source
+             * @default staff
+             */
+            source: string;
+        };
+        /** VaulderieOut */
+        VaulderieOut: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /** Note */
+            note: string;
+            officiant: components["schemas"]["PartyOut"] | null;
+            /** Participants */
+            participants: components["schemas"]["VaulderieParticipantOut"][];
+            /** Reason */
+            reason: string;
+            /** Recorded By */
+            recorded_by: string | null;
+            /** Source */
+            source: string;
+            /** Status */
+            status: string;
+        };
+        /** VaulderieParticipantIn */
+        VaulderieParticipantIn: {
+            /** Character Id */
+            character_id?: string | null;
+            /**
+             * False Sabbat
+             * @default false
+             */
+            false_sabbat: boolean;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+        };
+        /** VaulderieParticipantOut */
+        VaulderieParticipantOut: {
+            /** False Sabbat */
+            false_sabbat: boolean;
+            who: components["schemas"]["PartyOut"];
+        };
+        /**
+         * VaulderieTroupeOut
+         * @description A troupe its player can report the character's Vaulderies to, with the characters
+         *     they can name in it by id.
+         */
+        VaulderieTroupeOut: {
+            /** Characters */
+            characters: components["schemas"]["CharacterChoice-Output"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /** Venue */
         Venue: {
             /**
@@ -31446,6 +31803,88 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+        };
+        /**
+         * VinculumLine
+         * @description A Vinculum the character feels, for the Play View's Sheet tab (#666).
+         */
+        VinculumLine: {
+            /** Effects */
+            effects: string[];
+            /** Rating */
+            rating: number;
+            /** Toward */
+            toward: string;
+        };
+        /**
+         * VinculumOut
+         * @description A Vinculum the character feels, on its Bonds card: toward whom, and its rating.
+         */
+        VinculumOut: {
+            /** Effects */
+            effects: string[];
+            /** Name */
+            name: string;
+            /** Rating */
+            rating: number;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+        };
+        /** VinculumPersonOut */
+        VinculumPersonOut: {
+            /** Key */
+            key: string;
+            who: components["schemas"]["PartyOut"];
+        };
+        /** VinculumRatingOut */
+        VinculumRatingOut: {
+            /** Felt By */
+            felt_by: string;
+            /** Rating */
+            rating: number;
+            /** Toward */
+            toward: string;
+        };
+        /** VinculumReasonIn */
+        VinculumReasonIn: {
+            /** Reason */
+            reason: string;
+        };
+        /** VinculumTieIn */
+        VinculumTieIn: {
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            one: components["schemas"]["PartyIn"];
+            other: components["schemas"]["PartyIn"];
+            /** Rating */
+            rating: number;
+            /** Reason */
+            reason: string;
+        };
+        /** VinculumTieOut */
+        VinculumTieOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            one: components["schemas"]["PartyOut"];
+            other: components["schemas"]["PartyOut"];
+            /** Rating */
+            rating: number;
+            /** Reason */
+            reason: string;
         };
         /** VisibleNote */
         VisibleNote: {
@@ -39981,6 +40420,104 @@ export interface operations {
                             [key: string]: string;
                         };
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_vaulderie_api_characters__character_id__vaulderies_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlayerVaulderieIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaulderieOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    withdraw_vaulderie_api_characters__character_id__vaulderies__vaulderie_id__withdraw_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                vaulderie_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaulderieOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    character_vinculum_api_characters__character_id__vinculum_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterVinculumOut"];
                 };
             };
             /** @description Validation Error */
@@ -54301,6 +54838,215 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TitlesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_vaulderie_api_troupes__troupe_id__vaulderies_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaulderieIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaulderieOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decide_vaulderie_api_troupes__troupe_id__vaulderies__vaulderie_id__decide_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                vaulderie_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaulderieDecideIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaulderieOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_vaulderie_api_troupes__troupe_id__vaulderies__vaulderie_id__remove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                vaulderie_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VinculumReasonIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaulderieOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    troupe_vinculum_api_troupes__troupe_id__vinculum_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeVinculumOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_tie_api_troupes__troupe_id__vinculum_ties_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VinculumTieIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinculumTieOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_tie_api_troupes__troupe_id__vinculum_ties__tie_id__remove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                tie_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VinculumReasonIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeVinculumOut"];
                 };
             };
             /** @description Validation Error */

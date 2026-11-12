@@ -888,6 +888,19 @@ No bond drops or ends for time before the troupe's bonds started fading with tim
 
 A full bond makes the thrall immune to other bonds until it drops (Errata, p. 295). Recording a drink from anyone else, or entering a bond to them, is refused with why; give a **Reason to record it anyway** if the story calls for it, and it goes in the log.
 
+#### The Vinculum
+
+A troupe that allows the Sabbat (its allowed sects are any, or include the Sabbat) and tracks blood bonds has **The Vinculum** at the foot of **Characters › Bonds** (MET: VTM pp. 433–435). A Camarilla-only troupe never sees it.
+
+- **Record a Vaulderie**: who took part (characters of the troupe, or names), anyone among them who was a **false Sabbat**, drinking but giving no blood, who officiated, and the night. It counts at once.
+- **Ratings** come from the Vaulderies two shared, each night counted once: 1 after the first, for good; 2 if more than once in the past year; 3 if more than 10 times; 4 if about weekly for three months, never missing more than two weeks in a row; 5 if every few days for three months. They thin as the history does, so a 2 returns to 1 after a year without another. Both of a pair feel the same rating, except that nobody gains one toward a false Sabbat (Errata, p. 434). The **Ratings** table shows everyone's, or pick one Vaulderie under **Show** to see just that circle, such as a pack.
+- **Enter a background tie** for two who shared Vaulderies before Horatio, at the rating it stood at on a night, with a reason. It thins with time as Vaulderies would.
+- **The errata's blood bond rule**: taking part in a Vaulderie lowers every blood bond this troupe keeps for each participant, as thrall, a step, at most once a night (Errata, p. 434); a one-drink bond ends. It shows in the bond's log, and the thrall's player sees it at once, as their character took part.
+- **Take out** a Vaulderie entered by mistake, with a reason: it stops counting toward ratings, but the bonds it lowered stay lowered; put a bond back by hand.
+- Where players report drinks, they can report a Vaulderie their character took part in. It waits under **Vaulderies waiting** for you to **Approve** or **Decline** with a reason, under either player mode, as it changes the other participants' ratings and bonds too.
+
+Each character's player sees the ratings their character feels, on the sheet's **Blood bonds** card and, from 2 up, with what each costs in Willpower in the Play View. Nobody else does.
+
 ### Approving backstories
 
 Storytellers and assistant storytellers read a character's backstory on its **Backstory** tab, or opened in its home troupe request. Under **Your reading**:

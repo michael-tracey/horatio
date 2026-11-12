@@ -19,6 +19,7 @@ export function WhoPicker({
   onChange,
   id,
   "aria-describedby": describedBy,
+  "aria-label": ariaLabel,
 }: {
   characters: CharacterChoice[];
   who: string;
@@ -26,6 +27,8 @@ export function WhoPicker({
   onChange: (who: string, name: string) => void;
   id?: string;
   "aria-describedby"?: string;
+  // For a picker with no field label of its own, such as a row of a list.
+  "aria-label"?: string;
 }) {
   const listId = useId();
   const picked = who.startsWith("c:") ? characters.find((c) => `c:${c.id}` === who) : undefined;
@@ -71,6 +74,7 @@ export function WhoPicker({
       <Input
         id={id}
         aria-describedby={describedBy}
+        aria-label={ariaLabel}
         role="combobox"
         aria-autocomplete="list"
         aria-expanded={open}

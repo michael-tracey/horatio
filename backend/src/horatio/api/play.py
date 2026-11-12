@@ -30,6 +30,7 @@ from horatio import (
     sect_status,
     sheets,
     teaching,
+    vinculum,
 )
 from horatio.api.downtime_effects import BackgroundNowOut, background_changes
 from horatio.api.downtimes import staff_troupe
@@ -64,6 +65,7 @@ from horatio.pool_modifiers import ModifierOut, modifiers_out
 from horatio.rules.feeding import clan_family
 from horatio.rules.model import TraitChangeData
 from horatio.rules.npc_kinds import kind_name
+from horatio.vinculum import VinculumLine
 
 router = APIRouter(tags=["play"])
 
@@ -842,6 +844,9 @@ class PlayReference(reference.Reference):
     # The blood bonds the character feels as thrall, as the reader may know of them,
     # and what each does at a game (#664). Never its bonds as regnant.
     bonds: list[bond_effects.BondLine] = []
+    # The Vinculum ratings it feels with a rules effect, as the reader may know of them,
+    # and what each costs (#666).
+    vinculum: list[VinculumLine] = []
 
 
 def felt_bonds(
@@ -889,6 +894,7 @@ def read_reference(character_id: uuid.UUID, db: DbSession, user: CurrentUser) ->
     return PlayReference(
         **found.model_dump(),
         bonds=bond_effects.lines(felt),
+        vinculum=vinculum.play_lines(vinculum.felt_by(db, user, character)),
         traits=sheet_traits(db, character),
         retainers=listed(db, retainers.read(db, character), user),
         identities=identities_out(db, character),

@@ -10300,6 +10300,39 @@
         "title": "CharacterTitlesOut",
         "type": "object"
       },
+      "CharacterVinculumOut": {
+        "description": "For a character's Bonds card (#666).",
+        "properties": {
+          "ratings": {
+            "items": {
+              "$ref": "#/components/schemas/VinculumOut"
+            },
+            "title": "Ratings",
+            "type": "array"
+          },
+          "report_to": {
+            "items": {
+              "$ref": "#/components/schemas/VaulderieTroupeOut"
+            },
+            "title": "Report To",
+            "type": "array"
+          },
+          "reports": {
+            "items": {
+              "$ref": "#/components/schemas/VaulderieOut"
+            },
+            "title": "Reports",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ratings",
+          "report_to",
+          "reports"
+        ],
+        "title": "CharacterVinculumOut",
+        "type": "object"
+      },
       "CharacterXpIn": {
         "description": "Staff's choice for one character: adjustments ticked, or its figure set by hand.",
         "properties": {
@@ -33121,6 +33154,14 @@
             },
             "title": "Traits",
             "type": "array"
+          },
+          "vinculum": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/VinculumLine"
+            },
+            "title": "Vinculum",
+            "type": "array"
           }
         },
         "required": [
@@ -34340,6 +34381,61 @@
           "reset_expires_at"
         ],
         "title": "PlayerSummary",
+        "type": "object"
+      },
+      "PlayerVaulderieIn": {
+        "properties": {
+          "false_sabbat": {
+            "default": false,
+            "title": "False Sabbat",
+            "type": "boolean"
+          },
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "officiant": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PartyIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "others": {
+            "items": {
+              "$ref": "#/components/schemas/VaulderieParticipantIn"
+            },
+            "maxItems": 40,
+            "title": "Others",
+            "type": "array"
+          },
+          "source": {
+            "default": "game",
+            "title": "Source",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "night",
+          "others"
+        ],
+        "title": "PlayerVaulderieIn",
         "type": "object"
       },
       "PoolChange": {
@@ -49043,6 +49139,16 @@
             ],
             "title": "Setting",
             "type": "string"
+          },
+          "vaulderies_waiting": {
+            "default": 0,
+            "title": "Vaulderies Waiting",
+            "type": "integer"
+          },
+          "vinculum": {
+            "default": false,
+            "title": "Vinculum",
+            "type": "boolean"
           }
         },
         "required": [
@@ -50658,6 +50764,55 @@
         "title": "TroupeTemplateOut",
         "type": "object"
       },
+      "TroupeVinculumOut": {
+        "description": "A Sabbat troupe's Vinculum, for its running staff: its Vaulderies (newest first,\nthose waiting first of all), its background ties, and every rating now.",
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterChoice-Output"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/VinculumPersonOut"
+            },
+            "title": "People",
+            "type": "array"
+          },
+          "ratings": {
+            "items": {
+              "$ref": "#/components/schemas/VinculumRatingOut"
+            },
+            "title": "Ratings",
+            "type": "array"
+          },
+          "ties": {
+            "items": {
+              "$ref": "#/components/schemas/VinculumTieOut"
+            },
+            "title": "Ties",
+            "type": "array"
+          },
+          "vaulderies": {
+            "items": {
+              "$ref": "#/components/schemas/VaulderieOut"
+            },
+            "title": "Vaulderies",
+            "type": "array"
+          }
+        },
+        "required": [
+          "vaulderies",
+          "ties",
+          "people",
+          "ratings",
+          "characters"
+        ],
+        "title": "TroupeVinculumOut",
+        "type": "object"
+      },
       "UnavailableIn": {
         "properties": {
           "categories": {
@@ -50953,6 +51108,220 @@
         "title": "VariantQuality",
         "type": "object"
       },
+      "VaulderieDecideIn": {
+        "properties": {
+          "approve": {
+            "title": "Approve",
+            "type": "boolean"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "approve"
+        ],
+        "title": "VaulderieDecideIn",
+        "type": "object"
+      },
+      "VaulderieIn": {
+        "properties": {
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "officiant": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PartyIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/VaulderieParticipantIn"
+            },
+            "maxItems": 40,
+            "title": "Participants",
+            "type": "array"
+          },
+          "source": {
+            "default": "staff",
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "night",
+          "participants"
+        ],
+        "title": "VaulderieIn",
+        "type": "object"
+      },
+      "VaulderieOut": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "officiant": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PartyOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/VaulderieParticipantOut"
+            },
+            "title": "Participants",
+            "type": "array"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "recorded_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recorded By"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "night",
+          "participants",
+          "officiant",
+          "source",
+          "note",
+          "status",
+          "reason",
+          "recorded_by",
+          "at"
+        ],
+        "title": "VaulderieOut",
+        "type": "object"
+      },
+      "VaulderieParticipantIn": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "false_sabbat": {
+            "default": false,
+            "title": "False Sabbat",
+            "type": "boolean"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "title": "VaulderieParticipantIn",
+        "type": "object"
+      },
+      "VaulderieParticipantOut": {
+        "properties": {
+          "false_sabbat": {
+            "title": "False Sabbat",
+            "type": "boolean"
+          },
+          "who": {
+            "$ref": "#/components/schemas/PartyOut"
+          }
+        },
+        "required": [
+          "who",
+          "false_sabbat"
+        ],
+        "title": "VaulderieParticipantOut",
+        "type": "object"
+      },
+      "VaulderieTroupeOut": {
+        "description": "A troupe its player can report the character's Vaulderies to, with the characters\nthey can name in it by id.",
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterChoice-Output"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "characters"
+        ],
+        "title": "VaulderieTroupeOut",
+        "type": "object"
+      },
       "Venue": {
         "properties": {
           "access": {
@@ -51122,6 +51491,193 @@
           "ends_at"
         ],
         "title": "ViewingNow",
+        "type": "object"
+      },
+      "VinculumLine": {
+        "description": "A Vinculum the character feels, for the Play View's Sheet tab (#666).",
+        "properties": {
+          "effects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Effects",
+            "type": "array"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "toward": {
+            "title": "Toward",
+            "type": "string"
+          }
+        },
+        "required": [
+          "toward",
+          "rating",
+          "effects"
+        ],
+        "title": "VinculumLine",
+        "type": "object"
+      },
+      "VinculumOut": {
+        "description": "A Vinculum the character feels, on its Bonds card: toward whom, and its rating.",
+        "properties": {
+          "effects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Effects",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "name",
+          "rating",
+          "effects"
+        ],
+        "title": "VinculumOut",
+        "type": "object"
+      },
+      "VinculumPersonOut": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "who": {
+            "$ref": "#/components/schemas/PartyOut"
+          }
+        },
+        "required": [
+          "key",
+          "who"
+        ],
+        "title": "VinculumPersonOut",
+        "type": "object"
+      },
+      "VinculumRatingOut": {
+        "properties": {
+          "felt_by": {
+            "title": "Felt By",
+            "type": "string"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "toward": {
+            "title": "Toward",
+            "type": "string"
+          }
+        },
+        "required": [
+          "felt_by",
+          "toward",
+          "rating"
+        ],
+        "title": "VinculumRatingOut",
+        "type": "object"
+      },
+      "VinculumReasonIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "VinculumReasonIn",
+        "type": "object"
+      },
+      "VinculumTieIn": {
+        "properties": {
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "one": {
+            "$ref": "#/components/schemas/PartyIn"
+          },
+          "other": {
+            "$ref": "#/components/schemas/PartyIn"
+          },
+          "rating": {
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "one",
+          "other",
+          "rating",
+          "night",
+          "reason"
+        ],
+        "title": "VinculumTieIn",
+        "type": "object"
+      },
+      "VinculumTieOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "one": {
+            "$ref": "#/components/schemas/PartyOut"
+          },
+          "other": {
+            "$ref": "#/components/schemas/PartyOut"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "one",
+          "other",
+          "rating",
+          "night",
+          "reason"
+        ],
+        "title": "VinculumTieOut",
         "type": "object"
       },
       "VisibleNote": {
@@ -65509,6 +66065,158 @@
         "summary": "Unavailable After",
         "tags": [
           "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/vaulderies": {
+      "post": {
+        "description": "Its player reports a Vaulderie the character took part in: it waits for the\ntroupe's running staff to approve it.",
+        "operationId": "report_vaulderie_api_characters__character_id__vaulderies_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlayerVaulderieIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaulderieOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Report Vaulderie",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/vaulderies/{vaulderie_id}/withdraw": {
+      "post": {
+        "description": "Take back a Vaulderie its player reported, while it waits.",
+        "operationId": "withdraw_vaulderie_api_characters__character_id__vaulderies__vaulderie_id__withdraw_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "vaulderie_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vaulderie Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaulderieOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Withdraw Vaulderie",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/vinculum": {
+      "get": {
+        "description": "The Vinculum ratings the character feels, as the reader may know of them, and\nfor its player, where they can report its Vaulderies and those they reported.",
+        "operationId": "character_vinculum_api_characters__character_id__vinculum_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterVinculumOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Vinculum",
+        "tags": [
+          "bonds"
         ]
       }
     },
@@ -88174,6 +88882,349 @@
         "summary": "Set One Holder",
         "tags": [
           "titles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/vaulderies": {
+      "post": {
+        "description": "Record a Vaulderie: it counts at once, and lowers each participant's blood bonds\nthe troupe keeps a step (the Errata's p. 434).",
+        "operationId": "record_vaulderie_api_troupes__troupe_id__vaulderies_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaulderieIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaulderieOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Vaulderie",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/vaulderies/{vaulderie_id}/decide": {
+      "post": {
+        "description": "Approve a Vaulderie a player reported, or decline it with the reason.",
+        "operationId": "decide_vaulderie_api_troupes__troupe_id__vaulderies__vaulderie_id__decide_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "vaulderie_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vaulderie Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaulderieDecideIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaulderieOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Vaulderie",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/vaulderies/{vaulderie_id}/remove": {
+      "post": {
+        "description": "Take a recorded Vaulderie out, with the reason: it no longer counts toward\nratings. The bonds it lowered stay lowered.",
+        "operationId": "remove_vaulderie_api_troupes__troupe_id__vaulderies__vaulderie_id__remove_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "vaulderie_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vaulderie Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VinculumReasonIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaulderieOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Vaulderie",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/vinculum": {
+      "get": {
+        "description": "The troupe's Vaulderies, background ties and every rating now, for its running\nstaff.",
+        "operationId": "troupe_vinculum_api_troupes__troupe_id__vinculum_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeVinculumOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Vinculum",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/vinculum/ties": {
+      "post": {
+        "description": "Enter a background tie: two who shared Vaulderies before Horatio, at a rating\non a night (p. 435's example).",
+        "operationId": "add_tie_api_troupes__troupe_id__vinculum_ties_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VinculumTieIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VinculumTieOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Tie",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/vinculum/ties/{tie_id}/remove": {
+      "post": {
+        "operationId": "remove_tie_api_troupes__troupe_id__vinculum_ties__tie_id__remove_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "tie_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Tie Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VinculumReasonIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeVinculumOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Tie",
+        "tags": [
+          "bonds"
         ]
       }
     },

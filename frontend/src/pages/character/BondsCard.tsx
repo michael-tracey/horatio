@@ -6,6 +6,7 @@ import { BOND_PAGE, levelName, levelText } from "../../bonds";
 import { InfoButton } from "../../components/InfoButton";
 import { Button, Card } from "../../components/ui";
 import { BondReportList, ReportDrinkForm, ReportMeetingForm } from "./BondReports";
+import { useVinculum, VinculumPart } from "./VinculumPart";
 
 /**
  * The character's blood bonds still felt, as the viewer may know them: those it is
@@ -21,6 +22,7 @@ export function BondsCard({ characterId, name, mine }: { characterId: string; na
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/bonds", { params: { path: { character_id: characterId } } })),
     retry: false,
   });
+  const vinculum = useVinculum(characterId).data;
   const [reporting, setReporting] = useState(false);
   const [meeting, setMeeting] = useState<string | null>(null);
   const b = bonds.data;
@@ -39,7 +41,10 @@ export function BondsCard({ characterId, name, mine }: { characterId: string; na
       </button>
     );
   }
-  if (!b || (b.bound_to.length === 0 && b.bound_by.length === 0 && !b.manage_troupe_id && reports.length === 0 && troupes.length === 0)) return null;
+  // The Vinculum (#666) shows here too, for a character in a Sabbat troupe.
+  const sabbat = !!vinculum && (vinculum.ratings.length > 0 || vinculum.report_to.length > 0 || vinculum.reports.length > 0);
+  if (!b || (b.bound_to.length === 0 && b.bound_by.length === 0 && !b.manage_troupe_id && reports.length === 0 && troupes.length === 0 && !sabbat))
+    return null;
   return (
     <Card
       dense
@@ -100,6 +105,7 @@ export function BondsCard({ characterId, name, mine }: { characterId: string; na
           )}
         </div>
       )}
+      <VinculumPart characterId={characterId} name={name} />
       {b.manage_troupe_id && (
         <p className="mt-2 text-sm">
           <Link to={`/troupes/${b.manage_troupe_id}/bonds`} className="text-mist underline hover:text-parchment">

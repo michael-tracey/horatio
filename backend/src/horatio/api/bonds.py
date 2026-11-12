@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import or_, select
 
-from horatio import auto_bonds, bonds
+from horatio import auto_bonds, bonds, vinculum
 from horatio.api.downtimes import staff_troupe
 from horatio.api.influence_log import CharacterChoice
 from horatio.api.troupes import TroupeOut, troupe_out
@@ -99,11 +99,12 @@ class PartyOut(BaseModel):
 
 class BondEntryOut(BaseModel):
     id: uuid.UUID
-    # drink | entered | dropped (with time, #665) | meeting
+    # drink | entered | dropped (with time, #665) | meeting | vaulderie (lowered a
+    # step by a Vaulderie, #666)
     kind: str
     night: date
     source: Source
-    # For a bond entered, the level it stood at; dropped, the level it fell to.
+    # For a bond entered, the level it stood at; dropped or lowered, the level it fell to.
     level: int | None
     note: str
     # None for a drop Horatio made by itself.
@@ -186,6 +187,10 @@ class TroupeBondsOut(BaseModel):
     characters: list[CharacterChoice]
     # Drinks players reported that are still waiting, oldest first.
     reports: list[BondReportOut] = []
+    # The troupe allows the Sabbat, so keeps the Vinculum and its Vaulderie log (#666).
+    vinculum: bool = False
+    # Vaulderies players reported that wait for staff.
+    vaulderies_waiting: int = 0
 
 
 class ReportTroupeOut(BaseModel):
@@ -438,6 +443,8 @@ def troupe_bonds(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Trou
             CharacterChoice(id=c.id, name=c.name, kind=c.kind, in_troupe=True) for c in characters
         ],
         reports=[report_out(db, user, r) for r in bonds.pending_reports(db, troupe)],
+        vinculum=vinculum.on(troupe),
+        vaulderies_waiting=len(vinculum.pending(db, troupe)) if vinculum.on(troupe) else 0,
     )
 
 
