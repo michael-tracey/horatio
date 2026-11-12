@@ -9,7 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from tests.api_helpers import Troupe
+from tests.api_helpers import Troupe, new_character
 from tests.test_api_locations import Scene
 
 
@@ -168,3 +168,170 @@ def test_a_retired_character_s_haven_stays_as_it_is(scene: Scene) -> None:
     found = read(scene)
     assert found["haven"]["read_only"] == "Agnes is retired: their Haven stays as it is."
     assert changed(scene, name="Elsewhere").status_code == 409
+
+
+# --- named in creation, before any troupe accepts the character (#683) ----------------
+
+
+PICKS: dict[str, list[tuple[str, int]]] = {
+    "attributes": [("Physical", 3), ("Social", 7), ("Mental", 5)],
+    "focus_physicals": [("Dexterity", 1)],
+    "focus_mentals": [("Intelligence", 1)],
+    "focus_socials": [("Manipulation", 1)],
+    "skills": [
+        ("Leadership", 4),
+        ("Subterfuge", 3),
+        ("Academics", 3),
+        ("Awareness", 2),
+        ("Empathy", 2),
+        ("Investigation", 2),
+        ("Dodge", 1),
+        ("Drive", 1),
+        ("Medicine", 1),
+        ("Security", 1),
+    ],
+    "backgrounds": [("Resources", 3), ("Haven", 2), ("Generation", 1)],
+    "disciplines": [("Celerity", 2), ("Potence", 1), ("Presence", 1)],
+}
+
+
+def in_creation(scene: Scene, name: str) -> str:
+    """A Brujah built in the wizard with Haven 2 and Security 1, not yet finished."""
+    player = scene.troupe.player.client
+    character_id = new_character(scene.troupe, scene.troupe.player, name, finished=False)
+    chosen = player.put(
+        f"/characters/{character_id}/traits",
+        json={"category": "clan", "name": "Brujah", "rating": None},
+    )
+    assert chosen.status_code == 200, chosen.text
+    for category, picks in PICKS.items():
+        placed = player.put(
+            f"/characters/{character_id}/creation/categories/{category}",
+            json={"picks": [{"name": n, "rating": r} for n, r in picks]},
+        )
+        assert placed.status_code == 200, placed.text
+    return character_id
+
+
+def accepted(scene: Scene, character_id: str) -> Any:
+    player = scene.troupe.player.client
+    done = player.post(f"/characters/{character_id}/creation/complete")
+    assert done.status_code in (200, 204), done.text
+    asked = player.post(
+        f"/characters/{character_id}/home-troupe", json={"troupe_id": scene.troupe.id}
+    )
+    assert asked.status_code == 201, asked.text
+    return scene.troupe.lead.client.post(f"/approvals/{asked.json()['id']}/approve", json={})
+
+
+def drafted(scene: Scene, character_id: str, **body: Any) -> Any:
+    return scene.troupe.player.client.put(f"/characters/{character_id}/haven/draft", json=body)
+
+
+def read_of(scene: Scene, character_id: str) -> dict[str, Any]:
+    found = scene.troupe.player.client.get(f"/characters/{character_id}/haven")
+    assert found.status_code == 200, found.text
+    return found.json()
+
+
+def test_a_haven_named_in_creation_goes_on_the_list_of_the_troupe_that_accepts_her(
+    scene: Scene,
+) -> None:
+    nell = in_creation(scene, "Nell")
+    before = read_of(scene, nell)
+    assert (before["drafting"], before["cannot_create"], before["haven"]) == (True, None, None)
+    # The list's rules hold for the draft: two dots, plus Security free with the skill.
+    assert (
+        drafted(
+            scene, nell, name="Tower", haven_advantages=["Library", "Luxury", "Size"]
+        ).status_code
+        == 422
+    )
+    kept = drafted(
+        scene,
+        nell,
+        name="The Bell Tower",
+        description="A disused bell tower over the river.",
+        address="1 Church St",
+        haven_advantages=["Library", "Luxury", "Security"],
+    )
+    assert kept.status_code == 200, kept.text
+    draft = kept.json()["draft"]
+    assert (draft["name"], draft["haven_free"], draft["haven_over"]) == (
+        "The Bell Tower",
+        ["Security"],
+        None,
+    )
+    # Nothing is on the troupe's list yet: no troupe has accepted her.
+    listed = scene.troupe.storyteller.client.get(scene.path).json()
+    assert all(loc["name"] != "The Bell Tower" for loc in listed)
+
+    approved = accepted(scene, nell)
+    assert approved.status_code == 200, approved.text
+    after = read_of(scene, nell)
+    assert (after["draft"], after["drafting"]) == (None, False)
+    haven = after["haven"]
+    assert (haven["name"], haven["address"], haven["haven_advantages"]) == (
+        "The Bell Tower",
+        "1 Church St",
+        ["Library", "Luxury", "Security"],
+    )
+    staff = scene.troupe.storyteller.client.get(f"/locations/{haven['id']}").json()
+    assert staff["haven_of"]["name"] == "Nell"
+    # Put there as her player's own change.
+    assert "player added the location The Bell Tower." in scene.messages()
+    # Once accepted, the Haven is on the list: no more drafts.
+    late = drafted(scene, nell, name="Somewhere else")
+    assert late.status_code == 409
+
+
+def test_a_draft_over_its_dots_is_flagged_not_dropped(scene: Scene) -> None:
+    nell = in_creation(scene, "Nell")
+    assert (
+        drafted(
+            scene, nell, name="The Bell Tower", haven_advantages=["Library", "Luxury", "Security"]
+        ).status_code
+        == 200
+    )
+    # Later in the wizard she trades Security for Stealth: Security now uses a dot.
+    skills = [(n, r) for n, r in PICKS["skills"] if n != "Security"] + [("Stealth", 1)]
+    placed = scene.troupe.player.client.put(
+        f"/characters/{nell}/creation/categories/skills",
+        json={"picks": [{"name": n, "rating": r} for n, r in skills]},
+    )
+    assert placed.status_code == 200, placed.text
+    draft = read_of(scene, nell)["draft"]
+    assert draft["haven_advantages"] == ["Library", "Luxury", "Security"]
+    assert draft["haven_over"] == (
+        "Nell has Haven 2: one advantage for each dot (MET: VTM, p. 102). "
+        "This Haven has 3 that use a dot: drop 1."
+    )
+
+
+def test_a_draft_that_no_longer_fits_waits_for_its_player(scene: Scene) -> None:
+    """Acceptance never fails over the draft: its name is taken on the list, so it
+    stays a draft, and the player puts it on the list from the sheet."""
+    nell = in_creation(scene, "Nell")
+    assert drafted(scene, nell, name="The Grove Arcade").status_code == 200
+    scene.added(name="The Grove Arcade", kind="standard", rating=1)
+
+    approved = accepted(scene, nell)
+    assert approved.status_code == 200, approved.text
+    waiting = read_of(scene, nell)
+    assert waiting["haven"] is None
+    assert waiting["draft"]["name"] == "The Grove Arcade"
+    assert (waiting["drafting"], waiting["cannot_create"]) == (False, None)
+
+    placed = scene.troupe.player.client.post(
+        f"/characters/{nell}/haven", json={"name": "The Grove Arcade Annexe"}
+    )
+    assert placed.status_code == 201, placed.text
+    assert placed.json()["draft"] is None
+    assert placed.json()["haven"]["name"] == "The Grove Arcade Annexe"
+
+
+def test_only_the_player_names_a_draft_haven(scene: Scene) -> None:
+    nell = in_creation(scene, "Nell")
+    for person in (scene.troupe.storyteller, scene.troupe.stranger):
+        refused = person.client.put(f"/characters/{nell}/haven/draft", json={"name": "Mine"})
+        assert refused.status_code == 404

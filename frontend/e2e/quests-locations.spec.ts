@@ -670,6 +670,70 @@ test("a player's own Haven: Nell names it from her sheet, Security comes free wi
   await expect(l.getByText(/changed The Bell Tower: advantages −Luxury/)).toBeVisible();
 });
 
+test("a Haven named in creation: Wynne names it on the Backgrounds step, and the troupe that accepts her has it on its list", async ({ browser }) => {
+  const custodian = await person(browser, "hwz-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "hwz-lead");
+  const owner = await person(browser, "hwz-owner");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Rookery Court ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+
+  // Wynne, still in creation, with Haven 2 and the Security skill placed.
+  const { id: wynne } = await send(owner.page, "POST", "/api/characters", { splat: "vampire", name: "Wynne Ashgrove" });
+  await send(owner.page, "PUT", `/api/characters/${wynne}/traits`, { category: "clan", name: "Brujah", rating: null });
+  const picks: Record<string, [string, number][]> = {
+    attributes: [["Physical", 3], ["Social", 7], ["Mental", 5]],
+    focus_physicals: [["Dexterity", 1]],
+    focus_mentals: [["Intelligence", 1]],
+    focus_socials: [["Manipulation", 1]],
+    skills: [["Leadership", 4], ["Subterfuge", 3], ["Academics", 3], ["Awareness", 2], ["Empathy", 2], ["Investigation", 2], ["Dodge", 1], ["Drive", 1], ["Medicine", 1], ["Security", 1]],
+    backgrounds: [["Resources", 3], ["Haven", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, list] of Object.entries(picks))
+    await send(owner.page, "PUT", `/api/characters/${wynne}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+
+  // On the Backgrounds step, under her picks, she names her Haven: optional, and kept until a troupe accepts her.
+  const o = owner.page;
+  await o.goto(`/characters/${wynne}/create/backgrounds`);
+  const panel = o.getByRole("region", { name: "Your Haven" }).last();
+  await panel.getByRole("button", { name: "Name your Haven and choose its advantages" }).click();
+  const dialog = o.getByRole("dialog", { name: "Your Haven" });
+  await dialog.getByLabel("Name", { exact: true }).fill("The Old Mill");
+  await dialog.getByLabel("Address", { exact: true }).fill("4 Weir Lane");
+  await dialog.getByRole("checkbox", { name: /^Library/ }).check();
+  await dialog.getByRole("checkbox", { name: /^Luxury/ }).check();
+  await dialog.getByRole("checkbox", { name: /^Security/ }).check();
+  await expect(dialog.getByText("2 of 2 dots used, plus Security free")).toBeVisible();
+  await expect(dialog.getByText(/Kept with Wynne Ashgrove until a troupe accepts them/)).toBeVisible();
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(panel).toContainText("The Old Mill · 4 Weir Lane");
+  await expect(panel).toContainText("Advantages: Library, Luxury, Security (free)");
+
+  // She finishes, and the lead accepts her: the Haven goes on the troupe's list.
+  await send(owner.page, "POST", `/api/characters/${wynne}/creation/complete`);
+  const asked = await send(owner.page, "POST", `/api/characters/${wynne}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+  await o.goto(`/characters/${wynne}`);
+  const sheet = o.getByRole("region", { name: "Your Haven" });
+  await expect(sheet).toContainText("The Old Mill · 4 Weir Lane");
+  await expect(sheet.getByRole("button", { name: "Edit your Haven" })).toBeVisible();
+
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}/locations`);
+  await l.getByRole("link", { name: "The Old Mill" }).first().click();
+  await expect(l.getByRole("heading", { name: "The Old Mill" })).toBeVisible();
+  await expect(l.getByText("Wynne Ashgrove", { exact: true })).toBeVisible();
+});
+
 test("location quests: a player acquires Ruby's Bar, adds Profitable, a rival makes it Insolvent, and a repair brings the Resources back", async ({ browser }) => {
   // Three requests and their quests, from the Quests tab to the sheet.
   test.slow();

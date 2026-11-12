@@ -18868,6 +18868,63 @@
         "title": "HavenAdvantageOut",
         "type": "object"
       },
+      "HavenDraftOut": {
+        "description": "The Haven its player named before any troupe accepted the character (#683).",
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "haven_advantages": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Advantages",
+            "type": "array"
+          },
+          "haven_free": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Free",
+            "type": "array"
+          },
+          "haven_over": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Haven Over"
+          },
+          "map_link": {
+            "title": "Map Link",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "address",
+          "map_link",
+          "haven_advantages",
+          "haven_free",
+          "haven_over"
+        ],
+        "title": "HavenDraftOut",
+        "type": "object"
+      },
       "HavenNegativeOut": {
         "properties": {
           "effect": {
@@ -18919,6 +18976,20 @@
             "title": "Dots",
             "type": "integer"
           },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HavenDraftOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "drafting": {
+            "title": "Drafting",
+            "type": "boolean"
+          },
           "haven": {
             "anyOf": [
               {
@@ -18935,7 +19006,9 @@
           "dots",
           "advantages",
           "haven",
-          "cannot_create"
+          "cannot_create",
+          "draft",
+          "drafting"
         ],
         "title": "HavenOut",
         "type": "object"
@@ -56419,6 +56492,60 @@
           }
         },
         "summary": "Change Haven",
+        "tags": [
+          "locations"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/haven/draft": {
+      "put": {
+        "description": "Name the Haven before any troupe has accepted the character, as in creation:\nthe first troupe to accept it puts it on its list (#683).",
+        "operationId": "keep_haven_draft_api_characters__character_id__haven_draft_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnHavenIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HavenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Keep Haven Draft",
         "tags": [
           "locations"
         ]

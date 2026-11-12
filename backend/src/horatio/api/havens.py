@@ -60,6 +60,19 @@ class OwnHavenOut(BaseModel):
     updated_at: datetime
 
 
+class HavenDraftOut(BaseModel):
+    """The Haven its player named before any troupe accepted the character (#683)."""
+
+    name: str
+    description: str
+    address: str
+    map_link: str
+    haven_advantages: list[str]
+    haven_free: list[str]
+    # More advantages than the owner's Haven allows, since a skill or a dot went.
+    haven_over: str | None
+
+
 class HavenOut(BaseModel):
     character_name: str
     # The owner's dots of Haven: one advantage for each (MET: VTM p. 102).
@@ -68,6 +81,12 @@ class HavenOut(BaseModel):
     haven: OwnHavenOut | None
     # With no Haven on the list yet: why the owner can't put it there, if not.
     cannot_create: str | None
+    # The Haven named before a troupe accepted the character: kept until one does,
+    # or, if it didn't fit then, until its player puts it on the list.
+    draft: HavenDraftOut | None
+    # No troupe has accepted the character yet: saving keeps a draft, which the
+    # first troupe to accept it puts on its list.
+    drafting: bool
 
 
 class OwnHavenIn(BaseModel):
@@ -95,8 +114,10 @@ def rules_of(db: DbSession, troupe: Troupe | None) -> LocationRules:
 def haven_out(db: DbSession, character: Character) -> HavenOut:
     location = locations.own_haven(db, character)
     home = quests.home_troupe(db, character)
-    troupe = db.get_one(Troupe, location.troupe_id) if location else home
-    rules = rules_of(db, troupe)
+    if location:
+        rules = rules_of(db, db.get_one(Troupe, location.troupe_id))
+    else:
+        rules = locations.draft_rules(db, character) if home is None else rules_of(db, home)
     free = set(locations.free_advantages(db, rules, character))
     advantages = [
         HavenAdvantageChoiceOut(
@@ -110,12 +131,37 @@ def haven_out(db: DbSession, character: Character) -> HavenOut:
         )
         for a in rules.haven_advantages.values()
     ]
+    drafting = location is None and home is None
+    if location:
+        cannot = None
+    elif drafting:
+        cannot = locations.cannot_draft(db, character)
+    else:
+        cannot = locations.cannot_create(db, character, home)
+    own = None if location else locations.haven_draft(character)
     return HavenOut(
         character_name=character.name,
         dots=locations.rating_of(db, character, "backgrounds", locations.HAVEN),
         advantages=advantages,
         haven=own_out(db, rules, character, location) if location else None,
-        cannot_create=None if location else locations.cannot_create(db, character, home),
+        cannot_create=cannot,
+        draft=draft_out(db, rules, character, own) if own else None,
+        drafting=drafting and cannot is None,
+    )
+
+
+def draft_out(
+    db: DbSession, rules: LocationRules, character: Character, own: locations.OwnHaven
+) -> HavenDraftOut:
+    count = locations.haven_count(db, rules, character, own.haven_advantages)
+    return HavenDraftOut(
+        name=own.name,
+        description=own.description,
+        address=own.address,
+        map_link=own.map_link,
+        haven_advantages=list(own.haven_advantages),
+        haven_free=list(count.free),
+        haven_over=locations.haven_over(character, count),
     )
 
 
@@ -170,6 +216,20 @@ def add_haven(
     character = own_character(db, user, character_id)
     home = quests.home_troupe(db, character)
     locations.save_own_haven(db, user, character, home, None, own_from(body))
+    # A draft that didn't fit when the troupe accepted the character is now placed.
+    character.haven_draft = None
+    db.commit()
+    return haven_out(db, character)
+
+
+@router.put("/characters/{character_id}/haven/draft")
+def keep_haven_draft(
+    character_id: uuid.UUID, body: OwnHavenIn, db: DbSession, user: CurrentUser
+) -> HavenOut:
+    """Name the Haven before any troupe has accepted the character, as in creation:
+    the first troupe to accept it puts it on its list (#683)."""
+    character = own_character(db, user, character_id)
+    locations.save_haven_draft(db, user, character, own_from(body))
     db.commit()
     return haven_out(db, character)
 
