@@ -17,6 +17,7 @@ from horatio import (
     downtimes,
     leaving,
     pictures,
+    play_tabs,
     pronouns,
     remembrances,
     renames,
@@ -82,6 +83,9 @@ class CharacterOut(BaseModel):
     # What its sheet calls the clan stored as "Assamite" (horatio.clan_names): as the
     # troupe whose rules it plays by does, or Banu Haqim outside any troupe.
     assamite_name: Literal["Banu Haqim", "Assamite"] = "Banu Haqim"
+    # Whether it has a Play View: false for a PC whose troupe has every tab switched off
+    # for its players; an NPC always has one (horatio.play_tabs).
+    play_view: bool = True
 
 
 class CharacterListOut(CharacterOut):
@@ -195,6 +199,7 @@ def characters_out(db: Session, characters: Iterable[Character]) -> list[Charact
     )
     asking = {character_id: troupe_id for character_id, troupe_id in db.execute(pending)}
     called = clan_names.for_characters(db, found)
+    without = play_tabs.without_play_view(db, found)
     return [
         CharacterOut(
             id=character.id,
@@ -218,6 +223,7 @@ def characters_out(db: Session, characters: Iterable[Character]) -> list[Charact
             left_reason=character.left_reason,
             left_listed=character.left_listed,
             assamite_name=called[character.id],  # type: ignore[arg-type]  # checked by the database
+            play_view=character.id not in without,
         )
         for character in found
     ]

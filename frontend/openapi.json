@@ -1663,6 +1663,11 @@
             ],
             "title": "Status Source"
           },
+          "status_tab": {
+            "default": true,
+            "title": "Status Tab",
+            "type": "boolean"
+          },
           "status_to_choose": {
             "default": false,
             "title": "Status To Choose",
@@ -7437,6 +7442,11 @@
             ],
             "title": "Picture"
           },
+          "play_view": {
+            "default": true,
+            "title": "Play View",
+            "type": "boolean"
+          },
           "player_id": {
             "format": "uuid",
             "title": "Player Id",
@@ -7648,6 +7658,11 @@
               }
             ],
             "title": "Picture"
+          },
+          "play_view": {
+            "default": true,
+            "title": "Play View",
+            "type": "boolean"
           },
           "player_id": {
             "format": "uuid",
@@ -8176,6 +8191,11 @@
             "title": "Name",
             "type": "string"
           },
+          "play_view": {
+            "default": true,
+            "title": "Play View",
+            "type": "boolean"
+          },
           "status_at_checkin": {
             "default": false,
             "title": "Status At Checkin",
@@ -8470,6 +8490,11 @@
           },
           "play_started": {
             "title": "Play Started",
+            "type": "boolean"
+          },
+          "play_view": {
+            "default": true,
+            "title": "Play View",
             "type": "boolean"
           }
         },
@@ -26733,6 +26758,11 @@
             ],
             "title": "Picture"
           },
+          "play_view": {
+            "default": true,
+            "title": "Play View",
+            "type": "boolean"
+          },
           "player_id": {
             "format": "uuid",
             "title": "Player Id",
@@ -29888,6 +29918,27 @@
                 "type": "null"
               }
             ]
+          },
+          "tabs": {
+            "default": [
+              "sheet",
+              "tracker",
+              "pools",
+              "status",
+              "equipment"
+            ],
+            "items": {
+              "enum": [
+                "sheet",
+                "tracker",
+                "pools",
+                "status",
+                "equipment"
+              ],
+              "type": "string"
+            },
+            "title": "Tabs",
+            "type": "array"
           },
           "vitae": {
             "anyOf": [
@@ -44737,6 +44788,27 @@
             ],
             "title": "Name"
           },
+          "play_tabs_off": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "sheet",
+                    "tracker",
+                    "pools",
+                    "status",
+                    "equipment"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Play Tabs Off"
+          },
           "session_xp": {
             "anyOf": [
               {
@@ -45434,6 +45506,21 @@
             "title": "Place",
             "type": "string"
           },
+          "play_tabs_off": {
+            "default": [],
+            "items": {
+              "enum": [
+                "sheet",
+                "tracker",
+                "pools",
+                "status",
+                "equipment"
+              ],
+              "type": "string"
+            },
+            "title": "Play Tabs Off",
+            "type": "array"
+          },
           "player_nominations": {
             "default": false,
             "title": "Player Nominations",
@@ -45630,6 +45717,11 @@
                 "type": "null"
               }
             ]
+          },
+          "play_view": {
+            "default": true,
+            "title": "Play View",
+            "type": "boolean"
           },
           "player_name": {
             "title": "Player Name",

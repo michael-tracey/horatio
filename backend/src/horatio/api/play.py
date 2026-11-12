@@ -22,6 +22,7 @@ from horatio import (
     play,
     play_influence,
     play_status,
+    play_tabs,
     reference,
     retainers,
     sect_status,
@@ -364,6 +365,10 @@ class PlayView(BaseModel):
     game: GameOut | None
     # The game's log, newest first.
     log: list[LogEntryOut]
+    # The tabs it shows (horatio.play_tabs): its troupe's, every one on an NPC, none
+    # for a PC whose troupe doesn't use the Play View for players. Status shows only
+    # with `status` too.
+    tabs: list[play_tabs.PlayTab] = list(play_tabs.PLAY_TABS)
 
 
 class InfluenceDetailsIn(BaseModel):
@@ -488,6 +493,9 @@ class TroupePlayEntry(BaseModel):
     health_boxes: int
     # The player's lines and veils, as the roster shows them to staff.
     lines_veils: LinesVeils | None = None
+    # Whether it has a Play View: a PC's troupe may not use one for players; an NPC
+    # always has one (horatio.play_tabs).
+    play_view: bool = True
 
 
 class TroupeReset(BaseModel):
@@ -794,6 +802,7 @@ def play_view(db: Session, character: Character) -> PlayView:
         status=play_status_out(db, character, game, events),
         game=game_out(db, game, events) if game else None,
         log=log_out(db, character, limits, events),
+        tabs=play_tabs.character_tabs(db, character),
     )
 
 
@@ -1154,8 +1163,10 @@ def troupe_play(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[
     """Every character in the troupe at the game now, in the roster's order."""
     staff_troupe(db, user, troupe_id, TroupeAction.VIEW_MEMBER_CHARACTERS)
     found: list[TroupePlayEntry] = []
-    for entry in roster(troupe_id, db, user):
-        character = db.get_one(Character, entry.character_id)
+    entries = roster(troupe_id, db, user)
+    characters = [db.get_one(Character, e.character_id) for e in entries]
+    without = play_tabs.without_play_view(db, characters)
+    for entry, character in zip(entries, characters, strict=True):
         game = play.current_game(db, character)
         limits = play.limits(db, character, game)
         events = play.game_events(db, game) if game else []
@@ -1184,6 +1195,7 @@ def troupe_play(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[
                 health_marked=len(state["health"]),
                 health_boxes=len(limits.boxes(state["on"])),
                 lines_veils=entry.lines_veils,
+                play_view=character.id not in without,
             )
         )
     return found

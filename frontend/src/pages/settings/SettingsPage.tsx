@@ -1,5 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation } from "react-router";
+import { api, unwrap } from "../../api/client";
 import type { PlayerOut, Preferences } from "../../api/types";
 import { drawCurtains } from "../../components/Curtains";
 import { startSunrise } from "../../components/Sunrise";
@@ -10,6 +12,7 @@ import { usePreferences, useSavingPreferences, useSetPreferences } from "../../h
 import { AccountEmail } from "../AccountEmail";
 import { useOnline } from "../../offline/connection";
 import { tapsWaiting } from "../../offline/keep";
+import { openingChoices, TABS } from "../play/tabs";
 import { saveAwake } from "../play/wakeLock";
 import { ViewedAs } from "../ViewedAs";
 import { EmailNotifications } from "./EmailNotifications";
@@ -60,6 +63,30 @@ export function Choice<K extends Key>({ name, label, choices }: { name: K; label
         </button>
       ))}
     </span>
+  );
+}
+
+// The tabs the Play View can open on, in the order offered.
+const OPENING: Preferences["play_tab"][] = ["tracker", "sheet", "pools"];
+
+/**
+ * The tab the Play View opens on: only those at least one of the person's troupes has
+ * on (#673), saying which troupe has switched one off. Where the tab chosen is off,
+ * the Play View opens on its first tab.
+ */
+function OpeningTab() {
+  const troupes = useQuery({ queryKey: ["troupes"], queryFn: () => unwrap(api.GET("/api/troupes")) });
+  const mine = (troupes.data ?? []).filter((t) => !t.archived && (t.my_role || t.my_characters.length > 0));
+  const { offered, off } = openingChoices(OPENING, mine);
+  const label = (tab: string) => TABS.find((t) => t.key === tab)?.label ?? tab;
+  const hint =
+    off.length > 0
+      ? off.map((o) => `${o.troupes.join(" and ")} ${o.troupes.length > 1 ? "have" : "has"} switched off ${label(o.tab)}, so there it opens on the first tab on.`).join(" ")
+      : undefined;
+  return (
+    <Setting label="The Play View opens on" hint={hint}>
+      <Choice name="play_tab" label="The Play View opens on" choices={offered.map((tab) => [tab, label(tab)])} />
+    </Setting>
   );
 }
 
@@ -317,17 +344,7 @@ export function SettingsPage({ player }: { player: PlayerOut }) {
           >
             <Toggle name="keep_awake" label="Keep the screen awake" />
           </Setting>
-          <Setting label="The Play View opens on">
-            <Choice
-              name="play_tab"
-              label="The Play View opens on"
-              choices={[
-                ["tracker", "Tracker"],
-                ["sheet", "Sheet"],
-                ["pools", "Pools"],
-              ]}
-            />
-          </Setting>
+          <OpeningTab />
         </Card>
 
         <Card title="Appearance">

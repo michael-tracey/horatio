@@ -14,6 +14,7 @@ const attendee = (name: string, month_xp: number, home = true): Attendee => ({
   month_xp,
   kind: "attended",
   status_to_choose: false,
+  status_tab: true,
 });
 
 describe("the door's code", () => {
@@ -83,6 +84,7 @@ describe("the night's status at check-in (#441)", () => {
     checked_in: false,
     status_at_checkin: true,
     status_sources: [],
+    play_view: true,
     ...more,
   });
 

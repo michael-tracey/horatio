@@ -94,7 +94,7 @@ describe("the shared catalogue (#644)", () => {
   });
 
   it("is kept on the device under the key the screens ask by", () => {
-    const mine = { characters: new Set<string>(), troupes: new Set<string>() };
+    const mine = { characters: new Set<string>(), plays: new Set<string>(), troupes: new Set<string>() };
     expect(keepsQuery([...catalogueKey("vampire", "lords")], mine)).toBe(true);
     expect(keepsQuery([...catalogueKey("vampire", undefined)], mine)).toBe(true);
   });

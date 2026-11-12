@@ -112,6 +112,7 @@ def test_staff_open_check_in_and_a_player_checks_in_with_the_code(troupe: Troupe
             "status_at_checkin": False,
             "status_sources": [],
             "status_source": None,
+            "play_view": True,
         }
     ]
 
@@ -122,6 +123,7 @@ def test_staff_open_check_in_and_a_player_checks_in_with_the_code(troupe: Troupe
         "character_name": "Agnes",
         "already": False,
         "play_started": True,
+        "play_view": True,
     }
     # The night started on the Play View.
     assert view(troupe.player, agnes)["game"]["number"] == 1
