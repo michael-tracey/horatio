@@ -757,6 +757,32 @@ export interface paths {
         patch: operations["change_character_api_characters__character_id__patch"];
         trace?: never;
     };
+    "/api/characters/{character_id}/apology-boon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Apology Choices
+         * @description For staff putting right a slip under Warned or Disgraced: the ledger its boon
+         *     goes in, and who could have been wronged.
+         */
+        get: operations["apology_choices_api_characters__character_id__apology_boon_get"];
+        put?: never;
+        /**
+         * Apology Boon
+         * @description Register the boon an apology owes for a slip (p. 316): minor under Warned, major
+         *     under Disgraced, owed by the character to whoever was wronged.
+         */
+        post: operations["apology_boon_api_characters__character_id__apology_boon_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/attendance": {
         parameters: {
             query?: never;
@@ -1124,6 +1150,27 @@ export interface paths {
          * @description Take back a drink its player reported, while it waits.
          */
         post: operations["withdraw_report_api_characters__character_id__bonds_reports__report_id__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/bonds/{bond_id}/meetings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Meeting
+         * @description Its player logs the character meeting the other side of a bond it is in (#665):
+         *     it counts now, or waits on staff, by the troupe's setting (horatio.bonds).
+         */
+        post: operations["report_meeting_api_characters__character_id__bonds__bond_id__meetings_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3059,6 +3106,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/praised-claims": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Praised Claims
+         * @description For spending Praised (p. 316): who in the troupe whose ledger the character's
+         *     Play View shows is Accepted by its sect and not already in its debt. Its player
+         *     sees player characters; staff see the troupe's NPCs too.
+         */
+        get: operations["praised_claims_api_characters__character_id__praised_claims_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/primary-path": {
         parameters: {
             query?: never;
@@ -3487,6 +3556,51 @@ export interface paths {
         };
         /** Read Sheet */
         get: operations["read_sheet_api_characters__character_id__sheet_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/sire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Sire
+         * @description The character's sire, as anyone who sees the character sees it.
+         */
+        get: operations["read_sire_api_characters__character_id__sire_get"];
+        /**
+         * Set Sire
+         * @description Give the character its sire: a character the caller can see, or a name and
+         *     clan; and whether the troupe's players see it.
+         */
+        put: operations["set_sire_api_characters__character_id__sire_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/sire/choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sire Choices
+         * @description The vampires that could be the character's sire, by name (`candidates`).
+         */
+        get: operations["sire_choices_api_characters__character_id__sire_choices_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7466,7 +7580,8 @@ export interface paths {
         /**
          * Known Bonds
          * @description The bonds Horatio can work out for the troupe that it doesn't keep yet: from its
-         *     characters' Embraces, ghouls' domitors and vampires' ghoul Retainers (#663).
+         *     characters' Embraces and the sires their sheets name, ghouls' domitors and vampires'
+         *     ghoul Retainers (#663, #739).
          */
         get: operations["known_bonds_api_troupes__troupe_id__bonds_known_get"];
         put?: never;
@@ -7536,6 +7651,27 @@ export interface paths {
          * @description Stop showing the regnant's player a bond whose thrall died.
          */
         post: operations["clear_kept_api_troupes__troupe_id__bonds__bond_id__clear_kept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/confirm-change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Change
+         * @description Staff confirm the change time has brought a bond, in a troupe where players
+         *     report and staff approve (#665): it drops to two drinks, or ends.
+         */
+        post: operations["confirm_change_api_troupes__troupe_id__bonds__bond_id__confirm_change_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7639,6 +7775,27 @@ export interface paths {
          */
         put: operations["set_known_api_troupes__troupe_id__bonds__bond_id__known_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/meetings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Meeting
+         * @description Log the thrall and regnant meeting, such as in a downtime: it keeps a lesser bond
+         *     from ending (#665).
+         */
+        post: operations["add_meeting_api_troupes__troupe_id__bonds__bond_id__meetings_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10794,6 +10951,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/sire-lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Sire Lines
+         * @description Who sired whom: every vampire in the troupe for its staff; for its players, if
+         *     the troupe shows them, those on its Who's Who with the sires it shows.
+         */
+        get: operations["read_sire_lines_api_troupes__troupe_id__sire_lines_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/specializations": {
         parameters: {
             query?: never;
@@ -12239,6 +12417,41 @@ export interface components {
             feeding?: components["schemas"]["FeedingIn"] | null;
             /** Quick Hands */
             quick_hands?: boolean | null;
+        };
+        /** ApologyBoonIn */
+        ApologyBoonIn: {
+            /**
+             * Held Id
+             * Format: uuid
+             */
+            held_id: string;
+            /**
+             * Made On
+             * Format: date
+             */
+            made_on: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            wronged: components["schemas"]["BoonPartyIn"];
+        };
+        /**
+         * ApologyChoicesOut
+         * @description Where an apology's boon goes: the troupe whose ledger the character's Play
+         *     View shows, and its characters, to name whoever was wronged.
+         */
+        ApologyChoicesOut: {
+            /** Characters */
+            characters: components["schemas"]["CharacterChoice-Output"][];
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
         };
         /** AppearanceOut */
         AppearanceOut: {
@@ -13816,9 +14029,15 @@ export interface components {
         };
         /**
          * BondAskOut
-         * @description A drink a player reported, for staff to approve (horatio.bonds).
+         * @description A drink a player reported, or a meeting (#665), for staff to approve
+         *     (horatio.bonds).
          */
         BondAskOut: {
+            /**
+             * Kind
+             * @default drink
+             */
+            kind: string;
             /**
              * Night
              * Format: date
@@ -13909,8 +14128,11 @@ export interface components {
             known_to_regnant: boolean;
             /** Last Drink */
             last_drink: string | null;
+            /** Last Met */
+            last_met?: string | null;
             /** Level */
             level: number;
+            next_change?: components["schemas"]["horatio__api__bonds__ChangeOut"] | null;
             regnant: components["schemas"]["PartyOut"];
             /** Status */
             status: string;
@@ -13940,6 +14162,12 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /**
+             * Kind
+             * @default drink
+             * @enum {string}
+             */
+            kind: "drink" | "meeting";
             /**
              * Night
              * Format: date
@@ -14423,6 +14651,11 @@ export interface components {
             /** Conditions */
             conditions: string;
             creditor: components["schemas"]["BoonPartyOut"];
+            /**
+             * Creditor Disgraced
+             * @default false
+             */
+            creditor_disgraced: boolean;
             debtor: components["schemas"]["BoonPartyOut"];
             /** Departed */
             departed: boolean;
@@ -15145,12 +15378,6 @@ export interface components {
              */
             staff_note: string;
         };
-        /** ChangeOut */
-        ChangeOut: {
-            /** Cost */
-            cost: number;
-            sheet: components["schemas"]["SheetOut"];
-        };
         /** ChannelIn */
         ChannelIn: {
             /** Channel */
@@ -15688,6 +15915,39 @@ export interface components {
             /** Warnings */
             warnings: string[];
             xp: components["schemas"]["BackupXpOut"] | null;
+        };
+        /** CharacterSireIn */
+        CharacterSireIn: {
+            /** Character Id */
+            character_id?: string | null;
+            /**
+             * Clan
+             * @default
+             */
+            clan: string;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /**
+             * Secret
+             * @default false
+             */
+            secret: boolean;
+        };
+        /** CharacterSireOut */
+        CharacterSireOut: {
+            /** Can Change */
+            can_change: boolean;
+            /** Character Id */
+            character_id: string | null;
+            /** Clan */
+            clan: string;
+            /** Name */
+            name: string;
+            /** Secret */
+            secret: boolean;
         };
         /** CharacterTitlesOut */
         CharacterTitlesOut: {
@@ -17529,6 +17789,11 @@ export interface components {
              */
             note: string;
             /**
+             * Override
+             * @default
+             */
+            override: string;
+            /**
              * Source
              * @default staff
              * @enum {string}
@@ -17999,6 +18264,11 @@ export interface components {
              * Format: date
              */
             night: string;
+            /**
+             * Override
+             * @default
+             */
+            override: string;
             /** Reason */
             reason: string;
             regnant: components["schemas"]["PartyIn"];
@@ -21272,7 +21542,7 @@ export interface components {
              * Why
              * @enum {string}
              */
-            why: "embrace" | "domitor" | "retainer";
+            why: "embrace" | "sire" | "domitor" | "retainer";
         };
         /** KnownIn */
         KnownIn: {
@@ -22507,6 +22777,28 @@ export interface components {
             next_handle_change: string | null;
             preferences: components["schemas"]["Preferences"];
         };
+        /**
+         * MeetingIn
+         * @description The thrall and regnant met, which keeps a lesser bond from ending (#665).
+         */
+        MeetingIn: {
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Source
+             * @default staff
+             * @enum {string}
+             */
+            source: "game" | "downtime" | "staff";
+        };
         /** MemberOut */
         MemberOut: {
             /**
@@ -23126,6 +23418,11 @@ export interface components {
              * @default
              */
             note: string;
+            /**
+             * Override
+             * @default
+             */
+            override: string;
             regnant: components["schemas"]["PartyIn"];
             /**
              * Source
@@ -24605,6 +24902,11 @@ export interface components {
             /** Conditions */
             conditions: string;
             /**
+             * Creditor Disgraced
+             * @default false
+             */
+            creditor_disgraced: boolean;
+            /**
              * Id
              * Format: uuid
              */
@@ -25015,6 +25317,25 @@ export interface components {
             name: string;
             /** Retired */
             retired: boolean;
+        };
+        /** PlayerMeetingIn */
+        PlayerMeetingIn: {
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Source
+             * @default game
+             * @enum {string}
+             */
+            source: "game" | "downtime";
         };
         /** PlayerNominationsIn */
         PlayerNominationsIn: {
@@ -25536,6 +25857,20 @@ export interface components {
              * @default 0
              */
             turned_on: number;
+        };
+        /** PraisedClaimsOut */
+        PraisedClaimsOut: {
+            /** Characters */
+            characters: components["schemas"]["CharacterChoice-Output"][];
+            /** Sect */
+            sect: string | null;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
         };
         /** Preferences */
         Preferences: {
@@ -28849,6 +29184,11 @@ export interface components {
          */
         SheetBondOut: {
             /**
+             * Can Meet
+             * @default false
+             */
+            can_meet: boolean;
+            /**
              * Id
              * Format: uuid
              */
@@ -29032,6 +29372,62 @@ export interface components {
              * @default
              */
             name: string;
+        };
+        /** SireLineChoiceOut */
+        SireLineChoiceOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Clan */
+            clan: string | null;
+            /** Name */
+            name: string;
+        };
+        /** SireLineClanCount */
+        SireLineClanCount: {
+            /** Clan */
+            clan: string;
+            /** Count */
+            count: number;
+        };
+        /** SireLineNodeOut */
+        SireLineNodeOut: {
+            /** Character Id */
+            character_id: string | null;
+            /** Clan */
+            clan: string | null;
+            /** Generation */
+            generation: number | null;
+            /** Key */
+            key: string;
+            /** Kind */
+            kind: string;
+            /** Left Reason */
+            left_reason: string | null;
+            /** Name */
+            name: string;
+            /** Retired */
+            retired: boolean;
+            /** Sire Key */
+            sire_key: string | null;
+        };
+        /** SireLinesOut */
+        SireLinesOut: {
+            /** Clans */
+            clans: components["schemas"]["SireLineClanCount"][];
+            /** Nodes */
+            nodes: components["schemas"]["SireLineNodeOut"][];
+            /** Players See */
+            players_see: boolean;
+            /** Staff */
+            staff: boolean;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
         };
         /** SkillPool */
         SkillPool: {
@@ -30963,6 +31359,8 @@ export interface components {
             play_tabs_off?: ("sheet" | "tracker" | "pools" | "status" | "equipment" | "throws" | "boons")[] | null;
             /** Session Xp */
             session_xp?: number | null;
+            /** Sire Lines Players */
+            sire_lines_players?: boolean | null;
             /** Starting Xp */
             starting_xp?: number | null;
             /** Status At Checkin */
@@ -31268,6 +31666,8 @@ export interface components {
             remembrances: boolean;
             /** Session Xp */
             session_xp: number;
+            /** Sire Lines Players */
+            sire_lines_players: boolean;
             /** Starting Blood */
             starting_blood: number | null;
             /** Starting Xp */
@@ -31868,6 +32268,8 @@ export interface components {
             seated: string[] | null;
             /** Shows Negative */
             shows_negative: boolean;
+            /** Sire Lines */
+            sire_lines: boolean;
             /**
              * Troupe Id
              * Format: uuid
@@ -32463,6 +32865,24 @@ export interface components {
             /** Willpower */
             willpower: number;
         };
+        /**
+         * ChangeOut
+         * @description What time does next to a bond (#665): it drops to two drinks, or ends, on a day.
+         */
+        horatio__api__bonds__ChangeOut: {
+            /** Due */
+            due: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "drop" | "end";
+            /**
+             * On
+             * Format: date
+             */
+            on: string;
+        };
         /** AppliedOut */
         horatio__api__downtime_effects__AppliedOut: {
             /** Character Name */
@@ -32588,6 +33008,12 @@ export interface components {
             free: boolean;
             /** Reason */
             reason: string;
+        };
+        /** ChangeOut */
+        horatio__api__sheets__ChangeOut: {
+            /** Cost */
+            cost: number;
+            sheet: components["schemas"]["SheetOut"];
         };
         /** DetailChange */
         horatio__api__specializations__DetailChange: {
@@ -34038,6 +34464,72 @@ export interface operations {
             };
         };
     };
+    apology_choices_api_characters__character_id__apology_boon_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApologyChoicesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apology_boon_api_characters__character_id__apology_boon_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApologyBoonIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     attended_api_characters__character_id__attendance_get: {
         parameters: {
             query?: never;
@@ -34687,6 +35179,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BondReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_meeting_api_characters__character_id__bonds__bond_id__meetings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                bond_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlayerMeetingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportedOut"];
                 };
             };
             /** @description Validation Error */
@@ -38515,6 +39043,37 @@ export interface operations {
             };
         };
     };
+    praised_claims_api_characters__character_id__praised_claims_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PraisedClaimsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     name_primary_path_api_characters__character_id__primary_path_put: {
         parameters: {
             query?: never;
@@ -39315,6 +39874,105 @@ export interface operations {
             };
         };
     };
+    read_sire_api_characters__character_id__sire_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterSireOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_sire_api_characters__character_id__sire_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterSireIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterSireOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sire_choices_api_characters__character_id__sire_choices_get: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SireLineChoiceOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     character_kinds_api_characters__character_id__specializations_get: {
         parameters: {
             query?: never;
@@ -39873,7 +40531,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChangeOut"];
+                    "application/json": components["schemas"]["horatio__api__sheets__ChangeOut"];
                 };
             };
             /** @description Validation Error */
@@ -39908,7 +40566,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChangeOut"];
+                    "application/json": components["schemas"]["horatio__api__sheets__ChangeOut"];
                 };
             };
             /** @description Validation Error */
@@ -39943,7 +40601,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChangeOut"];
+                    "application/json": components["schemas"]["horatio__api__sheets__ChangeOut"];
                 };
             };
             /** @description Validation Error */
@@ -47198,6 +47856,38 @@ export interface operations {
             };
         };
     };
+    confirm_change_api_troupes__troupe_id__bonds__bond_id__confirm_change_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                bond_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BondOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     add_drink_api_troupes__troupe_id__bonds__bond_id__drinks_post: {
         parameters: {
             query?: never;
@@ -47362,6 +48052,42 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BondOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_meeting_api_troupes__troupe_id__bonds__bond_id__meetings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                bond_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeetingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -53891,6 +54617,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SharedChoicesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_sire_lines_api_troupes__troupe_id__sire_lines_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SireLinesOut"];
                 };
             };
             /** @description Validation Error */

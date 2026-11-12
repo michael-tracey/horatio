@@ -47,6 +47,16 @@ class DrinkIn(BaseModel):
     # Where it was told: at a game, in a downtime, or to staff otherwise.
     source: Source = "staff"
     note: str = Field(default="", max_length=2000)
+    # Why to record it though a full bond makes the thrall immune (#665).
+    override: str = Field(default="", max_length=2000)
+
+
+class MeetingIn(BaseModel):
+    """The thrall and regnant met, which keeps a lesser bond from ending (#665)."""
+
+    night: date
+    source: Source = "staff"
+    note: str = Field(default="", max_length=2000)
 
 
 class NewDrinkIn(DrinkIn):
@@ -61,6 +71,8 @@ class EnterIn(BaseModel):
     level: int = Field(ge=1, le=3)
     night: date
     reason: str = Field(max_length=2000)
+    # Why to enter it though a full bond makes the thrall immune (#665).
+    override: str = Field(default="", max_length=2000)
 
 
 class BreakIn(BaseModel):
@@ -87,15 +99,25 @@ class PartyOut(BaseModel):
 
 class BondEntryOut(BaseModel):
     id: uuid.UUID
-    # drink | entered
+    # drink | entered | dropped (with time, #665) | meeting
     kind: str
     night: date
     source: Source
-    # For a bond entered: the level it stood at.
+    # For a bond entered, the level it stood at; dropped, the level it fell to.
     level: int | None
     note: str
+    # None for a drop Horatio made by itself.
     recorded_by: str | None
     at: datetime
+
+
+class ChangeOut(BaseModel):
+    """What time does next to a bond (#665): it drops to two drinks, or ends, on a day."""
+
+    kind: Literal["drop", "end"]
+    on: date
+    # It is due: made now, or in "players_report", waiting for staff to confirm.
+    due: bool
 
 
 class BondOut(BaseModel):
@@ -119,6 +141,11 @@ class BondOut(BaseModel):
     kept_for_regnant: bool = False
     # The last night it was drunk from, if any drink is logged.
     last_drink: date | None
+    # When the two last met as far as Horatio knows: a drink, a meeting logged, the bond
+    # entered, or a game both checked in at (#665).
+    last_met: date | None = None
+    # What time does to it next, for a bond time can fade.
+    next_change: ChangeOut | None = None
     entries: list[BondEntryOut]
 
 
@@ -128,6 +155,8 @@ class BondReportOut(BaseModel):
     id: uuid.UUID
     troupe_id: uuid.UUID
     troupe_name: str
+    # A drink, or a meeting (#665).
+    kind: Literal["drink", "meeting"] = "drink"
     thrall: PartyOut
     regnant: PartyOut
     # Which side the reporting player's character is on.
@@ -188,6 +217,12 @@ class ReportedOut(BaseModel):
     level: int | None
 
 
+class PlayerMeetingIn(BaseModel):
+    night: date
+    source: PlayerSource = "game"
+    note: str = Field(default="", max_length=2000)
+
+
 class BondAnswerIn(BaseModel):
     confirm: bool
     reason: str = Field(default="", max_length=2000)
@@ -219,6 +254,9 @@ class SheetBondOut(BaseModel):
     # The regnant, for a bond the character is bound by; the thrall, for one it holds.
     name: str
     level: int
+    # The reader can log a meeting on it, as the character's player in a troupe whose
+    # players report or record bonds (#665).
+    can_meet: bool = False
 
 
 class CharacterBondsOut(BaseModel):
@@ -236,8 +274,9 @@ class CharacterBondsOut(BaseModel):
 
 
 class KnownBondOut(BaseModel):
-    # embrace | domitor | retainer: why Horatio knows of it (#663).
-    why: Literal["embrace", "domitor", "retainer"]
+    # embrace | sire | domitor | retainer: why Horatio knows of it (#663); `sire` is
+    # the sire the childe's sheet names, with no Embrace in play (#739).
+    why: Literal["embrace", "sire", "domitor", "retainer"]
     thrall: PartyOut
     regnant: PartyOut
     # The level it stands at from the start: 1, or 3 for a full bond.
@@ -265,6 +304,9 @@ def bond_out(db: DbSession, bond: BloodBond) -> BondOut:
         for u in db.scalars(select(User).where(User.id.in_({e.recorded_by for e in entries})))
     }
     drinks = [e.night for e in entries if e.kind == "drink"]
+    troupe = db.get_one(Troupe, bond.troupe_id)
+    change = bonds.next_change(db, troupe, bond, entries)
+    met = bonds.last_met(db, bond, entries) if bond.status in bonds.OPEN else None
     return BondOut(
         id=bond.id,
         thrall=party_out(thrall.character, thrall.name),
@@ -279,6 +321,14 @@ def bond_out(db: DbSession, bond: BloodBond) -> BondOut:
         thrall_told=bond.thrall_told_at is not None,
         kept_for_regnant=bond.kept_for_regnant,
         last_drink=max(drinks) if drinks else None,
+        last_met=met,
+        next_change=ChangeOut(
+            kind=change.kind,  # type: ignore[arg-type]  # drop or end
+            on=change.on,
+            due=change.on <= bonds.today(),
+        )
+        if change is not None
+        else None,
         entries=[
             BondEntryOut(
                 id=e.id,
@@ -303,6 +353,7 @@ def report_out(db: DbSession, user: User, report: BondReport) -> BondReportOut:
         id=report.id,
         troupe_id=troupe.id,
         troupe_name=troupe.name,
+        kind=report.kind,  # type: ignore[arg-type]  # checked by the database
         thrall=party_out(thrall.character, thrall.name),
         regnant=party_out(regnant.character, regnant.name),
         reported_as=report.reported_as,  # type: ignore[arg-type]  # checked by the database
@@ -393,7 +444,7 @@ def troupe_bonds(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Trou
 
 def known_out(item: auto_bonds.Known) -> KnownBondOut:
     return KnownBondOut(
-        why=item.why,  # type: ignore[arg-type]  # one of auto_bonds' three
+        why=item.why,  # type: ignore[arg-type]  # one of auto_bonds' four
         thrall=party_out(item.thrall.character, item.thrall.name),
         regnant=party_out(item.regnant.character, item.regnant.name),
         level=item.level,
@@ -405,7 +456,8 @@ def known_out(item: auto_bonds.Known) -> KnownBondOut:
 @router.get("/troupes/{troupe_id}/bonds/known")
 def known_bonds(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[KnownBondOut]:
     """The bonds Horatio can work out for the troupe that it doesn't keep yet: from its
-    characters' Embraces, ghouls' domitors and vampires' ghoul Retainers (#663)."""
+    characters' Embraces and the sires their sheets name, ghouls' domitors and vampires'
+    ghoul Retainers (#663, #739)."""
     troupe = bonds_troupe(db, user, troupe_id)
     found = auto_bonds.known(db, troupe)
     db.commit()
@@ -428,16 +480,11 @@ def record_drink(
     """Log a drink the thrall took of the regnant's blood: on the bond between them,
     or a new one."""
     troupe = bonds_troupe(db, user, troupe_id)
-    bond = bonds.record_drink(
-        db,
-        user,
-        troupe,
-        side(db, troupe, body.thrall, regnant=False),
-        side(db, troupe, body.regnant, regnant=True),
-        body.night,
-        body.source,
-        body.note,
-    )
+    thrall = side(db, troupe, body.thrall, regnant=False)
+    regnant = side(db, troupe, body.regnant, regnant=True)
+    override = bonds.staff_immunity(db, troupe, thrall, regnant, body.override)
+    bond = bonds.record_drink(db, user, troupe, thrall, regnant, body.night, body.source, body.note)
+    bonds.log_override(db, user, bond, override)
     db.commit()
     return bond_out(db, bond)
 
@@ -449,7 +496,36 @@ def add_drink(
     """Log another drink on a bond still felt."""
     troupe = bonds_troupe(db, user, troupe_id)
     bond = troupe_bond(db, troupe, bond_id)
+    thrall, regnant = bonds.parties(db, bond)
+    override = bonds.staff_immunity(db, troupe, thrall, regnant, body.override)
     bonds.add_drink(db, user, bond, body.night, body.source, body.note)
+    bonds.log_override(db, user, bond, override)
+    db.commit()
+    return bond_out(db, bond)
+
+
+@router.post("/troupes/{troupe_id}/bonds/{bond_id}/meetings", status_code=status.HTTP_201_CREATED)
+def add_meeting(
+    troupe_id: uuid.UUID, bond_id: uuid.UUID, body: MeetingIn, db: DbSession, user: CurrentUser
+) -> BondOut:
+    """Log the thrall and regnant meeting, such as in a downtime: it keeps a lesser bond
+    from ending (#665)."""
+    troupe = bonds_troupe(db, user, troupe_id)
+    bond = troupe_bond(db, troupe, bond_id)
+    bonds.add_meeting(db, user, bond, body.night, body.source, body.note)
+    db.commit()
+    return bond_out(db, bond)
+
+
+@router.post("/troupes/{troupe_id}/bonds/{bond_id}/confirm-change")
+def confirm_change(
+    troupe_id: uuid.UUID, bond_id: uuid.UUID, db: DbSession, user: CurrentUser
+) -> BondOut:
+    """Staff confirm the change time has brought a bond, in a troupe where players
+    report and staff approve (#665): it drops to two drinks, or ends."""
+    troupe = bonds_troupe(db, user, troupe_id)
+    bond = troupe_bond(db, troupe, bond_id)
+    bonds.confirm_change(db, user, troupe, bond)
     db.commit()
     return bond_out(db, bond)
 
@@ -459,16 +535,11 @@ def enter_bond(troupe_id: uuid.UUID, body: EnterIn, db: DbSession, user: Current
     """Enter a bond that already stands, such as one from before Horatio, at its
     level, with the reason."""
     troupe = bonds_troupe(db, user, troupe_id)
-    bond = bonds.enter_bond(
-        db,
-        user,
-        troupe,
-        side(db, troupe, body.thrall, regnant=False),
-        side(db, troupe, body.regnant, regnant=True),
-        body.level,
-        body.night,
-        body.reason,
-    )
+    thrall = side(db, troupe, body.thrall, regnant=False)
+    regnant = side(db, troupe, body.regnant, regnant=True)
+    override = bonds.staff_immunity(db, troupe, thrall, regnant, body.override)
+    bond = bonds.enter_bond(db, user, troupe, thrall, regnant, body.level, body.night, body.reason)
+    bonds.log_override(db, user, bond, override)
     db.commit()
     return bond_out(db, bond)
 
@@ -620,6 +691,29 @@ def report_drink(
     return ReportedOut(outcome=done.waiting_on, level=None)  # type: ignore[arg-type]
 
 
+@router.post(
+    "/characters/{character_id}/bonds/{bond_id}/meetings", status_code=status.HTTP_201_CREATED
+)
+def report_meeting(
+    character_id: uuid.UUID,
+    bond_id: uuid.UUID,
+    body: PlayerMeetingIn,
+    db: DbSession,
+    user: CurrentUser,
+) -> ReportedOut:
+    """Its player logs the character meeting the other side of a bond it is in (#665):
+    it counts now, or waits on staff, by the troupe's setting (horatio.bonds)."""
+    character = players_character(db, user, character_id)
+    bond = db.get(BloodBond, bond_id)
+    if bond is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such bond.")
+    done = bonds.report_meeting(db, user, character, bond, body.night, body.source, body.note)
+    db.commit()
+    if isinstance(done, BloodBond):
+        return ReportedOut(outcome="recorded", level=None)
+    return ReportedOut(outcome="staff", level=None)
+
+
 @router.post("/characters/{character_id}/bonds/reports/{report_id}/withdraw")
 def withdraw_report(
     character_id: uuid.UUID, report_id: uuid.UUID, db: DbSession, user: CurrentUser
@@ -666,11 +760,19 @@ def character_bonds(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -
     manage: uuid.UUID | None = None
     for s in seen:
         bond, troupe, thrall, regnant = s.bond, s.troupe, s.thrall, s.regnant
-        level = bonds.level(db, bond)
+        level = s.level
+        meet = (
+            bond.status == "active"
+            and bonds.for_players(troupe)
+            and character.status != "retired"
+            and bonds.plays(user, character)
+        )
         if bond.thrall_id == character.id:
-            bound_to.append(SheetBondOut(id=bond.id, name=regnant.shown, level=level))
+            bound_to.append(
+                SheetBondOut(id=bond.id, name=regnant.shown, level=level, can_meet=meet)
+            )
         else:
-            bound_by.append(SheetBondOut(id=bond.id, name=thrall.shown, level=level))
+            bound_by.append(SheetBondOut(id=bond.id, name=thrall.shown, level=level, can_meet=meet))
         if manage is None and bonds.can_manage(db, user, troupe):
             manage = troupe.id
     home_id = character.home_troupe_id or character.owner_troupe_id

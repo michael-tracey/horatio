@@ -274,8 +274,11 @@ def test_a_full_bond_wipes_away_lesser_bonds(scene: Scene) -> None:
         "Agnes (player)'s lesser bond to Lady Ophelia was wiped away by the full bond to Bram."
         in scene.messages()
     )
-    # A drink after an end starts a new bond.
-    again = scene.drink(scene.agnes, scene.vidal, "2026-10-20")
+    # A drink after an end starts a new bond; while the full bond stands it makes Agnes
+    # immune, so staff give a reason to record it anyway (#665).
+    assert scene.drink(scene.agnes, scene.vidal, "2026-10-20").status_code == 409
+    again = scene.drink(scene.agnes, scene.vidal, "2026-10-20", override="Story needs it")
+    assert again.status_code == 201, again.text
     assert again.json()["id"] != lesser["id"]
     assert again.json()["level"] == 1
 

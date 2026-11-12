@@ -113,7 +113,7 @@ def review_queue(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Boon
     characters = characters_of(db, found)
     out: list[BoonOut] = []
     for b in found:
-        row = boon_out(b, characters, users, keeper)
+        row = boon_out(b, characters, users, keeper=keeper)
         row.flags = [flag_out(f, users) for f in flags if f.boon_id == b.id]
         out.append(row)
     return BoonReviewOut(boons=out, characters=choices_for(db, troupe, keeper))

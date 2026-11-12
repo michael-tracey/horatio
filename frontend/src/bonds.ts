@@ -29,8 +29,9 @@ export const PLAYER_SOURCES: { value: BondReportOut["source"]; label: string }[]
   { value: "downtime", label: "In a downtime" },
 ];
 
-/** A reported drink, as its line reads: "Agnes drank Bram's blood on 3 Nov 2026". */
-export function reportLine(report: Pick<BondReportOut, "thrall" | "regnant">, night: string): string {
+/** A reported drink, as its line reads: "Agnes drank Bram's blood on 3 Nov 2026"; or a meeting (#665): "Agnes and Bram met on 3 Nov 2026". */
+export function reportLine(report: Pick<BondReportOut, "thrall" | "regnant"> & { kind?: BondReportOut["kind"] }, night: string): string {
+  if (report.kind === "meeting") return `${report.thrall.name} and ${report.regnant.name} met on ${night}`;
   return `${report.thrall.name} drank ${report.regnant.name}'s blood on ${night}`;
 }
 
