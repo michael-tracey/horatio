@@ -8,8 +8,8 @@ Characters still in creation are recalculated: each merit and flaw they hold get
 merit for its own clan); flaws give XP in the order they were taken, up to the
 budget. Every other character keeps its numbers: `merits_flaws_xp` is false for them.
 
-Revision ID: 0163
-Revises: 0162
+Revision ID: 0164
+Revises: 0163
 Create Date: 2026-11-11 12:00:00.000000
 """
 
@@ -18,8 +18,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0163"
-down_revision: str | None = "0162"
+revision: str = "0164"
+down_revision: str | None = "0163"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

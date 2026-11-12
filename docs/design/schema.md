@@ -671,7 +671,7 @@ Recorded here for review; each is easy to change.
 - `characters.merits_flaws_xp` is false for characters finished before #657
   (merits and flaws from free budgets, no XP) and for characters imported from
   a file (their XP for them comes in with the rest of what they spent): nothing
-  recalculates them. Migration 0163 set it, and wrote the `creation` lines, for
+  recalculates them. Migration 0164 set it, and wrote the `creation` lines, for
   player characters still in creation that no troupe had accepted.
 - Troupes can house-rule creation rules per category: a troupe's rules for a
   category replace all the generic rules for that category. There is no API
