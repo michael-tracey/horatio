@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { Avatar } from "../../components/Avatar";
@@ -47,6 +48,9 @@ import { useWaiting } from "./WaitingList";
 import { tabCounts } from "./waiting";
 import { WhosWhoTab } from "./WhosWhoTab";
 import { XpAwardsTab } from "./XpAwardsTab";
+
+// The boon statistics bring d3 with them (#702), so they load only when opened (#706).
+const BoonStatisticsPage = lazy(() => import("./BoonStatisticsPage").then((m) => ({ default: m.BoonStatisticsPage })));
 
 export function TroupePage() {
   const { troupeId = "" } = useParams();
@@ -117,6 +121,7 @@ export function TroupePage() {
               ...(can.running && (t.blood_bonds ?? "off") !== "off" ? [{ to: `${base}/bonds`, label: "Bonds" }] : []),
               ...(can.running && t.boons ? [{ to: `${base}/boons`, label: "Boons" }] : []),
               ...(can.running && t.boons ? [{ to: `${base}/boon-standings`, label: "Boon standings" }] : []),
+              ...(can.running && t.boons ? [{ to: `${base}/boon-statistics`, label: "Boon statistics" }] : []),
             ],
           },
           {
@@ -188,6 +193,16 @@ export function TroupePage() {
         {can.running && (t.blood_bonds ?? "off") !== "off" && <Route path="bonds" element={<BondsTab troupeId={t.id} />} />}
         {can.running && t.boons && <Route path="boons" element={<BoonsTab troupeId={t.id} />} />}
         {can.running && t.boons && <Route path="boon-standings" element={<BoonStandingsTab troupeId={t.id} />} />}
+        {can.running && t.boons && (
+          <Route
+            path="boon-statistics"
+            element={
+              <Suspense fallback={<Loading />}>
+                <BoonStatisticsPage troupeId={t.id} />
+              </Suspense>
+            }
+          />
+        )}
         {can.running && <Route path="shared/*" element={<SharedBackgroundsTab troupeId={t.id} />} />}
         {can.running && <Route path="locations/*" element={<LocationsTab troupeId={t.id} questsOn={t.quests_enabled} />} />}
         {can.running && <Route path="equipment" element={<EquipmentTab troupeId={t.id} troupeName={t.name} />} />}
