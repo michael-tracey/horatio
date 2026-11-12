@@ -2,7 +2,7 @@
 View's Throws tab (issue #670)
 
 Revision ID: 0182
-Revises: 0177
+Revises: 0181
 Create Date: 2026-11-11 18:00:00.000000
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 from sqlalchemy.dialects.postgresql import JSONB
 
 revision: str = "0182"
-down_revision: str | None = "0177"
+down_revision: str | None = "0181"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
