@@ -509,10 +509,10 @@ def test_the_migration_keeps_assamite_for_troupes_that_were_there(
 def test_the_merits_and_flaws_migration_recalculates_only_drafts(
     engine: Engine, alembic_config: Config
 ) -> None:
-    """Migration 0164 (#657): a character still in creation has its merits cost XP and
+    """Migration 0165 (#657): a character still in creation has its merits cost XP and
     its flaws give it, up to the flaws' budget, in the order taken; one a home troupe
     accepted keeps its numbers."""
-    command.downgrade(alembic_config, "0163")
+    command.downgrade(alembic_config, "0164")
     user, troupe = uuid.uuid4(), uuid.uuid4()
     draft, accepted = uuid.uuid4(), uuid.uuid4()
     try:
