@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BondOut } from "./api/types";
-import { groupBonds, levelName, levelText, partyIn, statusText } from "./bonds";
+import { BOND_SETTINGS, groupBonds, levelName, levelText, partyIn, reportedText, reportLine, reportState, statusText } from "./bonds";
 
 const bond = (id: string, thrall: string, regnant: string, status = "active", level = 1): BondOut => ({
   id,
@@ -50,5 +50,32 @@ describe("blood bonds", () => {
     expect(partyIn("name", " Lady Ophelia ")).toEqual({ name: "Lady Ophelia" });
     expect(partyIn("name", " ")).toBeNull();
     expect(partyIn("", "")).toBeNull();
+  });
+});
+
+describe("drinks players report", () => {
+  const report = {
+    thrall: { character_id: "a", name: "Agnes", kind: "pc" },
+    regnant: { character_id: "b", name: "Bram", kind: "pc" },
+    reason: "",
+  } as const;
+
+  it("reads as the drink, and where it stands", () => {
+    expect(reportLine(report, "3 Nov 2026")).toBe("Agnes drank Bram's blood on 3 Nov 2026");
+    expect(reportState({ ...report, status: "pending", waiting_on: "staff" })).toBe("Waiting for the storytellers");
+    expect(reportState({ ...report, status: "pending", waiting_on: "thrall" })).toBe("Waiting for Agnes's player to confirm");
+    expect(reportState({ ...report, status: "approved", waiting_on: "staff" })).toBe("Counted");
+    expect(reportState({ ...report, status: "declined", waiting_on: "staff", reason: "Not at that game." })).toBe("Declined: Not at that game.");
+    expect(reportState({ ...report, status: "declined", waiting_on: "thrall" })).toBe("Declined");
+  });
+
+  it("says what became of a drink just reported", () => {
+    expect(reportedText("recorded", 2, "Agnes")).toBe("Recorded: second drink.");
+    expect(reportedText("staff", null, "Agnes")).toBe("Sent to the storytellers to approve.");
+    expect(reportedText("thrall", null, "Agnes")).toBe("Sent to Agnes's player to confirm.");
+  });
+
+  it("offers every setting, the player modes among them", () => {
+    expect(BOND_SETTINGS.map((s) => s.value)).toEqual(["off", "staff", "players_report", "players_manage"]);
   });
 });

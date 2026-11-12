@@ -833,6 +833,7 @@ NOT_EXPORTED_TABLES: dict[str, str] = {
     "backstory_feedback": PLAY,
     "backstory_question_sets": "backstory question sets aren't carried",
     "blood_bonds": PLAY,
+    "bond_reports": PLAY,
     "boons": PLAY,
     "calendar_feeds": "people's own calendar links",
     "character_titles": PLAY,
