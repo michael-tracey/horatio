@@ -20,7 +20,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, npc_picks, sect_status
+from horatio import audit, creation_xp, npc_picks, sect_status
 from horatio.creation import grant_starting_traits
 from horatio.models import (
     Character,
@@ -320,10 +320,12 @@ class TallyLine:
 def tally(db: Session, npc: Character) -> tuple[int, list[TallyLine]]:
     """What the NPC's sheet would cost in experience under its troupe's rules, trait
     by trait. Starting traits and creation picks count as free, as for a PC: on an NPC
-    built without the wizard, the picks fitted to its sheet (horatio.npc_picks)."""
+    built without the wizard, the picks fitted to its sheet (horatio.npc_picks). But
+    merits and flaws taken as picks cost and give XP, as a PC's do (horatio.creation_xp)."""
     rules = rules_for(db, npc)
     rows = sheet_rows(db, npc)
     sheet = [r.as_rules_trait() for r in rows]
+    taken = {(line.definition_id, line.detail): line for line in creation_xp.due(db, npc)}
     # Dots no XP buys but creation gives as points (a ghoul's 5 discipline dots,
     # MET: VtM core p. 296): free up to the points, by category.
     points = {r.category: r.points for r in rules.creation_rules() if r.points is not None}
@@ -338,6 +340,14 @@ def tally(db: Session, npc: Character) -> tuple[int, list[TallyLine]]:
         line = TallyLine(
             row.category.key, row.definition.name, row.trait.detail, row.trait.rating, None
         )
+        given = taken.get((row.definition.id, row.trait.detail))
+        if given is not None:
+            line.cost = -given.worth
+            line.note = "taken in creation"
+            if row.category.key == "flaws" and given.worth < (row.trait.creation_pick or 0):
+                line.note += f": flaws give at most {given.budget} XP"
+            lines.append(line)
+            continue
         try:
             line.cost = trait_cost(rules, sheet, row.as_rules_trait()).cost
             if row.trait.creation_pick is not None:

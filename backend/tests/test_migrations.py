@@ -504,3 +504,100 @@ def test_the_migration_keeps_assamite_for_troupes_that_were_there(
         with engine.begin() as connection:
             connection.execute(text("delete from troupes where lead_user_id = :id"), {"id": user})
             connection.execute(text("delete from users where id = :id"), {"id": user})
+
+
+def test_the_merits_and_flaws_migration_recalculates_only_drafts(
+    engine: Engine, alembic_config: Config
+) -> None:
+    """Migration 0165 (#657): a character still in creation has its merits cost XP and
+    its flaws give it, up to the flaws' budget, in the order taken; one a home troupe
+    accepted keeps its numbers."""
+    command.downgrade(alembic_config, "0164")
+    user, troupe = uuid.uuid4(), uuid.uuid4()
+    draft, accepted = uuid.uuid4(), uuid.uuid4()
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "insert into users (id, email, display_name, handle)"
+                    " values (:id, 'drafts@example.com', 'Drafter', 'drafter')"
+                ),
+                {"id": user},
+            )
+            connection.execute(
+                text("insert into troupes (id, name, lead_user_id) values (:id, 'Embers', :lead)"),
+                {"id": troupe, "lead": user},
+            )
+            for character, name, home in ((draft, "Wren", None), (accepted, "Xan", troupe)):
+                connection.execute(
+                    text(
+                        "insert into characters (id, player_id, splat, name, home_troupe_id)"
+                        " values (:id, :player, 'vampire', :name, :home)"
+                    ),
+                    {"id": character, "player": user, "name": name, "home": home},
+                )
+                # Iron Will 3; Hunted 4, Slow Healing 3 and Dark Secret 1: 8 of flaws.
+                for category, trait, points in (
+                    ("merits", "Iron Will", 3),
+                    ("flaws", "Hunted", 4),
+                    ("flaws", "Slow Healing", 3),
+                    ("flaws", "Dark Secret", 1),
+                ):
+                    definition = connection.scalar(
+                        text(
+                            "select d.id from trait_definitions d"
+                            " join trait_categories c on c.id = d.category_id"
+                            " join rule_sets r on r.id = c.rule_set_id"
+                            " where r.splat = 'vampire' and c.key = :category"
+                            " and d.name = :name and d.troupe_id is null"
+                        ),
+                        {"category": category, "name": trait},
+                    )
+                    connection.execute(
+                        text(
+                            "insert into character_traits (character_id, trait_definition_id,"
+                            " rating, free_rating, creation_pick)"
+                            " values (:character, :definition, :points, :points, :points)"
+                        ),
+                        {"character": character, "definition": definition, "points": points},
+                    )
+
+        command.upgrade(alembic_config, "head")
+
+        with engine.connect() as connection:
+            flags = dict(
+                connection.execute(
+                    text("select id, merits_flaws_xp from characters where player_id = :id"),
+                    {"id": user},
+                ).all()
+            )
+            lines = connection.execute(
+                text(
+                    "select character_id, amount, reason from xp_entries"
+                    " where kind = 'creation' and entered_by = :id order by id"
+                ),
+                {"id": user},
+            ).all()
+        assert flags == {draft: True, accepted: False}
+        assert [(c, amount) for c, amount, _ in lines] == [
+            (draft, -3),
+            (draft, 4),
+            (draft, 3),
+            (draft, 0),
+        ]
+        assert lines[0][2] == "Iron Will 0 → 3, taken in creation: merits now cost XP (p. 106)"
+        assert lines[1][2] == "Hunted 0 → 4, taken in creation: flaws now give XP (p. 106)"
+    finally:
+        command.upgrade(alembic_config, "head")
+        with engine.begin() as connection:
+            connection.execute(text("delete from xp_entries where entered_by = :id"), {"id": user})
+            connection.execute(
+                text(
+                    "delete from character_traits where character_id in"
+                    " (select id from characters where player_id = :id)"
+                ),
+                {"id": user},
+            )
+            connection.execute(text("delete from characters where player_id = :id"), {"id": user})
+            connection.execute(text("delete from troupes where lead_user_id = :id"), {"id": user})
+            connection.execute(text("delete from users where id = :id"), {"id": user})

@@ -651,6 +651,28 @@ Recorded here for review; each is easy to change.
 - Finishing creation needs every pick placed; merit and flaw points may be
   left unspent. XP purchases are allowed during creation. A home troupe can
   only be requested once creation is finished.
+- Merits and flaws in creation follow the book (MET: VTM p. 85 Steps Eight and
+  Nine, p. 106; #657): a merit is bought with the character's initial XP (the
+  troupe's starting XP, or the rule set's), and a flaw adds its points to it.
+  They are still creation picks on a points budget, which is the merits' cap
+  (clan rarity and bloodline merits within it, costing XP as any merit) and the
+  most XP flaws give. What each costs or gives is an `xp_entries` line of kind
+  `creation`, naming the trait with `from_rating`/`to_rating` its points;
+  `horatio.creation_xp.sync` writes the difference after every change in
+  creation (`sheets.checked`, finishing, a ghoul's domitor, house rules or the
+  setting changing). A merit is priced by the cost rules (a Path merit for its
+  own clan costs 2, not 3); flaws give XP in the order taken. Taking one back
+  writes the refund, or takes back what a flaw gave. A change that would leave
+  the character below 0 XP is refused with the reason ("That costs 3 XP, and
+  only 2 XP is left", "Taking Hunted off takes back the 4 XP it gave, and only
+  1 XP is unspent. Undo some spends first."), and so is finishing below 0.
+  The rest of the initial XP is spent once creation is finished (Step Nine).
+  Ghouls the same: p. 296 changes only which merits a ghoul may take.
+- `characters.merits_flaws_xp` is false for characters finished before #657
+  (merits and flaws from free budgets, no XP) and for characters imported from
+  a file (their XP for them comes in with the rest of what they spent): nothing
+  recalculates them. Migration 0165 set it, and wrote the `creation` lines, for
+  player characters still in creation that no troupe had accepted.
 - Troupes can house-rule creation rules per category: a troupe's rules for a
   category replace all the generic rules for that category. There is no API
   or screen for house rules yet (costs, allowances or creation); they are set
@@ -659,20 +681,27 @@ Recorded here for review; each is easy to change.
   - Fewer picks at a rating (or fewer points) than the character placed: each
     trait in that pool can be **paid for** at the new troupe's prices,
     **removed** (only if it has no bought dots), or kept; enough of them must
-    be paid for or removed to fit, or the request is refused.
+    be paid for or removed to fit, or the request is refused. Merits and flaws
+    are not among them where they cost or gave XP in creation: there are no
+    free dots to pay for, so a smaller budget leaves them as they are.
   - More picks than the character's current rules gave: **take them**, which
     reopens character creation to place just those (the new dots then go
     through ordinary sheet approval), or leave them.
   - Differences in starting traits are not reconciled.
-- Flaws taken at creation are free records: they do not give XP. Bought
-  later, a flaw gives XP back as before.
 - Merits never go past their budget. Flaws can, with the Storyteller's OK, and
-  count for nothing past it (MET: VTM pp. 85, 235): the wizard says "9 points, 7
-  count toward the budget" (`pointsText`), and once creation is finished the
-  sheet's Experience card "7 of 7 XP paid out". The `flaws/past-limit` check (review) flags them on the sheet until
-  a home troupe accepts the character, and a troupe can make it refuse. The
-  limit is the troupe's creation budget for flaws, else the category's
-  `points_limit`. Reconciling leaves flaws past the budget as they are.
+  give no more XP past it (MET: VTM pp. 85, 235): the wizard says "9 points, 7
+  XP paid out" (`pointsText`), with a line of the XP ("30 XP to start, 6 on
+  merits, 7 from flaws: 31 left", `xpText`) on Merits & flaws, the Review and
+  the Sheet tab's creation card, and once creation is finished the sheet's
+  Experience card "7 of 7 XP paid out". The `flaws/past-limit` check (review)
+  flags them on the sheet until a home troupe accepts the character, and a
+  troupe can make it refuse. The limit is the troupe's creation budget for
+  flaws, else the category's `points_limit`. Reconciling leaves flaws past the
+  budget as they are.
+- An NPC spends no XP, but its tally and giving it to a player count its merit
+  and flaw picks as a player character's: merits at their cost, flaws up to the
+  budget (`creation_xp.due`). The Embrace and a diablerie's Lesser Generation
+  flaw count the `creation` lines as XP the trait cost or gave.
 
 **Troupe standing, deleting characters, and the troupe log**
 

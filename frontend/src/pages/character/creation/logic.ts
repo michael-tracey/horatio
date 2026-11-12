@@ -165,17 +165,38 @@ export function spent(picks: Picks): number {
 
 /**
  * A budget of points as the wizard says it: "3 of 7 points", or for flaws taken past
- * it, which count for nothing more (p. 85), "9 points, 7 count toward the budget".
- * Flaws give no XP in creation (they are free records), so it says nothing of XP:
- * the one place to change should creation come to pay XP for them.
+ * it, which give XP only up to it (p. 85), "9 points, 7 XP paid out".
  */
 export function pointsText(used: number, allowed: number, pastBudget: boolean): string {
-  return pastBudget && used > allowed ? `${used} points, ${allowed} count toward the budget` : `${used} of ${allowed} points`;
+  return pastBudget && used > allowed ? `${used} points, ${allowed} XP paid out` : `${used} of ${allowed} points`;
 }
 
 /** What a budget its picks may go past (flaws) says beside it (p. 85). */
 export function pastBudgetText(title: string, allowed: number): string {
-  return `${title} past ${allowed} points need the Storyteller's OK, and count for nothing more (p. 85).`;
+  return `${title} past ${allowed} points need the Storyteller's OK, and give no more XP (p. 85).`;
+}
+
+/** A character's XP in creation, the book's way (pp. 85, 106): what it starts with,
+ * what its merits cost and its flaws gave, and what is left. */
+export type CreationXp = { starting: number; merits: number; flaws: number; flaw_budget: number; left: number };
+
+/**
+ * The XP as the step's picks stand, before they are saved: each merit point picked or
+ * dropped since costs or gives back a point of XP, and the flaws give their points, up
+ * to the budget. The saved numbers come back with the save, priced by the rules.
+ */
+export function xpWith(xp: CreationXp, saved: { merits: number; flaws: number }, picked: { merits: number; flaws: number }): CreationXp {
+  const merits = Math.max(0, xp.merits + picked.merits - saved.merits);
+  const flaws = picked.flaws === saved.flaws ? xp.flaws : Math.min(picked.flaws, xp.flaw_budget);
+  return { ...xp, merits, flaws, left: xp.starting - merits + flaws };
+}
+
+/** "30 XP to start, 6 on merits, 4 from flaws: 28 left." */
+export function xpText(xp: CreationXp): string {
+  const parts = [`${xp.starting} XP to start`];
+  if (xp.merits) parts.push(`${xp.merits} on merits`);
+  if (xp.flaws) parts.push(`${xp.flaws} from flaws`);
+  return `${parts.join(", ")}: ${xp.left} left.`;
 }
 
 /** The archetype a player makes up (p. 86): its detail is the name they give it. */

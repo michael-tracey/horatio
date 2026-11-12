@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from horatio import (
     clan_merits,
     clan_names,
+    creation_xp,
     deletion,
     domitors,
     downtimes,
@@ -389,6 +390,8 @@ def bind(db: DbSession, user: User, ghoul: Character, body: DomitorIn) -> None:
     )
     # The domitor's clan and bloodline are the ghoul's, and so are their merits.
     clan_merits.refuse_overspent(clan_merits.sync(db, ghoul))
+    # They cost the ghoul XP, as any merit taken in creation does (p. 296).
+    creation_xp.refuse(creation_xp.settle(db, ghoul, user.id))
 
 
 def domitor_out(db: DbSession, ghoul: Character) -> DomitorOut | None:

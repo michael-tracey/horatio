@@ -188,6 +188,10 @@ def sync_fixed_ratings(db: Session, character: Character) -> None:
         if trait.creation_pick is not None:
             trait.creation_pick = min(trait.creation_pick, value)
     db.flush()
+    # A merit or flaw taken in creation costs or gives its new value (horatio.creation_xp).
+    from horatio import creation_xp  # imports this module
+
+    creation_xp.sync(db, character)
 
 
 def held_at(db: Session, character: Character, category: str, name: str) -> int | None:
@@ -1723,6 +1727,13 @@ def checked(
     if overspent is not None:
         savepoint.rollback()
         raise conflict(overspent)
+    # Merits and flaws taken in creation cost and give XP (horatio.creation_xp).
+    from horatio import creation_xp  # imports this module
+
+    short = creation_xp.settle(db, character, user.id if user is not None else None)
+    if short is not None:
+        savepoint.rollback()
+        raise conflict(short)
     if user is not None:
         apply_grants(db, user, character, converts_before)
     lower_on_taking(db, character, before)
@@ -2925,7 +2936,9 @@ def earned_and_spent(entries: Iterable[tuple[str, int, str | None]]) -> tuple[in
       down, so spent can be below 0), a settlement (what a troupe move pays or
       refunds for a purchase), a fee, a reprice (what a purchase costs after a
       Generation change), a debt line (horatio.xp_debt), and a correction to a
-      purchase (a diablerie taking back the XP a flaw gave);
+      purchase (a diablerie taking back the XP a flaw gave), and a creation line (what
+      a merit taken in creation cost, or a flaw gave, as a purchase does, and a
+      correction to one);
     - lost: creation XP lost on a first acceptance, never spent, so apart.
 
     The balance is earned less spent less lost."""
@@ -2933,7 +2946,7 @@ def earned_and_spent(entries: Iterable[tuple[str, int, str | None]]) -> tuple[in
     for kind, amount, corrected in entries:
         if kind == "lost":
             lost -= amount
-        elif kind in EARNED_KINDS and corrected != "purchase":
+        elif kind in EARNED_KINDS and corrected not in ("purchase", "creation"):
             earned += amount
         else:
             spent -= amount

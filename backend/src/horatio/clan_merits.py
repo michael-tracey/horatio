@@ -4,7 +4,8 @@ pp. 237-238), taken from its merit points while it is built.
 A bloodline needs its bloodline merit ("Bloodline: Coyote" for Gangrel: Coyote), and
 a clan that is not common in the setting a rarity merit: Uncommon Clan (2 points),
 Rare Clan (4) or Restricted Clan (6). Choosing the clan takes them, at their value,
-from the merit points; choosing another gives them back. The wizard shows them as
+from the merit points, and their XP from the initial XP as any merit's
+(horatio.creation_xp); choosing another gives both back. The wizard shows them as
 the clan's, not picks, and they cannot be picked or taken off by hand. They count
 against the 7-point merit limit like any merit bought (p. 237), and once creation is
 finished they stay as they are: they cannot be removed (p. 236).
@@ -393,8 +394,11 @@ def resync(db: Session, characters: Sequence[Character]) -> None:
     """Bring these characters' clan merits into line after their setting changes (a
     house rule, or another troupe to build for). Overspent points are left for the
     player to settle: finishing creation waits on it."""
+    from horatio import creation_xp  # imports this module
+
     for character in characters:
         sync(db, character)
+        creation_xp.sync(db, character)
 
 
 def refuse_overspent(message: str | None) -> None:

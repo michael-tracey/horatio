@@ -35,7 +35,7 @@ class Preferences(BaseModel):
     # The Play View, as it opens (#105).
     quick_notes: bool = True
     keep_awake: bool = True
-    play_tab: Literal["tracker", "sheet", "pools"] = "tracker"
+    play_tab: Literal["tracker", "sheet", "pools", "throws"] = "tracker"
     # Normal or larger text, everywhere but on paper (#107).
     text_size: Literal["normal", "large"] = "normal"
     # Dark, or Ultra goth: deep red on matte black (#635). Light isn't kept: it

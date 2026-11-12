@@ -48,7 +48,7 @@ The steps follow the book's order. A troupe's house rules can add a step (for a 
 4. **Skills.** Tap the dot for each skill's rating. The counters show what is left to place. Crafts, Performance and Science ask for their field.
 5. **Backgrounds.** The same, for Allies, Contacts, Resources and the rest. Generation is a background: a vampire needs at least one dot of it to go on.
 6. **Disciplines.** Your starting dots go on in-clan disciplines; the step says how many at each rating. Some merits change this, and say so.
-7. **Merits & flaws.** Each comes from its own budget of points, and both are optional. Merits the clan needs are already taken from the merit points, and shown as the clan's. Flaws can go past their budget with your Storyteller's OK, but count for nothing more; your sheet flags them for staff to see.
+7. **Merits & flaws.** As the book has it (MET: VTM pp. 85, 106), merits are bought with the character's starting XP, up to 7 points of them, and flaws add their points to it, up to 7 XP; both are optional. A line at the top keeps count, such as *30 XP to start, 6 on merits, 7 from flaws: 31 left*, and the rest is yours to spend once creation is finished. Merits the clan needs are already taken from the merit points, and cost their XP too; they're shown as the clan's. Taking a merit back refunds its XP, and taking a flaw back takes back what it gave; if you've already spent that XP, Horatio says so and asks you to undo something first. Flaws can go past 7 points with your Storyteller's OK, but give no more XP (*9 points, 7 XP paid out*); your sheet flags them for staff to see. A troupe can set its own budgets for merits and flaws.
 8. **Review.** A summary of the character, with anything left to do: **Picks left** (each with **Go to** the step), **Still to settle** (for example a rule the sheet breaks), and fields still to give. When everything is placed, **Finish creation** is ready.
 
 ![The wizard's Concept step with Gangrel: Coyote chosen as the clan: its in-clan disciplines, weakness, and the bloodline merit it takes from the merit points](images/players/wizard-concept.png)
@@ -59,7 +59,7 @@ While a character is in creation you can also place picks from its **Sheet** tab
 
 The **Clan** list includes each clan's bloodlines, written as clan and bloodline: *Gangrel: Coyote*, *Brujah: True Brujah*. Choosing a bloodline makes the character of that bloodline, with its in-clan disciplines.
 
-The book asks a bloodline, or a clan that is uncommon in the setting, to pay for it in merits (MET: VTM pp. 237–238). Horatio does that for you: choosing the clan takes its bloodline merit, and any rarity merit (Uncommon Clan, Rare Clan or Restricted Clan), from the merit points, and choosing another gives them back. The box under the clan says what it takes. How rare a clan is depends on the setting: the troupe's sect, or the character's own, and the troupe's house rules, which can also make a bloodline the local default so that it needs no bloodline merit. These merits count against the merit limit, and once creation is finished they can't be removed.
+The book asks a bloodline, or a clan that is uncommon in the setting, to pay for it in merits (MET: VTM pp. 237–238). Horatio does that for you: choosing the clan takes its bloodline merit, and any rarity merit (Uncommon Clan, Rare Clan or Restricted Clan), from the merit points and their XP from the starting XP, and choosing another gives them back. The box under the clan says what it takes. How rare a clan is depends on the setting: the troupe's sect, or the character's own, and the troupe's house rules, which can also make a bloodline the local default so that it needs no bloodline merit. These merits count against the merit limit, and once creation is finished they can't be removed.
 
 A troupe can ban clans or bloodlines, or call the Assamite Banu Haqim; once you've chosen the troupe under **Which troupe will you play in?**, the list follows its house rules.
 
@@ -202,7 +202,7 @@ The **Experience** tab lists every XP entry: **Date**, **What**, **XP** and the 
 
 XP comes from:
 
-- **Starting XP**: 30, or the XP floor of the troupe the character was built for.
+- **Starting XP**: 30, or the XP floor of the troupe the character was built for. Merits taken in creation cost from it and flaws add to it, each a line of its own, such as *Iron Will 0 → 3, taken in creation*.
 - **Games**: after a game, the storytellers award XP to the characters who came, recorded at check-in. A troupe may give different amounts by how much XP a character has earned, or allow absentee games (see [Calendar and RSVPs](#calendar-and-rsvps)). The tab also lists the **Games attended**.
 - **Downtimes**: a cycle may give XP for completing it, once, when you submit it. The downtime form says how much.
 - **Awards**: the home troupe's storytellers can award XP at any time, with a reason.
@@ -450,7 +450,7 @@ The [Play View](glossary.md#play-view) is the character sheet for a game, laid o
 
 Along the top: the way back to the character, **Keep the screen awake**, **Undo** for your last tap, and whether your taps are saved. Every tap is kept on the phone when there's no signal and sent when it comes back; to open the Play View with no signal at all, see [Using Horatio at a game with no signal](#using-horatio-at-a-game-with-no-signal).
 
-The tabs are **Sheet** (to look things up), **Tracker**, **Pools**, **Status** (for a character with sect status) and **Equipment**, as many of them as your character's home troupe has switched on. On every tab but the Tracker, a strip under the tabs shows Blood, Willpower and health, with **−** to spend. Your settings choose which tab it opens on; where your troupe has switched that one off, it opens on the first tab on. A troupe whose players keep their sheets in Horatio but don't play from it switches the Play View off for players, and their characters have no **Play**.
+The tabs are **Sheet** (to look things up), **Tracker**, **Pools**, **Status** (for a character with sect status), **Equipment** and **Throws** (rock, paper, scissors), as many of them as your character's home troupe has switched on. On every tab but the Tracker, a strip under the tabs shows Blood, Willpower and health, with **−** to spend. Your settings choose which tab it opens on; where your troupe has switched that one off, it opens on the first tab on. A troupe whose players keep their sheets in Horatio but don't play from it switches the Play View off for players, and their characters have no **Play**.
 
 ![The Play View's Tracker, a few taps into the night: Blood, Willpower and Health](images/players/play-tracker.png)
 

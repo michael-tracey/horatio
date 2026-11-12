@@ -2,13 +2,15 @@
 
 A new character starts with its splat's starting traits, free. Until its
 player finishes creation, they place creation picks: each pick gives one trait
-that many free dots ("one skill at 4, two at 3…"), and merits and flaws come
-from a budget of points instead. Picks follow the character's troupe rules —
-its home troupe's, or the plain rule set before it has one. Finishing needs
-every pick placed; points may be left unspent. After that, dots come from XP.
+that many free dots ("one skill at 4, two at 3…"), and merits and flaws are
+picked against a budget of points instead. Merits cost initial XP and flaws add
+to it, as the book has it (horatio.creation_xp, #657). Picks follow the
+character's troupe rules — its home troupe's, or the plain rule set before it has
+one. Finishing needs every pick placed; points may be left unspent. After that,
+dots come from XP.
 
 Merits never go past their budget. Flaws can, with the Storyteller's OK, but give
-nothing past it (MET: VTM pp. 85, 235): a check flags them for staff until a home
+no XP past it (MET: VTM pp. 85, 235): a check flags them for staff until a home
 troupe accepts the character, and a troupe can make it refuse instead.
 
 A pick can only go on a trait with no purchased dots, and can only be taken
@@ -46,8 +48,8 @@ from horatio.sheets import (
     unprocessable,
 )
 
-# Budgets of points that picks may go past: flaws, with the Storyteller's OK, paying
-# nothing more (p. 85). The check that flags them is in the rule set's checks.
+# Budgets of points that picks may go past: flaws, with the Storyteller's OK, giving
+# no more XP (p. 85). The check that flags them is in the rule set's checks.
 PAST_BUDGET = frozenset({"flaws"})
 
 
@@ -747,6 +749,10 @@ def complete(db: Session, player: User, character: Character) -> None:
     # The clan's merits as the rules now have them, should the rules have changed since
     # the sheet last did (the errata's Restricted Clan at more than 6 points, #415).
     clan_merits.sync(db, character)
+    from horatio import creation_xp  # imports this module
+
+    creation_xp.sync(db, character, player.id)
+    creation_xp.refuse(creation_xp.finish_refusal(db, character))
     every = pools_with_strays(db, character)
     unplaced = [p for p in every if p.kind == "picks" and p.remaining > 0]
     if unplaced:

@@ -43,6 +43,11 @@ class Character(Imported, Record):
     building_troupe_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("troupes.id"))
     # Null while the player is still placing creation picks (CONTEXT.md: Character Creation).
     creation_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Its merits taken in creation cost XP and its flaws give it, as the book has it
+    # (horatio.creation_xp, #657). False for a character finished before that, whose
+    # merits and flaws came from free budgets, and for one imported from a file, whose
+    # XP for them came in with the rest of what it spent.
+    merits_flaws_xp: Mapped[bool] = mapped_column(default=True, server_default="true")
     # When its player last renamed it while it was in a troupe: their three months
     # until the next rename run from here (horatio/renames.py). Custodian renames,
     # and renames before any troupe had the character, leave it alone.
@@ -319,10 +324,11 @@ class XpEntry(Record):
         # (horatio.embrace). A debt line is XP debt staff add (negative) or forgive
         # (positive), with their reason (horatio.xp_debt). Lost is unspent creation
         # XP over the bank, gone when a first home troupe accepts the character
-        # (horatio.reconciliation): neither earned nor spent.
+        # (horatio.reconciliation): neither earned nor spent. A creation line is what a
+        # merit taken in creation cost, or a flaw gave (horatio.creation_xp): spent.
         CheckConstraint(
             "kind in ('award', 'purchase', 'settlement', 'fee', 'correction',"
-            " 'self_entered', 'cap', 'reprice', 'debt', 'lost')",
+            " 'self_entered', 'cap', 'reprice', 'debt', 'lost', 'creation')",
             name="kind",
         ),
         CheckConstraint(

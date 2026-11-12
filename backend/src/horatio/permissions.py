@@ -70,6 +70,7 @@ class TroupeAction(StrEnum):
     RUN_CHECKIN = "run_checkin"
     WRITE_POSTS = "write_posts"
     PROPOSE_NEWS = "propose_news"
+    MANAGE_BONDS = "manage_bonds"
 
 
 _LEAD = {Role.LEAD_STORYTELLER}
@@ -147,6 +148,10 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     # Proposing a news story for the storytellers to publish or decline: a narrator
     # sees and edits only their own proposals (horatio.posts).
     TroupeAction.PROPOSE_NEWS: frozenset(_ALL_STAFF),
+    # Seeing every blood bond the troupe keeps, recording drinks, entering and
+    # breaking bonds, and saying which are known to their regnants (horatio.bonds).
+    # Narrators, and players but for their own characters', never see them.
+    TroupeAction.MANAGE_BONDS: frozenset(_RUNNING),
 }
 
 

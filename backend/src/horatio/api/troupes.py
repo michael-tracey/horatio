@@ -122,6 +122,9 @@ class TroupeOut(BaseModel):
     # Remembrances (horatio.remembrances): whether the troupe uses them. The caller
     # reads its published months (above) while it uses either.
     remembrances: bool = False
+    # Blood bonds (horatio.bonds): "off", not tracked; "staff", who record them; or
+    # one of the player modes (#661), which work as "staff" until then.
+    blood_bonds: Literal["off", "staff", "players_report", "players_manage"] = "off"
     # The caller may see its Who's Who: its staff, and the players of its characters.
     whos_who: bool
     # Its portrait (add "/48.webp", "/128.webp" or "/512.webp"), or None.
@@ -361,6 +364,7 @@ def one_out(
         player_nominations=troupe.player_nominations,
         nominations=reads_nominations,
         remembrances=troupe.remembrances,
+        blood_bonds=troupe.blood_bonds,  # type: ignore[arg-type]  # checked by the database
         whos_who=whos_who,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
         banner=pictures.banner_url(troupe.id, troupe.banner_id),

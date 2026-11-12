@@ -121,6 +121,10 @@ _Avoid_: Venue, creature type, game line
 The vampire a ghoul is bound to by its blood. A ghoul has no clan of its own: it takes its domitor's clan and bloodline, and its disciplines are its domitor's in-clan ones. The domitor is a PC or NPC in Horatio, or one known only by name.
 _Avoid_: Master, regnant (that is any blood bond's), sire
 
+**Blood Bond**:
+A thrall's forced love for a regnant, from drinking the regnant's blood: one drink, two, or a full bond at three, each on a separate night, and a full bond wipes away the thrall's lesser bonds (MET: VTM p. 295). Either side is a character or a name only. Its level comes from its drinks log, never typed in; staff can enter one that already stands, with a reason, and break one. A troupe tracks them or not at all. Its running staff see every bond, the thrall's player sees their own, and the regnant's player only those staff mark known to the regnant; nobody else sees any.
+_Avoid_: Blood oath, rating or points (for its drinks), master
+
 **Vitae**:
 The vampiric blood in a ghoul's Blood pool: at most 5 of its 10, the only part it can spend, and refilled only by drinking from a vampire. The rest of the pool is **human Blood**, which cannot be spent.
 _Avoid_: Ghoul blood, vampire points

@@ -4021,7 +4021,8 @@
               "cap",
               "reprice",
               "debt",
-              "lost"
+              "lost",
+              "creation"
             ],
             "title": "Kind",
             "type": "string"
@@ -4691,6 +4692,25 @@
         "title": "BlockWarningOut",
         "type": "object"
       },
+      "BloodBondsIn": {
+        "properties": {
+          "setting": {
+            "enum": [
+              "off",
+              "staff",
+              "players_report",
+              "players_manage"
+            ],
+            "title": "Setting",
+            "type": "string"
+          }
+        },
+        "required": [
+          "setting"
+        ],
+        "title": "BloodBondsIn",
+        "type": "object"
+      },
       "Body_add_table_api_yorick_imports__troupe_id__names_file_post": {
         "properties": {
           "file": {
@@ -5051,6 +5071,152 @@
         "title": "Body_upload_post_picture_api_posts__post_id__picture_post",
         "type": "object"
       },
+      "BondEntryOut": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "level": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level"
+          },
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "recorded_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recorded By"
+          },
+          "source": {
+            "enum": [
+              "game",
+              "downtime",
+              "staff"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "night",
+          "source",
+          "level",
+          "note",
+          "recorded_by",
+          "at"
+        ],
+        "title": "BondEntryOut",
+        "type": "object"
+      },
+      "BondOut": {
+        "properties": {
+          "ended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "ended_reason": {
+            "title": "Ended Reason",
+            "type": "string"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/BondEntryOut"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "known_to_regnant": {
+            "title": "Known To Regnant",
+            "type": "boolean"
+          },
+          "last_drink": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Drink"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "regnant": {
+            "$ref": "#/components/schemas/PartyOut"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "thrall": {
+            "$ref": "#/components/schemas/PartyOut"
+          }
+        },
+        "required": [
+          "id",
+          "thrall",
+          "regnant",
+          "level",
+          "status",
+          "known_to_regnant",
+          "ended_at",
+          "ended_reason",
+          "last_drink",
+          "entries"
+        ],
+        "title": "BondOut",
+        "type": "object"
+      },
       "BookTraitChange": {
         "description": "A change to one book trait. Only the fields given change; the rest stay.",
         "properties": {
@@ -5344,6 +5510,20 @@
           "holders"
         ],
         "title": "BookTraitsOut",
+        "type": "object"
+      },
+      "BreakIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "BreakIn",
         "type": "object"
       },
       "BreakingOut": {
@@ -6626,6 +6806,43 @@
           "amount"
         ],
         "title": "CharacterAward",
+        "type": "object"
+      },
+      "CharacterBondsOut": {
+        "properties": {
+          "bound_by": {
+            "items": {
+              "$ref": "#/components/schemas/SheetBondOut"
+            },
+            "title": "Bound By",
+            "type": "array"
+          },
+          "bound_to": {
+            "items": {
+              "$ref": "#/components/schemas/SheetBondOut"
+            },
+            "title": "Bound To",
+            "type": "array"
+          },
+          "manage_troupe_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manage Troupe Id"
+          }
+        },
+        "required": [
+          "bound_to",
+          "bound_by",
+          "manage_troupe_id"
+        ],
+        "title": "CharacterBondsOut",
         "type": "object"
       },
       "CharacterChanges": {
@@ -10136,6 +10353,16 @@
             },
             "title": "Shortfalls",
             "type": "array"
+          },
+          "xp": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CreationXpOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -10144,6 +10371,40 @@
           "needs"
         ],
         "title": "CreationOut",
+        "type": "object"
+      },
+      "CreationXpOut": {
+        "description": "The character's XP, the book's way (MET: VTM pp. 85, 106): what it starts with,\nwhat the merits taken in creation cost, what the flaws gave (at most\n`flaw_budget`), and what is left to spend once creation is finished.",
+        "properties": {
+          "flaw_budget": {
+            "title": "Flaw Budget",
+            "type": "integer"
+          },
+          "flaws": {
+            "title": "Flaws",
+            "type": "integer"
+          },
+          "left": {
+            "title": "Left",
+            "type": "integer"
+          },
+          "merits": {
+            "title": "Merits",
+            "type": "integer"
+          },
+          "starting": {
+            "title": "Starting",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "starting",
+          "merits",
+          "flaws",
+          "flaw_budget",
+          "left"
+        ],
+        "title": "CreationXpOut",
         "type": "object"
       },
       "CropIn": {
@@ -12569,6 +12830,36 @@
         "title": "DowntimeWaiting",
         "type": "object"
       },
+      "DrinkIn": {
+        "properties": {
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "source": {
+            "default": "staff",
+            "enum": [
+              "game",
+              "downtime",
+              "staff"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "night"
+        ],
+        "title": "DrinkIn",
+        "type": "object"
+      },
       "DyscrasiaOut": {
         "properties": {
           "name": {
@@ -13771,6 +14062,41 @@
           "this_game"
         ],
         "title": "EndingOut",
+        "type": "object"
+      },
+      "EnterIn": {
+        "properties": {
+          "level": {
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Level",
+            "type": "integer"
+          },
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          },
+          "regnant": {
+            "$ref": "#/components/schemas/PartyIn"
+          },
+          "thrall": {
+            "$ref": "#/components/schemas/PartyIn"
+          }
+        },
+        "required": [
+          "thrall",
+          "regnant",
+          "level",
+          "night",
+          "reason"
+        ],
+        "title": "EnterIn",
         "type": "object"
       },
       "EntryOut": {
@@ -21635,6 +21961,19 @@
         "title": "KindOut",
         "type": "object"
       },
+      "KnownIn": {
+        "properties": {
+          "known": {
+            "title": "Known",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "known"
+        ],
+        "title": "KnownIn",
+        "type": "object"
+      },
       "LanguagesIn": {
         "properties": {
           "custom": {
@@ -26013,6 +26352,44 @@
         "title": "NewCycle",
         "type": "object"
       },
+      "NewDrinkIn": {
+        "properties": {
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "regnant": {
+            "$ref": "#/components/schemas/PartyIn"
+          },
+          "source": {
+            "default": "staff",
+            "enum": [
+              "game",
+              "downtime",
+              "staff"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "thrall": {
+            "$ref": "#/components/schemas/PartyIn"
+          }
+        },
+        "required": [
+          "night",
+          "thrall",
+          "regnant"
+        ],
+        "title": "NewDrinkIn",
+        "type": "object"
+      },
       "NewLead": {
         "properties": {
           "handle": {
@@ -28699,6 +29076,69 @@
         "title": "ParticipantOut",
         "type": "object"
       },
+      "PartyIn": {
+        "description": "One side of a bond: a character in the troupe, or a name only.",
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "title": "PartyIn",
+        "type": "object"
+      },
+      "PartyOut": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "kind"
+        ],
+        "title": "PartyOut",
+        "type": "object"
+      },
       "PasswordChange": {
         "properties": {
           "current": {
@@ -30215,7 +30655,8 @@
               "tracker",
               "pools",
               "status",
-              "equipment"
+              "equipment",
+              "throws"
             ],
             "items": {
               "enum": [
@@ -30223,7 +30664,8 @@
                 "tracker",
                 "pools",
                 "status",
-                "equipment"
+                "equipment",
+                "throws"
               ],
               "type": "string"
             },
@@ -31747,7 +32189,8 @@
             "enum": [
               "tracker",
               "sheet",
-              "pools"
+              "pools",
+              "throws"
             ],
             "title": "Play Tab",
             "type": "string"
@@ -40067,6 +40510,31 @@
         "title": "SharerOut",
         "type": "object"
       },
+      "SheetBondOut": {
+        "description": "A bond on a character's Bonds card: who is on the other side, and its level.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "level"
+        ],
+        "title": "SheetBondOut",
+        "type": "object"
+      },
       "SheetOut": {
         "properties": {
           "character_id": {
@@ -44998,6 +45466,41 @@
         "title": "TraitRefOut",
         "type": "object"
       },
+      "TroupeBondsOut": {
+        "properties": {
+          "bonds": {
+            "items": {
+              "$ref": "#/components/schemas/BondOut"
+            },
+            "title": "Bonds",
+            "type": "array"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterChoice-Output"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "setting": {
+            "enum": [
+              "off",
+              "staff",
+              "players_report",
+              "players_manage"
+            ],
+            "title": "Setting",
+            "type": "string"
+          }
+        },
+        "required": [
+          "setting",
+          "bonds",
+          "characters"
+        ],
+        "title": "TroupeBondsOut",
+        "type": "object"
+      },
       "TroupeChanges": {
         "properties": {
           "allowed_sects": {
@@ -45112,7 +45615,8 @@
                     "tracker",
                     "pools",
                     "status",
-                    "equipment"
+                    "equipment",
+                    "throws"
                   ],
                   "type": "string"
                 },
@@ -45716,6 +46220,17 @@
             ],
             "title": "Banner"
           },
+          "blood_bonds": {
+            "default": "off",
+            "enum": [
+              "off",
+              "staff",
+              "players_report",
+              "players_manage"
+            ],
+            "title": "Blood Bonds",
+            "type": "string"
+          },
           "description": {
             "title": "Description",
             "type": "string"
@@ -45829,7 +46344,8 @@
                 "tracker",
                 "pools",
                 "status",
-                "equipment"
+                "equipment",
+                "throws"
               ],
               "type": "string"
             },
@@ -52238,6 +52754,50 @@
         "summary": "Character Badge",
         "tags": [
           "badges"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/bonds": {
+      "get": {
+        "description": "The bonds still felt that the character is in, as the caller may know of\nthem: all of them for the running staff of the troupe that keeps one; its\nplayer's own as thrall; and as regnant, only those known to the regnant.",
+        "operationId": "character_bonds_api_characters__character_id__bonds_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterBondsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Bonds",
+        "tags": [
+          "bonds"
         ]
       }
     },
@@ -70526,6 +71086,402 @@
         "summary": "Banner File",
         "tags": [
           "troupe profiles"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/blood-bonds": {
+      "put": {
+        "description": "How far Horatio tracks the troupe's blood bonds. Off hides them everywhere;\nwhat was recorded is kept, and comes back when it is switched on again.",
+        "operationId": "set_blood_bonds_api_troupes__troupe_id__blood_bonds_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BloodBondsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Blood Bonds",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/bonds": {
+      "get": {
+        "description": "Every bond the troupe keeps, with its log, for its running staff.",
+        "operationId": "troupe_bonds_api_troupes__troupe_id__bonds_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeBondsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Bonds",
+        "tags": [
+          "bonds"
+        ]
+      },
+      "post": {
+        "description": "Enter a bond that already stands, such as one from before Horatio, at its\nlevel, with the reason.",
+        "operationId": "enter_bond_api_troupes__troupe_id__bonds_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnterIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BondOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Enter Bond",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/bonds/drinks": {
+      "post": {
+        "description": "Log a drink the thrall took of the regnant's blood: on the bond between them,\nor a new one.",
+        "operationId": "record_drink_api_troupes__troupe_id__bonds_drinks_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewDrinkIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BondOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Drink",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/break": {
+      "post": {
+        "description": "Mark the bond broken, with the reason (p. 296).",
+        "operationId": "break_bond_api_troupes__troupe_id__bonds__bond_id__break_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "bond_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bond Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BreakIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BondOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Break Bond",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/drinks": {
+      "post": {
+        "description": "Log another drink on a bond still felt.",
+        "operationId": "add_drink_api_troupes__troupe_id__bonds__bond_id__drinks_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "bond_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bond Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DrinkIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BondOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Drink",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/known": {
+      "put": {
+        "description": "Whether the regnant's player is told of the bond, and sees it.",
+        "operationId": "set_known_api_troupes__troupe_id__bonds__bond_id__known_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "bond_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bond Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnownIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BondOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Known",
+        "tags": [
+          "bonds"
         ]
       }
     },

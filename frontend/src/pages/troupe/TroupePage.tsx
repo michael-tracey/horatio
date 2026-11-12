@@ -5,6 +5,7 @@ import { Avatar } from "../../components/Avatar";
 import { Badge, ErrorText, GroupedTabs, Loading, PageTitle } from "../../components/ui";
 import { useMe } from "../../hooks";
 import { ApprovalsTab } from "./ApprovalsTab";
+import { BondsTab } from "./BondsTab";
 import { ConnectorsTab } from "./ConnectorsTab";
 import { CyclesTab } from "./CyclesTab";
 import { EquipmentTab } from "./EquipmentTab";
@@ -111,6 +112,7 @@ export function TroupePage() {
               ...(can.running ? [{ to: `${base}/play`, label: "At game" }] : []),
               ...(can.running ? [{ to: `${base}/xp`, label: "Award XP" }] : []),
               ...(can.running ? [{ to: `${base}/titles`, label: "Titles" }] : []),
+              ...(can.running && (t.blood_bonds ?? "off") !== "off" ? [{ to: `${base}/bonds`, label: "Bonds" }] : []),
             ],
           },
           {
@@ -179,6 +181,7 @@ export function TroupePage() {
         <Route path="npcs" element={<Navigate to={`${base}/characters?show=npcs`} replace />} />
         {can.running && <Route path="npcs/:characterId" element={<StockNpcBuilder troupeId={t.id} />} />}
         {can.running && <Route path="titles" element={<TitlesTab troupeId={t.id} />} />}
+        {can.running && (t.blood_bonds ?? "off") !== "off" && <Route path="bonds" element={<BondsTab troupeId={t.id} />} />}
         {can.running && <Route path="shared/*" element={<SharedBackgroundsTab troupeId={t.id} />} />}
         {can.running && <Route path="locations/*" element={<LocationsTab troupeId={t.id} questsOn={t.quests_enabled} />} />}
         {can.running && <Route path="equipment" element={<EquipmentTab troupeId={t.id} troupeName={t.name} />} />}

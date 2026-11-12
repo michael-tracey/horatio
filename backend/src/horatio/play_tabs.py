@@ -23,7 +23,7 @@ from horatio.models import Character, Troupe, User
 
 # The Play View's tabs, as the frontend's TABS names them (pages/play/PlayPage.tsx),
 # in their order there. A tab added there is added here.
-PlayTab = Literal["sheet", "tracker", "pools", "status", "equipment"]
+PlayTab = Literal["sheet", "tracker", "pools", "status", "equipment", "throws"]
 PLAY_TABS: tuple[PlayTab, ...] = get_args(PlayTab)
 
 # Why a character with no Play View isn't run in a scene.
@@ -35,6 +35,7 @@ NAMES: dict[PlayTab, str] = {
     "pools": "Pools",
     "status": "Status",
     "equipment": "Equipment",
+    "throws": "Throws",
 }
 assert set(NAMES) == set(PLAY_TABS)
 
