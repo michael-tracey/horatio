@@ -119,6 +119,23 @@ so the app sends them with `Cache-Control: public, max-age=31536000, immutable`.
 build to build get `no-cache`: the browser checks each time, and nginx answers 304
 when the file has not changed.
 
+The rules catalogue, the rules browser and the equipment rules
+(`/api/rules/{splat}`, `/api/rules/{splat}/browse`, `/api/rules/{splat}/equipment`)
+come with `Cache-Control: private, no-cache` and an ETag of the rules' version
+(`horatio.api.etags`, #643). The browser keeps them and asks each time with
+`If-None-Match`; nginx passes that to the app, and the app answers 304, with no
+body, while the rules hold. The ETag is weak (`W/"..."`): nginx 1.18 turns a strong
+ETag weak when it gzips the answer (checked in a throwaway `nginx:1.18` container with
+this config), and leaves a weak one as it is. To check it, signed in (copy the
+session cookie from the browser):
+
+```bash
+curl -s -o /dev/null -D - -H 'Accept-Encoding: gzip' -b 'horatio_session=…' \
+  https://horatio.lotslarp.org/api/rules/vampire
+```
+
+It shows `etag: W/"…"`; the same with `-H 'If-None-Match: W/"…"'` gives 304.
+
 ## What is live
 
 **Custodian → System** shows the commit the running image was built from (linked to

@@ -565,6 +565,7 @@ MESSAGES: dict[str, str] = {
     "troupe.badges": "{actor} set what badges print: {titles}, {status}.",
     "troupe.badge_pronouns": "{actor} set badges to print {pronouns}.",
     "troupe.whos_who": "{actor} set the Who's Who to show {status}.",
+    "troupe.play_tabs": "{actor} set the Play View's tabs for players: {tabs}.",
     "npc.whos_who": "{actor} {listed} {character} on the Who's Who.",
     "scene.created": "{actor} made the scene {name}.",
     "scene.renamed": "{actor} renamed the scene {old} to {name}.",

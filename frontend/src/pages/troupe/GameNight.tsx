@@ -199,7 +199,7 @@ function AttendanceCard({ night }: { night: GameNight }) {
                 <MenuItem disabled={awarded || checkOut.isPending} onSelect={() => checkOut.mutate({ id: a.character_id, name: a.character_name })}>
                   Check out
                 </MenuItem>
-                {attendeeStatus(a) && <MenuLink to={statusLink(a)}>{a.status_to_choose ? "Choose status" : "Change status"}</MenuLink>}
+                {attendeeStatus(a) && a.status_tab && <MenuLink to={statusLink(a)}>{a.status_to_choose ? "Choose status" : "Change status"}</MenuLink>}
               </>
             )}
           />
@@ -279,7 +279,8 @@ function AttendanceCard({ night }: { night: GameNight }) {
   );
 }
 
-/** Where staff choose or change an attendee's status for the night: its Play View's Status tab. */
+/** Where staff choose or change an attendee's status for the night: its Play View's Status
+ * tab, while its troupe has that on (#673). */
 const statusLink = (a: Attendee) => `/play/characters/${a.character_id}?tab=status`;
 
 /** A column shown only on a wide screen; on a narrow one it folds in under the name. */
@@ -311,7 +312,7 @@ function AttendeeTable({ label, people, absentee = false, actions }: { label: st
         {people.map((a) => {
           const how = absentee ? (a.by_staff ? "Absentee, by staff" : "Absentee, by its player") : a.by_staff ? "By hand" : "By its player";
           const status = attendeeStatus(a);
-          const statusText = status && (a.status_to_choose ? (
+          const statusText = status && (a.status_to_choose && a.status_tab ? (
             <Link to={statusLink(a)} className="text-xs text-gold underline" aria-label={`Choose ${a.character_name}'s status`}>
               {status}
             </Link>

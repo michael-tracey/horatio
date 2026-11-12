@@ -158,7 +158,8 @@ export async function save(client: QueryClient, userId: string, shelf: Shelf = i
   if (client.getQueryData<Me | null>(["me"])?.id !== userId) return null;
   const before = await shelf.get<Kept>(recordKey(userId));
   const list = client.getQueryData<CharacterListOut[]>(["characters"]);
-  const mine: Mine = list ? mineOf(list, userId) : { characters: new Set(before?.characters.map((c) => c.id)), troupes: new Set(before?.troupes) };
+  const ids = new Set(before?.characters.map((c) => c.id));
+  const mine: Mine = list ? mineOf(list, userId) : { characters: ids, plays: ids, troupes: new Set(before?.troupes) };
   const now = dehydrate(client, { shouldDehydrateQuery: (q) => q.state.status === "success" && keepsQuery(q.queryKey, mine) }).queries;
   const queries = new Map<string, Queries[number]>();
   const gone = new Set(refreshed?.gone.map((key) => hashKey(key)));
@@ -208,8 +209,13 @@ export async function refresh(client: QueryClient, userId: string, shelf: Shelf 
     const [character] = await settled([
       fetch(["character", c.id], () => unwrap(api.GET("/api/characters/{character_id}", path))),
       fetch(["sheet", c.id], () => unwrap(api.GET("/api/characters/{character_id}/sheet", path))),
-      fetch(["play", c.id], () => unwrap(api.GET("/api/characters/{character_id}/play", path))),
-      fetch(["play-reference", c.id], () => unwrap(api.GET("/api/characters/{character_id}/play/reference", path))),
+      // Not the Play View where its troupe doesn't use one (#673).
+      ...(c.play_view
+        ? [
+            fetch(["play", c.id], () => unwrap(api.GET("/api/characters/{character_id}/play", path))),
+            fetch(["play-reference", c.id], () => unwrap(api.GET("/api/characters/{character_id}/play/reference", path))),
+          ]
+        : []),
       fetch(["character-equipment", c.id], () => unwrap(api.GET("/api/characters/{character_id}/equipment", path))),
     ]);
     if (character.status !== "fulfilled") {

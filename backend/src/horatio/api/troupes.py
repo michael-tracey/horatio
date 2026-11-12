@@ -13,6 +13,7 @@ from horatio import (
     handles,
     pictures,
     play_status,
+    play_tabs,
     sect_status,
     titles,
     troupe_settings,
@@ -108,6 +109,9 @@ class TroupeOut(BaseModel):
     quest_requests_per_cycle: int
     # Its staff can give items that expire (horatio.item_expiry).
     items_expire: bool = False
+    # The Play View's tabs its players don't see (horatio.play_tabs); with all of
+    # them off, it doesn't use the Play View.
+    play_tabs_off: list[play_tabs.PlayTab] = []
     # A character's backstory must be approved here before it is accepted
     # (horatio.backstories).
     backstory_required: bool = False
@@ -162,6 +166,7 @@ class TroupeChanges(BaseModel):
     badge_status: Literal["all", "negative", "none"] | None = None
     badge_pronouns: bool | None = None
     whos_who_negative: bool | None = None
+    play_tabs_off: list[play_tabs.PlayTab] | None = None
 
 
 class NewLead(BaseModel):
@@ -354,6 +359,7 @@ def one_out(
         quests_enabled=troupe.quests_enabled,
         quest_requests_per_cycle=troupe.quest_requests_per_cycle,
         items_expire=troupe.items_expire,
+        play_tabs_off=play_tabs.tabs_off(troupe.play_tabs_off),
         backstory_required=troupe.backstory_required,
         player_nominations=troupe.player_nominations,
         nominations=reads_nominations,
@@ -564,6 +570,9 @@ def change_troupe(
                 troupe_id=troupe.id,
                 status="negative status" if body.whos_who_negative else "no sect status",
             )
+    if body.play_tabs_off is not None:
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
+        play_tabs.set_tabs_off(db, user, troupe, body.play_tabs_off)
     if body.starting_xp is not None:
         # The floor and ceiling both start from it, so both move with it.
         require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)

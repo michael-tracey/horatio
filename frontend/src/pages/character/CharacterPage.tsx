@@ -105,7 +105,8 @@ export function CharacterPage() {
       {label}
     </Link>
   );
-  const play = primaryLink(`/play/characters/${c.id}`, "Play", onDowntime);
+  // None where its troupe doesn't use the Play View (#673).
+  const play = c.play_view && primaryLink(`/play/characters/${c.id}`, "Play", onDowntime);
   const rename = renaming && <RenameCharacter key={c.id} character={c} asCustodian={custodian} onDone={() => setRenaming(false)} />;
   const pronouns = saying && <CharacterPronouns key={c.id} character={c} onDone={() => setSaying(false)} />;
   const name = (

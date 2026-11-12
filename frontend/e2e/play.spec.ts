@@ -98,6 +98,100 @@ test("a troupe's house wording on a power shows on the Play View, marked as the 
   await expect(worded).toContainText("Majesty lasts one scene here, not an hour.");
 });
 
+test("a troupe switches Play View tabs off: Pools goes from a player's Play View, and with every tab off its PCs have no Play while staff still run NPCs and scenes (#673)", async ({ browser }) => {
+  const custodian = await person(browser, "tabs-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "tabs-lead");
+  const player = await person(browser, "tabs-player");
+  const troupeName = `Paper Court ${run}`;
+  const headers = { "X-Horatio": "1" };
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: troupeName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  await backstoryOptional(lead.page, troupeId);
+
+  // A player's Brujah makes the troupe home.
+  const l = lead.page;
+  const p = player.page;
+  const id = await builtVampire(p, "Quire", "Brujah", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  const asked = await p.request.post(`/api/characters/${id}/home-troupe`, { headers, data: { troupe_id: troupeId } });
+  expect(asked.status(), await asked.text()).toBeLessThan(300);
+  const [request] = await (await l.request.get(`/api/troupes/${troupeId}/approvals`)).json();
+  const approved = await l.request.post(`/api/approvals/${request.id}/approve`, { headers, data: {} });
+  expect(approved.status(), await approved.text()).toBeLessThan(300);
+  // And an NPC the lead runs.
+  const npc = await l.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: "Folio", wizard: false } });
+  expect(npc.status(), await npc.text()).toBe(201);
+  const folio: string = (await npc.json()).id;
+
+  // Every tab is on until the troupe switches one off.
+  await p.goto(`/characters/${id}`);
+  await p.getByRole("link", { name: "Play", exact: true }).click();
+  const tabs = p.getByRole("tablist", { name: "Play View" });
+  await expect(tabs.getByRole("tab", { name: "Pools" })).toBeVisible();
+
+  // The lead switches Pools off in the troupe's settings.
+  await l.goto(`/troupes/${troupeId}/settings`);
+  const setting = l.locator("section").filter({ has: l.getByRole("heading", { name: "Play View tabs", exact: true }) });
+  const pools = setting.getByRole("checkbox", { name: "Pools", exact: true });
+  await expect(pools).toBeChecked();
+  await pools.click();
+  await expect(pools).not.toBeChecked();
+
+  // The player's Play View has no Pools tab; a link to it opens on the Tracker, as their settings choose.
+  await p.goto(`/play/characters/${id}?tab=pools`);
+  await expect(tabs.getByRole("tab", { name: "Sheet" })).toBeVisible();
+  await expect(tabs.getByRole("tab", { name: "Pools" })).toHaveCount(0);
+  await expect(tabs.getByRole("tab", { name: "Tracker" })).toHaveAttribute("aria-selected", "true");
+  await p.screenshot(shots("play-tabs-no-pools"));
+
+  // Then every tab off: the last one says what that does before it's saved.
+  for (const name of ["Sheet", /^Tracker/, /^Status/, "Equipment"]) {
+    const box = setting.getByRole("checkbox", typeof name === "string" ? { name, exact: true } : { name });
+    await box.click();
+    await expect(box).not.toBeChecked();
+  }
+  await setting.getByRole("checkbox", { name: "Throws", exact: true }).click();
+  const asking = setting.getByRole("alertdialog", { name: "Turn the Play View off for players" });
+  await expect(asking).toContainText("the troupe doesn't use the Play View for players: their characters have no Play");
+  await expect(asking).toContainText("Staff still run NPCs and scenes");
+  await l.screenshot(shots("play-tabs-last-off"));
+  await asking.getByRole("button", { name: "Turn the Play View off for players" }).click();
+  await expect(setting.getByText("The Play View is off for players.")).toBeVisible();
+
+  // The character has no Play button, and its Play View says why.
+  await p.goto(`/characters/${id}`);
+  await expect(p.getByRole("heading", { name: /^Quire/ })).toBeVisible();
+  await expect(p.getByRole("link", { name: "Play", exact: true })).toHaveCount(0);
+  await p.goto(`/play/characters/${id}`);
+  await expect(p.getByText("Quire's troupe doesn't use the Play View.")).toBeVisible();
+
+  // The lead still opens the NPC's Play View, with every tab, Pools too.
+  await l.goto(`/characters/${folio}`);
+  await l.getByRole("link", { name: "Play", exact: true }).click();
+  const npcTabs = l.getByRole("tablist", { name: "Play View" });
+  await expect(npcTabs.getByRole("tab", { name: "Pools" })).toBeVisible();
+  await expect(npcTabs.getByRole("tab", { name: "Tracker" })).toBeVisible();
+
+  // And runs a scene with it from At game.
+  await l.goto(`/troupes/${troupeId}/play`);
+  await l.getByRole("link", { name: "Open the scenes" }).click();
+  await expect(l.getByRole("heading", { name: "Scenes", exact: true })).toBeVisible();
+  const sceneId = await openScene(l, troupeId, "The bindery");
+  const pinned = await l.request.put(`/api/troupes/${troupeId}/scenes/${sceneId}/characters/${folio}`, { headers });
+  expect(pinned.status(), await pinned.text()).toBe(200);
+  // A PC with no Play View isn't put in a scene.
+  const refused = await l.request.put(`/api/troupes/${troupeId}/scenes/${sceneId}/characters/${id}`, { headers });
+  expect(refused.status()).toBe(409);
+  await l.reload();
+  await expect(l.getByRole("article", { name: "Folio" })).toContainText("Willpower");
+});
+
 test("at a game, the Play View tracks blood and uses, offline too, and the storytellers reset the troupe", async ({ browser }) => {
   const custodian = await person(browser, "play-custodian");
   makeCustodian(custodian.email);
@@ -839,6 +933,54 @@ test("online only, nothing is kept: with no signal, the app says it needs a conn
   await expect(p.getByText("Your account needs a connection.")).toBeVisible();
   await p.goto("/characters");
   await expect(p.getByText("The Characters page needs a connection.")).toBeVisible();
+});
+
+test("Throws on the Play View: rock, paper or scissors, the last three kept, with no signal too, and the Play View can open on it (#668)", async ({ browser }) => {
+  const { page: p } = await person(browser, "rps-thrower");
+  await p.getByLabel("Name").fill("Corvina");
+  await p.getByRole("button", { name: "Create" }).click();
+  await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
+  const id = new URL(p.url()).pathname.split("/")[2]!;
+  const thrown = /^(Rock|Paper|Scissors)$/;
+
+  await p.goto(`/play/characters/${id}`);
+  await p.getByRole("tab", { name: "Throws" }).click();
+  const throws = p.getByRole("region", { name: "Throws" });
+  await expect(throws).toContainText("Throw for rock, paper or scissors");
+  await throws.getByRole("button", { name: "Throw" }).click();
+  // The count-in, then the throw, large, with its word.
+  await expect(throws.getByRole("img", { name: thrown })).toBeVisible();
+  const past = throws.getByRole("region", { name: "Last throws" }).getByRole("listitem");
+  await expect(past).toHaveCount(1);
+
+  // Nothing goes to the server, so it throws with no signal.
+  await p.context().setOffline(true);
+  for (const count of [2, 3, 3]) {
+    await throws.getByRole("button", { name: "Throw" }).click();
+    await expect(throws.getByRole("button", { name: "Throw" })).toBeEnabled();
+    await expect(past).toHaveCount(count);
+  }
+  await expect(throws.getByRole("img", { name: thrown })).toBeVisible();
+  await expect(past.first()).toContainText(/Rock|Paper|Scissors/);
+  await p.context().setOffline(false);
+  await p.screenshot({ ...shots("throws"), animations: "disabled" });
+
+  // Settings › the Play View opens on Throws, here in Ultra goth.
+  await p.goto("/account/settings");
+  const saved = p.waitForResponse((r) => r.url().endsWith("/api/preferences") && r.ok());
+  await p.getByRole("radiogroup", { name: "The Play View opens on" }).getByRole("radio", { name: "Throws" }).click();
+  await saved;
+  const goth = await p.request.patch("/api/preferences", { headers: { "X-Horatio": "1" }, data: { theme: "ultragoth" } });
+  expect(goth.status(), await goth.text()).toBe(200);
+  await p.goto(`/play/characters/${id}`);
+  await expect(p.locator("html")).toHaveAttribute("data-theme", "ultragoth");
+  await expect(p.getByRole("tab", { name: "Throws" })).toHaveAttribute("aria-selected", "true");
+  // The last throws stay for the browser tab.
+  await expect(past).toHaveCount(3);
+  await throws.getByRole("button", { name: "Throw" }).click();
+  await expect(throws.getByRole("button", { name: "Throw" })).toBeEnabled();
+  await expect(throws.getByRole("img", { name: thrown })).toBeVisible();
+  await p.screenshot({ ...shots("throws-ultragoth"), animations: "disabled" });
 });
 
 test("Shape of the Beast on the Play View: a Huge fight form adds Healthy levels and Brawl, flight form ends it, and the Scene shows it", async ({ browser }) => {

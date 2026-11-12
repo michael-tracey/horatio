@@ -6411,7 +6411,9 @@ export interface paths {
          * Catalogue
          * @description The rule set's categories and traits, with any house-rule text from `troupe_id`.
          *     A troupe that takes only some sects does not see traits for the others (the
-         *     Sabbat's Rituals), nor a category left empty without them.
+         *     Sabbat's Rituals), nor a category left empty without them. The same for everyone
+         *     signed in, so its ETag is the rules' version and `category` (horatio.api.etags):
+         *     a browser that has it already gets 304 Not Modified.
          */
         get: operations["catalogue_api_rules__splat__get"];
         put?: never;
@@ -6435,7 +6437,9 @@ export interface paths {
          *     prices, the checks about it, its powers and a clan's rarity, all read from the
          *     rules already loaded. Given `troupe_id`, as played there: its house prices, checks,
          *     merits and flaws and clan rarities, and the traits it does not allow. Anyone
-         *     signed in may read it, as they may the troupe's house rules.
+         *     signed in may read it, as they may the troupe's house rules. Its ETag is the
+         *     rules' version, as the catalogue's: its troupe's name, rarities and default
+         *     bloodlines are on the troupe's row, which changes it too.
          */
         get: operations["browse_api_rules__splat__browse_get"];
         put?: never;
@@ -6456,7 +6460,8 @@ export interface paths {
         /**
          * Equipment
          * @description The kinds of item, the grades, every quality of each kind and the book's
-         *     sample items, each with its facts.
+         *     sample items, each with its facts. Its ETag is the book's rules' version
+         *     (horatio.api.etags): a browser that has it already gets 304 Not Modified.
          */
         get: operations["equipment_api_rules__splat__equipment_get"];
         put?: never;
@@ -11480,6 +11485,11 @@ export interface components {
             /** Status Source */
             status_source?: string | null;
             /**
+             * Status Tab
+             * @default true
+             */
+            status_tab: boolean;
+            /**
              * Status To Choose
              * @default false
              */
@@ -13753,6 +13763,11 @@ export interface components {
             /** Picture */
             picture: string | null;
             /**
+             * Play View
+             * @default true
+             */
+            play_view: boolean;
+            /**
              * Player Id
              * Format: uuid
              */
@@ -13807,6 +13822,11 @@ export interface components {
             owner_troupe_id: string | null;
             /** Picture */
             picture: string | null;
+            /**
+             * Play View
+             * @default true
+             */
+            play_view: boolean;
             /**
              * Player Id
              * Format: uuid
@@ -13968,6 +13988,11 @@ export interface components {
             /** Name */
             name: string;
             /**
+             * Play View
+             * @default true
+             */
+            play_view: boolean;
+            /**
              * Status At Checkin
              * @default false
              */
@@ -14100,6 +14125,11 @@ export interface components {
             character_name: string;
             /** Play Started */
             play_started: boolean;
+            /**
+             * Play View
+             * @default true
+             */
+            play_view: boolean;
         };
         /** ChoiceChange */
         ChoiceChange: {
@@ -21273,6 +21303,11 @@ export interface components {
             /** Picture */
             picture: string | null;
             /**
+             * Play View
+             * @default true
+             */
+            play_view: boolean;
+            /**
              * Player Id
              * Format: uuid
              */
@@ -22534,6 +22569,18 @@ export interface components {
             splat: string;
             status?: components["schemas"]["PlayStatusOut"] | null;
             stock?: components["schemas"]["StockNpcOut"] | null;
+            /**
+             * Tabs
+             * @default [
+             *       "sheet",
+             *       "tracker",
+             *       "pools",
+             *       "status",
+             *       "equipment",
+             *       "throws"
+             *     ]
+             */
+            tabs: ("sheet" | "tracker" | "pools" | "status" | "equipment" | "throws")[];
             vitae?: components["schemas"]["VitaeOut"] | null;
             willpower: components["schemas"]["Tracker"];
             /** Willpower Lent */
@@ -23171,7 +23218,7 @@ export interface components {
              * @default tracker
              * @enum {string}
              */
-            play_tab: "tracker" | "sheet" | "pools";
+            play_tab: "tracker" | "sheet" | "pools" | "throws";
             /**
              * Quick Notes
              * @default true
@@ -28273,6 +28320,8 @@ export interface components {
             downtime_xp?: number | null;
             /** Name */
             name?: string | null;
+            /** Play Tabs Off */
+            play_tabs_off?: ("sheet" | "tracker" | "pools" | "status" | "equipment" | "throws")[] | null;
             /** Session Xp */
             session_xp?: number | null;
             /** Starting Xp */
@@ -28519,6 +28568,11 @@ export interface components {
             /** Place */
             place: string;
             /**
+             * Play Tabs Off
+             * @default []
+             */
+            play_tabs_off: ("sheet" | "tracker" | "pools" | "status" | "equipment" | "throws")[];
+            /**
              * Player Nominations
              * @default false
              */
@@ -28590,6 +28644,11 @@ export interface components {
             /** Last Tap At */
             last_tap_at: string | null;
             lines_veils?: components["schemas"]["LinesVeils"] | null;
+            /**
+             * Play View
+             * @default true
+             */
+            play_view: boolean;
             /** Player Name */
             player_name: string;
             /** Taps */

@@ -57,6 +57,14 @@ def test_ultra_goth_is_kept_on_the_account(
     assert user.preferences == {}
 
 
+def test_the_play_view_can_open_on_throws(client_for: Callable[[], TestClient]) -> None:
+    # Rock, paper, scissors on the Play View (#668).
+    person = sign_up(client_for, "settler")
+    changed = person.client.patch("/preferences", json={"play_tab": "throws"})
+    assert changed.status_code == 200, changed.text
+    assert person.client.get("/preferences").json()["play_tab"] == "throws"
+
+
 def test_unknown_settings_and_values_are_refused(client_for: Callable[[], TestClient]) -> None:
     person = sign_up(client_for, "settler")
     for body, says in (
