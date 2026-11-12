@@ -614,3 +614,56 @@ test("staff declare a Boonbreaker: their open boons are made void, both ways, an
   const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Status", exact: true }) });
   await expect(card.getByRole("listitem", { name: "Disgraced" })).toContainText("While a Boonbreaker (p. 397).");
 });
+
+test("the Harpy audits a character's boons and gives it to another, whose player reads it as it stood (#690)", async ({ browser }) => {
+  const custodian = await person(browser, "baudit-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "baudit-lead");
+  const harpy = await person(browser, "baudit-harpy");
+  const reader = await person(browser, "baudit-reader");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Audits Kept ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  const build = { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]] as [string, number][], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] as [string, number][] };
+  const home = async (page: Page, name: string) => {
+    const id = await builtVampire(page, name, "Brujah", build);
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    return id;
+  };
+  const isolde = await home(harpy.page, "Isolde Fenwick");
+  const corin = await home(reader.page, "Corin Halloway");
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/boon-ledger`, { on: true });
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/boon-harpy`, { access: "full" });
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/characters/${isolde}/titles`, { titles: ["Harpy"] });
+  const debt = { debtor: { character_id: isolde }, creditor: { name: "Lady Morrow" }, kind: "major", made_on: "2026-10-03", reason: "A secret kept" };
+  await send(lead.page, "POST", `/api/troupes/${troupe.id}/boons`, { boons: [debt], note: "" });
+
+  // Isolde's player, as the Harpy, audits Isolde's boons for Corin from the ledger.
+  const h = harpy.page;
+  await h.goto(`/play/characters/${isolde}/ledger`);
+  await h.getByLabel("Audit", { exact: true }).selectOption({ label: "Isolde Fenwick" });
+  await h.getByLabel("Give it to", { exact: true }).selectOption({ label: "Corin Halloway" });
+  await h.getByRole("button", { name: "Make the audit" }).click();
+  await expect(h.getByText("Audited Isolde Fenwick's boons, and gave it to Corin Halloway.")).toBeVisible();
+  await expect(h.getByRole("list", { name: "Audits" })).toContainText("given to Corin Halloway");
+
+  // Corin's player finds it in the Play View's Boons tab and reads it.
+  const r = reader.page;
+  await r.goto(`/play/characters/${corin}?tab=boons`);
+  await r.getByRole("list", { name: "Audits" }).getByRole("link", { name: "Isolde Fenwick's boons" }).click();
+  await expect(r.getByRole("heading", { name: "Boon audit · Isolde Fenwick" })).toBeVisible();
+  await expect(r.getByText("owes 1 (weighing 3) · is owed 0")).toBeVisible();
+  const owes = r.getByRole("region", { name: "Boons Isolde Fenwick owes" });
+  await expect(owes).toContainText("Lady Morrow");
+  await expect(owes).toContainText("A secret kept");
+  await expect(owes).toContainText("Standing");
+  await r.screenshot(shots("boon-audit"));
+});

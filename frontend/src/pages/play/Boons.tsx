@@ -49,10 +49,44 @@ export function BoonsTab({ characterId, name, online }: { characterId: string; n
             {boons.owed && (
               <Side title={`Owed to ${name}`} empty={`No boons in the ledger are owed to ${name}.`} boons={boons.owed} owes={false} name={name} characterId={characterId} online={online} />
             )}
+            <Audits characterId={characterId} name={name} online={online} />
           </>
         )}
       </Loaded>
     </section>
+  );
+}
+
+/**
+ * The audits of others' boons given to the character (#690), newest first: each as
+ * the ledger stood when it was made. Opened on its own page, to read or print. Only
+ * shown once there are some.
+ */
+function Audits({ characterId, name, online }: { characterId: string; name: string; online: boolean }) {
+  const dates = useDates();
+  const audits = useQuery({
+    queryKey: ["character-boon-audits", characterId],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/boon-audits", { params: { path: { character_id: characterId } } })),
+    refetchOnWindowFocus: false,
+    enabled: online,
+  });
+  if (!audits.isSuccess || audits.data.length === 0) return null;
+  return (
+    <Card title="Audits">
+      <p className="text-sm text-mist">Audits of others&apos; boons given to {name}, each as the ledger stood when it was made.</p>
+      <ul aria-label="Audits" className="mt-2 divide-y divide-ash/60">
+        {audits.data.map((a) => (
+          <li key={a.id} className="py-2 text-sm">
+            <Link to={`/print/boon-audits/${a.id}`} className="inline-flex min-h-10 items-center text-gold underline hover:text-parchment">
+              {a.name}&apos;s boons
+            </Link>
+            <span className="block text-xs text-mist">
+              {dates.date(a.made_at)} · by {a.made_by}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }
 

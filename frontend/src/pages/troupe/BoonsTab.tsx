@@ -31,6 +31,7 @@ import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { AuditsCard } from "./BoonAudits";
 import { Boonbreakers } from "./Boonbreakers";
 import { BoonReviewQueue, ReviewPanel } from "./BoonReview";
 import { WhoPicker } from "./WhoPicker";
@@ -47,6 +48,8 @@ export type LedgerKeeper = {
   add: boolean;
   edit: boolean;
   review: boolean;
+  // Audit a character's boons (#690).
+  audit: boolean;
   // One of the troupe's Lesser Harpies, as it calls them: "Lesser Harpy" or "Talon".
   word: string;
 };
@@ -256,6 +259,8 @@ function Ledger({ troupeId }: { troupeId: string }) {
           ))}
         </ul>
       )}
+
+      {(!harpy || harpy.audit) && <AuditsCard troupeId={troupeId} inPlay={!!harpy} />}
     </div>
   );
 }

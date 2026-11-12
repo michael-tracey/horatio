@@ -29,6 +29,7 @@ export function HarpyLedgerPage() {
         add: shown.can_add ?? true,
         edit: shown.can_edit ?? true,
         review: shown.can_review ?? true,
+        audit: shown.can_audit ?? true,
         word: shown.talon_word ?? "Lesser Harpy",
       }
     : null;

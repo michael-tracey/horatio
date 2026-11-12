@@ -6082,6 +6082,352 @@
         "title": "BoonActiveOut",
         "type": "object"
       },
+      "BoonAuditChoice": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "BoonAuditChoice",
+        "type": "object"
+      },
+      "BoonAuditGiveIn": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id"
+        ],
+        "title": "BoonAuditGiveIn",
+        "type": "object"
+      },
+      "BoonAuditIn": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "given_to_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given To Id"
+          }
+        },
+        "required": [
+          "character_id"
+        ],
+        "title": "BoonAuditIn",
+        "type": "object"
+      },
+      "BoonAuditLineOut": {
+        "properties": {
+          "conditions": {
+            "title": "Conditions",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "trivial",
+              "minor",
+              "major",
+              "blood",
+              "life"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "made_on": {
+            "format": "date",
+            "title": "Made On",
+            "type": "string"
+          },
+          "other": {
+            "title": "Other",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "settled_how": {
+            "anyOf": [
+              {
+                "enum": [
+                  "called_in",
+                  "forgiven",
+                  "ignored"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settled How"
+          },
+          "status": {
+            "enum": [
+              "standing",
+              "settled",
+              "departed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "other",
+          "kind",
+          "made_on",
+          "reason",
+          "conditions",
+          "status"
+        ],
+        "title": "BoonAuditLineOut",
+        "type": "object"
+      },
+      "BoonAuditOut": {
+        "properties": {
+          "age": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age"
+          },
+          "can_give": {
+            "default": false,
+            "title": "Can Give",
+            "type": "boolean"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "given_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given At"
+          },
+          "given_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given To"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "made_at": {
+            "format": "date-time",
+            "title": "Made At",
+            "type": "string"
+          },
+          "made_by": {
+            "title": "Made By",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "owed": {
+            "items": {
+              "$ref": "#/components/schemas/BoonAuditLineOut"
+            },
+            "title": "Owed",
+            "type": "array"
+          },
+          "owed_count": {
+            "title": "Owed Count",
+            "type": "integer"
+          },
+          "owed_weight": {
+            "title": "Owed Weight",
+            "type": "number"
+          },
+          "owes": {
+            "items": {
+              "$ref": "#/components/schemas/BoonAuditLineOut"
+            },
+            "title": "Owes",
+            "type": "array"
+          },
+          "owes_count": {
+            "title": "Owes Count",
+            "type": "integer"
+          },
+          "owes_weight": {
+            "title": "Owes Weight",
+            "type": "number"
+          },
+          "standing": {
+            "anyOf": [
+              {
+                "enum": [
+                  "active",
+                  "final_death",
+                  "off_field",
+                  "gone"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Standing"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "troupe_name",
+          "made_at",
+          "name",
+          "made_by",
+          "given_to",
+          "given_at",
+          "clan",
+          "age",
+          "standing",
+          "owes_count",
+          "owed_count",
+          "owes_weight",
+          "owed_weight",
+          "owes",
+          "owed"
+        ],
+        "title": "BoonAuditOut",
+        "type": "object"
+      },
+      "BoonAuditSummaryOut": {
+        "properties": {
+          "can_give": {
+            "default": false,
+            "title": "Can Give",
+            "type": "boolean"
+          },
+          "given_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given At"
+          },
+          "given_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Given To"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "made_at": {
+            "format": "date-time",
+            "title": "Made At",
+            "type": "string"
+          },
+          "made_by": {
+            "title": "Made By",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "troupe_name",
+          "made_at",
+          "name",
+          "made_by",
+          "given_to",
+          "given_at"
+        ],
+        "title": "BoonAuditSummaryOut",
+        "type": "object"
+      },
       "BoonBandOut": {
         "properties": {
           "count": {
@@ -50448,6 +50794,49 @@
         "title": "TroupeBondsOut",
         "type": "object"
       },
+      "TroupeBoonAuditsOut": {
+        "properties": {
+          "audits": {
+            "items": {
+              "$ref": "#/components/schemas/BoonAuditSummaryOut"
+            },
+            "title": "Audits",
+            "type": "array"
+          },
+          "can_audit": {
+            "title": "Can Audit",
+            "type": "boolean"
+          },
+          "recipients": {
+            "items": {
+              "$ref": "#/components/schemas/BoonAuditChoice"
+            },
+            "title": "Recipients",
+            "type": "array"
+          },
+          "subjects": {
+            "items": {
+              "$ref": "#/components/schemas/BoonAuditChoice"
+            },
+            "title": "Subjects",
+            "type": "array"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "can_audit",
+          "audits",
+          "subjects",
+          "recipients"
+        ],
+        "title": "TroupeBoonAuditsOut",
+        "type": "object"
+      },
       "TroupeBoonSummaryOut": {
         "properties": {
           "owed": {
@@ -56656,6 +57045,50 @@
         ]
       }
     },
+    "/api/boon-audits/{audit_id}": {
+      "get": {
+        "description": "One audit, as it was made: for whoever keeps the troupe's ledger and may see it,\nand for the player of the character it was given to.",
+        "operationId": "read_audit_api_boon_audits__audit_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "audit_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Audit Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonAuditOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Audit",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
     "/api/calendar/links": {
       "get": {
         "description": "The caller's calendar links, for a member of the troupe.",
@@ -58393,6 +58826,54 @@
         "summary": "Report Meeting",
         "tags": [
           "bonds"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/boon-audits": {
+      "get": {
+        "description": "The audits given to the character, newest first: for its player, and the staff\nof the troupe each was made in.",
+        "operationId": "character_audits_api_characters__character_id__boon_audits_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BoonAuditSummaryOut"
+                  },
+                  "title": "Response Character Audits Api Characters  Character Id  Boon Audits Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Character Audits",
+        "tags": [
+          "boons"
         ]
       }
     },
@@ -78326,6 +78807,166 @@
         "summary": "Change Book Trait",
         "tags": [
           "book traits"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boon-audits": {
+      "get": {
+        "description": "The troupe's audits the caller sees, newest first, and whom they can audit and\ngive one to: for its staff, and a Harpy or Lesser Harpy who may perform audits.",
+        "operationId": "troupe_audits_api_troupes__troupe_id__boon_audits_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeBoonAuditsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Audits",
+        "tags": [
+          "boons"
+        ]
+      },
+      "post": {
+        "description": "Audit a character's boons as the ledger holds them now; given at once to a\nplayer character, if named.",
+        "operationId": "make_audit_api_troupes__troupe_id__boon_audits_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoonAuditIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonAuditOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Make Audit",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boon-audits/{audit_id}/give": {
+      "post": {
+        "description": "Give an audit to a player character in play in the troupe, once.",
+        "operationId": "give_audit_api_troupes__troupe_id__boon_audits__audit_id__give_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "audit_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Audit Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoonAuditGiveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonAuditOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Give Audit",
+        "tags": [
+          "boons"
         ]
       }
     },

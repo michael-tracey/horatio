@@ -153,6 +153,10 @@ _Avoid_: Boon keeper, ledger admin
 A character the troupe's Harpy gives access to its boon ledger, where the troupe lets the Harpy do so and the Harpy has the full ledger; a troupe may call them **Talons** instead. Each sees the ledger as the Harpy does, and may add boons, edit them (with settling and reviewing), and perform audits, as the Harpy chooses. The access belongs to the office, not to the Harpy who gave it: a new Harpy finds the list and keeps or removes each one. Staff see who has what, and may take it away. Holders of the Lesser Harpy title are offered first.
 _Avoid_: Deputy, assistant Harpy
 
+**Boon Audit**:
+One character's boons as a troupe's boon ledger held them on the night it was made, kept as they were: later changes never alter it. It gives their standing, clan and age, how many boons they owe and are owed (and what those weigh), and each boon they owe and each owed to them, standing, settled or departed; never staff notes or logs. Departures show only as the court knows them: as the Who's Who lists them under "No longer with us", with why only for Final Death or Off-field, never that a player stopped. Made by the troupe's running staff, its Harpy with the full ledger, or a Lesser Harpy allowed to; its maker may give it once to a player character in play, whose player reads it in the Play View.
+_Avoid_: Boon report, statement
+
 **Boon Review**:
 A troupe's check of boons before or after they stand. It may hold the boons its players report: they wait, pending, until its running staff accept them (after an edit, if need be) or don't, with a reason the player sees. Off, they stand at once. Horatio **flags** a new boon whose side is a name that links to no character, or that looks like a duplicate of another; staff flag any boon by hand for a ruling. Every pending boon and every flagged one waits under **To review**. A name can be **linked** to a character on one boon or on every boon naming it.
 _Avoid_: Approval (that is a sheet's), moderation, queue (in names)

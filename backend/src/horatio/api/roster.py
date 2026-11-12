@@ -880,6 +880,8 @@ MESSAGES: dict[str, str] = {
     "boon.talon_given": "{actor}{acting} made {character_name} a {word}, to {can}.",
     "boon.talon_changed": "{actor}{acting} let {character_name}, a {word}, {can}.",
     "boon.talon_removed": "{actor}{acting} took away {character_name}'s access as a {word}.",
+    "boon.audited": "{actor}{acting} audited {character_name}'s boons.",
+    "boon.audit_given": "{actor}{acting} gave {character_name} an audit of {audited}'s boons.",
     "boon.submitted": "{actor} reported {what} for review: {debtor} owes {creditor}{because}.",
     "boon.accepted": "{actor} accepted {debtor}'s {kind} boon to {creditor}{because}.",
     "boon.rejected": "{actor} didn't accept {debtor}'s {kind} boon to {creditor}{because}.",
