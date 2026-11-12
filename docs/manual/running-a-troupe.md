@@ -485,6 +485,7 @@ NPCs are never limited by either.
 ### At game
 
 - **Play View tabs**: a switch for each of the Play View's tabs (Sheet, Tracker, Pools, Status, Equipment, Throws, and Boons while the troupe keeps a boon ledger), all on to begin with. A tab switched off doesn't show on your players' Play Views; with the Tracker off, the strip of Blood, Willpower and health on the other tabs goes too. Staff always see every tab on NPCs. A visiting character keeps its home troupe's tabs. Switch every tab off if your players keep their sheets in Horatio but don't play from it: the card says what that does before it's saved. Its player characters then have no **Play**, check-in doesn't open the Play View, and phones don't keep the Play View for a game with no signal. Staff still run NPCs, the At game tab and scenes as before, with every tab on an NPC; a player character with no Play View can't be put in a scene.
+- **Throw pictures**: your troupe's own rock, paper and scissors for the Throws tab, instead of Horatio's. Upload a picture for each (JPEG, PNG, WebP or HEIC, up to 10 MB); Horatio keeps it whole on a square, transparency and all, and strips anything else the file carries. Give the set a name if you like. The preview shows them as the Throws tab will, in Dark or Ultra goth, so you can check they read at arm's length. The set is offered to your players only once all three are there. Replace any one, or remove the set to go back to Horatio's. Each change goes in the troupe log.
 - **Badges**: whether game badges print titles, character pronouns, and all status, negative status only, or none.
 - **Blood at the start of a game**: what resetting a character's Play View puts their Blood back to: full, or a number you choose.
 - **Diablerie and Lesser Generation**: what recording a diablerie does to a Lesser Generation or Thin Blooded flaw: leave it, remove it and the XP it gave, or remove it and keep the XP.
@@ -848,6 +849,18 @@ The four settings:
 - **Players manage**: a player records a drink their character took, and it counts at once. One the regnant's player records waits for the thrall's player to confirm, or for you when the thrall is an NPC or a name only.
 
 Changing the setting leaves drinks already waiting where they are. **Characters › Bonds** lists every drink still waiting, whoever it waits on, to approve or decline there too. In any mode, a drink in a bond's **Drinks log** can be changed (its night and note) or taken out with a reason; taking out the last one removes the bond. Players can't record a night to come, one before the character was made in Horatio, or a drink while their character holds a full bond to someone else.
+
+#### Bonds Horatio knows by rule
+
+Some bonds need no one to record them, and Horatio adds them itself while the setting isn't **Off**:
+
+- **The Embrace**: every childe has a one-drink bond to their sire, since the Embrace itself is a drink of the sire's blood (MET: VTM p. 295). Running an Embrace on a ghoul's sheet adds it, from the night of the Embrace.
+- **A ghoul's domitor**: a ghoul is fully bound to their domitor (p. 296). Setting a ghoul's domitor adds the full bond; a ghoul made before any troupe accepted it gets it when its home troupe accepts it. Changing the domitor ends the bond to the old one, since the book has a ghoul change domitor only once that bond has faded, and adds the new.
+- **Ghoul Retainers**: a vampire's ghoul Retainer is fully bound to them. The bond is by the Retainer's name until you link the Retainer to an NPC, when it moves to the NPC. The vampire's player made the Retainer a ghoul, so this one is known to them; the others aren't until you mark them known.
+
+None is added if the two already have a bond, if a full bond to someone else makes the thrall immune, or if either side is retired. Each goes in the logs with the book's reason.
+
+For characters from before the troupe tracked bonds, **Characters › Bonds** shows **Fill in known bonds**: the bonds Horatio can work out from Embraces, domitors and ghoul Retainers that the troupe doesn't keep yet. Look the list over and add them all at once; once they're in, it goes away.
 
 #### When a regnant or a thrall meets Final Death
 

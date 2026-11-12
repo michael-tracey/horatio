@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Me } from "./api/types";
 import { DEFAULT_PREFERENCES } from "./hooks";
 import { withLoadingScreen } from "./loaders/indexHtml";
-import { applyTheme, BAR_COLOUR, cachedTheme, rememberTheme, THEME_KEY, themeOnLoad } from "./theme";
+import { applyTheme, BAR_COLOUR, cachedTheme, rememberTheme, THEME_KEY, THROW_PANEL, themeOnLoad } from "./theme";
 import { useTheme } from "./useTheme";
 
 beforeEach(() => {
@@ -117,6 +117,7 @@ const THEMES = {
   "Ultra goth": palette(/html\[data-theme="ultragoth"\] \{([^}]*)\}/, pointedAt('html\\[data-theme="ultragoth"\\] ')),
 };
 const BAR = { Dark: BAR_COLOUR.dark, "Ultra goth": BAR_COLOUR.ultragoth };
+const PANEL = { Dark: THROW_PANEL.dark, "Ultra goth": THROW_PANEL.ultragoth };
 
 const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 const hex = (c: number[]) => `#${c.map((v) => Math.round(v).toString(16).padStart(2, "0")).join("")}`;
@@ -173,5 +174,9 @@ describe.each(Object.entries(THEMES))("%s's colours", (theme, c) => {
 
   it("paints the browser's bar in its night", () => {
     expect(BAR[theme as keyof typeof BAR]).toBe(c.night);
+  });
+
+  it("previews throw pictures in its own dusk and gold", () => {
+    expect(PANEL[theme as keyof typeof PANEL]).toEqual({ dusk: c.dusk, gold: c.gold });
   });
 });

@@ -4893,6 +4893,21 @@
         "title": "Body_upload_dark_pack_api_tools_dark_pack_upload_post",
         "type": "object"
       },
+      "Body_upload_image_api_troupes__troupe_id__throw_images__which__post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "JPEG, PNG, WebP or HEIC, up to 10 MB.",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_image_api_troupes__troupe_id__throw_images__which__post",
+        "type": "object"
+      },
       "Body_upload_logo_api_clan_logos_post": {
         "properties": {
           "clan": {
@@ -10799,6 +10814,31 @@
         "title": "ClanChoiceOut",
         "type": "object"
       },
+      "ClanCountOut": {
+        "properties": {
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "clan",
+          "count"
+        ],
+        "title": "ClanCountOut",
+        "type": "object"
+      },
       "ClanFeedingIn": {
         "properties": {
           "amount": {
@@ -11945,6 +11985,63 @@
         "title": "CounterIn",
         "type": "object"
       },
+      "CourtHistoryOut": {
+        "properties": {
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/ClanCountOut"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "full": {
+            "title": "Full",
+            "type": "boolean"
+          },
+          "holdings": {
+            "items": {
+              "$ref": "#/components/schemas/TitleHoldingOut"
+            },
+            "title": "Holdings",
+            "type": "array"
+          },
+          "players_see": {
+            "title": "Players See",
+            "type": "boolean"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/StatusLineOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "titles": {
+            "items": {
+              "$ref": "#/components/schemas/CourtTitleOut"
+            },
+            "title": "Titles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "full",
+          "players_see",
+          "titles",
+          "holdings",
+          "status",
+          "clans"
+        ],
+        "title": "CourtHistoryOut",
+        "type": "object"
+      },
       "CourtOrder": {
         "properties": {
           "titles": {
@@ -11959,6 +12056,31 @@
           "titles"
         ],
         "title": "CourtOrder",
+        "type": "object"
+      },
+      "CourtTitleOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          }
+        },
+        "required": [
+          "name",
+          "sect"
+        ],
+        "title": "CourtTitleOut",
         "type": "object"
       },
       "CreationItem": {
@@ -18284,6 +18406,22 @@
         "title": "FillTableItem",
         "type": "object"
       },
+      "FilledOut": {
+        "properties": {
+          "added": {
+            "items": {
+              "$ref": "#/components/schemas/BondOut"
+            },
+            "title": "Added",
+            "type": "array"
+          }
+        },
+        "required": [
+          "added"
+        ],
+        "title": "FilledOut",
+        "type": "object"
+      },
       "FilterCondition": {
         "additionalProperties": false,
         "description": "One condition of a character filter; see horatio.character_filter.",
@@ -20857,6 +20995,36 @@
           "kind"
         ],
         "title": "HolderOut",
+        "type": "object"
+      },
+      "HoldingDatesIn": {
+        "properties": {
+          "began_in_game": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Began In Game"
+          },
+          "ended_in_game": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended In Game"
+          }
+        },
+        "title": "HoldingDatesIn",
         "type": "object"
       },
       "HoldingOut": {
@@ -23944,6 +24112,48 @@
           "counted"
         ],
         "title": "KindOut",
+        "type": "object"
+      },
+      "KnownBondOut": {
+        "properties": {
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "regnant": {
+            "$ref": "#/components/schemas/PartyOut"
+          },
+          "thrall": {
+            "$ref": "#/components/schemas/PartyOut"
+          },
+          "why": {
+            "enum": [
+              "embrace",
+              "domitor",
+              "retainer"
+            ],
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "why",
+          "thrall",
+          "regnant",
+          "level",
+          "night",
+          "reason"
+        ],
+        "title": "KnownBondOut",
         "type": "object"
       },
       "KnownIn": {
@@ -44529,6 +44739,55 @@
         "title": "StatusIn",
         "type": "object"
       },
+      "StatusLineOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "gained": {
+            "title": "Gained",
+            "type": "integer"
+          },
+          "lost": {
+            "title": "Lost",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/StatusPointOut"
+            },
+            "title": "Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "clan",
+          "points",
+          "gained",
+          "lost"
+        ],
+        "title": "StatusLineOut",
+        "type": "object"
+      },
       "StatusOut": {
         "properties": {
           "about": {
@@ -44730,6 +44989,30 @@
           "about"
         ],
         "title": "StatusOut",
+        "type": "object"
+      },
+      "StatusPointOut": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "fleeting": {
+            "title": "Fleeting",
+            "type": "integer"
+          },
+          "negative": {
+            "title": "Negative",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "at",
+          "fleeting",
+          "negative"
+        ],
+        "title": "StatusPointOut",
         "type": "object"
       },
       "StatusRemoveIn": {
@@ -46976,6 +47259,74 @@
         "title": "TextNeed",
         "type": "object"
       },
+      "ThrowImagesNameIn": {
+        "properties": {
+          "name": {
+            "maxLength": 60,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ThrowImagesNameIn",
+        "type": "object"
+      },
+      "ThrowImagesOut": {
+        "properties": {
+          "complete": {
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "paper": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paper"
+          },
+          "rock": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rock"
+          },
+          "scissors": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scissors"
+          }
+        },
+        "required": [
+          "name",
+          "rock",
+          "paper",
+          "scissors",
+          "complete"
+        ],
+        "title": "ThrowImagesOut",
+        "type": "object"
+      },
       "TitleChange": {
         "properties": {
           "sect": {
@@ -47176,6 +47527,129 @@
           "out_of_sect"
         ],
         "title": "TitleHolderOut",
+        "type": "object"
+      },
+      "TitleHoldingOut": {
+        "properties": {
+          "backfilled": {
+            "title": "Backfilled",
+            "type": "boolean"
+          },
+          "began_at": {
+            "format": "date-time",
+            "title": "Began At",
+            "type": "string"
+          },
+          "began_how": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Began How"
+          },
+          "began_in_game": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Began In Game"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "ended_how": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended How"
+          },
+          "ended_in_game": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended In Game"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "character_id",
+          "character_name",
+          "clan",
+          "began_at",
+          "ended_at",
+          "began_in_game",
+          "ended_in_game",
+          "began_how",
+          "ended_how",
+          "backfilled"
+        ],
+        "title": "TitleHoldingOut",
         "type": "object"
       },
       "TitleOut": {
@@ -48121,6 +48595,17 @@
             ],
             "title": "Badge Titles"
           },
+          "court_history_players": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Court History Players"
+          },
           "description": {
             "anyOf": [
               {
@@ -48802,6 +49287,11 @@
           "boons": {
             "default": false,
             "title": "Boons",
+            "type": "boolean"
+          },
+          "court_history_players": {
+            "default": false,
+            "title": "Court History Players",
             "type": "boolean"
           },
           "description": {
@@ -74298,6 +74788,96 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/bonds/known": {
+      "get": {
+        "description": "The bonds Horatio can work out for the troupe that it doesn't keep yet: from its\ncharacters' Embraces, ghouls' domitors and vampires' ghoul Retainers (#663).",
+        "operationId": "known_bonds_api_troupes__troupe_id__bonds_known_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/KnownBondOut"
+                  },
+                  "title": "Response Known Bonds Api Troupes  Troupe Id  Bonds Known Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Known Bonds",
+        "tags": [
+          "bonds"
+        ]
+      },
+      "post": {
+        "description": "Add every bond `known_bonds` lists, and say which were added.",
+        "operationId": "fill_in_bonds_api_troupes__troupe_id__bonds_known_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilledOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Fill In Bonds",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/bonds/reports/{report_id}/decide": {
       "post": {
         "description": "Approve or decline a drink a player reported, still waiting: whether it waits\non staff or on the thrall's player.",
@@ -76874,6 +77454,113 @@
         "summary": "Change Cost",
         "tags": [
           "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/court-history": {
+      "get": {
+        "operationId": "court_history_api_troupes__troupe_id__court_history_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourtHistoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Court History",
+        "tags": [
+          "court"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/court-history/{holding_id}/in-game": {
+      "put": {
+        "description": "Set the in-game dates a holding began and ended; none, to clear them.",
+        "operationId": "date_holding_api_troupes__troupe_id__court_history__holding_id__in_game_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "holding_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Holding Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HoldingDatesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TitleHoldingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Date Holding",
+        "tags": [
+          "court"
         ]
       }
     },
@@ -85851,6 +86538,263 @@
         "summary": "Change Teacher Rule",
         "tags": [
           "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/throw-images": {
+      "delete": {
+        "description": "Remove the whole set: the troupe throws with Horatio's own again.",
+        "operationId": "remove_images_api_troupes__troupe_id__throw_images_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Images",
+        "tags": [
+          "throw images"
+        ]
+      },
+      "get": {
+        "description": "The troupe's rock, paper and scissors, for its members.",
+        "operationId": "read_images_api_troupes__troupe_id__throw_images_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThrowImagesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Images",
+        "tags": [
+          "throw images"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/throw-images/name": {
+      "put": {
+        "description": "Name the set, or clear its name with an empty one.",
+        "operationId": "name_images_api_troupes__troupe_id__throw_images_name_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThrowImagesNameIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThrowImagesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Name Images",
+        "tags": [
+          "throw images"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/throw-images/{picture_id}/{name}": {
+      "get": {
+        "description": "One of the set's files, for the troupe's members, while it is in the set.",
+        "operationId": "image_file_api_troupes__troupe_id__throw_images__picture_id___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "picture_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Picture Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Image File",
+        "tags": [
+          "throw images"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/throw-images/{which}": {
+      "post": {
+        "description": "A new picture for one throw, kept whole on a transparent square. It replaces\nthe one before, whose files go once the new one is saved.",
+        "operationId": "upload_image_api_troupes__troupe_id__throw_images__which__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "which",
+            "required": true,
+            "schema": {
+              "enum": [
+                "rock",
+                "paper",
+                "scissors"
+              ],
+              "title": "Which",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_image_api_troupes__troupe_id__throw_images__which__post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThrowImagesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Image",
+        "tags": [
+          "throw images"
         ]
       }
     },

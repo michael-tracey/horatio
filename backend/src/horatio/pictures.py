@@ -17,6 +17,8 @@ Horatio shows, all WebP, in `HORATIO_UPLOAD_DIR`:
 
 - a troupe's post's picture, or a news agency's masthead (issue #510): the whole
   picture, shrunk to 1200 and 600 px wide.
+- a troupe's rock, paper or scissors for the Throws tab (issue #670): the whole
+  picture, centred on a transparent square of 128 and 512 px, as a clan logo is.
 
 Each upload (and each new crop) is kept in a directory of its own, named by a new
 id, so its address changes and no cache ever shows the one it replaced.
@@ -64,6 +66,9 @@ PICTURE_FILES = {
 LOGO_FILES = {f"{s}.webp" for s in LOGOS}
 TROUPE_PORTRAIT_FILES = {*(f"{s}.webp" for s in SQUARES), "full.webp"}
 BANNER_FILES = {f"{w}.webp" for w in BANNERS}
+# A troupe's rock, paper or scissors: 512 px for the Throws tab, 128 px to preview.
+THROWS = (128, 512)
+THROW_FILES = {f"{s}.webp" for s in THROWS}
 # A post's picture or a masthead, at these widths, keeping its shape.
 POST_WIDTHS = (1200, 600)
 POST_FILES = {f"{w}.webp" for w in POST_WIDTHS}
@@ -248,6 +253,24 @@ def write_logo(directory: Path, image: Image.Image) -> None:
         _webp(square, directory / f"{size}.webp", lossless=size <= 128)
 
 
+def _on_square(image: Image.Image, size: int) -> Image.Image:
+    """The whole picture, fitted into a transparent square of `size`, centred."""
+    fitted = _shrunk(image, size) if max(image.size) > size else _grown(image, size)
+    square = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    square.paste(fitted, ((size - fitted.width) // 2, (size - fitted.height) // 2))
+    return square
+
+
+def write_throw_image(directory: Path, image: Image.Image) -> None:
+    """Write a troupe's rock, paper or scissors files into `directory`, which must be
+    new: the whole picture on a transparent square, so nothing is cut off and a PNG's
+    transparency is kept."""
+    directory.mkdir(parents=True)
+    picture = image.convert("RGBA")
+    for size in THROWS:
+        _webp(_on_square(picture, size), directory / f"{size}.webp")
+
+
 def _grown(image: Image.Image, longest: int) -> Image.Image:
     """A small logo scaled up to fill its square (logos are often small files)."""
     scale = longest / max(image.size)
@@ -289,6 +312,19 @@ def post_picture_file(
     if name not in POST_FILES:
         return None
     path = post_picture_dir(root, troupe_id, picture_id) / name
+    return path if path.is_file() else None
+
+
+def throw_image_dir(root: Path, troupe_id: uuid.UUID, image_id: uuid.UUID) -> Path:
+    return troupe_dir(root, troupe_id) / "throws" / str(image_id)
+
+
+def throw_image_file(
+    root: Path, troupe_id: uuid.UUID, image_id: uuid.UUID, name: str
+) -> Path | None:
+    if name not in THROW_FILES:
+        return None
+    path = throw_image_dir(root, troupe_id, image_id) / name
     return path if path.is_file() else None
 
 
@@ -373,3 +409,10 @@ def post_picture_url(troupe_id: uuid.UUID, picture_id: uuid.UUID | None) -> str 
     if picture_id is None:
         return None
     return f"/api/troupes/{troupe_id}/post-pictures/{picture_id}"
+
+
+def throw_image_url(troupe_id: uuid.UUID, image_id: uuid.UUID | None) -> str | None:
+    """Where the app finds a troupe's rock, paper or scissors: add "/512.webp" or "/128.webp"."""
+    if image_id is None:
+        return None
+    return f"/api/troupes/{troupe_id}/throw-images/{image_id}"

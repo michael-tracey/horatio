@@ -7394,6 +7394,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/bonds/known": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Known Bonds
+         * @description The bonds Horatio can work out for the troupe that it doesn't keep yet: from its
+         *     characters' Embraces, ghouls' domitors and vampires' ghoul Retainers (#663).
+         */
+        get: operations["known_bonds_api_troupes__troupe_id__bonds_known_get"];
+        put?: never;
+        /**
+         * Fill In Bonds
+         * @description Add every bond `known_bonds` lists, and say which were added.
+         */
+        post: operations["fill_in_bonds_api_troupes__troupe_id__bonds_known_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/bonds/reports/{report_id}/decide": {
         parameters: {
             query?: never;
@@ -8146,6 +8171,43 @@ export interface paths {
         post?: never;
         /** Remove Cost */
         delete: operations["remove_cost_api_troupes__troupe_id__costs__cost_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/court-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Court History */
+        get: operations["court_history_api_troupes__troupe_id__court_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/court-history/{holding_id}/in-game": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Date Holding
+         * @description Set the in-game dates a holding began and ended; none, to clear them.
+         */
+        put: operations["date_holding_api_troupes__troupe_id__court_history__holding_id__in_game_put"];
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -10700,6 +10762,91 @@ export interface paths {
         post?: never;
         /** Remove Teacher Rule */
         delete: operations["remove_teacher_rule_api_troupes__troupe_id__teacher_rules__rule_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/throw-images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Images
+         * @description The troupe's rock, paper and scissors, for its members.
+         */
+        get: operations["read_images_api_troupes__troupe_id__throw_images_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove Images
+         * @description Remove the whole set: the troupe throws with Horatio's own again.
+         */
+        delete: operations["remove_images_api_troupes__troupe_id__throw_images_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/throw-images/name": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Name Images
+         * @description Name the set, or clear its name with an empty one.
+         */
+        put: operations["name_images_api_troupes__troupe_id__throw_images_name_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/throw-images/{picture_id}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Image File
+         * @description One of the set's files, for the troupe's members, while it is in the set.
+         */
+        get: operations["image_file_api_troupes__troupe_id__throw_images__picture_id___name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/throw-images/{which}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Image
+         * @description A new picture for one throw, kept whole on a transparent square. It replaces
+         *     the one before, whose files go once the new one is saved.
+         */
+        post: operations["upload_image_api_troupes__troupe_id__throw_images__which__post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -13321,6 +13468,14 @@ export interface components {
              */
             file: string;
         };
+        /** Body_upload_image_api_troupes__troupe_id__throw_images__which__post */
+        Body_upload_image_api_troupes__troupe_id__throw_images__which__post: {
+            /**
+             * File
+             * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
+             */
+            file: string;
+        };
         /** Body_upload_logo_api_clan_logos_post */
         Body_upload_logo_api_clan_logos_post: {
             /** Clan */
@@ -15453,6 +15608,13 @@ export interface components {
             /** Page */
             page: string | null;
         };
+        /** ClanCountOut */
+        ClanCountOut: {
+            /** Clan */
+            clan: string | null;
+            /** Count */
+            count: number;
+        };
         /** ClanFeedingIn */
         ClanFeedingIn: {
             /** Amount */
@@ -15846,10 +16008,32 @@ export interface components {
             /** Uses */
             uses: number;
         };
+        /** CourtHistoryOut */
+        CourtHistoryOut: {
+            /** Clans */
+            clans: components["schemas"]["ClanCountOut"][];
+            /** Full */
+            full: boolean;
+            /** Holdings */
+            holdings: components["schemas"]["TitleHoldingOut"][];
+            /** Players See */
+            players_see: boolean;
+            /** Status */
+            status: components["schemas"]["StatusLineOut"][] | null;
+            /** Titles */
+            titles: components["schemas"]["CourtTitleOut"][];
+        };
         /** CourtOrder */
         CourtOrder: {
             /** Titles */
             titles: string[];
+        };
+        /** CourtTitleOut */
+        CourtTitleOut: {
+            /** Name */
+            name: string;
+            /** Sect */
+            sect: string | null;
         };
         /**
          * CreationItem
@@ -18255,6 +18439,11 @@ export interface components {
              */
             type: "fill_table";
         };
+        /** FilledOut */
+        FilledOut: {
+            /** Added */
+            added: components["schemas"]["BondOut"][];
+        };
         /**
          * FilterCondition
          * @description One condition of a character filter; see horatio.character_filter.
@@ -19313,6 +19502,13 @@ export interface components {
             kind: string;
             /** Name */
             name: string;
+        };
+        /** HoldingDatesIn */
+        HoldingDatesIn: {
+            /** Began In Game */
+            began_in_game?: string | null;
+            /** Ended In Game */
+            ended_in_game?: string | null;
         };
         /** HoldingOut */
         HoldingOut: {
@@ -20552,6 +20748,25 @@ export interface components {
             parent_name: string;
             /** Parent Rating */
             parent_rating: number;
+        };
+        /** KnownBondOut */
+        KnownBondOut: {
+            /** Level */
+            level: number;
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /** Reason */
+            reason: string;
+            regnant: components["schemas"]["PartyOut"];
+            thrall: components["schemas"]["PartyOut"];
+            /**
+             * Why
+             * @enum {string}
+             */
+            why: "embrace" | "domitor" | "retainer";
         };
         /** KnownIn */
         KnownIn: {
@@ -28622,6 +28837,24 @@ export interface components {
              */
             story: string;
         };
+        /** StatusLineOut */
+        StatusLineOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Clan */
+            clan: string | null;
+            /** Gained */
+            gained: number;
+            /** Lost */
+            lost: number;
+            /** Name */
+            name: string;
+            /** Points */
+            points: components["schemas"]["StatusPointOut"][];
+        };
         /** StatusOut */
         StatusOut: {
             /** About */
@@ -28679,6 +28912,18 @@ export interface components {
             troupe_name: string | null;
             /** Unresolved */
             unresolved: string[];
+        };
+        /** StatusPointOut */
+        StatusPointOut: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Fleeting */
+            fleeting: number;
+            /** Negative */
+            negative: number;
         };
         /** StatusRemoveIn */
         StatusRemoveIn: {
@@ -29620,6 +29865,24 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** ThrowImagesNameIn */
+        ThrowImagesNameIn: {
+            /** Name */
+            name: string;
+        };
+        /** ThrowImagesOut */
+        ThrowImagesOut: {
+            /** Complete */
+            complete: boolean;
+            /** Name */
+            name: string;
+            /** Paper */
+            paper: string | null;
+            /** Rock */
+            rock: string | null;
+            /** Scissors */
+            scissors: string | null;
+        };
         /** TitleChange */
         TitleChange: {
             /** Sect */
@@ -29703,6 +29966,39 @@ export interface components {
             out_of_sect: boolean;
             /** Sect */
             sect: string | null;
+        };
+        /** TitleHoldingOut */
+        TitleHoldingOut: {
+            /** Backfilled */
+            backfilled: boolean;
+            /**
+             * Began At
+             * Format: date-time
+             */
+            began_at: string;
+            /** Began How */
+            began_how: string | null;
+            /** Began In Game */
+            began_in_game: string | null;
+            /** Character Id */
+            character_id: string | null;
+            /** Character Name */
+            character_name: string;
+            /** Clan */
+            clan: string | null;
+            /** Ended At */
+            ended_at: string | null;
+            /** Ended How */
+            ended_how: string | null;
+            /** Ended In Game */
+            ended_in_game: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
         };
         /** TitleOut */
         TitleOut: {
@@ -30027,6 +30323,8 @@ export interface components {
             badge_status?: ("all" | "negative" | "none") | null;
             /** Badge Titles */
             badge_titles?: boolean | null;
+            /** Court History Players */
+            court_history_players?: boolean | null;
             /** Description */
             description?: string | null;
             /** Downtime Xp */
@@ -30233,6 +30531,11 @@ export interface components {
              * @default false
              */
             boons: boolean;
+            /**
+             * Court History Players
+             * @default false
+             */
+            court_history_players: boolean;
             /** Description */
             description: string;
             /** Diablerie Flaws */
@@ -45973,6 +46276,68 @@ export interface operations {
             };
         };
     };
+    known_bonds_api_troupes__troupe_id__bonds_known_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnownBondOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fill_in_bonds_api_troupes__troupe_id__bonds_known_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilledOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     decide_report_api_troupes__troupe_id__bonds_reports__report_id__decide_post: {
         parameters: {
             query?: never;
@@ -47420,6 +47785,73 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    court_history_api_troupes__troupe_id__court_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourtHistoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    date_holding_api_troupes__troupe_id__court_history__holding_id__in_game_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                holding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HoldingDatesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TitleHoldingOut"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -52852,6 +53284,168 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_images_api_troupes__troupe_id__throw_images_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThrowImagesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_images_api_troupes__troupe_id__throw_images_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    name_images_api_troupes__troupe_id__throw_images_name_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThrowImagesNameIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThrowImagesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    image_file_api_troupes__troupe_id__throw_images__picture_id___name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                picture_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_image_api_troupes__troupe_id__throw_images__which__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                which: "rock" | "paper" | "scissors";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_image_api_troupes__troupe_id__throw_images__which__post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThrowImagesOut"];
+                };
             };
             /** @description Validation Error */
             422: {
