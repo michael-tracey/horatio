@@ -964,7 +964,7 @@ def settle_time(db: Session, troupe: Troupe, user: User | None = None) -> None:
     for bond in db.scalars(
         select(BloodBond)
         .where(BloodBond.troupe_id == troupe.id, BloodBond.status == "active")
-        .order_by(BloodBond.created_at)
+        .order_by(BloodBond.created_at, BloodBond.id)
     ):
         for _ in range(2):
             change = due(db, troupe, bond)
@@ -981,7 +981,7 @@ def waiting_changes(db: Session, troupe: Troupe) -> list[tuple[BloodBond, Change
     for bond in db.scalars(
         select(BloodBond)
         .where(BloodBond.troupe_id == troupe.id, BloodBond.status == "active")
-        .order_by(BloodBond.created_at)
+        .order_by(BloodBond.created_at, BloodBond.id)
     ):
         change = due(db, troupe, bond)
         if change is not None:
@@ -1033,7 +1033,7 @@ def untold_drops(db: Session, troupe: Troupe) -> list[tuple[BloodBond, BondEntry
             BondEntry.kind == "dropped",
             BondEntry.thrall_told_at.is_(None),
         )
-        .order_by(BondEntry.night)
+        .order_by(BondEntry.night, BondEntry.created_at, BondEntry.id)
     )
     return [(bond, entry) for bond, entry in rows]
 
