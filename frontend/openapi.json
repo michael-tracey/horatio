@@ -5071,6 +5071,72 @@
         "title": "Body_upload_post_picture_api_posts__post_id__picture_post",
         "type": "object"
       },
+      "BondAnswerIn": {
+        "properties": {
+          "confirm": {
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "confirm"
+        ],
+        "title": "BondAnswerIn",
+        "type": "object"
+      },
+      "BondAskOut": {
+        "description": "A drink a player reported, for staff to approve (horatio.bonds).",
+        "properties": {
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "refused": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refused"
+          },
+          "regnant": {
+            "title": "Regnant",
+            "type": "string"
+          },
+          "reported_as": {
+            "title": "Reported As",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "thrall": {
+            "title": "Thrall",
+            "type": "string"
+          }
+        },
+        "required": [
+          "thrall",
+          "regnant",
+          "reported_as",
+          "night",
+          "source",
+          "refused"
+        ],
+        "title": "BondAskOut",
+        "type": "object"
+      },
       "BondEntryOut": {
         "properties": {
           "at": {
@@ -5215,6 +5281,116 @@
           "entries"
         ],
         "title": "BondOut",
+        "type": "object"
+      },
+      "BondReportOut": {
+        "description": "A drink a player reported, while it waits and after it is decided.",
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "can_confirm": {
+            "title": "Can Confirm",
+            "type": "boolean"
+          },
+          "can_withdraw": {
+            "title": "Can Withdraw",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "regnant": {
+            "$ref": "#/components/schemas/PartyOut"
+          },
+          "reported_as": {
+            "enum": [
+              "thrall",
+              "regnant"
+            ],
+            "title": "Reported As",
+            "type": "string"
+          },
+          "reported_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reported By"
+          },
+          "source": {
+            "enum": [
+              "game",
+              "downtime"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "thrall": {
+            "$ref": "#/components/schemas/PartyOut"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          },
+          "waiting_on": {
+            "enum": [
+              "staff",
+              "thrall"
+            ],
+            "title": "Waiting On",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "troupe_id",
+          "troupe_name",
+          "thrall",
+          "regnant",
+          "reported_as",
+          "night",
+          "source",
+          "note",
+          "status",
+          "waiting_on",
+          "reason",
+          "reported_by",
+          "at",
+          "can_withdraw",
+          "can_confirm"
+        ],
+        "title": "BondReportOut",
         "type": "object"
       },
       "BookTraitChange": {
@@ -8127,6 +8303,22 @@
               }
             ],
             "title": "Manage Troupe Id"
+          },
+          "report_to": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ReportTroupeOut"
+            },
+            "title": "Report To",
+            "type": "array"
+          },
+          "reports": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BondReportOut"
+            },
+            "title": "Reports",
+            "type": "array"
           }
         },
         "required": [
@@ -12449,6 +12641,25 @@
         "title": "DebtOut",
         "type": "object"
       },
+      "DecideIn": {
+        "properties": {
+          "approve": {
+            "title": "Approve",
+            "type": "boolean"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "approve"
+        ],
+        "title": "DecideIn",
+        "type": "object"
+      },
       "Decision": {
         "properties": {
           "at_cost": {
@@ -15407,6 +15618,26 @@
         "title": "EnterIn",
         "type": "object"
       },
+      "EntryIn": {
+        "properties": {
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "night"
+        ],
+        "title": "EntryIn",
+        "type": "object"
+      },
       "EntryOut": {
         "properties": {
           "about": {
@@ -15451,6 +15682,39 @@
           "order"
         ],
         "title": "EntryOut",
+        "type": "object"
+      },
+      "EntryRemoveIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "EntryRemoveIn",
+        "type": "object"
+      },
+      "EntryRemovedOut": {
+        "properties": {
+          "bond": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BondOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "bond"
+        ],
+        "title": "EntryRemovedOut",
         "type": "object"
       },
       "EquipmentCheckIn": {
@@ -36293,6 +36557,16 @@
             "title": "Banned",
             "type": "array"
           },
+          "bond": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BondAskOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "character_id": {
             "format": "uuid",
             "title": "Character Id",
@@ -37327,6 +37601,54 @@
         "title": "ReportCharacterOut",
         "type": "object"
       },
+      "ReportIn": {
+        "properties": {
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "other": {
+            "$ref": "#/components/schemas/PartyIn"
+          },
+          "side": {
+            "enum": [
+              "thrall",
+              "regnant"
+            ],
+            "title": "Side",
+            "type": "string"
+          },
+          "source": {
+            "default": "game",
+            "enum": [
+              "game",
+              "downtime"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "side",
+          "other",
+          "night"
+        ],
+        "title": "ReportIn",
+        "type": "object"
+      },
       "ReportOut": {
         "properties": {
           "at": {
@@ -37369,6 +37691,75 @@
           "characters"
         ],
         "title": "ReportOut",
+        "type": "object"
+      },
+      "ReportTroupeOut": {
+        "description": "A troupe the character's player can report its drinks to.",
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterChoice-Output"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "setting": {
+            "enum": [
+              "off",
+              "staff",
+              "players_report",
+              "players_manage"
+            ],
+            "title": "Setting",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "setting",
+          "characters"
+        ],
+        "title": "ReportTroupeOut",
+        "type": "object"
+      },
+      "ReportedOut": {
+        "properties": {
+          "level": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level"
+          },
+          "outcome": {
+            "enum": [
+              "recorded",
+              "staff",
+              "thrall"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome",
+          "level"
+        ],
+        "title": "ReportedOut",
         "type": "object"
       },
       "RepresentedBy": {
@@ -46952,6 +47343,14 @@
             "title": "Characters",
             "type": "array"
           },
+          "reports": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BondReportOut"
+            },
+            "title": "Reports",
+            "type": "array"
+          },
           "setting": {
             "enum": [
               "off",
@@ -54338,6 +54737,178 @@
           }
         },
         "summary": "Character Bonds",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/bonds/reports": {
+      "post": {
+        "description": "Its player reports a drink for the character: it drank of a vampire's blood,\nor a character drank of its blood. Whether it counts now or waits, and on whom,\nfollows the troupe's setting (horatio.bonds).",
+        "operationId": "report_drink_api_characters__character_id__bonds_reports_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Report Drink",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/bonds/reports/{report_id}/answer": {
+      "post": {
+        "description": "The thrall's player confirms or declines a drink the regnant's player recorded.",
+        "operationId": "answer_report_api_characters__character_id__bonds_reports__report_id__answer_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BondAnswerIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BondReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Answer Report",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/bonds/reports/{report_id}/withdraw": {
+      "post": {
+        "description": "Take back a drink its player reported, while it waits.",
+        "operationId": "withdraw_report_api_characters__character_id__bonds_reports__report_id__withdraw_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BondReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Withdraw Report",
         "tags": [
           "bonds"
         ]
@@ -72232,7 +72803,8 @@
                     "review",
                     "exception",
                     "diablerie",
-                    "merit_flaw"
+                    "merit_flaw",
+                    "bond_drink"
                   ],
                   "type": "string"
                 },
@@ -72933,6 +73505,70 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/bonds/reports/{report_id}/decide": {
+      "post": {
+        "description": "Approve or decline a drink a player reported, still waiting: whether it waits\non staff or on the thrall's player.",
+        "operationId": "decide_report_api_troupes__troupe_id__bonds_reports__report_id__decide_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Report Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecideIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BondReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Report",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/bonds/{bond_id}/break": {
       "post": {
         "description": "Mark the bond broken, with the reason (p. 296).",
@@ -73056,6 +73692,154 @@
           }
         },
         "summary": "Add Drink",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/entries/{entry_id}": {
+      "patch": {
+        "description": "Change a drink's night or note in the bond's log, such as one a player recorded\nwrongly.",
+        "operationId": "change_entry_api_troupes__troupe_id__bonds__bond_id__entries__entry_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "bond_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bond Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BondOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Entry",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/entries/{entry_id}/remove": {
+      "post": {
+        "description": "Take a drink out of the bond's log, with the reason. A bond left with nothing\nin its log goes too.",
+        "operationId": "remove_entry_api_troupes__troupe_id__bonds__bond_id__entries__entry_id__remove_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "bond_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bond Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntryRemoveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryRemovedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Entry",
         "tags": [
           "bonds"
         ]

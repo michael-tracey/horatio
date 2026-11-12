@@ -19,7 +19,7 @@ import { generationText } from "../../generation";
 
 type State = "pending" | "approved" | "declined" | "withdrawn";
 const STATE_NAMES: Record<State, string> = { pending: "Pending", approved: "Approved", declined: "Declined", withdrawn: "Withdrawn" };
-type Kind = "home_troupe_change" | "discipline" | "review" | "exception" | "diablerie" | "merit_flaw";
+type Kind = "home_troupe_change" | "discipline" | "review" | "exception" | "diablerie" | "merit_flaw" | "bond_drink";
 
 const KINDS: Record<Kind, string> = {
   home_troupe_change: "Home troupe requests",
@@ -28,6 +28,7 @@ const KINDS: Record<Kind, string> = {
   exception: "Exceptions",
   diablerie: "Diablerie",
   merit_flaw: "Merits and flaws",
+  bond_drink: "Blood bonds",
 };
 
 export function ApprovalsTab({ troupeId }: { troupeId: string }) {
@@ -145,6 +146,8 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
                     : "Exception"
                   : approval.kind === "diablerie"
                     ? "Diablerie"
+                    : approval.kind === "bond_drink"
+                      ? "Blood bond"
                     : approval.kind === "merit_flaw"
                       ? merit?.category === "flaws"
                         ? "Flaw"
@@ -227,6 +230,21 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
           {d.teaching ? <>{teachingText(d.teaching)} </> : d.teacher && <>Taught by {d.teacher}. </>}
           <span className="text-mist">The XP is spent; declining refunds it and takes the dots back.</span>
         </p>
+      )}
+      {approval.bond && (
+        <div className="mb-3 flex flex-col gap-1 text-sm">
+          <p>
+            Reports {approval.bond.thrall} drinking {approval.bond.regnant}&apos;s blood on {dates.day(approval.bond.night)},{" "}
+            {approval.bond.source === "downtime" ? "in a downtime" : "at a game"}.
+          </p>
+          {pending && approval.bond.refused && <p className="text-blood-bright">{approval.bond.refused}</p>}
+          {pending && (
+            <p className="text-xs text-mist">
+              Approving adds the drink to the bond&apos;s log{approval.bond.reported_as === "regnant" ? ", and marks the bond known to its regnant, who reported it" : ""}.
+              Declining tells the player your note.
+            </p>
+          )}
+        </div>
       )}
       {dia && (
         <div className="mb-3 flex flex-col gap-2 text-sm">

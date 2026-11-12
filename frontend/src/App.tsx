@@ -43,6 +43,8 @@ const StaffBadgesPage = lazy(() => import("./pages/BadgePage").then((m) => ({ de
 const CharacterBadgePage = lazy(() => import("./pages/BadgePage").then((m) => ({ default: m.CharacterBadgePage })));
 const JyhadCardPage = lazy(() => import("./pages/jyhad/JyhadCardPage").then((m) => ({ default: m.JyhadCardPage })));
 const TroupePrintPage = lazy(() => import("./pages/PrintPage").then((m) => ({ default: m.TroupePrintPage })));
+// The chart kit's demonstration (#706): d3 loads with it, never with the app's first chunk.
+const ChartKitPage = lazy(() => import("./pages/charts/ChartKitPage").then((m) => ({ default: m.ChartKitPage })));
 const WhosWhoPrintPage = lazy(() => import("./pages/WhosWhoPrintPage").then((m) => ({ default: m.WhosWhoPrintPage })));
 
 function ToScenes() {
@@ -138,6 +140,7 @@ export const routes = createRoutesFromElements(
         <Route path="/players/:userId" element={<PlayerPage />} />
         <Route path="/account/*" element={<AccountPage />} />
         <Route path="/custodian/*" element={<CustodianPage />} />
+        <Route path="/charts" element={<ChartKitPage />} />
         <Route path="/people" element={<Navigate to="/custodian/people" replace />} />
       </Route>
       <Route path="*" element={<p className="text-mist">There is nothing here.</p>} />

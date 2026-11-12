@@ -114,6 +114,17 @@ On the right:
 
 A card called **Against the rules** lists anything on the sheet the rules no longer allow, for example after the troupe changed a house rule. Your storytellers see the same list.
 
+### Blood bonds
+
+Where a troupe tracks blood bonds, a **Blood bonds** card shows the bonds the character is bound by, with what each does in play, and those bound to it that you've been told of (MET: VTM p. 295). Nobody else's player sees your bonds.
+
+Where the troupe lets players report drinks, **Report a drink** on that card says your character drank someone's blood, or someone drank your character's: pick the other character from the troupe, or type a name, then the night and where it happened. What happens next depends on the troupe:
+
+- **Players report and staff approves**: it waits for the storytellers, and counts once they approve. If they decline, you see why.
+- **Players manage**: a drink your character took counts at once. One you record of someone drinking your character's blood waits for their player to **Confirm** or **Decline** it, as one recorded against your character waits for you, on this card. For an NPC or a name, the storytellers decide.
+
+Until it's decided you can **Withdraw** it. The other character's player isn't told of a bond unless they're its regnant and know of it; reporting one as the regnant tells Horatio you know. You can't report a night to come, one before the character was made in Horatio, or a drink from someone else while your character holds a full bond, which makes them immune to other bonds (Errata, p. 295).
+
 ![A character's Sheet tab: its parts on the left, and Print, Experience and the cart on the right](images/players/sheet.png)
 
 ### Trait details
@@ -267,6 +278,7 @@ The home troupe's storytellers and assistant storytellers decide:
 - changes held for review, including those made with free changes;
 - exceptions;
 - diablerie you say the character committed (from the **⋯** menu, which asks staff about it).
+- drinks of vampire blood you report, where the troupe has players report them and staff approve (see [Blood bonds](#blood-bonds)).
 
 You're told when they decide. Narrators never see character sheets, and a visiting troupe's staff can see the sheet but decide nothing on it. The staff's side is in [Running a troupe](running-a-troupe.md).
 
@@ -454,6 +466,8 @@ Along the top: the way back to the character, **Keep the screen awake**, **Undo*
 
 The tabs are **Sheet** (to look things up), **Tracker**, **Pools**, **Status** (for a character with sect status), **Equipment** and **Throws** (rock, paper, scissors), as many of them as your character's home troupe has switched on. On every tab but the Tracker, a strip under the tabs shows Blood, Willpower and health, with **−** to spend. Your settings choose which tab it opens on; where your troupe has switched that one off, it opens on the first tab on. A troupe whose players keep their sheets in Horatio but don't play from it switches the Play View off for players, and their characters have no **Play**.
 
+On **Throws**, **Throw** picks rock, paper or scissors on your phone; show the other player your screen. On a phone with a motion sensor you can also throw by **flipping the phone** face down and back up in your hand, so two players can flip together: the throw is showing as the screen comes back up, with a short buzz. Turn **Throw by flipping** off on the tab, or in Settings › At game, if you'd rather not; it's kept on that phone. On an iPhone, tap **Turn on flipping the phone** once to let Horatio use the motion sensor.
+
 ![The Play View's Tracker, a few taps into the night: Blood, Willpower and Health](images/players/play-tracker.png)
 
 #### The Tracker
@@ -466,6 +480,7 @@ The tabs are **Sheet** (to look things up), **Tracker**, **Pools**, **Status** (
 - **This game**: every tap, newest first. **A note for this game…** with **Add note** adds a line of your own.
 - **Reset for next game…** puts every tracker back where the sheet starts it, ready for the next game, and keeps this game's log. The storytellers can also reset the whole troupe.
 - **Past games**: earlier games and their logs, for writing your next downtime.
+- **Report a drink of vampire blood**, where your troupe lets players report drinks: the same form as on the sheet's **Blood bonds** card, set to tonight at a game. A drink waiting for you to confirm shows here too. Reporting needs a signal. See [Blood bonds](#blood-bonds).
 
 Every tap shows briefly with **Undo**, and **Undo** in the header always takes back the last one.
 

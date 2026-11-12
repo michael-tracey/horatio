@@ -114,7 +114,19 @@ def approval_tasks(db: Session, user: User) -> list[Item]:
             )
         )
     )
-    return approval_items(db, troupes, [(approval, about) for approval, about in rows])
+    # A drink reported to a troupe that stopped tracking bonds waits unseen
+    # (horatio.bonds.hidden_approvals).
+    return approval_items(
+        db,
+        troupes,
+        [
+            (approval, about)
+            for approval, about in rows
+            if not (
+                approval.kind == "bond_drink" and troupes[approval.troupe_id].blood_bonds == "off"
+            )
+        ],
+    )
 
 
 def approval_items(
@@ -167,6 +179,8 @@ def approval_items(
             )
         elif approval.kind == "diablerie":
             summary = f"{character} says they committed diablerie"
+        elif approval.kind == "bond_drink":
+            summary = f"{character}'s player reports a drink of vampire blood"
         elif approval.kind == "home_troupe_change":
             moving = moves.get(approval.id) is not None
             summary = f"{character} asks to {'move' if moving else 'make'} {troupe.name} its home"

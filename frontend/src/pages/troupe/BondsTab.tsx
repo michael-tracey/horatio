@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
-import type { BondOut, CharacterChoice } from "../../api/types";
-import { BOND_PAGE, groupBonds, isOpen, levelName, partyIn, SOURCES, statusText, type BondSource } from "../../bonds";
+import type { BondOut, BondReportOut, CharacterChoice } from "../../api/types";
+import { BOND_PAGE, groupBonds, isOpen, levelName, partyIn, PLAYER_SOURCES, reportLine, SOURCES, statusText, type BondSource } from "../../bonds";
 import { DateInput } from "../../components/DateInput";
 import { useToast } from "../../components/Toast";
 import { Button, Card, Empty, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
@@ -19,8 +19,9 @@ function today(dates: ReturnType<typeof useDates>) {
 /**
  * The troupe's blood bonds, for its running staff: every bond, by thrall or by
  * regnant, with its drinks log. Staff record drinks, enter bonds that already stand,
- * break them, and say which are known to their regnants. Only shown while the troupe
- * tracks bonds.
+ * break them, and say which are known to their regnants; approve or decline the
+ * drinks players report, and change or take out any drink in a log (#661). Only shown
+ * while the troupe tracks bonds.
  */
 export function BondsTab({ troupeId }: { troupeId: string }) {
   const [by, setBy] = useState<By>("thrall");
@@ -61,6 +62,7 @@ export function BondsTab({ troupeId }: { troupeId: string }) {
         {adding === "drink" && <NewDrinkForm troupeId={troupeId} characters={bonds.data.characters} onDone={() => setAdding(null)} />}
         {adding === "enter" && <EnterForm troupeId={troupeId} characters={bonds.data.characters} onDone={() => setAdding(null)} />}
       </Card>
+      {(bonds.data.reports ?? []).length > 0 && <WaitingReports troupeId={troupeId} reports={bonds.data.reports ?? []} />}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div role="group" aria-label="List bonds" className="flex gap-1">
           {(["thrall", "regnant"] as const).map((b) => (
@@ -144,12 +146,7 @@ function BondRow({ troupeId, bond, by }: { troupeId: string; bond: BondOut; by: 
         {log && (
           <ol aria-label={`Drinks log of ${label}`} className="mt-1 flex flex-col gap-1 pl-3 text-xs">
             {bond.entries.map((e) => (
-              <li key={e.id}>
-                {dates.day(e.night)}:{" "}
-                {e.kind === "entered" ? `entered at ${levelName(e.level ?? 1).toLowerCase()}` : `a drink, ${SOURCES.find((s) => s.value === e.source)?.label.toLowerCase()}`}
-                {e.note && <span className="text-mist"> · {e.note}</span>}
-                {e.recorded_by && <span className="text-mist"> · by {e.recorded_by}</span>}
-              </li>
+              <EntryRow key={e.id} troupeId={troupeId} bond={bond} entry={e} />
             ))}
           </ol>
         )}
@@ -389,5 +386,171 @@ function BreakForm({ troupeId, bond, onDone }: { troupeId: string; bond: BondOut
         </Button>
       </div>
     </form>
+  );
+}
+
+type Entry = BondOut["entries"][number];
+
+/** A line of a bond's log, which staff can change (its night and note) or take out with a reason. */
+function EntryRow({ troupeId, bond, entry: e }: { troupeId: string; bond: BondOut; entry: Entry }) {
+  const dates = useDates();
+  const [doing, setDoing] = useState<"change" | "remove" | null>(null);
+  const [night, setNight] = useState(e.night);
+  const [note, setNote] = useState(e.note);
+  const [reason, setReason] = useState("");
+  const path = { params: { path: { troupe_id: troupeId, bond_id: bond.id, entry_id: e.id } } };
+  const change = useAction(async () => {
+    await unwrap(api.PATCH("/api/troupes/{troupe_id}/bonds/{bond_id}/entries/{entry_id}", { ...path, body: { night, note } }));
+    setDoing(null);
+  });
+  const remove = useAction(async () => {
+    await unwrap(api.POST("/api/troupes/{troupe_id}/bonds/{bond_id}/entries/{entry_id}/remove", { ...path, body: { reason } }));
+    setDoing(null);
+  });
+  const what = e.kind === "entered" ? `entered at ${levelName(e.level ?? 1).toLowerCase()}` : `a drink, ${SOURCES.find((s) => s.value === e.source)?.label.toLowerCase()}`;
+  return (
+    <li aria-label={`${dates.day(e.night)}: ${what}`}>
+      {dates.day(e.night)}: {what}
+      {e.note && <span className="text-mist"> · {e.note}</span>}
+      {e.recorded_by && <span className="text-mist"> · by {e.recorded_by}</span>}
+      {doing === null && (
+        <span className="ml-2 inline-flex gap-2">
+          <button type="button" className="text-mist underline hover:text-parchment" onClick={() => setDoing("change")}>
+            Change
+          </button>
+          <button type="button" className="text-mist underline hover:text-parchment" onClick={() => setDoing("remove")}>
+            Take out
+          </button>
+        </span>
+      )}
+      {doing === "change" && (
+        <form
+          aria-label={`Change the night of ${dates.day(e.night)}`}
+          className="mt-1 flex flex-col gap-2 rounded-md border border-ash p-2"
+          onSubmit={(ev) => {
+            ev.preventDefault();
+            change.mutate(undefined);
+          }}
+        >
+          <div className="flex flex-wrap gap-3">
+            <Field label="Night">
+              <DateInput required value={night} onChange={(ev) => setNight(ev.target.value)} className="w-44" />
+            </Field>
+            <Field label={e.kind === "entered" ? "Reason" : "Note"}>
+              <Input maxLength={2000} value={note} onChange={(ev) => setNote(ev.target.value)} />
+            </Field>
+          </div>
+          <ErrorText error={change.error} />
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" disabled={change.isPending || !night}>
+              Save
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => setDoing(null)}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      )}
+      {doing === "remove" && (
+        <form
+          aria-label={`Take out the night of ${dates.day(e.night)}`}
+          className="mt-1 flex flex-col gap-2 rounded-md border border-ash p-2"
+          onSubmit={(ev) => {
+            ev.preventDefault();
+            remove.mutate(undefined);
+          }}
+        >
+          <Field label="Reason" hint={bond.entries.length === 1 ? "It's the only line in the log, so the bond goes too." : "The level is worked out again."}>
+            <Input maxLength={2000} value={reason} onChange={(ev) => setReason(ev.target.value)} />
+          </Field>
+          <ErrorText error={remove.error} />
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" variant="danger" disabled={remove.isPending || !reason.trim()}>
+              Take it out
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => setDoing(null)}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      )}
+    </li>
+  );
+}
+
+/**
+ * Drinks players reported that are still waiting: on staff (also in Approvals) or on
+ * a thrall's player. Staff can decide either kind here.
+ */
+function WaitingReports({ troupeId, reports }: { troupeId: string; reports: BondReportOut[] }) {
+  return (
+    <Card title="Drinks waiting">
+      <ul aria-label="Drinks waiting" className="flex flex-col gap-3 text-sm">
+        {reports.map((r) => (
+          <WaitingReport key={r.id} troupeId={troupeId} report={r} />
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
+function WaitingReport({ troupeId, report: r }: { troupeId: string; report: BondReportOut }) {
+  const dates = useDates();
+  const [declining, setDeclining] = useState(false);
+  const [reason, setReason] = useState("");
+  const decide = useAction((approve: boolean) =>
+    unwrap(
+      api.POST("/api/troupes/{troupe_id}/bonds/reports/{report_id}/decide", {
+        params: { path: { troupe_id: troupeId, report_id: r.id } },
+        body: { approve, reason: approve ? "" : reason },
+      }),
+    ),
+  );
+  const line = reportLine(r, dates.day(r.night));
+  const reporter = r.reported_as === "thrall" ? r.thrall.name : r.regnant.name;
+  return (
+    <li aria-label={line} className="flex flex-col gap-1 border-t border-ash pt-2 first:border-t-0 first:pt-0">
+      <span>
+        {line}, {PLAYER_SOURCES.find((s) => s.value === r.source)?.label.toLowerCase()}
+        {r.note && <span className="text-mist"> · {r.note}</span>}
+      </span>
+      <span className="text-xs text-mist">
+        Reported for {reporter}
+        {r.reported_by && ` by ${r.reported_by}`} ·{" "}
+        {r.waiting_on === "staff" ? "waiting for staff (also in Approvals)" : `waiting for ${r.thrall.name}'s player to confirm`}
+      </span>
+      {!declining ? (
+        <span className="flex flex-wrap gap-2">
+          <Button variant="secondary" disabled={decide.isPending} onClick={() => decide.mutate(true)}>
+            Approve
+          </Button>
+          <Button variant="ghost" disabled={decide.isPending} onClick={() => setDeclining(true)}>
+            Decline
+          </Button>
+        </span>
+      ) : (
+        <form
+          aria-label={`Decline: ${line}`}
+          className="flex flex-col gap-2"
+          onSubmit={(ev) => {
+            ev.preventDefault();
+            decide.mutate(false);
+          }}
+        >
+          <Field label="Why" hint="The player who reported it sees it.">
+            <Input maxLength={2000} value={reason} onChange={(ev) => setReason(ev.target.value)} />
+          </Field>
+          <span className="flex flex-wrap gap-2">
+            <Button type="submit" variant="danger" disabled={decide.isPending}>
+              Decline it
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => setDeclining(false)}>
+              Cancel
+            </Button>
+          </span>
+        </form>
+      )}
+      <ErrorText error={decide.error} />
+    </li>
   );
 }

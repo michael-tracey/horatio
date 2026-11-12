@@ -48,7 +48,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,woff2,webp,ico,svg}", "*.png", "*.webmanifest"],
         // The link preview's picture and the big logo are for other sites, not the app.
-        globIgnores: ["preview.jpg", "logo.png"],
+        // d3 is only for staff's charts, which need a connection anyway (#706).
+        globIgnores: ["preview.jpg", "logo.png", "assets/d3-*.js"],
         navigateFallback: "index.html",
         navigateFallbackDenylist: [/^\/api\//],
         // The rules and the manual make some of the app's files big.
@@ -64,6 +65,17 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    // scripts/check-chart-chunks.mjs reads it to follow the first chunk's imports.
+    manifest: true,
+    rolldownOptions: {
+      output: {
+        // The chart kit's d3 (#706) in one chunk of its own, loaded only by the
+        // pages that draw charts, and named so the service worker can leave it out.
+        codeSplitting: { groups: [{ name: "d3", test: /[\\/]node_modules[\\/](d3-[a-z-]+|internmap)[\\/]/ }] },
+      },
+    },
+  },
   server: {
     proxy: { "/api": `http://localhost:${apiPort}` },
     // The user manual is bundled from ../docs/manual (src/manual/content.ts).

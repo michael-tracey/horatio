@@ -33,7 +33,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import equipment, titles
+from horatio import bonds, equipment, titles
 from horatio.models import Approval, Character, EquipmentItem
 from horatio.rules.equipment import KINDS
 from horatio.rules.model import RuleSetData
@@ -96,7 +96,9 @@ def facts(db: Session, troupe_id: uuid.UUID, character: Character, *, items: boo
     pending = list(
         db.scalars(
             select(Approval).where(
-                Approval.character_id == character.id, Approval.status == "pending"
+                Approval.character_id == character.id,
+                Approval.status == "pending",
+                ~bonds.hidden_approvals(),
             )
         )
     )
