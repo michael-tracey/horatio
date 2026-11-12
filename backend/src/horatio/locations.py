@@ -2,6 +2,8 @@
 its chronicle, and its characters' Havens placed on the list. Its storytellers and
 assistant storytellers keep them; players never see the record (#326 shows a
 controller the names of their locations, and what their qualities give them).
+A Haven's owner sees their own Haven, and sets its name, description, address,
+map link and advantages (#682): the same rules and log as staff's changes.
 
 The rules (MET: VTM Vol. II Issue 1, pp. 117-133), as horatio.rules.locations has
 them for the troupe:
@@ -138,6 +140,7 @@ class Draft:
     influence_type: str | None = None
     influence_area: str = ""
     address: str = ""
+    description: str = ""
     web_address: str = ""
     map_link: str = ""
     feeding_block: str = ""
@@ -165,6 +168,7 @@ SCALARS = (
     "influence_type",
     "influence_area",
     "address",
+    "description",
     "web_address",
     "map_link",
     "feeding_block",
@@ -197,7 +201,7 @@ def tidied(draft: Draft) -> Draft:
     draft.name = tidy(draft.name)
     for key in ("controller_name", "joint_name", "heir_name", "influence_area", "feeding_block"):
         setattr(draft, key, tidy(getattr(draft, key)))
-    for key in ("address", "web_address", "map_link", "notes"):
+    for key in ("address", "description", "web_address", "map_link", "notes"):
         setattr(draft, key, getattr(draft, key).strip())
     draft.qualities = [QualityIn(tidy(q.name), tidy(q.detail)) for q in draft.qualities]
     draft.negatives = [
@@ -713,6 +717,96 @@ def remove(db: Session, actor: User, location: Location) -> None:
     db.delete(location)
 
 
+# --- a player's own Haven -------------------------------------------------------------------
+
+
+@dataclass
+class OwnHaven:
+    """What a Haven's owner sets on it (#682): the rest is staff's."""
+
+    name: str
+    description: str = ""
+    address: str = ""
+    map_link: str = ""
+    haven_advantages: list[str] = field(default_factory=list[str])
+
+
+def own_havens(db: Session, character: Character) -> list[Location]:
+    """The locations that are the character's Haven: a haven its own first, then one
+    in its home troupe, then the oldest."""
+    found = db.scalars(select(Location).where(Location.haven_of_id == character.id))
+    return sorted(
+        found,
+        key=lambda loc: (
+            loc.kind != "haven",
+            loc.troupe_id != character.home_troupe_id,
+            loc.created_at,
+        ),
+    )
+
+
+def own_haven(db: Session, character: Character) -> Location | None:
+    found = own_havens(db, character)
+    return found[0] if found else None
+
+
+def read_only(db: Session, character: Character, location: Location) -> str | None:
+    """Why the owner can't change their Haven, if they can't."""
+    if character.status == "retired":
+        return f"{character.name} is retired: their Haven stays as it is."
+    if db.get_one(Troupe, location.troupe_id).archived_at is not None:
+        return f"{location.name} is on an archived troupe's list."
+    if location.kind != "haven":
+        return (
+            f"Staff made {location.name}, one of the troupe's locations, {character.name}'s "
+            "Haven: ask them to change it."
+        )
+    return None
+
+
+def cannot_create(db: Session, character: Character, troupe: Troupe | None) -> str | None:
+    """Why the owner can't put their Haven on the list, if they can't."""
+    if character.status == "retired":
+        return f"{character.name} is retired."
+    if own_havens(db, character):
+        return f"{character.name} already has a Haven."
+    if troupe is None:
+        return f"{character.name} needs a home troupe first: its Haven goes on that troupe's list."
+    if rating_of(db, character, "backgrounds", HAVEN) < 1:
+        return f"{character.name} has no Haven background."
+    return None
+
+
+def save_own_haven(
+    db: Session,
+    actor: User,
+    character: Character,
+    troupe: Troupe | None,
+    location: Location | None,
+    own: OwnHaven,
+) -> Location:
+    """Put the character's Haven on its home troupe's list, or change the owner's
+    part of it, by the same rules and log as staff's changes."""
+    if location is None:
+        if reason := cannot_create(db, character, troupe):
+            raise conflict(reason)
+        assert troupe is not None
+        dots = rating_of(db, character, "backgrounds", HAVEN)
+        draft = Draft(name=own.name, kind="haven", rating=min(dots, 5), haven_of_id=character.id)
+    else:
+        if reason := read_only(db, character, location):
+            raise conflict(reason)
+        troupe = db.get_one(Troupe, location.troupe_id)
+        draft = draft_of(location)
+    draft.name = own.name
+    draft.description = own.description
+    draft.address = own.address
+    draft.map_link = own.map_link
+    draft.haven_advantages = list(own.haven_advantages)
+    saved, _ = save(db, actor, troupe, location, draft)
+    return saved
+
+
 # --- its log ----------------------------------------------------------------------------------
 
 
@@ -731,6 +825,7 @@ LABELS = {
     "influence_type": "influence area",
     "influence_area": "influence area",
     "address": "address",
+    "description": "description",
     "web_address": "web address",
     "map_link": "map link",
     "feeding_block": "feeding block",
