@@ -67,7 +67,7 @@ export function Choice<K extends Key>({ name, label, choices }: { name: K; label
 }
 
 // The tabs the Play View can open on, in the order offered.
-const OPENING: Preferences["play_tab"][] = ["tracker", "sheet", "pools"];
+const OPENING: Preferences["play_tab"][] = ["tracker", "sheet", "pools", "throws"];
 
 /**
  * The tab the Play View opens on: only those at least one of the person's troupes has

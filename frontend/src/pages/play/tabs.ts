@@ -15,6 +15,7 @@ export const TABS = [
   // Only for a character with sect status.
   { key: "status", label: "Status" },
   { key: "equipment", label: "Equipment" },
+  { key: "throws", label: "Throws" },
 ] as const satisfies readonly { key: Tab; label: string }[];
 
 // Every tab the server knows is in TABS: one missing here fails the typecheck.

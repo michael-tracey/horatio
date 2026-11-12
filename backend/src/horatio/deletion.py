@@ -23,6 +23,7 @@ from horatio.models import (
     Backstory,
     BackstoryAnswer,
     BackstoryFeedback,
+    BloodBond,
     Character,
     CharacterTitle,
     CharacterTrait,
@@ -192,6 +193,15 @@ def delete_character(db: Session, player: User, character: Character) -> None:
         update(Location)
         .where(Location.haven_of_id == cid)
         .values(haven_of_id=None, haven_advantages=[])
+    )
+    # A blood bond it is on either side of keeps its name.
+    db.execute(
+        update(BloodBond).where(BloodBond.thrall_id == cid).values(thrall_id=None, thrall_name=name)
+    )
+    db.execute(
+        update(BloodBond)
+        .where(BloodBond.regnant_id == cid)
+        .values(regnant_id=None, regnant_name=name)
     )
     db.execute(update(AuditEvent).where(AuditEvent.character_id == cid).values(character_id=None))
     db.delete(character)

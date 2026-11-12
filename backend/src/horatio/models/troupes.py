@@ -35,6 +35,10 @@ class Troupe(Imported, Record):
         CheckConstraint("languages in ('book', 'accelerated', 'custom')", name="languages"),
         CheckConstraint("free_changes in ('none', 'date', 'games')", name="free_changes"),
         CheckConstraint("assamite_name in ('Banu Haqim', 'Assamite')", name="assamite_name"),
+        CheckConstraint(
+            "blood_bonds in ('off', 'staff', 'players_report', 'players_manage')",
+            name="blood_bonds",
+        ),
     )
 
     name: Mapped[str]
@@ -143,6 +147,12 @@ class Troupe(Imported, Record):
     # leaves play, and the next downtime asks for memories of them. While off, nothing
     # of them shows, but those already published stay with the characters.
     remembrances: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Blood bonds (horatio.bonds, #660): "off", not tracked at all, with what was
+    # recorded kept hidden until it is switched on again; "staff", who record every
+    # drink; "players_report", players report drinks for staff to approve; or
+    # "players_manage", players record them. The player modes come with #661; until
+    # then they work as "staff".
+    blood_bonds: Mapped[str] = mapped_column(default="off", server_default="off")
     # House rules for Retainers (horatio.retainer_upkeep): upkeep, in Blood or
     # Willpower, and growth, in XP a month. Each is off while it is absent.
     retainer_rules: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
