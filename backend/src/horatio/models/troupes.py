@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 from sqlalchemy import (
@@ -157,6 +157,12 @@ class Troupe(Imported, Record):
     # "players_manage", players record them. The player modes come with #661; until
     # then they work as "staff".
     blood_bonds: Mapped[str] = mapped_column(default="off", server_default="off")
+    # The day the troupe's bonds' clocks start from (#665): no bond drops or ends for
+    # time spent apart before it, so bonds kept before fading with time came in, or
+    # entered from before Horatio, don't all fade at once.
+    bond_clock_from: Mapped[date] = mapped_column(
+        Date, default=lambda: datetime.now(UTC).date(), server_default=text("current_date")
+    )
     # Boons (horatio.boons, #685): whether the troupe keeps a boon ledger. While off,
     # nothing of it shows, not even in the log; what was registered is kept, and comes
     # back when it is on again.

@@ -234,13 +234,23 @@ function ApprovalCard({ approval }: { approval: QueuedApproval }) {
       {approval.bond && (
         <div className="mb-3 flex flex-col gap-1 text-sm">
           <p>
-            Reports {approval.bond.thrall} drinking {approval.bond.regnant}&apos;s blood on {dates.day(approval.bond.night)},{" "}
+            {approval.bond.kind === "meeting" ? (
+              <>
+                Reports {approval.bond.thrall} and {approval.bond.regnant} meeting on {dates.day(approval.bond.night)},{" "}
+              </>
+            ) : (
+              <>
+                Reports {approval.bond.thrall} drinking {approval.bond.regnant}&apos;s blood on {dates.day(approval.bond.night)},{" "}
+              </>
+            )}
             {approval.bond.source === "downtime" ? "in a downtime" : "at a game"}.
           </p>
           {pending && approval.bond.refused && <p className="text-blood-bright">{approval.bond.refused}</p>}
           {pending && (
             <p className="text-xs text-mist">
-              Approving adds the drink to the bond&apos;s log{approval.bond.reported_as === "regnant" ? ", and marks the bond known to its regnant, who reported it" : ""}.
+              {approval.bond.kind === "meeting"
+                ? "Approving logs the meeting, which keeps a lesser bond from ending (p. 296). "
+                : `Approving adds the drink to the bond's log${approval.bond.reported_as === "regnant" ? ", and marks the bond known to its regnant, who reported it" : ""}. `}
               Declining tells the player your note.
             </p>
           )}

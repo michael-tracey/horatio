@@ -899,6 +899,16 @@ MESSAGES: dict[str, str] = {
     "bond.thrall_died": "{character}'s bond to {regnant} ended: {character} met Final Death.",
     "bond.kept_cleared": "{actor} stopped showing {regnant}'s player the bond of {thrall}, who"
     " met Final Death.",
+    # Fading with time (#665): the drop goes in the troupe's log only, until the thrall's
+    # player is told it weakened, with the troupe's next downtime results.
+    "bond.dropped": "{thrall}'s full bond to {regnant} dropped to two drinks on {night}, after"
+    " three months without drinking.",
+    "bond.dropped_told": "{character}'s bond to {regnant} has weakened.",
+    "bond.meeting": "{actor} recorded {character} and {regnant} meeting on {night}, {source}.",
+    "bond.meeting_reported": "{actor} reported {character} and {regnant} meeting on {night},"
+    " {source}.",
+    "bond.immunity_overridden": "{actor} recorded {character}'s bond to {regnant} though a full"
+    " bond made them immune: {reason}",
     "bond.entry_changed": "{actor} changed a night in {character}'s bond to {regnant} from {was}"
     " to {night}: now {level}.",
     "bond.entry_removed": "{actor} took the night of {night} out of {character}'s bond to"

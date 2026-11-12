@@ -879,6 +879,16 @@ A thrall's Final Death ends its bonds. A regnant has no sense of a thrall's deat
 
 Players can still learn of a death in other ways, which are yours to choose: listing the character under **No longer with us** on the Who's Who, opening Remembrances for it, or logging the withdrawal of its dots from a shared background. Hold off on these until its bonds have faded if the thralls shouldn't know yet.
 
+#### Bonds that fade with time
+
+A bond must be kept up (MET: VTM p. 296). A **full bond drops to two drinks** after three months without the thrall drinking the regnant's blood. A **two-drink bond ends** after six months without the two meeting or speaking, and a **one-drink bond** after a year. A drink counts as meeting. So does a game both characters checked in at. For other meetings, such as one in a downtime, use **Log a meeting** on the bond. Each bond on **Characters › Bonds** says what happens to it next, and when ("Drops to two drinks on 12 Feb 2027 unless Agnes drinks again").
+
+There's no clock running at night: Horatio makes the changes due when the troupe's bonds are next looked at, or its downtime results delivered. Under **Staff manages** and **Players manage** it makes them by itself. Under **Players report and staff approves** each waits on **Characters › Bonds**, marked **Due**, until you **Confirm** it; log a meeting or a drink instead if the two did keep it up. A change goes in the troupe's log only. The thrall's player is told with the next downtime results, "Agnes's bond to Bram has weakened" or "has faded", and until then their sheet shows the bond as it was.
+
+No bond drops or ends for time before the troupe's bonds started fading with time, or before it last switched bonds back on from **Off**: nothing could be logged while they were off.
+
+A full bond makes the thrall immune to other bonds until it drops (Errata, p. 295). Recording a drink from anyone else, or entering a bond to them, is refused with why; give a **Reason to record it anyway** if the story calls for it, and it goes in the log.
+
 ### Approving backstories
 
 Storytellers and assistant storytellers read a character's backstory on its **Backstory** tab, or opened in its home troupe request. Under **Your reading**:
