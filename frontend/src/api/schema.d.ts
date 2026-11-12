@@ -13340,6 +13340,8 @@ export interface components {
             applies_to: string;
             /** By Sheet */
             by_sheet: boolean | null;
+            /** From Ledger */
+            from_ledger: boolean;
             /** Key */
             key: string;
             /** Level */

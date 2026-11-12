@@ -4355,6 +4355,10 @@
             ],
             "title": "By Sheet"
           },
+          "from_ledger": {
+            "title": "From Ledger",
+            "type": "boolean"
+          },
           "key": {
             "title": "Key",
             "type": "string"
@@ -4396,6 +4400,7 @@
           "applies_to",
           "page",
           "by_sheet",
+          "from_ledger",
           "marked",
           "reason",
           "applies"

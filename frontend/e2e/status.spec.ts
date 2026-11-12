@@ -277,6 +277,46 @@ test("a troupe names the Gangrel a pillar clan in Customise, and the Camarilla's
   await expect(card.getByText("Fleeting: 0 of 3")).toBeVisible();
 });
 
+test("with a boon ledger, the ban on no boons registered with the Harpy is judged from it (#692)", async ({ browser }) => {
+  const custodian = await person(browser, "harpy-ban-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "harpy-ban-lead");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Court of Debts ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  const l = lead.page;
+  const send = async (url: string, data: object, method: "POST" | "PUT" = "POST") => {
+    const response = await l.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  // Ilsa, a Camarilla Ventrue NPC: of a pillar clan, so only the boons ban can touch her.
+  const { id } = await send(`/api/troupes/${troupeId}/npcs`, { name: "Ilsa Marten", wizard: false });
+  for (const [category, name] of [["sect", "Camarilla"], ["clan", "Ventrue"]])
+    await send(`/api/characters/${id}/npc/ratings`, { category, name, rating: null, detail: "" }, "PUT");
+  await send(`/api/troupes/${troupeId}/boon-ledger`, { on: true }, "PUT");
+
+  const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Status", exact: true }) });
+  const bans = l.locator("section").filter({ has: l.getByRole("heading", { name: "Status bans" }) });
+  const boonsBan = bans.getByRole("button", { name: /Lesser ban: No boons registered with the Harpy/ });
+  await l.goto(`/characters/${id}/status`);
+  await expect(boonsBan).toContainText("applies");
+  await expect(card.getByText("Fleeting: 0 of 3")).toBeVisible();
+  await boonsBan.click();
+  const panel = l.getByRole("dialog");
+  await expect(panel.getByText("It applies: the boon ledger has no boon of Ilsa Marten's registered.")).toBeVisible();
+  await l.screenshot(shots("status-ban-boon-ledger"));
+  await l.keyboard.press("Escape");
+
+  // Staff register one she's owed: the ban no longer holds.
+  const boon = { debtor: { name: "Old Varga" }, creditor: { character_id: id }, kind: "minor", made_on: "2026-10-03", reason: "Information" };
+  await send(`/api/troupes/${troupeId}/boons`, { boons: [boon], note: "" });
+  await l.goto(`/characters/${id}/status`);
+  await expect(boonsBan).toContainText("does not apply");
+  await expect(card.getByText("Fleeting: 0 of 5")).toBeVisible();
+});
+
 test("Status & Titles: a Camarilla player sees the status held with its sources, takes Harpy from the titles sidebar and gains its status, switches to Keeper of Elysium, and opens a status ban, on desktop and phone (#321, #339)", async ({ browser }) => {
   const custodian = await person(browser, "stitles-cust");
   makeCustodian(custodian.email);

@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from horatio import sect_status
 from horatio.models import (
     AuditEvent,
+    Boon,
     Character,
     CharacterTitle,
     CharacterTrait,
@@ -428,6 +429,100 @@ def test_merits_and_flaws_move_the_fleeting_cap_and_say_why(troupe: Troupe) -> N
         5,
         ["Reputation: 1 more", "Tainted Embrace: 1 less"],
     )
+
+
+def boons_ban(person: Person, character_id: str) -> dict[str, Any]:
+    found = status(person, character_id)["bans"]
+    return next(b for b in found if b["key"] == sect_status.NO_BOONS_BAN)
+
+
+def register_boon(troupe: Troupe, debtor: Any, creditor: Any) -> str:
+    made = troupe.storyteller.client.post(
+        f"/troupes/{troupe.id}/boons",
+        json={
+            "boons": [
+                {
+                    "debtor": debtor,
+                    "creditor": creditor,
+                    "kind": "minor",
+                    "made_on": "2026-10-03",
+                    "reason": "Information",
+                }
+            ],
+            "note": "",
+        },
+    )
+    assert made.status_code == 201, made.text
+    boon_id: str = made.json()[0]["id"]
+    return boon_id
+
+
+def test_the_boon_ledger_judges_the_ban_on_no_boons_registered(troupe: Troupe) -> None:
+    # p. 403: a lesser ban on a Camarilla member with no boons registered with the Harpy.
+    agnes = member(troupe)
+    # Without a ledger the sheet can't tell: staff say, as before.
+    ban = boons_ban(troupe.player, agnes)
+    assert (ban["by_sheet"], ban["from_ledger"], ban["applies"]) == (None, False, False)
+
+    switched = troupe.storyteller.client.put(f"/troupes/{troupe.id}/boon-ledger", json={"on": True})
+    assert switched.status_code == 200, switched.text
+    # None registered: it applies, and cuts fleeting status to 3.
+    found = status(troupe.player, agnes)
+    ban = boons_ban(troupe.player, agnes)
+    assert (ban["by_sheet"], ban["from_ledger"], ban["applies"]) == (True, True, True)
+    assert found["fleeting_cap"] == 3
+
+    # A pending boon was never registered, nor a void one.
+    boon_id = register_boon(troupe, {"character_id": agnes}, {"name": "Vidal"})
+    record = troupe.session.get(Boon, uuid.UUID(boon_id))
+    assert record is not None
+    record.state = "pending"
+    troupe.session.commit()
+    assert boons_ban(troupe.player, agnes)["applies"] is True
+    record.state = "registered"
+    troupe.session.commit()
+    boons = f"/troupes/{troupe.id}/boons/{boon_id}"
+    voided = troupe.storyteller.client.post(f"{boons}/void", json={"note": "Entered twice"})
+    assert voided.status_code == 200, voided.text
+    assert boons_ban(troupe.player, agnes)["applies"] is True
+
+    # One registered, owed to her or by her, standing or settled: it doesn't.
+    reopened = troupe.storyteller.client.post(f"{boons}/reopen", json={"note": "Not twice"})
+    assert reopened.status_code == 200, reopened.text
+    ban = boons_ban(troupe.player, agnes)
+    assert (ban["by_sheet"], ban["applies"]) == (False, False)
+    assert status(troupe.player, agnes)["fleeting_cap"] == 5
+    settled = troupe.storyteller.client.post(
+        f"{boons}/settle", json={"how": "called_in", "note": ""}
+    )
+    assert settled.status_code == 200, settled.text
+    assert boons_ban(troupe.player, agnes)["applies"] is False
+
+    # Staff's mark still overrides the ledger.
+    path = f"/characters/{agnes}/status/bans"
+    marked = troupe.storyteller.client.put(
+        path, json={"ban": sect_status.NO_BOONS_BAN, "mark": "applies", "reason": "Unpaid"}
+    )
+    assert marked.status_code == 200, marked.text
+    ban = boons_ban(troupe.player, agnes)
+    assert (ban["by_sheet"], ban["marked"], ban["applies"]) == (False, True, True)
+
+    # Switched off, the ledger says nothing again: only the mark stands.
+    off = troupe.storyteller.client.put(f"/troupes/{troupe.id}/boon-ledger", json={"on": False})
+    assert off.status_code == 200, off.text
+    ban = boons_ban(troupe.player, agnes)
+    assert (ban["by_sheet"], ban["from_ledger"], ban["applies"]) == (None, False, True)
+
+
+def test_both_sides_of_a_registered_boon_are_clear_of_the_ban(troupe: Troupe) -> None:
+    agnes = member(troupe)
+    bram = member(troupe, "Bram", player=sign_up(troupe.client_for, "bramsplayer"))
+    on = troupe.storyteller.client.put(f"/troupes/{troupe.id}/boon-ledger", json={"on": True})
+    assert on.status_code == 200, on.text
+    register_boon(troupe, {"character_id": bram}, {"character_id": agnes})
+    # Both sides of a registered boon are clear of the ban.
+    assert boons_ban(troupe.player, agnes)["applies"] is False
+    assert boons_ban(troupe.storyteller, bram)["applies"] is False
 
 
 def test_a_flaws_penalty_adds_to_a_ban(troupe: Troupe) -> None:

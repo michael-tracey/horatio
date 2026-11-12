@@ -107,6 +107,8 @@ class BanOut(BaseModel):
     page: str | None
     # As the sheet shows it; None where it cannot tell.
     by_sheet: bool | None
+    # `by_sheet` comes from the troupe's boon ledger, not the sheet (issue #692).
+    from_ledger: bool
     # As staff marked it: True, it applies; False, exempt; None, as the sheet shows.
     marked: bool | None
     reason: str
@@ -336,6 +338,7 @@ def status_out(db: DbSession, user: User, character: Character) -> StatusOut:
                 applies_to=b.applies_to,
                 page=b.page,
                 by_sheet=b.by_sheet,
+                from_ledger=b.from_ledger,
                 marked=b.marked,
                 reason=b.reason,
                 applies=b.applies,

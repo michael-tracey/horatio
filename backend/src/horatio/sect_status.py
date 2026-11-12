@@ -76,6 +76,7 @@ from sqlalchemy.orm import Session
 
 from horatio import audit, social_age, titles
 from horatio.models import (
+    Boon,
     Character,
     CharacterTitle,
     HeldStatus,
@@ -236,6 +237,9 @@ class Ban:
     by_sheet: bool | None
     marked: bool | None
     reason: str
+    # Its answer (`by_sheet`) comes from the boon ledger, not the sheet: the ban on no
+    # boons registered with the Harpy, in a troupe that keeps a ledger (issue #692).
+    from_ledger: bool = False
 
     @property
     def applies(self) -> bool:
@@ -526,6 +530,36 @@ def suppressions(db: Session, character: Character, held: Sequence[Held]) -> lis
     return found
 
 
+# The ban the boon ledger can judge (MET: VTM p. 403). Staff marks are kept under a
+# ban's words, so it is known by them, as the rules files have it.
+NO_BOONS_BAN = "No boons registered with the Harpy."
+# A boon the Harpy has registered, standing or since settled; pending and void ones
+# never were (horatio.boons).
+REGISTERED = ("registered", "settled")
+
+
+def boons_registered(db: Session, character: Character) -> bool | None:
+    """Whether the character has a boon registered, owed or owed to it, in the ledger
+    of any troupe it is in that keeps one; None when none of them does."""
+    keeping = [
+        t.id
+        for t in db.scalars(select(Troupe).where(Troupe.id.in_(current_troupe_ids(db, character))))
+        if t.boons
+    ]
+    if not keeping:
+        return None
+    found = db.scalar(
+        select(Boon.id)
+        .where(
+            Boon.troupe_id.in_(keeping),
+            Boon.state.in_(REGISTERED),
+            (Boon.debtor_id == character.id) | (Boon.creditor_id == character.id),
+        )
+        .limit(1)
+    )
+    return found is not None
+
+
 def bans_of(
     db: Session, character: Character, sect: SectData | None, sheet: Sequence[SheetTrait]
 ) -> list[Ban]:
@@ -543,15 +577,22 @@ def bans_of(
     found: list[Ban] = []
     for ban in sect.bans:
         mark = marks.get(ban.mark_key)
+        by_sheet = matches(ban.when, sheet, subject) if ban.when else None
+        from_ledger = False
+        if ban.when is None and ban.mark_key == NO_BOONS_BAN:
+            registered = boons_registered(db, character)
+            if registered is not None:
+                by_sheet, from_ledger = not registered, True
         found.append(
             Ban(
                 key=ban.mark_key,
                 level=ban.level,
                 applies_to=ban.applies_to,
                 page=ban.page,
-                by_sheet=matches(ban.when, sheet, subject) if ban.when else None,
+                by_sheet=by_sheet,
                 marked=mark.applies if mark else None,
                 reason=mark.reason if mark else "",
+                from_ledger=from_ledger,
             )
         )
     return found
