@@ -599,6 +599,77 @@ test("the troupe's locations: a storyteller adds the Grove Arcade, is refused an
   await expect(owner.page.getByText(/Controls 1 of 5 locations/)).toHaveCount(0);
 });
 
+test("a player's own Haven: Nell names it from her sheet, Security comes free with the skill, and the lead sees it on the troupe's list", async ({ browser }) => {
+  const custodian = await person(browser, "hav-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "hav-lead");
+  const owner = await person(browser, "hav-owner");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Haven Court ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+
+  // Nell, at home in the troupe, with Haven 2 and the Security skill.
+  const { id: nell } = await send(owner.page, "POST", "/api/characters", { splat: "vampire", name: "Nell Bellhouse" });
+  await send(owner.page, "PUT", `/api/characters/${nell}/traits`, { category: "clan", name: "Brujah", rating: null });
+  const picks: Record<string, [string, number][]> = {
+    attributes: [["Physical", 3], ["Social", 7], ["Mental", 5]],
+    focus_physicals: [["Dexterity", 1]],
+    focus_mentals: [["Intelligence", 1]],
+    focus_socials: [["Manipulation", 1]],
+    skills: [["Leadership", 4], ["Subterfuge", 3], ["Academics", 3], ["Awareness", 2], ["Empathy", 2], ["Investigation", 2], ["Dodge", 1], ["Drive", 1], ["Medicine", 1], ["Security", 1]],
+    backgrounds: [["Resources", 3], ["Haven", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  };
+  for (const [category, list] of Object.entries(picks))
+    await send(owner.page, "PUT", `/api/characters/${nell}/creation/categories/${category}`, { picks: list.map(([n, rating]) => ({ name: n, rating })) });
+  await send(owner.page, "POST", `/api/characters/${nell}/creation/complete`);
+  const asked = await send(owner.page, "POST", `/api/characters/${nell}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+
+  // Under the Haven row of her sheet, Nell puts her Haven on the list.
+  const o = owner.page;
+  await o.goto(`/characters/${nell}`);
+  const panel = o.getByRole("region", { name: "Your Haven" });
+  await panel.getByRole("button", { name: "Name your Haven and choose its advantages" }).click();
+  const dialog = o.getByRole("dialog", { name: "Your Haven" });
+  await dialog.getByLabel("Name", { exact: true }).fill("The Bell Tower");
+  await dialog.getByLabel("Description").fill("A disused bell tower over the river.");
+  await dialog.getByLabel("Address", { exact: true }).fill("1 Church St");
+  await dialog.getByRole("checkbox", { name: /^Library/ }).check();
+  await dialog.getByRole("checkbox", { name: /^Security/ }).check();
+  await expect(dialog.getByText("1 of 2 dots used, plus Security free")).toBeVisible();
+  await dialog.getByRole("checkbox", { name: /^Luxury/ }).check();
+  await expect(dialog.getByText("2 of 2 dots used, plus Security free")).toBeVisible();
+  // Her two dots are used: another that needs one can't be ticked.
+  await expect(dialog.getByRole("checkbox", { name: /^Size/ })).toBeDisabled();
+  await dialog.getByRole("button", { name: "Put it on the list" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(panel).toContainText("The Bell Tower · 1 Church St");
+  await expect(panel).toContainText("Advantages: Library, Security (free), Luxury");
+
+  // She drops Luxury.
+  await panel.getByRole("button", { name: "Edit your Haven" }).click();
+  await dialog.getByRole("checkbox", { name: /^Luxury/ }).uncheck();
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(panel).toContainText("Advantages: Library, Security (free)");
+
+  // The lead finds it on the troupe's list, as Nell's Haven, with what she changed in its log.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}/locations`);
+  await l.getByRole("link", { name: "The Bell Tower" }).first().click();
+  await expect(l.getByRole("heading", { name: "The Bell Tower" })).toBeVisible();
+  await expect(l.getByText("A disused bell tower over the river.")).toBeVisible();
+  await expect(l.getByText("Nell Bellhouse", { exact: true })).toBeVisible();
+  await expect(l.getByText(/changed The Bell Tower: advantages −Luxury/)).toBeVisible();
+});
+
 test("location quests: a player acquires Ruby's Bar, adds Profitable, a rival makes it Insolvent, and a repair brings the Resources back", async ({ browser }) => {
   // Three requests and their quests, from the Quests tab to the sheet.
   test.slow();

@@ -1883,6 +1883,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/haven": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Haven
+         * @description The character's Haven as its player keeps it, and the advantages to choose from.
+         */
+        get: operations["read_haven_api_characters__character_id__haven_get"];
+        /**
+         * Change Haven
+         * @description Change the owner's part of the character's Haven: the rest stays as staff set it.
+         */
+        put: operations["change_haven_api_characters__character_id__haven_put"];
+        /**
+         * Add Haven
+         * @description Put the character's Haven on its home troupe's list of locations.
+         */
+        post: operations["add_haven_api_characters__character_id__haven_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/held-locations": {
         parameters: {
             query?: never;
@@ -18011,6 +18039,23 @@ export interface components {
             /** Handle */
             handle: string;
         };
+        /** HavenAdvantageChoiceOut */
+        HavenAdvantageChoiceOut: {
+            /** Allowed */
+            allowed: boolean;
+            /** Free */
+            free: boolean;
+            /** Free With */
+            free_with: string;
+            /** Name */
+            name: string;
+            /** Needs */
+            needs: string;
+            /** Page */
+            page: string;
+            /** Text */
+            text: string;
+        };
         /** HavenAdvantageOut */
         HavenAdvantageOut: {
             /** Free With */
@@ -18023,6 +18068,27 @@ export interface components {
             page: string;
             /** Text */
             text: string;
+        };
+        /** HavenNegativeOut */
+        HavenNegativeOut: {
+            /** Effect */
+            effect: string;
+            /** Level */
+            level: number;
+            /** Name */
+            name: string;
+        };
+        /** HavenOut */
+        HavenOut: {
+            /** Advantages */
+            advantages: components["schemas"]["HavenAdvantageChoiceOut"][];
+            /** Cannot Create */
+            cannot_create: string | null;
+            /** Character Name */
+            character_name: string;
+            /** Dots */
+            dots: number;
+            haven: components["schemas"]["OwnHavenOut"] | null;
         };
         /** Health */
         Health: {
@@ -19752,6 +19818,11 @@ export interface components {
              * @default []
              */
             damaged_off: string[];
+            /**
+             * Description
+             * @default
+             */
+            description: string;
             /** Elysium Since */
             elysium_since?: number | null;
             /**
@@ -19882,6 +19953,8 @@ export interface components {
              * @default []
              */
             damaged_off: string[];
+            /** Description */
+            description: string;
             /** Elysium Qualities */
             elysium_qualities: number | null;
             /** Elysium Since */
@@ -19990,6 +20063,11 @@ export interface components {
              * @default []
              */
             damaged_off: string[];
+            /**
+             * Description
+             * @default
+             */
+            description: string;
             /** Elysium Since */
             elysium_since?: number | null;
             /**
@@ -20130,6 +20208,8 @@ export interface components {
              * @default []
              */
             damaged_off: string[];
+            /** Description */
+            description: string;
             /** Elysium Qualities */
             elysium_qualities: number | null;
             /** Elysium Since */
@@ -21994,6 +22074,69 @@ export interface components {
              * @enum {string}
              */
             type: "elite" | "underworld";
+        };
+        /** OwnHavenIn */
+        OwnHavenIn: {
+            /**
+             * Address
+             * @default
+             */
+            address: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Haven Advantages
+             * @default []
+             */
+            haven_advantages: string[];
+            /**
+             * Map Link
+             * @default
+             */
+            map_link: string;
+            /** Name */
+            name: string;
+        };
+        /** OwnHavenOut */
+        OwnHavenOut: {
+            /** Address */
+            address: string;
+            /** Description */
+            description: string;
+            /** Haven Advantages */
+            haven_advantages: string[];
+            /** Haven Free */
+            haven_free: string[];
+            /** Haven Over */
+            haven_over: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "standard" | "prestige" | "iconic" | "haven";
+            /** Map Link */
+            map_link: string;
+            /** Name */
+            name: string;
+            /** Negatives */
+            negatives: components["schemas"]["HavenNegativeOut"][];
+            /** Read Only */
+            read_only: string | null;
+            /** Troupe Name */
+            troupe_name: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /** OwnLocationQualityIn */
         OwnLocationQualityIn: {
@@ -25759,6 +25902,8 @@ export interface components {
              * @default []
              */
             damaged_off: string[];
+            /** Description */
+            description: string;
             /** Elysium Qualities */
             elysium_qualities: number | null;
             /** Elysium Since */
@@ -33860,6 +34005,107 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_haven_api_characters__character_id__haven_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HavenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_haven_api_characters__character_id__haven_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnHavenIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HavenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_haven_api_characters__character_id__haven_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnHavenIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HavenOut"];
+                };
             };
             /** @description Validation Error */
             422: {

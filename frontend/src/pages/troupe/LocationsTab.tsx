@@ -457,6 +457,7 @@ function Record({ location: l, catalogue, onEdit, onQuest }: { location: Locatio
           </div>
         ))}
       </dl>
+      {l.description && <p className="mt-3 text-sm whitespace-pre-wrap">{l.description}</p>}
       {l.qualities.length > 0 && (
         <section className="mt-4">
           <h3 className="mb-1 font-sans text-xs tracking-wide text-mist uppercase">Qualities</h3>

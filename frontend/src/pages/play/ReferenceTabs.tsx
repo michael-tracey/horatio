@@ -164,7 +164,25 @@ function IdentityLine({ reference, detail }: { reference: PlayReference; detail:
   return identity ? <IdentityNote identity={identity} /> : null;
 }
 
-export function PoolRow({ pool, willpower, modifiers, on, trackers }: { pool: TestPool; willpower: number; modifiers: Modifier[]; on: string[]; trackers?: Trackers }) {
+/** Throwing a pool from the Pools tab (#698): the pool, its total now and how it is made up. */
+export type ThrowPool = (pool: TestPool, total: number, breakdown: string) => void;
+
+export function PoolRow({
+  pool,
+  willpower,
+  modifiers,
+  on,
+  trackers,
+  onThrow,
+}: {
+  pool: TestPool;
+  willpower: number;
+  modifiers: Modifier[];
+  on: string[];
+  trackers?: Trackers;
+  /** A Throw button that takes the pool to the Throws tab. */
+  onThrow?: ThrowPool;
+}) {
   const hurt = pool.damage ? switchedDamage(pool.damage, on) : [];
   const now = total(pool, willpower, modifiers, on);
   const variants: VariantNow[] = [
@@ -178,7 +196,22 @@ export function PoolRow({ pool, willpower, modifiers, on, trackers }: { pool: Te
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-parchment">{pool.name}</span>
         {/* A power with no test of its own (Scourge of Arikel) has no pool to show, only when it hurts. */}
-        {!pool.challenge && <strong className="font-display text-2xl leading-none text-parchment">{now}</strong>}
+        {!pool.challenge && (
+          <span className="flex shrink-0 items-baseline gap-2">
+            {/* Initiative sets who acts first; it is never thrown. */}
+            {onThrow && pool.key !== "initiative" && (
+              <button
+                type="button"
+                aria-label={`Throw ${pool.name}`}
+                onClick={() => onThrow(pool, now, breakdown(pool, willpower, modifiers, on))}
+                className="min-h-9 rounded-full border border-line px-2.5 text-xs text-mist hover:border-gold/60 hover:text-gold pointer-coarse:min-h-10"
+              >
+                Throw
+              </button>
+            )}
+            <strong className="font-display text-2xl leading-none text-parchment">{now}</strong>
+          </span>
+        )}
       </div>
       <p className="text-xs text-mist">
         {pool.challenge ?? breakdown(pool, willpower, modifiers, on)}
@@ -234,7 +267,21 @@ const ATTRIBUTES = ["Physical", "Social", "Mental"] as const;
  * issue #371). The storyteller names the attribute, so each starts with the one the
  * skill is listed under, and one tap counts them all on another.
  */
-function OtherTests({ pools, reference, willpower, modifiers, on }: { pools: TestPool[]; reference: PlayReference; willpower: number; modifiers: Modifier[]; on: string[] }) {
+function OtherTests({
+  pools,
+  reference,
+  willpower,
+  modifiers,
+  on,
+  onThrow,
+}: {
+  pools: TestPool[];
+  reference: PlayReference;
+  willpower: number;
+  modifiers: Modifier[];
+  on: string[];
+  onThrow?: ThrowPool;
+}) {
   const [attribute, setAttribute] = useState<string | null>(null);
   const rating = (name: string) => reference.traits.find((t) => t.category === "attributes" && t.name === name)?.rating ?? 0;
   const shown = attribute ? pools.map((p) => withAttribute(p, attribute, rating(attribute))) : pools;
@@ -256,7 +303,7 @@ function OtherTests({ pools, reference, willpower, modifiers, on }: { pools: Tes
       </div>
       <ul>
         {shown.map((p) => (
-          <PoolRow key={p.key} pool={p} willpower={willpower} modifiers={modifiers} on={on} />
+          <PoolRow key={p.key} pool={p} willpower={willpower} modifiers={modifiers} on={on} onThrow={onThrow} />
         ))}
       </ul>
     </Panel>
@@ -314,6 +361,7 @@ export function PoolsTab({
   tap,
   using,
   trackers,
+  onThrow,
 }: {
   reference: PlayReference;
   willpower: number;
@@ -328,6 +376,8 @@ export function PoolsTab({
   using?: Using;
   /** Morality and Beast traits now, for Rampart of Faith (issue #602). */
   trackers?: Trackers;
+  /** A Throw button on each pool, when the troupe has the Throws tab on (#698). */
+  onThrow?: ThrowPool;
 }) {
   const modifiers = useModifiers(characterId);
   const named = useClanName();
@@ -339,13 +389,13 @@ export function PoolsTab({
       <div className="grid gap-3 md:grid-cols-2">
         {grouped(showing(reference.pools, on)).map(([group, pools]) =>
           group === OTHER_TESTS ? (
-            <OtherTests key={group} pools={pools} reference={reference} willpower={willpower} modifiers={counting} on={on} />
+            <OtherTests key={group} pools={pools} reference={reference} willpower={willpower} modifiers={counting} on={on} onThrow={onThrow} />
           ) : (
             <Panel key={group} title={group} aside={group === "Defence" ? <span className="text-xs text-mist">Willpower now: {willpower}</span> : undefined}>
               {group === "Combat" && reference.blood_per_turn > 0 && <p className="text-xs text-mist">{bloodNote(reference.blood_per_turn)}</p>}
               <ul>
                 {pools.map((p) => (
-                  <PoolRow key={p.key} pool={p} willpower={willpower} modifiers={counting} on={on} trackers={trackers} />
+                  <PoolRow key={p.key} pool={p} willpower={willpower} modifiers={counting} on={on} trackers={trackers} onThrow={onThrow} />
                 ))}
               </ul>
             </Panel>

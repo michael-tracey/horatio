@@ -114,6 +114,7 @@ const CHARACTER = new Set([
   "character-titles",
   "character-shared",
   "held-locations",
+  "haven",
   "character-locations",
   "domitor",
   "picture",
