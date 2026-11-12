@@ -130,9 +130,17 @@ export type TroupeThrowSet = Record<Throw, string>;
  * (horatio.pictures keeps it so), never recoloured, so it looks as the troupe made it.
  */
 export function troupeImages(name: string, set: TroupeThrowSet): ThrowImages {
+  return pictureImages(name, { rock: `${set.rock}/512.webp`, paper: `${set.paper}/512.webp`, scissors: `${set.scissors}/512.webp` });
+}
+
+/**
+ * A troupe's set from each picture's own source: its address, or the picture itself as
+ * kept on the device for the Throws tab offline (#671, play/chosenThrows.ts).
+ */
+export function pictureImages(name: string, sources: Record<Throw, string>): ThrowImages {
   return {
     name,
-    picture: (which) => <img src={`${set[which]}/512.webp`} alt="" draggable={false} className="h-full w-full object-contain" />,
+    picture: (which) => <img src={sources[which]} alt="" draggable={false} className="h-full w-full object-contain" />,
   };
 }
 

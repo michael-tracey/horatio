@@ -6,9 +6,10 @@ settings someone has changed (`users.preferences`), so changing a default here
 changes it for everyone who kept it. The tickets that follow #100 each give a
 setting its effect: #101 ratings, #102 time zone and dates, #104 paper and
 badge size, #105 the Play View, #106 notifications by email, #107 text size,
-#635 the theme.
+#635 the theme, #671 the Throws tab's pictures.
 """
 
+import uuid
 from typing import Any, Literal
 from zoneinfo import available_timezones
 
@@ -36,6 +37,10 @@ class Preferences(BaseModel):
     quick_notes: bool = True
     keep_awake: bool = True
     play_tab: Literal["tracker", "sheet", "pools", "throws"] = "tracker"
+    # The Throws tab's pictures (#671): None for Horatio's, or the id of a troupe the
+    # person plays in whose own set they chose (horatio.api.throw_images). One they no
+    # longer play in, or that removed its set, falls back to Horatio's.
+    throw_images: str | None = None
     # Normal or larger text, everywhere but on paper (#107).
     text_size: Literal["normal", "large"] = "normal"
     # Dark, or Ultra goth: deep red on matte black (#635). Light isn't kept: it
@@ -70,6 +75,16 @@ class Preferences(BaseModel):
         if zone is not None and zone not in available_timezones():
             raise ValueError(f"{zone} is not a time zone Horatio knows.")
         return zone
+
+    @field_validator("throw_images")
+    @classmethod
+    def troupe_id(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        try:
+            return str(uuid.UUID(value))
+        except ValueError as error:
+            raise ValueError("That isn't a troupe.") from error
 
 
 def read(user: User) -> Preferences:

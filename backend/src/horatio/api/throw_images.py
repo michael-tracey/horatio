@@ -8,6 +8,11 @@ once all three are there; removing it puts the troupe back on Horatio's own.
 
 The troupe's members see the set and its pictures: its staff, and the players of its
 active characters, home or visiting (horatio.permissions.is_member).
+
+Each person chooses which set their Throws tab uses (issue #671): Horatio's, or the
+whole set of any troupe they play in (horatio.preferences `throw_images`). `/throw-images`
+says which sets they may choose and which one counts now; a choice whose troupe they
+no longer play in, or whose set is gone, counts as Horatio's.
 """
 
 import uuid
@@ -16,17 +21,20 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import pictures
+from horatio import pictures, preferences
 from horatio.api.pictures import uploads
 from horatio.api.troupe_profiles import image_response, read_upload
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import Troupe, User
-from horatio.permissions import TroupeAction, is_member, require_troupe_action
+from horatio.permissions import TroupeAction, is_member, member_troupe_ids, require_troupe_action
 
 router = APIRouter(prefix="/troupes/{troupe_id}/throw-images", tags=["throw images"])
+# The signed-in person's choice of set (#671).
+mine_router = APIRouter(prefix="/throw-images", tags=["throw images"])
 
 Which = Literal["rock", "paper", "scissors"]
 WHICH: tuple[Which, ...] = ("rock", "paper", "scissors")
@@ -162,3 +170,63 @@ def image_file(
         else None
     )
     return image_response(path)
+
+
+# --- Each person's choice (#671) ----------------------------------------------------
+
+
+class ThrowSetOut(BaseModel):
+    """A troupe's whole set, as a person may choose it for their Throws tab."""
+
+    troupe_id: uuid.UUID
+    troupe_name: str
+    # The set's own name, if it has one.
+    name: str
+    # Where each picture is: add "/512.webp" or "/128.webp".
+    rock: str
+    paper: str
+    scissors: str
+
+
+class MyThrowImagesOut(BaseModel):
+    # The set the Throws tab uses now; None for Horatio's.
+    chosen: ThrowSetOut | None
+    # Every set the person may choose: each troupe they play in with all three pictures.
+    offered: list[ThrowSetOut]
+
+
+def offered(db: Session, user: User) -> list[ThrowSetOut]:
+    """The whole sets of the troupes `user` plays in: their characters' troupes, home
+    or visiting, and those they are staff of; never an archived troupe's."""
+    ids = member_troupe_ids(db, user)
+    if not ids:
+        return []
+    troupes = db.scalars(select(Troupe).where(Troupe.id.in_(ids)).order_by(Troupe.name))
+    sets: list[ThrowSetOut] = []
+    for troupe in troupes:
+        images = images_out(troupe)
+        if images.rock and images.paper and images.scissors:
+            sets.append(
+                ThrowSetOut(
+                    troupe_id=troupe.id,
+                    troupe_name=troupe.name,
+                    name=images.name,
+                    rock=images.rock,
+                    paper=images.paper,
+                    scissors=images.scissors,
+                )
+            )
+    return sets
+
+
+def may_choose(db: Session, user: User, troupe_id: str) -> bool:
+    return any(str(s.troupe_id) == troupe_id for s in offered(db, user))
+
+
+@mine_router.get("")
+def my_images(db: DbSession, user: CurrentUser) -> MyThrowImagesOut:
+    """The set the person's Throws tab uses, and the sets they may choose from."""
+    sets = offered(db, user)
+    want = preferences.read(user).throw_images
+    chosen = next((s for s in sets if str(s.troupe_id) == want), None)
+    return MyThrowImagesOut(chosen=chosen, offered=sets)
