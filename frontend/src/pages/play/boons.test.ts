@@ -15,6 +15,7 @@ const boon = (over: Partial<PlayBoonOut>): PlayBoonOut => ({
   settled_how: null,
   settled_at: null,
   settled_note: "",
+  creditor_disgraced: false,
   can_settle: false,
   ...over,
 });

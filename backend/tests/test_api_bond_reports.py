@@ -333,8 +333,9 @@ def test_a_full_bond_makes_the_thrall_immune_to_drinks_players_record(players: P
     assert p.report(p.agnes, t.player, "thrall", named("Someone")).status_code == 409
     # Another drink from the regnant of the full bond is fine.
     assert p.reported(p.agnes, t.player, "thrall", p.bram) == "recorded"
-    # Staff aren't held to it until bonds fade by the rules (#665).
-    assert p.drink(p.agnes, p.cora, "2026-10-24").status_code == 201
+    # Staff are held to it too, but can give a reason to record it anyway (#665).
+    assert p.drink(p.agnes, p.cora, "2026-10-24").status_code == 409
+    assert p.drink(p.agnes, p.cora, "2026-10-24", override="A ritual").status_code == 201
 
 
 def test_the_form_offers_the_troupes_player_characters(players: Players) -> None:
