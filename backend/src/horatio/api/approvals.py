@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from horatio import (
+    bonds,
     book_traits,
     clan_merits,
     diablerie,
@@ -187,6 +188,20 @@ class FreeChoicesSummaryOut(BaseModel):
     complete: bool
 
 
+class BondAskOut(BaseModel):
+    """A drink a player reported, for staff to approve (horatio.bonds)."""
+
+    thrall: str
+    regnant: str
+    # Which side the reporting player's character is on.
+    reported_as: str
+    night: date
+    # game | downtime
+    source: str
+    # Why approving it would be refused now, such as a full bond to someone else.
+    refused: str | None
+
+
 class QueuedApproval(ApprovalOut):
     character_name: str
     # The character's picture (horatio.pictures) and clan, for its placeholder.
@@ -205,6 +220,8 @@ class QueuedApproval(ApprovalOut):
     exception: ExceptionAskOut | None = None
     # For a diablerie a player asked to record.
     diablerie: DiablerieAskOut | None = None
+    # For a drink of vampire blood a player reported.
+    bond: BondAskOut | None = None
     # For a home troupe change: each difference and how it is to be settled.
     reconciliation: list[ReconciliationOut]
     # For a player character's home troupe change: its XP against the floor and ceiling.
@@ -389,6 +406,26 @@ def exception_out(db: DbSession, approval: Approval) -> ExceptionAskOut | None:
     )
 
 
+def bond_out(db: DbSession, approval: Approval) -> BondAskOut | None:
+    if approval.kind != bonds.APPROVAL_KIND:
+        return None
+    report = bonds.report_for_approval(db, approval)
+    if report is None:
+        return None
+    thrall, regnant = bonds.report_parties(db, report)
+    troupe = db.get_one(Troupe, report.troupe_id)
+    return BondAskOut(
+        thrall=thrall.shown,
+        regnant=regnant.shown,
+        reported_as=report.reported_as,
+        night=report.night,
+        source=report.source,
+        refused=bonds.immune_to(db, troupe, thrall, regnant)
+        if report.status == "pending"
+        else None,
+    )
+
+
 def diablerie_out(db: DbSession, approval: Approval) -> DiablerieAskOut | None:
     if approval.kind != "diablerie":
         return None
@@ -477,7 +514,13 @@ def troupe_approvals(
     user: CurrentUser,
     state: Literal["pending", "approved", "declined", "withdrawn"] = "pending",
     kind: Literal[
-        "home_troupe_change", "discipline", "review", "exception", "diablerie", "merit_flaw"
+        "home_troupe_change",
+        "discipline",
+        "review",
+        "exception",
+        "diablerie",
+        "merit_flaw",
+        "bond_drink",
     ]
     | None = None,
 ) -> list[QueuedApproval]:
@@ -494,6 +537,8 @@ def troupe_approvals(
     )
     if kind is not None:
         query = query.where(Approval.kind == kind)
+    if not bonds.tracked(troupe):
+        query = query.where(Approval.kind != bonds.APPROVAL_KIND)
     rows = list(db.execute(query))
     standing = social_age.standings(db, list({c.id for _, c in rows}))
     players = {c.player_id for _, c in rows if c.kind == "pc"}
@@ -515,6 +560,7 @@ def troupe_approvals(
             discipline=discipline_out(db, a),
             exception=exception_out(db, a),
             diablerie=diablerie_out(db, a),
+            bond=bond_out(db, a),
             reconciliation=reconciliation_out(db, a),
             xp=xp_review_out(db, a, c),
             locks=locks_out(db, a, c),

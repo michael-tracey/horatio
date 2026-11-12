@@ -871,6 +871,24 @@ MESSAGES: dict[str, str] = {
     " {full}.",
     "bond.broken": "{actor} broke {character}'s bond to {regnant}: {reason}",
     "bond.known": "{actor} marked {character}'s bond to {regnant} {known} to the regnant.",
+    "bond.entry_changed": "{actor} changed a night in {character}'s bond to {regnant} from {was}"
+    " to {night}: now {level}.",
+    "bond.entry_removed": "{actor} took the night of {night} out of {character}'s bond to"
+    " {regnant}: {reason} Now {level}.",
+    "bond.reported": "{actor} reported {character} drinking {regnant}'s blood on {night},"
+    " {source}.",
+    "bond.report_withdrawn": "{actor} withdrew the drink of {regnant}'s blood reported for"
+    " {character} on {night}.",
+    "bond.report_confirmed": "{actor} confirmed {character} drinking {regnant}'s blood on {night}.",
+    "bond.report_approved": "{actor} approved {character} drinking {regnant}'s blood on {night}.",
+    "bond.report_declined": "{actor} declined {character} drinking {regnant}'s blood on {night}:"
+    " {reason}",
+    "approval.approved.bond_drink": "{actor} approved a drink of vampire blood reported for"
+    " {character}.",
+    "approval.declined.bond_drink": "{actor} declined a drink of vampire blood reported for"
+    " {character}.",
+    "approval.withdrawn.bond_drink": "{actor} withdrew a drink of vampire blood reported for"
+    " {character}.",
     "remembrance.opened": "{actor} opened remembrances for {character}, asked in {cycle}.",
     "remembrance.asked": "{actor} asked for remembrances of {character}.",
     "remembrance.removed": "{actor} removed a memory of {remembered} from {cycle}{because}:"
