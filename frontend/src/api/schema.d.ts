@@ -8115,6 +8115,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/chronicle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Troupe Chronicle */
+        get: operations["troupe_chronicle_api_troupes__troupe_id__chronicle_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/clan-names": {
         parameters: {
             query?: never;
@@ -15752,6 +15769,48 @@ export interface components {
             active: boolean;
             /** Name */
             name: string;
+        };
+        /** ChronicleEventOut */
+        ChronicleEventOut: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Character Id */
+            character_id: string | null;
+            /** Character Name */
+            character_name: string;
+            /** Clan */
+            clan: string | null;
+            /** Detail */
+            detail: string;
+            /** Ends At */
+            ends_at: string | null;
+            /** Ends On */
+            ends_on: string | null;
+            /** Key */
+            key: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "title" | "status" | "embrace" | "diablerie" | "death" | "arrival" | "departure";
+            /** Label */
+            label: string;
+            /** On */
+            on: string | null;
+            /** Ongoing */
+            ongoing: boolean;
+        };
+        /** ChronicleOut */
+        ChronicleOut: {
+            /** Events */
+            events: components["schemas"]["ChronicleEventOut"][];
+            /** Full */
+            full: boolean;
+            /** Players See */
+            players_see: boolean;
         };
         /** ClaimLinkOut */
         ClaimLinkOut: {
@@ -30598,6 +30657,8 @@ export interface components {
             badge_status?: ("all" | "negative" | "none") | null;
             /** Badge Titles */
             badge_titles?: boolean | null;
+            /** Chronicle Players */
+            chronicle_players?: boolean | null;
             /** Court History Players */
             court_history_players?: boolean | null;
             /** Description */
@@ -30806,6 +30867,11 @@ export interface components {
              * @default false
              */
             boons: boolean;
+            /**
+             * Chronicle Players
+             * @default false
+             */
+            chronicle_players: boolean;
             /**
              * Court History Players
              * @default false
@@ -47870,6 +47936,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    troupe_chronicle_api_troupes__troupe_id__chronicle_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChronicleOut"];
                 };
             };
             /** @description Validation Error */

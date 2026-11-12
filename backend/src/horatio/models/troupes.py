@@ -168,6 +168,9 @@ class Troupe(Imported, Record):
     # The court over time (horatio.title_history, #712): whether its players see who
     # held each title and when. Its staff always do.
     court_history_players: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # The chronicle timeline (horatio.chronicle, #711): whether its players see the
+    # troupe's public history. Its staff always see all of it.
+    chronicle_players: Mapped[bool] = mapped_column(default=False, server_default="false")
     # What each kind of boon weighs in its boon standings (horatio.boon_standings,
     # #691), by kind: {"major": 3}. A kind left out weighs its default.
     boon_weights: Mapped[dict[str, float]] = mapped_column(JSONB, default=dict, server_default="{}")

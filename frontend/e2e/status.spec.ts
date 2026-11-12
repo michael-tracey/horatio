@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab, builtVampire, ATTRIBUTES_AND_FOCUSES } from "./support";
 
 /** Status and titles, on the sheet, on badges and at a game. */
 
@@ -1069,4 +1069,89 @@ test("the court over time: staff give a Prince and take it away, and see one fin
   await expect(p.getByRole("checkbox", { name: /^Players see it too/ })).toBeChecked();
   const saved = await p.request.get(`/api/troupes/${troupeId}/court-history`);
   expect((await saved.json()).players_see).toBe(true);
+});
+
+test("the chronicle: staff see an Embrace and a diablerie on the troupe's timeline at their in-game dates, and the players see only what is public (#711)", async ({ browser }) => {
+  test.slow();
+  const custodian = await person(browser, "chron-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "chron-lead");
+  const player = await person(browser, "chron-player");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT" | "PATCH", url: string, data: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  const { id: troupeId } = await send(custodian.page, "POST", "/api/troupes", { name: `Annals of the Night ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupeId);
+  await send(lead.page, "PATCH", `/api/troupes/${troupeId}`, { allowed_splats: ["vampire", "ghoul"] });
+  const p = player.page;
+  const accept = async (id: string) => {
+    const asked = await send(p, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+  };
+
+  // A Brujah neonate, accepted, who later commits diablerie.
+  const teodor = await builtVampire(p, "Teodor Ash", "Brujah", {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+    disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+  });
+  await accept(teodor);
+  await send(lead.page, "POST", `/api/characters/${teodor}/diablerie`, { committed_on: "1999-08-15", victim: "Elder Mercy", humanity_lowered: 1 });
+
+  // A ghoul, accepted, who dies in an Embrace long ago.
+  // Built as the book's Vivian (p. 299), which the ghoul tests build too.
+  const { id: mireval } = await send(p, "POST", "/api/characters", { splat: "ghoul", name: "Mireval", building_troupe_id: troupeId, domitor: { name: "The Vizier", clan: "Assamite: Vizier" } });
+  await send(p, "PUT", `/api/characters/${mireval}/traits`, { category: "sect", name: "Camarilla", rating: null });
+  const build: Record<string, [string, number][]> = {
+    ...ATTRIBUTES_AND_FOCUSES,
+    backgrounds: [["Fame", 3], ["Herd", 2], ["Allies", 1]],
+    disciplines: [["Auspex", 3], ["Quietus", 2]],
+    merits: [["Uncommon Clan", 2], ["Code of Honor", 2]],
+  };
+  for (const [category, picks] of Object.entries(build))
+    await send(p, "PUT", `/api/characters/${mireval}/creation/categories/${category}`, { picks: picks.map(([name, rating]) => ({ name, rating })) });
+  await send(p, "POST", `/api/characters/${mireval}/creation/complete`, {});
+  await accept(mireval);
+  await send(lead.page, "POST", `/api/characters/${mireval}/embrace/died`, { embraced_on: "1791-06-02", sire_name: "Lucien" });
+
+  // Characters › Chronicle: both, at their in-game dates.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/titles`);
+  await l.getByRole("navigation", { name: "Characters", exact: true }).getByRole("link", { name: "Chronicle", exact: true }).click();
+  const chart = l.getByRole("figure", { name: "The chronicle" });
+  await expect(chart).toBeVisible();
+  await expect(chart.getByRole("checkbox", { name: "In-game dates" })).toBeChecked();
+  const embrace = chart.getByRole("img", { name: /^Died in the Embrace: Mireval: / });
+  await expect(embrace).toHaveAccessibleName(/in game 2 Jun 1791/);
+  const diablerie = chart.getByRole("img", { name: /^Diablerie: Teodor Ash: / });
+  await expect(diablerie).toHaveAccessibleName(/in game 15 Aug 1999/);
+  await expect(diablerie).toHaveAccessibleName(/Of Elder Mercy/);
+  // Joining the troupe has no in-game date: it is listed under the chart instead.
+  await expect(l.locator("summary", { hasText: /no in-game date/ })).toBeVisible();
+  await l.screenshot(shots("chronicle"));
+
+  // Picking an event shows it in full, with the way to its record.
+  await diablerie.click();
+  const chosen = l.getByRole("region", { name: "Chosen event" });
+  await expect(chosen).toContainText("Diablerie: Teodor Ash");
+  await expect(chosen.getByRole("link", { name: "Open Teodor Ash" })).toHaveAttribute("href", `/characters/${teodor}`);
+
+  // The same as a table.
+  await chart.getByRole("button", { name: "Show as table" }).click();
+  await expect(chart.getByRole("row", { name: /Diablerie Teodor Ash/ })).toContainText("15 Aug 1999");
+  await chart.getByRole("button", { name: "Show as chart" }).click();
+
+  // The players see it once the troupe lets them, and only what is public.
+  expect((await p.request.get(`/api/troupes/${troupeId}/chronicle`)).status()).toBe(403);
+  await l.goto(`/troupes/${troupeId}/settings`);
+  const players = l.getByRole("checkbox", { name: /^Players see it too Only what the troupe already shows them/ });
+  await players.click();
+  await expect(players).toBeChecked();
+  const seen = await (await p.request.get(`/api/troupes/${troupeId}/chronicle`)).json();
+  expect(seen.full).toBe(false);
+  expect(seen.events.map((e: { kind: string }) => e.kind)).not.toContain("diablerie");
+  expect(seen.events.map((e: { kind: string }) => e.kind)).not.toContain("embrace");
 });

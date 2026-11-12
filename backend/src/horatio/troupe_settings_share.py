@@ -711,6 +711,13 @@ SETTINGS: dict[str, Setting] = {
             on_off,
         ),
         Setting(
+            "chronicle_players",
+            "status_titles",
+            "Players see the chronicle",
+            bool,
+            on_off,
+        ),
+        Setting(
             "play_tabs_off",
             "at_game",
             "Play View tabs for players",

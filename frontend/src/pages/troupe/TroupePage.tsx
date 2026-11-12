@@ -53,6 +53,8 @@ import { XpAwardsTab } from "./XpAwardsTab";
 const BoonStatisticsPage = lazy(() => import("./BoonStatisticsPage").then((m) => ({ default: m.BoonStatisticsPage })));
 // The court over time (#712) draws with the chart kit, so d3 loads only when it is opened.
 const CourtTab = lazy(() => import("./CourtTab").then((m) => ({ default: m.CourtTab })));
+// The chronicle (#711) too.
+const ChronicleTab = lazy(() => import("./ChronicleTab").then((m) => ({ default: m.ChronicleTab })));
 
 export function TroupePage() {
   const { troupeId = "" } = useParams();
@@ -107,6 +109,7 @@ export function TroupePage() {
               { to: `${base}/house-rules`, label: "House rules" },
               { to: `${base}/status`, label: "Status" },
               ...(!can.running && t.whos_who && t.court_history_players ? [{ to: `${base}/court`, label: "Court" }] : []),
+              ...(!can.running && t.whos_who && t.chronicle_players ? [{ to: `${base}/chronicle`, label: "Chronicle" }] : []),
               ...(can.staff ? [{ to: `${base}/staff`, label: "Staff" }] : []),
               ...(can.running ? [{ to: `${base}/log`, label: "Log" }] : []),
             ],
@@ -122,6 +125,7 @@ export function TroupePage() {
               ...(can.running ? [{ to: `${base}/xp`, label: "Award XP" }] : []),
               ...(can.running ? [{ to: `${base}/titles`, label: "Titles" }] : []),
               ...(can.running ? [{ to: `${base}/court`, label: "Court" }] : []),
+              ...(can.running ? [{ to: `${base}/chronicle`, label: "Chronicle" }] : []),
               ...(can.running && (t.blood_bonds ?? "off") !== "off" ? [{ to: `${base}/bonds`, label: "Bonds" }] : []),
               ...(can.running && t.boons ? [{ to: `${base}/boons`, label: "Boons" }] : []),
               ...(can.running && t.boons ? [{ to: `${base}/boon-standings`, label: "Boon standings" }] : []),
@@ -200,6 +204,16 @@ export function TroupePage() {
             element={
               <Suspense fallback={<Loading />}>
                 <CourtTab troupeId={t.id} />
+              </Suspense>
+            }
+          />
+        )}
+        {(can.running || (t.whos_who && t.chronicle_players)) && (
+          <Route
+            path="chronicle"
+            element={
+              <Suspense fallback={<Loading />}>
+                <ChronicleTab troupeId={t.id} />
               </Suspense>
             }
           />
