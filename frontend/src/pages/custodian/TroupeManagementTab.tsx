@@ -119,7 +119,7 @@ function RunningTroupe({ troupe: t }: { troupe: TroupeOut }) {
       {/* Named by its text, not an aria-label: a label holding "lead storyteller" on
           every row would answer to the New troupe form's own field label. */}
       <Button variant="secondary" onClick={() => setOpen(true)}>
-        Change lead<span className="sr-only"> for {t.name}</span>…
+        Change lead…<span className="sr-only"> for {t.name}</span>
       </Button>
       {/* Only while open, as a closed dialog's title still labels it (see above). */}
       {open && (

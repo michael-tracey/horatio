@@ -455,7 +455,7 @@ test("the custodian sets up a troupe, changes its lead and approves a request, a
   await expect(troupes.getByRole("link", { name: troupeName })).toBeVisible();
 
   // Its lead changes from the Troupes list.
-  await troupes.getByRole("button", { name: `Change lead for ${troupeName}` }).click();
+  await troupes.getByRole("button", { name: `Change lead… for ${troupeName}` }).click();
   const dialog = c.getByRole("dialog", { name: `New lead for ${troupeName}` });
   await expect(dialog.getByText("Now: tmgmt-lead")).toBeVisible();
   await dialog.getByLabel("New lead").fill(newLead.handle.slice(0, -2));
