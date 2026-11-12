@@ -6,6 +6,7 @@ import { Badge, ErrorText, GroupedTabs, Loading, PageTitle } from "../../compone
 import { useMe } from "../../hooks";
 import { ApprovalsTab } from "./ApprovalsTab";
 import { BondsTab } from "./BondsTab";
+import { BoonStandingsTab } from "./BoonStandingsTab";
 import { BoonsTab } from "./BoonsTab";
 import { ConnectorsTab } from "./ConnectorsTab";
 import { CyclesTab } from "./CyclesTab";
@@ -115,6 +116,7 @@ export function TroupePage() {
               ...(can.running ? [{ to: `${base}/titles`, label: "Titles" }] : []),
               ...(can.running && (t.blood_bonds ?? "off") !== "off" ? [{ to: `${base}/bonds`, label: "Bonds" }] : []),
               ...(can.running && t.boons ? [{ to: `${base}/boons`, label: "Boons" }] : []),
+              ...(can.running && t.boons ? [{ to: `${base}/boon-standings`, label: "Boon standings" }] : []),
             ],
           },
           {
@@ -185,6 +187,7 @@ export function TroupePage() {
         {can.running && <Route path="titles" element={<TitlesTab troupeId={t.id} />} />}
         {can.running && (t.blood_bonds ?? "off") !== "off" && <Route path="bonds" element={<BondsTab troupeId={t.id} />} />}
         {can.running && t.boons && <Route path="boons" element={<BoonsTab troupeId={t.id} />} />}
+        {can.running && t.boons && <Route path="boon-standings" element={<BoonStandingsTab troupeId={t.id} />} />}
         {can.running && <Route path="shared/*" element={<SharedBackgroundsTab troupeId={t.id} />} />}
         {can.running && <Route path="locations/*" element={<LocationsTab troupeId={t.id} questsOn={t.quests_enabled} />} />}
         {can.running && <Route path="equipment" element={<EquipmentTab troupeId={t.id} troupeName={t.name} />} />}
