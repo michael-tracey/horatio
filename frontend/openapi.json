@@ -29880,7 +29880,8 @@
               "tracker",
               "pools",
               "status",
-              "equipment"
+              "equipment",
+              "throws"
             ],
             "items": {
               "enum": [
@@ -29888,7 +29889,8 @@
                 "tracker",
                 "pools",
                 "status",
-                "equipment"
+                "equipment",
+                "throws"
               ],
               "type": "string"
             },
@@ -31412,7 +31414,8 @@
             "enum": [
               "tracker",
               "sheet",
-              "pools"
+              "pools",
+              "throws"
             ],
             "title": "Play Tab",
             "type": "string"
@@ -44752,7 +44755,8 @@
                     "tracker",
                     "pools",
                     "status",
-                    "equipment"
+                    "equipment",
+                    "throws"
                   ],
                   "type": "string"
                 },
@@ -45469,7 +45473,8 @@
                 "tracker",
                 "pools",
                 "status",
-                "equipment"
+                "equipment",
+                "throws"
               ],
               "type": "string"
             },

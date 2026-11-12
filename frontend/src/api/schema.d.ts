@@ -22269,10 +22269,11 @@ export interface components {
              *       "tracker",
              *       "pools",
              *       "status",
-             *       "equipment"
+             *       "equipment",
+             *       "throws"
              *     ]
              */
-            tabs: ("sheet" | "tracker" | "pools" | "status" | "equipment")[];
+            tabs: ("sheet" | "tracker" | "pools" | "status" | "equipment" | "throws")[];
             vitae?: components["schemas"]["VitaeOut"] | null;
             willpower: components["schemas"]["Tracker"];
             /** Willpower Lent */
@@ -22910,7 +22911,7 @@ export interface components {
              * @default tracker
              * @enum {string}
              */
-            play_tab: "tracker" | "sheet" | "pools";
+            play_tab: "tracker" | "sheet" | "pools" | "throws";
             /**
              * Quick Notes
              * @default true
@@ -27986,7 +27987,7 @@ export interface components {
             /** Name */
             name?: string | null;
             /** Play Tabs Off */
-            play_tabs_off?: ("sheet" | "tracker" | "pools" | "status" | "equipment")[] | null;
+            play_tabs_off?: ("sheet" | "tracker" | "pools" | "status" | "equipment" | "throws")[] | null;
             /** Session Xp */
             session_xp?: number | null;
             /** Starting Xp */
@@ -28230,7 +28231,7 @@ export interface components {
              * Play Tabs Off
              * @default []
              */
-            play_tabs_off: ("sheet" | "tracker" | "pools" | "status" | "equipment")[];
+            play_tabs_off: ("sheet" | "tracker" | "pools" | "status" | "equipment" | "throws")[];
             /**
              * Player Nominations
              * @default false
