@@ -361,7 +361,7 @@ def troupe_boons(
         db.scalars(
             select(Boon)
             .where(Boon.troupe_id == troupe.id)
-            .order_by(Boon.made_on.desc(), Boon.created_at.desc())
+            .order_by(Boon.made_on.desc(), Boon.created_at.desc(), Boon.id.desc())
         )
     )
     characters = characters_of(db, every)
@@ -722,7 +722,7 @@ def play_out(
                 Boon.troupe_id == troupe.id,
                 or_(Boon.debtor_id == character.id, Boon.creditor_id == character.id),
             )
-            .order_by(Boon.made_on.desc(), Boon.created_at.desc())
+            .order_by(Boon.made_on.desc(), Boon.created_at.desc(), Boon.id.desc())
         )
         if b.state in ("registered", "settled")
     ]

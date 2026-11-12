@@ -271,7 +271,7 @@ def memberships(db: Session, character: Character) -> list[TroupeMembership]:
             .where(
                 TroupeMembership.character_id == character.id, TroupeMembership.left_at.is_(None)
             )
-            .order_by(TroupeMembership.joined_at)
+            .order_by(TroupeMembership.joined_at, TroupeMembership.id)
         )
     )
 

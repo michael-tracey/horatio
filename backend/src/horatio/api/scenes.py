@@ -136,7 +136,7 @@ def pinned(db: Session, scene_id: uuid.UUID) -> list[uuid.UUID]:
         db.scalars(
             select(SceneCharacter.character_id)
             .where(SceneCharacter.scene_id == scene_id)
-            .order_by(SceneCharacter.position, SceneCharacter.created_at)
+            .order_by(SceneCharacter.position, SceneCharacter.created_at, SceneCharacter.id)
         )
     )
 
