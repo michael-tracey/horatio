@@ -28,6 +28,10 @@ class Boon(Record):
         ),
         CheckConstraint("(state = 'settled') = (settled_how is not null)", name="settled"),
         CheckConstraint("(state in ('settled', 'void')) = (closed_at is not null)", name="closed"),
+        CheckConstraint(
+            "status_loss is null or status_loss in ('due', 'taken', 'waived')",
+            name="status_loss",
+        ),
         Index("ix_boons_troupe_id_state", "troupe_id", "state"),
     )
 
@@ -62,6 +66,10 @@ class Boon(Record):
     submitted_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     # The game it was registered at, when staff say so (#702): the Harpy's boons from
     # one game, entered days later. None away from a game, or for one entered before.
+    # A major, blood or life boon its debtor formally ignored costs them status (p. 395):
+    # "due" until staff or the Harpy say they took it ("taken") or chose not to
+    # ("waived"). None for any other boon.
+    status_loss: Mapped[str | None]
     game_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("scheduled_games.id", ondelete="SET NULL"), index=True
     )

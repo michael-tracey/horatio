@@ -1,4 +1,4 @@
-import type { BoonEventOut, BoonOut, BoonKindCount } from "./api/types";
+import type { AppealOut, BoonEventOut, BoonOut, BoonKindCount, BoonbreakerPreviewOut } from "./api/types";
 
 /** Where the book has boons: what they are, their kinds, and boon breakers. */
 export const BOON_PAGE = "MET: VTM pp. 395-397";
@@ -51,7 +51,7 @@ export const SETTLED: { value: SettledHow; label: string; meaning: string }[] = 
   {
     value: "ignored",
     label: "Formally ignored",
-    meaning: "The debtor formally ignored it, which costs status for a major boon or greater (p. 397).",
+    meaning: "The debtor formally ignored it, which costs them status for a major, blood or life boon (p. 395).",
   },
 ];
 
@@ -208,3 +208,31 @@ export function flagText(flag: BoonFlag, boon: Pick<BoonOut, "debtor" | "credito
   if (flag.kind === "unmatched") return `${FLAG_NAMES.unmatched} (${flagBody(flag, boon).replace(": ", "): ")}`;
   return `${FLAG_NAMES[flag.kind]}${flag.kind === "hand" && flag.raised_by ? " " : ": "}${flagBody(flag, boon)}`;
 }
+
+// --- Boonbreakers (#717) --------------------------------------------------------------------
+
+/** Where the book has Boonbreakers, and appeals for mercy. */
+export const BREAKER_PAGE = "MET: VTM pp. 397-398";
+
+/** What declaring someone a Boonbreaker would make void, said before it's done. */
+export function voidsText(preview: Pick<BoonbreakerPreviewOut, "owed_by" | "owed_to">): string {
+  const total = preview.owed_by + preview.owed_to;
+  if (total === 0) return "They have no open boons to make void.";
+  return `This makes ${total} ${total === 1 ? "boon" : "boons"} void: ${preview.owed_by} owed by them, ${preview.owed_to} owed to them.`;
+}
+
+const APPEAL_TO: Record<AppealOut["to"], string> = { harpy: "the Harpy", court: "a court of Harpies" };
+
+/** One appeal for mercy: "To a court of Harpies: mercy refused, 4 against". */
+export function appealText(appeal: Pick<AppealOut, "to" | "outcome" | "against">): string {
+  const outcome = appeal.outcome === "granted" ? "mercy granted" : "mercy refused";
+  const votes = appeal.against !== null && appeal.against !== undefined ? `, ${appeal.against} against` : "";
+  return `To ${APPEAL_TO[appeal.to]}: ${outcome}${votes}`;
+}
+
+/** A great boon its debtor formally ignored, and the status they lose for it (p. 395). */
+export const LOSS_TEXT: Record<NonNullable<BoonOut["status_loss"]>, string> = {
+  due: "Ignoring it costs its debtor status (p. 395): take it with the status tools, then say so here.",
+  taken: "Its debtor lost status for ignoring it (p. 395).",
+  waived: "No status was taken for ignoring it.",
+};
