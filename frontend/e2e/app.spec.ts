@@ -68,6 +68,48 @@ test("Help opens the user manual from the top menu, signed out or in, with links
   await expect(p.getByRole("searchbox", { name: "Search the manual" })).toHaveValue("calendar link");
 });
 
+test("the chart kit draws its sample charts in Dark, Ultra goth and print, with tooltips and tables, d3 loading only then (#706)", async ({ browser }) => {
+  const { page } = await person(browser, "kit-viewer");
+  // d3 comes with the charts, never with the app's first load.
+  const d3 = page.waitForRequest((r) => /\/assets\/d3-[^/]+\.js$/.test(r.url()));
+  await page.goto("/charts");
+  await expect(page.getByRole("heading", { name: "Chart kit", level: 1 })).toBeVisible();
+  await d3;
+
+  const columns = page.getByRole("figure", { name: "Open boons by type" });
+  const minor = columns.getByRole("img", { name: "Minor: open 70" });
+  await expect(minor).toBeVisible();
+  // Keyboard focus shows the tooltip; Escape puts it away.
+  await minor.focus();
+  await expect(columns.getByText("70", { exact: true }).last()).toBeVisible();
+  await page.keyboard.press("Escape");
+  // The same data as a table, on request.
+  await columns.getByRole("button", { name: "Show as table" }).click();
+  await expect(columns.getByRole("row", { name: "Minor 70" })).toBeVisible();
+  await columns.getByRole("button", { name: "Show as chart" }).click();
+  await expect(minor).toBeVisible();
+
+  // Clans past the seventh share Other.
+  await expect(page.getByRole("figure", { name: "Clan colours" }).getByRole("img", { name: "Banu Haqim: characters 4" })).toBeVisible();
+  // The chart fits the screen: nothing scrolls sideways, on a phone too.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+
+  // Each theme sets the chart's colours: the series alike on both dark surfaces, the ink each theme's own.
+  const colours = () =>
+    columns.evaluate((figure) => {
+      const style = getComputedStyle(figure);
+      return { series: style.getPropertyValue("--chart-series-1").trim(), ink: style.getPropertyValue("--chart-ink").trim() };
+    });
+  expect(await colours()).toEqual({ series: "#3987e5", ink: "#ede4d3" });
+  await page.screenshot(shots("chart-kit"));
+  await page.evaluate(() => document.documentElement.setAttribute("data-theme", "ultragoth"));
+  expect(await colours()).toEqual({ series: "#3987e5", ink: "#efe6dc" });
+  await page.screenshot(shots("chart-kit-ultragoth"));
+  // On paper, the hues stepped for white and black ink.
+  await page.emulateMedia({ media: "print" });
+  expect(await colours()).toEqual({ series: "#2a78d6", ink: "#0b0b0b" });
+});
+
 test("a link opened signed out goes there once signed in, and never to another site", async ({ browser }) => {
   const player = await person(browser, "nextlink-player");
   const made = await player.page.request.post("/api/characters", { headers: { "X-Horatio": "1" }, data: { splat: "vampire", name: "Ines Varga" } });
