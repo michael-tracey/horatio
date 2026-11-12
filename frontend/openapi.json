@@ -9865,6 +9865,186 @@
         "title": "CharacterXpIn",
         "type": "object"
       },
+      "ChartCycleOut": {
+        "properties": {
+          "closes_at": {
+            "format": "date-time",
+            "title": "Closes At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "opened_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opened At"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "opened_at",
+          "closes_at"
+        ],
+        "title": "ChartCycleOut",
+        "type": "object"
+      },
+      "ChartEntryOut": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "action_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Key"
+          },
+          "blocks": {
+            "title": "Blocks",
+            "type": "integer"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "conflict": {
+            "title": "Conflict",
+            "type": "boolean"
+          },
+          "cycle_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Id"
+          },
+          "happened_at": {
+            "format": "date-time",
+            "title": "Happened At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "level": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "short_id": {
+            "title": "Short Id",
+            "type": "string"
+          },
+          "specialization": {
+            "title": "Specialization",
+            "type": "string"
+          },
+          "target_activity": {
+            "title": "Target Activity",
+            "type": "string"
+          },
+          "target_character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Character Id"
+          },
+          "target_name": {
+            "title": "Target Name",
+            "type": "string"
+          },
+          "times": {
+            "title": "Times",
+            "type": "integer"
+          },
+          "type": {
+            "enum": [
+              "elite",
+              "underworld"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "short_id",
+          "type",
+          "happened_at",
+          "character_id",
+          "name",
+          "specialization",
+          "action_key",
+          "action",
+          "level",
+          "conflict",
+          "purpose",
+          "times",
+          "blocks",
+          "cycle_id",
+          "target_character_id",
+          "target_name",
+          "target_activity"
+        ],
+        "title": "ChartEntryOut",
+        "type": "object"
+      },
       "CheckChange": {
         "properties": {
           "strength": {
@@ -20609,6 +20789,56 @@
         "title": "HolderOut",
         "type": "object"
       },
+      "HoldingOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "elite": {
+            "title": "Elite",
+            "type": "integer"
+          },
+          "elite_specializations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Elite Specializations",
+            "type": "array"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "underworld": {
+            "title": "Underworld",
+            "type": "integer"
+          },
+          "underworld_specializations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Underworld Specializations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "kind",
+          "elite",
+          "elite_specializations",
+          "underworld",
+          "underworld_specializations"
+        ],
+        "title": "HoldingOut",
+        "type": "object"
+      },
       "HomeTroupeRequest": {
         "properties": {
           "note": {
@@ -21803,6 +22033,30 @@
         "title": "InfluenceAnswerOut",
         "type": "object"
       },
+      "InfluenceChartsOut": {
+        "properties": {
+          "cycles": {
+            "items": {
+              "$ref": "#/components/schemas/ChartCycleOut"
+            },
+            "title": "Cycles",
+            "type": "array"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/ChartEntryOut"
+            },
+            "title": "Entries",
+            "type": "array"
+          }
+        },
+        "required": [
+          "entries",
+          "cycles"
+        ],
+        "title": "InfluenceChartsOut",
+        "type": "object"
+      },
       "InfluenceChoicesOut": {
         "properties": {
           "characters": {
@@ -22459,6 +22713,22 @@
           "log_troupe_id"
         ],
         "title": "InfluenceHistoryOut",
+        "type": "object"
+      },
+      "InfluenceHoldingsOut": {
+        "properties": {
+          "holdings": {
+            "items": {
+              "$ref": "#/components/schemas/HoldingOut"
+            },
+            "title": "Holdings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "holdings"
+        ],
+        "title": "InfluenceHoldingsOut",
         "type": "object"
       },
       "InfluenceLogOut": {
@@ -79426,6 +79696,128 @@
         "summary": "Record Block",
         "tags": [
           "influence effects"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/influence-charts": {
+      "get": {
+        "description": "Every entry in the troupe's log (from `since`, up to `until`), oldest first,\nwith what the charts need, and the troupe's cycles.",
+        "operationId": "read_charts_api_troupes__troupe_id__influence_charts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Until"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfluenceChartsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Charts",
+        "tags": [
+          "influence charts"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/influence-charts/holdings": {
+      "get": {
+        "description": "Who in the troupe holds what influence now: each character's Elite and\nUnderworld ratings and specialisations, under its own troupe rules.",
+        "operationId": "read_holdings_api_troupes__troupe_id__influence_charts_holdings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfluenceHoldingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Holdings",
+        "tags": [
+          "influence charts"
         ]
       }
     },
