@@ -575,9 +575,9 @@ test("staff chart the influence log: a heatmap cell opens its entries, and an At
   await p.getByRole("link", { name: "Charts" }).click();
   await expect(p.getByRole("heading", { name: "Actions by specialisation and month" })).toBeVisible();
 
-  // A cell of the heatmap opens the entries behind it.
-  await p.getByRole("img", { name: /^Transportation, .*: actions 1$/ }).click();
-  const entries = p.getByRole("region", { name: /^Entries for Transportation, / });
+  // A cell of the heatmap opens the entries behind it. With both types shown, a row says which.
+  await p.getByRole("img", { name: /^Transportation \(Underworld\), .*: actions 1$/ }).click();
+  const entries = p.getByRole("region", { name: /^Entries for Transportation \(Underworld\), / });
   await expect(entries.getByText("UW1")).toBeVisible();
   await expect(entries.getByText("To close the docks to the Sabbat")).toBeVisible();
 

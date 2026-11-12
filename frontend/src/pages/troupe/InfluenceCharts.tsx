@@ -414,7 +414,7 @@ function Cycles({ entries, cycles, type, loading }: { entries: ChartEntryOut[]; 
     columns: [{ key: "cycle", label: "Cycle" }, ...types.map((t) => ({ key: t, label: TYPE_NAMES[t], numeric: true }))],
     rows: rows.map((r) => ({ cycle: r.name, ...Object.fromEntries(types.map((t) => [t, r[t]])) })),
   };
-  const outside = found.outside ? ` ${found.outside} taken since the last cycle closed aren't shown.` : "";
+  const outside = !found.outside ? "" : cycles.length ? ` ${found.outside} taken since the last cycle closed aren't shown.` : ` ${found.outside} taken outside any cycle aren't shown.`;
   return (
     <ChartFrame
       title="Actions in each downtime cycle"
