@@ -53,7 +53,7 @@ export function Layout() {
               <nav aria-label="Main" className="hidden items-center gap-x-4 text-sm whitespace-nowrap lg:flex">
                 <SiteLinks inCycle={inCycle} isCustodian={me.data.is_custodian} link={link} />
                 <NotificationBell />
-                <AccountLink name={me.data.display_name} isCustodian={me.data.is_custodian} className={(state) => `inline-flex min-w-0 items-center gap-1.5 ${link(state)}`} />
+                <AccountLink name={me.data.display_name} isCustodian={me.data.is_custodian} className={(state) => `inline-flex min-w-0 items-center gap-1.5 ${link(state)}`} short />
                 <button className="text-mist hover:text-parchment" onClick={signOut.signOut}>
                   Sign out
                 </button>
@@ -115,8 +115,8 @@ function SiteLinks({ inCycle, isCustodian, link, onPick }: { inCycle: boolean; i
   );
 }
 
-/** The person's own name, which opens their account; "(custodian)" after it for the custodian. */
-function AccountLink({ name, isCustodian, className, onPick }: { name: string; isCustodian: boolean; className: LinkClass; onPick?: () => void }) {
+/** The person's own name, which opens their account; "(custodian)" after it for the custodian. `short` cuts a long name short, to keep the bar to one line. */
+function AccountLink({ name, isCustodian, className, short = false, onPick }: { name: string; isCustodian: boolean; className: LinkClass; short?: boolean; onPick?: () => void }) {
   return (
     <NavLink to="/account" className={className} title="Your account" onClick={onPick}>
       <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -124,7 +124,7 @@ function AccountLink({ name, isCustodian, className, onPick }: { name: string; i
         <path d="M4 21a8 8 0 0 1 16 0" strokeLinecap="round" />
       </svg>
       <span className="sr-only">Your account: </span>
-      <span className="max-w-48 truncate">{name}</span>
+      <span className={short ? "max-w-48 truncate" : "min-w-0 break-words"}>{name}</span>
       {isCustodian && <span className="shrink-0"> (custodian)</span>}
     </NavLink>
   );
