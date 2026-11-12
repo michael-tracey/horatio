@@ -5232,10 +5232,32 @@
             "title": "Entries",
             "type": "array"
           },
+          "fade_reason": {
+            "default": "",
+            "title": "Fade Reason",
+            "type": "string"
+          },
+          "fades_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fades On"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "kept_for_regnant": {
+            "default": false,
+            "title": "Kept For Regnant",
+            "type": "boolean"
           },
           "known_to_regnant": {
             "title": "Known To Regnant",
@@ -5266,6 +5288,11 @@
           },
           "thrall": {
             "$ref": "#/components/schemas/PartyOut"
+          },
+          "thrall_told": {
+            "default": false,
+            "title": "Thrall Told",
+            "type": "boolean"
           }
         },
         "required": [
@@ -17789,6 +17816,26 @@
           "note"
         ],
         "title": "ExpiryOut",
+        "type": "object"
+      },
+      "FadeIn": {
+        "properties": {
+          "fades_on": {
+            "format": "date",
+            "title": "Fades On",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fades_on",
+          "reason"
+        ],
+        "title": "FadeIn",
         "type": "object"
       },
       "FeedingAdjustmentIn": {
@@ -55319,7 +55366,7 @@
     },
     "/api/characters/{character_id}/bonds": {
       "get": {
-        "description": "The bonds still felt that the character is in, as the caller may know of\nthem: all of them for the running staff of the troupe that keeps one; its\nplayer's own as thrall; and as regnant, only those known to the regnant.",
+        "description": "The bonds still felt that the character is in, as the caller may know of\nthem: all of them for the running staff of the troupe that keeps one; its\nplayer's own as thrall; and as regnant, only those known to the regnant. A\nfading bond shows to the thrall's player just as before, and one that has faded\ntoo, until they are told it faded; one whose thrall died, to the regnant's player\nwho knew of it, until staff clear it (#662).",
         "operationId": "character_bonds_api_characters__character_id__bonds_get",
         "parameters": [
           {
@@ -74252,6 +74299,60 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/clear-kept": {
+      "post": {
+        "description": "Stop showing the regnant's player a bond whose thrall died.",
+        "operationId": "clear_kept_api_troupes__troupe_id__bonds__bond_id__clear_kept_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "bond_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bond Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BondOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Clear Kept",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/bonds/{bond_id}/drinks": {
       "post": {
         "description": "Log another drink on a bond still felt.",
@@ -74459,6 +74560,70 @@
           }
         },
         "summary": "Remove Entry",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/fade": {
+      "put": {
+        "description": "Move the day a fading bond ends, with the reason: to today or before, it ends\nnow, as faded.",
+        "operationId": "set_fade_api_troupes__troupe_id__bonds__bond_id__fade_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "bond_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bond Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FadeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BondOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Fade",
         "tags": [
           "bonds"
         ]

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { BondOut, BondReportOut, CharacterChoice } from "../../api/types";
-import { BOND_PAGE, groupBonds, isOpen, levelName, partyIn, PLAYER_SOURCES, reportLine, SOURCES, statusText, type BondSource } from "../../bonds";
+import { BOND_PAGE, groupBonds, isOpen, levelName, partyIn, PLAYER_SOURCES, reportLine, SOURCES, statusText, untold, watched, type BondSource } from "../../bonds";
 import { DateInput } from "../../components/DateInput";
 import { useToast } from "../../components/Toast";
 import { Button, Card, Empty, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
@@ -33,8 +33,8 @@ export function BondsTab({ troupeId }: { troupeId: string }) {
   });
   if (bonds.isPending) return <Loading />;
   if (bonds.error) return <ErrorText error={bonds.error} />;
-  const shown = past ? bonds.data.bonds : bonds.data.bonds.filter(isOpen);
-  const closed = bonds.data.bonds.length - bonds.data.bonds.filter(isOpen).length;
+  const shown = past ? bonds.data.bonds : bonds.data.bonds.filter(watched);
+  const closed = bonds.data.bonds.length - bonds.data.bonds.filter(watched).length;
   const groups = groupBonds(shown, by);
 
   return (
@@ -101,10 +101,11 @@ export function BondsTab({ troupeId }: { troupeId: string }) {
 
 function BondRow({ troupeId, bond, by }: { troupeId: string; bond: BondOut; by: By }) {
   const dates = useDates();
-  const [doing, setDoing] = useState<"drink" | "break" | null>(null);
+  const [doing, setDoing] = useState<"drink" | "break" | "fade" | null>(null);
   const [log, setLog] = useState(false);
   const path = { params: { path: { troupe_id: troupeId, bond_id: bond.id } } };
   const known = useAction((on: boolean) => unwrap(api.PUT("/api/troupes/{troupe_id}/bonds/{bond_id}/known", { ...path, body: { known: on } })));
+  const clearKept = useAction(() => unwrap(api.POST("/api/troupes/{troupe_id}/bonds/{bond_id}/clear-kept", path)));
   const open = isOpen(bond);
   const label = `${bond.thrall.name} bound to ${bond.regnant.name}`;
   const other = by === "thrall" ? bond.regnant : bond.thrall;
@@ -117,6 +118,7 @@ function BondRow({ troupeId, bond, by }: { troupeId: string; bond: BondOut; by: 
           {other.kind === null && <span className="text-mist"> (name only)</span>}
           <span className={open ? "text-gold" : "text-mist"}> · {levelName(bond.level)}</span>
           {bond.status !== "active" && <span className="text-mist"> · {statusText(bond)}</span>}
+          {bond.status === "fading" && bond.fades_on && <span className="text-mist">: {bond.regnant.name} met Final Death, and it ends on {dates.day(bond.fades_on)}</span>}
           {bond.last_drink && <span className="text-mist"> · last drink {dates.day(bond.last_drink)}</span>}
         </p>
         {open && doing === null && (
@@ -124,12 +126,36 @@ function BondRow({ troupeId, bond, by }: { troupeId: string; bond: BondOut; by: 
             <Button variant="secondary" onClick={() => setDoing("drink")}>
               Add a drink
             </Button>
+            {bond.status === "fading" && (
+              <Button variant="secondary" onClick={() => setDoing("fade")}>
+                Change the fade
+              </Button>
+            )}
             <Button variant="ghost" onClick={() => setDoing("break")}>
               Break
             </Button>
           </div>
         )}
       </div>
+      {bond.status === "fading" && (
+        <p className="text-xs text-mist">
+          {bond.thrall.name}&apos;s player sees the bond as it was until it ends and they&apos;re told it has faded, with the next downtime results (p. 296).
+        </p>
+      )}
+      {untold(bond) && (
+        <p className="text-xs text-gold">
+          {bond.thrall.name}&apos;s player isn&apos;t told yet: their sheet still shows the bond until the next downtime results tell them it has faded.
+        </p>
+      )}
+      {bond.kept_for_regnant && (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-gold">
+          <span>{bond.regnant.name}&apos;s player still sees this bond as it was: the regnant has no sense of the thrall&apos;s death.</span>
+          <Button variant="ghost" disabled={clearKept.isPending} onClick={() => clearKept.mutate(undefined)}>
+            Stop showing the regnant
+          </Button>
+        </div>
+      )}
+      <ErrorText error={clearKept.error} />
       {open && (
         <label className="flex items-center gap-2 text-mist">
           <input type="checkbox" checked={bond.known_to_regnant} disabled={known.isPending} onChange={(e) => known.mutate(e.target.checked)} />
@@ -139,6 +165,7 @@ function BondRow({ troupeId, bond, by }: { troupeId: string; bond: BondOut; by: 
       <ErrorText error={known.error} />
       {doing === "drink" && <DrinkForm troupeId={troupeId} bond={bond} onDone={() => setDoing(null)} />}
       {doing === "break" && <BreakForm troupeId={troupeId} bond={bond} onDone={() => setDoing(null)} />}
+      {doing === "fade" && <FadeForm troupeId={troupeId} bond={bond} onDone={() => setDoing(null)} />}
       <div>
         <button type="button" className="text-xs text-mist underline hover:text-parchment" aria-expanded={log} onClick={() => setLog(!log)}>
           {log ? "Hide the drinks log" : `Drinks log (${bond.entries.length})`}
@@ -380,6 +407,48 @@ function BreakForm({ troupeId, bond, onDone }: { troupeId: string; bond: BondOut
       <div className="flex flex-wrap gap-2">
         <Button type="submit" variant="danger" disabled={save.isPending || !reason.trim()}>
           Break the bond
+        </Button>
+        <Button type="button" variant="ghost" onClick={onDone}>
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/** Move the day a fading bond ends, with a reason: today ends it now, as faded. */
+function FadeForm({ troupeId, bond, onDone }: { troupeId: string; bond: BondOut; onDone: () => void }) {
+  const dates = useDates();
+  const [ends, setEnds] = useState(bond.fades_on ?? today(dates));
+  const [reason, setReason] = useState("");
+  const save = useAction(async () => {
+    await unwrap(api.PUT("/api/troupes/{troupe_id}/bonds/{bond_id}/fade", { params: { path: { troupe_id: troupeId, bond_id: bond.id } }, body: { fades_on: ends, reason } }));
+    onDone();
+  });
+  return (
+    <form
+      aria-label={`Change the fade of ${bond.thrall.name}'s bond to ${bond.regnant.name}`}
+      className="flex flex-col gap-3 rounded-md border border-ash p-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save.mutate(undefined);
+      }}
+    >
+      <div className="flex flex-wrap gap-3">
+        <Field label="It ends on" hint="Today or before ends it now, as faded.">
+          <DateInput required value={ends} onChange={(e) => setEnds(e.target.value)} className="w-44" />
+        </Field>
+        <Button type="button" variant="ghost" className="self-end" onClick={() => setEnds(today(dates))}>
+          Today
+        </Button>
+      </div>
+      <Field label="Reason">
+        <Input maxLength={2000} value={reason} onChange={(e) => setReason(e.target.value)} />
+      </Field>
+      <ErrorText error={save.error} />
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" disabled={save.isPending || !ends || !reason.trim()}>
+          Save the fade
         </Button>
         <Button type="button" variant="ghost" onClick={onDone}>
           Cancel

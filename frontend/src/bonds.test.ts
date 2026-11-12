@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BondOut } from "./api/types";
-import { BOND_SETTINGS, groupBonds, levelName, levelText, partyIn, reportedText, reportLine, reportState, statusText } from "./bonds";
+import { BOND_SETTINGS, groupBonds, levelName, levelText, partyIn, reportedText, reportLine, reportState, statusText, untold, watched } from "./bonds";
 
 const bond = (id: string, thrall: string, regnant: string, status = "active", level = 1): BondOut => ({
   id,
@@ -11,8 +11,25 @@ const bond = (id: string, thrall: string, regnant: string, status = "active", le
   known_to_regnant: false,
   ended_at: null,
   ended_reason: "",
+  fades_on: null,
+  fade_reason: "",
+  thrall_told: false,
+  kept_for_regnant: false,
   last_drink: null,
   entries: [],
+});
+
+describe("fading bonds (#662)", () => {
+  it("keeps on staff's list what a player still sees as it was", () => {
+    const faded = { ...bond("1", "Agnes", "Bram", "ended"), fade_reason: "regnant_died" };
+    expect(untold(faded)).toBe(true);
+    expect(watched(faded)).toBe(true);
+    expect(untold({ ...faded, thrall_told: true })).toBe(false);
+    expect(watched({ ...faded, thrall_told: true })).toBe(false);
+    expect(watched(bond("2", "Agnes", "Bram", "fading"))).toBe(true);
+    expect(watched({ ...bond("3", "Agnes", "Bram", "ended"), kept_for_regnant: true })).toBe(true);
+    expect(watched(bond("4", "Agnes", "Bram", "broken"))).toBe(false);
+  });
 });
 
 describe("blood bonds", () => {
