@@ -8978,6 +8978,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/influence-charts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Charts
+         * @description Every entry in the troupe's log (from `since`, up to `until`), oldest first,
+         *     with what the charts need, and the troupe's cycles.
+         */
+        get: operations["read_charts_api_troupes__troupe_id__influence_charts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/influence-charts/holdings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Holdings
+         * @description Who in the troupe holds what influence now: each character's Elite and
+         *     Underworld ratings and specialisations, under its own troupe rules.
+         */
+        get: operations["read_holdings_api_troupes__troupe_id__influence_charts_holdings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/influence-effects": {
         parameters: {
             query?: never;
@@ -15013,6 +15055,71 @@ export interface components {
             /** Ticks */
             ticks?: string[];
         };
+        /** ChartCycleOut */
+        ChartCycleOut: {
+            /**
+             * Closes At
+             * Format: date-time
+             */
+            closes_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Opened At */
+            opened_at: string | null;
+        };
+        /** ChartEntryOut */
+        ChartEntryOut: {
+            /** Action */
+            action: string;
+            /** Action Key */
+            action_key: string | null;
+            /** Blocks */
+            blocks: number;
+            /** Character Id */
+            character_id: string | null;
+            /** Conflict */
+            conflict: boolean;
+            /** Cycle Id */
+            cycle_id: string | null;
+            /**
+             * Happened At
+             * Format: date-time
+             */
+            happened_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Level */
+            level: number | null;
+            /** Name */
+            name: string;
+            /** Purpose */
+            purpose: string;
+            /** Short Id */
+            short_id: string;
+            /** Specialization */
+            specialization: string;
+            /** Target Activity */
+            target_activity: string;
+            /** Target Character Id */
+            target_character_id: string | null;
+            /** Target Name */
+            target_name: string;
+            /** Times */
+            times: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "elite" | "underworld";
+        };
         /** CheckChange */
         CheckChange: {
             /** Strength */
@@ -19150,6 +19257,26 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** HoldingOut */
+        HoldingOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Elite */
+            elite: number;
+            /** Elite Specializations */
+            elite_specializations: string[];
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Underworld */
+            underworld: number;
+            /** Underworld Specializations */
+            underworld_specializations: string[];
+        };
         /** HomeTroupeRequest */
         HomeTroupeRequest: {
             /**
@@ -19660,6 +19787,13 @@ export interface components {
              */
             type: "elite" | "underworld";
         };
+        /** InfluenceChartsOut */
+        InfluenceChartsOut: {
+            /** Cycles */
+            cycles: components["schemas"]["ChartCycleOut"][];
+            /** Entries */
+            entries: components["schemas"]["ChartEntryOut"][];
+        };
         /** InfluenceChoicesOut */
         InfluenceChoicesOut: {
             /** Characters */
@@ -19899,6 +20033,11 @@ export interface components {
             owed: components["schemas"]["OwedOut"][];
             /** Standings */
             standings: components["schemas"]["InfluenceStandingOut"][];
+        };
+        /** InfluenceHoldingsOut */
+        InfluenceHoldingsOut: {
+            /** Holdings */
+            holdings: components["schemas"]["HoldingOut"][];
         };
         /** InfluenceLogOut */
         InfluenceLogOut: {
@@ -49000,6 +49139,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InfluenceEffectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_charts_api_troupes__troupe_id__influence_charts_get: {
+        parameters: {
+            query?: {
+                since?: string | null;
+                until?: string | null;
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InfluenceChartsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_holdings_api_troupes__troupe_id__influence_charts_holdings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InfluenceHoldingsOut"];
                 };
             };
             /** @description Validation Error */
