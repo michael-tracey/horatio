@@ -238,7 +238,8 @@ class Ban:
     marked: bool | None
     reason: str
     # Its answer (`by_sheet`) comes from the boon ledger, not the sheet: the ban on no
-    # boons registered with the Harpy, in a troupe that keeps a ledger (issue #692).
+    # boons registered with the Harpy, in a troupe that keeps a ledger and has it judge
+    # that ban (issue #692).
     from_ledger: bool = False
 
     @property
@@ -540,11 +541,12 @@ REGISTERED = ("registered", "settled")
 
 def boons_registered(db: Session, character: Character) -> bool | None:
     """Whether the character has a boon registered, owed or owed to it, in the ledger
-    of any troupe it is in that keeps one; None when none of them does."""
+    of any troupe it is in that keeps one and judges the ban by it; None when none of
+    them does (#692)."""
     keeping = [
         t.id
         for t in db.scalars(select(Troupe).where(Troupe.id.in_(current_troupe_ids(db, character))))
-        if t.boons
+        if t.boons and t.boons_judge_ban
     ]
     if not keeping:
         return None

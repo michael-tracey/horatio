@@ -300,6 +300,18 @@ test("with a boon ledger, the ban on no boons registered with the Harpy is judge
   const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Status", exact: true }) });
   const bans = l.locator("section").filter({ has: l.getByRole("heading", { name: "Status bans" }) });
   const boonsBan = bans.getByRole("button", { name: /Lesser ban: No boons registered with the Harpy/ });
+  // A ledger alone doesn't judge the ban: it may not hold every boon yet.
+  await l.goto(`/characters/${id}/status`);
+  await expect(boonsBan).toContainText("does not apply");
+  await expect(card.getByText("Fleeting: 0 of 5")).toBeVisible();
+
+  // The lead has the ledger judge it, in the troupe's settings.
+  await l.goto(`/troupes/${troupeId}/settings`);
+  const judge = l.getByRole("checkbox", { name: /Judge “No boons registered” from the boon ledger/ });
+  await judge.check();
+  await expect(l.getByText("The boon ledger now judges the ban on no boons registered with the Harpy.")).toBeVisible();
+  await expect(judge).toBeChecked();
+
   await l.goto(`/characters/${id}/status`);
   await expect(boonsBan).toContainText("applies");
   await expect(card.getByText("Fleeting: 0 of 3")).toBeVisible();

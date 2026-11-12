@@ -129,6 +129,17 @@ def set_setting(db: Session, user: User, troupe: Troupe, on: bool) -> None:
     audit.record(db, user, "house.boons", troupe_id=troupe.id, setting="on" if on else "off")
 
 
+def set_judge_ban(db: Session, user: User, troupe: Troupe, on: bool) -> None:
+    """Whether the ledger judges the ban on no boons registered with the Harpy
+    (horatio.sect_status, #692). Logged if it changes."""
+    if troupe.boons_judge_ban == on:
+        return
+    troupe.boons_judge_ban = on
+    audit.record(
+        db, user, "house.boons_judge_ban", troupe_id=troupe.id, setting="on" if on else "off"
+    )
+
+
 def can_manage(db: Session, user: User, troupe: Troupe) -> bool:
     """The troupe's running staff, and the custodian: they keep its ledger."""
     if troupe.archived_at is not None and not user.is_custodian:

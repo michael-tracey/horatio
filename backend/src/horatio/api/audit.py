@@ -66,6 +66,7 @@ GROUPS: dict[AuditGroup, tuple[str, tuple[str, ...]]] = {
             "boon.",
             "house.boons",
             "house.boon_players",
+            "house.boons_judge_ban",
         ),
     ),
     AuditGroup.TITLES: ("Titles", ("title.", "troupe.titles_by")),

@@ -337,6 +337,18 @@ def set_boon_ledger(
     return troupe_out(db, user, troupe)
 
 
+@router.put("/troupes/{troupe_id}/boon-ban")
+def set_boon_ban(
+    troupe_id: uuid.UUID, body: BoonLedgerIn, db: DbSession, user: CurrentUser
+) -> TroupeOut:
+    """Whether the ledger judges the ban on no boons registered with the Harpy (p. 403):
+    for a ledger that holds every boon. Off, staff mark that ban by hand."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    boons.set_judge_ban(db, user, troupe, body.on)
+    db.commit()
+    return troupe_out(db, user, troupe)
+
+
 # --- the ledger ---------------------------------------------------------------------------
 
 
