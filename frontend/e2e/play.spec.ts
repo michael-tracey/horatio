@@ -751,6 +751,13 @@ test("an elder power adds its notes to another power's switch: Quickness with Ce
   await expect(banner).toContainText(quickness);
   await drawer.getByLabel("Celerity on").uncheck();
   await expect(banner).toHaveCount(0);
+  // Each power on has its own Off in the banner, which works like its switch (#697).
+  await drawer.getByLabel("Celerity on").check();
+  await drawer.getByRole("button", { name: "Close" }).click();
+  await banner.getByRole("button", { name: "Switch Celerity off" }).click();
+  await expect(banner).toHaveCount(0);
+  await p.getByRole("button", { name: "Forms, powers and modifiers" }).click();
+  await expect(drawer.getByLabel("Celerity on")).not.toBeChecked();
 });
 
 test("Killer Instincts: +2 Accurate and Brutal on a line of their own against the hunted target, on the Play View and in a Scene (#613)", async ({ browser }) => {
