@@ -89,6 +89,10 @@ _Avoid_: Encounter, group view
 A position a character holds in one troupe, such as Prince or Primogen. Its player chooses it from that troupe's titles of the character's sect, and the troupe's storytellers and assistant storytellers are told; they can also give and take titles, and a troupe can keep titles to them alone. Several characters may hold a title, unless the troupe holds it to one holder at a time as a house rule; then, while someone holds it, it is staff's to give. Of the titles a character holds in a troupe, at most one is active, and only that one gives status. A title means nothing outside its troupe.
 _Avoid_: Rank, office, court position
 
+**Title History**:
+Every holding of a title in a troupe, from when it began (given by staff, or chosen) to when it ended (taken, given up, retired, left, removed from the troupe, or the character deleted), with the real dates and the in-game dates staff give. It is the troupe's court over time: its storytellers and assistant storytellers see it, with each home character's status over time; its players see the titles alone if the troupe lets them. What came before it was kept was recovered from the log.
+_Avoid_: Title log
+
 **Vault**:
 A player's own characters, whether or not they are in any troupe.
 _Avoid_: Library, roster

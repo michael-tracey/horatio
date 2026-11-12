@@ -9644,6 +9644,31 @@
         "title": "ClanChoiceOut",
         "type": "object"
       },
+      "ClanCountOut": {
+        "properties": {
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "clan",
+          "count"
+        ],
+        "title": "ClanCountOut",
+        "type": "object"
+      },
       "ClanFeedingIn": {
         "properties": {
           "amount": {
@@ -10790,6 +10815,63 @@
         "title": "CounterIn",
         "type": "object"
       },
+      "CourtHistoryOut": {
+        "properties": {
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/ClanCountOut"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "full": {
+            "title": "Full",
+            "type": "boolean"
+          },
+          "holdings": {
+            "items": {
+              "$ref": "#/components/schemas/HoldingOut"
+            },
+            "title": "Holdings",
+            "type": "array"
+          },
+          "players_see": {
+            "title": "Players See",
+            "type": "boolean"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/StatusLineOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "titles": {
+            "items": {
+              "$ref": "#/components/schemas/CourtTitleOut"
+            },
+            "title": "Titles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "full",
+          "players_see",
+          "titles",
+          "holdings",
+          "status",
+          "clans"
+        ],
+        "title": "CourtHistoryOut",
+        "type": "object"
+      },
       "CourtOrder": {
         "properties": {
           "titles": {
@@ -10804,6 +10886,31 @@
           "titles"
         ],
         "title": "CourtOrder",
+        "type": "object"
+      },
+      "CourtTitleOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          }
+        },
+        "required": [
+          "name",
+          "sect"
+        ],
+        "title": "CourtTitleOut",
         "type": "object"
       },
       "CreationItem": {
@@ -19610,6 +19717,159 @@
           "kind"
         ],
         "title": "HolderOut",
+        "type": "object"
+      },
+      "HoldingDatesIn": {
+        "properties": {
+          "began_in_game": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Began In Game"
+          },
+          "ended_in_game": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended In Game"
+          }
+        },
+        "title": "HoldingDatesIn",
+        "type": "object"
+      },
+      "HoldingOut": {
+        "properties": {
+          "backfilled": {
+            "title": "Backfilled",
+            "type": "boolean"
+          },
+          "began_at": {
+            "format": "date-time",
+            "title": "Began At",
+            "type": "string"
+          },
+          "began_how": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Began How"
+          },
+          "began_in_game": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Began In Game"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "ended_how": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended How"
+          },
+          "ended_in_game": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended In Game"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "character_id",
+          "character_name",
+          "clan",
+          "began_at",
+          "ended_at",
+          "began_in_game",
+          "ended_in_game",
+          "began_how",
+          "ended_how",
+          "backfilled"
+        ],
+        "title": "HoldingOut",
         "type": "object"
       },
       "HomeTroupeRequest": {
@@ -42789,6 +43049,55 @@
         "title": "StatusIn",
         "type": "object"
       },
+      "StatusLineOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "gained": {
+            "title": "Gained",
+            "type": "integer"
+          },
+          "lost": {
+            "title": "Lost",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/StatusPointOut"
+            },
+            "title": "Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "clan",
+          "points",
+          "gained",
+          "lost"
+        ],
+        "title": "StatusLineOut",
+        "type": "object"
+      },
       "StatusOut": {
         "properties": {
           "about": {
@@ -42990,6 +43299,30 @@
           "about"
         ],
         "title": "StatusOut",
+        "type": "object"
+      },
+      "StatusPointOut": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "fleeting": {
+            "title": "Fleeting",
+            "type": "integer"
+          },
+          "negative": {
+            "title": "Negative",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "at",
+          "fleeting",
+          "negative"
+        ],
+        "title": "StatusPointOut",
         "type": "object"
       },
       "StatusRemoveIn": {
@@ -46373,6 +46706,17 @@
             ],
             "title": "Badge Titles"
           },
+          "court_history_players": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Court History Players"
+          },
           "description": {
             "anyOf": [
               {
@@ -47038,6 +47382,11 @@
           "boons": {
             "default": false,
             "title": "Boons",
+            "type": "boolean"
+          },
+          "court_history_players": {
+            "default": false,
+            "title": "Court History Players",
             "type": "boolean"
           },
           "description": {
@@ -74280,6 +74629,113 @@
         "summary": "Change Cost",
         "tags": [
           "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/court-history": {
+      "get": {
+        "operationId": "court_history_api_troupes__troupe_id__court_history_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourtHistoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Court History",
+        "tags": [
+          "court"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/court-history/{holding_id}/in-game": {
+      "put": {
+        "description": "Set the in-game dates a holding began and ended; none, to clear them.",
+        "operationId": "date_holding_api_troupes__troupe_id__court_history__holding_id__in_game_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "holding_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Holding Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HoldingDatesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HoldingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Date Holding",
+        "tags": [
+          "court"
         ]
       }
     },
