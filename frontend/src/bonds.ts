@@ -1,4 +1,4 @@
-import type { BondOut, TroupeOut } from "./api/types";
+import type { BondOut, BondReportOut, TroupeOut } from "./api/types";
 
 /** Where the book has the blood bond's three drinks. */
 export const BOND_PAGE = "MET: VTM p. 295";
@@ -6,13 +6,48 @@ export const BOND_PAGE = "MET: VTM p. 295";
 export type BondSetting = TroupeOut["blood_bonds"];
 export type BondSource = BondOut["entries"][number]["source"];
 
-/** The troupe's Blood bonds setting, each with what it means. The player modes come with #661. */
-export const BOND_SETTINGS: { value: NonNullable<BondSetting>; label: string; meaning: string; ready: boolean }[] = [
-  { value: "off", label: "Off", meaning: "Horatio doesn't track blood bonds: no Bonds card on sheets and no Bonds screen.", ready: true },
-  { value: "staff", label: "Staff manages", meaning: "Running staff record each drink, enter bonds that already stand and break them.", ready: true },
-  { value: "players_report", label: "Players report and staff approves", meaning: "Players report the drinks their characters take, for staff to approve.", ready: false },
-  { value: "players_manage", label: "Players manage", meaning: "Players record the drinks their characters take themselves.", ready: false },
+/** The troupe's Blood bonds setting, each with what it means. */
+export const BOND_SETTINGS: { value: NonNullable<BondSetting>; label: string; meaning: string }[] = [
+  { value: "off", label: "Off", meaning: "Horatio doesn't track blood bonds: no Bonds card on sheets and no Bonds screen." },
+  { value: "staff", label: "Staff manages", meaning: "Running staff record each drink, enter bonds that already stand and break them." },
+  {
+    value: "players_report",
+    label: "Players report and staff approves",
+    meaning: "Players report their characters' drinks, from the sheet or the Play View; each waits in Approvals until staff approve it.",
+  },
+  {
+    value: "players_manage",
+    label: "Players manage",
+    meaning:
+      "Players record the drinks their characters take, and they count at once. One the regnant's player records waits for the thrall's player to confirm. Staff can still change or remove any drink.",
+  },
 ];
+
+/** Where a player says a drink happened. */
+export const PLAYER_SOURCES: { value: BondReportOut["source"]; label: string }[] = [
+  { value: "game", label: "At a game" },
+  { value: "downtime", label: "In a downtime" },
+];
+
+/** A reported drink, as its line reads: "Agnes drank Bram's blood on 3 Nov 2026". */
+export function reportLine(report: Pick<BondReportOut, "thrall" | "regnant">, night: string): string {
+  return `${report.thrall.name} drank ${report.regnant.name}'s blood on ${night}`;
+}
+
+/** Where a reported drink stands, for the player who sees it. */
+export function reportState(report: Pick<BondReportOut, "status" | "waiting_on" | "thrall" | "reason">): string {
+  if (report.status === "approved") return "Counted";
+  if (report.status === "withdrawn") return "Withdrawn";
+  if (report.status === "declined") return report.reason ? `Declined: ${report.reason}` : "Declined";
+  return report.waiting_on === "staff" ? "Waiting for the storytellers" : `Waiting for ${report.thrall.name}'s player to confirm`;
+}
+
+/** What became of a drink just reported, for the toast. */
+export function reportedText(outcome: "recorded" | "staff" | "thrall", level: number | null, thrall: string): string {
+  if (outcome === "recorded") return `Recorded: ${levelName(level ?? 1).toLowerCase()}.`;
+  if (outcome === "staff") return "Sent to the storytellers to approve.";
+  return `Sent to ${thrall}'s player to confirm.`;
+}
 
 export const SOURCES: { value: BondSource; label: string }[] = [
   { value: "game", label: "At a game" },

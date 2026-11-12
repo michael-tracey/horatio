@@ -1065,6 +1065,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/bonds/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Drink
+         * @description Its player reports a drink for the character: it drank of a vampire's blood,
+         *     or a character drank of its blood. Whether it counts now or waits, and on whom,
+         *     follows the troupe's setting (horatio.bonds).
+         */
+        post: operations["report_drink_api_characters__character_id__bonds_reports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/bonds/reports/{report_id}/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer Report
+         * @description The thrall's player confirms or declines a drink the regnant's player recorded.
+         */
+        post: operations["answer_report_api_characters__character_id__bonds_reports__report_id__answer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/bonds/reports/{report_id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw Report
+         * @description Take back a drink its player reported, while it waits.
+         */
+        post: operations["withdraw_report_api_characters__character_id__bonds_reports__report_id__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/boons": {
         parameters: {
             query?: never;
@@ -7281,6 +7343,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/bonds/reports/{report_id}/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decide Report
+         * @description Approve or decline a drink a player reported, still waiting: whether it waits
+         *     on staff or on the thrall's player.
+         */
+        post: operations["decide_report_api_troupes__troupe_id__bonds_reports__report_id__decide_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/bonds/{bond_id}/break": {
         parameters: {
             query?: never;
@@ -7315,6 +7398,48 @@ export interface paths {
          * @description Log another drink on a bond still felt.
          */
         post: operations["add_drink_api_troupes__troupe_id__bonds__bond_id__drinks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/entries/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change Entry
+         * @description Change a drink's night or note in the bond's log, such as one a player recorded
+         *     wrongly.
+         */
+        patch: operations["change_entry_api_troupes__troupe_id__bonds__bond_id__entries__entry_id__patch"];
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/entries/{entry_id}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove Entry
+         * @description Take a drink out of the bond's log, with the reason. A bond left with nothing
+         *     in its log goes too.
+         */
+        post: operations["remove_entry_api_troupes__troupe_id__bonds__bond_id__entries__entry_id__remove_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13107,6 +13232,37 @@ export interface components {
              */
             file: string;
         };
+        /** BondAnswerIn */
+        BondAnswerIn: {
+            /** Confirm */
+            confirm: boolean;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /**
+         * BondAskOut
+         * @description A drink a player reported, for staff to approve (horatio.bonds).
+         */
+        BondAskOut: {
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /** Refused */
+            refused: string | null;
+            /** Regnant */
+            regnant: string;
+            /** Reported As */
+            reported_as: string;
+            /** Source */
+            source: string;
+            /** Thrall */
+            thrall: string;
+        };
         /** BondEntryOut */
         BondEntryOut: {
             /**
@@ -13161,6 +13317,63 @@ export interface components {
             /** Status */
             status: string;
             thrall: components["schemas"]["PartyOut"];
+        };
+        /**
+         * BondReportOut
+         * @description A drink a player reported, while it waits and after it is decided.
+         */
+        BondReportOut: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Can Confirm */
+            can_confirm: boolean;
+            /** Can Withdraw */
+            can_withdraw: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /** Note */
+            note: string;
+            /** Reason */
+            reason: string;
+            regnant: components["schemas"]["PartyOut"];
+            /**
+             * Reported As
+             * @enum {string}
+             */
+            reported_as: "thrall" | "regnant";
+            /** Reported By */
+            reported_by: string | null;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "game" | "downtime";
+            /** Status */
+            status: string;
+            thrall: components["schemas"]["PartyOut"];
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+            /**
+             * Waiting On
+             * @enum {string}
+             */
+            waiting_on: "staff" | "thrall";
         };
         /**
          * BookTraitChange
@@ -13937,6 +14150,16 @@ export interface components {
             bound_to: components["schemas"]["SheetBondOut"][];
             /** Manage Troupe Id */
             manage_troupe_id: string | null;
+            /**
+             * Report To
+             * @default []
+             */
+            report_to: components["schemas"]["ReportTroupeOut"][];
+            /**
+             * Reports
+             * @default []
+             */
+            reports: components["schemas"]["BondReportOut"][];
         };
         /** CharacterBoonsOut */
         CharacterBoonsOut: {
@@ -15597,6 +15820,16 @@ export interface components {
             /** Debt */
             debt: number;
         };
+        /** DecideIn */
+        DecideIn: {
+            /** Approve */
+            approve: boolean;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
         /** Decision */
         Decision: {
             /**
@@ -16679,6 +16912,19 @@ export interface components {
             regnant: components["schemas"]["PartyIn"];
             thrall: components["schemas"]["PartyIn"];
         };
+        /** EntryIn */
+        EntryIn: {
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
         /** EntryOut */
         EntryOut: {
             /** About */
@@ -16696,6 +16942,15 @@ export interface components {
             starred: boolean;
             /** Text */
             text: string;
+        };
+        /** EntryRemoveIn */
+        EntryRemoveIn: {
+            /** Reason */
+            reason: string;
+        };
+        /** EntryRemovedOut */
+        EntryRemovedOut: {
+            bond: components["schemas"]["BondOut"] | null;
         };
         /** EquipmentCheckIn */
         EquipmentCheckIn: {
@@ -25004,6 +25259,7 @@ export interface components {
              * @default []
              */
             banned: string[];
+            bond?: components["schemas"]["BondAskOut"] | null;
             /**
              * Character Id
              * Format: uuid
@@ -25366,6 +25622,36 @@ export interface components {
             /** Xp */
             xp: number;
         };
+        /** ReportIn */
+        ReportIn: {
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            other: components["schemas"]["PartyIn"];
+            /**
+             * Side
+             * @enum {string}
+             */
+            side: "thrall" | "regnant";
+            /**
+             * Source
+             * @default game
+             * @enum {string}
+             */
+            source: "game" | "downtime";
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+        };
         /** ReportOut */
         ReportOut: {
             /**
@@ -25384,6 +25670,36 @@ export interface components {
             stale: boolean;
             /** Summary */
             summary: string[];
+        };
+        /**
+         * ReportTroupeOut
+         * @description A troupe the character's player can report its drinks to.
+         */
+        ReportTroupeOut: {
+            /** Characters */
+            characters: components["schemas"]["CharacterChoice-Output"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Setting
+             * @enum {string}
+             */
+            setting: "off" | "staff" | "players_report" | "players_manage";
+        };
+        /** ReportedOut */
+        ReportedOut: {
+            /** Level */
+            level: number | null;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "recorded" | "staff" | "thrall";
         };
         /** RepresentedBy */
         RepresentedBy: {
@@ -29103,6 +29419,11 @@ export interface components {
             /** Characters */
             characters: components["schemas"]["CharacterChoice-Output"][];
             /**
+             * Reports
+             * @default []
+             */
+            reports: components["schemas"]["BondReportOut"][];
+            /**
              * Setting
              * @enum {string}
              */
@@ -32714,6 +33035,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CharacterBondsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_drink_api_characters__character_id__bonds_reports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    answer_report_api_characters__character_id__bonds_reports__report_id__answer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                report_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BondAnswerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BondReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    withdraw_report_api_characters__character_id__bonds_reports__report_id__withdraw_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                report_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BondReportOut"];
                 };
             };
             /** @description Validation Error */
@@ -44414,7 +44838,7 @@ export interface operations {
         parameters: {
             query?: {
                 state?: "pending" | "approved" | "declined" | "withdrawn";
-                kind?: ("home_troupe_change" | "discipline" | "review" | "exception" | "diablerie" | "merit_flaw") | null;
+                kind?: ("home_troupe_change" | "discipline" | "review" | "exception" | "diablerie" | "merit_flaw" | "bond_drink") | null;
             };
             header?: never;
             path: {
@@ -44875,6 +45299,42 @@ export interface operations {
             };
         };
     };
+    decide_report_api_troupes__troupe_id__bonds_reports__report_id__decide_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                report_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecideIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BondReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     break_bond_api_troupes__troupe_id__bonds__bond_id__break_post: {
         parameters: {
             query?: never;
@@ -44934,6 +45394,80 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BondOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_entry_api_troupes__troupe_id__bonds__bond_id__entries__entry_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                bond_id: string;
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BondOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_entry_api_troupes__troupe_id__bonds__bond_id__entries__entry_id__remove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                bond_id: string;
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntryRemoveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntryRemovedOut"];
                 };
             };
             /** @description Validation Error */
