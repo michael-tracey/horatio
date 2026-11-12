@@ -348,7 +348,8 @@ test("sire lines: a player gives a sire from the menu, staff see the sire and bo
   await expect(p.getByText("The troupe’s characters, for its players and staff. It is never public.")).toBeVisible();
   await expect(p.getByRole("button", { name: "Sire lines" })).toHaveCount(0);
   await l.goto(`/troupes/${troupeId}/settings`);
-  await l.getByRole("checkbox", { name: /Show the sire lines to players/ }).check();
+  // It changes once the troupe is saved, so click and wait for it.
+  await l.getByRole("checkbox", { name: /Show the sire lines to players/ }).click();
   await expect(l.getByRole("checkbox", { name: /Show the sire lines to players/ })).toBeChecked();
   await p.reload();
   await p.getByRole("button", { name: "Sire lines" }).click();

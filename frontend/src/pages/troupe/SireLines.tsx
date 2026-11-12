@@ -12,6 +12,14 @@ import { about, left, loneCount, ordinal, sireRows, sireTree, type SireTree } fr
 const ROW = 40;
 const MARGIN = { left: 28, top: 20, right: 24, bottom: 20 };
 const RADIUS = 6;
+// From a node's centre to where its label starts.
+const LABEL_GAP = RADIUS + 8;
+
+/** About how wide a node's label is: its name at 13px, and what it is at 11px under it. */
+function labelWidth(n: SireLineNodeOut, folded: number): number {
+  const name = n.name.length + (folded ? ` +${folded}`.length : 0);
+  return Math.ceil(Math.max(name * 7.4, about(n).join(" · ").length * 6.2));
+}
 
 /**
  * A troupe's sire lines (#707): a tree from each eldest known down to their childer,
@@ -40,7 +48,7 @@ export function SireLines({ troupeId, open }: { troupeId: string; open: (node: S
   if (found.error) return <ErrorText error={found.error} />;
   const alone = loneCount(nodes);
   const leaves = hierarchy(shaped, (d) => d.children).leaves().length;
-  const height = Math.max(160, leaves * ROW + MARGIN.top + MARGIN.bottom);
+  const height = Math.max(100, leaves * ROW + MARGIN.top + MARGIN.bottom);
   const order = (slot: Slot) => (slot === "other" ? 99 : slot);
   const clans = [...new Set(nodes.filter((n) => n.kind === "pc" || n.kind === "npc").map((n) => clanKey(n.clan)))].sort(
     (a, b) => order(slotOf(slots, a)) - order(slotOf(slots, b)) || a.localeCompare(b),
@@ -110,16 +118,26 @@ function Drawing({
 }) {
   const mark = useMarks();
   const root = hierarchy(shaped, (d) => d.children);
-  // Columns share the width, never so narrow that names collide; zoom and pan reach the rest.
-  const column = Math.min(220, Math.max(140, (width - MARGIN.left - MARGIN.right - 120) / Math.max(1, root.height - 1)));
+  // Each column is as wide as its widest label, so a link starts after its sire's
+  // label and never crosses it; it spreads to fill the width, and zoom and pan reach
+  // past it.
+  const widest = Math.max(0, ...root.descendants().map((d) => (d.data.node ? labelWidth(d.data.node, d.data.folded) : 0)));
+  const fill = (width - MARGIN.left - MARGIN.right - widest) / Math.max(1, root.height - 1);
+  const column = Math.max(widest + LABEL_GAP + 40, Math.min(fill, widest + 160));
   const laid = tree<SireTree>().nodeSize([ROW, column])(root);
   const all = laid.descendants().filter((d) => d.data.node);
   const top = Math.min(...all.map((d) => d.x));
   // The hidden root is depth 0: the eldest known stand in the first column.
   const at = (d: Point) => ({ x: MARGIN.left + (d.depth - 1) * column, y: MARGIN.top + d.x - top });
-  const link = linkHorizontal<{ source: Point; target: Point }, Point>()
-    .x((d) => at(d).x)
-    .y((d) => at(d).y);
+  const link = linkHorizontal<{ source: [number, number]; target: [number, number] }, [number, number]>();
+  const from = (d: Point): [number, number] => {
+    const { x, y } = at(d);
+    return [x + LABEL_GAP + labelWidth(d.data.node!, d.data.folded) + 6, y];
+  };
+  const to = (d: Point): [number, number] => {
+    const { x, y } = at(d);
+    return [x - RADIUS - 2, y];
+  };
   const byKey = new Map(all.map((d) => [d.data.node!.key, d]));
 
   return (
@@ -128,7 +146,7 @@ function Drawing({
         {all
           .filter((d) => d.parent?.data.node)
           .map((d) => (
-            <path key={`link-${d.data.node!.key}`} d={link({ source: d.parent!, target: d }) ?? ""} />
+            <path key={`link-${d.data.node!.key}`} d={link({ source: from(d.parent!), target: to(d) }) ?? ""} />
           ))}
       </g>
       {all.map((d) => {
@@ -168,7 +186,7 @@ function Drawing({
                 strokeDasharray={outside ? "2 2" : undefined}
               />
             </g>
-            <text x={x + RADIUS + 8} y={y - 3} fontSize={13} fill="var(--chart-ink)">
+            <text x={x + LABEL_GAP} y={y - 3} fontSize={13} fill="var(--chart-ink)">
               {n.character_id && n.kind !== "elsewhere" ? (
                 <a
                   href={`#c-${n.character_id}`}
@@ -185,7 +203,7 @@ function Drawing({
               )}
               {folded && d.data.folded > 0 && <tspan fill="var(--chart-ink-secondary)"> +{d.data.folded}</tspan>}
             </text>
-            <text x={x + RADIUS + 8} y={y + 12} fontSize={11} fill="var(--chart-ink-secondary)">
+            <text x={x + LABEL_GAP} y={y + 12} fontSize={11} fill="var(--chart-ink-secondary)">
               {about(n).join(" · ")}
             </text>
             {(childer > 0 || d.data.folded > 0) && (
