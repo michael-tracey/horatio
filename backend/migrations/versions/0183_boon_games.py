@@ -2,7 +2,7 @@
 can show each game's activity (issue #702)
 
 Revision ID: 0183
-Revises: 0177
+Revises: 0181
 Create Date: 2026-11-12 21:00:00.000000
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0183"
-down_revision: str | None = "0177"
+down_revision: str | None = "0181"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
