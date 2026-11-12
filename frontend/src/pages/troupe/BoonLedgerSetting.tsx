@@ -50,10 +50,12 @@ export function BoonLedgerSetting({ troupe, canEdit }: { troupe: TroupeOut; canE
           <ErrorText error={save.error} />
           {on && <PlayersSetting troupe={troupe} />}
           {on && <ReviewSetting troupe={troupe} />}
+          {on && <HarpySetting troupe={troupe} />}
         </div>
       )}
       {!canEdit && on && <p className="mt-2 text-sm">{PLAYERS_SEE.find((p) => p.value === troupe.boon_players_see)?.summary}</p>}
       {!canEdit && on && troupe.boon_review && <p className="mt-1 text-sm">Boons players report wait for review before they stand.</p>}
+      {!canEdit && on && <p className="mt-1 text-sm">{HARPY.find((h) => h.value === (troupe.boon_harpy ?? "none"))?.summary}</p>}
     </Card>
   );
 }
@@ -173,5 +175,69 @@ function ReviewSetting({ troupe }: { troupe: TroupeOut }) {
       </label>
       <ErrorText error={save.error} />
     </div>
+  );
+}
+
+type HarpyAccess = NonNullable<TroupeOut["boon_harpy"]>;
+
+/** How far the Harpy reaches into the ledger (#688), least first. */
+const HARPY: { value: HarpyAccess; label: string; hint: string; summary: string }[] = [
+  { value: "none", label: "None", hint: "The ledger is staff's alone.", summary: "The ledger is staff's alone; the Harpy has no access to it." },
+  {
+    value: "submissions",
+    label: "Receives submissions",
+    hint: "The Harpy reviews what players report, and is told of each one.",
+    summary: "The Harpy reviews the boons players report, and is told of each one.",
+  },
+  {
+    value: "full",
+    label: "The full ledger",
+    hint: "The Harpy registers, edits, trades, passes on and settles boons, and reviews what players report.",
+    summary: "The Harpy keeps the full ledger, and reviews the boons players report.",
+  },
+];
+
+/**
+ * The Harpy's access to the ledger (#688): whoever holds the Harpy title in the troupe
+ * works it from their Play View, as their character. They never see what an edit
+ * changed, nor a boon's staff note; access ends with the title.
+ */
+function HarpySetting({ troupe }: { troupe: TroupeOut }) {
+  const toast = useToast();
+  const group = useId();
+  // Shown as chosen at once, while it saves.
+  const [access, setAccess] = useState<HarpyAccess>(troupe.boon_harpy ?? "none");
+  const save = useAction(async (next: HarpyAccess) => {
+    await unwrap(api.PUT("/api/troupes/{troupe_id}/boon-harpy", { params: { path: { troupe_id: troupe.id } }, body: { access: next } }));
+    toast({ message: `Saved: ${HARPY.find((h) => h.value === next)?.summary}` });
+  });
+  return (
+    <fieldset className="mt-2 flex flex-col gap-2 border-t border-ash/60 pt-3">
+      <legend className="text-mist">The Harpy&apos;s access to the ledger</legend>
+      {HARPY.map((h) => (
+        <label key={h.value} className="flex items-start gap-2">
+          <input
+            type="radio"
+            className="mt-1"
+            name={group}
+            checked={access === h.value}
+            disabled={save.isPending}
+            onChange={() => {
+              setAccess(h.value);
+              save.mutate(h.value, { onError: () => setAccess(troupe.boon_harpy ?? "none") });
+            }}
+          />
+          <span>
+            {h.label}
+            <span className="block text-xs text-mist">{h.hint}</span>
+          </span>
+        </label>
+      ))}
+      <p className="text-xs text-mist">
+        The Harpy is whoever holds the Harpy title in the troupe; with several, each has it, and it ends when the title does. They work from their Play
+        View&apos;s Boons tab, as their character, and never see what an edit changed, a boon&apos;s staff note, or why a character retired.
+      </p>
+      <ErrorText error={save.error} />
+    </fieldset>
   );
 }

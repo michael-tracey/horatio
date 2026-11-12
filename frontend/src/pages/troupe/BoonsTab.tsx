@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { BoonOut, CharacterChoice } from "../../api/types";
@@ -32,6 +32,14 @@ import { useAction } from "../../hooks";
 import { BoonReviewQueue, ReviewPanel } from "./BoonReview";
 import { WhoPicker } from "./WhoPicker";
 
+/**
+ * How far the one keeping the ledger reaches: its running staff (null), or a Harpy
+ * (#688), working as their character from the Play View, with the review queue only
+ * or the full ledger. A Harpy never sees or writes a boon's staff note.
+ */
+type HarpyAccess = "submissions" | "full";
+const HarpyMode = createContext<HarpyAccess | null>(null);
+
 function today(dates: ReturnType<typeof useDates>) {
   return dates.toInput(new Date()).slice(0, 10);
 }
@@ -49,7 +57,36 @@ function picked(party: BoonOut["debtor"]): { who: string; name: string } {
  * the troupe keeps a ledger. Boons waiting for review, or flagged, are listed under
  * "To review" (#687), and each boon's detail has its review.
  */
-export function BoonsTab({ troupeId }: { troupeId: string }) {
+export function BoonsTab({ troupeId, harpy = null }: { troupeId: string; harpy?: HarpyAccess | null }) {
+  return (
+    <HarpyMode.Provider value={harpy}>{harpy === "submissions" ? <ReviewOnly troupeId={troupeId} /> : <Ledger troupeId={troupeId} />}</HarpyMode.Provider>
+  );
+}
+
+/** A Harpy given only the review queue (#688): the boons waiting for review or flagged, nothing else of the ledger. */
+function ReviewOnly({ troupeId }: { troupeId: string }) {
+  const review = useQuery({
+    queryKey: ["boon-review", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/boon-review", { params: { path: { troupe_id: troupeId } } })),
+  });
+  if (review.isPending) return <Loading />;
+  if (review.error) return <ErrorText error={review.error} />;
+  const characters = review.data.characters ?? [];
+  return (
+    <div className="flex flex-col gap-4">
+      <Card title="To review">
+        <p className="text-sm text-mist">
+          Boons players reported that wait for review, and boons flagged for a ruling ({BOON_PAGE}). Accept each one, or don&apos;t, with a reason its player
+          sees; link a name to a character; clear a flag. The rest of the ledger is staff&apos;s.
+        </p>
+      </Card>
+      <BoonReviewQueue troupeId={troupeId} detail={(boonId) => <BoonDetail troupeId={troupeId} boonId={boonId} characters={characters} />} />
+    </div>
+  );
+}
+
+function Ledger({ troupeId }: { troupeId: string }) {
+  const harpy = useContext(HarpyMode);
   const [params, setParams] = useSearchParams();
   const [view, setView] = useState<BoonView>("open");
   // The review queue (#687) in place of the ledger's views.
@@ -116,6 +153,7 @@ export function BoonsTab({ troupeId }: { troupeId: string }) {
         <p className="text-sm text-mist">
           The debts characters owe each other, registered with the Harpy ({BOON_PAGE}). Each boon keeps its own log; an edit&apos;s changes show only to
           storytellers and assistant storytellers. A boon made off the record isn&apos;t tracked here.
+          {harpy && " You keep it as the troupe's Harpy: what you do is logged as your character. An NPC you can't pick is named by name, for staff to link."}
         </p>
         {adding && <QuickEntry troupeId={troupeId} characters={characters} onDone={() => setAdding(false)} />}
       </Card>
@@ -257,6 +295,7 @@ const ACTION_LABELS: Record<Doing, string> = {
 };
 
 function BoonDetail({ troupeId, boonId, characters }: { troupeId: string; boonId: string; characters: CharacterChoice[] }) {
+  const harpy = useContext(HarpyMode);
   const dates = useDates();
   const [doing, setDoing] = useState<Doing | null>(null);
   const boon = useQuery({
@@ -303,7 +342,7 @@ function BoonDetail({ troupeId, boonId, characters }: { troupeId: string; boonId
         )}
       </dl>
       <ReviewPanel troupeId={troupeId} boon={b} characters={characters} />
-      {doing === null ? (
+      {harpy === "submissions" ? null : doing === null ? (
         <div role="group" aria-label="What to do with it" className="flex flex-wrap gap-2">
           {actionsFor(b.state).map((a) => (
             <Button key={a} variant={a === "void" ? "ghost" : "secondary"} onClick={() => setDoing(a)}>
@@ -329,8 +368,7 @@ function BoonDetail({ troupeId, boonId, characters }: { troupeId: string; boonId
               <span className="text-mist">
                 {" "}
                 · {dates.dateTime(e.at)}
-                {e.by && ` · ${e.by}`}
-                {e.as_character && ` as ${e.as_character}`}
+                {e.by ? ` · ${e.by}${e.as_character ? ` as ${e.as_character}` : ""}` : e.as_character ? ` · ${e.as_character}` : ""}
               </span>
               {e.note && <span> · {e.note}</span>}
               {e.changes && e.changes.length > 0 && (
@@ -366,6 +404,7 @@ function boonPath(troupeId: string, boon: BoonOut) {
 }
 
 function EditForm({ troupeId, boon, characters, onDone }: { troupeId: string; boon: BoonOut; characters: CharacterChoice[]; onDone: () => void }) {
+  const harpy = useContext(HarpyMode);
   const [debtor, setDebtor] = useState(picked(boon.debtor));
   const [creditor, setCreditor] = useState(picked(boon.creditor));
   const [kind, setKind] = useState<BoonKind>(boon.kind);
@@ -390,7 +429,7 @@ function EditForm({ troupeId, boon, characters, onDone }: { troupeId: string; bo
           reason,
           conditions,
           notify_on_trade: notify,
-          staff_note: staffNote,
+          ...(harpy ? {} : { staff_note: staffNote }),
           note,
         },
       }),
@@ -436,9 +475,11 @@ function EditForm({ troupeId, boon, characters, onDone }: { troupeId: string; bo
         <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} />
         Tell the debtor&apos;s player if it&apos;s traded
       </label>
-      <Field label="Staff note" hint="For storytellers and assistant storytellers only.">
-        <Textarea rows={2} maxLength={2000} value={staffNote} onChange={(e) => setStaffNote(e.target.value)} />
-      </Field>
+      {!harpy && (
+        <Field label="Staff note" hint="For storytellers and assistant storytellers only.">
+          <Textarea rows={2} maxLength={2000} value={staffNote} onChange={(e) => setStaffNote(e.target.value)} />
+        </Field>
+      )}
       <Field label="Why the edit" hint="Goes in its log. What changed shows only to storytellers and assistant storytellers.">
         <Input maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
@@ -614,6 +655,7 @@ function NoteForm({ troupeId, boon, action, onDone }: { troupeId: string; boon: 
  * register together, or none do.
  */
 function QuickEntry({ troupeId, characters, onDone }: { troupeId: string; characters: CharacterChoice[]; onDone: () => void }) {
+  const harpy = useContext(HarpyMode);
   const dates = useDates();
   const toast = useToast();
   const [madeOn, setMadeOn] = useState(today(dates));
@@ -624,6 +666,8 @@ function QuickEntry({ troupeId, characters, onDone }: { troupeId: string; charac
   const games = useQuery({
     queryKey: ["boon-games", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/boon-games", { params: { path: { troupe_id: troupeId } } })),
+    // The games come with the standings, which are staff's (a Harpy's are a follow-up to #688).
+    enabled: !harpy,
   });
   const set = (i: number, change: Partial<EntryRow>) => setRows(rows.map((r, j) => (j === i ? { ...r, ...change } : r)));
   const started = rows.filter(rowStarted);

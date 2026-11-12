@@ -137,6 +137,10 @@ _Avoid_: Favour, debt (in names), IOU, prestation (for one boon)
 A troupe's record of its boons, kept by its running staff while the troupe's Boons setting is on. Off, it is hidden everywhere, and kept. Its players report boons for their characters in the Play View's Boons tab, and see there what the troupe lets them: nothing more, what their characters owe, or also what they're owed; where it lets them, a boon's creditor's player marks it settled.
 _Avoid_: Boon registry, boon sheet
 
+**Harpy (ledger access)**:
+Whoever holds the Harpy title in a troupe (a Master Harpy too; with several, each), working its boon ledger as their character from the Play View, as far as the troupe's setting reaches: **none**; **receives submissions**, the review queue and word of each boon players report; or the **full ledger**, to register, edit, trade, pass on, settle, void and reopen boons as staff do. What they do is logged as done by their character. They never see what an edit changed, a boon's staff note, who entered a boon, or why a character retired. Access ends when the title does.
+_Avoid_: Boon keeper, ledger admin
+
 **Boon Review**:
 A troupe's check of boons before or after they stand. It may hold the boons its players report: they wait, pending, until its running staff accept them (after an edit, if need be) or don't, with a reason the player sees. Off, they stand at once. Horatio **flags** a new boon whose side is a name that links to no character, or that looks like a duplicate of another; staff flag any boon by hand for a ruling. Every pending boon and every flagged one waits under **To review**. A name can be **linked** to a character on one boon or on every boon naming it.
 _Avoid_: Approval (that is a sheet's), moderation, queue (in names)
