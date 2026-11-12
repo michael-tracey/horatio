@@ -134,7 +134,8 @@ def test_a_chosen_kind_comes_by_email_at_once(
     # Sent once only, and the bell still has it.
     assert waiting(session) == []
     assert send(session) == 0
-    assert len(custodian.client.get("/notifications").json()["items"]) == 1
+    items = custodian.client.get("/notifications").json()["items"]
+    assert len([i for i in items if i["kind"] == "troupe_request"]) == 1
 
 
 def test_kinds_not_chosen_stay_in_the_bell(

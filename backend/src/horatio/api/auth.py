@@ -6,7 +6,7 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import handles, preferences, suspensions
+from horatio import handles, notifications, preferences, suspensions
 from horatio.audit import record
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.auth.passwords import MIN_PASSWORD_LENGTH, hash_password, verify_password
@@ -146,6 +146,7 @@ def sign_up(body: SignUp, db: DbSession, response: Response) -> Me:
     )
     db.add(user)
     db.flush()
+    notifications.signed_up(db, user)
     set_session_cookie(response, start_session(db, user))
     db.commit()
     return me(user)
