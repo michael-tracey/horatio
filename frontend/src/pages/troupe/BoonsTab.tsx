@@ -13,6 +13,7 @@ import {
   eventName,
   KINDS,
   kindName,
+  LOSS_TEXT,
   owes,
   partyName,
   rowStarted,
@@ -30,6 +31,7 @@ import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { Boonbreakers } from "./Boonbreakers";
 import { BoonReviewQueue, ReviewPanel } from "./BoonReview";
 import { WhoPicker } from "./WhoPicker";
 
@@ -173,6 +175,8 @@ function Ledger({ troupeId }: { troupeId: string }) {
         {adding && <QuickEntry troupeId={troupeId} characters={characters} onDone={() => setAdding(false)} />}
       </Card>
 
+      {(!harpy || harpy.role === "harpy") && <Boonbreakers troupeId={troupeId} characters={characters} />}
+
       <div className="flex flex-col gap-3">
         <div role="tablist" aria-label="Ledger views" className="flex flex-wrap gap-1">
           {VIEWS.filter((v) => v.value !== "pending" || (counts.pending ?? 0) > 0).map((v) => (
@@ -276,9 +280,9 @@ function BoonRow({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p>
-            <span className="text-parchment">{partyName(boon.debtor)}</span>
+            <PartyName party={boon.debtor} />
             <span className="text-mist"> owes </span>
-            <span className="text-parchment">{partyName(boon.creditor)}</span>
+            <PartyName party={boon.creditor} />
             <span className="text-mist"> · </span>
             <span className="text-gold">{kindName(boon.kind)}</span>
             <span className="text-mist"> · {dates.day(boon.made_on)}</span>
@@ -296,6 +300,20 @@ function BoonRow({
       </div>
       {open && <BoonDetail troupeId={troupeId} boonId={boon.id} characters={characters} />}
     </li>
+  );
+}
+
+/** A side of a boon, marked when they're a Boonbreaker (#717). */
+function PartyName({ party }: { party: BoonOut["debtor"] }) {
+  return (
+    <>
+      <span className="text-parchment">{partyName(party)}</span>
+      {party.boonbreaker && (
+        <Badge tone="blood" className="ml-1">
+          Boonbreaker
+        </Badge>
+      )}
+    </>
   );
 }
 
@@ -358,6 +376,7 @@ function BoonDetail({ troupeId, boonId, characters }: { troupeId: string; boonId
         )}
       </dl>
       {(!harpy || harpy.review) && <ReviewPanel troupeId={troupeId} boon={b} characters={characters} />}
+      {b.status_loss && (!harpy || harpy.edit) && <StatusLoss troupeId={troupeId} boon={b} />}
       {harpy && !harpy.edit ? null : doing === null ? (
         <div role="group" aria-label="What to do with it" className="flex flex-wrap gap-2">
           {actionsFor(b.state).map((a) => (
@@ -397,6 +416,42 @@ function BoonDetail({ troupeId, boonId, characters }: { troupeId: string; boonId
             </li>
           ))}
         </ol>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A major, blood or life boon its debtor formally ignored costs them status (p. 395):
+ * staff, or the Harpy, take it with the status tools and say so here, or say they
+ * won't. Never taken by itself (#717).
+ */
+function StatusLoss({ troupeId, boon }: { troupeId: string; boon: BoonOut }) {
+  const [note, setNote] = useState("");
+  const save = useAction(async (taken: boolean) => {
+    await unwrap(
+      api.POST("/api/troupes/{troupe_id}/boons/{boon_id}/status-loss", {
+        ...boonPath(troupeId, boon),
+        body: { taken, note },
+      }),
+    );
+  });
+  if (!boon.status_loss) return null;
+  if (boon.status_loss !== "due") return <p className="text-sm text-mist">{LOSS_TEXT[boon.status_loss]}</p>;
+  return (
+    <div role="group" aria-label="Status for ignoring it" className="flex flex-col gap-2 rounded-md border border-blood/60 p-3 text-sm">
+      <p>{LOSS_TEXT.due}</p>
+      <Field label="Note (optional)" hint="Which status, say.">
+        <Input maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+      <ErrorText error={save.error} />
+      <div className="flex flex-wrap gap-2">
+        <Button variant="secondary" disabled={save.isPending} onClick={() => save.mutate(true)}>
+          Status taken
+        </Button>
+        <Button variant="ghost" disabled={save.isPending} onClick={() => save.mutate(false)}>
+          No status taken
+        </Button>
       </div>
     </div>
   );

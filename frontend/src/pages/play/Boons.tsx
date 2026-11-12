@@ -4,10 +4,10 @@ import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { HarpyLedgerOut, PlayBoonIn, PlayBoonOut, PlayBoonsOut, PlayReportOut } from "../../api/types";
 import { disgracedText } from "../../boonStatus";
-import { BOON_PAGE, KINDS, kindName, type BoonKind } from "../../boons";
+import { BOON_PAGE, BREAKER_PAGE, KINDS, kindName, type BoonKind } from "../../boons";
 import { DateInput } from "../../components/DateInput";
 import { useToast } from "../../components/Toast";
-import { Button, Card, ErrorText, Field, Input, Loaded, Select } from "../../components/ui";
+import { Badge, Button, Card, ErrorText, Field, Input, Loaded, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { playerSettles, reportedText, reportLine, settledText, standingFirst, type PlayerSettles } from "./boons";
@@ -34,6 +34,12 @@ export function BoonsTab({ characterId, name, online }: { characterId: string; n
       <Loaded query={query}>
         {(boons) => (
           <>
+            {boons.boonbreaker && (
+              <p role="status" className="rounded-md border border-blood/60 px-3 py-2 text-sm">
+                {name} is a Boonbreaker in {boons.troupe_name}&apos;s ledger ({BREAKER_PAGE}): the boons they owed and were owed there were made void, and
+                they hold Disgraced while the mark stands.
+              </p>
+            )}
             {(boons.harpy ?? []).map((h) => (
               <HarpyCard key={h.troupe_id} characterId={characterId} name={name} ledger={h} online={online} />
             ))}
@@ -292,6 +298,11 @@ function BoonRow({
           <strong className="font-semibold text-parchment">{kindName(boon.kind)}</strong>
           <span className="text-mist"> {owes ? "to" : "from"} </span>
           {boon.other}
+          {boon.other_boonbreaker && (
+            <Badge tone="blood" className="ml-1">
+              Boonbreaker
+            </Badge>
+          )}
           <span className="text-mist"> · {dates.day(boon.made_on)}</span>
         </p>
         {boon.can_settle && !settling && (

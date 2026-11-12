@@ -887,6 +887,14 @@ MESSAGES: dict[str, str] = {
     "boon.flag_cleared": "{actor} cleared a flag ({what}) on {debtor}'s {kind} boon to"
     " {creditor}{because}.",
     "boon.linked": "{actor} linked the name {name} to {linked_to} on {what}{because}.",
+    # Boonbreakers (#717): on the character's log too, as the mark is public at court.
+    "boon.boonbreaker": "{actor} declared {character} a Boonbreaker{as_harpy}: {voided} of their"
+    " boons made void{disgraced}{because}.",
+    "boon.boonbreaker_appeal": "{actor} recorded {character}'s appeal to {to}: {outcome}{because}.",
+    "boon.boonbreaker_lifted": "{actor} lifted {character}'s Boonbreaker mark, restoring {restored}"
+    " of {of} voided boons{because}.",
+    "boon.status_loss": "{actor} recorded {debtor}'s ignored {kind} boon to {creditor}: {outcome}"
+    "{as_harpy}{because}.",
     "bond.drink": "{actor} recorded {character} drinking {regnant}'s blood on {night}, {source}:"
     " {level}{again}.",
     "bond.entered": "{actor} entered {character}'s bond to {regnant}, at {level} from {night}:"
