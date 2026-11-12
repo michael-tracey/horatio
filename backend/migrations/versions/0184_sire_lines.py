@@ -5,7 +5,7 @@ A vampire's sire was kept only on an Embrace run in play. It is now on the
 character too, for every vampire, and the Embraces already run fill it in.
 
 Revision ID: 0184
-Revises: 0177
+Revises: 0181
 Create Date: 2026-11-12 21:00:00.000000
 """
 
@@ -15,7 +15,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0184"
-down_revision: str | None = "0177"
+down_revision: str | None = "0181"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
