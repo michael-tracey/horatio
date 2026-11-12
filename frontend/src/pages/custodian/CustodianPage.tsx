@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router";
+import { Link, Navigate, Route, Routes, useLocation } from "react-router";
 import { Loading, PageTitle, Tabs } from "../../components/ui";
 import { useMe } from "../../hooks";
 import { ArchivedTroupesTab } from "./ArchivedTroupesTab";
@@ -28,7 +28,6 @@ export function CustodianPage() {
           { to: "/custodian/troupe-requests", label: "Troupe requests", count: requests.data?.filter((r) => r.status === "pending").length ?? 0 },
           { to: "/custodian/archived-troupes", label: "Archived troupes" },
           { to: "/custodian/clan-logos", label: "Clan logos" },
-          { to: "/custodian/yorick-import", label: "Import from Yorick" },
           { to: "/custodian/backups", label: "Backups" },
           { to: "/custodian/audit", label: "Audit" },
           { to: "/custodian/settings", label: "Settings" },
@@ -42,13 +41,31 @@ export function CustodianPage() {
         <Route path="troupe-requests" element={<TroupeRequestsTab />} />
         <Route path="archived-troupes" element={<ArchivedTroupesTab />} />
         <Route path="clan-logos" element={<ClanLogosTab />} />
-        <Route path="yorick-import" element={<YorickImportTab />} />
+        {/* Moved under Tools (#758); old links, with their ?troupe=, still land there. */}
+        <Route path="yorick-import" element={<ToYorickImport />} />
         <Route path="backups" element={<BackupsTab />} />
         <Route path="audit" element={<AuditTab />} />
         <Route path="settings" element={<SettingsTab />} />
         <Route path="system" element={<SystemTab />} />
         <Route path="tools" element={<ToolsTab />} />
+        <Route
+          path="tools/yorick-import"
+          element={
+            <>
+              <Link to="/custodian/tools" className="mb-3 inline-block text-sm text-mist hover:text-parchment">
+                ← Tools
+              </Link>
+              <YorickImportTab />
+            </>
+          }
+        />
       </Routes>
     </>
   );
+}
+
+/** The import's old address, sent on to its place under Tools with its query kept. */
+function ToYorickImport() {
+  const { search } = useLocation();
+  return <Navigate to={`/custodian/tools/yorick-import${search}`} replace />;
 }

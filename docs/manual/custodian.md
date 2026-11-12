@@ -292,7 +292,7 @@ The very first screen shows before the app has asked the server anything, so it 
 
 ## Tools
 
-**Custodian › Tools** holds upkeep that would otherwise need a command on the server. Each tool is a card that says what it does, shows what it would change, and changes nothing until you say so. The cards that fetch files from elsewhere say what the server has now.
+**Custodian › Tools** holds upkeep that would otherwise need a command on the server. Each tool is a card that says what it does, shows what it would change, and changes nothing until you say so. The cards that fetch files from elsewhere say what the server has now. The [import from Yorick](#importing-characters-from-yorick) is here too: its card opens it.
 
 ### Fitting NPC creation picks
 
@@ -374,7 +374,7 @@ The page holds real players' names and emails. Horatio keeps it only for the imp
 
 ### Upload the page
 
-1. Open **Custodian › Import from Yorick**, and choose the **Troupe**.
+1. Open **Custodian › Tools**, choose **Open the import** on the **Import from Yorick** card, and choose the **Troupe**.
 2. Choose **Upload the page**, and pick the zip or the `.html`. **Upload a newer page** replaces it later.
 3. Under **The NPCs are made by**, choose who makes them: the lead storyteller, or one of the troupe's storytellers.
 
