@@ -1009,9 +1009,9 @@ test("a troupe uploads its own rock, paper and scissors, names the set and previ
   await expect(card.getByRole("img", { name: "The troupe's scissors" })).toBeVisible();
   await expect(card.getByText("Add the rest: the set is offered only with all three.")).toHaveCount(0);
 
-  await card.getByLabel(/Name for the set/).fill("Land of the Sky bones");
-  await card.getByRole("button", { name: "Save the name" }).click();
-  await expect(card.getByRole("button", { name: "Save the name" })).toBeDisabled();
+  await card.getByLabel(/Title for the set/).fill("Land of the Sky bones");
+  await card.getByRole("button", { name: "Use this title" }).click();
+  await expect(card.getByRole("button", { name: "Use this title" })).toBeDisabled();
 
   // The preview shows all three as the Throws tab would, in Dark, then Ultra goth.
   const preview = card.getByRole("region", { name: "Preview" });

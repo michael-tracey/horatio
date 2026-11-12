@@ -80,12 +80,12 @@ function Editor({ troupeId, images }: { troupeId: string; images: ThrowImagesOut
       >
         <label className="flex min-w-0 flex-1 flex-col gap-1">
           <span>
-            Name for the set <span className="text-mist">(optional)</span>
+            Title for the set <span className="text-mist">(optional)</span>
           </span>
           <input value={name} maxLength={60} placeholder="Land of the Sky bones" onChange={(e) => setName(e.target.value)} className="rounded-md border border-line bg-night px-3 py-2" />
         </label>
         <Button type="submit" variant="secondary" disabled={saveName.isPending || name.trim() === images.name}>
-          Save the name
+          Use this title
         </Button>
       </form>
       {any &&
