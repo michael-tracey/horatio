@@ -52,7 +52,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, clan_merits, notifications, repricing, sheets, xp_debt
+from horatio import audit, auto_bonds, clan_merits, notifications, repricing, sheets, xp_debt
 from horatio.models import (
     AppliedHouseTrait,
     Character,
@@ -1168,6 +1168,9 @@ def embrace(
     )
     sheets.freeze_sheet(db, staff, character, character.home_troupe_id)
     db.flush()
+    # The Embrace itself is a drink of the sire's blood: a one-drink bond (p. 295).
+    sire = db.get(Character, plan.sire_id) if plan.sire_id is not None else None
+    auto_bonds.embraced(db, staff, character, sire, plan.sire_name, embraced_on)
     for step in plan.steps:
         audit.record(
             db,

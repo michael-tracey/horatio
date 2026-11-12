@@ -1,8 +1,8 @@
 """boon games: the game a boon was registered at, optional, so the boon statistics
 can show each game's activity (issue #702)
 
-Revision ID: 0183
-Revises: 0181
+Revision ID: 0193
+Revises: 0191
 Create Date: 2026-11-12 21:00:00.000000
 """
 
@@ -11,8 +11,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0183"
-down_revision: str | None = "0181"
+revision: str = "0193"
+down_revision: str | None = "0191"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

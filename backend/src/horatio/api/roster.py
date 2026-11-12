@@ -400,6 +400,10 @@ MESSAGES: dict[str, str] = {
     "troupe.portrait_removed": "{actor} removed the troupe's portrait.",
     "troupe.banner_uploaded": "{actor} gave the troupe a banner.",
     "troupe.banner_removed": "{actor} removed the troupe's banner.",
+    "troupe.throw_image_uploaded": "{actor} gave the troupe a picture for {throw}.",
+    "troupe.throw_image_replaced": "{actor} gave the troupe a new picture for {throw}.",
+    "troupe.throw_images_named": "{actor} named the troupe's throw pictures: {name}.",
+    "troupe.throw_images_removed": "{actor} removed the troupe's throw pictures.",
     "downtime.cycle_created": "{actor} created a downtime cycle.",
     "downtime.cycle_opened": "{actor} opened a downtime cycle ({participants} taking part).",
     "downtime.cycle_closed": "{actor} closed a downtime cycle.",
@@ -540,6 +544,7 @@ MESSAGES: dict[str, str] = {
     "title.removed_from_troupe": "{actor} removed the title {title} from the troupe.",
     "title.one_holder": "{actor} switched One holder at a time {what} for the title {title}.",
     "title.court_order": "{actor} set the court order of the troupe's own titles: {order}.",
+    "title.dated": "{actor} set the in-game dates of {character}'s {title}: {what}.",
     "troupe.seats": "{actor} gave seats at court to {clans}.",
     "character.represented_by": "{actor} set who represents {character} at court: {by}.",
     "status.added": "{actor} gave {character} the {type} status {status}, from {patron}"
@@ -566,6 +571,7 @@ MESSAGES: dict[str, str] = {
     "troupe.badges": "{actor} set what badges print: {titles}, {status}.",
     "troupe.badge_pronouns": "{actor} set badges to print {pronouns}.",
     "troupe.whos_who": "{actor} set the Who's Who to show {status}.",
+    "troupe.court_history": "{actor} set the court over time to show to {who}.",
     "troupe.play_tabs": "{actor} set the Play View's tabs for players: {tabs}.",
     "npc.whos_who": "{actor} {listed} {character} on the Who's Who.",
     "scene.created": "{actor} made the scene {name}.",
@@ -854,6 +860,8 @@ MESSAGES: dict[str, str] = {
     "house.remembrances": "{actor} switched Remembrances {setting}.",
     "house.blood_bonds": "{actor} set Blood bonds to {setting}.",
     "house.boons": "{actor} switched the boon ledger {setting}.",
+    "house.boon_players": "{actor} set what players see of the boon ledger in the Play View:"
+    " {see}; they {settle} mark a boon owed to them settled.",
     "boon.weights": "{actor} set what boons weigh in the standings: {changed}.",
     "boon.registered": "{actor} registered {what}: {debtor} owes {creditor}{because}.",
     "boon.edited": "{actor} edited {debtor}'s {kind} boon to {creditor}{because}.",
@@ -871,6 +879,11 @@ MESSAGES: dict[str, str] = {
     "bond.wiped": "{character}'s lesser bond to {regnant} was wiped away by the full bond to"
     " {full}.",
     "bond.broken": "{actor} broke {character}'s bond to {regnant}: {reason}",
+    # Bonds Horatio knows by rule (#663), as {actor}'s change made them.
+    "bond.automatic": "{character}'s bond to {regnant} was added at {level} from {night}: {reason}",
+    "bond.domitor_moved": "{character}'s bond to {regnant} ended: {reason}",
+    "bond.retainer_linked": "{character}'s bond to {regnant} moved from the Retainer {retainer}"
+    " to the NPC linked to it.",
     "bond.known": "{actor} marked {character}'s bond to {regnant} {known} to the regnant.",
     # Fading (#662): in the troupe's log only, but for the thrall's death and the word
     # that a bond faded, which go in the thrall's own log too.

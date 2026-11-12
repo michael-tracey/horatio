@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional } from "./support";
+import { closeContextsAfterEach, run, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, shots } from "./support";
 
-/** Boons: the troupe's ledger, for its running staff: registering a game's boons at once, settling, editing and trading them, each with its own log. */
+/** Boons: the troupe's ledger, for its running staff: registering a game's boons at once, settling, editing and trading them, each with its own log; the boon standings; and the Play View's Boons tab, where players report boons and see what the troupe lets them (#686). */
 
 closeContextsAfterEach();
 
@@ -202,4 +202,85 @@ test("staff see the boon statistics: the ledger over time, who owes whom, betwee
   await expect(web.getByText(/1 of 2 debts shown/)).toBeVisible();
   await expect(web.getByRole("img", { name: /Thaddeus Grue/ })).toHaveCount(0);
   await expect(web.getByRole("img", { name: /The Grey Countess/ })).toBeVisible();
+});
+
+test("in the Play View's Boons tab a player reports a boon, sees what the troupe lets them, and only the creditor's player settles it (#686)", async ({ browser }) => {
+  const custodian = await person(browser, "boontab-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "boontab-lead");
+  const creditor = await person(browser, "boontab-creditor");
+  const debtor = await person(browser, "boontab-debtor");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Debts Told ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  const build = { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]] as [string, number][], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] as [string, number][] };
+  const home = async (page: Page, name: string) => {
+    const id = await builtVampire(page, name, "Brujah", build);
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    return id;
+  };
+  const isolde = await home(creditor.page, "Isolde Marrow");
+  const tobiah = await home(debtor.page, "Tobiah Venn");
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/boon-ledger`, { on: true });
+
+  // By default a player sees only the form: Isolde's player reports that Tobiah owes her.
+  const c = creditor.page;
+  await c.goto(`/play/characters/${isolde}?tab=boons`);
+  const tab = c.getByRole("region", { name: "Boons" });
+  const report = tab.getByRole("form", { name: "Report a boon" });
+  await expect(report).toBeVisible();
+  await expect(tab.getByRole("region", { name: "Owed to Isolde Marrow" })).toHaveCount(0);
+  await report.getByLabel("They owe Isolde Marrow").check();
+  await report.getByLabel("Who").selectOption({ label: "Tobiah Venn" });
+  await report.getByLabel("Kind").selectOption("major");
+  await report.getByLabel("Reason").fill("Shelter before dawn");
+  await report.getByRole("button", { name: "Report the boon" }).click();
+  await expect(c.getByText(`Reported to Debts Told ${run}'s ledger: Tobiah Venn owes Isolde Marrow a major boon.`)).toBeVisible();
+
+  // The lead lets players see what they owe and are owed, and creditors settle.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}/settings`);
+  await l.getByRole("radio", { name: /^Also what they're owed/ }).check();
+  await expect(l.getByText("Saved what players see of the boon ledger.")).toBeVisible();
+  await l.getByRole("checkbox", { name: /^Players mark boons owed to them settled/ }).check();
+  await expect(l.getByRole("checkbox", { name: /^Players mark boons owed to them settled/ })).toBeChecked();
+
+  // Tobiah's player sees what he owes, with no way to settle it.
+  const d = debtor.page;
+  await d.goto(`/play/characters/${tobiah}?tab=boons`);
+  const owes = d.getByRole("region", { name: "Tobiah Venn owes" });
+  const debt = owes.getByRole("listitem", { name: "Major boon to Isolde Marrow" });
+  await expect(debt).toContainText("Shelter before dawn");
+  await expect(debt.getByRole("button", { name: "Settle" })).toHaveCount(0);
+
+  // Isolde's player sees it owed to her, and forgives it.
+  await c.reload();
+  const owed = c.getByRole("region", { name: "Owed to Isolde Marrow" });
+  const held = owed.getByRole("listitem", { name: "Major boon from Tobiah Venn" });
+  await expect(held).toBeVisible();
+  await c.screenshot(shots("play-boons"));
+  await held.getByRole("button", { name: "Settle" }).click();
+  const settle = held.getByRole("form", { name: "Settle the boon" });
+  await settle.getByLabel(/^Forgiven/).check();
+  await settle.getByLabel("Note (optional)").fill("For old times");
+  await settle.getByRole("button", { name: "Mark it settled" }).click();
+  await expect(owed.getByText("No boons in the ledger are owed to Isolde Marrow.")).toBeVisible();
+  await owed.getByText("Settled (1)").click();
+  await expect(owed.getByRole("listitem", { name: "Major boon from Tobiah Venn" })).toContainText("Settled: forgiven");
+
+  // In the ledger, staff see it was done as Isolde.
+  await l.goto(`/troupes/${troupe.id}/boons`);
+  await l.getByRole("tab", { name: /^Settled/ }).click();
+  const row = l.getByRole("list", { name: "Boons" }).getByRole("listitem", { name: "Tobiah Venn owes Isolde Marrow, major" });
+  await row.getByRole("button", { name: "Open" }).click();
+  const log = row.getByRole("list", { name: "Log of Tobiah Venn owes Isolde Marrow" });
+  await expect(log).toContainText("as Isolde Marrow");
+  await expect(log).toContainText("For old times");
 });

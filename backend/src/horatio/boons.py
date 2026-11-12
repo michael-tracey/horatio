@@ -27,6 +27,13 @@ in a character's own, which its player reads.
 This issue builds the ledger for staff. Players' intake and what they see (#686),
 review (#687), the Harpy (#688) and Lesser Harpies (#689) come after; the
 `pending` state and `BoonEvent.as_character_id` are there for them.
+
+Players (#686) report boons in the Play View's Boons tab, for the troupe whose
+setting their Play View follows. What else they see there is the troupe's to say
+(`PLAYERS_SEE`): the form alone, or also what their character owes, or also what it
+is owed. With "owed", the troupe may let a boon's creditor's player mark it settled,
+called in or forgiven. A player never sees a boon's log, its staff note, or who
+registered it.
 """
 
 import uuid
@@ -69,6 +76,15 @@ STANDINGS = {
 # character's player has stopped, which says nothing in game; a character retired
 # before reasons were kept is counted as gone.
 DEPARTED = ("final_death", "off_field", "retired")
+# What a troupe's players see of its ledger in the Play View (#686), least first.
+PLAYERS_SEE = {
+    "intake": "the form to report a boon only",
+    "owes": "the form, and the boons their characters owe",
+    "owed": "the form, and the boons their characters owe and are owed",
+}
+# How a player may settle a boon owed to their character: formally ignoring one is
+# its debtor's doing (p. 397).
+PLAYER_SETTLES = ("called_in", "forgiven")
 # The most boons one entry may make, and rows a quick entry may hold.
 MOST_AT_ONCE = 20
 MOST_ROWS = 100
@@ -256,14 +272,17 @@ def event(
     kind: str,
     note: str = "",
     changes: Mapping[str, tuple[str, str]] | None = None,
+    as_character: Character | None = None,
 ) -> BoonEvent:
-    """A line in the boon's own log."""
+    """A line in the boon's own log: done as `as_character` for a player in the Play
+    View (#686), or a Harpy (#688)."""
     line = BoonEvent(
         boon_id=boon.id,
         kind=kind,
         note=note,
         changes={k: list(v) for k, v in (changes or {}).items()},
         actor_id=user.id,
+        as_character_id=as_character.id if as_character is not None else None,
     )
     db.add(line)
     return line
@@ -318,6 +337,7 @@ def register(
     terms: Terms,
     count: int = 1,
     note: str = "",
+    as_character: Character | None = None,
     game_id: uuid.UUID | None = None,
 ) -> list[Boon]:
     """Put `count` boons, alike, in the troupe's ledger, standing; registered at the
@@ -340,7 +360,7 @@ def register(
         place(boon, "creditor", creditor)
         db.add(boon)
         db.flush()
-        event(db, user, boon, "registered", note.strip())
+        event(db, user, boon, "registered", note.strip(), as_character=as_character)
         made.append(boon)
     log(db, user, "boon.registered", made[0], what=a_boon(terms.kind, count), reason=note.strip())
     return made
@@ -461,7 +481,14 @@ def close(boon: Boon, state: str, note: str, how: str | None = None) -> None:
     boon.closed_note = note
 
 
-def settle(db: Session, user: User, boon: Boon, how: str, note: str = "") -> None:
+def settle(
+    db: Session,
+    user: User,
+    boon: Boon,
+    how: str,
+    note: str = "",
+    as_character: Character | None = None,
+) -> None:
     """The boon is settled: called in, forgiven, or formally ignored (p. 397)."""
     if how not in SETTLED:
         raise unprocessable(f"A boon is settled as one of {', '.join(SETTLED)}.")
@@ -469,7 +496,15 @@ def settle(db: Session, user: User, boon: Boon, how: str, note: str = "") -> Non
     note = note.strip()
     close(boon, "settled", note, how)
     db.flush()
-    event(db, user, boon, "settled", note, {"state": ("Standing", f"Settled: {SETTLED[how]}")})
+    event(
+        db,
+        user,
+        boon,
+        "settled",
+        note,
+        {"state": ("Standing", f"Settled: {SETTLED[how]}")},
+        as_character,
+    )
     log(db, user, "boon.settled", boon, how=SETTLED[how], reason=note)
 
 
@@ -523,3 +558,55 @@ def in_view(boon: Boon, characters: Mapping[uuid.UUID, Character], view: str) ->
 def counts(boons: Sequence[Boon], characters: Mapping[uuid.UUID, Character]) -> dict[str, int]:
     """How many boons are in each view."""
     return {v: sum(1 for b in boons if in_view(b, characters, v)) for v in VIEWS}
+
+
+# --- players (#686) -----------------------------------------------------------------------
+
+
+def set_players(db: Session, user: User, troupe: Troupe, see: str, settle: bool) -> None:
+    """What the troupe's players see of its ledger in the Play View, and whether a
+    creditor's player may mark a boon settled. Logged if it changes anything."""
+    if see not in PLAYERS_SEE:
+        raise unprocessable(f"Players see one of {', '.join(PLAYERS_SEE)}.")
+    if (troupe.boon_players_see, troupe.boon_players_settle) == (see, settle):
+        return
+    troupe.boon_players_see = see
+    troupe.boon_players_settle = settle
+    audit.record(
+        db,
+        user,
+        "house.boon_players",
+        troupe_id=troupe.id,
+        see=PLAYERS_SEE[see],
+        settle="may" if settle else "may not",
+    )
+
+
+def players_settle(troupe: Troupe) -> bool:
+    """Whether a creditor's player may mark a boon settled: only where they see it."""
+    return troupe.boon_players_settle and troupe.boon_players_see == "owed"
+
+
+def shown_to_player(troupe: Troupe, boon: Boon, character: Character) -> bool:
+    """Whether the character's player sees the boon in the Play View: standing or
+    settled (never pending or void), and on a side the troupe lets them see."""
+    if boon.state not in ("registered", "settled"):
+        return False
+    if boon.debtor_id == character.id:
+        return troupe.boon_players_see in ("owes", "owed")
+    if boon.creditor_id == character.id:
+        return troupe.boon_players_see == "owed"
+    return False
+
+
+def ledger_of(db: Session, character: Character) -> Troupe | None:
+    """The troupe whose ledger the character's Play View shows: the one whose setting
+    the Play View follows (a PC's home troupe, or the one it is built for; an NPC's
+    own), while it keeps a ledger."""
+    troupe_id = (
+        character.owner_troupe_id
+        if character.kind == "npc"
+        else character.home_troupe_id or character.building_troupe_id
+    )
+    troupe = db.get(Troupe, troupe_id) if troupe_id else None
+    return troupe if troupe is not None and tracked(troupe) else None

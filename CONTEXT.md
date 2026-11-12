@@ -89,6 +89,10 @@ _Avoid_: Encounter, group view
 A position a character holds in one troupe, such as Prince or Primogen. Its player chooses it from that troupe's titles of the character's sect, and the troupe's storytellers and assistant storytellers are told; they can also give and take titles, and a troupe can keep titles to them alone. Several characters may hold a title, unless the troupe holds it to one holder at a time as a house rule; then, while someone holds it, it is staff's to give. Of the titles a character holds in a troupe, at most one is active, and only that one gives status. A title means nothing outside its troupe.
 _Avoid_: Rank, office, court position
 
+**Title History**:
+Every holding of a title in a troupe, from when it began (given by staff, or chosen) to when it ended (taken, given up, retired, left, removed from the troupe, or the character deleted), with the real dates and the in-game dates staff give. It is the troupe's court over time: its storytellers and assistant storytellers see it, with each home character's status over time; its players see the titles alone if the troupe lets them. What came before it was kept was recovered from the log.
+_Avoid_: Title log
+
 **Vault**:
 A player's own characters, whether or not they are in any troupe.
 _Avoid_: Library, roster
@@ -122,7 +126,7 @@ The vampire a ghoul is bound to by its blood. A ghoul has no clan of its own: it
 _Avoid_: Master, regnant (that is any blood bond's), sire
 
 **Blood Bond**:
-A thrall's forced love for a regnant, from drinking the regnant's blood: one drink, two, or a full bond at three, each on a separate night, and a full bond wipes away the thrall's lesser bonds (MET: VTM p. 295). Either side is a character or a name only. Its level comes from its drinks log, never typed in; staff can enter one that already stands, with a reason, and break one. A troupe tracks them or not at all; with staff recording every drink, with players reporting their characters' drinks for staff to approve, or with players recording them, where one the regnant's player records waits for the thrall's player to confirm. Its running staff see every bond, the thrall's player sees their own, and the regnant's player only those staff mark known to the regnant, or that they reported; nobody else sees any. When its regnant meets Final Death it is **fading**: it ends 30 days later (p. 296), and until its thrall's player is told it faded, with the next downtime results, nothing they see changes. A thrall's Final Death ends its bonds.
+A thrall's forced love for a regnant, from drinking the regnant's blood: one drink, two, or a full bond at three, each on a separate night, and a full bond wipes away the thrall's lesser bonds (MET: VTM p. 295). Either side is a character or a name only. Its level comes from its drinks log, never typed in; staff can enter one that already stands, with a reason, and break one. A troupe tracks them or not at all; with staff recording every drink, with players reporting their characters' drinks for staff to approve, or with players recording them, where one the regnant's player records waits for the thrall's player to confirm. Its running staff see every bond, the thrall's player sees their own, and the regnant's player only those staff mark known to the regnant, or that they reported; nobody else sees any. When its regnant meets Final Death it is **fading**: it ends 30 days later (p. 296), and until its thrall's player is told it faded, with the next downtime results, nothing they see changes. A thrall's Final Death ends its bonds. Some Horatio adds itself, by rule: a childe's one-drink bond to their sire from the Embrace (p. 295), and a full bond from a ghoul, or a vampire's ghoul Retainer, to the vampire they serve (p. 296); staff fill in those from before the troupe tracked bonds.
 _Avoid_: Blood oath, rating or points (for its drinks), master
 
 **Boon**:
@@ -130,7 +134,7 @@ A debt one character (the debtor) owes another (the creditor), registered in a t
 _Avoid_: Favour, debt (in names), IOU, prestation (for one boon)
 
 **Boon Ledger**:
-A troupe's record of its boons, kept by its running staff while the troupe's Boons setting is on. Off, it is hidden everywhere, and kept.
+A troupe's record of its boons, kept by its running staff while the troupe's Boons setting is on. Off, it is hidden everywhere, and kept. Its players report boons for their characters in the Play View's Boons tab, and see there what the troupe lets them: nothing more, what their characters owe, or also what they're owed; where it lets them, a boon's creditor's player marks it settled.
 _Avoid_: Boon registry, boon sheet
 
 **Boon Standings**:

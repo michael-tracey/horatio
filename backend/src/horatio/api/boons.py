@@ -425,7 +425,7 @@ def register(
     made: list[Boon] = []
     for debtor, creditor, terms, count in rows:
         made += boons.register(
-            db, user, troupe, debtor, creditor, terms, count, body.note, body.game_id
+            db, user, troupe, debtor, creditor, terms, count, body.note, game_id=body.game_id
         )
     db.commit()
     characters = characters_of(db, made)
@@ -562,3 +562,271 @@ def character_boons(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -
             )
         )
     return CharacterBoonsOut(troupes=summaries)
+
+
+# --- the troupe's players (#686) ----------------------------------------------------------
+
+PlayersSee = Literal["intake", "owes", "owed"]
+Direction = Literal["owes", "owed"]
+PlayerSettles = Literal["called_in", "forgiven"]
+
+
+class BoonPlayersIn(BaseModel):
+    # What players see in the Play View's Boons tab: the form only, also what their
+    # characters owe, or also what they're owed.
+    see: PlayersSee
+    # A boon's creditor's player may mark it settled (only with "owed").
+    settle: bool
+
+
+@router.put("/troupes/{troupe_id}/boon-players")
+def set_boon_players(
+    troupe_id: uuid.UUID, body: BoonPlayersIn, db: DbSession, user: CurrentUser
+) -> TroupeOut:
+    """What the troupe's players see of its boon ledger in the Play View, and whether a
+    boon's creditor's player may mark it settled there."""
+    troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
+    boons.set_players(db, user, troupe, body.see, body.settle)
+    db.commit()
+    return troupe_out(db, user, troupe)
+
+
+class PlayBoonIn(BaseModel):
+    """A boon a player reports for their character."""
+
+    # The other side: a player character in the troupe, or a name only.
+    other: BoonPartyIn
+    # The character owes the other side, or is owed by it.
+    direction: Direction
+    kind: Kind
+    # The in-game night it was made.
+    made_on: date
+    reason: str = Text
+    conditions: str = Text
+    notify_on_trade: bool = False
+    # How many alike.
+    count: int = Field(default=1, ge=1, le=boons.MOST_AT_ONCE)
+
+
+class PlayBoonSettleIn(BaseModel):
+    how: PlayerSettles
+    note: str = Text
+
+
+class PlayBoonOut(BaseModel):
+    """A boon as its party's player sees it: never its log, staff note or who
+    registered it."""
+
+    id: uuid.UUID
+    # The other side: a character, or a name only.
+    other: str
+    other_id: uuid.UUID | None
+    kind: Kind
+    made_on: date
+    reason: str
+    conditions: str
+    notify_on_trade: bool
+    state: Literal["registered", "settled"]
+    settled_how: SettledHow | None
+    settled_at: datetime | None
+    settled_note: str
+    # The caller may mark it settled here.
+    can_settle: bool
+
+
+class PlayBoonsOut(BaseModel):
+    troupe_id: uuid.UUID
+    troupe_name: str
+    # What the troupe lets its players see.
+    see: PlayersSee
+    # The caller may report a boon for the character now: it's in play in the troupe.
+    can_report: bool
+    # What the character owes, and is owed, standing then settled, newest first; None
+    # where the troupe doesn't show that side.
+    owes: list[PlayBoonOut] | None
+    owed: list[PlayBoonOut] | None
+    # The troupe's player characters in play, to name the other side; anyone else is
+    # named by name.
+    characters: list[CharacterChoice]
+
+
+def play_ledger(db: DbSession, user: User, character_id: uuid.UUID) -> tuple[Character, Troupe]:
+    """The character and the troupe whose ledger its Play View shows, for its player
+    or the troupe's running staff."""
+    character = visible_character(db, user, character_id)
+    troupe = boons.ledger_of(db, character)
+    if troupe is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Its troupe doesn't keep a boon ledger.")
+    if character.player_id != user.id and not boons.can_manage(db, user, troupe):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Only its player and its troupe's staff see its boons."
+        )
+    return character, troupe
+
+
+def player_sees(troupe: Troupe, character: Character) -> str:
+    """What is shown for the character: as its troupe lets players see, or, on an NPC
+    its staff run, everything."""
+    return "owed" if character.kind == "npc" else troupe.boon_players_see
+
+
+def in_play(db: DbSession, troupe: Troupe, character: Character) -> bool:
+    return (
+        character.status != "retired"
+        and troupe.archived_at is None
+        and boons.in_troupe(db, troupe, character)
+    )
+
+
+def play_choices(db: DbSession, troupe: Troupe, character: Character) -> list[CharacterChoice]:
+    """The troupe's player characters in play, at home or visiting, but this one."""
+    members = select(TroupeMembership.character_id).where(
+        TroupeMembership.troupe_id == troupe.id, TroupeMembership.left_at.is_(None)
+    )
+    found = db.scalars(
+        select(Character)
+        .where(
+            Character.id.in_(members),
+            Character.kind == "pc",
+            Character.status == "active",
+            Character.id != character.id,
+        )
+        .order_by(Character.name)
+    )
+    return [CharacterChoice(id=c.id, name=c.name, kind=c.kind, in_troupe=True) for c in found]
+
+
+def play_out(
+    db: DbSession, user: User, troupe: Troupe, character: Character, sees: str
+) -> PlayBoonsOut:
+    found = [
+        b
+        for b in db.scalars(
+            select(Boon)
+            .where(
+                Boon.troupe_id == troupe.id,
+                or_(Boon.debtor_id == character.id, Boon.creditor_id == character.id),
+            )
+            .order_by(Boon.made_on.desc(), Boon.created_at.desc())
+        )
+        if b.state in ("registered", "settled")
+    ]
+    others = characters_of(db, found)
+    playing = in_play(db, troupe, character)
+    settles = playing and (character.kind == "npc" or boons.players_settle(troupe))
+
+    def out(b: Boon, owes: bool) -> PlayBoonOut:
+        other_id, other_name = (
+            (b.creditor_id, b.creditor_name) if owes else (b.debtor_id, b.debtor_name)
+        )
+        other = others.get(other_id) if other_id else None
+        return PlayBoonOut(
+            id=b.id,
+            other=other.name if other is not None else other_name,
+            other_id=other_id,
+            kind=b.kind,  # type: ignore[arg-type]  # checked by the database
+            made_on=b.made_on,
+            reason=b.reason,
+            conditions=b.conditions,
+            notify_on_trade=b.notify_on_trade,
+            state=b.state,  # type: ignore[arg-type]  # registered or settled, as found
+            settled_how=b.settled_how,  # type: ignore[arg-type]  # checked by the database
+            settled_at=b.closed_at,
+            settled_note=b.closed_note,
+            can_settle=settles and not owes and b.state == "registered",
+        )
+
+    def side(owes: bool) -> list[PlayBoonOut]:
+        mine = [b for b in found if (b.debtor_id if owes else b.creditor_id) == character.id]
+        # Standing first, then settled, each newest first.
+        mine.sort(key=lambda b: b.state != "registered")
+        return [out(b, owes) for b in mine]
+
+    return PlayBoonsOut(
+        troupe_id=troupe.id,
+        troupe_name=troupe.name,
+        see=troupe.boon_players_see,  # type: ignore[arg-type]  # checked by the database
+        can_report=playing,
+        owes=side(True) if sees in ("owes", "owed") else None,
+        owed=side(False) if sees == "owed" else None,
+        characters=play_choices(db, troupe, character) if playing else [],
+    )
+
+
+@router.get("/characters/{character_id}/play-boons")
+def play_boons(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -> PlayBoonsOut:
+    """The Play View's Boons tab: the form to report a boon, and what the troupe lets
+    its players see of the character's boons. Staff on a PC see what its player does;
+    on an NPC they run, everything."""
+    character, troupe = play_ledger(db, user, character_id)
+    return play_out(db, user, troupe, character, player_sees(troupe, character))
+
+
+@router.post("/characters/{character_id}/play-boons", status_code=status.HTTP_201_CREATED)
+def report_boon(
+    character_id: uuid.UUID, body: PlayBoonIn, db: DbSession, user: CurrentUser
+) -> PlayBoonsOut:
+    """A player reports a boon for their character, which goes in the troupe's ledger
+    as theirs, done as the character."""
+    character, troupe = play_ledger(db, user, character_id)
+    if not in_play(db, troupe, character):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, f"{character.name} isn't in play in {troupe.name}."
+        )
+    me = boons.Party(character, "")
+    other = side(db, troupe, body.other, "other side")
+    if other.character is not None and other.character.kind == "npc":
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "Name an NPC by name: the Harpy or staff link it to the ledger.",
+        )
+    debtor, creditor = (me, other) if body.direction == "owes" else (other, me)
+    terms = boons.Terms(
+        kind=body.kind,
+        made_on=body.made_on,
+        reason=body.reason,
+        conditions=body.conditions,
+        notify_on_trade=body.notify_on_trade,
+    )
+    boons.register(
+        db,
+        user,
+        troupe,
+        debtor,
+        creditor,
+        terms,
+        body.count,
+        "Reported in the Play View.",
+        as_character=character,
+    )
+    db.commit()
+    return play_out(db, user, troupe, character, player_sees(troupe, character))
+
+
+@router.post("/characters/{character_id}/play-boons/{boon_id}/settle")
+def settle_owed(
+    character_id: uuid.UUID,
+    boon_id: uuid.UUID,
+    body: PlayBoonSettleIn,
+    db: DbSession,
+    user: CurrentUser,
+) -> PlayBoonsOut:
+    """A boon owed to the character is settled, called in or forgiven, by its
+    creditor's player, where the troupe lets them."""
+    character, troupe = play_ledger(db, user, character_id)
+    boon = troupe_boon(db, troupe, boon_id)
+    if boon.creditor_id != character.id:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Only the player of the boon's creditor settles it here."
+        )
+    if not in_play(db, troupe, character):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, f"{character.name} isn't in play in {troupe.name}."
+        )
+    if character.kind != "npc" and not boons.players_settle(troupe):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, f"{troupe.name}'s players don't mark boons settled."
+        )
+    boons.settle(db, user, boon, body.how, body.note, as_character=character)
+    db.commit()
+    return play_out(db, user, troupe, character, player_sees(troupe, character))
