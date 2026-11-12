@@ -21,6 +21,16 @@ function gameDate(iso: string): Date {
   return at;
 }
 
+const DAY = 86_400_000;
+
+/**
+ * A time axis from `first` to `last`, at least a day long: a title given and taken
+ * in the same minute would otherwise tick in milliseconds.
+ */
+export function span(first: Date, last: Date): [Date, Date] {
+  return [first, new Date(Math.max(last.getTime(), first.getTime() + DAY))];
+}
+
 /**
  * The holdings to draw, and between which dates: the real ones, or the in-game
  * ones staff gave. In game, a holding without an in-game start, or ended without
@@ -103,5 +113,5 @@ export function statusExtent(lines: readonly StatusLine[], now = new Date()): { 
       most = Math.max(most, p.fleeting + p.negative);
     }
   }
-  return { start: new Date(start), end: now, most };
+  return { start: new Date(Math.min(start, now.getTime() - DAY)), end: now, most };
 }

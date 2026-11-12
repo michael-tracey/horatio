@@ -8,7 +8,7 @@ import type { components } from "../../api/schema";
 import { AxisBottom, AxisLeft, ChartFrame, clanKey, clanSlots, Legend, plotArea, series, slotOf, useMarks, type ChartTable, type LegendItem, type Tip } from "../../charts";
 import { Button, ErrorText, Input, Loading } from "../../components/ui";
 import { useAction } from "../../hooks";
-import { courtRows, dated, statusExtent, type CourtHolding, type Dates } from "./court";
+import { courtRows, dated, span, statusExtent, type CourtHolding, type Dates } from "./court";
 
 type CourtHistory = components["schemas"]["CourtHistoryOut"];
 type StatusLine = components["schemas"]["StatusLineOut"];
@@ -124,7 +124,7 @@ function TitlesChart({ data }: { data: CourtHistory }) {
         const now = new Date();
         const first = shown.reduce((min, d) => (d.from < min ? d.from : min), now);
         const last = shown.reduce((max, d) => (d.to && d.to > max ? d.to : max), inGame ? first : now);
-        const x = scaleTime([first, last > first ? last : new Date(first.getTime() + 86_400_000)], [p.left, p.left + p.width]);
+        const x = scaleTime(span(first, last), [p.left, p.left + p.width]);
         let y = p.top;
         return (
           <>

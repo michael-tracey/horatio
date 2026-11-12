@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { courtRows, dated, lanes, statusExtent, type CourtHolding } from "./court";
+import { courtRows, dated, lanes, span, statusExtent, type CourtHolding } from "./court";
 
 function holding(over: Partial<CourtHolding>): CourtHolding {
   return {
@@ -96,5 +96,22 @@ describe("statusExtent", () => {
     expect(start.toISOString()).toBe("2026-01-01T00:00:00.000Z");
     expect(end).toBe(NOW);
     expect(most).toBe(3);
+  });
+
+  it("reaches back at least a day, so a status gained a minute ago doesn't tick in milliseconds", () => {
+    const lines = [{ character_id: "a", name: "Agnes", clan: null, gained: 1, lost: 0, points: [{ at: "2026-05-31T23:59:00Z", fleeting: 1, negative: 0 }] }];
+    expect(statusExtent(lines, NOW).start.toISOString()).toBe("2026-05-31T00:00:00.000Z");
+  });
+});
+
+describe("span", () => {
+  it("keeps an axis that is a day or more as it is", () => {
+    const [from, to] = span(new Date("2026-01-01T00:00:00Z"), NOW);
+    expect([from.toISOString(), to.toISOString()]).toEqual(["2026-01-01T00:00:00.000Z", "2026-06-01T00:00:00.000Z"]);
+  });
+
+  it("stretches a shorter one to a day, as when a title is given and taken in the same minute", () => {
+    const [, to] = span(new Date("2026-06-01T10:00:00Z"), new Date("2026-06-01T10:00:00.400Z"));
+    expect(to.toISOString()).toBe("2026-06-02T10:00:00.000Z");
   });
 });

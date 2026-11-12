@@ -1023,13 +1023,19 @@ test("the court over time: staff give a Prince and take it away, and see one fin
   const npc = await p.request.post(`/api/troupes/${troupeId}/npcs`, { headers, data: { name: "Aurelio Vance", wizard: false } });
   expect(npc.status(), await npc.text()).toBe(201);
   const aurelio = (await npc.json()).id;
-  const titles = (names: string[]) => p.request.put(`/api/troupes/${troupeId}/characters/${aurelio}/titles`, { headers, data: { titles: names } });
-  expect((await titles(["Prince"])).status()).toBe(200);
-  expect((await titles([])).status()).toBe(200);
+  // Prince is a Camarilla title, so the NPC needs that sect to hold it.
+  const sect = await p.request.put(`/api/characters/${aurelio}/npc/ratings`, { headers, data: { category: "sect", name: "Camarilla", rating: null } });
+  expect(sect.status(), await sect.text()).toBe(200);
+  const titles = async (names: string[]) => {
+    const response = await p.request.put(`/api/troupes/${troupeId}/characters/${aurelio}/titles`, { headers, data: { titles: names } });
+    expect(response.status(), await response.text()).toBe(200);
+  };
+  await titles(["Prince"]);
+  await titles([]);
 
   // Characters › Court: the Prince's row, with one bar, ended.
-  await p.goto(`/troupes/${troupeId}`);
-  await p.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Court", exact: true }).click();
+  await p.goto(`/troupes/${troupeId}/titles`);
+  await p.getByRole("navigation", { name: "Characters", exact: true }).getByRole("link", { name: "Court", exact: true }).click();
   const chart = p.getByRole("figure", { name: "Who held each title" });
   await expect(chart).toBeVisible();
   const bar = chart.getByRole("img", { name: /^Prince: Aurelio Vance: from / });
@@ -1048,6 +1054,8 @@ test("the court over time: staff give a Prince and take it away, and see one fin
   await p.getByLabel("Prince: Aurelio Vance: began in game").fill("1791-03-01");
   await p.getByLabel("Prince: Aurelio Vance: ended in game").fill("1888-10-31");
   await p.getByRole("button", { name: "Save" }).click();
+  // Saved, the dates are the holding's own, so there is nothing left to save.
+  await expect(p.getByRole("button", { name: "Save" })).toBeDisabled();
   await chart.getByRole("button", { name: "Show as chart" }).click();
   await chart.getByRole("checkbox", { name: "In-game dates" }).check();
   await expect(chart.getByRole("img", { name: /^Prince: Aurelio Vance: from 1 Mar 1791, to 31 Oct 1888/ })).toBeVisible();
@@ -1056,6 +1064,9 @@ test("the court over time: staff give a Prince and take it away, and see one fin
   const shown = await p.request.get(`/api/troupes/${troupeId}/court-history`);
   expect((await shown.json()).full).toBe(true);
   await p.goto(`/troupes/${troupeId}/settings`);
-  await p.getByRole("checkbox", { name: /^Players see it too/ }).check();
+  // The box shows what the troupe has saved, so it ticks once the change is in.
+  await p.getByRole("checkbox", { name: /^Players see it too/ }).click();
   await expect(p.getByRole("checkbox", { name: /^Players see it too/ })).toBeChecked();
+  const saved = await p.request.get(`/api/troupes/${troupeId}/court-history`);
+  expect((await saved.json()).players_see).toBe(true);
 });

@@ -190,6 +190,7 @@ def date_holding(
             title=holding.name,
             what=words(body.began_in_game, body.ended_in_game),
         )
+        db.commit()
     standing = social_age.standings(db, [holding.character_id]) if holding.character_id else {}
     found = standing.get(holding.character_id) if holding.character_id else None
     return holding_out(holding, found.clan if found else None, True)
