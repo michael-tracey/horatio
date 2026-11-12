@@ -121,3 +121,40 @@ test("staff keep the boon ledger: a game's boons at once, then a settling, an ed
   const refused = await p.request.get(`/api/troupes/${troupe.id}/boons`);
   expect(refused.status()).toBe(403);
 });
+
+test("staff see the boon standings: each character's net by the troupe's weights, which they can change", async ({ browser }) => {
+  const custodian = await person(browser, "bstand-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "bstand-lead");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Standing of Debts ${run}`, lead_handle: lead.handle });
+  const l = lead.page;
+  const isolde = await send(l, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Isolde Fenwright" });
+  const casimir = await send(l, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Casimir Wode" });
+  await send(l, "PUT", `/api/troupes/${troupe.id}/boon-ledger`, { on: true });
+  const owes = (debtor: string, creditor: string, kind: string) => ({ debtor: { character_id: debtor }, creditor: { character_id: creditor }, kind, made_on: "2026-10-03" });
+  await send(l, "POST", `/api/troupes/${troupe.id}/boons`, { boons: [owes(isolde.id, casimir.id, "major"), owes(casimir.id, isolde.id, "minor")] });
+
+  // Under Characters, Boon standings: Casimir is owed a major and owes a minor.
+  await l.goto(`/troupes/${troupe.id}`);
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("link", { name: "Boon standings", exact: true }).click();
+  const standing = l.getByRole("table", { name: "Standing by character" });
+  await expect(standing.getByRole("row", { name: /Casimir Wode/ })).toContainText("+2");
+  await expect(standing.getByRole("row", { name: /Isolde Fenwright/ })).toContainText("−2");
+  await expect(l.getByRole("table", { name: "Owing each other" })).toContainText("Isolde Fenwright");
+
+  // The troupe weighs a major boon at 4: the sums follow.
+  await l.getByRole("button", { name: "Change" }).click();
+  await l.getByLabel("Major").fill("4");
+  await l.getByRole("button", { name: "Save weights" }).click();
+  await expect(l.getByText("The boon weights are saved.")).toBeVisible();
+  await expect(standing.getByRole("row", { name: /Casimir Wode/ })).toContainText("+3");
+  await expect(l.getByText(/Major 4/)).toBeVisible();
+});
