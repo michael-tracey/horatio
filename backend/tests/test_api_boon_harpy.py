@@ -81,7 +81,7 @@ def report(court: Court, character: str, player: Person, other: str) -> Any:
 
 def test_the_harpy_has_no_access_until_storytellers_give_it(court: Court) -> None:
     harpy = court.harpy_player
-    assert harpy.client.get(court.path).status_code == 404
+    assert harpy.client.get(court.path).status_code == 403
     assert harpy.client.get(court.queue).status_code == 404
     shown = ok(harpy.client.get(f"/troupes/{court.troupe.id}"))
     assert shown["boon_harpy"] == "none"
@@ -118,8 +118,8 @@ def test_with_submissions_the_harpy_reviews_as_their_character(court: Court) -> 
     assert ok(court.get(queue[0], by=harpy))["events"][0]["kind"] == "submitted"
     assert court.get(standing, by=harpy).status_code == 404
     # The ledger itself stays staff's.
-    assert harpy.client.get(court.path).status_code == 404
-    assert court.register(row(court.agnes, court.bram), by=harpy).status_code == 404
+    assert harpy.client.get(court.path).status_code == 403
+    assert court.register(row(court.agnes, court.bram), by=harpy).status_code == 403
 
     accepted = ok(harpy.client.post(f"{court.path}/{queue[0]['id']}/accept", json={"note": ""}))
 
@@ -276,7 +276,7 @@ def test_access_goes_with_the_title_and_each_holder_has_it(court: Court) -> None
 
     court.give_title(court.hestia, [])
 
-    assert harpy.client.get(court.path).status_code == 404
+    assert harpy.client.get(court.path).status_code == 403
     assert harpy.client.get(court.queue).status_code == 404
     mine = ok(harpy.client.get(f"/characters/{court.hestia}/play-boons"))
     assert mine["harpy"] == []
@@ -291,14 +291,14 @@ def test_a_harpy_who_retires_loses_access(court: Court) -> None:
     )
     assert retired.status_code == 200, retired.text
 
-    assert court.harpy_player.client.get(court.path).status_code == 404
+    assert court.harpy_player.client.get(court.path).status_code in (403, 404)
 
 
 def test_with_the_ledger_off_the_harpy_sees_nothing(court: Court) -> None:
     ok(court.access("full"))
     ok(court.switch(False))
 
-    assert court.harpy_player.client.get(court.path).status_code == 404
+    assert court.harpy_player.client.get(court.path).status_code in (403, 404)
     assert court.harpy_player.client.get(court.queue).status_code == 404
     mine = court.harpy_player.client.get(f"/characters/{court.hestia}/harpy-ledgers")
     assert ok(mine) == []

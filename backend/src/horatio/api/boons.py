@@ -359,6 +359,8 @@ def ledger_troupe(
     troupe = db.get(Troupe, troupe_id)
     keeper = boon_harpy.keeper(db, user, troupe, need) if troupe is not None else None
     if troupe is None or keeper is None:
+        # Refused as staff's pages refuse anyone else.
+        staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_BOONS)
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such troupe.")
     if not boons.tracked(troupe):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "This troupe doesn't keep a boon ledger.")
