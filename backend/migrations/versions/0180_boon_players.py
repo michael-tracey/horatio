@@ -2,7 +2,7 @@
 whether a boon's creditor's player may mark it settled (issue #686).
 
 Revision ID: 0180
-Revises: 0175
+Revises: 0177
 Create Date: 2026-11-12 18:00:00.000000
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0180"
-down_revision: str | None = "0175"
+down_revision: str | None = "0177"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

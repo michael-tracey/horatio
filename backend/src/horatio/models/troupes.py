@@ -165,6 +165,9 @@ class Troupe(Imported, Record):
     # A boon's creditor's player may mark it settled, called in or forgiven, from the
     # Play View (#686). Only with "owed", where they see it.
     boon_players_settle: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # What each kind of boon weighs in its boon standings (horatio.boon_standings,
+    # #691), by kind: {"major": 3}. A kind left out weighs its default.
+    boon_weights: Mapped[dict[str, float]] = mapped_column(JSONB, default=dict, server_default="{}")
     # House rules for Retainers (horatio.retainer_upkeep): upkeep, in Blood or
     # Willpower, and growth, in XP a month. Each is off while it is absent.
     retainer_rules: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
