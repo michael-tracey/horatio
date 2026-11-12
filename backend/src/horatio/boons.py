@@ -338,8 +338,10 @@ def register(
     count: int = 1,
     note: str = "",
     as_character: Character | None = None,
+    game_id: uuid.UUID | None = None,
 ) -> list[Boon]:
-    """Put `count` boons, alike, in the troupe's ledger, standing."""
+    """Put `count` boons, alike, in the troupe's ledger, standing; registered at the
+    troupe's game `game_id`, if staff say so (checked by the caller)."""
     terms = check_new(debtor, creditor, terms, count)
     made: list[Boon] = []
     for _ in range(count):
@@ -352,6 +354,7 @@ def register(
             notify_on_trade=terms.notify_on_trade,
             staff_note=terms.staff_note,
             submitted_by=user.id,
+            game_id=game_id,
         )
         place(boon, "debtor", debtor)
         place(boon, "creditor", creditor)

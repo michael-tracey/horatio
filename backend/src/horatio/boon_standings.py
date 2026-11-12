@@ -23,7 +23,7 @@ import uuid
 from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from typing import Literal
 
 from sqlalchemy import select
@@ -123,6 +123,11 @@ class Row:
     made_on: date
     settled_how: str | None = None
     closed_on: date | None = None
+    # When it went in the ledger, when it was closed, and the game it was registered
+    # at, for the statistics (horatio.boon_statistics).
+    entered_at: datetime | None = None
+    closed_at: datetime | None = None
+    game_id: uuid.UUID | None = None
 
 
 @dataclass(frozen=True)
@@ -189,6 +194,9 @@ def load(db: Session, troupe: Troupe) -> Ledger:
             made_on=b.made_on,
             settled_how=b.settled_how,
             closed_on=b.closed_at.date() if b.closed_at else None,
+            entered_at=b.created_at,
+            closed_at=b.closed_at,
+            game_id=b.game_id,
         )
         for b in found
     ]

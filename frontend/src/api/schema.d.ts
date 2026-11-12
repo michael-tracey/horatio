@@ -7609,6 +7609,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/boon-games": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boon Games
+         * @description The troupe's latest games already started, newest first: those its boons can be
+         *     registered at, for those who keep its ledger.
+         */
+        get: operations["boon_games_api_troupes__troupe_id__boon_games_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/boon-ledger": {
         parameters: {
             query?: never;
@@ -7666,6 +7687,28 @@ export interface paths {
          *     other. "active" leaves out boons that involve someone dead or off-field.
          */
         get: operations["boon_standings_api_troupes__troupe_id__boon_standings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boon-statistics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boon Statistics
+         * @description The boon ledger's statistics: by month, who owes whom, debt between clans and
+         *     sects, and each recent game's boons. "active" leaves out boons that involve
+         *     someone dead or off-field.
+         */
+        get: operations["boon_statistics_api_troupes__troupe_id__boon_statistics_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -13849,6 +13892,12 @@ export interface components {
             /** Pairs */
             pairs: components["schemas"]["BoonPairOut"][];
         };
+        /** BoonActiveOut */
+        BoonActiveOut: {
+            /** Boons */
+            boons: number;
+            who: components["schemas"]["BoonStandingPartyOut"];
+        };
         /** BoonBandOut */
         BoonBandOut: {
             /** Count */
@@ -13925,6 +13974,54 @@ export interface components {
             /** Note */
             note: string;
         };
+        /**
+         * BoonFlowOut
+         * @description `matrix[i][j]`: the open weight `groups[i]` owes `groups[j]`; `counts`, how many.
+         */
+        BoonFlowOut: {
+            /** Counts */
+            counts: number[][];
+            /** Groups */
+            groups: string[];
+            /** Matrix */
+            matrix: number[][];
+        };
+        /** BoonGameActivityOut */
+        BoonGameActivityOut: {
+            /** By Kind */
+            by_kind: {
+                [key: string]: number;
+            };
+            game: components["schemas"]["BoonGameOut"];
+            /** Most Active */
+            most_active: components["schemas"]["BoonActiveOut"][];
+            /** Registered */
+            registered: number;
+            /** Registered Weight */
+            registered_weight: number;
+            /** Settled */
+            settled: number;
+            /** Settled Weight */
+            settled_weight: number;
+        };
+        /** BoonGameOut */
+        BoonGameOut: {
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+        };
         /** BoonGroupOut */
         BoonGroupOut: {
             /** Characters */
@@ -13967,6 +14064,50 @@ export interface components {
             /** On */
             on: boolean;
         };
+        /**
+         * BoonLinkOut
+         * @description What `debtor` owes `creditor` (parties' keys), still open.
+         */
+        BoonLinkOut: {
+            /** Count */
+            count: number;
+            /** Creditor */
+            creditor: string;
+            /** Debtor */
+            debtor: string;
+            /** Kinds */
+            kinds: {
+                [key: string]: number;
+            };
+            /** Weight */
+            weight: number;
+        };
+        /**
+         * BoonMonthOut
+         * @description One kind of boon in one month ("2026-10"): registered, settled, and what stood
+         *     at the month's end, by count and weight.
+         */
+        BoonMonthOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "trivial" | "minor" | "major" | "blood" | "life";
+            /** Month */
+            month: string;
+            /** Open */
+            open: number;
+            /** Open Weight */
+            open_weight: number;
+            /** Registered */
+            registered: number;
+            /** Registered Weight */
+            registered_weight: number;
+            /** Settled */
+            settled: number;
+            /** Settled Weight */
+            settled_weight: number;
+        };
         /** BoonMutualOut */
         BoonMutualOut: {
             /** Back */
@@ -13977,6 +14118,20 @@ export interface components {
             /** Owes */
             owes: number;
             second: components["schemas"]["BoonStandingPartyOut"];
+        };
+        /** BoonNodeOut */
+        BoonNodeOut: {
+            /** Net */
+            net: number;
+            /** Owed */
+            owed: number;
+            /** Owed Count */
+            owed_count: number;
+            /** Owes */
+            owes: number;
+            /** Owes Count */
+            owes_count: number;
+            who: components["schemas"]["BoonStandingPartyOut"];
         };
         /** BoonNoteIn */
         BoonNoteIn: {
@@ -14227,6 +14382,27 @@ export interface components {
             sects: components["schemas"]["BoonGroupOut"][];
             settling: components["schemas"]["BoonSettlingOut"];
             totals: components["schemas"]["BoonStandingTotalsOut"];
+            weights: components["schemas"]["BoonWeightsOut"];
+        };
+        /** BoonStatisticsOut */
+        BoonStatisticsOut: {
+            /** By Entered */
+            by_entered: components["schemas"]["BoonMonthOut"][];
+            /** By Night */
+            by_night: components["schemas"]["BoonMonthOut"][];
+            clan_flow: components["schemas"]["BoonFlowOut"];
+            /** Games */
+            games: components["schemas"]["BoonGameActivityOut"][];
+            /** Links */
+            links: components["schemas"]["BoonLinkOut"][];
+            /** Nodes */
+            nodes: components["schemas"]["BoonNodeOut"][];
+            /**
+             * Scope
+             * @enum {string}
+             */
+            scope: "active" | "everyone";
+            sect_flow: components["schemas"]["BoonFlowOut"];
             weights: components["schemas"]["BoonWeightsOut"];
         };
         /** BoonTallyOut */
@@ -26261,6 +26437,8 @@ export interface components {
         RegisterBoonsIn: {
             /** Boons */
             boons: components["schemas"]["NewBoonIn"][];
+            /** Game Id */
+            game_id?: string | null;
             /**
              * Note
              * @default
@@ -46709,6 +46887,37 @@ export interface operations {
             };
         };
     };
+    boon_games_api_troupes__troupe_id__boon_games_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonGameOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     set_boon_ledger_api_troupes__troupe_id__boon_ledger_put: {
         parameters: {
             query?: never;
@@ -46799,6 +47008,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BoonStandingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    boon_statistics_api_troupes__troupe_id__boon_statistics_get: {
+        parameters: {
+            query?: {
+                scope?: "active" | "everyone";
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonStatisticsOut"];
                 };
             };
             /** @description Validation Error */

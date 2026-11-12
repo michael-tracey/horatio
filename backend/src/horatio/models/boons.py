@@ -60,6 +60,11 @@ class Boon(Record):
     staff_note: Mapped[str] = mapped_column(default="", server_default="")
     # Who put it in the ledger.
     submitted_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    # The game it was registered at, when staff say so (#702): the Harpy's boons from
+    # one game, entered days later. None away from a game, or for one entered before.
+    game_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("scheduled_games.id", ondelete="SET NULL"), index=True
+    )
 
 
 class BoonEvent(Record):
