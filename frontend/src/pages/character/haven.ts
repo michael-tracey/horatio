@@ -1,4 +1,4 @@
-import type { HavenAdvantageChoiceOut } from "../../api/types";
+import type { HavenAdvantageChoiceOut, SheetOut } from "../../api/types";
 
 /**
  * A Haven's advantages against its owner's dots of Haven (MET: VTM p. 102): one
@@ -22,4 +22,9 @@ export function canChoose(name: string, chosen: string[], advantages: HavenAdvan
 export function countText(chosen: string[], advantages: HavenAdvantageChoiceOut[], dots: number): string {
   const { used, free } = havenCount(chosen, advantages);
   return `${used} of ${dots} ${dots === 1 ? "dot" : "dots"} used${free.length ? `, plus ${free.join(" and ")} free` : ""}`;
+}
+
+/** The character's dots of Haven on its sheet, from picks, purchases or merits (#683). */
+export function havenDots(sheet: Pick<SheetOut, "traits">): number {
+  return sheet.traits.filter((t) => t.category === "backgrounds" && t.name === "Haven").reduce((sum, t) => sum + (t.rating ?? 0), 0);
 }

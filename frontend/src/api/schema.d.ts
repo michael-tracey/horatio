@@ -1849,6 +1849,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/haven/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Keep Haven Draft
+         * @description Name the Haven before any troupe has accepted the character, as in creation:
+         *     the first troupe to accept it puts it on its list (#683).
+         */
+        put: operations["keep_haven_draft_api_characters__character_id__haven_draft_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/held-locations": {
         parameters: {
             query?: never;
@@ -17814,6 +17835,26 @@ export interface components {
             /** Text */
             text: string;
         };
+        /**
+         * HavenDraftOut
+         * @description The Haven its player named before any troupe accepted the character (#683).
+         */
+        HavenDraftOut: {
+            /** Address */
+            address: string;
+            /** Description */
+            description: string;
+            /** Haven Advantages */
+            haven_advantages: string[];
+            /** Haven Free */
+            haven_free: string[];
+            /** Haven Over */
+            haven_over: string | null;
+            /** Map Link */
+            map_link: string;
+            /** Name */
+            name: string;
+        };
         /** HavenNegativeOut */
         HavenNegativeOut: {
             /** Effect */
@@ -17833,6 +17874,9 @@ export interface components {
             character_name: string;
             /** Dots */
             dots: number;
+            draft: components["schemas"]["HavenDraftOut"] | null;
+            /** Drafting */
+            drafting: boolean;
             haven: components["schemas"]["OwnHavenOut"] | null;
         };
         /** Health */
@@ -33676,6 +33720,41 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HavenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    keep_haven_draft_api_characters__character_id__haven_draft_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnHavenIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -37,6 +37,7 @@ from horatio import (
     backstories,
     creation_xp,
     free_changes,
+    locations,
     notifications,
     titles,
     xp_range,
@@ -842,6 +843,9 @@ def approve_change(
     sync_fixed_ratings(db, character)
     # The sheet as the new home troupe accepted it: the floor for lowering ratings.
     freeze_sheet(db, staff, character, change.to_troupe_id)
+    if character.kind == "pc":
+        # The Haven its player named before any troupe accepted it goes on this list.
+        locations.place_haven_draft(db, character, troupe)
     if reopen:
         # The new troupe gives more starting dots: let the player place them.
         character.creation_completed_at = None
