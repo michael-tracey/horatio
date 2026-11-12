@@ -174,8 +174,19 @@ def set_sire(
         sire = next((c for c in candidates(db, user, character) if c.id == body.character_id), None)
         if sire is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "No such character to be the sire.")
+    home = home_of(db, character)
+    by_staff = user.is_custodian or (
+        home is not None and allows(troupe_role(db, user, home), TroupeAction.APPROVE_CHANGES)
+    )
     sire_lines.set_sire(
-        db, user, character, sire=sire, name=body.name, clan=body.clan, secret=body.secret
+        db,
+        user,
+        character,
+        sire=sire,
+        name=body.name,
+        clan=body.clan,
+        secret=body.secret,
+        by_player=not by_staff,
     )
     db.commit()
     return sire_out(db, user, character)
