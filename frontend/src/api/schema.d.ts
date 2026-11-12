@@ -13443,6 +13443,20 @@ export interface components {
              */
             source: "game" | "downtime" | "staff";
         };
+        /**
+         * BondLine
+         * @description A bond the character feels, for the Play View's Sheet tab.
+         */
+        BondLine: {
+            /** Drinks */
+            drinks: string;
+            /** Effects */
+            effects: string[];
+            /** Level */
+            level: number;
+            /** Regnant */
+            regnant: string;
+        };
         /** BondOut */
         BondOut: {
             /** Ended At */
@@ -23870,6 +23884,11 @@ export interface components {
             backgrounds_changed: components["schemas"]["BackgroundNowOut"][];
             /** Blood Per Turn */
             blood_per_turn: number;
+            /**
+             * Bonds
+             * @default []
+             */
+            bonds: components["schemas"]["BondLine"][];
             /** Disciplines */
             disciplines: components["schemas"]["DisciplinePowers"][];
             domitor?: components["schemas"]["DomitorLine"] | null;

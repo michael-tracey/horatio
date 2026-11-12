@@ -118,6 +118,8 @@ A card called **Against the rules** lists anything on the sheet the rules no lon
 
 Where a troupe tracks blood bonds, a **Blood bonds** card shows the bonds the character is bound by, with what each does in play, and those bound to it that you've been told of (MET: VTM p. 295). Nobody else's player sees your bonds.
 
+At a game, the Play View counts the bonds your character is bound by. On the **Pools** tab, each defence a bond lowers has a line of its own against the regnant, "Against Lucien's powers (−3 Blood bond)", as it counts only against them: two drinks take 1 from Social defence, a full bond 3 from Social and Mental. The **Sheet** tab lists each bond with what crossing the regnant costs in Willpower. A first drink has no rules effect, only feelings to play. The bonds to your character, as the regnant, never show there.
+
 Where the troupe lets players report drinks, **Report a drink** on that card says your character drank someone's blood, or someone drank your character's: pick the other character from the troupe, or type a name, then the night and where it happened. What happens next depends on the troupe:
 
 - **Players report and staff approves**: it waits for the storytellers, and counts once they approve. If they decline, you see why.
