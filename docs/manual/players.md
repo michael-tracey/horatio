@@ -454,6 +454,8 @@ Along the top: the way back to the character, **Keep the screen awake**, **Undo*
 
 The tabs are **Sheet** (to look things up), **Tracker**, **Pools**, **Status** (for a character with sect status), **Equipment** and **Throws** (rock, paper, scissors), as many of them as your character's home troupe has switched on. On every tab but the Tracker, a strip under the tabs shows Blood, Willpower and health, with **−** to spend. Your settings choose which tab it opens on; where your troupe has switched that one off, it opens on the first tab on. A troupe whose players keep their sheets in Horatio but don't play from it switches the Play View off for players, and their characters have no **Play**.
 
+On **Throws**, **Throw** picks rock, paper or scissors on your phone; show the other player your screen. On a phone with a motion sensor you can also throw by **flipping the phone** face down and back up in your hand, so two players can flip together: the throw is showing as the screen comes back up, with a short buzz. Turn **Throw by flipping** off on the tab, or in Settings › At game, if you'd rather not; it's kept on that phone. On an iPhone, tap **Turn on flipping the phone** once to let Horatio use the motion sensor.
+
 ![The Play View's Tracker, a few taps into the night: Blood, Willpower and Health](images/players/play-tracker.png)
 
 #### The Tracker

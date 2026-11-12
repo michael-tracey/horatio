@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../../components/ui";
 import { useDates } from "../../dates";
 import { ChallengeSetup, ChallengeTests, TheirThrow, type Challenging } from "./Challenge";
+import { useFlip, type Flipping } from "./useFlip";
 import { expecting } from "./challenge";
 import { HORATIO_IMAGES, ThrowFace, type ThrowImages } from "./throwImages";
 import { COUNT_IN_STEP_MS, countIn, fairThrow, readThrows, remember, THROW_NAMES, type Throw, type Thrown } from "./throws";
@@ -10,6 +11,15 @@ import { COUNT_IN_STEP_MS, countIn, fairThrow, readThrows, remember, THROW_NAMES
 const KEY = "horatio.throws";
 
 const reducedMotion = () => !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+/** A short vibration on a flip's reveal, where the phone can. */
+function buzz() {
+  try {
+    navigator.vibrate?.(60);
+  } catch {
+    // Not every browser lets a page vibrate.
+  }
+}
 
 function keptStorage(): Storage | null {
   try {
@@ -27,10 +37,11 @@ export type Throwing = {
   /** The last few throws, newest first, the one on show among them. */
   past: Thrown[];
   /**
-   * Throw now. The Throw button calls it, and a flip of the phone (#669) can too.
-   * Does nothing while a throw is counting in.
+   * Throw now. The Throw button calls it, and so does a flip of the phone (#669),
+   * which reveals at once, with a short buzz, so the throw is showing as the screen
+   * comes back up. Does nothing while a throw is counting in.
    */
-  throwNow: () => void;
+  throwNow: (how?: { flipped?: boolean }) => void;
 };
 
 /**
@@ -70,7 +81,7 @@ export function useThrows({
   }, [past, storage]);
   useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
 
-  const throwNow = useCallback(() => {
+  const throwNow = useCallback((how?: { flipped?: boolean }) => {
     if (timers.current.length) return;
     // Picked now, at the press, not when it is shown.
     const thrown: Thrown = { throw: pick(), at: new Date().toISOString() };
@@ -80,8 +91,10 @@ export function useThrows({
       setShown(thrown);
       setPast((p) => remember(p, thrown));
       told.current?.(thrown);
+      if (how?.flipped) buzz();
     };
-    const steps = countIn(reducedMotion());
+    // A flip has no count-in: the phone was face down for it.
+    const steps = how?.flipped ? [] : countIn(reducedMotion());
     if (!steps.length) return reveal();
     setShown(null);
     setCounting(steps[0]!);
@@ -118,6 +131,7 @@ export function ThrowsTab({
     // A throw while the challenge waits for one is its test; any other is a throw like before.
     onThrown: (thrown) => update?.((now) => (now && expecting(now) ? { ...now, pending: thrown.throw } : now)),
   });
+  const flipping = useFlip(() => throwNow({ flipped: true }));
   const dates = useDates();
   return (
     <section aria-label="Throws" className="flex flex-col items-center gap-4">
@@ -135,9 +149,10 @@ export function ThrowsTab({
           <p className="max-w-xs text-mist">Throw for rock, paper or scissors, then show the other player your screen.</p>
         )}
       </div>
-      <Button className="min-h-16 w-full max-w-sm font-display text-2xl! tracking-wide" onClick={throwNow} disabled={!!counting}>
+      <Button className="min-h-16 w-full max-w-sm font-display text-2xl! tracking-wide" onClick={() => throwNow()} disabled={!!counting}>
         Throw
       </Button>
+      <FlipSwitch flipping={flipping} />
       {c && update && <TheirThrow c={c} update={update} images={images} />}
       {c && update && <ChallengeTests c={c} update={update} images={images} willpower={willpower} spendWillpower={spendWillpower} />}
       {past.length > 0 && (
@@ -162,5 +177,32 @@ export function ThrowsTab({
       )}
       <p className="max-w-sm text-center text-xs text-mist">Thrown on this phone and sent nowhere, so it works with no signal. Tests: MET: VTM p. 271.</p>
     </section>
+  );
+}
+
+/**
+ * Throwing by flipping the phone (#669), offered only where the phone has the
+ * sensor: on iOS a one-time button that asks for it (its name leaves out "Throw",
+ * so it's never mistaken for the Throw button), then a switch kept on this device.
+ */
+function FlipSwitch({ flipping }: { flipping: Flipping }) {
+  const { support, on, setOn, ask } = flipping;
+  if (support === "none") return null;
+  if (support === "ask")
+    return (
+      <Button variant="secondary" className="min-h-12 w-full max-w-sm" onClick={ask}>
+        Turn on flipping the phone
+      </Button>
+    );
+  if (support === "denied")
+    return <p className="max-w-sm text-center text-xs text-mist">To throw by flipping, allow Motion &amp; Orientation Access for this site in Safari&rsquo;s settings.</p>;
+  return (
+    <div className="flex w-full max-w-sm flex-col items-center gap-0.5 text-sm">
+      <label className="flex min-h-11 items-center gap-2 text-parchment">
+        <input type="checkbox" className="h-5 w-5 accent-[var(--color-gold)]" checked={on} onChange={(e) => setOn(e.target.checked)} />
+        Throw by flipping
+      </label>
+      {on && <p className="text-center text-xs text-mist">Flip the phone face down and back up to throw.</p>}
+    </div>
   );
 }
