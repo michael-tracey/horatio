@@ -883,7 +883,7 @@ Retiring a regnant **Off-field** or **Inactive** leaves its bonds alone. If you 
 
 A thrall's Final Death ends its bonds. A regnant has no sense of a thrall's death, so a regnant's player who knew of the bond goes on seeing it as it was; **Stop showing the regnant** clears it when the regnant would know.
 
-Players can still learn of a death in other ways, which are yours to choose: listing the character under **No longer with us** on the Who's Who, opening Remembrances for it, or logging the withdrawal of its dots from a shared background. Hold off on these until its bonds have faded if the thralls shouldn't know yet.
+Players can still learn of a death in other ways, which are yours to choose: listing the character under **No longer with us** on the Who's Who, opening Remembrances for it, or logging the withdrawal of its dots from a shared background. Hold off on these until its bonds have faded if the thralls shouldn't know yet. The retire dialog, and **Change…** on a retired character, warn of these before you confirm: the bonds it's the regnant of (all of them for staff; to its player, only those known to the regnant) and the shared backgrounds it has dots in with others. A warning never stops you.
 
 #### Bonds that fade with time
 

@@ -25204,6 +25204,85 @@
         "title": "LeavingOut",
         "type": "object"
       },
+      "LeavingSharersOut": {
+        "properties": {
+          "background": {
+            "title": "Background",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "others": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Others",
+            "type": "array"
+          },
+          "troupe": {
+            "title": "Troupe",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "background",
+          "troupe",
+          "others"
+        ],
+        "title": "LeavingSharersOut",
+        "type": "object"
+      },
+      "LeavingThrallOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "troupe": {
+            "title": "Troupe",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "troupe"
+        ],
+        "title": "LeavingThrallOut",
+        "type": "object"
+      },
+      "LeavingWarningsOut": {
+        "description": "What retiring the character, or saying it met Final Death, could tell others\n(horatio.retiring), as the reader may know of it.",
+        "properties": {
+          "shared": {
+            "items": {
+              "$ref": "#/components/schemas/LeavingSharersOut"
+            },
+            "title": "Shared",
+            "type": "array"
+          },
+          "staff": {
+            "title": "Staff",
+            "type": "boolean"
+          },
+          "thralls": {
+            "items": {
+              "$ref": "#/components/schemas/LeavingThrallOut"
+            },
+            "title": "Thralls",
+            "type": "array"
+          }
+        },
+        "required": [
+          "thralls",
+          "shared",
+          "staff"
+        ],
+        "title": "LeavingWarningsOut",
+        "type": "object"
+      },
       "LedTroupe": {
         "properties": {
           "id": {
@@ -61216,6 +61295,50 @@
           }
         },
         "summary": "Change Leaving",
+        "tags": [
+          "characters"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/leaving/warnings": {
+      "get": {
+        "description": "What the retire dialog, and changing why a character left, warn of before it\ntells other players something they haven't been told (#748): its player's, and its\nhome troupe's running staff's, each as they may know of it.",
+        "operationId": "leaving_warnings_api_characters__character_id__leaving_warnings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeavingWarningsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Leaving Warnings",
         "tags": [
           "characters"
         ]
