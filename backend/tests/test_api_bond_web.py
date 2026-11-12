@@ -26,9 +26,10 @@ def web(scene: Scene, by: Any = None) -> Any:
 def test_staff_see_everyone_on_either_side_and_every_bond(scene: Scene) -> None:
     t = scene.troupe
     scene.drunk(scene.agnes, scene.bram, "2026-10-03", "2026-10-10", "2026-10-17")
-    scene.drunk(scene.cora, named("Old Marguerite"), "2026-10-03")
-    # The same name in another case is the same person.
-    scene.drunk(scene.vidal, named("old marguerite"), "2026-10-03")
+    # The same name in another case is the same person, shown with its capitals,
+    # whichever was recorded first.
+    scene.drunk(scene.cora, named("old marguerite"), "2026-10-03")
+    scene.drunk(scene.vidal, named("Old Marguerite"), "2026-10-03")
     broken = scene.drunk(scene.ghislaine, scene.vidal, "2026-10-03")
     assert (
         t.storyteller.client.post(

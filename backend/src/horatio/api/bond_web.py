@@ -87,7 +87,14 @@ def bond_web(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> BondWebO
     """Every bond the troupe keeps, and the people on either side, for its running staff."""
     troupe = bonds_troupe(db, user, troupe_id)
     db.commit()
-    kept = list(db.scalars(select(BloodBond).where(BloodBond.troupe_id == troupe.id)))
+    # Oldest first, for a steady order.
+    kept = list(
+        db.scalars(
+            select(BloodBond)
+            .where(BloodBond.troupe_id == troupe.id)
+            .order_by(BloodBond.created_at, BloodBond.id)
+        )
+    )
     ids = {i for b in kept for i in (b.thrall_id, b.regnant_id) if i}
     characters = (
         {c.id: c for c in db.scalars(select(Character).where(Character.id.in_(ids)))} if ids else {}
@@ -127,6 +134,10 @@ def bond_web(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> BondWebO
                     titles=[],
                 )
             )
+        elif character is None:
+            # A name written in more than one way shows as the first of them in plain
+            # alphabetical order, capitals first: "Old Marguerite" over "old marguerite".
+            people[key].name = min(people[key].name, name)
         return key
 
     found = [
