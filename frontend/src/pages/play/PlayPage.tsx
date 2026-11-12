@@ -26,6 +26,8 @@ import { RetainerPools } from "./RetainerPools";
 import { StatusTab } from "./Status";
 import { TeachingAsks } from "./Teaching";
 import { ThrowsTab } from "./Throws";
+import { useChallenge } from "./Challenge";
+import { load } from "./challenge";
 import { DRANK, incapacitated, influenceStanding, latestUndoable, tapsToast, type Damage, type Shown, type ShownEntry, type Tap } from "./tracker";
 import { TrackerStrip } from "./TrackerStrip";
 import { usePlay, type Play, type Sync } from "./usePlay";
@@ -99,6 +101,8 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
   const [detailing, setDetailing] = useState<ShownEntry | null>(null);
   // The Feed sheet is open (the timer itself is kept by Feed, on the device).
   const [feeding, setFeeding] = useState(false);
+  // A pool thrown from the Pools tab, kept for this browser tab while the tabs switch (#698).
+  const challenging = useChallenge();
   const choose = (next: Tab) =>
     setParams(
       (p) => {
@@ -124,8 +128,8 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
   const undoButton = <UndoLast last={shown ? latestUndoable(shown.log) : undefined} undo={undo} />;
 
   // Throws needs nothing from the server, so it works before the sheet comes, or with none kept on the phone.
-  if (view.isPending) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}>{tab === "throws" ? <ThrowsTab /> : <Loading />}</PlayShell>;
-  if (!shown) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}>{tab === "throws" ? <ThrowsTab /> : <ErrorText error={view.error} />}</PlayShell>;
+  if (view.isPending) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}>{tab === "throws" ? <ThrowsTab challenging={challenging} /> : <Loading />}</PlayShell>;
+  if (!shown) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}>{tab === "throws" ? <ThrowsTab challenging={challenging} /> : <ErrorText error={view.error} />}</PlayShell>;
 
   const record: RecordTap = (change) => {
     // Influence always asks for the spend's details, for the troupe's influence log.
@@ -144,7 +148,29 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
       <PowersBanner powers={shown.powers} tap={tap} />
       {!tab && <p className="py-8 text-center text-mist">{shown.character_name}'s troupe has switched off every tab it has here.</p>}
       {tab === "sheet" && lookup((r) => <SheetTab reference={r} />)}
-      {tab === "pools" && lookup((r) => <PoolsTab reference={r} willpower={shown.willpower.value} characterId={characterId} powers={shown.powers} forms={shown.forms} items={shown.equipment} equipped={shown.equipped} tap={tap} using={{ view: shown, use: taps }} trackers={trackersOf(shown)} />)}
+      {tab === "pools" &&
+        lookup((r) => (
+          <PoolsTab
+            reference={r}
+            willpower={shown.willpower.value}
+            characterId={characterId}
+            powers={shown.powers}
+            forms={shown.forms}
+            items={shown.equipment}
+            equipped={shown.equipped}
+            tap={tap}
+            using={{ view: shown, use: taps }}
+            trackers={trackersOf(shown)}
+            onThrow={
+              showing.includes("throws")
+                ? (pool, total, breakdown) => {
+                    challenging.update(() => load(pool, total, breakdown));
+                    choose("throws");
+                  }
+                : undefined
+            }
+          />
+        ))}
       {tab === "status" && (
         <StatusTab
           view={shown}
@@ -155,7 +181,13 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
         />
       )}
       {tab === "equipment" && <EquipmentTab characterId={characterId} view={shown} tap={tap} />}
-      {tab === "throws" && <ThrowsTab />}
+      {tab === "throws" && (
+        <ThrowsTab
+          challenging={challenging}
+          willpower={shown.willpower.value}
+          spendWillpower={() => tap({ kind: "change", tracker: "willpower", amount: -1, damage: null })}
+        />
+      )}
       {tab === "tracker" && (
         <>
           <TeachingAsks characterId={characterId} />
