@@ -716,7 +716,7 @@ def quest_out(db: DbSession, user: User, troupe: Troupe, quest: Quest) -> QuestO
         select(Delivery, Character.name)
         .join(Character, Delivery.character_id == Character.id)
         .where(Delivery.quest_id == quest.id)
-        .order_by(Delivery.created_at)
+        .order_by(Delivery.created_at, Delivery.id)
     )
     requirements_, scenarios_ = quests.guidance(quest.category, quest.difficulty)
     may_work = quests.may_work_on(db, user, troupe, quest)
@@ -933,7 +933,7 @@ def character_quests_out(
     requests = db.scalars(
         select(QuestRequest)
         .where(QuestRequest.character_id == character.id, QuestRequest.troupe_id == troupe.id)
-        .order_by(QuestRequest.created_at.desc())
+        .order_by(QuestRequest.created_at.desc(), QuestRequest.id.desc())
     )
     return CharacterQuestsOut(
         enabled=True,
@@ -1197,7 +1197,7 @@ def troupe_quests(
     found = db.scalars(
         select(Quest)
         .where(Quest.troupe_id == troupe.id, Quest.status.in_(states))
-        .order_by(Quest.created_at.desc())
+        .order_by(Quest.created_at.desc(), Quest.id.desc())
     )
     running = quests.is_running(db, user, troupe)
     return [quest_row(db, q) for q in found if running or quests.narrator_may_see(user, q)]
