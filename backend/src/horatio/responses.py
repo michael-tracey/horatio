@@ -571,8 +571,9 @@ def deliver_cycle(
     changed since. Each goes out in Horatio and is queued on each of the troupe's
     connectors that has not had it, and the equipment its responses give goes to the
     character (horatio.response_items); with them go the quest results recorded
-    through the cycle (horatio.quest_actions)."""
-    from horatio import quest_actions
+    through the cycle (horatio.quest_actions), and word to each thrall's player whose
+    bond has faded (horatio.bonds.tell_faded)."""
+    from horatio import bonds, quest_actions
 
     if cycle.status not in ("closed", "complete"):
         raise conflict("Close the cycle before delivering results.")
@@ -637,6 +638,7 @@ def deliver_cycle(
         )
     db.flush()
     quest_actions.deliver(db, staff, cycle)
+    bonds.tell_faded(db, staff, troupe)
     audit.record(
         db,
         staff,

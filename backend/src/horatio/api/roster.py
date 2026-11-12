@@ -876,6 +876,18 @@ MESSAGES: dict[str, str] = {
     " {full}.",
     "bond.broken": "{actor} broke {character}'s bond to {regnant}: {reason}",
     "bond.known": "{actor} marked {character}'s bond to {regnant} {known} to the regnant.",
+    # Fading (#662): in the troupe's log only, but for the thrall's death and the word
+    # that a bond faded, which go in the thrall's own log too.
+    "bond.fading": "{thrall}'s bond to {regnant} began to fade, as {why}: it ends on {ends}.",
+    "bond.fading_stopped": "{thrall}'s bond to {regnant} stopped fading: {regnant} no longer"
+    " met Final Death.",
+    "bond.fade_changed": "{actor} moved the end of {thrall}'s fading bond to {regnant} from"
+    " {was} to {ends}: {reason}",
+    "bond.faded": "{thrall}'s bond to {regnant} has faded.",
+    "bond.faded_told": "{character}'s bond to {regnant} has faded.",
+    "bond.thrall_died": "{character}'s bond to {regnant} ended: {character} met Final Death.",
+    "bond.kept_cleared": "{actor} stopped showing {regnant}'s player the bond of {thrall}, who"
+    " met Final Death.",
     "bond.entry_changed": "{actor} changed a night in {character}'s bond to {regnant} from {was}"
     " to {night}: now {level}.",
     "bond.entry_removed": "{actor} took the night of {night} out of {character}'s bond to"
