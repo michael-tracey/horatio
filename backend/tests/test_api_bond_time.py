@@ -233,8 +233,7 @@ def test_staff_recording_past_a_full_bond_need_a_reason(scene: Players) -> None:
     anyway = scene.drink(scene.agnes, scene.vidal, tonight(), override="The Prince's command")
     assert anyway.status_code == 201, anyway.text
     assert any(
-        "though a full bond made them immune: The Prince's command" in m
-        for m in scene.messages()
+        "though a full bond made them immune: The Prince's command" in m for m in scene.messages()
     )
     # The regnant of the full bond can always add to it.
     assert scene.drink(scene.agnes, scene.bram, tonight()).status_code == 201

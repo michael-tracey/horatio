@@ -7,7 +7,7 @@ reports can now be a meeting instead. Each troupe keeps the day its bonds' clock
 start from, so bonds kept before this don't all fade at once.
 
 Revision ID: 0195
-Revises: 0191
+Revises: 0193
 Create Date: 2026-11-12 22:00:00.000000
 """
 
@@ -17,7 +17,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0195"
-down_revision: str | None = "0191"
+down_revision: str | None = "0193"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
