@@ -35,6 +35,15 @@ export async function topBar(page: Page): Promise<Locator> {
   return nav;
 }
 
+/**
+ * Opens the custodian's New troupe form, under Custodian › Troupe management
+ * (#759), from wherever the page is.
+ */
+export async function openNewTroupe(page: Page): Promise<void> {
+  await page.goto("/custodian/troupe-management");
+  await expect(page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+}
+
 /** Which group each of a PC's tabs is in on a phone (CharacterPage). */
 const CHARACTER_GROUPS: Record<string, string> = {
   Sheet: "Sheet",

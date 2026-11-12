@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab, builtVampire, ATTRIBUTES_AND_FOCUSES, PASSWORD, tapMid, choosePick, chooseDots, topBar } from "./support";
+import { ATTRIBUTES_AND_FOCUSES, backstoryOptional, builtVampire, characterTab, chooseDots, choosePick, closeContextsAfterEach, makeCustodian, openNewTroupe, PASSWORD, person, run, shots, tapMid, topBar } from "./support";
 
 /** A troupe's setup: its rules, XP range, staff, profile and archiving, and asking for one. */
 
@@ -12,8 +12,7 @@ test("a troupe changes what new characters start with and their downtime actions
   const player = await person(browser, "start-player");
   const troupeName = `Court of Embers ${run}`;
   await custodian.page.reload();
-  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
-  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await openNewTroupe(custodian.page);
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
@@ -798,8 +797,7 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   const player = await person(browser, "floor-player");
   const troupeName = `Court of Bones ${run}`;
   await custodian.page.reload();
-  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
-  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await openNewTroupe(custodian.page);
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
@@ -896,8 +894,7 @@ test("storytellers filter the troupe's characters and print what they find", asy
   const lead = await person(browser, "filter-lead");
   const troupeName = `Court of Mirrors ${run}`;
   await custodian.page.reload();
-  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
-  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await openNewTroupe(custodian.page);
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
@@ -1354,8 +1351,7 @@ test("a lead adds staff by picking from a list of people, the troupe's own playe
   const player = await person(browser, "staff-player");
   const troupeName = `Court of Keys ${run}`;
   await custodian.page.reload();
-  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
-  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await openNewTroupe(custodian.page);
   await custodian.page.getByLabel("Name").fill(troupeName);
   // The custodian finds the lead in the list by typing part of their handle.
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle.slice(0, -2));
@@ -1696,8 +1692,7 @@ test("a troupe's profile: storytellers fill it in, and people not signed in see 
 
   const c = custodian.page;
   await c.reload();
-  await (await topBar(c)).getByRole("link", { name: "Troupes" }).click();
-  await expect(c.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await openNewTroupe(c);
   await c.getByLabel("Name").fill(troupeName);
   await c.getByLabel("Lead storyteller").fill(lead.handle);
   await c.getByRole("button", { name: "Create troupe" }).click();
@@ -2161,8 +2156,7 @@ test("a troupe's public page asks a newcomer to make an account, which brings th
   const lead = await person(browser, "joinlink-lead");
   const troupeName = `Wardens of Whitby ${run}`;
   await custodian.page.reload();
-  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
-  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await openNewTroupe(custodian.page);
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
@@ -2213,8 +2207,7 @@ test("a troupe's Profile tab switches it public at once, About shows its XP rang
   const visitor = await (await browser.newContext()).newPage();
   const troupeName = `Court of Thresholds ${run}`;
   await custodian.page.reload();
-  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
-  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await openNewTroupe(custodian.page);
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();

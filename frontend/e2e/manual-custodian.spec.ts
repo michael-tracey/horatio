@@ -121,16 +121,17 @@ test("screenshots for the manual's Custodian part", async ({ browser }) => {
   const main = c.locator("main");
   await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
 
-  // Troupe requests.
-  await main.getByRole("link", { name: /^Troupe requests/ }).click();
-  await expect(main.getByText("Court of Ashes")).toBeVisible();
-  await expect(main.getByText("Harbour Lights")).toBeVisible();
-  await shoot(main, "troupe-requests");
+  // Troupe management (#759): a new troupe, the troupes, requests and archived ones.
+  await main.getByRole("link", { name: /^Troupe management/ }).click();
+  const requests = main.getByRole("region", { name: "Requests" });
+  await expect(requests.getByText("Court of Ashes")).toBeVisible();
+  await expect(requests.getByText("Harbour Lights")).toBeVisible();
+  await shoot(main, "troupe-management");
+  await shoot(requests, "troupe-requests");
 
-  // Archived troupes.
-  await main.getByRole("link", { name: "Archived troupes", exact: true }).click();
-  await expect(main.getByText("Our chronicle has ended after six years.", { exact: false })).toBeVisible();
-  await shoot(main, "archived-troupes");
+  const archived = main.getByRole("region", { name: "Archived troupes" });
+  await expect(archived.getByText("Our chronicle has ended after six years.", { exact: false })).toBeVisible();
+  await shoot(archived, "archived-troupes");
 
   // Suspend Priya from her row's ⋯.
   await main.getByRole("link", { name: "People", exact: true }).click();
