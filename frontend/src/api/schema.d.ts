@@ -552,6 +552,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/boon-audits/{audit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Audit
+         * @description One audit, as it was made: for whoever keeps the troupe's ledger and may see it,
+         *     and for the player of the character it was given to.
+         */
+        get: operations["read_audit_api_boon_audits__audit_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/calendar/links": {
         parameters: {
             query?: never;
@@ -1124,6 +1145,27 @@ export interface paths {
          * @description Take back a drink its player reported, while it waits.
          */
         post: operations["withdraw_report_api_characters__character_id__bonds_reports__report_id__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/boon-audits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Audits
+         * @description The audits given to the character, newest first: for its player, and the staff
+         *     of the troupe each was made in.
+         */
+        get: operations["character_audits_api_characters__character_id__boon_audits_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -7671,6 +7713,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/boon-audits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Troupe Audits
+         * @description The troupe's audits the caller sees, newest first, and whom they can audit and
+         *     give one to: for its staff, and a Harpy or Lesser Harpy who may perform audits.
+         */
+        get: operations["troupe_audits_api_troupes__troupe_id__boon_audits_get"];
+        put?: never;
+        /**
+         * Make Audit
+         * @description Audit a character's boons as the ledger holds them now; given at once to a
+         *     player character, if named.
+         */
+        post: operations["make_audit_api_troupes__troupe_id__boon_audits_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boon-audits/{audit_id}/give": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give Audit
+         * @description Give an audit to a player character in play in the troupe, once.
+         */
+        post: operations["give_audit_api_troupes__troupe_id__boon_audits__audit_id__give_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/boon-flags/{flag_id}/clear": {
         parameters: {
             query?: never;
@@ -14192,6 +14280,144 @@ export interface components {
             /** Boons */
             boons: number;
             who: components["schemas"]["BoonStandingPartyOut"];
+        };
+        /** BoonAuditChoice */
+        BoonAuditChoice: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** BoonAuditGiveIn */
+        BoonAuditGiveIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+        };
+        /** BoonAuditIn */
+        BoonAuditIn: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Given To Id */
+            given_to_id?: string | null;
+        };
+        /** BoonAuditLineOut */
+        BoonAuditLineOut: {
+            /** Conditions */
+            conditions: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "trivial" | "minor" | "major" | "blood" | "life";
+            /**
+             * Made On
+             * Format: date
+             */
+            made_on: string;
+            /** Other */
+            other: string;
+            /** Reason */
+            reason: string;
+            /** Settled How */
+            settled_how?: ("called_in" | "forgiven" | "ignored") | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "standing" | "settled" | "departed";
+        };
+        /** BoonAuditOut */
+        BoonAuditOut: {
+            /** Age */
+            age: string | null;
+            /**
+             * Can Give
+             * @default false
+             */
+            can_give: boolean;
+            /** Clan */
+            clan: string | null;
+            /** Given At */
+            given_at: string | null;
+            /** Given To */
+            given_to: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Made At
+             * Format: date-time
+             */
+            made_at: string;
+            /** Made By */
+            made_by: string;
+            /** Name */
+            name: string;
+            /** Owed */
+            owed: components["schemas"]["BoonAuditLineOut"][];
+            /** Owed Count */
+            owed_count: number;
+            /** Owed Weight */
+            owed_weight: number;
+            /** Owes */
+            owes: components["schemas"]["BoonAuditLineOut"][];
+            /** Owes Count */
+            owes_count: number;
+            /** Owes Weight */
+            owes_weight: number;
+            /** Standing */
+            standing: ("active" | "final_death" | "off_field" | "gone") | null;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
+        /** BoonAuditSummaryOut */
+        BoonAuditSummaryOut: {
+            /**
+             * Can Give
+             * @default false
+             */
+            can_give: boolean;
+            /** Given At */
+            given_at: string | null;
+            /** Given To */
+            given_to: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Made At
+             * Format: date-time
+             */
+            made_at: string;
+            /** Made By */
+            made_by: string;
+            /** Name */
+            name: string;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
         };
         /** BoonBandOut */
         BoonBandOut: {
@@ -31109,6 +31335,22 @@ export interface components {
              */
             setting: "off" | "staff" | "players_report" | "players_manage";
         };
+        /** TroupeBoonAuditsOut */
+        TroupeBoonAuditsOut: {
+            /** Audits */
+            audits: components["schemas"]["BoonAuditSummaryOut"][];
+            /** Can Audit */
+            can_audit: boolean;
+            /** Recipients */
+            recipients: components["schemas"]["BoonAuditChoice"][];
+            /** Subjects */
+            subjects: components["schemas"]["BoonAuditChoice"][];
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+        };
         /** TroupeBoonSummaryOut */
         TroupeBoonSummaryOut: {
             /** Owed */
@@ -33842,6 +34084,37 @@ export interface operations {
             };
         };
     };
+    read_audit_api_boon_audits__audit_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                audit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonAuditOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     links_api_calendar_links_get: {
         parameters: {
             query: {
@@ -34893,6 +35166,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BondReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    character_audits_api_characters__character_id__boon_audits_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonAuditSummaryOut"][];
                 };
             };
             /** @description Validation Error */
@@ -47639,6 +47943,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BookTraitOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    troupe_audits_api_troupes__troupe_id__boon_audits_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeBoonAuditsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    make_audit_api_troupes__troupe_id__boon_audits_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonAuditIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonAuditOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    give_audit_api_troupes__troupe_id__boon_audits__audit_id__give_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                audit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonAuditGiveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonAuditOut"];
                 };
             };
             /** @description Validation Error */
