@@ -136,7 +136,7 @@ A character the troupe's storytellers or assistant storytellers make and keep fo
 
 ## Play View
 
-The character's page for use at a game, made for a phone: trackers for Blood, Willpower and health that you tap as you spend them, test pools, equipment and status. It keeps working with poor signal and catches up when it can.
+The character's page for use at a game, made for a phone: trackers for Blood, Willpower and health that you tap as you spend them, test pools, equipment and status. It keeps working with poor signal and catches up when it can. Its home troupe chooses which of its tabs players see; a troupe that switches them all off doesn't use it for players, though its staff still run NPCs with it.
 
 ## Player
 

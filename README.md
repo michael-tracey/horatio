@@ -71,6 +71,18 @@ npm run build
 npx playwright test
 ```
 
+#### e2e in CI
+
+CI runs the e2e suite in Microsoft's Playwright image
+(`mcr.microsoft.com/playwright:v<version>-noble`, in `.github/workflows/frontend.yml`).
+The image has Chromium and the libraries and fonts it needs built in, so a run
+doesn't install anything through apt and doesn't fail when Ubuntu's package
+mirrors are down. The browsers in the image belong to one Playwright version, so
+the image's version must be the `@playwright/test` version in
+`frontend/package-lock.json`; a step at the start of each shard fails the run if
+they differ. To upgrade Playwright, update it in `frontend/` and change the image
+tag to the version now in the lock file, in the same PR.
+
 In production the backend serves the built frontend itself
 (`HORATIO_FRONTEND_DIST`), so the app and API share one origin. The live site,
 https://horatio.lotslarp.org, is deployed with `deploy/deploy.sh`; see

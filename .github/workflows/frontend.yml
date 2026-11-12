@@ -32,9 +32,15 @@ jobs:
 
   # The suite split across runners, each with its own database and server. Four
   # shards bring a 35-minute run to about 12; each repeats a minute of setup.
+  #
+  # The shards run in Microsoft's Playwright image, which has Chromium and the
+  # libraries and fonts it needs built in, so a run never waits on Ubuntu's apt
+  # mirrors (#679). Its version must be the @playwright/test in package-lock.json:
+  # bump the two together (see the README's "e2e in CI").
   e2e-shard:
     name: e2e-shard ${{ matrix.shard }}/${{ strategy.job-total }}
     runs-on: ubuntu-latest
+    container: mcr.microsoft.com/playwright:v1.64.0-noble
     strategy:
       fail-fast: false
       matrix:
@@ -46,13 +52,22 @@ jobs:
           POSTGRES_USER: horatio
           POSTGRES_PASSWORD: horatio
           POSTGRES_DB: horatio
-        ports: ["54329:5432"]
         options: >-
           --health-cmd "pg_isready -U horatio" --health-interval 2s --health-timeout 5s --health-retries 20
     env:
       HORATIO_COOKIE_SECURE: "false"
+      # Inside a container the service is reached by its name, on its own port.
+      HORATIO_DATABASE_URL: postgresql+psycopg://horatio:horatio@postgres:5432/horatio
     steps:
       - uses: actions/checkout@v4
+      # The image's browsers are those of one Playwright version; another one in the
+      # lock file would look for browsers the image doesn't have.
+      - name: Check the image matches Playwright
+        run: |
+          image=$(grep -o 'mcr.microsoft.com/playwright:v[0-9.]*' .github/workflows/frontend.yml | head -1 | sed 's/.*:v//')
+          lock=$(node -p 'require("./frontend/package-lock.json").packages["node_modules/@playwright/test"].version')
+          echo "image $image, @playwright/test $lock"
+          test "$image" = "$lock" || { echo "::error::The Playwright image is v$image but package-lock.json has @playwright/test $lock; bump the image in frontend.yml"; exit 1; }
       - uses: astral-sh/setup-uv@v6
       - uses: actions/setup-node@v4
         with:
@@ -61,7 +76,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: uv sync --locked && uv run alembic upgrade head && uv run python -m horatio.rules
         working-directory: backend
-      - run: npm ci && npm run build && npx playwright install --with-deps chromium
+      # No browser install: the image keeps them in /ms-playwright (PLAYWRIGHT_BROWSERS_PATH).
+      - run: npm ci && npm run build
         working-directory: frontend
       # Keep-alive as e2e-local.sh sets it: Playwright reuses idle connections with
       # no timeout of its own, and one uvicorn drops at 5 s fails with ECONNRESET.

@@ -1,10 +1,11 @@
 """Equipment (horatio.equipment): the rule set's kinds, grades, qualities and sample
 items, and the check an item's editor asks as it is built."""
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import NoResultFound
 
+from horatio.api.etags import revalidate, rules_tag
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.equipment import ItemModifier, ItemQuality, assess, equipment_rules, kind_problems
 from horatio.rules.equipment import EquipmentRules, Facts
@@ -153,9 +154,13 @@ def facts_out(facts: Facts) -> EquipmentFactsOut:
 
 
 @router.get("")
-def equipment(splat: str, db: DbSession, user: CurrentUser) -> EquipmentOut:
+def equipment(
+    splat: str, request: Request, response: Response, db: DbSession, user: CurrentUser
+) -> EquipmentOut:
     """The kinds of item, the grades, every quality of each kind and the book's
-    sample items, each with its facts."""
+    sample items, each with its facts. Its ETag is the book's rules' version
+    (horatio.api.etags): a browser that has it already gets 304 Not Modified."""
+    revalidate(request, response, "equipment", splat, rules_tag(db, splat, None))
     rules = rules_for(db, splat)
     return EquipmentOut(
         kinds=[

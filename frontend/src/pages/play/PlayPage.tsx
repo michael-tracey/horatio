@@ -37,6 +37,8 @@ import { ShownWarning } from "./TrackerWarning";
 import { beastWarning } from "./warnings";
 import { useKeepAwake } from "./wakeLock";
 import { generationText } from "../../generation";
+import { NotUsed } from "./NotUsed";
+import { openingTab, shownTabs, TABS, type Tab } from "./tabs";
 
 type Change = { tracker: string; amount: number; damage?: Damage; label: string };
 type RecordTap = (change: Change) => void;
@@ -44,17 +46,6 @@ type RecordTap = (change: Change) => void;
 function cx(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(" ");
 }
-
-const TABS = [
-  { key: "sheet", label: "Sheet" },
-  { key: "tracker", label: "Tracker" },
-  { key: "pools", label: "Pools" },
-  // Only for a character with sect status.
-  { key: "status", label: "Status" },
-  { key: "equipment", label: "Equipment" },
-  { key: "throws", label: "Throws" },
-] as const;
-type Tab = (typeof TABS)[number]["key"];
 
 /** Trackers whose spends never ask for a quick note. */
 const UNNOTED = new Set(["blood", "willpower", "health"]);
@@ -71,11 +62,13 @@ const UNNOTED = new Set(["blood", "willpower", "health"]);
  * tap is in the header on every tab. Taps are kept on the phone when there is no signal and sent when it
  * returns. The Sheet, Pools and Equipment load when the page opens, so the tabs
  * switch at once. The person's settings choose the tab it opens on and whether
- * quick notes start on; the screen stays awake as the header's switch says.
+ * quick notes start on; the screen stays awake as the header's switch says. Its
+ * troupe chooses which tabs show (#673); with none, it doesn't use the Play View for players.
  */
 export function PlayPage() {
   const { characterId = "" } = useParams();
   const play = usePlay(characterId);
+  if (play.view.data?.tabs.length === 0) return <NoPlayView characterId={characterId} name={play.view.data.character_name} />;
   // Chosen once, by form: a Stock NPC has its own, simpler Play View (issue #215).
   if (play.view.data?.npc_form === "stock") return <StockPlay characterId={characterId} play={play} />;
   return <SheetedPlay characterId={characterId} play={play} />;
@@ -84,8 +77,11 @@ export function PlayPage() {
 function SheetedPlay({ characterId, play }: { characterId: string; play: Play }) {
   const [params, setParams] = useSearchParams();
   const prefs = usePreferences();
-  const tab: Tab = TABS.find((t) => t.key === params.get("tab"))?.key ?? prefs.play_tab;
   const { view, shown, sync, accept } = play;
+  // The tabs its troupe has on (every one on an NPC, for staff); a tab asked for that
+  // is off opens the first one on.
+  const showing = shownTabs(view.data?.tabs ?? TABS.map((t) => t.key), !!view.data?.status);
+  const tab = openingTab(params.get("tab"), prefs.play_tab, showing);
   const tap = useToldTap(play);
   // A power's Use: its cost and its switch, with one Undo.
   const taps = useToldTaps(play);
@@ -113,9 +109,10 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
     );
   const tabs = (
     <>
-      <TabBar tab={tab} onChange={choose} status={!!view.data?.status} />
-      {/* Blood, Willpower and health on every other tab, where powers are read and paid for. */}
-      {shown && tab !== "tracker" && <TrackerStrip view={shown} tap={tap} open={() => choose("tracker")} />}
+      <TabBar tab={tab} tabs={showing} onChange={choose} />
+      {/* Blood, Willpower and health on every other tab, where powers are read and paid
+          for; with the Tracker, so a troupe that switches it off has neither. */}
+      {shown && tab !== "tracker" && showing.includes("tracker") && <TrackerStrip view={shown} tap={tap} open={() => choose("tracker")} />}
     </>
   );
   // Opened from a Scene view's card: the way back is to that scene. A link from
@@ -145,6 +142,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
     <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} name={shown.character_name} tabs={tabs}>
       <Identity view={shown} />
       <PowersBanner powers={shown.powers} tap={tap} />
+      {!tab && <p className="py-8 text-center text-mist">{shown.character_name}'s troupe has switched off every tab it has here.</p>}
       {tab === "sheet" && lookup((r) => <SheetTab reference={r} />)}
       {tab === "pools" && lookup((r) => <PoolsTab reference={r} willpower={shown.willpower.value} characterId={characterId} powers={shown.powers} forms={shown.forms} items={shown.equipment} equipped={shown.equipped} tap={tap} using={{ view: shown, use: taps }} trackers={trackersOf(shown)} />)}
       {tab === "status" && (
@@ -265,6 +263,25 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
         />
       )}
     </PlayShell>
+  );
+}
+
+/** What the Play View says of a character whose troupe doesn't use it (#673): the troupe
+ * keeps its sheets in Horatio and plays its games without. */
+function NoPlayView({ characterId, name }: { characterId: string; name: string }) {
+  return (
+    <div className="min-h-screen bg-night pb-16 text-parchment">
+      <header className="border-b border-ash">
+        <div className="mx-auto flex max-w-3xl items-center px-4 py-2">
+          <Link to={`/characters/${characterId}`} className="inline-flex min-h-10 min-w-0 items-center text-sm text-mist hover:text-parchment">
+            <span className="truncate">← {name}</span>
+          </Link>
+        </div>
+      </header>
+      <main className="mx-auto max-w-3xl px-4 pt-8 text-center">
+        <NotUsed name={name} />
+      </main>
+    </div>
   );
 }
 
@@ -406,12 +423,16 @@ export function useToldTaps(play: Play): ToldTaps {
   return told;
 }
 
-/** Sheet, Tracker, Pools, (for a character with sect status) Status, Equipment and Throws: big tabs across the top, for a thumb. */
-function TabBar({ tab, onChange, status }: { tab: Tab; onChange: (tab: Tab) => void; status: boolean }) {
-  const tabs = TABS.filter((t) => t.key !== "status" || status);
+// A column for each tab shown.
+const COLUMNS = ["grid-cols-1", "grid-cols-1", "grid-cols-2", "grid-cols-3", "grid-cols-4", "grid-cols-5", "grid-cols-6", "grid-cols-7", "grid-cols-8"];
+
+/** Sheet, Tracker, Pools, (for a character with sect status) Status, Equipment and
+ * Throws, as its troupe has them on: big tabs across the top, for a thumb. */
+function TabBar({ tab, tabs, onChange }: { tab: Tab | undefined; tabs: Tab[]; onChange: (tab: Tab) => void }) {
+  if (tabs.length === 0) return null;
   return (
-    <nav className="mx-auto grid max-w-3xl px-1 sm:px-2" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }} role="tablist" aria-label="Play View">
-      {tabs.map((t) => (
+    <nav className={cx("mx-auto grid max-w-3xl px-1 sm:px-2", COLUMNS[tabs.length] ?? "grid-cols-8")} role="tablist" aria-label="Play View">
+      {TABS.filter((t) => tabs.includes(t.key)).map((t) => (
         <button
           key={t.key}
           type="button"

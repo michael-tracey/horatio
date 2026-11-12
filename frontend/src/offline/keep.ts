@@ -78,13 +78,15 @@ export function keptCharacters(list: CharacterListOut[] | undefined, userId: str
   return (list ?? []).filter((c) => c.player_id === userId && c.kind === "pc" && c.status !== "retired" && c.creation_complete);
 }
 
-/** What a person's kept answers may hold: their kept characters, and those characters' troupes. */
-export type Mine = { characters: Set<string>; troupes: Set<string> };
+/** What a person's kept answers may hold: their kept characters, those of them with a Play
+ * View (not where the troupe doesn't use one, #673), and those characters' troupes. */
+export type Mine = { characters: Set<string>; plays: Set<string>; troupes: Set<string> };
 
 export function mineOf(list: CharacterListOut[] | undefined, userId: string): Mine {
   const kept = keptCharacters(list, userId);
   return {
     characters: new Set(kept.map((c) => c.id)),
+    plays: new Set(kept.filter((c) => c.play_view).map((c) => c.id)),
     troupes: new Set(kept.flatMap((c) => [c.home_troupe_id, c.building_troupe_id].filter((t): t is string => !!t))),
   };
 }
@@ -93,15 +95,15 @@ export function mineOf(list: CharacterListOut[] | undefined, userId: string): Mi
 const PERSON = new Set(["me", "characters", "troupes"]);
 /** The rules: the same for everyone. */
 const RULES = new Set(["catalogue", "splats"]);
+/** The Play View's own, about one character: kept only for one with a Play View. */
+const PLAY = new Set(["play", "play-reference", "play-games"]);
 /** About one character, named second in the key: kept for the person's own. The sheet and
  * what it shows, and the Play View and its tabs. Never the Play View's Others tab, which
  * is about other characters, nor anything between games (downtimes, XP, results). */
 const CHARACTER = new Set([
   "character",
   "sheet",
-  "play",
-  "play-reference",
-  "play-games",
+  ...PLAY,
   "character-equipment",
   "teaching",
   "power-choices",
@@ -126,6 +128,7 @@ export function keepsQuery(key: QueryKey, mine: Mine): boolean {
   // A troupe's news: its agencies, and the first page of its list (the last 30 days), not a filtered or older page.
   if (what === "agencies" || what === "posts-glance") return typeof of === "string" && mine.troupes.has(of);
   if (what === "posts") return key.length === 3 && typeof of === "string" && mine.troupes.has(of);
+  if (PLAY.has(what)) return typeof of === "string" && mine.plays.has(of);
   if (CHARACTER.has(what)) return typeof of === "string" && mine.characters.has(of);
   return false;
 }

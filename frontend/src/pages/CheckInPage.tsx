@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { api, unwrap } from "../api/client";
 import type { CheckInOffer } from "../api/types";
 import { EmptyState } from "../components/EmptyState";
+import { useToast } from "../components/Toast";
 import { Button, Card, ErrorText, Field, Input, Loading, PageTitle } from "../components/ui";
 import { useDates } from "../dates";
 import { useAction } from "../hooks";
@@ -76,13 +77,15 @@ function CodeForm() {
 
 /**
  * Pick the character you're playing tonight and say whether it had a full day's
- * rest, then check in: the night starts on its Play View, which opens. Where the
+ * rest, then check in: the night starts on its Play View, which opens (unless its
+ * troupe doesn't use the Play View, #673, when it says so here). Where the
  * troupe chooses the night's status at check-in (issue #441), pick the one source of
  * abiding status it carries too, fixed for the game.
  */
 export function CheckInForm({ offer }: { offer: CheckInOffer }) {
   const dates = useDates();
   const navigate = useNavigate();
+  const toast = useToast();
   const waiting = offer.characters.filter((c) => !c.checked_in);
   const [chosen, setChosen] = useState(waiting[0]?.id ?? "");
   const [rested, setRested] = useState(true);
@@ -98,7 +101,9 @@ export function CheckInForm({ offer }: { offer: CheckInOffer }) {
       }),
     );
     // The Play View opening is the answer: a toast would go with the page it was on.
-    navigate(`/play/characters/${done.character_id}`);
+    if (done.play_view) navigate(`/play/characters/${done.character_id}`);
+    // With none to open, the page stays, its character checked in.
+    else toast({ message: `${done.character_name} is checked in.` });
   });
 
   const heading = (
@@ -135,9 +140,11 @@ export function CheckInForm({ offer }: { offer: CheckInOffer }) {
               <span>
                 {c.name} <span className="text-mist">· checked in</span>
               </span>
-              <Link to={`/play/characters/${c.id}`} className="text-gold underline">
-                Open the Play View
-              </Link>
+              {c.play_view && (
+                <Link to={`/play/characters/${c.id}`} className="text-gold underline">
+                  Open the Play View
+                </Link>
+              )}
             </p>
           ) : (
             <label

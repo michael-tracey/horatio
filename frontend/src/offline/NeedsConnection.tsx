@@ -12,13 +12,21 @@ export function NeedsConnection({ pathname }: { pathname?: string }) {
   const here = pathname ?? window.location.pathname;
   const characterId = characterOf(here);
   // From another of the character's screens, the way to its Play View and sheet.
-  const mine = !!characterId && !here.startsWith("/play/") && !!client.getQueryData<CharacterListOut[]>(["characters"])?.some((c) => c.id === characterId);
+  const own = characterId && !here.startsWith("/play/") ? client.getQueryData<CharacterListOut[]>(["characters"])?.find((c) => c.id === characterId) : undefined;
   const link = "text-gold underline hover:text-parchment";
   return (
     <div role="status" className="py-8 text-center">
       <p className="text-parchment">{screenName(here)} needs a connection.</p>
       <p className="mt-2 text-sm text-mist">
-        {mine ? (
+        {own && !own.play_view ? (
+          <>
+            {/* Its troupe doesn't use the Play View (#673): its sheet alone. */}
+            <Link to={`/characters/${characterId}`} className={link}>
+              Open its sheet
+            </Link>
+            , which works offline if it's kept on this device.
+          </>
+        ) : own ? (
           <>
             <Link to={`/play/characters/${characterId}`} className={link}>
               Open its Play View

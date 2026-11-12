@@ -41,6 +41,7 @@ function character(id: string, changes: Partial<CharacterListOut> = {}): Charact
     creation_complete: true,
     home_troupe_id: HOME,
     building_troupe_id: null,
+    play_view: true,
     ...changes,
   } as CharacterListOut;
 }
@@ -96,6 +97,12 @@ describe("what is kept", () => {
       expect(keepsQuery([what, OLD], mine)).toBe(false);
       expect(keepsQuery([what, OTHER], mine)).toBe(false);
     }
+  });
+
+  it("keeps no Play View for a character whose troupe doesn't use it, only its sheet (#673)", () => {
+    const sheets = mineOf([character(ROSA, { play_view: false })], ME);
+    for (const what of ["play", "play-reference", "play-games"]) expect(keepsQuery([what, ROSA], sheets)).toBe(false);
+    for (const what of ["character", "sheet", "character-equipment"]) expect(keepsQuery([what, ROSA], sheets)).toBe(true);
   });
 
   it("keeps the home troupe of a kept character, and no other troupe", () => {
