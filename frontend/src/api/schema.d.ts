@@ -3473,6 +3473,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/sire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Sire
+         * @description The character's sire, as anyone who sees the character sees it.
+         */
+        get: operations["read_sire_api_characters__character_id__sire_get"];
+        /**
+         * Set Sire
+         * @description Give the character its sire: a character the caller can see, or a name and
+         *     clan; and whether the troupe's players see it.
+         */
+        put: operations["set_sire_api_characters__character_id__sire_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/sire/choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sire Choices
+         * @description The vampires that could be the character's sire, by name (`candidates`).
+         */
+        get: operations["sire_choices_api_characters__character_id__sire_choices_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/specializations": {
         parameters: {
             query?: never;
@@ -10624,6 +10669,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/sire-lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Sire Lines
+         * @description Who sired whom: every vampire in the troupe for its staff; for its players, if
+         *     the troupe shows them, those on its Who's Who with the sires it shows.
+         */
+        get: operations["read_sire_lines_api_troupes__troupe_id__sire_lines_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/specializations": {
         parameters: {
             query?: never;
@@ -15454,6 +15520,39 @@ export interface components {
             /** Warnings */
             warnings: string[];
             xp: components["schemas"]["BackupXpOut"] | null;
+        };
+        /** CharacterSireIn */
+        CharacterSireIn: {
+            /** Character Id */
+            character_id?: string | null;
+            /**
+             * Clan
+             * @default
+             */
+            clan: string;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /**
+             * Secret
+             * @default false
+             */
+            secret: boolean;
+        };
+        /** CharacterSireOut */
+        CharacterSireOut: {
+            /** Can Change */
+            can_change: boolean;
+            /** Character Id */
+            character_id: string | null;
+            /** Clan */
+            clan: string;
+            /** Name */
+            name: string;
+            /** Secret */
+            secret: boolean;
         };
         /** CharacterTitlesOut */
         CharacterTitlesOut: {
@@ -28680,6 +28779,62 @@ export interface components {
              */
             name: string;
         };
+        /** SireLineChoiceOut */
+        SireLineChoiceOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Clan */
+            clan: string | null;
+            /** Name */
+            name: string;
+        };
+        /** SireLineClanCount */
+        SireLineClanCount: {
+            /** Clan */
+            clan: string;
+            /** Count */
+            count: number;
+        };
+        /** SireLineNodeOut */
+        SireLineNodeOut: {
+            /** Character Id */
+            character_id: string | null;
+            /** Clan */
+            clan: string | null;
+            /** Generation */
+            generation: number | null;
+            /** Key */
+            key: string;
+            /** Kind */
+            kind: string;
+            /** Left Reason */
+            left_reason: string | null;
+            /** Name */
+            name: string;
+            /** Retired */
+            retired: boolean;
+            /** Sire Key */
+            sire_key: string | null;
+        };
+        /** SireLinesOut */
+        SireLinesOut: {
+            /** Clans */
+            clans: components["schemas"]["SireLineClanCount"][];
+            /** Nodes */
+            nodes: components["schemas"]["SireLineNodeOut"][];
+            /** Players See */
+            players_see: boolean;
+            /** Staff */
+            staff: boolean;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+        };
         /** SkillPool */
         SkillPool: {
             /** Name */
@@ -30610,6 +30765,8 @@ export interface components {
             play_tabs_off?: ("sheet" | "tracker" | "pools" | "status" | "equipment" | "throws" | "boons")[] | null;
             /** Session Xp */
             session_xp?: number | null;
+            /** Sire Lines Players */
+            sire_lines_players?: boolean | null;
             /** Starting Xp */
             starting_xp?: number | null;
             /** Status At Checkin */
@@ -30904,6 +31061,8 @@ export interface components {
             remembrances: boolean;
             /** Session Xp */
             session_xp: number;
+            /** Sire Lines Players */
+            sire_lines_players: boolean;
             /** Starting Blood */
             starting_blood: number | null;
             /** Starting Xp */
@@ -31504,6 +31663,8 @@ export interface components {
             seated: string[] | null;
             /** Shows Negative */
             shows_negative: boolean;
+            /** Sire Lines */
+            sire_lines: boolean;
             /**
              * Troupe Id
              * Format: uuid
@@ -38907,6 +39068,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SheetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_sire_api_characters__character_id__sire_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterSireOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_sire_api_characters__character_id__sire_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterSireIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterSireOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sire_choices_api_characters__character_id__sire_choices_get: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SireLineChoiceOut"][];
                 };
             };
             /** @description Validation Error */
@@ -53215,6 +53475,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SharedChoicesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_sire_lines_api_troupes__troupe_id__sire_lines_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SireLinesOut"];
                 };
             };
             /** @description Validation Error */

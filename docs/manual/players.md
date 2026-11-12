@@ -23,7 +23,9 @@ Open a character to see its page. On a wide screen its tabs sit in one row; on a
 
 ![The Characters page, with three characters: one at home in Court of Ashes with a downtime due, one waiting for the troupe to accept it, and one in creation](images/players/characters.png)
 
-Beside the character's name, the **⋯** button (**More for** the character) holds the less-used actions: **Rename…**, **Pronouns…**, diablerie, **Retire…** and **Delete…**. You can rename a character as often as you like until it joins a troupe; after that, once every three months, and its troupes' staff are told. Tap the picture beside the name to add or change a portrait.
+Beside the character's name, the **⋯** button (**More for** the character) holds the less-used actions: **Rename…**, **Pronouns…**, **Sire…** (a vampire's), diablerie, **Retire…** and **Delete…**. You can rename a character as often as you like until it joins a troupe; after that, once every three months, and its troupes' staff are told. Tap the picture beside the name to add or change a portrait.
+
+**Sire…** says who made your vampire: a vampire on your troupe's Who's Who, or someone known by name and clan, or not known. Tick **Keep it from the troupe's players** to keep it off the sire lines other players see; the storytellers still see it. An Embrace run in play fills it in. If your troupe shows its sire lines to players, **Sire lines** on the Who's Who draws who sired whom among the characters on it.
 
 ### Making a character
 
