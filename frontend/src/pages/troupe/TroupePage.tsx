@@ -6,7 +6,7 @@ import { Avatar } from "../../components/Avatar";
 import { Badge, ErrorText, GroupedTabs, Loading, PageTitle } from "../../components/ui";
 import { useMe } from "../../hooks";
 import { ApprovalsTab } from "./ApprovalsTab";
-import { BondsTab } from "./BondsTab";
+import { BondsPages } from "./BondsPages";
 import { BoonStandingsTab } from "./BoonStandingsTab";
 import { BoonsTab } from "./BoonsTab";
 import { ConnectorsTab } from "./ConnectorsTab";
@@ -201,7 +201,7 @@ export function TroupePage() {
             }
           />
         )}
-        {can.running && (t.blood_bonds ?? "off") !== "off" && <Route path="bonds" element={<BondsTab troupeId={t.id} />} />}
+        {can.running && (t.blood_bonds ?? "off") !== "off" && <Route path="bonds/*" element={<BondsPages troupeId={t.id} />} />}
         {can.running && t.boons && <Route path="boons" element={<BoonsTab troupeId={t.id} />} />}
         {can.running && t.boons && <Route path="boon-standings" element={<BoonStandingsTab troupeId={t.id} />} />}
         {can.running && <Route path="shared/*" element={<SharedBackgroundsTab troupeId={t.id} />} />}

@@ -7300,6 +7300,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/bond-web": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Bond Web
+         * @description Every bond the troupe keeps, and the people on either side, for its running staff.
+         */
+        get: operations["bond_web_api_troupes__troupe_id__bond_web_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/bonds": {
         parameters: {
             query?: never;
@@ -13515,6 +13535,15 @@ export interface components {
              * @enum {string}
              */
             waiting_on: "staff" | "thrall";
+        };
+        /** BondWebOut */
+        BondWebOut: {
+            /** Bonds */
+            bonds: components["schemas"]["WebBondOut"][];
+            /** Clans */
+            clans: components["schemas"]["ClanCountOut"][];
+            /** People */
+            people: components["schemas"]["WebPersonOut"][];
         };
         /**
          * BookTraitChange
@@ -30734,6 +30763,41 @@ export interface components {
             /** Link */
             link: string;
         };
+        /** WebBondOut */
+        WebBondOut: {
+            /** Fades On */
+            fades_on: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Level */
+            level: number;
+            /** Regnant */
+            regnant: string;
+            /** Status */
+            status: string;
+            /** Thrall */
+            thrall: string;
+        };
+        /** WebPersonOut */
+        WebPersonOut: {
+            /** Character Id */
+            character_id: string | null;
+            /** Clan */
+            clan: string | null;
+            /** Key */
+            key: string;
+            /** Kind */
+            kind: string | null;
+            /** Name */
+            name: string;
+            /** Standing */
+            standing: string;
+            /** Titles */
+            titles: string[];
+        };
         /** WhileAbsentOut */
         WhileAbsentOut: {
             /** Note */
@@ -45686,6 +45750,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bond_web_api_troupes__troupe_id__bond_web_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BondWebOut"];
                 };
             };
             /** @description Validation Error */

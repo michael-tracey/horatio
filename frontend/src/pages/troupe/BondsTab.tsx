@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { BondOut, BondReportOut, CharacterChoice } from "../../api/types";
-import { BOND_PAGE, groupBonds, isOpen, levelName, partyIn, PLAYER_SOURCES, reportLine, SOURCES, statusText, untold, watched, type BondSource } from "../../bonds";
+import { BOND_PAGE, groupBonds, isOpen, levelName, partyIn, partyKey, PLAYER_SOURCES, reportLine, SOURCES, statusText, untold, watched, type BondSource } from "../../bonds";
 import { DateInput } from "../../components/DateInput";
 import { useToast } from "../../components/Toast";
 import { Button, Card, Empty, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
@@ -27,14 +28,19 @@ export function BondsTab({ troupeId }: { troupeId: string }) {
   const [by, setBy] = useState<By>("thrall");
   const [past, setPast] = useState(false);
   const [adding, setAdding] = useState<"drink" | "enter" | null>(null);
+  // ?who=, from the web of bonds (#708): only that person's bonds.
+  const [params, setParams] = useSearchParams();
+  const who = params.get("who");
   const bonds = useQuery({
     queryKey: ["troupe-bonds", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/bonds", { params: { path: { troupe_id: troupeId } } })),
   });
   if (bonds.isPending) return <Loading />;
   if (bonds.error) return <ErrorText error={bonds.error} />;
-  const shown = past ? bonds.data.bonds : bonds.data.bonds.filter(watched);
-  const closed = bonds.data.bonds.length - bonds.data.bonds.filter(watched).length;
+  const theirs = who ? bonds.data.bonds.filter((b) => partyKey(b.thrall) === who || partyKey(b.regnant) === who) : bonds.data.bonds;
+  const named = who ? theirs.flatMap((b) => [b.thrall, b.regnant]).find((p) => partyKey(p) === who)?.name : undefined;
+  const shown = past ? theirs : theirs.filter(watched);
+  const closed = theirs.length - theirs.filter(watched).length;
   const groups = groupBonds(shown, by);
 
   return (
@@ -62,6 +68,14 @@ export function BondsTab({ troupeId }: { troupeId: string }) {
         {adding === "drink" && <NewDrinkForm troupeId={troupeId} characters={bonds.data.characters} onDone={() => setAdding(null)} />}
         {adding === "enter" && <EnterForm troupeId={troupeId} characters={bonds.data.characters} onDone={() => setAdding(null)} />}
       </Card>
+      {who && (
+        <p className="flex flex-wrap items-center gap-2 text-sm text-mist">
+          Showing only {named ?? "this person"}&apos;s bonds.
+          <Button variant="ghost" onClick={() => setParams({})}>
+            Show everyone&apos;s
+          </Button>
+        </p>
+      )}
       {(bonds.data.reports ?? []).length > 0 && <WaitingReports troupeId={troupeId} reports={bonds.data.reports ?? []} />}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div role="group" aria-label="List bonds" className="flex gap-1">
