@@ -36,6 +36,20 @@ describe("the Throws tab", () => {
     expect(screen.getByRole("list").children).toHaveLength(1);
   });
 
+  it("shows the word twice, once upside down above the picture, and reads it out once (#740)", () => {
+    motion(true);
+    shown();
+    fireEvent.click(screen.getByRole("button", { name: "Throw" }));
+    const face = screen.getByRole("img", { name: THROWN });
+    const word = face.getAttribute("aria-label")!;
+    const words = Array.from(face.querySelectorAll("span")).filter((s) => s.textContent === word);
+    expect(words).toHaveLength(2);
+    expect(words[0]!.className).toContain("rotate-180");
+    expect(words[1]!.className).not.toContain("rotate-180");
+    expect(words.every((s) => s.getAttribute("aria-hidden") === "true")).toBe(true);
+    expect(screen.getAllByRole("img", { name: word })).toHaveLength(1);
+  });
+
   it("counts in rock, paper, scissors for about a second, then shows the throw", () => {
     vi.useFakeTimers();
     motion(false);

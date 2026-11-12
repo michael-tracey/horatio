@@ -52,6 +52,8 @@ from horatio.models import (
     BondEntry,
     BondReport,
     Character,
+    GameAttendance,
+    ScheduledGame,
     Troupe,
     User,
 )
@@ -103,6 +105,10 @@ def set_setting(db: Session, user: User, troupe: Troupe, setting: str) -> None:
         raise unprocessable(f"Blood bonds is one of {', '.join(SETTINGS)}.")
     if troupe.blood_bonds == setting:
         return
+    if troupe.blood_bonds == "off":
+        # Nothing could be recorded while it was off, meetings included: time spent
+        # apart until now doesn't count against the troupe's bonds (#665).
+        troupe.bond_clock_from = max(troupe.bond_clock_from, datetime.now(UTC).date())
     troupe.blood_bonds = setting
     audit.record(db, user, "house.blood_bonds", troupe_id=troupe.id, setting=SETTINGS[setting])
 
@@ -218,30 +224,47 @@ def parties(db: Session, bond: BloodBond) -> tuple[Party, Party]:
 # --- the level, from the log -------------------------------------------------------------
 
 
+# The lines of a bond's log that set its level outright: a bond entered by staff, and
+# a full bond dropped to two drinks with time (#665).
+SETS_LEVEL = ("entered", "dropped")
+
+
 def level_of(entries: Sequence[BondEntry]) -> int:
     """The bond's level, 1 to 3, from its log, night by night: a drink on a night not
     already counted adds one, up to a full bond; drinks on one night count once (p.
     295). A bond entered by staff stands at its level from its night, whatever was
-    drunk before."""
+    drunk before, and so does one dropped with time; a meeting changes nothing."""
     level = 0
     nights: set[date] = set()
-    # A night's drinks before a bond entered on it: entering says where it stood after.
-    for entry in sorted(entries, key=lambda e: (e.night, e.kind == "entered")):
-        if entry.kind == "entered":
+    # A night's drinks before a bond entered or dropped on it: that says where it stood
+    # after.
+    for entry in sorted(entries, key=lambda e: (e.night, e.kind in SETS_LEVEL)):
+        if entry.kind in SETS_LEVEL:
             level = entry.level or 0
-        elif entry.night not in nights:
+            # A drink before the drop that night is behind it.
+            nights.add(entry.night)
+        elif entry.kind == "drink" and entry.night not in nights:
             nights.add(entry.night)
             level = min(FULL, level + 1)
     return level
 
 
+def felt_level_of(entries: Sequence[BondEntry]) -> int:
+    """The level a player sees: a drop their character's player isn't told of yet
+    doesn't count, as the drop is told only with the troupe's next downtime results
+    (#665)."""
+    return level_of([e for e in entries if not (e.kind == "dropped" and e.thrall_told_at is None)])
+
+
 def entries_of(db: Session, bond: BloodBond) -> list[BondEntry]:
-    """Its log, oldest night first."""
+    """Its log, oldest night first, and the drinks of one night as they were
+    recorded: ids are UUID v7, so they break a tie in created_at, which is the
+    same for every row written in one transaction."""
     return list(
         db.scalars(
             select(BondEntry)
             .where(BondEntry.bond_id == bond.id)
-            .order_by(BondEntry.night, BondEntry.created_at)
+            .order_by(BondEntry.night, BondEntry.created_at, BondEntry.id)
         )
     )
 
@@ -521,7 +544,7 @@ def tracked_bonds(db: Session, *conditions: ColumnElement[bool]) -> list[BloodBo
                 *conditions,
                 BloodBond.troupe_id.in_(select(Troupe.id).where(Troupe.blood_bonds != "off")),
             )
-            .order_by(BloodBond.created_at)
+            .order_by(BloodBond.created_at, BloodBond.id)
         )
     )
 
@@ -600,7 +623,8 @@ def faded(db: Session, bond: BloodBond, user: User | None = None) -> None:
 
 
 def settle_fades(db: Session, troupe_ids: Sequence[uuid.UUID] | None = None) -> None:
-    """End every fading bond whose day has come: those of `troupe_ids`, or all."""
+    """End every fading bond whose day has come, and make the changes time brings that
+    are due (#665): those of `troupe_ids`, or all."""
     conditions: list[ColumnElement[bool]] = [
         BloodBond.status == "fading",
         BloodBond.fades_on <= today(),
@@ -609,6 +633,11 @@ def settle_fades(db: Session, troupe_ids: Sequence[uuid.UUID] | None = None) -> 
         conditions.append(BloodBond.troupe_id.in_(troupe_ids))
     for bond in tracked_bonds(db, *conditions):
         faded(db, bond)
+    troupes = select(Troupe).where(Troupe.blood_bonds.in_(AUTOMATIC))
+    if troupe_ids is not None:
+        troupes = troupes.where(Troupe.id.in_(troupe_ids))
+    for troupe in db.scalars(troupes):
+        settle_time(db, troupe)
 
 
 def set_fade(db: Session, user: User, bond: BloodBond, ends: date, reason: str) -> None:
@@ -657,9 +686,28 @@ def tell_faded(db: Session, staff: User, troupe: Troupe) -> int:
         return 0
     settle_fades(db, [troupe.id])
     told = 0
+    now = datetime.now(UTC)
+    for bond, entry in untold_drops(db, troupe):
+        entry.thrall_told_at = now
+        if bond.status not in OPEN:
+            # It has faded since: the player is told that instead, below.
+            continue
+        thrall, regnant = parties(db, bond)
+        if thrall.character is not None and thrall.character.kind == "pc":
+            notifications.notify(
+                db,
+                [thrall.character.player_id],
+                "sheet.bond",
+                f"{thrall.character.name}'s bond to {regnant.shown} has weakened.",
+                f"/characters/{thrall.character.id}",
+                troupe_id=troupe.id,
+                character_id=thrall.character.id,
+            )
+            log(db, staff, "bond.dropped_told", bond)
+            told += 1
     for bond in untold(db, troupe):
         thrall, regnant = parties(db, bond)
-        bond.thrall_told_at = datetime.now(UTC)
+        bond.thrall_told_at = now
         if thrall.character is not None and thrall.character.kind == "pc":
             notifications.notify(
                 db,
@@ -700,12 +748,15 @@ def as_felt(
 
 @dataclass(frozen=True)
 class Seen:
-    """A bond the character is in, as someone may know of it."""
+    """A bond the character is in, as someone may know of it, at the level they know
+    it at: the troupe's running staff the truth; a player as it was until told of a drop
+    with time (#665)."""
 
     bond: BloodBond
     troupe: Troupe
     thrall: Party
     regnant: Party
+    level: int
 
 
 def seen_by(db: Session, user: User, character: Character, *, settle: bool = True) -> list[Seen]:
@@ -736,7 +787,7 @@ def seen_by(db: Session, user: User, character: Character, *, settle: bool = Tru
                 ),
             ),
         )
-        .order_by(BloodBond.created_at)
+        .order_by(BloodBond.created_at, BloodBond.id)
     ).all()
     troupes = {
         t.id: t
@@ -751,8 +802,240 @@ def seen_by(db: Session, user: User, character: Character, *, settle: bool = Tru
                 continue
         elif not (tracked(troupe) and as_felt(user, bond, thrall.character, regnant.character)):
             continue
-        seen.append(Seen(bond, troupe, thrall, regnant))
+        entries = entries_of(db, bond)
+        at = level_of(entries) if can_manage(db, user, troupe) else felt_level_of(entries)
+        seen.append(Seen(bond, troupe, thrall, regnant, at))
     return seen
+
+
+# --- fading with time and distance (#665) ------------------------------------------------
+#
+# "A three-point blood bond must be reinforced regularly" (p. 296): a full bond drops to
+# two drinks after three months without drinking from the regnant; a two-drink bond
+# ends after six months without the two meeting or speaking; a one-drink bond after a
+# year. A drink is a meeting too. Two characters both checked in at the same game have
+# met (horatio.checkin), and staff, or players in the player modes, log other meetings,
+# such as one in a downtime. A regnant who has left the city checks in nowhere, so their
+# bonds fade by these rules.
+#
+# There is no scheduler: as with a dead regnant's fade, the changes due are made when
+# the troupe's bonds are next read, or its downtime results delivered. In "staff" and
+# "players_manage" they are made then by themselves; in "players_report" they wait on
+# the Bonds screen for staff to confirm, as players' drinks wait there for approval.
+# Like a dead regnant's fade, a change goes in the troupe's log only. The thrall's
+# player is told with the troupe's next downtime results, never at once: until then
+# their character's sheet shows the bond as it was (`felt_level_of`, `as_felt`).
+#
+# No clock starts before the troupe's `bond_clock_from`: the day fading with time came
+# in for it, or the day it switched bonds on again, so bonds kept before then, or
+# entered from before Horatio, don't all fade at once.
+
+DROP_MONTHS = 3
+APART_MONTHS = {2: 6, 1: 12}
+# Why a bond faded: it and its regnant were kept apart too long.
+APART = "apart"
+FADE_REASONS[APART] = "its thrall and regnant didn't meet for too long"
+# The settings in which changes due are made by themselves.
+AUTOMATIC = ("staff", "players_manage")
+
+
+def add_months(day: date, months: int) -> date:
+    """The same day `months` later, or the month's last day if it has no such day."""
+    month = day.month - 1 + months
+    year, month = day.year + month // 12, month % 12 + 1
+    for last in (31, 30, 29, 28):
+        try:
+            return date(year, month, min(day.day, last))
+        except ValueError:
+            continue
+    raise AssertionError("every month has 28 days")
+
+
+def met_at_games(db: Session, bond: BloodBond) -> date | None:
+    """The last game both sides checked in at, if both are characters (#421)."""
+    if bond.thrall_id is None or bond.regnant_id is None:
+        return None
+    came = and_(GameAttendance.game_id == ScheduledGame.id, GameAttendance.kind == "attended")
+    thrall_came = select(GameAttendance.id).where(
+        came, GameAttendance.character_id == bond.thrall_id
+    )
+    regnant_came = select(GameAttendance.id).where(
+        came, GameAttendance.character_id == bond.regnant_id
+    )
+    started = db.scalar(
+        select(func.max(ScheduledGame.starts_at)).where(
+            thrall_came.exists(), regnant_came.exists(), ScheduledGame.starts_at <= func.now()
+        )
+    )
+    return started.astimezone(UTC).date() if started is not None else None
+
+
+def last_met(db: Session, bond: BloodBond, entries: Sequence[BondEntry]) -> date | None:
+    """When the two last met, as far as Horatio knows: a drink, a meeting logged, the
+    bond entered, or a game both checked in at."""
+    nights = [e.night for e in entries if e.kind in ("drink", "meeting", "entered")]
+    game = met_at_games(db, bond)
+    if game is not None:
+        nights.append(game)
+    return max(nights) if nights else None
+
+
+@dataclass(frozen=True)
+class Change:
+    """What happens next to a bond with time: it drops to two drinks, or ends, on a day."""
+
+    kind: str  # drop | end
+    on: date
+
+    @property
+    def shown(self) -> str:
+        return "drops to two drinks" if self.kind == "drop" else "ends"
+
+
+def clock_from(troupe: Troupe, bond: BloodBond) -> date:
+    return max(troupe.bond_clock_from, bond.created_at.astimezone(UTC).date())
+
+
+def next_change(
+    db: Session, troupe: Troupe, bond: BloodBond, entries: Sequence[BondEntry] | None = None
+) -> Change | None:
+    """The next change time brings the bond, due or not: None for a bond not still felt,
+    or one already fading because its regnant died, which ends by its own day."""
+    if bond.status != "active":
+        return None
+    entries = entries_of(db, bond) if entries is None else entries
+    at = level_of(entries)
+    start = clock_from(troupe, bond)
+    if at >= FULL:
+        reinforced = [
+            e.night
+            for e in entries
+            if e.kind == "drink" or (e.kind == "entered" and e.level == FULL)
+        ]
+        since = max([start, *reinforced])
+        return Change("drop", add_months(since, DROP_MONTHS))
+    if at not in APART_MONTHS:
+        return None
+    met = last_met(db, bond, entries)
+    since = max(start, met) if met is not None else start
+    on = add_months(since, APART_MONTHS[at])
+    # A bond just dropped to two drinks, by people long apart, ends with the drop.
+    dropped = [e.night for e in entries if e.kind == "dropped"]
+    if dropped:
+        on = max(on, max(dropped))
+    return Change("end", on)
+
+
+def due(db: Session, troupe: Troupe, bond: BloodBond) -> Change | None:
+    change = next_change(db, troupe, bond)
+    return change if change is not None and change.on <= today() else None
+
+
+def apply_change(db: Session, user: User | None, bond: BloodBond, change: Change) -> None:
+    """Make the change: a drop goes in the bond's log, taking it to two drinks; an end
+    ends it as faded. Into the troupe's log only."""
+    thrall, regnant = parties(db, bond)
+    if change.kind == "drop":
+        entry = BondEntry(
+            bond_id=bond.id,
+            kind="dropped",
+            night=change.on,
+            source="staff",
+            level=FULL - 1,
+            note=f"Three months without drinking {regnant.shown}'s blood (p. 296).",
+            recorded_by=user.id if user else None,
+        )
+        # A thrall with no player has no one to tell.
+        if thrall.character is None or thrall.character.kind != "pc":
+            entry.thrall_told_at = datetime.now(UTC)
+        db.add(entry)
+        db.flush()
+        staff_log(db, user, "bond.dropped", bond, night=when(change.on))
+        return
+    bond.fade_reason = APART
+    faded(db, bond, user)
+
+
+def settle_time(db: Session, troupe: Troupe, user: User | None = None) -> None:
+    """Make the changes due in a troupe whose setting makes them by themselves: a bond
+    can drop and then end at once, if its two were apart long enough for both."""
+    if troupe.blood_bonds not in AUTOMATIC:
+        return
+    for bond in db.scalars(
+        select(BloodBond)
+        .where(BloodBond.troupe_id == troupe.id, BloodBond.status == "active")
+        .order_by(BloodBond.created_at, BloodBond.id)
+    ):
+        for _ in range(2):
+            change = due(db, troupe, bond)
+            if change is None:
+                break
+            apply_change(db, user, bond, change)
+
+
+def waiting_changes(db: Session, troupe: Troupe) -> list[tuple[BloodBond, Change]]:
+    """In "players_report", the changes due that wait for staff to confirm."""
+    if troupe.blood_bonds != "players_report":
+        return []
+    found: list[tuple[BloodBond, Change]] = []
+    for bond in db.scalars(
+        select(BloodBond)
+        .where(BloodBond.troupe_id == troupe.id, BloodBond.status == "active")
+        .order_by(BloodBond.created_at, BloodBond.id)
+    ):
+        change = due(db, troupe, bond)
+        if change is not None:
+            found.append((bond, change))
+    return found
+
+
+def confirm_change(db: Session, user: User, troupe: Troupe, bond: BloodBond) -> Change:
+    """Staff confirm the change due on a bond: it is made now."""
+    change = due(db, troupe, bond)
+    if change is None:
+        raise conflict("Nothing is due on that bond now.")
+    apply_change(db, user, bond, change)
+    return change
+
+
+def add_meeting(
+    db: Session, user: User, bond: BloodBond, night: date, source: str, note: str
+) -> BloodBond:
+    """Log the thrall and regnant meeting, such as in a downtime: it keeps a lesser bond
+    from ending, and changes no level."""
+    if bond.status != "active":
+        raise conflict("That bond isn't one time can fade now.")
+    if source not in SOURCES:
+        raise unprocessable(f"Where it was told is one of {', '.join(SOURCES)}.")
+    check_night(night)
+    db.add(
+        BondEntry(
+            bond_id=bond.id,
+            kind="meeting",
+            night=night,
+            source=source,
+            note=note.strip(),
+            recorded_by=user.id,
+        )
+    )
+    db.flush()
+    log(db, user, "bond.meeting", bond, night=when(night), source=SOURCES[source])
+    return bond
+
+
+def untold_drops(db: Session, troupe: Troupe) -> list[tuple[BloodBond, BondEntry]]:
+    """Drops in the troupe whose thrall's player isn't told yet, on bonds still felt."""
+    rows = db.execute(
+        select(BloodBond, BondEntry)
+        .join(BondEntry, BondEntry.bond_id == BloodBond.id)
+        .where(
+            BloodBond.troupe_id == troupe.id,
+            BondEntry.kind == "dropped",
+            BondEntry.thrall_told_at.is_(None),
+        )
+        .order_by(BondEntry.night, BondEntry.created_at, BondEntry.id)
+    )
+    return [(bond, entry) for bond, entry in rows]
 
 
 # --- staff change a drink -------------------------------------------------------------
@@ -871,7 +1154,8 @@ def other_side(
 def immune_to(db: Session, troupe: Troupe, thrall: Party, regnant: Party) -> str | None:
     """Why a new drink can't bind the thrall to the regnant: a full bond the thrall
     holds to someone else makes them immune to other bonds until it drops (the
-    Errata's p. 295). Players can't record past it; for staff it comes with #665."""
+    Errata's p. 295). Players can't record past it; staff can, with a reason
+    (`staff_immunity`, #665)."""
     if thrall.character is not None:
         same_thrall = BloodBond.thrall_id == thrall.character.id
     else:
@@ -892,6 +1176,26 @@ def immune_to(db: Session, troupe: Troupe, thrall: Party, regnant: Party) -> str
                 "to other bonds until it drops (Errata, p. 295)."
             )
     return None
+
+
+def staff_immunity(
+    db: Session, troupe: Troupe, thrall: Party, regnant: Party, override: str
+) -> str:
+    """For staff recording a drink or entering a bond (#665): refused while a full bond
+    makes the thrall immune, as for players, unless staff give a reason to record it
+    anyway. The reason, if they gave one and it was needed; otherwise empty."""
+    refused = immune_to(db, troupe, thrall, regnant)
+    if refused is None:
+        return ""
+    override = override.strip()
+    if not override:
+        raise conflict(f"{refused} Give a reason to record it anyway.")
+    return override
+
+
+def log_override(db: Session, user: User, bond: BloodBond, reason: str) -> None:
+    if reason:
+        log(db, user, "bond.immunity_overridden", bond, reason=reason)
 
 
 def check_player_night(night: date, *characters: Character | None) -> None:
@@ -1023,6 +1327,71 @@ def report_drink(
     return report
 
 
+def report_meeting(
+    db: Session,
+    user: User,
+    mine: Character,
+    bond: BloodBond,
+    night: date,
+    source: str,
+    note: str,
+) -> BondReport | BloodBond:
+    """A player's meeting between their own character and the other side of a bond it
+    is in, such as one in a downtime (#665): it keeps a lesser bond from ending. In
+    "players_manage" it counts at once, from either side's player, since it binds no
+    one; in "players_report" it waits for staff, as a drink does. The regnant's player
+    can log one only on a bond known to the regnant."""
+    troupe = db.get_one(Troupe, bond.troupe_id)
+    if not for_players(troupe):
+        raise conflict("This troupe's staff record its blood bonds; players don't.")
+    if not plays(user, mine) or mine.status == "retired" or not in_troupe(db, troupe, mine):
+        raise unprocessable("Players log meetings only for their own characters in the troupe.")
+    if bond.thrall_id == mine.id:
+        reported_as = "thrall"
+    elif bond.regnant_id == mine.id and bond.known_to_regnant:
+        reported_as = "regnant"
+    else:
+        raise unprocessable("That isn't a bond your character is in.")
+    if bond.status != "active":
+        raise conflict("That bond isn't one time can fade now.")
+    if source not in PLAYER_SOURCES:
+        raise unprocessable(f"Where it happened is one of {', '.join(PLAYER_SOURCES)}.")
+    thrall, regnant = parties(db, bond)
+    check_player_night(night, thrall.character, regnant.character)
+    if troupe.blood_bonds == "players_manage":
+        return add_meeting(db, user, bond, night, source, note)
+    note = note.strip()
+    approval = Approval(
+        character_id=mine.id,
+        troupe_id=troupe.id,
+        kind=APPROVAL_KIND,
+        requested_by=user.id,
+        player_note=note,
+    )
+    db.add(approval)
+    db.flush()
+    report = BondReport(
+        troupe_id=troupe.id,
+        thrall_id=bond.thrall_id,
+        thrall_name=bond.thrall_name,
+        regnant_id=bond.regnant_id,
+        regnant_name=bond.regnant_name,
+        kind="meeting",
+        reported_as=reported_as,
+        night=night,
+        source=source,
+        note=note,
+        waiting_on="staff",
+        reported_by=user.id,
+        approval_id=approval.id,
+    )
+    db.add(report)
+    db.flush()
+    log_report(db, user, "bond.meeting_reported", report, source=SOURCES[source])
+    notifications.approval_waiting(db, approval)
+    return report
+
+
 def report_of(db: Session, report_id: uuid.UUID) -> BondReport:
     report = db.get(BondReport, report_id)
     if report is None:
@@ -1042,12 +1411,20 @@ def accept(db: Session, user: User, report: BondReport) -> BloodBond:
     if not tracked(troupe):
         raise conflict("This troupe doesn't track blood bonds now.")
     thrall, regnant = report_parties(db, report)
-    refused = immune_to(db, troupe, thrall, regnant)
-    if refused:
-        raise conflict(refused)
-    bond = record_drink(db, user, troupe, thrall, regnant, report.night, report.source, report.note)
-    if report.reported_as == "regnant":
-        set_known(db, user, bond, True)
+    if report.kind == "meeting":
+        found = open_bond(db, troupe, thrall, regnant)
+        if found is None or found.status != "active":
+            raise conflict("That bond isn't one time can fade now.")
+        bond = add_meeting(db, user, found, report.night, report.source, report.note)
+    else:
+        refused = immune_to(db, troupe, thrall, regnant)
+        if refused:
+            raise conflict(refused)
+        bond = record_drink(
+            db, user, troupe, thrall, regnant, report.night, report.source, report.note
+        )
+        if report.reported_as == "regnant":
+            set_known(db, user, bond, True)
     report.status = "approved"
     report.decided_by = user.id
     report.decided_at = datetime.now(UTC)
@@ -1082,8 +1459,11 @@ def tell_reporter(db: Session, report: BondReport, summary: str) -> None:
 
 
 def drink_line(db: Session, report: BondReport) -> str:
-    """The drink, as its reporter would say it: "Agnes drinking Viktor's blood on 3 Nov 2026"."""
+    """The drink, as its reporter would say it: "Agnes drinking Viktor's blood on 3 Nov
+    2026"; or the meeting: "Agnes and Viktor meeting on 3 Nov 2026"."""
     thrall, regnant = report_parties(db, report)
+    if report.kind == "meeting":
+        return f"{thrall.shown} and {regnant.shown} meeting on {when(report.night)}"
     return f"{thrall.shown} drinking {regnant.shown}'s blood on {when(report.night)}"
 
 
@@ -1232,7 +1612,7 @@ def visible_reports(db: Session, user: User, character: Character) -> list[BondR
                 ),
             ),
         )
-        .order_by(BondReport.created_at.desc())
+        .order_by(BondReport.created_at.desc(), BondReport.id.desc())
     ).all()
     pending = [r for r in rows if r.status == "pending"]
     decided = [r for r in rows if r.status in ("approved", "declined")][:RECENT_DECIDED]
@@ -1249,6 +1629,6 @@ def pending_reports(db: Session, troupe: Troupe) -> list[BondReport]:
         db.scalars(
             select(BondReport)
             .where(BondReport.troupe_id == troupe.id, BondReport.status == "pending")
-            .order_by(BondReport.created_at)
+            .order_by(BondReport.created_at, BondReport.id)
         )
     )

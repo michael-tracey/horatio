@@ -16,12 +16,12 @@ import {
   readableMinimum,
   timeline,
   trend,
+  weightsOf,
   type Flow,
   type GameActivity,
   type Measure,
   type Statistics,
   type StatNode,
-  type Weights,
 } from "../../boonStatistics";
 import { net, SCOPES, weight, type Scope } from "../../boonStandings";
 import {
@@ -65,11 +65,6 @@ function columnPath(x: number, y: number, w: number, h: number, rounded: boolean
   if (h <= 0) return "";
   const r = rounded ? Math.min(4, h, w / 2) : 0;
   return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
-}
-
-function weightsOf(s: Statistics): Weights {
-  const { trivial, minor, major, blood, life } = s.weights;
-  return { trivial, minor, major, blood, life };
 }
 
 function Segmented<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {

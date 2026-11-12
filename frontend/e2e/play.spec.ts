@@ -955,10 +955,23 @@ test("Throws on the Play View: rock, paper or scissors, the last three kept, wit
   const throws = p.getByRole("region", { name: "Throws" });
   await expect(throws).toContainText("Throw for rock, paper or scissors");
   await throws.getByRole("button", { name: "Throw" }).click();
-  // The count-in, then the throw, large, with its word.
+  // The count-in, then the throw, large, with its word, and the word again upside
+  // down above it for the player across the table (#740).
   await expect(throws.getByRole("img", { name: thrown })).toBeVisible();
+  const word = (await throws.getByRole("img", { name: thrown }).getAttribute("aria-label"))!;
+  await expect(throws.getByTestId("throw-word-flipped")).toHaveText(word);
+  await expect(throws.getByRole("img", { name: thrown }).getByText(word, { exact: true })).toHaveCount(2);
   const past = throws.getByRole("region", { name: "Last throws" }).getByRole("listitem");
   await expect(past).toHaveCount(1);
+  // On a small phone the throw, both words and the Throw button fit without scrolling.
+  const size = p.viewportSize()!;
+  await p.setViewportSize({ width: 375, height: 667 });
+  await p.evaluate(() => window.scrollTo(0, 0));
+  await expect(throws.getByTestId("throw-word-flipped")).toBeInViewport();
+  await expect(throws.getByRole("img", { name: thrown }).getByText(word, { exact: true }).last()).toBeInViewport();
+  await expect(throws.getByRole("button", { name: "Throw" })).toBeInViewport();
+  await p.screenshot({ ...shots("throws-small-phone"), animations: "disabled" });
+  await p.setViewportSize(size);
 
   // Nothing goes to the server, so it throws with no signal.
   await p.context().setOffline(true);

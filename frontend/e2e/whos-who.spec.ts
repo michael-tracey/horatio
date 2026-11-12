@@ -276,6 +276,86 @@ test("the Who's Who: a player sees the court in rank order, their clan and Other
   expect(refused.status()).toBe(403);
 });
 
+test("sire lines: a player gives a sire from the menu, staff see the sire and both childer linked, and players only once the troupe shows them", async ({ browser }) => {
+  const custodian = await person(browser, "sireline-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "sireline-lead");
+  const ana = await person(browser, "sireline-ana");
+  const headers = { "X-Horatio": "1" };
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Blood Lines ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId = (await made.json()).id;
+  await backstoryOptional(custodian.page, troupeId);
+  const send = async (page: Page, method: "POST" | "PUT" | "GET", url: string, data?: object) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  // A Camarilla Toreador, built through the API and accepted home.
+  const build = async (name: string): Promise<string> => {
+    const { id } = await send(ana.page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(ana.page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Toreador", rating: null });
+    await send(ana.page, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+    const picks: Record<string, [string, number][]> = {
+      attributes: [["Physical", 7], ["Social", 5], ["Mental", 3]],
+      focus_physicals: [["Strength", 1]],
+      focus_mentals: [["Wits", 1]],
+      focus_socials: [["Charisma", 1]],
+      skills: [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Medicine", 1], ["Melee", 1]],
+      backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+      disciplines: [["Auspex", 2], ["Celerity", 1], ["Presence", 1]],
+    };
+    for (const [category, chosen] of Object.entries(picks))
+      await send(ana.page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: chosen.map(([n, rating]) => ({ name: n, rating })) });
+    await send(ana.page, "POST", `/api/characters/${id}/creation/complete`, {});
+    const asked = await send(ana.page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupeId });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
+    return id;
+  };
+  const mother = await build("Mother Aldegonde");
+  const aurelie = await build("Aurelie");
+  const bertrand = await build("Bertrand");
+
+  // Aurelie's player gives her sire from the ⋯ menu, choosing from the Who's Who.
+  const p = ana.page;
+  await p.goto(`/characters/${aurelie}`);
+  await p.getByRole("button", { name: "More for Aurelie" }).click();
+  await p.getByRole("menuitem", { name: "Sire…" }).click();
+  const form = p.locator("section", { has: p.getByRole("heading", { name: "Aurelie's sire" }) });
+  await form.getByRole("radio", { name: "A vampire in the troupe" }).check();
+  await form.getByLabel("Sire", { exact: true }).selectOption({ label: "Mother Aldegonde (Toreador)" });
+  await form.getByRole("button", { name: "Save sire" }).click();
+  await expect(form).toBeHidden();
+  // Bertrand's through the API, the same way.
+  await send(p, "PUT", `/api/characters/${bertrand}/sire`, { character_id: mother, name: "", clan: "", secret: false });
+
+  // Staff see the line: Mother Aldegonde, with both childer under her.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/whos-who`);
+  await l.getByRole("button", { name: "Sire lines" }).click();
+  const chart = l.getByRole("figure", { name: "Sire lines" });
+  await expect(chart.getByRole("img", { name: /^Aurelie: .*sire Mother Aldegonde/ })).toBeAttached();
+  await expect(chart.getByRole("img", { name: /^Bertrand: .*sire Mother Aldegonde/ })).toBeAttached();
+  await expect(chart.getByRole("img", { name: /^Mother Aldegonde: .*of their line 2/ })).toBeAttached();
+  await l.screenshot(shots("sire-lines"));
+  // The same as a table.
+  await chart.getByRole("button", { name: "Show as table" }).click();
+  await expect(chart.getByRole("row", { name: /Aurelie Mother Aldegonde/ })).toBeVisible();
+  await expect(chart.getByRole("row", { name: /Bertrand Mother Aldegonde/ })).toBeVisible();
+
+  // Players don't, until the troupe shows them.
+  await p.goto(`/troupes/${troupeId}/whos-who`);
+  await expect(p.getByText("The troupe’s characters, for its players and staff. It is never public.")).toBeVisible();
+  await expect(p.getByRole("button", { name: "Sire lines" })).toHaveCount(0);
+  await l.goto(`/troupes/${troupeId}/settings`);
+  // It changes once the troupe is saved, so click and wait for it.
+  await l.getByRole("checkbox", { name: /Show the sire lines to players/ }).click();
+  await expect(l.getByRole("checkbox", { name: /Show the sire lines to players/ })).toBeChecked();
+  await p.reload();
+  await p.getByRole("button", { name: "Sire lines" }).click();
+  await expect(p.getByRole("figure", { name: "Sire lines" }).getByRole("img", { name: /^Aurelie: .*sire Mother Aldegonde/ })).toBeAttached();
+});
+
 test("lines and veils: a player adds them, staff see them, another player only once shared, and no one outside the troupe", async ({ browser }) => {
   const custodian = await person(browser, "lv-cust");
   makeCustodian(custodian.email);

@@ -578,6 +578,6 @@ def recorded(db: Session, character: Character) -> list[Diablerie]:
         db.scalars(
             select(Diablerie)
             .where(Diablerie.character_id == character.id, Diablerie.recorded_at.is_not(None))
-            .order_by(Diablerie.committed_on, Diablerie.created_at)
+            .order_by(Diablerie.committed_on, Diablerie.created_at, Diablerie.id)
         )
     )

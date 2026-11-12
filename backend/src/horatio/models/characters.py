@@ -90,6 +90,14 @@ class Character(Imported, Record):
     # bloodline are the ghoul's clan trait. Both empty for a vampire.
     domitor_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("characters.id"))
     domitor_name: Mapped[str] = mapped_column(default="", server_default="")
+    # A vampire's sire (horatio.sire_lines): a character in Horatio, or one known by
+    # name and clan only, as its player or its troupe's staff gave it, or as its
+    # Embrace in play named it. Kept by name if the linked one is deleted. Its sire
+    # is kept from the troupe's players while `sire_secret`.
+    sire_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("characters.id"), index=True)
+    sire_name: Mapped[str] = mapped_column(default="", server_default="")
+    sire_clan: Mapped[str] = mapped_column(default="", server_default="")
+    sire_secret: Mapped[bool] = mapped_column(default=False, server_default="false")
     # What an NPC is, by its kind's key (horatio.rules.npc_kinds): "vampire",
     # "werewolf", "custom" and so on; and its form: "sheeted", with a full sheet, or
     # "stock", with only a rating and specializations (horatio.stock_npcs). Both

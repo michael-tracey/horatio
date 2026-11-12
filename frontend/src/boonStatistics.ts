@@ -122,6 +122,12 @@ export function readableMinimum(links: readonly StatLink[], cap = 120): number {
   return sorted[cap - 1]!;
 }
 
+/** The troupe's weights as the network weighs links, from the statistics' answer. */
+export function weightsOf(s: Pick<Statistics, "weights">): Weights {
+  const { trivial, minor, major, blood, life } = s.weights;
+  return { trivial, minor, major, blood, life };
+}
+
 export type Network = { nodes: StatNode[]; links: (StatLink & { shown: number; kind: BoonKind })[] };
 
 /** A party's clan as the charts group it: a bloodline counts as its clan. */
