@@ -40,7 +40,8 @@
 #   `names_who` asks who is behind it.
 #
 # [[haven_advantages]]: the Haven background's advantages, one per dot.
-# `needs` is a skill a character must have to take it.
+# `needs` is a skill a character must have to take it; `free_with` is a skill that
+# gives it free, so it doesn't use one of the Haven's dots.
 
 types_page = "118-119, 121"
 control_page = "119"
@@ -673,6 +674,7 @@ text = "Comfortable and expensive: +3 on Social tests against mortals here."
 name = "Security"
 page = "102"
 text = "-3 to challenges to break in or go unseen, and a turn's warning of a break-in. Free with the Security skill."
+free_with = "Security"
 
 [[haven_advantages]]
 name = "Size"

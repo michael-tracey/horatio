@@ -484,7 +484,7 @@ test("the troupe's locations: a storyteller adds the Grove Arcade, is refused an
     focus_physicals: [["Dexterity", 1]],
     focus_mentals: [["Intelligence", 1]],
     focus_socials: [["Manipulation", 1]],
-    skills: [["Leadership", 4], ["Subterfuge", 3], ["Academics", 3], ["Awareness", 2], ["Empathy", 2], ["Investigation", 2], ["Dodge", 1], ["Drive", 1], ["Medicine", 1], ["Melee", 1]],
+    skills: [["Leadership", 4], ["Subterfuge", 3], ["Academics", 3], ["Awareness", 2], ["Empathy", 2], ["Investigation", 2], ["Dodge", 1], ["Drive", 1], ["Medicine", 1], ["Security", 1]],
     backgrounds: [["Resources", 3], ["Haven", 2], ["Generation", 1]],
     disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
   };
@@ -571,7 +571,20 @@ test("the troupe's locations: a storyteller adds the Grove Arcade, is refused an
   await l.getByLabel("Quality").selectOption("Workshop");
   await expect(l.getByText("No locations match.")).toBeVisible();
 
-  // The sheet shows staff how many Agnes controls, of how many she may.
+  // Agnes's Haven: with the Security skill, Security doesn't use one of her two dots (#681).
+  await l.getByRole("button", { name: "Add a location" }).click();
+  const haven = l.getByRole("form", { name: "Add a location" });
+  await haven.getByLabel("Name", { exact: true }).fill("Grove Loft");
+  await haven.getByLabel("Type").selectOption("haven");
+  await haven.getByLabel("A Haven of").selectOption({ label: "Agnes Grove (Haven 2)" });
+  for (const advantage of ["Library", "Luxury", "Security"]) await haven.getByRole("checkbox", { name: new RegExp(`^${advantage}`) }).check();
+  await expect(haven.getByText("Free with Security")).toBeVisible();
+  await expect(haven.getByText("one for each dot of Haven · 2 of 2, plus Security free")).toBeVisible();
+  await haven.getByRole("button", { name: "Add location" }).click();
+  await expect(l.getByRole("heading", { name: "Grove Loft" })).toBeVisible();
+  await expect(l.getByText("(free with Security)")).toBeVisible();
+
+  // The sheet shows staff how many Agnes controls, of how many she may: her Haven isn't counted.
   await l.goto(`/characters/${agnes}`);
   await expect(l.getByText(/Controls 1 of 5 locations/)).toBeVisible();
 

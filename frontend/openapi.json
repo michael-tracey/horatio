@@ -17870,6 +17870,10 @@
       },
       "HavenAdvantageOut": {
         "properties": {
+          "free_with": {
+            "title": "Free With",
+            "type": "string"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -17891,7 +17895,8 @@
           "name",
           "page",
           "text",
-          "needs"
+          "needs",
+          "free_with"
         ],
         "title": "HavenAdvantageOut",
         "type": "object"
@@ -22323,6 +22328,13 @@
             "title": "Haven",
             "type": "integer"
           },
+          "haven_free": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Free",
+            "type": "array"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -22341,7 +22353,8 @@
           "id",
           "name",
           "kind",
-          "haven"
+          "haven",
+          "haven_free"
         ],
         "title": "LocationCharacter",
         "type": "object"
@@ -22465,6 +22478,13 @@
             "title": "Haven Advantages",
             "type": "array"
           },
+          "haven_free": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Free",
+            "type": "array"
+          },
           "haven_of": {
             "anyOf": [
               {
@@ -22474,6 +22494,17 @@
                 "type": "null"
               }
             ]
+          },
+          "haven_over": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Haven Over"
           },
           "heir": {
             "anyOf": [
@@ -22645,6 +22676,8 @@
           "locked",
           "haven_of",
           "haven_advantages",
+          "haven_free",
+          "haven_over",
           "elysium_since",
           "elysium_qualities",
           "notes",
@@ -23075,6 +23108,13 @@
             "title": "Haven Advantages",
             "type": "array"
           },
+          "haven_free": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Free",
+            "type": "array"
+          },
           "haven_of": {
             "anyOf": [
               {
@@ -23084,6 +23124,17 @@
                 "type": "null"
               }
             ]
+          },
+          "haven_over": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Haven Over"
           },
           "heir": {
             "anyOf": [
@@ -23248,6 +23299,8 @@
           "locked",
           "haven_of",
           "haven_advantages",
+          "haven_free",
+          "haven_over",
           "elysium_since",
           "elysium_qualities",
           "notes",
@@ -37362,6 +37415,13 @@
             "title": "Haven Advantages",
             "type": "array"
           },
+          "haven_free": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Haven Free",
+            "type": "array"
+          },
           "haven_of": {
             "anyOf": [
               {
@@ -37371,6 +37431,17 @@
                 "type": "null"
               }
             ]
+          },
+          "haven_over": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Haven Over"
           },
           "heir": {
             "anyOf": [
@@ -37542,6 +37613,8 @@
           "locked",
           "haven_of",
           "haven_advantages",
+          "haven_free",
+          "haven_over",
           "elysium_since",
           "elysium_qualities",
           "notes",

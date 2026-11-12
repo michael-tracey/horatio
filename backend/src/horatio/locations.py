@@ -525,16 +525,61 @@ def checked_parent(
         parent = db.get(Location, parent.parent_id) if parent.parent_id else None
 
 
+def free_advantages(db: Session, rules: LocationRules, owner: Character) -> list[str]:
+    """The Haven advantages `owner` has free, with a skill that gives them (Security,
+    p. 102): they don't use a dot of Haven."""
+    return [
+        a.name
+        for a in rules.haven_advantages.values()
+        if a.free_with and rating_of(db, owner, "skills", a.free_with) > 0
+    ]
+
+
+@dataclass(frozen=True)
+class HavenCount:
+    """A Haven's advantages against its owner's dots of Haven (p. 102)."""
+
+    dots: int
+    # The advantages it has that use a dot, and those it has free.
+    used: int
+    free: tuple[str, ...]
+
+    @property
+    def over(self) -> bool:
+        return self.used > self.dots
+
+
+def haven_count(
+    db: Session, rules: LocationRules, owner: Character, advantages: Sequence[str]
+) -> HavenCount:
+    free = set(free_advantages(db, rules, owner))
+    return HavenCount(
+        dots=rating_of(db, owner, "backgrounds", HAVEN),
+        used=sum(1 for a in advantages if a not in free),
+        free=tuple(a for a in advantages if a in free),
+    )
+
+
+def haven_over(owner: Character, count: HavenCount) -> str | None:
+    """Why the Haven has more advantages than its owner's dots allow, if it does."""
+    if not count.over:
+        return None
+    free = f", plus {' and '.join(count.free)} free" if count.free else ""
+    return (
+        f"{owner.name} has Haven {count.dots}: one advantage for each dot{free}"
+        f"{page_core('102')}. This Haven has {count.used} that use a dot: drop "
+        f"{count.used - count.dots}."
+    )
+
+
 def checked_haven(db: Session, rules: LocationRules, owner: Character | None, draft: Draft) -> None:
     if owner is None:
         return
-    dots = rating_of(db, owner, "backgrounds", HAVEN)
-    if dots < 1:
+    count = haven_count(db, rules, owner, draft.haven_advantages)
+    if count.dots < 1:
         raise unprocessable(f"{owner.name} has no Haven background.")
-    if len(draft.haven_advantages) > dots:
-        raise unprocessable(
-            f"{owner.name} has Haven {dots}: one advantage for each dot{page_core('102')}."
-        )
+    if reason := haven_over(owner, count):
+        raise unprocessable(reason)
     for name in draft.haven_advantages:
         needs = rules.haven_advantages[name].needs
         if needs and rating_of(db, owner, "skills", needs) < 1:

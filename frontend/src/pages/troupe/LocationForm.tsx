@@ -143,6 +143,10 @@ export function LocationForm({
   const conglomerates = catalogue.options.find((o) => o.key === "conglomerates")?.on ?? false;
   const owner = catalogue.characters.find((c) => c.id === d.haven_of_id);
   const havens = catalogue.characters.filter((c) => c.haven > 0 || c.id === d.haven_of_id);
+  // Security is free for someone with the skill: it doesn't use a dot (p. 102).
+  const freeHere = owner?.haven_free ?? [];
+  const usingDots = d.haven_advantages.filter((a) => !freeHere.includes(a)).length;
+  const heldFree = d.haven_advantages.filter((a) => freeHere.includes(a));
   const areas = d.influence_type ? (catalogue.influence_areas[d.influence_type] ?? []) : [];
 
   const save = useAction(async () => {
@@ -410,7 +414,8 @@ export function LocationForm({
         {d.haven_of_id && (
           <fieldset className="text-sm">
             <legend className="mb-1 text-mist">
-              Advantages{owner ? `: one for each dot of Haven (${owner.haven})` : ""}
+              Advantages
+              {owner ? `: one for each dot of Haven · ${usingDots} of ${owner.haven}${heldFree.length ? `, plus ${heldFree.join(" and ")} free` : ""}` : ""}
             </legend>
             <div className="grid grid-cols-2 gap-1">
               {catalogue.haven_advantages.map((a) => (
@@ -423,6 +428,7 @@ export function LocationForm({
                     }
                   />
                   {a.name}
+                  {freeHere.includes(a.name) && <span className="text-xs text-mist">Free with {a.free_with}</span>}
                 </label>
               ))}
             </div>

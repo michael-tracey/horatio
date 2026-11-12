@@ -99,6 +99,8 @@ class HavenAdvantageOut(BaseModel):
     page: str
     text: str
     needs: str
+    # A skill that gives it free (Security).
+    free_with: str
 
 
 class LocationTypeOut(BaseModel):
@@ -136,6 +138,8 @@ class LocationCharacter(BaseModel):
     kind: str
     # Its Haven background's dots, for placing its Haven.
     haven: int
+    # The Haven advantages it has free, with a skill that gives them (p. 102).
+    haven_free: list[str]
 
 
 class LocationCatalogueOut(BaseModel):
@@ -226,6 +230,17 @@ def own_out(db: DbSession, troupe: Troupe, row: TroupeLocationQuality) -> OwnLoc
     )
 
 
+def character_out(db: DbSession, rules: LocationRules, c: Character) -> LocationCharacter:
+    haven = locations.rating_of(db, c, "backgrounds", locations.HAVEN)
+    return LocationCharacter(
+        id=c.id,
+        name=c.name,
+        kind=c.kind,
+        haven=haven,
+        haven_free=locations.free_advantages(db, rules, c) if haven else [],
+    )
+
+
 def catalogue_out(db: DbSession, user: User, troupe: Troupe) -> LocationCatalogueOut:
     rules = locations.rules_for(db, troupe)
     cat = rules.catalogue
@@ -251,15 +266,7 @@ def catalogue_out(db: DbSession, user: User, troupe: Troupe) -> LocationCatalogu
         pages=dict(cat.pages),
         book=catalogue.BOOK,
         influence_areas=influence_areas(db, troupe),
-        characters=[
-            LocationCharacter(
-                id=c.id,
-                name=c.name,
-                kind=c.kind,
-                haven=locations.rating_of(db, c, "backgrounds", locations.HAVEN),
-            )
-            for c in troupe_characters(db, troupe.id)
-        ],
+        characters=[character_out(db, rules, c) for c in troupe_characters(db, troupe.id)],
         feeding_blocks=sorted(blocks, key=str.casefold),
         can_change_house=allows(
             troupe_role(db, user, troupe),
@@ -557,6 +564,11 @@ class LocationOut(BaseModel):
     locked: bool
     haven_of: LocationPerson | None
     haven_advantages: list[str]
+    # Those its owner has free, with a skill that gives them (Security, p. 102).
+    haven_free: list[str]
+    # More advantages than its owner's Haven allows, since a skill or a dot went:
+    # why, for staff to drop one. Nothing is taken off by itself.
+    haven_over: str | None
     elysium_since: int | None
     # How many Elysium qualities it has earned.
     elysium_qualities: int | None
@@ -630,6 +642,8 @@ def location_out(db: DbSession, rules: LocationRules, location: Location) -> Loc
     ]
     under = locations.subsidiaries(db, location)
     controller = location.controller_id
+    owner = db.get(Character, location.haven_of_id) if location.haven_of_id else None
+    count = locations.haven_count(db, rules, owner, location.haven_advantages) if owner else None
     return LocationOut(
         id=location.id,
         troupe_id=location.troupe_id,
@@ -654,6 +668,8 @@ def location_out(db: DbSession, rules: LocationRules, location: Location) -> Loc
         locked=location.locked,
         haven_of=who_out(db, location.haven_of_id, ""),
         haven_advantages=list(location.haven_advantages),
+        haven_free=list(count.free) if count else [],
+        haven_over=locations.haven_over(owner, count) if owner and count else None,
         elysium_since=location.elysium_since,
         elysium_qualities=(
             catalogue.elysium_qualities(max(0, locations.this_year() - location.elysium_since))
