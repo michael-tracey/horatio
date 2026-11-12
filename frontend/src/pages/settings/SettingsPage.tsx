@@ -13,6 +13,7 @@ import { AccountEmail } from "../AccountEmail";
 import { useOnline } from "../../offline/connection";
 import { tapsWaiting } from "../../offline/keep";
 import { openingChoices, TABS } from "../play/tabs";
+import { loadFlipping, saveFlipping } from "../play/flip";
 import { saveAwake } from "../play/wakeLock";
 import { ViewedAs } from "../ViewedAs";
 import { EmailNotifications } from "./EmailNotifications";
@@ -153,6 +154,26 @@ function Toggle({ name, label }: { name: "quick_notes" | "keep_awake"; label: st
       />
       <span className="sr-only">{label}</span>
       {prefs[name] ? "On" : "Off"}
+    </label>
+  );
+}
+
+/** "Throw by flipping" (#669): kept on this device, not with the other settings, as it depends on the phone. */
+function FlipToggle() {
+  const [on, setOn] = useState(loadFlipping);
+  return (
+    <label className="inline-flex min-h-9 items-center gap-2 text-sm text-mist">
+      <input
+        type="checkbox"
+        className="h-5 w-5 accent-[var(--color-gold)]"
+        checked={on}
+        onChange={(e) => {
+          saveFlipping(e.target.checked);
+          setOn(e.target.checked);
+        }}
+      />
+      <span className="sr-only">Throw by flipping</span>
+      {on ? "On" : "Off"}
     </label>
   );
 }
@@ -345,6 +366,9 @@ export function SettingsPage({ player }: { player: PlayerOut }) {
             <Toggle name="keep_awake" label="Keep the screen awake" />
           </Setting>
           <OpeningTab />
+          <Setting label="Throw by flipping" hint="On the Throws tab, flip your phone face down and back up to throw. On this device, and only on phones with a motion sensor.">
+            <FlipToggle />
+          </Setting>
         </Card>
 
         <Card title="Appearance">
