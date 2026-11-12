@@ -1206,17 +1206,18 @@ test("someone asks for a troupe of their own, and the custodian approves it", as
   const mine = a.getByRole("listitem").filter({ hasText: troupeName });
   await expect(mine.getByText("Waiting", { exact: true })).toBeVisible();
 
-  // It waits on the custodian's bell and under Custodian → Troupe requests.
+  // It waits on the custodian's bell and under Custodian → Troupe management → Requests.
   const c = custodian.page;
   await c.reload();
   await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
-  await c.getByRole("link", { name: /Troupe requests/ }).click();
-  const request = c.getByRole("listitem").filter({ hasText: troupeName });
+  await c.getByRole("link", { name: /^Troupe management/ }).click();
+  const requests = c.getByRole("region", { name: "Requests" });
+  const request = requests.getByRole("listitem").filter({ hasText: troupeName });
   await expect(request.getByText("Eight players ready.")).toBeVisible();
   await expect(request.getByText(`(@${asker.handle}), `)).toBeVisible();
   await c.screenshot(shots("troupe-request"));
   await request.getByRole("button", { name: "Approve and make the troupe" }).click();
-  await expect(c.getByRole("link", { name: troupeName })).toBeVisible();
+  await expect(requests.getByRole("link", { name: troupeName })).toBeVisible();
 
   // What is running, and that the database is on its latest migration.
   await c.getByRole("link", { name: "System", exact: true }).click();
@@ -1316,13 +1317,13 @@ test("archiving a troupe lets its characters go and ends its cycle, and the cust
   await visitor.page.getByRole("button", { name: "Notifications, 1 waiting" }).click();
   await expect(visitor.page.getByText(`${troupeName} is archived (The chronicle has ended): Tobias no longer visits it`)).toBeVisible();
 
-  // The custodian finds it under Archived troupes, with who archived it, why, and
+  // The custodian finds it under Troupe management → Archived troupes, with who archived it, why, and
   // the characters it had; its log is still there to read.
   const c = custodian.page;
   await c.reload();
   await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
-  await c.getByRole("link", { name: "Archived troupes" }).click();
-  const card = c.getByRole("listitem").filter({ has: c.getByRole("heading", { name: troupeName }) });
+  await c.getByRole("link", { name: /^Troupe management/ }).click();
+  const card = c.getByRole("region", { name: "Archived troupes" }).getByRole("listitem").filter({ has: c.getByRole("heading", { name: troupeName }) });
   await expect(card.getByText("The chronicle has ended")).toBeVisible();
   await expect(card.getByRole("link", { name: "closing-lead" })).toBeVisible();
   await expect(card.getByRole("link", { name: "Mireille" })).toBeVisible();
