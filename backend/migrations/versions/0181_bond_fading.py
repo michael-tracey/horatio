@@ -4,7 +4,7 @@ bond keeps the day its fade ends and why, when the thrall's player was told it h
 faded, and whether the regnant's player still sees a bond whose thrall has died.
 
 Revision ID: 0181
-Revises: 0175
+Revises: 0177
 Create Date: 2026-11-12 18:00:00.000000
 """
 
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0181"
-down_revision: str | None = "0175"
+down_revision: str | None = "0177"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

@@ -167,11 +167,11 @@ test("players report a drink for staff to approve; under Players manage the thra
 });
 
 test("a dead regnant's bond fades: staff see the day it ends, and the thrall's sheet doesn't change (#662)", async ({ browser }) => {
-  const custodian = await person(browser, "fade-custodian");
+  const custodian = await person(browser, "gonefade-cust");
   makeCustodian(custodian.email);
-  const lead = await person(browser, "fade-lead");
-  const thrall = await person(browser, "fade-thrall");
-  const regnant = await person(browser, "fade-regnant");
+  const lead = await person(browser, "gonefade-lead");
+  const thrall = await person(browser, "gonefade-thrall");
+  const regnant = await person(browser, "gonefade-regnant");
   const headers = { "X-Horatio": "1" };
   const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
     const response = await page.request.fetch(url, { method, headers, data });
