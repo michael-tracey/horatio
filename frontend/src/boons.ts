@@ -104,6 +104,8 @@ const EVENTS: Record<BoonEventOut["kind"], string> = {
   settled: "Settled",
   voided: "Made void",
   reopened: "Reopened",
+  gallant_given: "Gallant given",
+  gallant_declined: "Gallant not given",
 };
 
 export function eventName(kind: BoonEventOut["kind"]): string {
@@ -120,7 +122,20 @@ const FIELDS: Record<string, string> = {
   notify_on_trade: "Tell the debtor if traded",
   staff_note: "Staff note",
   state: "State",
+  gallant: "Gallant",
 };
+
+/** Why Gallant is offered for a repaid boon's debtor (#693; MET: VTM pp. 402, 405). */
+const GALLANT_REASONS: Record<"nobility" | "great", string> = {
+  nobility: "the creditor has Social Nobility (p. 405)",
+  great: "a great boon repaid to someone of significance (p. 402)",
+};
+
+/** "Give Bram Gallant for repaying it? The creditor has Social Nobility (p. 405)." */
+export function gallantText(offer: { debtor: string; reasons: ("nobility" | "great")[] }): string {
+  const why = offer.reasons.map((r) => GALLANT_REASONS[r]).join(", and ");
+  return `Give ${offer.debtor} Gallant for repaying it? ${why.charAt(0).toUpperCase()}${why.slice(1)}.`;
+}
 
 /** One change in a boon's log: "Kind: Minor → Major". Empty text reads "(none)". */
 export function changeText(change: { field: string; before: string; after: string }): string {

@@ -284,3 +284,74 @@ test("in the Play View's Boons tab a player reports a boon, sees what the troupe
   await expect(log).toContainText("as Isolde Marrow");
   await expect(log).toContainText("For old times");
 });
+
+test("a creditor with Social Nobility, repaid a boon, gives its debtor Gallant from the Play View (#693)", async ({ browser }) => {
+  const custodian = await person(browser, "gallant-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "gallant-lead");
+  const creditor = await person(browser, "gallant-creditor");
+  const debtor = await person(browser, "gallant-debtor");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "GET" | "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, ...(method === "GET" ? {} : { data }) });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Repaid in Full ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  // Two Camarilla Brujah, built through the API and accepted home: Corvane has Social Nobility.
+  const home = async (page: Page, name: string, merits: [string, number][]) => {
+    const { id } = await send(page, "POST", "/api/characters", { splat: "vampire", name });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "clan", name: "Brujah", rating: null });
+    await send(page, "PUT", `/api/characters/${id}/traits`, { category: "sect", name: "Camarilla", rating: null });
+    const build: Record<string, [string, number][]> = {
+      ...ATTRIBUTES_AND_FOCUSES,
+      backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]],
+      disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]],
+      ...(merits.length ? { merits } : {}),
+    };
+    for (const [category, picks] of Object.entries(build))
+      await send(page, "PUT", `/api/characters/${id}/creation/categories/${category}`, { picks: picks.map(([n, rating]) => ({ name: n, rating })) });
+    await send(page, "POST", `/api/characters/${id}/creation/complete`);
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    return id as string;
+  };
+  const corvane = await home(creditor.page, "Lady Corvane", [["Social Nobility", 3]]);
+  const hesk = await home(debtor.page, "Hesk Arlow", []);
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/boon-ledger`, { on: true });
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/boon-players`, { see: "owed", settle: true });
+  await send(lead.page, "POST", `/api/troupes/${troupe.id}/boons`, {
+    boons: [{ debtor: { character_id: hesk }, creditor: { character_id: corvane }, kind: "minor", made_on: "2026-10-03", reason: "A word with the Prince" }],
+    note: "",
+  });
+
+  // Corvane's player calls the boon in, and is offered Gallant for Hesk.
+  const c = creditor.page;
+  await c.goto(`/play/characters/${corvane}?tab=boons`);
+  const owed = c.getByRole("region", { name: "Owed to Lady Corvane" });
+  const held = owed.getByRole("listitem", { name: "Minor boon from Hesk Arlow" });
+  await held.getByRole("button", { name: "Settle" }).click();
+  const settle = held.getByRole("form", { name: "Settle the boon" });
+  await settle.getByLabel(/^Called in/).check();
+  await settle.getByRole("button", { name: "Mark it settled" }).click();
+  await owed.getByText("Settled (1)").click();
+  const repaid = owed.getByRole("listitem", { name: "Minor boon from Hesk Arlow" });
+  const offer = repaid.getByRole("group", { name: "Gallant offered" });
+  await expect(offer).toContainText("Give Hesk Arlow Gallant for repaying it? The creditor has Social Nobility (p. 405).");
+  await offer.getByRole("button", { name: "Give Gallant" }).click();
+  await expect(offer).toHaveCount(0);
+
+  // Hesk holds Gallant, from Corvane; the boon's log says it was given, as Corvane.
+  const found = await send(debtor.page, "GET", `/api/characters/${hesk}/status`);
+  expect(found.held.map((h: { name: string }) => h.name)).toEqual(["Gallant"]);
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}/boons`);
+  await l.getByRole("tab", { name: /^Settled/ }).click();
+  const row = l.getByRole("list", { name: "Boons" }).getByRole("listitem", { name: "Hesk Arlow owes Lady Corvane, minor" });
+  await row.getByRole("button", { name: "Open" }).click();
+  const log = row.getByRole("list", { name: "Log of Hesk Arlow owes Lady Corvane" });
+  await expect(log).toContainText("Gallant given");
+  await expect(log).toContainText("as Lady Corvane");
+});

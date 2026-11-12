@@ -919,12 +919,15 @@ def add(
     give_up: uuid.UUID | None = None,
     override: bool = False,
     game_id: uuid.UUID | None = None,
+    acting: Acting | None = None,
 ) -> HeldStatus:
     """Give the character a fleeting or negative status of its sect, named for its
     patron, as the troupe's setting allows. At the fleeting cap it gives up
     `give_up`, lost unspent. `game_id` is the game it is given at, if any; else the
-    game the character is playing now, if it has begun."""
-    acting = require_change(db, user, character, troupe)
+    game the character is playing now, if it has begun. `acting` is for a caller that
+    has already said who may give it: a creditor's player giving Gallant for a boon
+    repaid (horatio.boon_gallant), who is not the character's player."""
+    acting = acting or require_change(db, user, character, troupe)
     expire(db, character, user)
     found = standing(db, character)
     if found.sect_data is None:

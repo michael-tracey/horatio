@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import or_, select
 
-from horatio import boons
+from horatio import boon_gallant, boons
 from horatio.api.downtimes import staff_troupe
 from horatio.api.influence_log import CharacterChoice
 from horatio.api.troupes import TroupeOut, troupe_out
@@ -34,7 +34,17 @@ State = Literal["pending", "registered", "settled", "void"]
 SettledHow = Literal["called_in", "forgiven", "ignored"]
 View = Literal["open", "departed", "settled", "void", "pending", "all"]
 Standing = Literal["active", "final_death", "off_field", "inactive", "retired"]
-EventKind = Literal["registered", "edited", "traded", "passed_on", "settled", "voided", "reopened"]
+EventKind = Literal[
+    "registered",
+    "edited",
+    "traded",
+    "passed_on",
+    "settled",
+    "voided",
+    "reopened",
+    "gallant_given",
+    "gallant_declined",
+]
 Side = Literal["debtor", "creditor"]
 
 Text = Field(default="", max_length=boons.LONGEST_TEXT)
@@ -140,6 +150,17 @@ class BoonEventOut(BaseModel):
     changes: list[BoonChangeOut] | None
 
 
+class GallantOut(BaseModel):
+    """Gallant offered for a repaid boon's debtor (horatio.boon_gallant), which the
+    caller may give or decline."""
+
+    debtor: str
+    creditor: str
+    # Why: "nobility" (its creditor has Social Nobility, p. 405), "great" (a great
+    # boon repaid to someone of significance, p. 402), or both.
+    reasons: list[Literal["nobility", "great"]]
+
+
 class BoonOut(BaseModel):
     id: uuid.UUID
     debtor: BoonPartyOut
@@ -160,6 +181,8 @@ class BoonOut(BaseModel):
     submitted_at: datetime
     # Its log, oldest first: only on a single boon, not in the ledger's list.
     events: list[BoonEventOut] | None = None
+    # Gallant offered for its debtor, for the caller to answer: only on a single boon.
+    gallant: GallantOut | None = None
 
 
 class TroupeBoonsOut(BaseModel):
@@ -275,7 +298,18 @@ def full_out(db: DbSession, user: User, troupe: Troupe, boon: Boon) -> BoonOut:
     out = boon_out(boon, characters_of(db, [boon]), users)
     diffs = boons.sees_changes(db, user, troupe)
     out.events = [event_out(e, users, names, diffs) for e in lines]
+    found = boon_gallant.offer(db, boon)
+    if found is not None and boon_gallant.staff_answers(db, user, troupe):
+        out.gallant = gallant_out(found)
     return out
+
+
+def gallant_out(found: boon_gallant.Offer) -> GallantOut:
+    return GallantOut(
+        debtor=found.debtor.name,
+        creditor=found.creditor.name,
+        reasons=list(found.reasons),  # type: ignore[arg-type]  # nobility or great
+    )
 
 
 def ledger_troupe(db: DbSession, user: User, troupe_id: uuid.UUID) -> Troupe:
@@ -632,6 +666,8 @@ class PlayBoonOut(BaseModel):
     settled_note: str
     # The caller may mark it settled here.
     can_settle: bool
+    # Gallant offered for its debtor, for the caller to answer here (#693).
+    gallant: GallantOut | None = None
 
 
 class PlayBoonsOut(BaseModel):
@@ -714,6 +750,17 @@ def play_out(
     others = characters_of(db, found)
     playing = in_play(db, troupe, character)
     settles = playing and (character.kind == "npc" or boons.players_settle(troupe))
+    staff = boons.can_manage(db, user, troupe)
+
+    def gallant_for(b: Boon) -> GallantOut | None:
+        """Gallant offered for a repaid boon's debtor, if the caller answers it here:
+        its creditor's player, or staff."""
+        found = boon_gallant.offer(db, b) if playing else None
+        if found is None:
+            return None
+        if staff or boon_gallant.player_answers(troupe, found, user):
+            return gallant_out(found)
+        return None
 
     def out(b: Boon, owes: bool) -> PlayBoonOut:
         other_id, other_name = (
@@ -734,6 +781,7 @@ def play_out(
             settled_at=b.closed_at,
             settled_note=b.closed_note,
             can_settle=settles and not owes and b.state == "registered",
+            gallant=gallant_for(b) if not owes and b.state == "settled" else None,
         )
 
     def side(owes: bool) -> list[PlayBoonOut]:

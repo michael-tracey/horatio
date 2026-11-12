@@ -872,6 +872,10 @@ MESSAGES: dict[str, str] = {
     "boon.settled": "{actor} marked {debtor}'s {kind} boon to {creditor} settled, {how}{because}.",
     "boon.voided": "{actor} made {debtor}'s {kind} boon to {creditor} void{because}.",
     "boon.reopened": "{actor} reopened {debtor}'s {kind} boon to {creditor}{because}.",
+    "boon.gallant_given": "{actor} gave {debtor} Gallant for repaying their {kind} boon to"
+    " {creditor}{because}.",
+    "boon.gallant_declined": "{actor} gave {debtor} no Gallant for repaying their {kind} boon"
+    " to {creditor}{because}.",
     "bond.drink": "{actor} recorded {character} drinking {regnant}'s blood on {night}, {source}:"
     " {level}{again}.",
     "bond.entered": "{actor} entered {character}'s bond to {regnant}, at {level} from {night}:"

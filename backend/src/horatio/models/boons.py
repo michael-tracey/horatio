@@ -69,7 +69,8 @@ class Boon(Record):
 
 class BoonEvent(Record):
     """A line of a boon's own log: its registering, each edit, trade, passing on,
-    settling, voiding and reopening, with who did it, when, and their note. `changes`
+    settling, voiding and reopening, and Gallant given for repaying it or not (#693),
+    with who did it, when, and their note. `changes`
     says what it changed: for an edit, each field before and after, which only the
     troupe's storytellers and assistant storytellers see (anyone else who sees the
     boon sees that it was edited, when, and the note); for the rest, what it did."""
@@ -78,7 +79,7 @@ class BoonEvent(Record):
     __table_args__ = (
         CheckConstraint(
             "kind in ('registered', 'edited', 'traded', 'passed_on', 'settled', 'voided',"
-            " 'reopened')",
+            " 'reopened', 'gallant_given', 'gallant_declined')",
             name="kind",
         ),
     )
