@@ -3,6 +3,7 @@ import { api, ApiError, unwrap } from "../api/client";
 import type { CharacterListOut, Me, PlayView, SceneOut } from "../api/types";
 import { catalogueKey, fetchCatalogue } from "../catalogue";
 import { rulesTroupe } from "../pages/character/rules";
+import { fetchThrowImages, THROW_IMAGES } from "../pages/play/chosenThrows";
 import {
   clearDevice,
   keepsQuery,
@@ -202,7 +203,12 @@ export async function refresh(client: QueryClient, userId: string, shelf: Shelf 
     return results;
   };
   const list = await fetch(["characters"], () => unwrap(api.GET("/api/characters")));
-  await settled([fetch(["troupes"], () => unwrap(api.GET("/api/troupes"))), fetch(["splats"], () => unwrap(api.GET("/api/rules")))]);
+  await settled([
+    fetch(["troupes"], () => unwrap(api.GET("/api/troupes"))),
+    fetch(["splats"], () => unwrap(api.GET("/api/rules"))),
+    // The throw pictures the person chose (#671), the pictures themselves with them.
+    fetch([...THROW_IMAGES], () => fetchThrowImages()),
+  ]);
   // One character at a time: the API is one process, and this is not what anyone is waiting on.
   for (const c of keptCharacters(list, userId)) {
     const path = { params: { path: { character_id: c.id } } };

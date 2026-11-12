@@ -28693,6 +28693,33 @@
         "title": "MyRemembrancesOut",
         "type": "object"
       },
+      "MyThrowImagesOut": {
+        "properties": {
+          "chosen": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThrowSetOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "offered": {
+            "items": {
+              "$ref": "#/components/schemas/ThrowSetOut"
+            },
+            "title": "Offered",
+            "type": "array"
+          }
+        },
+        "required": [
+          "chosen",
+          "offered"
+        ],
+        "title": "MyThrowImagesOut",
+        "type": "object"
+      },
       "NameIn": {
         "properties": {
           "category": {
@@ -35162,6 +35189,17 @@
             ],
             "title": "Theme",
             "type": "string"
+          },
+          "throw_images": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Throw Images"
           },
           "time_zone": {
             "anyOf": [
@@ -47738,6 +47776,46 @@
           "complete"
         ],
         "title": "ThrowImagesOut",
+        "type": "object"
+      },
+      "ThrowSetOut": {
+        "description": "A troupe's whole set, as a person may choose it for their Throws tab.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "paper": {
+            "title": "Paper",
+            "type": "string"
+          },
+          "rock": {
+            "title": "Rock",
+            "type": "string"
+          },
+          "scissors": {
+            "title": "Scissors",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "name",
+          "rock",
+          "paper",
+          "scissors"
+        ],
+        "title": "ThrowSetOut",
         "type": "object"
       },
       "TitleChange": {
@@ -73520,6 +73598,28 @@
         "summary": "Refuse Teaching",
         "tags": [
           "house rules"
+        ]
+      }
+    },
+    "/api/throw-images": {
+      "get": {
+        "description": "The set the person's Throws tab uses, and the sets they may choose from.",
+        "operationId": "my_images_api_throw_images_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyThrowImagesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Images",
+        "tags": [
+          "throw images"
         ]
       }
     },

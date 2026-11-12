@@ -6814,6 +6814,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/throw-images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Images
+         * @description The set the person's Throws tab uses, and the sets they may choose from.
+         */
+        get: operations["my_images_api_throw_images_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tools/dark-pack": {
         parameters: {
             query?: never;
@@ -22659,6 +22679,12 @@ export interface components {
             /** Submitted */
             submitted: boolean;
         };
+        /** MyThrowImagesOut */
+        MyThrowImagesOut: {
+            chosen: components["schemas"]["ThrowSetOut"] | null;
+            /** Offered */
+            offered: components["schemas"]["ThrowSetOut"][];
+        };
         /** NameIn */
         NameIn: {
             /** Category */
@@ -25284,6 +25310,8 @@ export interface components {
              * @enum {string}
              */
             theme: "dark" | "ultragoth";
+            /** Throw Images */
+            throw_images?: string | null;
             /** Time Zone */
             time_zone?: string | null;
             /**
@@ -30108,6 +30136,27 @@ export interface components {
             rock: string | null;
             /** Scissors */
             scissors: string | null;
+        };
+        /**
+         * ThrowSetOut
+         * @description A troupe's whole set, as a person may choose it for their Throws tab.
+         */
+        ThrowSetOut: {
+            /** Name */
+            name: string;
+            /** Paper */
+            paper: string;
+            /** Rock */
+            rock: string;
+            /** Scissors */
+            scissors: string;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
         };
         /** TitleChange */
         TitleChange: {
@@ -45314,6 +45363,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_images_api_throw_images_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyThrowImagesOut"];
                 };
             };
         };

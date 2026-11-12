@@ -91,8 +91,9 @@ export function mineOf(list: CharacterListOut[] | undefined, userId: string): Mi
   };
 }
 
-/** Who the person is, their characters and troupes: about them alone. */
-const PERSON = new Set(["me", "characters", "troupes"]);
+/** Who the person is, their characters and troupes, and the throw pictures they chose
+ * (#671, pages/play/chosenThrows.ts): about them alone. */
+const PERSON = new Set(["me", "characters", "troupes", "throw-images"]);
 /** The rules: the same for everyone. */
 const RULES = new Set(["catalogue", "splats"]);
 /** The Play View's own, about one character: kept only for one with a Play View. */
