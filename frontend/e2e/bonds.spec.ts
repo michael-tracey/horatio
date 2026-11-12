@@ -7,6 +7,7 @@ import {
   builtVampire,
   ATTRIBUTES_AND_FOCUSES,
   backstoryOptional,
+  shots,
 } from "./support";
 
 /** Blood bonds: the troupe's setting, staff recording drinks on the Bonds screen, players reporting them (#661), and who sees them. */
@@ -270,6 +271,67 @@ test("staff see the troupe's bonds as a web: a full bond is a heavy link, and a 
   // Players never get it.
   const player = await person(browser, "bondweb-player");
   expect((await player.page.request.get(`/api/troupes/${troupe.id}/bond-web`)).status()).toBe(403);
+});
+
+test("staff see one web of obligation: boons, blood bonds and sire lines on the same people, each layer switched on and off (#709)", async ({ browser }) => {
+  const custodian = await person(browser, "oblweb-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "oblweb-lead");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", `/api/troupes`, { name: `Ties That Bind ${run}`, lead_handle: lead.handle });
+  const l = lead.page;
+  await send(l, "PUT", `/api/troupes/${troupe.id}/blood-bonds`, { setting: "staff" });
+  await send(l, "PUT", `/api/troupes/${troupe.id}/boon-ledger`, { on: true });
+  const seraphine = await send(l, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Seraphine Vale" });
+  const lucan = await send(l, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Lucan Drey" });
+  // Seraphine sired Lucan; he owes her a major boon and is fully bound to her.
+  await send(l, "PUT", `/api/characters/${lucan.id}/sire`, { character_id: seraphine.id, name: "", clan: "", secret: false });
+  await send(l, "POST", `/api/troupes/${troupe.id}/boons`, {
+    boons: [
+      { debtor: { character_id: lucan.id }, creditor: { character_id: seraphine.id }, kind: "major", made_on: "2026-10-03" },
+      // Old Hesper, known only by name, is owed a boon by Lucan...
+      { debtor: { character_id: lucan.id }, creditor: { name: "Old Hesper" }, kind: "minor", made_on: "2026-10-03" },
+    ],
+  });
+  for (const night of ["2026-10-03", "2026-10-10", "2026-10-17"])
+    await send(l, "POST", `/api/troupes/${troupe.id}/bonds/drinks`, { thrall: { character_id: lucan.id }, regnant: { character_id: seraphine.id }, night, source: "game" });
+  // ...and has drunk once from Seraphine, written in lower case this time.
+  await send(l, "POST", `/api/troupes/${troupe.id}/bonds/drinks`, { thrall: { name: "old hesper" }, regnant: { character_id: seraphine.id }, night: "2026-10-03", source: "game" });
+
+  await l.goto(`/troupes/${troupe.id}`);
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("link", { name: "Web of obligation", exact: true }).click();
+  const chart = l.getByRole("figure", { name: "The web of obligation" });
+  await expect(chart).toBeVisible();
+  await expect(chart.locator('[data-tie="boons"]')).toHaveCount(2);
+  await expect(chart.locator('[data-tie="bonds"]')).toHaveCount(2);
+  await expect(chart.locator('[data-tie="sires"]')).toHaveCount(1);
+  // Old Hesper, owed a boon and bound by blood, is one dot.
+  await expect(chart.locator('[data-person="Old Hesper"]')).toHaveCount(1);
+  await expect(chart.locator("[data-person]")).toHaveCount(3);
+  await l.screenshot(shots("obligation-web"));
+
+  // Switching the boons off takes their arrows away, and on again brings them back.
+  const layers = l.getByRole("group", { name: "Layers" });
+  await layers.getByRole("checkbox", { name: "Boons" }).uncheck();
+  await expect(chart.locator('[data-tie="boons"]')).toHaveCount(0);
+  await expect(chart.locator('[data-tie="bonds"]')).toHaveCount(2);
+  await layers.getByRole("checkbox", { name: "Sire lines" }).uncheck();
+  await expect(chart.locator('[data-tie="sires"]')).toHaveCount(0);
+  await layers.getByRole("checkbox", { name: "Boons" }).check();
+  await expect(chart.locator('[data-tie="boons"]')).toHaveCount(2);
+
+  // Selecting Lucan says every tie he has, and opens his record.
+  await chart.locator('[data-person="Lucan Drey"] circle').nth(1).click();
+  await expect(l.getByText(/Lucan Drey: boons owes 2/)).toBeVisible();
+  await l.getByRole("button", { name: "Open their record" }).click();
+  await expect(l).toHaveURL(new RegExp(`/characters/${lucan.id}`));
 });
 
 test("players report a drink for staff to approve; under Players manage the thrall confirms one the regnant recorded", async ({
