@@ -698,6 +698,63 @@ def as_felt(
     return bond.kept_for_regnant and plays(user, regnant)
 
 
+@dataclass(frozen=True)
+class Seen:
+    """A bond the character is in, as someone may know of it."""
+
+    bond: BloodBond
+    troupe: Troupe
+    thrall: Party
+    regnant: Party
+
+
+def seen_by(db: Session, user: User, character: Character, *, settle: bool = True) -> list[Seen]:
+    """The bonds still felt that `character` is in, on either side, as `user` may know
+    of them: all of them for the running staff of the troupe that keeps one; its
+    player's own as thrall; and as regnant, only those known to the regnant. A fading
+    bond shows to the thrall's player just as before, and one that has faded too, until
+    they are told it faded; one whose thrall died, to the regnant's player who knew of
+    it, until staff clear it (#662). Oldest first. With `settle`, it first ends fades
+    whose day has come, so the caller commits; without (the custodian viewing as
+    someone, who may write nothing), a fade past its day still shows as fading."""
+    mine = or_(BloodBond.thrall_id == character.id, BloodBond.regnant_id == character.id)
+    troupe_ids = db.scalars(select(BloodBond.troupe_id).where(mine).distinct()).all()
+    if troupe_ids and settle:
+        settle_fades(db, troupe_ids)
+    found = db.scalars(
+        select(BloodBond)
+        .where(
+            mine,
+            or_(
+                BloodBond.status.in_(OPEN),
+                and_(
+                    BloodBond.status == "ended",
+                    or_(
+                        and_(BloodBond.fade_reason != "", BloodBond.thrall_told_at.is_(None)),
+                        BloodBond.kept_for_regnant,
+                    ),
+                ),
+            ),
+        )
+        .order_by(BloodBond.created_at)
+    ).all()
+    troupes = {
+        t.id: t
+        for t in db.scalars(select(Troupe).where(Troupe.id.in_({b.troupe_id for b in found})))
+    }
+    seen: list[Seen] = []
+    for bond in found:
+        troupe = troupes[bond.troupe_id]
+        thrall, regnant = parties(db, bond)
+        if bond.status in OPEN:
+            if not shown_to(db, user, bond, troupe, thrall.character, regnant.character):
+                continue
+        elif not (tracked(troupe) and as_felt(user, bond, thrall.character, regnant.character)):
+            continue
+        seen.append(Seen(bond, troupe, thrall, regnant))
+    return seen
+
+
 # --- staff change a drink -------------------------------------------------------------
 
 

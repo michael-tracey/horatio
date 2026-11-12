@@ -14,6 +14,8 @@ from sqlalchemy.orm import Session
 
 from horatio import (
     audit,
+    bond_effects,
+    bonds,
     domitors,
     embrace,
     equipment,
@@ -40,6 +42,7 @@ from horatio.api.retainers import IdentityOut, RetainerOut, identities_out, list
 from horatio.api.roster import roster
 from horatio.api.sect_status import StatusIn
 from horatio.auth.deps import CurrentUser, DbSession
+from horatio.auth.viewing import read_only
 from horatio.influence import InfluenceType
 from horatio.models import (
     Character,
@@ -836,6 +839,23 @@ class PlayReference(reference.Reference):
     # Backgrounds raised or lowered for now: Crafts, Performance, overtaxed Resources
     # (horatio.downtime_effects).
     backgrounds_changed: list[BackgroundNowOut] = []
+    # The blood bonds the character feels as thrall, as the reader may know of them,
+    # and what each does at a game (#664). Never its bonds as regnant.
+    bonds: list[bond_effects.BondLine] = []
+
+
+def felt_bonds(
+    db: Session, user: User, character: Character, *, settle: bool = True
+) -> list[bond_effects.Felt]:
+    """The bonds the character feels as thrall that `user` may know of: its player's
+    own, and every one for the running staff of the troupe that keeps it (an NPC
+    thrall on the Scene view). None while the troupe's setting is off. A bond fading
+    after its regnant's death keeps the regnant's name to the end (#662)."""
+    return [
+        bond_effects.Felt(regnant=s.regnant.shown, level=bonds.level(db, s.bond))
+        for s in bonds.seen_by(db, user, character, settle=settle)
+        if s.bond.thrall_id == character.id
+    ]
 
 
 def domitor_line(db: Session, character: Character) -> DomitorLine | None:
@@ -861,8 +881,14 @@ def read_reference(character_id: uuid.UUID, db: DbSession, user: CurrentUser) ->
         sheets.rules_for(db, character).rule_set,
         play.limits(db, character).blood_per_turn,
     )
+    settle = not read_only(db)
+    felt = felt_bonds(db, user, character, settle=settle)
+    if settle:
+        db.commit()
+    found.pools = bond_effects.with_penalties(found.pools, felt)
     return PlayReference(
         **found.model_dump(),
+        bonds=bond_effects.lines(felt),
         traits=sheet_traits(db, character),
         retainers=listed(db, retainers.read(db, character), user),
         identities=identities_out(db, character),

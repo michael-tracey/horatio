@@ -5222,6 +5222,38 @@
         "title": "BondEntryOut",
         "type": "object"
       },
+      "BondLine": {
+        "description": "A bond the character feels, for the Play View's Sheet tab.",
+        "properties": {
+          "drinks": {
+            "title": "Drinks",
+            "type": "string"
+          },
+          "effects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Effects",
+            "type": "array"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "regnant": {
+            "title": "Regnant",
+            "type": "string"
+          }
+        },
+        "required": [
+          "regnant",
+          "level",
+          "drinks",
+          "effects"
+        ],
+        "title": "BondLine",
+        "type": "object"
+      },
       "BondOut": {
         "properties": {
           "ended_at": {
@@ -32552,6 +32584,14 @@
           "blood_per_turn": {
             "title": "Blood Per Turn",
             "type": "integer"
+          },
+          "bonds": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BondLine"
+            },
+            "title": "Bonds",
+            "type": "array"
           },
           "disciplines": {
             "items": {

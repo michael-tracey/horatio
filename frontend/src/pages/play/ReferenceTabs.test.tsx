@@ -21,6 +21,7 @@ const reference: PlayReference = {
   retainers: [],
   identities: [],
   backgrounds_changed: [],
+  bonds: [],
   traits: [
     trait("archetype", "Archetype", "Identity", "Loner", { rating: null, description: "You'd rather work alone." }),
     trait("attributes", "Attributes", "Attributes", "Physical", { rating: 5, description: "Strength, speed and toughness." }),
@@ -58,6 +59,20 @@ describe("SheetTab", () => {
     const crafts = { source: "crafts", delta: 1, starts_at: "2026-11-07T12:00:00Z", ends_at: null, games_left: 0 };
     sheet({ ...reference, backgrounds_changed: [{ trait: "Resources", rating: 2, now: 3, changes: [crafts] }] });
     expect(screen.getByText("Resources 3 (+1 this month, Crafts)")).toBeTruthy();
+  });
+
+  it("shows the blood bonds the character feels, with what each does at a game (#664)", () => {
+    const full = { regnant: "Bram", level: 3, drinks: "Full bond", effects: ["Resisting Bram's powers: −3 to Social and Mental defence."] };
+    sheet({ ...reference, bonds: [full] });
+    expect(screen.getByText("Blood bonds")).toBeTruthy();
+    expect(screen.getByText("Bram")).toBeTruthy();
+    expect(screen.getByText("· Full bond")).toBeTruthy();
+    expect(screen.getByText("Resisting Bram's powers: −3 to Social and Mental defence.")).toBeTruthy();
+  });
+
+  it("has no blood bonds panel without one", () => {
+    sheet();
+    expect(screen.queryByText("Blood bonds")).toBeNull();
   });
 
   it("gives a chevron only to a trait with something to say", () => {
@@ -169,6 +184,28 @@ describe("PoolRow", () => {
     expect(screen.getByText(/Against your hunted target/).textContent).toBe("Against your hunted target (+2 Accurate), Brutal");
     expect(screen.getByText("10")).toBeTruthy();
     expect(screen.getByText("Brutal: win on the larger pool: exceptional success (p. 516)")).toBeTruthy();
+  });
+
+  it("shows a line against a blood bond's regnant, always, under the defence it lowers (#664)", () => {
+    const social = {
+      ...pool,
+      key: "defense:Social",
+      name: "Resisting Social powers",
+      switch: null,
+      parts: [{ label: "Social", value: 4 }],
+      total: 4,
+      versus: null,
+      damage: null,
+      variants: [{ when: "Against Bram's powers", total: 3, parts: [{ label: "Blood bond", value: -1 }], instead: false, tracked: [], switch: null, qualities: [] }],
+    };
+    render(
+      <ul>
+        <PoolRow pool={social} willpower={0} modifiers={[]} on={[]} />
+      </ul>,
+    );
+    expect(screen.getByText("4")).toBeTruthy();
+    expect(screen.getByText(/Against Bram's powers/).textContent).toBe("Against Bram's powers (−1 Blood bond)");
+    expect(screen.getByText("3")).toBeTruthy();
   });
 
   it("has a Throw button that takes the pool, its total and its parts to the Throws tab (#698)", () => {

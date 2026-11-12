@@ -134,6 +134,26 @@ test("staff record three drinks and the thrall's player sees a full bond; the re
   await expect(bound).toContainText(
     "Full bond: they come before everyone else",
   );
+  // On her Play View, it lowers her Social and Mental defence against Lucien's
+  // powers, on a line of its own, and says what crossing him costs (#664).
+  await t.goto(`/play/characters/${odile}`);
+  await t.getByRole("tab", { name: "Pools" }).click();
+  const defence = (name: string) =>
+    t.getByRole("listitem").filter({ hasText: new RegExp(`^${name}`) });
+  for (const name of ["Resisting Social powers", "Resisting Mental powers"]) {
+    await expect(defence(name)).toContainText(
+      "Against Lucien Vasse's powers (−3 Blood bond)",
+    );
+  }
+  await expect(defence("Resisting Physical powers")).not.toContainText(
+    "Blood bond",
+  );
+  await t.getByRole("tab", { name: "Sheet" }).click();
+  await expect(
+    t.getByText(
+      "Directly harming Lucien Vasse costs 3 Willpower an hour (p. 295).",
+    ),
+  ).toBeVisible();
 
   // Lucien's player isn't told until the lead marks it known to him.
   const r = regnant.page;
@@ -149,6 +169,13 @@ test("staff record three drinks and the thrall's player sees a full bond; the re
   await expect(r.getByRole("list", { name: "Bound to you" })).toContainText(
     "Odile Marchand: full bond",
   );
+  // His Play View says nothing of bonds, even known ones (#664).
+  await r.goto(`/play/characters/${lucien}`);
+  await r.getByRole("tab", { name: "Pools" }).click();
+  await expect(
+    r.getByRole("listitem").filter({ hasText: /^Resisting Social powers/ }),
+  ).toBeVisible();
+  await expect(r.getByText(/Blood bond/)).toHaveCount(0);
   // Neither player can open the Bonds screen.
   const refused = await r.request.get(`/api/troupes/${troupe.id}/bonds`);
   expect(refused.status()).toBe(403);
