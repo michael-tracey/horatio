@@ -114,25 +114,40 @@ export function useThrows({
  * their own phone and they show each other their screens. A pool thrown from the
  * Pools tab (#698) comes with what the book says each throw means for it.
  */
-export function ThrowsTab({
-  images = HORATIO_IMAGES,
-  challenging,
-  willpower,
-  spendWillpower,
-}: {
+type ThrowsTabProps = {
   images?: ThrowImages;
   /** The challenge a pool from the Pools tab started, if any. */
   challenging?: Challenging;
   /** Willpower now, and spending one for a retest, when the sheet is here. */
   willpower?: number;
   spendWillpower?: () => void;
-}) {
+  /**
+   * The throws, kept by a page that outlives the tab. The Play View draws the tab
+   * one way while the sheet loads and another once it has come, and React makes it
+   * afresh between them; kept here, a throw pressed while the sheet loads, or
+   * counting in as it arrives, isn't lost. Left out, the tab keeps its own.
+   */
+  throwing?: Throwing;
+};
+
+/** What a throw means to a challenge from the Pools tab: while it waits for one, the throw is its test (#698). */
+export function challengeTest(challenging?: Challenging): (thrown: Thrown) => void {
+  return (thrown) => challenging?.update((now) => (now && expecting(now) ? { ...now, pending: thrown.throw } : now));
+}
+
+export function ThrowsTab(props: ThrowsTabProps) {
+  return props.throwing ? <ThrowsBody {...props} throwing={props.throwing} /> : <OwnThrows {...props} />;
+}
+
+function OwnThrows(props: ThrowsTabProps) {
+  const throwing = useThrows({ onThrown: challengeTest(props.challenging) });
+  return <ThrowsBody {...props} throwing={throwing} />;
+}
+
+function ThrowsBody({ images = HORATIO_IMAGES, challenging, willpower, spendWillpower, throwing }: ThrowsTabProps & { throwing: Throwing }) {
   const c = challenging?.challenge ?? null;
   const update = challenging?.update;
-  const { shown, counting, past, throwNow } = useThrows({
-    // A throw while the challenge waits for one is its test; any other is a throw like before.
-    onThrown: (thrown) => update?.((now) => (now && expecting(now) ? { ...now, pending: thrown.throw } : now)),
-  });
+  const { shown, counting, past, throwNow } = throwing;
   const flipping = useFlip(() => throwNow({ flipped: true }));
   const dates = useDates();
   return (

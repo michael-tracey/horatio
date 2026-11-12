@@ -1,7 +1,8 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ThrowsTab } from "./Throws";
+import { useState } from "react";
+import { ThrowsTab, useThrows } from "./Throws";
 import { useChallenge } from "./Challenge";
 import { load } from "./challenge";
 
@@ -150,6 +151,42 @@ describe("a pool thrown from the Pools tab", () => {
     expect(screen.getByRole("status").textContent).toContain("You lose");
     expect(screen.queryByRole("button", { name: /Willpower/ })).toBeNull();
     expect(screen.getByRole("button", { name: "Retest with a merit" })).toBeTruthy();
+  });
+});
+
+describe("throws kept by the page (#756)", () => {
+  /** The Play View: it keeps the throws, and remakes the tab when the sheet arrives. */
+  function Page() {
+    const throwing = useThrows();
+    const [loaded, setLoaded] = useState(false);
+    return (
+      <>
+        <button onClick={() => setLoaded(true)}>The sheet arrives</button>
+        {loaded ? (
+          <div>
+            <ThrowsTab throwing={throwing} />
+          </div>
+        ) : (
+          <ThrowsTab throwing={throwing} />
+        )}
+      </>
+    );
+  }
+
+  it("doesn't lose a throw that was counting in when the tab is remade", () => {
+    vi.useFakeTimers();
+    motion(false);
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <Page />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Throw" }));
+    expect(screen.getByText("Rock…")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "The sheet arrives" }));
+    act(() => void vi.advanceTimersByTime(1000));
+    expect(screen.getByRole("img", { name: THROWN })).toBeTruthy();
+    expect(screen.getByRole("list").children).toHaveLength(1);
   });
 });
 
