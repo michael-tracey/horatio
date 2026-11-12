@@ -990,6 +990,59 @@ test("Throws on the Play View: rock, paper or scissors, the last three kept, wit
   await p.screenshot({ ...shots("throws-ultragoth"), animations: "disabled" });
 });
 
+test("a troupe uploads its own rock, paper and scissors, names the set and previews it in Dark and Ultra goth (#670)", async ({ browser }) => {
+  const custodian = await person(browser, "throwpix-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "throwpix-lead");
+  const headers = { "X-Horatio": "1" };
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Bone Throwers ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/settings`);
+  const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Throw pictures", exact: true }) });
+  await expect(card.getByText("None yet")).toHaveCount(3);
+
+  // A small PNG for each: Horatio keeps it whole on a transparent square.
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+  for (const which of ["Rock", "Paper"]) {
+    await card.getByLabel(`Choose a picture for ${which}`).setInputFiles({ name: `${which}.png`, mimeType: "image/png", buffer: png });
+    await expect(card.getByRole("img", { name: `The troupe's ${which.toLowerCase()}` })).toBeVisible();
+  }
+  await expect(card.getByText("Add the rest: the set is offered only with all three.")).toBeVisible();
+  await card.getByLabel("Choose a picture for Scissors").setInputFiles({ name: "Scissors.png", mimeType: "image/png", buffer: png });
+  await expect(card.getByRole("img", { name: "The troupe's scissors" })).toBeVisible();
+  await expect(card.getByText("Add the rest: the set is offered only with all three.")).toHaveCount(0);
+
+  await card.getByLabel(/Title for the set/).fill("Land of the Sky bones");
+  await card.getByRole("button", { name: "Use this title" }).click();
+  await expect(card.getByRole("button", { name: "Use this title" })).toBeDisabled();
+
+  // The preview shows all three as the Throws tab would, in Dark, then Ultra goth.
+  const preview = card.getByRole("region", { name: "Preview" });
+  for (const which of ["Rock", "Paper", "Scissors"]) await expect(preview.getByRole("img", { name: which, exact: true })).toBeVisible();
+  const panel = preview.getByTestId("throw-preview");
+  await expect(panel).toHaveCSS("background-color", "rgb(30, 25, 34)");
+  await preview.getByRole("radio", { name: "Ultra goth" }).check();
+  await expect(panel).toHaveCSS("background-color", "rgb(19, 16, 17)");
+
+  // Replacing one keeps the set; removing the set goes back to Horatio's.
+  const old = await card.getByRole("img", { name: "The troupe's rock" }).getAttribute("src");
+  await card.getByLabel("Choose a picture for Rock").setInputFiles({ name: "Rock2.png", mimeType: "image/png", buffer: png });
+  await expect(card.getByRole("img", { name: "The troupe's rock" })).not.toHaveAttribute("src", old!);
+  await card.getByRole("button", { name: "Remove the set" }).click();
+  await card.getByRole("alertdialog", { name: "Remove the throw pictures" }).getByRole("button", { name: "Remove them" }).click();
+  await expect(card.getByText("None yet")).toHaveCount(3);
+  await expect(card.getByRole("region", { name: "Preview" })).toHaveCount(0);
+
+  await l.goto(`/troupes/${troupeId}/log`);
+  await expect(l.getByText("gave the troupe a new picture for Rock.")).toBeVisible();
+  await expect(l.getByText("named the troupe's throw pictures: Land of the Sky bones.")).toBeVisible();
+  await expect(l.getByText("removed the troupe's throw pictures.")).toBeVisible();
+});
+
 test("throwing by flipping the phone face down and back up, on a phone, and switching it off (#669)", async ({ browser }) => {
   test.skip(test.info().project.name !== "phone", "the phone's orientation sensor");
   const { page: p } = await person(browser, "phone-flipper");

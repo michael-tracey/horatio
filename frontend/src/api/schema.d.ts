@@ -7366,6 +7366,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/bonds/known": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Known Bonds
+         * @description The bonds Horatio can work out for the troupe that it doesn't keep yet: from its
+         *     characters' Embraces, ghouls' domitors and vampires' ghoul Retainers (#663).
+         */
+        get: operations["known_bonds_api_troupes__troupe_id__bonds_known_get"];
+        put?: never;
+        /**
+         * Fill In Bonds
+         * @description Add every bond `known_bonds` lists, and say which were added.
+         */
+        post: operations["fill_in_bonds_api_troupes__troupe_id__bonds_known_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/bonds/reports/{report_id}/decide": {
         parameters: {
             query?: never;
@@ -10693,6 +10718,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/throw-images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Images
+         * @description The troupe's rock, paper and scissors, for its members.
+         */
+        get: operations["read_images_api_troupes__troupe_id__throw_images_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove Images
+         * @description Remove the whole set: the troupe throws with Horatio's own again.
+         */
+        delete: operations["remove_images_api_troupes__troupe_id__throw_images_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/throw-images/name": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Name Images
+         * @description Name the set, or clear its name with an empty one.
+         */
+        put: operations["name_images_api_troupes__troupe_id__throw_images_name_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/throw-images/{picture_id}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Image File
+         * @description One of the set's files, for the troupe's members, while it is in the set.
+         */
+        get: operations["image_file_api_troupes__troupe_id__throw_images__picture_id___name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/throw-images/{which}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Image
+         * @description A new picture for one throw, kept whole on a transparent square. It replaces
+         *     the one before, whose files go once the new one is saved.
+         */
+        post: operations["upload_image_api_troupes__troupe_id__throw_images__which__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/titles": {
         parameters: {
             query?: never;
@@ -13306,6 +13416,14 @@ export interface components {
             /**
              * File
              * @description The Dark Pack folder an import wrote, zipped.
+             */
+            file: string;
+        };
+        /** Body_upload_image_api_troupes__troupe_id__throw_images__which__post */
+        Body_upload_image_api_troupes__troupe_id__throw_images__which__post: {
+            /**
+             * File
+             * @description JPEG, PNG, WebP or HEIC, up to 10 MB.
              */
             file: string;
         };
@@ -18271,6 +18389,11 @@ export interface components {
              */
             type: "fill_table";
         };
+        /** FilledOut */
+        FilledOut: {
+            /** Added */
+            added: components["schemas"]["BondOut"][];
+        };
         /**
          * FilterCondition
          * @description One condition of a character filter; see horatio.character_filter.
@@ -20575,6 +20698,25 @@ export interface components {
             parent_name: string;
             /** Parent Rating */
             parent_rating: number;
+        };
+        /** KnownBondOut */
+        KnownBondOut: {
+            /** Level */
+            level: number;
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /** Reason */
+            reason: string;
+            regnant: components["schemas"]["PartyOut"];
+            thrall: components["schemas"]["PartyOut"];
+            /**
+             * Why
+             * @enum {string}
+             */
+            why: "embrace" | "domitor" | "retainer";
         };
         /** KnownIn */
         KnownIn: {
@@ -29548,6 +29690,24 @@ export interface components {
             kind: "text";
             /** Text */
             text: string;
+        };
+        /** ThrowImagesNameIn */
+        ThrowImagesNameIn: {
+            /** Name */
+            name: string;
+        };
+        /** ThrowImagesOut */
+        ThrowImagesOut: {
+            /** Complete */
+            complete: boolean;
+            /** Name */
+            name: string;
+            /** Paper */
+            paper: string | null;
+            /** Rock */
+            rock: string | null;
+            /** Scissors */
+            scissors: string | null;
         };
         /** TitleChange */
         TitleChange: {
@@ -45895,6 +46055,68 @@ export interface operations {
             };
         };
     };
+    known_bonds_api_troupes__troupe_id__bonds_known_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnownBondOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fill_in_bonds_api_troupes__troupe_id__bonds_known_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilledOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     decide_report_api_troupes__troupe_id__bonds_reports__report_id__decide_post: {
         parameters: {
             query?: never;
@@ -52806,6 +53028,168 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_images_api_troupes__troupe_id__throw_images_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThrowImagesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_images_api_troupes__troupe_id__throw_images_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    name_images_api_troupes__troupe_id__throw_images_name_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThrowImagesNameIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThrowImagesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    image_file_api_troupes__troupe_id__throw_images__picture_id___name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                picture_id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_image_api_troupes__troupe_id__throw_images__which__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                which: "rock" | "paper" | "scissors";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_image_api_troupes__troupe_id__throw_images__which__post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThrowImagesOut"];
+                };
             };
             /** @description Validation Error */
             422: {

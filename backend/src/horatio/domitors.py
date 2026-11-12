@@ -26,7 +26,7 @@ from fastapi import HTTPException
 from sqlalchemy import delete, event, exists, func, inspect, select
 from sqlalchemy.orm import Session
 
-from horatio import audit
+from horatio import audit, auto_bonds
 from horatio.models import Character, CharacterTrait, TraitCategory, TraitDefinition, User
 from horatio.permissions import viewable_characters
 from horatio.rules.model import RuleSetData, SheetTrait
@@ -251,6 +251,7 @@ def set_domitor(
             raise unprocessable("Choose the domitor's clan and bloodline.")
         three = named_three(db, ghoul, clan, in_clan)
         chosen = ""
+    was_id, was_name = ghoul.domitor_id, ghoul.domitor_name
     definition, _ = find_definition(db, ghoul, "clan", clan)
     placing: list[tuple[TraitDefinition, Placed]] = []
     if disciplines == "move":
@@ -284,6 +285,8 @@ def set_domitor(
         in_clan=three,
         disciplines="moved" if disciplines == "move" else "kept",
     )
+    # A ghoul is fully bound to its domitor, the old bond having faded (p. 296).
+    auto_bonds.domitor_changed(db, user, ghoul, was_id, was_name)
 
 
 def place_in_clan(db: Session, ghoul: Character, names: Sequence[str]) -> None:

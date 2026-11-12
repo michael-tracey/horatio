@@ -400,6 +400,10 @@ MESSAGES: dict[str, str] = {
     "troupe.portrait_removed": "{actor} removed the troupe's portrait.",
     "troupe.banner_uploaded": "{actor} gave the troupe a banner.",
     "troupe.banner_removed": "{actor} removed the troupe's banner.",
+    "troupe.throw_image_uploaded": "{actor} gave the troupe a picture for {throw}.",
+    "troupe.throw_image_replaced": "{actor} gave the troupe a new picture for {throw}.",
+    "troupe.throw_images_named": "{actor} named the troupe's throw pictures: {name}.",
+    "troupe.throw_images_removed": "{actor} removed the troupe's throw pictures.",
     "downtime.cycle_created": "{actor} created a downtime cycle.",
     "downtime.cycle_opened": "{actor} opened a downtime cycle ({participants} taking part).",
     "downtime.cycle_closed": "{actor} closed a downtime cycle.",
@@ -873,6 +877,11 @@ MESSAGES: dict[str, str] = {
     "bond.wiped": "{character}'s lesser bond to {regnant} was wiped away by the full bond to"
     " {full}.",
     "bond.broken": "{actor} broke {character}'s bond to {regnant}: {reason}",
+    # Bonds Horatio knows by rule (#663), as {actor}'s change made them.
+    "bond.automatic": "{character}'s bond to {regnant} was added at {level} from {night}: {reason}",
+    "bond.domitor_moved": "{character}'s bond to {regnant} ended: {reason}",
+    "bond.retainer_linked": "{character}'s bond to {regnant} moved from the Retainer {retainer}"
+    " to the NPC linked to it.",
     "bond.known": "{actor} marked {character}'s bond to {regnant} {known} to the regnant.",
     # Fading (#662): in the troupe's log only, but for the thrall's death and the word
     # that a bond faded, which go in the thrall's own log too.

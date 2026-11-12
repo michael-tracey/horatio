@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, or_, select
 
-from horatio import bonds
+from horatio import auto_bonds, bonds
 from horatio.api.downtimes import staff_troupe
 from horatio.api.influence_log import CharacterChoice
 from horatio.api.troupes import TroupeOut, troupe_out
@@ -234,6 +234,22 @@ class CharacterBondsOut(BaseModel):
     reports: list[BondReportOut] = []
 
 
+class KnownBondOut(BaseModel):
+    # embrace | domitor | retainer: why Horatio knows of it (#663).
+    why: Literal["embrace", "domitor", "retainer"]
+    thrall: PartyOut
+    regnant: PartyOut
+    # The level it stands at from the start: 1, or 3 for a full bond.
+    level: int
+    night: date
+    reason: str
+
+
+class FilledOut(BaseModel):
+    # The bonds added, as the Bonds screen shows them.
+    added: list[BondOut]
+
+
 def party_out(character: Character | None, name: str) -> PartyOut:
     if character is None:
         return PartyOut(character_id=None, name=name, kind=None)
@@ -372,6 +388,36 @@ def troupe_bonds(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Trou
         ],
         reports=[report_out(db, user, r) for r in bonds.pending_reports(db, troupe)],
     )
+
+
+def known_out(item: auto_bonds.Known) -> KnownBondOut:
+    return KnownBondOut(
+        why=item.why,  # type: ignore[arg-type]  # one of auto_bonds' three
+        thrall=party_out(item.thrall.character, item.thrall.name),
+        regnant=party_out(item.regnant.character, item.regnant.name),
+        level=item.level,
+        night=item.night,
+        reason=item.reason,
+    )
+
+
+@router.get("/troupes/{troupe_id}/bonds/known")
+def known_bonds(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[KnownBondOut]:
+    """The bonds Horatio can work out for the troupe that it doesn't keep yet: from its
+    characters' Embraces, ghouls' domitors and vampires' ghoul Retainers (#663)."""
+    troupe = bonds_troupe(db, user, troupe_id)
+    found = auto_bonds.known(db, troupe)
+    db.commit()
+    return [known_out(item) for item in found]
+
+
+@router.post("/troupes/{troupe_id}/bonds/known")
+def fill_in_bonds(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> FilledOut:
+    """Add every bond `known_bonds` lists, and say which were added."""
+    troupe = bonds_troupe(db, user, troupe_id)
+    added = auto_bonds.fill_in(db, user, troupe)
+    db.commit()
+    return FilledOut(added=[bond_out(db, bond) for bond in added])
 
 
 @router.post("/troupes/{troupe_id}/bonds/drinks", status_code=status.HTTP_201_CREATED)
