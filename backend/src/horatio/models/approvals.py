@@ -13,22 +13,24 @@ class Approval(Record):
     """Something waiting on (or decided by) a troupe's storytellers or assistant
     storytellers: a home troupe change, a discipline dot bought in the home
     troupe, a change held for review, a trait asked for by exception, a
-    diablerie a player says they committed, or a merit or flaw added or removed
-    once the character is accepted (horatio.merit_requests). One queue for every
-    kind. `sheet_change` is kept only for history."""
+    diablerie a player says they committed, a merit or flaw added or removed
+    once the character is accepted (horatio.merit_requests), or a drink of vampire
+    blood a player reported (horatio.bonds). One queue for every kind.
+    `sheet_change` is kept only for history."""
 
     __tablename__ = "approvals"
     __table_args__ = (
         CheckConstraint(
             "kind in ('sheet_change', 'home_troupe_change', 'discipline', 'review',"
-            " 'exception', 'diablerie', 'merit_flaw')",
+            " 'exception', 'diablerie', 'merit_flaw', 'bond_drink')",
             name="kind",
         ),
         CheckConstraint(
             "status in ('pending', 'approved', 'declined', 'withdrawn')", name="status"
         ),
         # A character has at most one home troupe request waiting in each troupe;
-        # dots held for approval, and merit and flaw changes, each wait on their own.
+        # dots held for approval, merit and flaw changes, and drinks reported, each
+        # wait on their own.
         Index(
             "uq_approvals_one_pending",
             "character_id",
@@ -37,7 +39,8 @@ class Approval(Record):
             unique=True,
             postgresql_where=text(
                 "status = 'pending'"
-                " and kind not in ('discipline', 'review', 'exception', 'merit_flaw')"
+                " and kind not in"
+                " ('discipline', 'review', 'exception', 'merit_flaw', 'bond_drink')"
             ),
         ),
     )

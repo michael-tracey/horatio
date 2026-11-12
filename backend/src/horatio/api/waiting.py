@@ -21,7 +21,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import backstories, downtimes, influence_effects, quests, responses
+from horatio import backstories, bonds, downtimes, influence_effects, quests, responses
 from horatio.api.responses import cycle_progress
 from horatio.api.troupes import get_troupe
 from horatio.auth.deps import CurrentUser, DbSession
@@ -88,7 +88,11 @@ def approvals(asked: Asked) -> list[WaitingLine]:
     count = asked.db.scalar(
         select(func.count(Approval.id))
         .join(Character, Approval.character_id == Character.id)
-        .where(Approval.troupe_id == troupe.id, Approval.status == "pending")
+        .where(
+            Approval.troupe_id == troupe.id,
+            Approval.status == "pending",
+            ~bonds.hidden_approvals(),
+        )
     )
     return [
         WaitingLine(

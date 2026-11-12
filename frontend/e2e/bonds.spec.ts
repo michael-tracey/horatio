@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { closeContextsAfterEach, run, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional } from "./support";
 
-/** Blood bonds: the troupe's setting, staff recording drinks on the Bonds screen, and who sees them. */
+/** Blood bonds: the troupe's setting, staff recording drinks on the Bonds screen, players reporting them (#661), and who sees them. */
 
 closeContextsAfterEach();
 
@@ -35,7 +35,7 @@ test("staff record three drinks and the thrall's player sees a full bond; the re
   await l.goto(`/troupes/${troupe.id}/settings`);
   const off = l.getByRole("radio", { name: /^Off/ });
   await expect(off).toBeChecked();
-  await expect(l.getByRole("radio", { name: /^Players manage/ })).toBeDisabled();
+  await expect(l.getByRole("radio", { name: /^Players manage/ })).toBeEnabled();
   // Checked once the troupe saves it.
   await l.getByRole("radio", { name: /^Staff manages/ }).click();
   await expect(l.getByText(/^Blood bonds are tracked\./)).toBeVisible();
@@ -90,4 +90,78 @@ test("staff record three drinks and the thrall's player sees a full bond; the re
   // Neither player can open the Bonds screen.
   const refused = await r.request.get(`/api/troupes/${troupe.id}/bonds`);
   expect(refused.status()).toBe(403);
+});
+
+test("players report a drink for staff to approve; under Players manage the thrall confirms one the regnant recorded", async ({ browser }) => {
+  const custodian = await person(browser, "bondrep-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "bondrep-lead");
+  const thrall = await person(browser, "bondrep-thrall");
+  const regnant = await person(browser, "bondrep-regnant");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Chalice Court ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  const build = { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]] as [string, number][], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] as [string, number][] };
+  const home = async (page: Page, name: string) => {
+    const id = await builtVampire(page, name, "Brujah", build);
+    const asked = await send(page, "POST", `/api/characters/${id}/home-troupe`, { troupe_id: troupe.id });
+    await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+    return id;
+  };
+  const severine = await home(thrall.page, "Séverine Arlaud");
+  const corentin = await home(regnant.page, "Corentin Mallet");
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/blood-bonds`, { setting: "players_report" });
+
+  // Séverine's player reports a drink from her sheet: it waits on the storytellers.
+  const t = thrall.page;
+  await t.goto(`/characters/${severine}`);
+  await t.getByRole("button", { name: "Report a drink", exact: true }).click();
+  const form = t.getByRole("form", { name: "Report a drink" });
+  await form.getByRole("combobox", { name: "Whose blood" }).fill("Corentin");
+  await form.getByRole("listbox", { name: "Characters" }).getByRole("option", { name: /Corentin Mallet/ }).click();
+  await form.getByLabel("Note (optional)").fill("A sip at the masque");
+  await form.getByRole("button", { name: "Report the drink" }).click();
+  await expect(t.getByText("Sent to the storytellers to approve.")).toBeVisible();
+  const reported = t.getByRole("list", { name: "Drinks reported" });
+  await expect(reported).toContainText("Séverine Arlaud drank Corentin Mallet's blood");
+  await expect(reported).toContainText("Waiting for the storytellers");
+  // Corentin's player hears nothing of it.
+  const unseen = await (await regnant.page.request.get(`/api/characters/${corentin}/bonds`)).json();
+  expect([unseen.bound_by, unseen.reports]).toEqual([[], []]);
+
+  // The lead approves it in Approvals.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}/approvals`);
+  await expect(l.getByText("Reports Séverine Arlaud drinking Corentin Mallet's blood")).toBeVisible();
+  await l.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(l.getByText("Nothing pending.")).toBeVisible();
+  await t.reload();
+  await expect(t.getByRole("list", { name: "Bound to" })).toContainText("Bound to Corentin Mallet");
+  await expect(t.getByRole("list", { name: "Drinks reported" })).toContainText("Counted");
+
+  // Under Players manage, Corentin's player records that Séverine drank his blood, in the Play View.
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/blood-bonds`, { setting: "players_manage" });
+  const r = regnant.page;
+  await r.goto(`/play/characters/${corentin}?tab=tracker`);
+  await r.getByRole("button", { name: "Report a drink of vampire blood" }).click();
+  const play = r.getByRole("form", { name: "Report a drink" });
+  await play.getByLabel("Someone drank Corentin Mallet's blood").check();
+  await play.getByRole("combobox", { name: "Who drank it" }).fill("Séverine");
+  await play.getByRole("listbox", { name: "Characters" }).getByRole("option", { name: /Séverine Arlaud/ }).click();
+  await play.getByRole("button", { name: "Report the drink" }).click();
+  await expect(r.getByText("Sent to Séverine Arlaud's player to confirm.")).toBeVisible();
+
+  // It waits on Séverine's player, who confirms it; then the bond is known to Corentin.
+  await t.reload();
+  const asking = t.getByRole("listitem", { name: /^Séverine Arlaud drank Corentin Mallet's blood/ }).filter({ hasText: "Did it happen?" });
+  await asking.getByRole("button", { name: "Confirm" }).click();
+  await expect(t.getByText("Did it happen?")).toHaveCount(0);
+  await r.goto(`/characters/${corentin}`);
+  await expect(r.getByRole("list", { name: "Bound to you" })).toContainText("Séverine Arlaud: first drink");
 });
