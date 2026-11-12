@@ -614,6 +614,7 @@ SETTINGS: dict[str, Setting] = {
         Setting(
             "whos_who_negative", "status_titles", "Negative status on the Who's Who", bool, on_off
         ),
+        Setting("sire_lines_players", "status_titles", "Sire lines shown to players", bool, on_off),
         Setting(
             "golconda_enlightened",
             "status_titles",
@@ -2351,6 +2352,7 @@ def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, Setti
             "titles_by",
             "status_at_checkin",
             "whos_who_negative",
+            "sire_lines_players",
             "badge_titles",
             "badge_status",
             "badge_pronouns",

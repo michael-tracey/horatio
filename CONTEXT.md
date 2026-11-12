@@ -113,6 +113,14 @@ _Avoid_: Amaranth, level-up
 A ghoul PC made a vampire in play by its sire. The home troupe's lead storyteller, storytellers and assistant storytellers run it from the ghoul's sheet, and its player chooses: it dies in the attempt, and is retired, or it becomes a vampire of its sire's clan, one generation weaker, with new clan and rarity merits, new starting disciplines, and what it bought in play repriced. What it cannot pay is XP debt.
 _Avoid_: Conversion, turning, siring (in names)
 
+**Sire**:
+The vampire who made a character a vampire: one in Horatio, or one known by name and clan only. Its player gives it, or its home troupe's storytellers and assistant storytellers; an Embrace in play names it. A sire that would make a loop is refused. Its player can keep it from the troupe's players.
+_Avoid_: Maker, parent (in names)
+
+**Sire Lines**:
+Who sired whom in a troupe, as a family tree on its Who's Who. Its storytellers and assistant storytellers see every vampire in it; its players see them only if the troupe shows them, and then only the characters on its Who's Who, with no sire kept secret or not on it.
+_Avoid_: Lineage chart, bloodline (that is a clan's offshoot)
+
 **Retired Character**:
 A character its player has stopped playing: hidden from everyday lists and out of all downtimes, but kept with its full history. Retiring gives a reason, which is in-game information: Final Death, Off-field (alive, but away from the domain) or Inactive (the player stopped; it says nothing in game). The player chooses whether the troupe's Who's Who lists it under "No longer with us". Retiring gives up every title it holds, for any reason.
 _Avoid_: Deleted, dead, inactive (except as the reason)

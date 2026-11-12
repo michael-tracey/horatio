@@ -178,6 +178,10 @@ A character its player has stopped playing: Final Death, Off-field or Inactive. 
 
 Several characters of one troupe on one page of the Play View, side by side, for staff running a scene.
 
+## Sire lines
+
+Who sired whom in a troupe, drawn as a family tree on its Who's Who. Each vampire's player gives its sire from the character's **⋯** menu, or an Embrace in play fills it in. Storytellers see every line; players see them only if the troupe shows them, and never a sire kept secret.
+
 ## Staff
 
 The people who run a troupe: its [lead storyteller](#lead-storyteller), [storytellers](#storyteller), [assistant storytellers](#assistant-storyteller) and [narrators](#narrator).
