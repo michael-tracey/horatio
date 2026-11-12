@@ -107,6 +107,7 @@ export function InfluenceTab({ character, mine }: { character: CharacterOut; min
               key={entry.id}
               entry={entry}
               characterId={character.id}
+              playView={character.play_view}
               mine={mine}
               staffHere={h.log_troupe_id === entry.troupe_id}
               standing={h.standings.find((s) => s.type === entry.type)}
@@ -121,12 +122,15 @@ export function InfluenceTab({ character, mine }: { character: CharacterOut; min
 function HistoryRow({
   entry,
   characterId,
+  playView,
   mine,
   staffHere,
   standing,
 }: {
   entry: HistoryEntryOut;
   characterId: string;
+  /** It has a Play View to open: its troupe may not use one (#673). */
+  playView: boolean;
   mine: boolean;
   staffHere: boolean;
   standing: InfluenceStandingOut | undefined;
@@ -136,7 +140,9 @@ function HistoryRow({
   const blocks = blocksText(entry.own_blocks);
   const to =
     entry.source === "game"
-      ? `/play/characters/${characterId}`
+      ? playView
+        ? `/play/characters/${characterId}`
+        : null
       : entry.cycle_id && staffHere
         ? `/cycles/${entry.cycle_id}`
         : entry.source === "downtime" && mine

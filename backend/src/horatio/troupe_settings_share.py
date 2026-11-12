@@ -55,6 +55,7 @@ from horatio import (
     influence_lookups,
     keywords,
     languages,
+    play_tabs,
     posts,
     quests,
     responses,
@@ -650,6 +651,13 @@ SETTINGS: dict[str, Setting] = {
             ),
         ),
         Setting("items_expire", "at_game", "Items can expire", bool, on_off),
+        Setting(
+            "play_tabs_off",
+            "at_game",
+            "Play View tabs for players",
+            Annotated[list[play_tabs.PlayTab], Field(max_length=len(play_tabs.PLAY_TABS))],
+            play_tabs.words,
+        ),
         Setting("player_nominations", "downtimes", "Player Nominations", bool, on_off),
         Setting("remembrances", "downtimes", "Remembrances", bool, on_off),
         Setting(
@@ -2294,6 +2302,8 @@ def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, Setti
             # Set as their editors set them: the value alone, checked by its type.
             if key in values:
                 setattr(troupe, key, values[key])
+        if touched("play_tabs_off"):
+            play_tabs.set_tabs_off(db, user, troupe, values["play_tabs_off"])
         if touched("game_xp"):
             game_xp.save(db, user, troupe, game_xp.GameXpSettings.model_validate(values["game_xp"]))
         if touched("one_holder_titles"):

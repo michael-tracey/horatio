@@ -71,7 +71,7 @@ The **Settings** tab of your account holds your notification emails, your email 
 
 - **Sheets**: show ratings as **Numbers** or **Pips**; the **Paper** printed sheets and badges are laid out for (US Letter or A4); and your **Badge size**.
 - **Dates and times**: your **Time zone** (leave it empty to follow your device), how **Dates** look (such as 20 Oct 2026), and a 12- or 24-hour **Clock**. Deadlines always show with their time zone, so players in other places agree on them.
-- **At game**: **Quick notes** (the Play View asks what each use was for), **Keep the screen awake** while the Play View is open, and which tab **The Play View opens on**.
+- **At game**: **Quick notes** (the Play View asks what each use was for), **Keep the screen awake** while the Play View is open, and which tab **The Play View opens on** (only the tabs your troupes have switched on).
 - **Appearance**: **Text size**, Normal or Large, everywhere but printed sheets and badges.
 - **Troupes**: whether a troupe's Who's Who shows you by your name or by your handle.
 

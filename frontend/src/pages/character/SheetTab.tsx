@@ -372,7 +372,7 @@ export function SheetTab({
   );
   // Health sits after the part its category belongs to (with willpower), or last.
   const health = s.traits.some((t) => t.category === "health_levels") ? (
-    <HealthLevels key="health_levels" traits={s.traits} play={`/play/characters/${character.id}`} />
+    <HealthLevels key="health_levels" traits={s.traits} play={character.play_view ? `/play/characters/${character.id}` : undefined} />
   ) : null;
   const healthAfter = catalogue.data?.categories.find(
     (c) => c.key === "health_levels",
@@ -1024,7 +1024,7 @@ function SheetPowers({ characterId, discipline }: { characterId: string; discipl
  * boxes it has: drawn as a count, not boxes to tick, since damage is tracked in
  * the Play View. Health is worked out from the rest of the sheet, so nothing here is saved.
  */
-function HealthLevels({ traits, play }: { traits: SheetTraitOut[]; play: string }) {
+function HealthLevels({ traits, play }: { traits: SheetTraitOut[]; play?: string }) {
   return (
     <Card dense title="Health Levels">
       <p className="mb-2 text-xs text-mist">{HEALTH_RULE}</p>
@@ -1047,9 +1047,11 @@ function HealthLevels({ traits, play }: { traits: SheetTraitOut[]; play: string 
           </li>
         ))}
       </ul>
-      <Link to={play} className="mt-2 inline-block text-sm text-gold underline hover:text-parchment">
-        Track damage in the Play View →
-      </Link>
+      {play && (
+        <Link to={play} className="mt-2 inline-block text-sm text-gold underline hover:text-parchment">
+          Track damage in the Play View →
+        </Link>
+      )}
     </Card>
   );
 }

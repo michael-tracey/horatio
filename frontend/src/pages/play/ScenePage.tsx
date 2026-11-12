@@ -7,6 +7,7 @@ import { LinesVeilsNote } from "../../components/LinesVeils";
 import { useClanName } from "../../components/ClanNames";
 import { Button, ErrorText, Input, Loading } from "../../components/ui";
 import { usePreferences } from "../../hooks";
+import { NotUsed } from "./NotUsed";
 import { LogEntries, ResetGame, SyncStatus } from "./PlayPage";
 import { EquipmentSwitches } from "./EquipmentSwitches";
 import { equipmentModifiers } from "./equipped";
@@ -554,6 +555,18 @@ function SceneCard({ characterId, back, onRemove, onRank }: { characterId: strin
         ) : (
           <ErrorText error={view.error} />
         )}
+        <Button variant="secondary" className="self-start" onClick={onRemove} disabled={!onRemove} title={onRemove ? undefined : "Needs a connection"}>
+          Remove from the scene
+        </Button>
+      </article>
+    );
+  }
+  if (shown.tabs.length === 0) {
+    // A PC pinned before its troupe switched every tab off for players (#673).
+    return (
+      <article className="flex flex-col gap-2 rounded-lg border border-ash bg-dusk p-3" aria-label={shown.character_name}>
+        <h2 className="truncate text-lg leading-tight text-gold">{shown.character_name}</h2>
+        <NotUsed name={shown.character_name} className="text-sm" />
         <Button variant="secondary" className="self-start" onClick={onRemove} disabled={!onRemove} title={onRemove ? undefined : "Needs a connection"}>
           Remove from the scene
         </Button>
