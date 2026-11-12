@@ -543,3 +543,49 @@ test("a storyteller resolves an attack, its target's Defend taken off, and the t
   await p.goto(`/play/characters/${npcs.Vasquez}`);
   await expect(p.getByRole("listitem").filter({ hasText: "Influences: The Elite" }).getByText("3 of 3 left", { exact: false })).toBeVisible();
 });
+
+test("staff chart the influence log: a heatmap cell opens its entries, and an Attack shows whom it hit", async ({ browser }) => {
+  const custodian = await person(browser, "inflchart-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "inflchart-lead");
+  const troupeName = `Court of Charts ${run}`;
+  await custodian.page.reload();
+  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await custodian.page.getByLabel("Name").fill(troupeName);
+  await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
+  await custodian.page.getByRole("button", { name: "Create troupe" }).click();
+  await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
+
+  const p = lead.page;
+  await p.getByRole("link", { name: "Troupes" }).click();
+  await p.getByRole("link", { name: troupeName }).click();
+  await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
+  const troupeId = new URL(p.url()).pathname.split("/")[2]!;
+
+  // Two people not in Horatio: one locks the docks down, the other attacks it.
+  const log = (data: Record<string, unknown>) =>
+    p.request.post(`/api/troupes/${troupeId}/influence-log`, { headers: { "X-Horatio": "1" }, data: { happened_at: new Date().toISOString(), ...data } });
+  const docks = await log({ type: "underworld", name: "The Harbourmaster", specialization: "Transportation", action_key: "lockdown", purpose: "To close the docks to the Sabbat" });
+  expect(docks.status(), await docks.text()).toBe(201);
+  const attack = await log({ type: "underworld", name: "A rival fence", action_key: "attack", times: 2, target: { entry: (await docks.json()).short_id } });
+  expect(attack.status(), await attack.text()).toBe(201);
+
+  await p.goto(`/troupes/${troupeId}/influence`);
+  await p.getByRole("link", { name: "Charts" }).click();
+  await expect(p.getByRole("heading", { name: "Actions by specialisation and month" })).toBeVisible();
+
+  // A cell of the heatmap opens the entries behind it.
+  await p.getByRole("img", { name: /^Transportation, .*: actions 1$/ }).click();
+  const entries = p.getByRole("region", { name: /^Entries for Transportation, / });
+  await expect(entries.getByText("UW1")).toBeVisible();
+  await expect(entries.getByText("To close the docks to the Sabbat")).toBeVisible();
+
+  // The web shows the Attack landing on whoever took UW1, though it was logged by its id.
+  const web = p.getByRole("figure", { name: "Who acts against whom" });
+  await web.getByRole("button", { name: "Show as table" }).click();
+  const row = web.getByRole("row", { name: /A rival fence/ });
+  await expect(row).toContainText("The Harbourmaster");
+  await expect(row).toContainText("Attack");
+  await p.screenshot(shots("influence-charts"));
+});

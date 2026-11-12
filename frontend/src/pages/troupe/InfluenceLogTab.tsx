@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Link, Route, Routes, useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { InfluenceChoicesOut, InfluenceEntryIn, InfluenceEntryOut } from "../../api/types";
@@ -18,6 +18,9 @@ import { WhoPicker } from "./WhoPicker";
 
 const PAGE = 100;
 
+// The charts draw with d3, which only they load (#706, #710).
+const InfluenceCharts = lazy(() => import("./InfluenceCharts").then((m) => ({ default: m.InfluenceCharts })));
+
 /**
  * Every influence action taken in the troupe, for its storytellers and
  * assistants, and the effects targeted actions have made. Players never see it.
@@ -31,11 +34,20 @@ export function InfluenceLogTab({ troupeId }: { troupeId: string }) {
         tabs={[
           { to: base, label: "Log", end: true },
           { to: `${base}/effects`, label: "Effects and blocks" },
+          { to: `${base}/charts`, label: "Charts" },
         ]}
       />
       <Routes>
         <Route index element={<Log troupeId={troupeId} />} />
         <Route path="effects" element={<EffectsCard troupeId={troupeId} />} />
+        <Route
+          path="charts"
+          element={
+            <Suspense fallback={<Loading />}>
+              <InfluenceCharts troupeId={troupeId} />
+            </Suspense>
+          }
+        />
       </Routes>
     </>
   );
