@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { BoonOut, CharacterChoice } from "../../api/types";
 import { partyIn } from "../../bonds";
+import { disgracedText } from "../../boonStatus";
 import {
   actionsFor,
   BOON_PAGE,
@@ -284,6 +285,7 @@ function BoonRow({
           </p>
           {boon.reason && <p className="text-mist">{boon.reason}</p>}
           {boon.conditions && <p className="text-xs text-mist">Conditions: {boon.conditions}</p>}
+          {boon.creditor_disgraced && <p className="text-xs text-blood-bright">{disgracedText(partyName(boon.creditor))}</p>}
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           {state && <Badge tone={boon.state === "void" ? "blood" : "mist"}>{state}</Badge>}

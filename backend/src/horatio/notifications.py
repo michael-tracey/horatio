@@ -180,7 +180,13 @@ def approval_items(
         elif approval.kind == "diablerie":
             summary = f"{character} says they committed diablerie"
         elif approval.kind == "bond_drink":
-            summary = f"{character}'s player reports a drink of vampire blood"
+            from horatio import bonds  # imports this module
+
+            report = bonds.report_for_approval(db, approval)
+            if report is not None and report.kind == "meeting":
+                summary = f"{character}'s player reports a meeting with their regnant or thrall"
+            else:
+                summary = f"{character}'s player reports a drink of vampire blood"
         elif approval.kind == "home_troupe_change":
             moving = moves.get(approval.id) is not None
             summary = f"{character} asks to {'move' if moving else 'make'} {troupe.name} its home"

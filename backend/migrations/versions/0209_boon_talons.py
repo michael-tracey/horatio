@@ -2,7 +2,7 @@
 the boon ledger, what the troupe calls them, and who has what access.
 
 Revision ID: 0209
-Revises: 0202
+Revises: 0208
 Create Date: 2026-11-13 12:00:00.000000
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0209"
-down_revision: str | None = "0202"
+down_revision: str | None = "0208"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

@@ -1,8 +1,8 @@
 """Reviewing boons (issue #687): whether boons players report wait for review, the
 flags raised on boons for review, and the boon log's new kinds of entry.
 
-Revision ID: 0194
-Revises: 0193
+Revision ID: 0207
+Revises: 0204
 Create Date: 2026-11-12 22:00:00.000000
 """
 
@@ -11,8 +11,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0194"
-down_revision: str | None = "0193"
+revision: str = "0207"
+down_revision: str | None = "0204"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

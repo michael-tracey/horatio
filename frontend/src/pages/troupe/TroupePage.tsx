@@ -53,6 +53,8 @@ import { XpAwardsTab } from "./XpAwardsTab";
 const BoonStatisticsPage = lazy(() => import("./BoonStatisticsPage").then((m) => ({ default: m.BoonStatisticsPage })));
 // The court over time (#712) draws with the chart kit, so d3 loads only when it is opened.
 const CourtTab = lazy(() => import("./CourtTab").then((m) => ({ default: m.CourtTab })));
+// The web of obligation (#709) draws with the chart kit too.
+const ObligationWeb = lazy(() => import("./ObligationWeb").then((m) => ({ default: m.ObligationWeb })));
 
 export function TroupePage() {
   const { troupeId = "" } = useParams();
@@ -126,6 +128,7 @@ export function TroupePage() {
               ...(can.running && t.boons ? [{ to: `${base}/boons`, label: "Boons" }] : []),
               ...(can.running && t.boons ? [{ to: `${base}/boon-standings`, label: "Boon standings" }] : []),
               ...(can.running && t.boons ? [{ to: `${base}/boon-statistics`, label: "Boon statistics" }] : []),
+              ...(can.running ? [{ to: `${base}/obligations`, label: "Web of obligation" }] : []),
             ],
           },
           {
@@ -213,6 +216,16 @@ export function TroupePage() {
             element={
               <Suspense fallback={<Loading />}>
                 <BoonStatisticsPage troupeId={t.id} />
+              </Suspense>
+            }
+          />
+        )}
+        {can.running && (
+          <Route
+            path="obligations"
+            element={
+              <Suspense fallback={<Loading />}>
+                <ObligationWeb troupeId={t.id} boonsOn={!!t.boons} bondsOn={(t.blood_bonds ?? "off") !== "off"} />
               </Suspense>
             }
           />
