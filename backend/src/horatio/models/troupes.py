@@ -153,6 +153,10 @@ class Troupe(Imported, Record):
     # "players_manage", players record them. The player modes come with #661; until
     # then they work as "staff".
     blood_bonds: Mapped[str] = mapped_column(default="off", server_default="off")
+    # Boons (horatio.boons, #685): whether the troupe keeps a boon ledger. While off,
+    # nothing of it shows, not even in the log; what was registered is kept, and comes
+    # back when it is on again.
+    boons: Mapped[bool] = mapped_column(default=False, server_default="false")
     # House rules for Retainers (horatio.retainer_upkeep): upkeep, in Blood or
     # Willpower, and growth, in XP a month. Each is off while it is absent.
     retainer_rules: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")

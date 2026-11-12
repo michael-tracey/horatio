@@ -13,6 +13,7 @@ from sqlalchemy import Select, select
 from horatio import (
     backstories,
     bonds,
+    boons,
     character_filter,
     npc_gifts,
     pictures,
@@ -852,6 +853,16 @@ MESSAGES: dict[str, str] = {
     "nomination.published_more": "{actor} published {count} more of {cycle}'s Player Nominations.",
     "house.remembrances": "{actor} switched Remembrances {setting}.",
     "house.blood_bonds": "{actor} set Blood bonds to {setting}.",
+    "house.boons": "{actor} switched the boon ledger {setting}.",
+    "boon.registered": "{actor} registered {what}: {debtor} owes {creditor}{because}.",
+    "boon.edited": "{actor} edited {debtor}'s {kind} boon to {creditor}{because}.",
+    "boon.traded": "{actor} recorded {debtor}'s {kind} boon traded by {before} to {creditor}"
+    "{because}.",
+    "boon.passed_on": "{actor} passed on {before}'s side ({side}) of a {kind} boon to {after}"
+    "{because}.",
+    "boon.settled": "{actor} marked {debtor}'s {kind} boon to {creditor} settled, {how}{because}.",
+    "boon.voided": "{actor} made {debtor}'s {kind} boon to {creditor} void{because}.",
+    "boon.reopened": "{actor} reopened {debtor}'s {kind} boon to {creditor}{because}.",
     "bond.drink": "{actor} recorded {character} drinking {regnant}'s blood on {night}, {source}:"
     " {level}{again}.",
     "bond.entered": "{actor} entered {character}'s bond to {regnant}, at {level} from {night}:"
@@ -951,7 +962,7 @@ def log(
     query = (
         select(AuditEvent, User.display_name)
         .outerjoin(User, AuditEvent.actor_id == User.id)
-        .where(AuditEvent.troupe_id == troupe_id, ~bonds.hidden_events())
+        .where(AuditEvent.troupe_id == troupe_id, ~bonds.hidden_events(), ~boons.hidden_events())
         .order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc())
         .limit(min(max(limit, 1), 500))
     )
