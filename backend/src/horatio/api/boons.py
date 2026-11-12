@@ -16,7 +16,16 @@ from horatio.api.downtimes import staff_troupe
 from horatio.api.influence_log import CharacterChoice
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Boon, BoonEvent, BoonFlag, Character, Troupe, TroupeMembership, User
+from horatio.models import (
+    Boon,
+    BoonEvent,
+    BoonFlag,
+    Character,
+    ScheduledGame,
+    Troupe,
+    TroupeMembership,
+    User,
+)
 from horatio.permissions import TroupeAction, visible_character
 
 router = APIRouter(tags=["boons"])
@@ -78,6 +87,9 @@ class RegisterBoonsIn(BaseModel):
     boons: list[NewBoonIn] = Field(min_length=1, max_length=boons.MOST_ROWS)
     # Why or where they come from, for each boon's log: "Elysium, 3 October".
     note: str = Text
+    # The troupe's game they were registered at, if any (#702): one of its games
+    # already started.
+    game_id: uuid.UUID | None = None
 
 
 class BoonEditIn(BaseModel):
@@ -434,6 +446,12 @@ def register(
     """Register boons in the ledger: one, or a whole game's at once, each row as many
     times as its count. All or none: a row that can't be registered stops them all."""
     troupe = ledger_troupe(db, user, troupe_id)
+    if body.game_id is not None:
+        game = db.get(ScheduledGame, body.game_id)
+        if game is None or game.troupe_id != troupe.id or game.starts_at > datetime.now(UTC):
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT, "Choose one of the troupe's past games."
+            )
     rows: list[tuple[boons.Party, boons.Party, boons.Terms, int]] = []
     # Every row is checked before any is written.
     for number, given in enumerate(body.boons, start=1):
@@ -460,7 +478,9 @@ def register(
         rows.append((debtor, creditor, terms, given.count))
     made: list[Boon] = []
     for debtor, creditor, terms, count in rows:
-        made += boons.register(db, user, troupe, debtor, creditor, terms, count, body.note)
+        made += boons.register(
+            db, user, troupe, debtor, creditor, terms, count, body.note, game_id=body.game_id
+        )
     boon_reviews.flag_new(db, troupe, made)
     db.commit()
     characters = characters_of(db, made)

@@ -138,6 +138,26 @@ export function SheetTab({ reference }: { reference: PlayReference }) {
           {reference.domitor.weakness && <p className="mt-1 text-xs text-mist">Weakness: {named(reference.domitor.weakness)}</p>}
         </Panel>
       )}
+      {/* The blood bonds the character feels as thrall, and what each does at a game (#664, core p. 295). */}
+      {(reference.bonds ?? []).length > 0 && (
+        <Panel title="Blood bonds">
+          <ul className="text-sm">
+            {reference.bonds.map((b) => (
+              <li key={b.regnant} className="border-b border-ash/60 py-1 last:border-0">
+                <p className="text-parchment">
+                  {b.regnant}
+                  <span className="text-mist"> · {b.drinks}</span>
+                </p>
+                {b.effects.map((e) => (
+                  <p key={e} className="text-xs text-mist">
+                    {e}
+                  </p>
+                ))}
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
       {[...groups].map(([name, traits]) => (
         <Panel key={name} title={name}>
           <ul className="text-sm">

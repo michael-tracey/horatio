@@ -619,6 +619,12 @@ function QuickEntry({ troupeId, characters, onDone }: { troupeId: string; charac
   const [madeOn, setMadeOn] = useState(today(dates));
   const [rows, setRows] = useState<EntryRow[]>([emptyRow(today(dates))]);
   const [note, setNote] = useState("");
+  const [gameId, setGameId] = useState("");
+  // The troupe's recent games, for the statistics' activity per game (#702).
+  const games = useQuery({
+    queryKey: ["boon-games", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/boon-games", { params: { path: { troupe_id: troupeId } } })),
+  });
   const set = (i: number, change: Partial<EntryRow>) => setRows(rows.map((r, j) => (j === i ? { ...r, ...change } : r)));
   const started = rows.filter(rowStarted);
   const parts = started.map((r) => ({
@@ -643,7 +649,7 @@ function QuickEntry({ troupeId, characters, onDone }: { troupeId: string; charac
     const made = await unwrap(
       api.POST("/api/troupes/{troupe_id}/boons", {
         params: { path: { troupe_id: troupeId } },
-        body: { boons: body, note },
+        body: { boons: body, note, game_id: gameId || null },
       }),
     );
     toast({
@@ -675,6 +681,18 @@ function QuickEntry({ troupeId, characters, onDone }: { troupeId: string; charac
         <Field label="Where they come from (optional)" hint="Goes in each boon's log: “Elysium, 3 October”.">
           <Input maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
+        {(games.data?.length ?? 0) > 0 && (
+          <Field label="At a game (optional)" hint="The game they were made at, for the statistics' boons at each game.">
+            <Select value={gameId} onChange={(e) => setGameId(e.target.value)}>
+              <option value="">Not at a game</option>
+              {games.data!.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {dates.dateTime(g.starts_at)}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
       </div>
       <ol className="flex flex-col gap-3">
         {rows.map((row, i) => (

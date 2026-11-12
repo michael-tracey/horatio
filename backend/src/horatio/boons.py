@@ -339,9 +339,11 @@ def register(
     note: str = "",
     as_character: Character | None = None,
     pending: bool = False,
+    game_id: uuid.UUID | None = None,
 ) -> list[Boon]:
     """Put `count` boons, alike, in the troupe's ledger: standing, or, `pending`,
-    submitted to wait for review (horatio.boon_reviews, #687)."""
+    submitted to wait for review (horatio.boon_reviews, #687); registered at the
+    troupe's game `game_id`, if staff say so (checked by the caller)."""
     terms = check_new(debtor, creditor, terms, count)
     made: list[Boon] = []
     for _ in range(count):
@@ -355,6 +357,7 @@ def register(
             staff_note=terms.staff_note,
             state="pending" if pending else "registered",
             submitted_by=user.id,
+            game_id=game_id,
         )
         place(boon, "debtor", debtor)
         place(boon, "creditor", creditor)

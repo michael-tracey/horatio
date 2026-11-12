@@ -159,6 +159,51 @@ test("staff see the boon standings: each character's net by the troupe's weights
   await expect(l.getByText(/Major 4/)).toBeVisible();
 });
 
+test("staff see the boon statistics: the ledger over time, who owes whom, between clans and at each game", async ({ browser }) => {
+  const custodian = await person(browser, "bstats-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "bstats-lead");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Debts Charted ${run}`, lead_handle: lead.handle });
+  const l = lead.page;
+  const wendeline = await send(l, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Wendeline Krause" });
+  const thaddeus = await send(l, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Thaddeus Grue" });
+  await send(l, "PUT", `/api/troupes/${troupe.id}/boon-ledger`, { on: true });
+  const owes = (debtor: object, creditor: object, kind: string) => ({ debtor, creditor, kind, made_on: "2026-10-03" });
+  await send(l, "POST", `/api/troupes/${troupe.id}/boons`, {
+    boons: [owes({ character_id: wendeline.id }, { character_id: thaddeus.id }, "major"), owes({ name: "The Grey Countess" }, { character_id: wendeline.id }, "minor")],
+  });
+
+  // Under Characters, Boon statistics: each of the four charts, every one with its table.
+  await l.goto(`/troupes/${troupe.id}`);
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("link", { name: "Boon statistics", exact: true }).click();
+  for (const title of ["Boons registered", "Who owes whom", "Debt between clans", "Boons at each game"]) {
+    await expect(l.getByRole("figure", { name: title })).toBeVisible();
+  }
+  // Open debt over time by weight, read as a table: the major (3) and the minor (1) stand this month.
+  await l.getByRole("radio", { name: "Open debt" }).click();
+  await l.getByRole("radio", { name: "Weight" }).click();
+  const overTime = l.getByRole("figure", { name: "Open debt over time" });
+  await overTime.getByRole("button", { name: "Show as table" }).click();
+  await expect(overTime.getByRole("table").getByRole("row").last().getByRole("cell").last()).toHaveText("4");
+
+  // The network shows both debts, and filtering to the name-only party keeps only hers.
+  const web = l.getByRole("figure", { name: "Who owes whom" });
+  await expect(web.getByRole("img", { name: /Thaddeus Grue/ })).toBeVisible();
+  await expect(web.getByText(/2 of 2 debts shown/)).toBeVisible();
+  await l.getByRole("combobox", { name: "Clan", exact: true }).selectOption("Name only");
+  await expect(web.getByText(/1 of 2 debts shown/)).toBeVisible();
+  await expect(web.getByRole("img", { name: /Thaddeus Grue/ })).toHaveCount(0);
+  await expect(web.getByRole("img", { name: /The Grey Countess/ })).toBeVisible();
+});
+
 test("in the Play View's Boons tab a player reports a boon, sees what the troupe lets them, and only the creditor's player settles it (#686)", async ({ browser }) => {
   const custodian = await person(browser, "boontab-custodian");
   makeCustodian(custodian.email);

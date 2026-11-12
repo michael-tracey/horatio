@@ -19,10 +19,12 @@ from horatio.api import (
     backstories,
     backups,
     badges,
+    bond_web,
     bonds,
     book_traits,
     boon_reviews,
     boon_standings,
+    boon_statistics,
     boons,
     calendar,
     cart,
@@ -237,9 +239,11 @@ for module in (
     nominations,
     remembrances,
     bonds,
+    bond_web,
     boons,
     boon_reviews,
     boon_standings,
+    boon_statistics,
     court,
     posts,
     targets,
@@ -253,6 +257,8 @@ for module in (
     jyhad_card,
 ):
     api.include_router(module.router)
+# The signed-in person's choice of throw pictures (#671), beside the troupe's own.
+api.include_router(throw_images.mine_router)
 
 
 @api.get("/health")

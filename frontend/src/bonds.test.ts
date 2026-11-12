@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BondOut } from "./api/types";
-import { BOND_SETTINGS, groupBonds, levelName, levelText, partyIn, reportedText, reportLine, reportState, statusText, untold, watched } from "./bonds";
+import { BOND_SETTINGS, groupBonds, levelName, levelText, partyIn, partyKey, reportedText, reportLine, reportState, statusText, untold, watched } from "./bonds";
 
 const bond = (id: string, thrall: string, regnant: string, status = "active", level = 1): BondOut => ({
   id,
@@ -94,5 +94,12 @@ describe("drinks players report", () => {
 
   it("offers every setting, the player modes among them", () => {
     expect(BOND_SETTINGS.map((s) => s.value)).toEqual(["off", "staff", "players_report", "players_manage"]);
+  });
+});
+
+describe("partyKey", () => {
+  it("keys a character by id and a name only by its name in lower case, as the web of bonds does (#708)", () => {
+    expect(partyKey({ character_id: "c1", name: "Agnes" })).toBe("c1");
+    expect(partyKey({ character_id: null, name: " Old Marguerite " })).toBe("name:old marguerite");
   });
 });

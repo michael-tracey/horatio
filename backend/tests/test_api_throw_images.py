@@ -1,5 +1,6 @@
 """A troupe's own rock, paper and scissors for the Throws tab (issue #670)."""
 
+import copy
 from collections.abc import Callable
 from io import BytesIO
 from pathlib import Path
@@ -13,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from horatio.config import get_settings
 from horatio.models import AuditEvent
-from tests.api_helpers import Person, Troupe
+from tests.api_helpers import Person, Troupe, backstory_optional
 from tests.test_api_character_search import member
 from tests.test_api_pictures import photo
 
@@ -155,3 +156,86 @@ def test_replacing_naming_and_removing_go_in_the_troupe_log(
     messages = [e["message"] for e in troupe.lead.client.get(f"/troupes/{troupe.id}/log").json()]
     assert "storyteller gave the troupe a new picture for Rock." in messages
     assert "storyteller named the troupe's throw pictures: Land of the Sky bones." in messages
+
+
+# --- Each person's choice (#671) ----------------------------------------------------
+
+
+def choose(person: Person, troupe_id: str | None) -> Any:
+    return person.client.patch("/preferences", json={"throw_images": troupe_id})
+
+
+def another(troupe: Troupe, name: str) -> Troupe:
+    """A second troupe with the same lead, for `upload` and `member`."""
+    made = troupe.custodian.client.post(
+        "/troupes", json={"name": name, "lead_handle": troupe.lead.handle}
+    )
+    assert made.status_code == 201, made.text
+    other = copy.copy(troupe)
+    # Its lead stands in as the storyteller who uploads; nobody else is on its staff.
+    other.id, other.storyteller = made.json()["id"], troupe.lead
+    backstory_optional(troupe.session, other.id)
+    return other
+
+
+def test_a_player_chooses_only_whole_sets_of_troupes_they_play_in(
+    troupe: Troupe, kept: Path
+) -> None:
+    images = full_set(troupe)
+    upload(troupe, "rock", photo())
+    # Another troupe with a whole set, which the player doesn't play in.
+    elsewhere = another(troupe, "Elsewhere by Night")
+    full_set(elsewhere)
+    # A third the player plays in, with only two pictures.
+    half = another(troupe, "Half a Set")
+    upload(half, "rock", photo())
+    upload(half, "paper", photo())
+
+    nothing = troupe.player.client.get("/throw-images").json()
+    assert nothing == {"chosen": None, "offered": []}
+
+    member(troupe, troupe.player, "Agatha Thrown", clan="Ventrue")
+    member(half, troupe.player, "Bertha Halved", clan="Ventrue")
+    mine = troupe.player.client.get("/throw-images").json()
+    assert mine["chosen"] is None
+    assert [s["troupe_name"] for s in mine["offered"]] == ["Lords of the Night"]
+    offered = mine["offered"][0]
+    assert offered["troupe_id"] == troupe.id
+    assert offered["paper"] == images["paper"] and offered["rock"] != images["rock"]
+
+    refused = choose(troupe.player, elsewhere.id)
+    assert refused.status_code == 422
+    assert "a troupe you play in" in refused.json()["detail"]
+    assert choose(troupe.player, half.id).status_code == 422
+    assert choose(troupe.player, "not a troupe").status_code == 422
+    assert troupe.player.client.get("/preferences").json()["throw_images"] is None
+
+    chosen = choose(troupe.player, troupe.id)
+    assert chosen.status_code == 200, chosen.text
+    assert chosen.json()["throw_images"] == troupe.id
+    assert troupe.player.client.get("/throw-images").json()["chosen"] == offered
+    # Staff play in their troupe too.
+    assert choose(troupe.narrator, troupe.id).status_code == 200
+    assert choose(troupe.player, None).json()["throw_images"] is None
+
+
+def test_the_choice_falls_back_to_horatios_when_the_set_or_the_troupe_goes(
+    troupe: Troupe, kept: Path
+) -> None:
+    images = full_set(troupe)
+    character_id = member(troupe, troupe.player, "Agatha Thrown", clan="Ventrue")
+    assert choose(troupe.player, troupe.id).status_code == 200
+    assert troupe.player.client.get("/throw-images").json()["chosen"]["troupe_id"] == troupe.id
+
+    # The troupe removes its set: Horatio's again, quietly.
+    troupe.storyteller.client.delete(f"/troupes/{troupe.id}/throw-images")
+    assert troupe.player.client.get("/throw-images").json() == {"chosen": None, "offered": []}
+
+    # A new set counts again; leaving the troupe falls back, and its pictures stop coming.
+    images = full_set(troupe)
+    assert troupe.player.client.get("/throw-images").json()["chosen"]["troupe_id"] == troupe.id
+    left = troupe.player.client.delete(f"/characters/{character_id}/troupes/{troupe.id}")
+    assert left.status_code in (200, 204), left.text
+    assert troupe.player.client.get("/throw-images").json() == {"chosen": None, "offered": []}
+    picture = f"{images['rock'].removeprefix('/api')}/512.webp"
+    assert troupe.player.client.get(picture).status_code == 404
