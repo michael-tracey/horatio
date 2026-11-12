@@ -1,6 +1,8 @@
+import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { api, unwrap } from "../../api/client";
 import type { CarriedOut, ConditionOut, PlayStatusOut, PlayView, StatusChoiceIn, StatusIn } from "../../api/types";
+import { claimsText } from "../../boonStatus";
 import { pageLabel } from "../../components/TraitInfo";
 import { Badge, Button, ErrorText, Input } from "../../components/ui";
 import { useDates } from "../../dates";
@@ -110,7 +112,13 @@ export function StatusTab({
           <Panel key={g.type} title={g.title}>
             <ul className="divide-y divide-ash">
               {items.map((item) => (
-                <StatusRow key={item.key} item={item} spend={() => spend(item)} undo={item.spent_by ? () => undo(item.spent_by!) : undefined} />
+                <StatusRow
+                  key={item.key}
+                  item={item}
+                  spend={() => spend(item)}
+                  undo={item.spent_by ? () => undo(item.spent_by!) : undefined}
+                  extra={item.name === "Praised" && item.type === "Fleeting" && !item.spent ? <PraisedClaims characterId={view.character_id} online={online} /> : undefined}
+                />
               ))}
             </ul>
           </Panel>
@@ -299,7 +307,32 @@ function ConditionRow({ condition: c, staff, disabled, choose }: { condition: Co
   );
 }
 
-function StatusRow({ item, spend, undo }: { item: CarriedOut; spend: () => void; undo?: () => void }) {
+/**
+ * Whom spending Praised can claim a trivial boon's worth of help from (MET: VTM p. 316):
+ * the Accepted of the character's sect in its troupe's boon ledger who aren't already
+ * in its debt. Asked when online, where the troupe keeps a ledger; nothing otherwise.
+ */
+function PraisedClaims({ characterId, online }: { characterId: string; online: boolean }) {
+  const claims = useQuery({
+    queryKey: ["praised-claims", characterId],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/praised-claims", { params: { path: { character_id: characterId } } })),
+    enabled: online,
+    retry: false,
+  });
+  if (!claims.data) return null;
+  const c = claims.data;
+  return (
+    <p className="text-xs text-gold">
+      {claimsText(
+        c.characters.map((x) => x.name),
+        c.sect,
+        c.troupe_name,
+      )}
+    </p>
+  );
+}
+
+function StatusRow({ item, spend, undo, extra }: { item: CarriedOut; spend: () => void; undo?: () => void; extra?: ReactNode }) {
   const dates = useDates();
   const about = item.about;
   const page = pageLabel(about?.page);
@@ -324,6 +357,7 @@ function StatusRow({ item, spend, undo }: { item: CarriedOut; spend: () => void;
         {item.ending && <p className="text-xs text-gold">{endingText(item.ending, dates.day)}.</p>}
         {item.story && <p className="text-xs text-mist">{item.story}</p>}
         {page && <p className="text-xs text-mist">{page}</p>}
+        {extra}
       </div>
       {item.spendable &&
         (item.spent ? (
