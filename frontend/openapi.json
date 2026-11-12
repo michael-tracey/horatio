@@ -6029,6 +6029,29 @@
         "title": "BoonPassOnIn",
         "type": "object"
       },
+      "BoonPlayersIn": {
+        "properties": {
+          "see": {
+            "enum": [
+              "intake",
+              "owes",
+              "owed"
+            ],
+            "title": "See",
+            "type": "string"
+          },
+          "settle": {
+            "title": "Settle",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "see",
+          "settle"
+        ],
+        "title": "BoonPlayersIn",
+        "type": "object"
+      },
       "BoonSettleIn": {
         "properties": {
           "how": {
@@ -30317,6 +30340,280 @@
         "title": "PlanOut",
         "type": "object"
       },
+      "PlayBoonIn": {
+        "description": "A boon a player reports for their character.",
+        "properties": {
+          "conditions": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Conditions",
+            "type": "string"
+          },
+          "count": {
+            "default": 1,
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "direction": {
+            "enum": [
+              "owes",
+              "owed"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "trivial",
+              "minor",
+              "major",
+              "blood",
+              "life"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "made_on": {
+            "format": "date",
+            "title": "Made On",
+            "type": "string"
+          },
+          "notify_on_trade": {
+            "default": false,
+            "title": "Notify On Trade",
+            "type": "boolean"
+          },
+          "other": {
+            "$ref": "#/components/schemas/BoonPartyIn"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "other",
+          "direction",
+          "kind",
+          "made_on"
+        ],
+        "title": "PlayBoonIn",
+        "type": "object"
+      },
+      "PlayBoonOut": {
+        "description": "A boon as its party's player sees it: never its log, staff note or who\nregistered it.",
+        "properties": {
+          "can_settle": {
+            "title": "Can Settle",
+            "type": "boolean"
+          },
+          "conditions": {
+            "title": "Conditions",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "trivial",
+              "minor",
+              "major",
+              "blood",
+              "life"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "made_on": {
+            "format": "date",
+            "title": "Made On",
+            "type": "string"
+          },
+          "notify_on_trade": {
+            "title": "Notify On Trade",
+            "type": "boolean"
+          },
+          "other": {
+            "title": "Other",
+            "type": "string"
+          },
+          "other_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Other Id"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "settled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settled At"
+          },
+          "settled_how": {
+            "anyOf": [
+              {
+                "enum": [
+                  "called_in",
+                  "forgiven",
+                  "ignored"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settled How"
+          },
+          "settled_note": {
+            "title": "Settled Note",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "registered",
+              "settled"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "other",
+          "other_id",
+          "kind",
+          "made_on",
+          "reason",
+          "conditions",
+          "notify_on_trade",
+          "state",
+          "settled_how",
+          "settled_at",
+          "settled_note",
+          "can_settle"
+        ],
+        "title": "PlayBoonOut",
+        "type": "object"
+      },
+      "PlayBoonSettleIn": {
+        "properties": {
+          "how": {
+            "enum": [
+              "called_in",
+              "forgiven"
+            ],
+            "title": "How",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "how"
+        ],
+        "title": "PlayBoonSettleIn",
+        "type": "object"
+      },
+      "PlayBoonsOut": {
+        "properties": {
+          "can_report": {
+            "title": "Can Report",
+            "type": "boolean"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterChoice-Output"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "owed": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PlayBoonOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owed"
+          },
+          "owes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PlayBoonOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owes"
+          },
+          "see": {
+            "enum": [
+              "intake",
+              "owes",
+              "owed"
+            ],
+            "title": "See",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "see",
+          "can_report",
+          "owes",
+          "owed",
+          "characters"
+        ],
+        "title": "PlayBoonsOut",
+        "type": "object"
+      },
       "PlayItemOut": {
         "description": "An item the character holds, to equip at a game (issue #306).",
         "properties": {
@@ -31013,7 +31310,8 @@
               "pools",
               "status",
               "equipment",
-              "throws"
+              "throws",
+              "boons"
             ],
             "items": {
               "enum": [
@@ -31022,7 +31320,8 @@
                 "pools",
                 "status",
                 "equipment",
-                "throws"
+                "throws",
+                "boons"
               ],
               "type": "string"
             },
@@ -46060,7 +46359,8 @@
                     "pools",
                     "status",
                     "equipment",
-                    "throws"
+                    "throws",
+                    "boons"
                   ],
                   "type": "string"
                 },
@@ -46675,6 +46975,21 @@
             "title": "Blood Bonds",
             "type": "string"
           },
+          "boon_players_see": {
+            "default": "intake",
+            "enum": [
+              "intake",
+              "owes",
+              "owed"
+            ],
+            "title": "Boon Players See",
+            "type": "string"
+          },
+          "boon_players_settle": {
+            "default": false,
+            "title": "Boon Players Settle",
+            "type": "boolean"
+          },
           "boons": {
             "default": false,
             "title": "Boons",
@@ -46794,7 +47109,8 @@
                 "pools",
                 "status",
                 "equipment",
-                "throws"
+                "throws",
+                "boons"
               ],
               "type": "string"
             },
@@ -57695,6 +58011,166 @@
         "summary": "Read Play",
         "tags": [
           "play"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play-boons": {
+      "get": {
+        "description": "The Play View's Boons tab: the form to report a boon, and what the troupe lets\nits players see of the character's boons. Staff on a PC see what its player does;\non an NPC they run, everything.",
+        "operationId": "play_boons_api_characters__character_id__play_boons_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayBoonsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Play Boons",
+        "tags": [
+          "boons"
+        ]
+      },
+      "post": {
+        "description": "A player reports a boon for their character, which goes in the troupe's ledger\nas theirs, done as the character.",
+        "operationId": "report_boon_api_characters__character_id__play_boons_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlayBoonIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayBoonsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Report Boon",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/play-boons/{boon_id}/settle": {
+      "post": {
+        "description": "A boon owed to the character is settled, called in or forgiven, by its\ncreditor's player, where the troupe lets them.",
+        "operationId": "settle_owed_api_characters__character_id__play_boons__boon_id__settle_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "boon_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Boon Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlayBoonSettleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayBoonsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Settle Owed",
+        "tags": [
+          "boons"
         ]
       }
     },
@@ -71975,6 +72451,60 @@
           }
         },
         "summary": "Set Boon Ledger",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boon-players": {
+      "put": {
+        "description": "What the troupe's players see of its boon ledger in the Play View, and whether a\nboon's creditor's player may mark it settled there.",
+        "operationId": "set_boon_players_api_troupes__troupe_id__boon_players_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoonPlayersIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Boon Players",
         "tags": [
           "boons"
         ]

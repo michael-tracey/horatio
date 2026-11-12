@@ -25,6 +25,7 @@ import { PoolsTab, SheetTab } from "./ReferenceTabs";
 import { RetainerPools } from "./RetainerPools";
 import { StatusTab } from "./Status";
 import { TeachingAsks } from "./Teaching";
+import { BoonsTab } from "./Boons";
 import { ThrowsTab } from "./Throws";
 import { DRANK, incapacitated, influenceStanding, latestUndoable, tapsToast, type Damage, type Shown, type ShownEntry, type Tap } from "./tracker";
 import { TrackerStrip } from "./TrackerStrip";
@@ -55,8 +56,8 @@ const UNNOTED = new Set(["blood", "willpower", "health"]);
  * the Sheet to look things up in; the Tracker, with blood, Willpower, health,
  * Morality and Beast traits as boxes with big buttons to tap, the character's
  * limited uses and the game's log; and Pools, its test pools and powers; with
- * Status for a character with sect status, Equipment, and Throws for rock, paper,
- * scissors. On every tab but the Tracker, a strip under the tabs shows Blood,
+ * Status for a character with sect status, Equipment, Throws for rock, paper,
+ * scissors, and Boons while its troupe keeps a boon ledger. On every tab but the Tracker, a strip under the tabs shows Blood,
  * Willpower and health, with "−" to spend, and the Pools tab's powers have Use
  * buttons. Each tap says what it did in a toast with Undo, and Undo for the last
  * tap is in the header on every tab. Taps are kept on the phone when there is no signal and sent when it
@@ -156,6 +157,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
       )}
       {tab === "equipment" && <EquipmentTab characterId={characterId} view={shown} tap={tap} />}
       {tab === "throws" && <ThrowsTab />}
+      {tab === "boons" && <BoonsTab characterId={characterId} name={shown.character_name} online={sync.online} />}
       {tab === "tracker" && (
         <>
           <TeachingAsks characterId={characterId} />

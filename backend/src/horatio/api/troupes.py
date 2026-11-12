@@ -127,6 +127,10 @@ class TroupeOut(BaseModel):
     blood_bonds: Literal["off", "staff", "players_report", "players_manage"] = "off"
     # Boons (horatio.boons): whether the troupe keeps a boon ledger.
     boons: bool = False
+    # What its players see of the ledger in the Play View (#686), and whether a boon's
+    # creditor's player may mark it settled there.
+    boon_players_see: Literal["intake", "owes", "owed"] = "intake"
+    boon_players_settle: bool = False
     # The caller may see its Who's Who: its staff, and the players of its characters.
     whos_who: bool
     # Its portrait (add "/48.webp", "/128.webp" or "/512.webp"), or None.
@@ -368,6 +372,8 @@ def one_out(
         remembrances=troupe.remembrances,
         blood_bonds=troupe.blood_bonds,  # type: ignore[arg-type]  # checked by the database
         boons=troupe.boons,
+        boon_players_see=troupe.boon_players_see,  # type: ignore[arg-type]  # checked by the database
+        boon_players_settle=troupe.boon_players_settle,
         whos_who=whos_who,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
         banner=pictures.banner_url(troupe.id, troupe.banner_id),

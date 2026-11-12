@@ -96,7 +96,7 @@ const PERSON = new Set(["me", "characters", "troupes"]);
 /** The rules: the same for everyone. */
 const RULES = new Set(["catalogue", "splats"]);
 /** The Play View's own, about one character: kept only for one with a Play View. */
-const PLAY = new Set(["play", "play-reference", "play-games"]);
+const PLAY = new Set(["play", "play-reference", "play-games", "play-boons"]);
 /** About one character, named second in the key: kept for the person's own. The sheet and
  * what it shows, and the Play View and its tabs. Never the Play View's Others tab, which
  * is about other characters, nor anything between games (downtimes, XP, results). */

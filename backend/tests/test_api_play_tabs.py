@@ -16,7 +16,11 @@ from tests.test_api_downtimes import member_character
 from tests.test_api_scenes import new_scene, npc
 from tests.test_api_troupe_settings_share import apply, exported, second
 
+# The tabs a troupe that keeps no boon ledger shows; Boons (#686) is a tab only while
+# it keeps one.
 EVERY = ["sheet", "tracker", "pools", "status", "equipment", "throws"]
+# Every tab a troupe can switch.
+ALL = [*EVERY, "boons"]
 
 
 @pytest.fixture
@@ -73,7 +77,8 @@ def test_tabs_switched_off_are_gone_for_players_and_logged(troupe: Troupe) -> No
     assert tabs(troupe.storyteller, agnes) == ["sheet", "tracker", "status", "throws"]
     assert plays(troupe.player, agnes)
     assert logged(troupe) == [
-        "storyteller set the Play View's tabs for players: Sheet, Tracker, Status and Throws."
+        "storyteller set the Play View's tabs for players:"
+        " Sheet, Tracker, Status, Throws and Boons."
     ]
     # The same again changes nothing, and isn't logged.
     switch_off(troupe, "pools", "equipment")
@@ -103,7 +108,7 @@ def test_every_tab_off_takes_the_play_view_away_from_player_characters(troupe: T
     bram = npc(troupe, "Bram")
     scene = new_scene(troupe.storyteller, troupe, "The docks")
 
-    switch_off(troupe, *EVERY)
+    switch_off(troupe, *ALL)
 
     assert logged(troupe)[-1] == (
         "storyteller set the Play View's tabs for players: no tabs,"
@@ -129,7 +134,7 @@ def test_every_tab_off_takes_the_play_view_away_from_player_characters(troupe: T
     assert pinned.json()["detail"] == "Its troupe doesn't use the Play View for players."
 
     # One tab back on brings it back.
-    switch_off(troupe, "sheet", "tracker", "pools", "status", "throws")
+    switch_off(troupe, "sheet", "tracker", "pools", "status", "throws", "boons")
     assert plays(troupe.player, agnes)
     assert tabs(troupe.player, agnes) == ["equipment"]
     assert tabs(troupe.storyteller, bram) == EVERY
