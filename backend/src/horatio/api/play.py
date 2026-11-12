@@ -852,7 +852,7 @@ def felt_bonds(
     thrall on the Scene view). None while the troupe's setting is off. A bond fading
     after its regnant's death keeps the regnant's name to the end (#662)."""
     return [
-        bond_effects.Felt(regnant=s.regnant.shown, level=bonds.level(db, s.bond))
+        bond_effects.Felt(regnant=s.regnant.shown, level=s.level)
         for s in bonds.seen_by(db, user, character, settle=settle)
         if s.bond.thrall_id == character.id
     ]

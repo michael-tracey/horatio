@@ -53,7 +53,7 @@ def troupes_of(db: Session, character: Character) -> list[Troupe]:
             TroupeMembership.left_at.is_(None),
             Troupe.archived_at.is_(None),
         )
-        .order_by(TroupeMembership.joined_at)
+        .order_by(TroupeMembership.joined_at, TroupeMembership.id)
     )
     return sorted(troupes, key=lambda t: t.id != character.home_troupe_id)
 

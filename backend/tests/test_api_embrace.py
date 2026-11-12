@@ -169,6 +169,9 @@ def test_vivian_is_embraced_as_the_book_has_it(troupe: Troupe) -> None:
     character = troupe.player.client.get(f"/characters/{ghoul}").json()
     assert character["splat"] == "vampire"
     assert troupe.player.client.get(f"/characters/{ghoul}/domitor").json() is None
+    # Her sire is on her sheet too, for the troupe's sire lines (#707).
+    sire = troupe.player.client.get(f"/characters/{ghoul}/sire").json()
+    assert (sire["name"], sire["clan"]) == (MALKAVIAN["name"], MALKAVIAN["clan"])
     assert ratings(troupe.player, ghoul, "clan") == {"Malkavian": None}
     assert ratings(troupe.player, ghoul, "disciplines") == {
         "Auspex": 2,
