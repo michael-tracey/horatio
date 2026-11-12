@@ -113,6 +113,7 @@ describe("numbers", () => {
     expect(formatValue(0.5)).toBe("0.5");
     expect(formatValue(1234)).toBe("1,234");
     expect(formatValue(12_500)).toBe("12.5K");
+    expect(formatValue(2_500_000)).toBe("2.5M");
   });
 
   it("keep one style along an axis, from its largest tick", () => {
