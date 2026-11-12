@@ -677,6 +677,26 @@ SETTINGS: dict[str, Setting] = {
         ),
         Setting("boons", "at_game", "Boons", bool, on_off),
         Setting(
+            "boon_players_see",
+            "at_game",
+            "What players see of the boon ledger",
+            Literal["intake", "owes", "owed"],
+            chosen(
+                {
+                    "intake": "The form to report a boon only",
+                    "owes": "Also what they owe",
+                    "owed": "Also what they owe and are owed",
+                }
+            ),
+        ),
+        Setting(
+            "boon_players_settle",
+            "at_game",
+            "Players mark boons owed to them settled",
+            bool,
+            on_off,
+        ),
+        Setting(
             "boon_weights",
             "at_game",
             "Boon weights",
@@ -2338,6 +2358,8 @@ def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, Setti
             "items_expire",
             "blood_bonds",
             "boons",
+            "boon_players_see",
+            "boon_players_settle",
             "player_nominations",
             "remembrances",
             "assamite_name",

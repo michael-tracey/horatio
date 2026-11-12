@@ -134,7 +134,7 @@ A debt one character (the debtor) owes another (the creditor), registered in a t
 _Avoid_: Favour, debt (in names), IOU, prestation (for one boon)
 
 **Boon Ledger**:
-A troupe's record of its boons, kept by its running staff while the troupe's Boons setting is on. Off, it is hidden everywhere, and kept.
+A troupe's record of its boons, kept by its running staff while the troupe's Boons setting is on. Off, it is hidden everywhere, and kept. Its players report boons for their characters in the Play View's Boons tab, and see there what the troupe lets them: nothing more, what their characters owe, or also what they're owed; where it lets them, a boon's creditor's player marks it settled.
 _Avoid_: Boon registry, boon sheet
 
 **Boon Standings**:

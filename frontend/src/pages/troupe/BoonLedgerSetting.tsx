@@ -1,3 +1,4 @@
+import { useId, useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { TroupeOut } from "../../api/types";
 import { BOON_PAGE } from "../../boons";
@@ -47,8 +48,88 @@ export function BoonLedgerSetting({ troupe, canEdit }: { troupe: TroupeOut; canE
             </span>
           </label>
           <ErrorText error={save.error} />
+          {on && <PlayersSetting troupe={troupe} />}
         </div>
       )}
+      {!canEdit && on && <p className="mt-2 text-sm">{PLAYERS_SEE.find((p) => p.value === troupe.boon_players_see)?.summary}</p>}
     </Card>
+  );
+}
+
+type PlayersSee = TroupeOut["boon_players_see"];
+
+/** What players see of the ledger in the Play View's Boons tab (#686), least first. */
+const PLAYERS_SEE: { value: NonNullable<PlayersSee>; label: string; hint: string; summary: string }[] = [
+  {
+    value: "intake",
+    label: "The form to report a boon only",
+    hint: "Players report boons; they see nothing of the ledger.",
+    summary: "Players report boons in the Play View, and see nothing of the ledger.",
+  },
+  {
+    value: "owes",
+    label: "Also what they owe",
+    hint: "Each player sees the boons their character owes.",
+    summary: "Players report boons in the Play View, and see what their characters owe.",
+  },
+  {
+    value: "owed",
+    label: "Also what they're owed",
+    hint: "Each player sees the boons their character owes and is owed.",
+    summary: "Players report boons in the Play View, and see what their characters owe and are owed.",
+  },
+];
+
+/**
+ * The Play View's Boons tab (#686): what players see there, and whether a boon's
+ * creditor's player may mark it settled, called in or forgiven. Only the creditor's:
+ * a debtor saying "I paid that" is for the Harpy to judge. They settle only boons
+ * they see, so it needs "Also what they're owed".
+ */
+function PlayersSetting({ troupe }: { troupe: TroupeOut }) {
+  const toast = useToast();
+  const group = useId();
+  // Shown as chosen at once, while it saves.
+  const [see, setSee] = useState<NonNullable<PlayersSee>>(troupe.boon_players_see ?? "intake");
+  const [settle, setSettle] = useState(troupe.boon_players_settle ?? false);
+  const save = useAction(async (body: { see: NonNullable<PlayersSee>; settle: boolean }) => {
+    await unwrap(api.PUT("/api/troupes/{troupe_id}/boon-players", { params: { path: { troupe_id: troupe.id } }, body }));
+    toast({ message: "Saved what players see of the boon ledger." });
+  });
+  const choose = (body: { see: NonNullable<PlayersSee>; settle: boolean }) => {
+    setSee(body.see);
+    setSettle(body.settle);
+    save.mutate(body, {
+      onError: () => {
+        setSee(troupe.boon_players_see ?? "intake");
+        setSettle(troupe.boon_players_settle ?? false);
+      },
+    });
+  };
+  return (
+    <fieldset className="mt-2 flex flex-col gap-2 border-t border-ash/60 pt-3">
+      <legend className="text-mist">In the Play View&apos;s Boons tab, players see</legend>
+      {PLAYERS_SEE.map((p) => (
+        <label key={p.value} className="flex items-start gap-2">
+          <input type="radio" className="mt-1" name={group} checked={see === p.value} disabled={save.isPending} onChange={() => choose({ see: p.value, settle })} />
+          <span>
+            {p.label}
+            <span className="block text-xs text-mist">{p.hint}</span>
+          </span>
+        </label>
+      ))}
+      <label className="mt-1 flex items-start gap-2">
+        <input type="checkbox" className="mt-1" checked={settle} disabled={save.isPending} onChange={(e) => choose({ see, settle: e.target.checked })} />
+        <span>
+          Players mark boons owed to them settled
+          <span className="block text-xs text-mist">
+            Only a boon&apos;s creditor&apos;s player, as called in or forgiven, and only where they see what they&apos;re owed
+            {see === "owed" ? "." : ": choose “Also what they're owed” for it to take effect."}
+          </span>
+        </span>
+      </label>
+      <p className="text-xs text-mist">The Boons tab can also be switched off under Play View tabs.</p>
+      <ErrorText error={save.error} />
+    </fieldset>
   );
 }

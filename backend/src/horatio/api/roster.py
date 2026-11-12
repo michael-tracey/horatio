@@ -860,6 +860,8 @@ MESSAGES: dict[str, str] = {
     "house.remembrances": "{actor} switched Remembrances {setting}.",
     "house.blood_bonds": "{actor} set Blood bonds to {setting}.",
     "house.boons": "{actor} switched the boon ledger {setting}.",
+    "house.boon_players": "{actor} set what players see of the boon ledger in the Play View:"
+    " {see}; they {settle} mark a boon owed to them settled.",
     "boon.weights": "{actor} set what boons weigh in the standings: {changed}.",
     "boon.registered": "{actor} registered {what}: {debtor} owes {creditor}{because}.",
     "boon.edited": "{actor} edited {debtor}'s {kind} boon to {creditor}{because}.",

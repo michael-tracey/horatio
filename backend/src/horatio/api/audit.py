@@ -59,7 +59,14 @@ GROUPS: dict[AuditGroup, tuple[str, tuple[str, ...]]] = {
     AuditGroup.CREATION: ("Character creation", ("creation.",)),
     AuditGroup.STATUS: (
         "Status",
-        ("status.", "troupe.status_by", "troupe.status_at_checkin", "boon.", "house.boons"),
+        (
+            "status.",
+            "troupe.status_by",
+            "troupe.status_at_checkin",
+            "boon.",
+            "house.boons",
+            "house.boon_players",
+        ),
     ),
     AuditGroup.TITLES: ("Titles", ("title.", "troupe.titles_by")),
     AuditGroup.DOWNTIMES: (

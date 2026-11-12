@@ -39,6 +39,7 @@ class Troupe(Imported, Record):
             "blood_bonds in ('off', 'staff', 'players_report', 'players_manage')",
             name="blood_bonds",
         ),
+        CheckConstraint("boon_players_see in ('intake', 'owes', 'owed')", name="boon_players_see"),
     )
 
     name: Mapped[str]
@@ -157,6 +158,13 @@ class Troupe(Imported, Record):
     # nothing of it shows, not even in the log; what was registered is kept, and comes
     # back when it is on again.
     boons: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # What its players see of the ledger in the Play View's Boons tab (#686): "intake",
+    # the form to report a boon, and nothing of the ledger; "owes", also the boons
+    # their characters owe; "owed", also those owed to them.
+    boon_players_see: Mapped[str] = mapped_column(default="intake", server_default="intake")
+    # A boon's creditor's player may mark it settled, called in or forgiven, from the
+    # Play View (#686). Only with "owed", where they see it.
+    boon_players_settle: Mapped[bool] = mapped_column(default=False, server_default="false")
     # The court over time (horatio.title_history, #712): whether its players see who
     # held each title and when. Its staff always do.
     court_history_players: Mapped[bool] = mapped_column(default=False, server_default="false")

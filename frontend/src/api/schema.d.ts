@@ -2638,6 +2638,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/play-boons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Play Boons
+         * @description The Play View's Boons tab: the form to report a boon, and what the troupe lets
+         *     its players see of the character's boons. Staff on a PC see what its player does;
+         *     on an NPC they run, everything.
+         */
+        get: operations["play_boons_api_characters__character_id__play_boons_get"];
+        put?: never;
+        /**
+         * Report Boon
+         * @description A player reports a boon for their character, which goes in the troupe's ledger
+         *     as theirs, done as the character.
+         */
+        post: operations["report_boon_api_characters__character_id__play_boons_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/play-boons/{boon_id}/settle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Settle Owed
+         * @description A boon owed to the character is settled, called in or forgiven, by its
+         *     creditor's player, where the troupe lets them.
+         */
+        post: operations["settle_owed_api_characters__character_id__play_boons__boon_id__settle_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/play/counters": {
         parameters: {
             query?: never;
@@ -7575,6 +7623,27 @@ export interface paths {
          *     registered is kept, and comes back when it is switched on again.
          */
         put: operations["set_boon_ledger_api_troupes__troupe_id__boon_ledger_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boon-players": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Boon Players
+         * @description What the troupe's players see of its boon ledger in the Play View, and whether a
+         *     boon's creditor's player may mark it settled there.
+         */
+        put: operations["set_boon_players_api_troupes__troupe_id__boon_players_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -14006,6 +14075,16 @@ export interface components {
              */
             side: "debtor" | "creditor";
             to: components["schemas"]["BoonPartyIn"];
+        };
+        /** BoonPlayersIn */
+        BoonPlayersIn: {
+            /**
+             * See
+             * @enum {string}
+             */
+            see: "intake" | "owes" | "owed";
+            /** Settle */
+            settle: boolean;
         };
         /** BoonSettleIn */
         BoonSettleIn: {
@@ -23932,6 +24011,129 @@ export interface components {
             type: "elite" | "underworld";
         };
         /**
+         * PlayBoonIn
+         * @description A boon a player reports for their character.
+         */
+        PlayBoonIn: {
+            /**
+             * Conditions
+             * @default
+             */
+            conditions: string;
+            /**
+             * Count
+             * @default 1
+             */
+            count: number;
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "owes" | "owed";
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "trivial" | "minor" | "major" | "blood" | "life";
+            /**
+             * Made On
+             * Format: date
+             */
+            made_on: string;
+            /**
+             * Notify On Trade
+             * @default false
+             */
+            notify_on_trade: boolean;
+            other: components["schemas"]["BoonPartyIn"];
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /**
+         * PlayBoonOut
+         * @description A boon as its party's player sees it: never its log, staff note or who
+         *     registered it.
+         */
+        PlayBoonOut: {
+            /** Can Settle */
+            can_settle: boolean;
+            /** Conditions */
+            conditions: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "trivial" | "minor" | "major" | "blood" | "life";
+            /**
+             * Made On
+             * Format: date
+             */
+            made_on: string;
+            /** Notify On Trade */
+            notify_on_trade: boolean;
+            /** Other */
+            other: string;
+            /** Other Id */
+            other_id: string | null;
+            /** Reason */
+            reason: string;
+            /** Settled At */
+            settled_at: string | null;
+            /** Settled How */
+            settled_how: ("called_in" | "forgiven" | "ignored") | null;
+            /** Settled Note */
+            settled_note: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "registered" | "settled";
+        };
+        /** PlayBoonSettleIn */
+        PlayBoonSettleIn: {
+            /**
+             * How
+             * @enum {string}
+             */
+            how: "called_in" | "forgiven";
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** PlayBoonsOut */
+        PlayBoonsOut: {
+            /** Can Report */
+            can_report: boolean;
+            /** Characters */
+            characters: components["schemas"]["CharacterChoice-Output"][];
+            /** Owed */
+            owed: components["schemas"]["PlayBoonOut"][] | null;
+            /** Owes */
+            owes: components["schemas"]["PlayBoonOut"][] | null;
+            /**
+             * See
+             * @enum {string}
+             */
+            see: "intake" | "owes" | "owed";
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
+        /**
          * PlayItemOut
          * @description An item the character holds, to equip at a game (issue #306).
          */
@@ -24192,10 +24394,11 @@ export interface components {
              *       "pools",
              *       "status",
              *       "equipment",
-             *       "throws"
+             *       "throws",
+             *       "boons"
              *     ]
              */
-            tabs: ("sheet" | "tracker" | "pools" | "status" | "equipment" | "throws")[];
+            tabs: ("sheet" | "tracker" | "pools" | "status" | "equipment" | "throws" | "boons")[];
             vitae?: components["schemas"]["VitaeOut"] | null;
             willpower: components["schemas"]["Tracker"];
             /** Willpower Lent */
@@ -30129,7 +30332,7 @@ export interface components {
             /** Name */
             name?: string | null;
             /** Play Tabs Off */
-            play_tabs_off?: ("sheet" | "tracker" | "pools" | "status" | "equipment" | "throws")[] | null;
+            play_tabs_off?: ("sheet" | "tracker" | "pools" | "status" | "equipment" | "throws" | "boons")[] | null;
             /** Session Xp */
             session_xp?: number | null;
             /** Starting Xp */
@@ -30313,6 +30516,17 @@ export interface components {
              */
             blood_bonds: "off" | "staff" | "players_report" | "players_manage";
             /**
+             * Boon Players See
+             * @default intake
+             * @enum {string}
+             */
+            boon_players_see: "intake" | "owes" | "owed";
+            /**
+             * Boon Players Settle
+             * @default false
+             */
+            boon_players_settle: boolean;
+            /**
              * Boons
              * @default false
              */
@@ -30389,7 +30603,7 @@ export interface components {
              * Play Tabs Off
              * @default []
              */
-            play_tabs_off: ("sheet" | "tracker" | "pools" | "status" | "equipment" | "throws")[];
+            play_tabs_off: ("sheet" | "tracker" | "pools" | "status" | "equipment" | "throws" | "boons")[];
             /**
              * Player Nominations
              * @default false
@@ -36812,6 +37026,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlayView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    play_boons_api_characters__character_id__play_boons_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayBoonsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_boon_api_characters__character_id__play_boons_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlayBoonIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayBoonsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    settle_owed_api_characters__character_id__play_boons__boon_id__settle_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                boon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlayBoonSettleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayBoonsOut"];
                 };
             };
             /** @description Validation Error */
@@ -46386,6 +46702,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["BoonLedgerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_boon_players_api_troupes__troupe_id__boon_players_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonPlayersIn"];
             };
         };
         responses: {
