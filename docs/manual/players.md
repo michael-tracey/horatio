@@ -136,6 +136,10 @@ Some skills and backgrounds take specialisations: Lore, Academics, Drive, Lingui
 
 Crafts, Performance and Science need their field before the sheet is complete: a red line under the skill asks for it, with **Set**.
 
+### Your Haven
+
+If your character has the Haven background, its row on the sheet shows your Haven. Press **Name your Haven and choose its advantages** to put it on your home troupe's list of locations, then **Edit your Haven** to change it. You set its name, a description, its address and a map link, and choose its advantages: one for each dot of Haven, plus Security free if you have the Security skill (MET: VTM p. 102). Your storytellers see each change. If they have made one of the troupe's locations your Haven, you see it here, but they change it.
+
 ### Printing your sheet
 
 **Print**, at the top right of the sheet, opens the character laid out for paper, in the order of the official sheet, sized to fit one page. Press **Print** on that page to print it. The little arrow beside Print prints it once with numbers or pips, whichever your settings don't use. The paper size (A4 or US Letter) is in your settings.

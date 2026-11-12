@@ -27,6 +27,7 @@ type Draft = {
   influence_type: "" | "elite" | "underworld";
   influence_area: string;
   address: string;
+  description: string;
   web_address: string;
   map_link: string;
   feeding_block: string;
@@ -61,6 +62,7 @@ function draftOf(l: LocationOut | null): Draft {
     influence_type: l?.influence_type ?? "",
     influence_area: l?.influence_area ?? "",
     address: l?.address ?? "",
+    description: l?.description ?? "",
     web_address: l?.web_address ?? "",
     map_link: l?.map_link ?? "",
     feeding_block: l?.feeding_block ?? "",
@@ -97,6 +99,7 @@ function bodyOf(d: Draft): LocationIn {
     influence_type: d.influence_type || null,
     influence_area: d.influence_type ? d.influence_area : "",
     address: d.address,
+    description: d.description,
     web_address: d.web_address,
     map_link: d.map_link,
     feeding_block: d.feeding_block,
@@ -207,6 +210,11 @@ export function LocationForm({
         <Field label="Address">
           <Input value={d.address} onChange={(e) => set({ address: e.target.value })} />
         </Field>
+        <div className="sm:col-span-2">
+          <Field label="Description" hint={d.haven_of_id ? "What it is like. The Haven's player sees and edits this too." : "What it is like."}>
+            <Textarea value={d.description} onChange={(e) => set({ description: e.target.value })} />
+          </Field>
+        </div>
         <Field label="Web address">
           <Input type="url" value={d.web_address} onChange={(e) => set({ web_address: e.target.value })} placeholder="https://" />
         </Field>

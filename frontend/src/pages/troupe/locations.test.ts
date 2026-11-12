@@ -21,6 +21,7 @@ function location(change: Partial<LocationOut>): LocationOut {
     influence_type: null,
     influence_area: "",
     address: "1 Page Ave",
+    description: "",
     web_address: "",
     map_link: "",
     feeding_block: "",

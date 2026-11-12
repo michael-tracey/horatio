@@ -479,6 +479,8 @@ class LocationIn(BaseModel):
     influence_type: InfluenceType | None = None
     influence_area: str = Field(default="", max_length=120)
     address: str = Field(default="", max_length=500)
+    # A Haven's owner writes it too (#682).
+    description: str = Field(default="", max_length=5000)
     web_address: str = Field(default="", max_length=locations.WEB_ADDRESS)
     map_link: str = Field(default="", max_length=locations.MAP_LINK)
     feeding_block: str = Field(default="", max_length=120)
@@ -558,6 +560,7 @@ class LocationOut(BaseModel):
     influence_type: InfluenceType | None
     influence_area: str
     address: str
+    description: str
     web_address: str
     map_link: str
     feeding_block: str
@@ -662,6 +665,7 @@ def location_out(db: DbSession, rules: LocationRules, location: Location) -> Loc
         influence_type=location.influence_type,  # type: ignore[arg-type]
         influence_area=location.influence_area,
         address=location.address,
+        description=location.description,
         web_address=location.web_address,
         map_link=location.map_link,
         feeding_block=location.feeding_block,
