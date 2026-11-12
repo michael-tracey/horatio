@@ -258,12 +258,14 @@ def felt_level_of(entries: Sequence[BondEntry]) -> int:
 
 
 def entries_of(db: Session, bond: BloodBond) -> list[BondEntry]:
-    """Its log, oldest night first."""
+    """Its log, oldest night first, and the drinks of one night as they were
+    recorded: ids are UUID v7, so they break a tie in created_at, which is the
+    same for every row written in one transaction."""
     return list(
         db.scalars(
             select(BondEntry)
             .where(BondEntry.bond_id == bond.id)
-            .order_by(BondEntry.night, BondEntry.created_at)
+            .order_by(BondEntry.night, BondEntry.created_at, BondEntry.id)
         )
     )
 
@@ -543,7 +545,7 @@ def tracked_bonds(db: Session, *conditions: ColumnElement[bool]) -> list[BloodBo
                 *conditions,
                 BloodBond.troupe_id.in_(select(Troupe.id).where(Troupe.blood_bonds != "off")),
             )
-            .order_by(BloodBond.created_at)
+            .order_by(BloodBond.created_at, BloodBond.id)
         )
     )
 
@@ -786,7 +788,7 @@ def seen_by(db: Session, user: User, character: Character, *, settle: bool = Tru
                 ),
             ),
         )
-        .order_by(BloodBond.created_at)
+        .order_by(BloodBond.created_at, BloodBond.id)
     ).all()
     troupes = {
         t.id: t
@@ -963,7 +965,7 @@ def settle_time(db: Session, troupe: Troupe, user: User | None = None) -> None:
     for bond in db.scalars(
         select(BloodBond)
         .where(BloodBond.troupe_id == troupe.id, BloodBond.status == "active")
-        .order_by(BloodBond.created_at)
+        .order_by(BloodBond.created_at, BloodBond.id)
     ):
         for _ in range(2):
             change = due(db, troupe, bond)
@@ -980,7 +982,7 @@ def waiting_changes(db: Session, troupe: Troupe) -> list[tuple[BloodBond, Change
     for bond in db.scalars(
         select(BloodBond)
         .where(BloodBond.troupe_id == troupe.id, BloodBond.status == "active")
-        .order_by(BloodBond.created_at)
+        .order_by(BloodBond.created_at, BloodBond.id)
     ):
         change = due(db, troupe, bond)
         if change is not None:
@@ -1032,7 +1034,7 @@ def untold_drops(db: Session, troupe: Troupe) -> list[tuple[BloodBond, BondEntry
             BondEntry.kind == "dropped",
             BondEntry.thrall_told_at.is_(None),
         )
-        .order_by(BondEntry.night)
+        .order_by(BondEntry.night, BondEntry.created_at, BondEntry.id)
     )
     return [(bond, entry) for bond, entry in rows]
 
@@ -1611,7 +1613,7 @@ def visible_reports(db: Session, user: User, character: Character) -> list[BondR
                 ),
             ),
         )
-        .order_by(BondReport.created_at.desc())
+        .order_by(BondReport.created_at.desc(), BondReport.id.desc())
     ).all()
     pending = [r for r in rows if r.status == "pending"]
     decided = [r for r in rows if r.status in ("approved", "declined")][:RECENT_DECIDED]
@@ -1628,6 +1630,6 @@ def pending_reports(db: Session, troupe: Troupe) -> list[BondReport]:
         db.scalars(
             select(BondReport)
             .where(BondReport.troupe_id == troupe.id, BondReport.status == "pending")
-            .order_by(BondReport.created_at)
+            .order_by(BondReport.created_at, BondReport.id)
         )
     )

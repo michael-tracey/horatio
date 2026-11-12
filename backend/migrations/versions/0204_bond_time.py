@@ -6,8 +6,8 @@ was told of it; and a meeting, which keeps a lesser bond from ending. A drink a 
 reports can now be a meeting instead. Each troupe keeps the day its bonds' clocks
 start from, so bonds kept before this don't all fade at once.
 
-Revision ID: 0195
-Revises: 0193
+Revision ID: 0204
+Revises: 0196
 Create Date: 2026-11-12 22:00:00.000000
 """
 
@@ -16,8 +16,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0195"
-down_revision: str | None = "0193"
+revision: str = "0204"
+down_revision: str | None = "0196"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

@@ -478,7 +478,7 @@ NPCs are never limited by either.
 - **Status on sheets**: **Players keep their own** (a player adds and removes fleeting and negative status on their own character, naming who gave it) or **Staff only**. Storytellers and assistant storytellers can always change status, with a reason for the character's log.
 - **Titles on sheets**: **Players choose their own** (from the troupe's titles of the character's sect; staff are told) or **Staff only**. A title the troupe holds to [one holder at a time](#titles-and-status) is staff's to give while someone holds it.
 - **The night's status**: tick **Choose the night's status at check-in** so players choose their one source of abiding status as they check in, fixed for the game. Off, they choose it on the Play View as the game begins.
-- **Who's Who**: whether it also shows the negative status each character carries into a game here.
+- **Who's Who**: whether it also shows the negative status each character carries into a game here, and whether players see its sire lines.
 - **Golconda and Enlightened**: a house option for a sect that recognises the pursuit of Golconda.
 - **Status bans on clans**: which clans each sect's status bans name here: the Camarilla's pillar clans (a character of none of them is under a lesser ban) and its known Caitiff (a greater ban), and the Sabbat's antitribu under a lesser or a greater ban. The pillar clans start as Volume II has them (Assamite, Malkavian, Nosferatu, Toreador, Tremere and Ventrue); **As the core book (2013)** adds the Brujah back, or tick the clans by hand (the Gangrel, say). A bloodline goes with its clan, and a character staff have marked keeps the mark.
 
