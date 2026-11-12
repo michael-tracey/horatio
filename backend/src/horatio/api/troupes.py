@@ -131,6 +131,8 @@ class TroupeOut(BaseModel):
     # creditor's player may mark it settled there.
     boon_players_see: Literal["intake", "owes", "owed"] = "intake"
     boon_players_settle: bool = False
+    # Boons its players report wait for review before they stand (#687).
+    boon_review: bool = False
     # The court over time (horatio.title_history): whether its players see it.
     court_history_players: bool = False
     # The caller may see its Who's Who: its staff, and the players of its characters.
@@ -377,6 +379,7 @@ def one_out(
         boons=troupe.boons,
         boon_players_see=troupe.boon_players_see,  # type: ignore[arg-type]  # checked by the database
         boon_players_settle=troupe.boon_players_settle,
+        boon_review=troupe.boon_review,
         court_history_players=troupe.court_history_players,
         whos_who=whos_who,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),

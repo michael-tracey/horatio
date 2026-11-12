@@ -25,8 +25,8 @@ Each change also goes in the troupe's log, which is for its running staff; never
 in a character's own, which its player reads.
 
 This issue builds the ledger for staff. Players' intake and what they see (#686),
-review (#687), the Harpy (#688) and Lesser Harpies (#689) come after; the
-`pending` state and `BoonEvent.as_character_id` are there for them.
+review (#687, horatio.boon_reviews), the Harpy (#688) and Lesser Harpies (#689)
+come after; the `pending` state and `BoonEvent.as_character_id` are there for them.
 
 Players (#686) report boons in the Play View's Boons tab, for the troupe whose
 setting their Play View follows. What else they see there is the troupe's to say
@@ -338,8 +338,10 @@ def register(
     count: int = 1,
     note: str = "",
     as_character: Character | None = None,
+    pending: bool = False,
 ) -> list[Boon]:
-    """Put `count` boons, alike, in the troupe's ledger, standing."""
+    """Put `count` boons, alike, in the troupe's ledger: standing, or, `pending`,
+    submitted to wait for review (horatio.boon_reviews, #687)."""
     terms = check_new(debtor, creditor, terms, count)
     made: list[Boon] = []
     for _ in range(count):
@@ -351,15 +353,24 @@ def register(
             conditions=terms.conditions,
             notify_on_trade=terms.notify_on_trade,
             staff_note=terms.staff_note,
+            state="pending" if pending else "registered",
             submitted_by=user.id,
         )
         place(boon, "debtor", debtor)
         place(boon, "creditor", creditor)
         db.add(boon)
         db.flush()
-        event(db, user, boon, "registered", note.strip(), as_character=as_character)
+        kind = "submitted" if pending else "registered"
+        event(db, user, boon, kind, note.strip(), as_character=as_character)
         made.append(boon)
-    log(db, user, "boon.registered", made[0], what=a_boon(terms.kind, count), reason=note.strip())
+    log(
+        db,
+        user,
+        "boon.submitted" if pending else "boon.registered",
+        made[0],
+        what=a_boon(terms.kind, count),
+        reason=note.strip(),
+    )
     return made
 
 

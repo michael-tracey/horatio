@@ -4,19 +4,19 @@ reopen them, each with its own log; and a character's boon summary, for staff.""
 
 import uuid
 from collections.abc import Iterable, Mapping
-from datetime import date, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import or_, select
 
-from horatio import boons
+from horatio import boon_reviews, boons
 from horatio.api.downtimes import staff_troupe
 from horatio.api.influence_log import CharacterChoice
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
-from horatio.models import Boon, BoonEvent, Character, Troupe, TroupeMembership, User
+from horatio.models import Boon, BoonEvent, BoonFlag, Character, Troupe, TroupeMembership, User
 from horatio.permissions import TroupeAction, visible_character
 
 router = APIRouter(tags=["boons"])
@@ -26,7 +26,22 @@ State = Literal["pending", "registered", "settled", "void"]
 SettledHow = Literal["called_in", "forgiven", "ignored"]
 View = Literal["open", "departed", "settled", "void", "pending", "all"]
 Standing = Literal["active", "final_death", "off_field", "inactive", "retired"]
-EventKind = Literal["registered", "edited", "traded", "passed_on", "settled", "voided", "reopened"]
+EventKind = Literal[
+    "registered",
+    "edited",
+    "traded",
+    "passed_on",
+    "settled",
+    "voided",
+    "reopened",
+    "submitted",
+    "accepted",
+    "rejected",
+    "flagged",
+    "flag_cleared",
+    "linked",
+]
+FlagKind = Literal["unmatched", "duplicate", "hand"]
 Side = Literal["debtor", "creditor"]
 
 Text = Field(default="", max_length=boons.LONGEST_TEXT)
@@ -129,6 +144,23 @@ class BoonEventOut(BaseModel):
     changes: list[BoonChangeOut] | None
 
 
+class BoonFlagOut(BaseModel):
+    """A flag raised on a boon for review (horatio.boon_reviews, #687)."""
+
+    id: uuid.UUID
+    kind: FlagKind
+    # For an unmatched name: the side it names.
+    side: Side | None
+    # What Horatio found.
+    detail: str
+    # Why it was flagged by hand.
+    note: str
+    # For a likely duplicate: the boon it looks like.
+    other_boon_id: uuid.UUID | None
+    raised_by: str | None
+    raised_at: datetime
+
+
 class BoonOut(BaseModel):
     id: uuid.UUID
     debtor: BoonPartyOut
@@ -149,6 +181,9 @@ class BoonOut(BaseModel):
     submitted_at: datetime
     # Its log, oldest first: only on a single boon, not in the ledger's list.
     events: list[BoonEventOut] | None = None
+    # Its flags still raised for review (#687): only on a single boon and in the
+    # review queue, not in the ledger's list.
+    flags: list[BoonFlagOut] | None = None
 
 
 class TroupeBoonsOut(BaseModel):
@@ -251,10 +286,27 @@ def event_out(
     )
 
 
+def flag_out(f: BoonFlag, users: Mapping[uuid.UUID, str]) -> BoonFlagOut:
+    return BoonFlagOut(
+        id=f.id,
+        kind=f.kind,  # type: ignore[arg-type]  # checked by the database
+        side=f.side,  # type: ignore[arg-type]  # checked by the database
+        detail=f.detail,
+        note=f.note,
+        other_boon_id=f.other_boon_id,
+        raised_by=users.get(f.raised_by) if f.raised_by else None,
+        raised_at=f.created_at,
+    )
+
+
 def full_out(db: DbSession, user: User, troupe: Troupe, boon: Boon) -> BoonOut:
-    """The boon with its log, its changes shown as far as `user` may see them."""
+    """The boon with its log and its flags, its changes shown as far as `user` may see
+    them."""
     lines = boons.events_of(db, boon)
-    users = users_of(db, [boon.submitted_by, *(e.actor_id for e in lines)])
+    flags = boon_reviews.raised(db, [boon.id])
+    users = users_of(
+        db, [boon.submitted_by, *(e.actor_id for e in lines), *(f.raised_by for f in flags)]
+    )
     acting = {e.as_character_id for e in lines} - {None}
     names = (
         {c.id: c.name for c in db.scalars(select(Character).where(Character.id.in_(acting)))}
@@ -264,6 +316,7 @@ def full_out(db: DbSession, user: User, troupe: Troupe, boon: Boon) -> BoonOut:
     out = boon_out(boon, characters_of(db, [boon]), users)
     diffs = boons.sees_changes(db, user, troupe)
     out.events = [event_out(e, users, names, diffs) for e in lines]
+    out.flags = [flag_out(f, users) for f in flags]
     return out
 
 
@@ -408,6 +461,7 @@ def register(
     made: list[Boon] = []
     for debtor, creditor, terms, count in rows:
         made += boons.register(db, user, troupe, debtor, creditor, terms, count, body.note)
+    boon_reviews.flag_new(db, troupe, made)
     db.commit()
     characters = characters_of(db, made)
     users = users_of(db, [user.id])
@@ -615,6 +669,24 @@ class PlayBoonOut(BaseModel):
     can_settle: bool
 
 
+class PlayReportOut(BaseModel):
+    """A boon the character's player reported that waits for review, or that wasn't
+    accepted lately, with the reason (#687). Shown to its player whatever else the
+    troupe lets them see: they reported it."""
+
+    id: uuid.UUID
+    # The character owes the other side, or is owed by it.
+    direction: Direction
+    other: str
+    kind: Kind
+    made_on: date
+    reason: str
+    state: Literal["pending", "rejected"]
+    # Why it wasn't accepted, and when.
+    rejected_because: str
+    rejected_at: datetime | None
+
+
 class PlayBoonsOut(BaseModel):
     troupe_id: uuid.UUID
     troupe_name: str
@@ -629,6 +701,9 @@ class PlayBoonsOut(BaseModel):
     # The troupe's player characters in play, to name the other side; anyone else is
     # named by name.
     characters: list[CharacterChoice]
+    # Its boons reported here that wait for review, or weren't accepted in the last
+    # REJECTED_SHOWN days (#687).
+    reports: list[PlayReportOut] = []
 
 
 def play_ledger(db: DbSession, user: User, character_id: uuid.UUID) -> tuple[Character, Troupe]:
@@ -675,6 +750,64 @@ def play_choices(db: DbSession, troupe: Troupe, character: Character) -> list[Ch
         .order_by(Character.name)
     )
     return [CharacterChoice(id=c.id, name=c.name, kind=c.kind, in_troupe=True) for c in found]
+
+
+# How long a report that wasn't accepted stays in its reporter's Boons tab.
+REJECTED_SHOWN = 30
+
+
+def reports_of(db: DbSession, troupe: Troupe, character: Character) -> list[PlayReportOut]:
+    """The boons reported as the character that wait for review, or weren't accepted
+    lately, newest first."""
+    reported = select(BoonEvent.boon_id).where(
+        BoonEvent.kind.in_(("submitted", "registered")),
+        BoonEvent.as_character_id == character.id,
+    )
+    found = list(
+        db.scalars(
+            select(Boon)
+            .where(
+                Boon.troupe_id == troupe.id,
+                Boon.id.in_(reported),
+                Boon.state.in_(("pending", "void")),
+            )
+            .order_by(Boon.created_at.desc())
+        )
+    )
+    rejections = {
+        e.boon_id: e
+        for e in db.scalars(
+            select(BoonEvent).where(
+                BoonEvent.boon_id.in_([b.id for b in found]), BoonEvent.kind == "rejected"
+            )
+        )
+    }
+    since = datetime.now(UTC) - timedelta(days=REJECTED_SHOWN)
+    others = characters_of(db, found)
+    out: list[PlayReportOut] = []
+    for b in found:
+        rejected = rejections.get(b.id)
+        if b.state == "void" and (rejected is None or rejected.created_at < since):
+            continue
+        owes = b.debtor_id == character.id
+        other_id, other_name = (
+            (b.creditor_id, b.creditor_name) if owes else (b.debtor_id, b.debtor_name)
+        )
+        other = others.get(other_id) if other_id else None
+        out.append(
+            PlayReportOut(
+                id=b.id,
+                direction="owes" if owes else "owed",
+                other=other.name if other is not None else other_name,
+                kind=b.kind,  # type: ignore[arg-type]  # checked by the database
+                made_on=b.made_on,
+                reason=b.reason,
+                state="pending" if b.state == "pending" else "rejected",
+                rejected_because=rejected.note if rejected is not None else "",
+                rejected_at=rejected.created_at if rejected is not None else None,
+            )
+        )
+    return out
 
 
 def play_out(
@@ -731,6 +864,7 @@ def play_out(
         owes=side(True) if sees in ("owes", "owed") else None,
         owed=side(False) if sees == "owed" else None,
         characters=play_choices(db, troupe, character) if playing else [],
+        reports=reports_of(db, troupe, character),
     )
 
 
@@ -748,7 +882,8 @@ def report_boon(
     character_id: uuid.UUID, body: PlayBoonIn, db: DbSession, user: CurrentUser
 ) -> PlayBoonsOut:
     """A player reports a boon for their character, which goes in the troupe's ledger
-    as theirs, done as the character."""
+    as theirs, done as the character: standing, or waiting for review where the troupe
+    holds reports for review (#687)."""
     character, troupe = play_ledger(db, user, character_id)
     if not in_play(db, troupe, character):
         raise HTTPException(
@@ -769,7 +904,7 @@ def report_boon(
         conditions=body.conditions,
         notify_on_trade=body.notify_on_trade,
     )
-    boons.register(
+    made = boons.register(
         db,
         user,
         troupe,
@@ -779,7 +914,9 @@ def report_boon(
         body.count,
         "Reported in the Play View.",
         as_character=character,
+        pending=boon_reviews.held(troupe),
     )
+    boon_reviews.flag_new(db, troupe, made)
     db.commit()
     return play_out(db, user, troupe, character, player_sees(troupe, character))
 
