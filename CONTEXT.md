@@ -137,6 +137,10 @@ _Avoid_: Favour, debt (in names), IOU, prestation (for one boon)
 A troupe's record of its boons, kept by its running staff while the troupe's Boons setting is on. Off, it is hidden everywhere, and kept.
 _Avoid_: Boon registry, boon sheet
 
+**Boon Standings**:
+Where everyone stands in a troupe's boon ledger, worked out live from its open and settled boons. Each kind of boon has a weight, set per troupe (Trivial 0.5, Minor 1, Major 3, Blood 5, Life 10 unless it sets its own), and a character's **net** is the weight owed to them less the weight they owe. Active by default: boons involving someone dead or off-field are left out. Its running staff see it.
+_Avoid_: Boon score, prestige, ranking
+
 **Vitae**:
 The vampiric blood in a ghoul's Blood pool: at most 5 of its 10, the only part it can spend, and refilled only by drinking from a vampire. The rest of the pool is **human Blood**, which cannot be spent.
 _Avoid_: Ghoul blood, vampire points

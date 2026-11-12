@@ -856,6 +856,7 @@ MESSAGES: dict[str, str] = {
     "house.remembrances": "{actor} switched Remembrances {setting}.",
     "house.blood_bonds": "{actor} set Blood bonds to {setting}.",
     "house.boons": "{actor} switched the boon ledger {setting}.",
+    "boon.weights": "{actor} set what boons weigh in the standings: {changed}.",
     "boon.registered": "{actor} registered {what}: {debtor} owes {creditor}{because}.",
     "boon.edited": "{actor} edited {debtor}'s {kind} boon to {creditor}{because}.",
     "boon.traded": "{actor} recorded {debtor}'s {kind} boon traded by {before} to {creditor}"

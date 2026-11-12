@@ -304,7 +304,7 @@ def test_names_in_a_retiring_list_match_titles_with_and_in_their_name() -> None:
 
 
 def test_the_migration_backfills_from_the_log(engine: Engine, alembic_config: Config) -> None:
-    command.downgrade(alembic_config, "0175")
+    command.downgrade(alembic_config, "0177")
     user, court_, varga = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
     try:
         with engine.begin() as connection:

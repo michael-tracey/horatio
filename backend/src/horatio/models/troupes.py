@@ -160,6 +160,9 @@ class Troupe(Imported, Record):
     # The court over time (horatio.title_history, #712): whether its players see who
     # held each title and when. Its staff always do.
     court_history_players: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # What each kind of boon weighs in its boon standings (horatio.boon_standings,
+    # #691), by kind: {"major": 3}. A kind left out weighs its default.
+    boon_weights: Mapped[dict[str, float]] = mapped_column(JSONB, default=dict, server_default="{}")
     # House rules for Retainers (horatio.retainer_upkeep): upkeep, in Blood or
     # Willpower, and growth, in XP a month. Each is off while it is absent.
     retainer_rules: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
