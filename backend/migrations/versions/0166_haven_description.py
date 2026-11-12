@@ -2,7 +2,7 @@
 staff see; players create and edit their own Haven (issue #682)
 
 Revision ID: 0166
-Revises: 0163
+Revises: 0165
 Create Date: 2026-11-12 12:00:00.000000
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0166"
-down_revision: str | None = "0163"
+down_revision: str | None = "0165"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
