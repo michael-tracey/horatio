@@ -454,7 +454,7 @@ Who controls a location: a character in the troupe, an NPC known only by name, o
 _Avoid_: Owner (in names), holder
 
 **Haven (as a location)**:
-A character's Haven background placed on the troupe's list of locations, with its address and advantages, or a location staff mark as that character's Haven. It can't be targeted as a Stock Location can, and it doesn't count toward the control limit. Its player puts it on their home troupe's list and keeps its name, description, address, map link and advantages; staff keep the rest, and a location staff marked as a Haven is theirs alone to change.
+A character's Haven background placed on the troupe's list of locations, with its address and advantages, or a location staff mark as that character's Haven. It can't be targeted as a Stock Location can, and it doesn't count toward the control limit. Its player puts it on their home troupe's list and keeps its name, description, address, map link and advantages; staff keep the rest, and a location staff marked as a Haven is theirs alone to change. Before any troupe has accepted the character, its player can name it in Character Creation: it is kept with the character, and the first troupe to accept it puts it on its list.
 _Avoid_: Home, lair, base
 
 ### Quests
