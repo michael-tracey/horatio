@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { TroupeOut } from "../../api/types";
 import { BOON_PAGE } from "../../boons";
@@ -89,18 +89,29 @@ const PLAYERS_SEE: { value: NonNullable<PlayersSee>; label: string; hint: string
 function PlayersSetting({ troupe }: { troupe: TroupeOut }) {
   const toast = useToast();
   const group = useId();
-  const see = troupe.boon_players_see ?? "intake";
-  const settle = troupe.boon_players_settle ?? false;
+  // Shown as chosen at once, while it saves.
+  const [see, setSee] = useState<NonNullable<PlayersSee>>(troupe.boon_players_see ?? "intake");
+  const [settle, setSettle] = useState(troupe.boon_players_settle ?? false);
   const save = useAction(async (body: { see: NonNullable<PlayersSee>; settle: boolean }) => {
     await unwrap(api.PUT("/api/troupes/{troupe_id}/boon-players", { params: { path: { troupe_id: troupe.id } }, body }));
     toast({ message: "Saved what players see of the boon ledger." });
   });
+  const choose = (body: { see: NonNullable<PlayersSee>; settle: boolean }) => {
+    setSee(body.see);
+    setSettle(body.settle);
+    save.mutate(body, {
+      onError: () => {
+        setSee(troupe.boon_players_see ?? "intake");
+        setSettle(troupe.boon_players_settle ?? false);
+      },
+    });
+  };
   return (
     <fieldset className="mt-2 flex flex-col gap-2 border-t border-ash/60 pt-3">
       <legend className="text-mist">In the Play View&apos;s Boons tab, players see</legend>
       {PLAYERS_SEE.map((p) => (
         <label key={p.value} className="flex items-start gap-2">
-          <input type="radio" className="mt-1" name={group} checked={see === p.value} disabled={save.isPending} onChange={() => save.mutate({ see: p.value, settle })} />
+          <input type="radio" className="mt-1" name={group} checked={see === p.value} disabled={save.isPending} onChange={() => choose({ see: p.value, settle })} />
           <span>
             {p.label}
             <span className="block text-xs text-mist">{p.hint}</span>
@@ -108,7 +119,7 @@ function PlayersSetting({ troupe }: { troupe: TroupeOut }) {
         </label>
       ))}
       <label className="mt-1 flex items-start gap-2">
-        <input type="checkbox" className="mt-1" checked={settle} disabled={save.isPending} onChange={(e) => save.mutate({ see, settle: e.target.checked })} />
+        <input type="checkbox" className="mt-1" checked={settle} disabled={save.isPending} onChange={(e) => choose({ see, settle: e.target.checked })} />
         <span>
           Players mark boons owed to them settled
           <span className="block text-xs text-mist">
