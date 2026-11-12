@@ -35,6 +35,7 @@ from sqlalchemy.orm import Session
 from horatio import (
     audit,
     backstories,
+    bonds,
     creation_xp,
     free_changes,
     notifications,
@@ -273,8 +274,11 @@ def end_membership(
             refund(db, actor, character, approval, "withdrawn")
         elif approval.kind in HELD_KINDS:
             undo_discipline(db, actor, character, approval, "withdrawn")
+        elif approval.kind == "bond_drink":
+            bonds.withdrawn(db, approval)
         approval.status = "withdrawn"
         approval.decided_at = datetime.now(UTC)
+    bonds.left_troupe(db, character, troupe)
     db.flush()
 
 
@@ -307,6 +311,7 @@ def withdrawn(db: Session, approval: Approval) -> Withdrawn:
         what = {
             "diablerie": "Diablerie",
             "home_troupe_change": "To make this the home troupe",
+            "bond_drink": "A drink of vampire blood reported",
         }.get(approval.kind, approval.kind.replace("_", " ").capitalize())
         return Withdrawn(what, 0)
     name = db.get_one(TraitDefinition, bought.trait_definition_id).name

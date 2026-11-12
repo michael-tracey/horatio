@@ -633,7 +633,8 @@ def sheet_out(db: DbSession, character: Character) -> SheetOut:
             debt=xp_debt.owed(earned - spent - lost),
             unbanked=unbanked_xp(db, character) if character.kind == "pc" else 0,
         ),
-        pending_approvals=[approval_out(a) for a in pending],
+        # A drink reported shows on the Bonds card, to those who may know of it.
+        pending_approvals=[approval_out(a) for a in pending if a.kind != "bond_drink"],
         primary_paths=[
             PrimaryPathOut(
                 discipline=p.discipline,

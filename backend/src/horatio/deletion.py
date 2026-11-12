@@ -24,6 +24,7 @@ from horatio.models import (
     BackstoryAnswer,
     BackstoryFeedback,
     BloodBond,
+    BondReport,
     Character,
     CharacterTitle,
     CharacterTrait,
@@ -201,6 +202,18 @@ def delete_character(db: Session, player: User, character: Character) -> None:
     db.execute(
         update(BloodBond)
         .where(BloodBond.regnant_id == cid)
+        .values(regnant_id=None, regnant_name=name)
+    )
+    # So does a drink reported with it on the other side (one it reported goes with its
+    # requests).
+    db.execute(
+        update(BondReport)
+        .where(BondReport.thrall_id == cid)
+        .values(thrall_id=None, thrall_name=name)
+    )
+    db.execute(
+        update(BondReport)
+        .where(BondReport.regnant_id == cid)
         .values(regnant_id=None, regnant_name=name)
     )
     db.execute(update(AuditEvent).where(AuditEvent.character_id == cid).values(character_id=None))

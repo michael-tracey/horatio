@@ -72,3 +72,54 @@ class BondEntry(Record):
     # A note, or for a bond entered, the reason.
     note: Mapped[str] = mapped_column(default="", server_default="")
     recorded_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+
+
+class BondReport(Record):
+    """A drink a player reported for their own character (#661), waiting until it is
+    decided: on the troupe's running staff, through its approvals queue (the troupe's
+    setting "players report and staff approves", or a regnant's drink whose thrall has
+    no player to confirm it); or on the thrall's player, who confirms or declines a
+    drink the regnant's player recorded ("players manage"). Its drink goes in the
+    bond's log only once it is approved or confirmed (horatio.bonds)."""
+
+    __tablename__ = "bond_reports"
+    __table_args__ = (
+        CheckConstraint(
+            "status in ('pending', 'approved', 'declined', 'withdrawn')", name="status"
+        ),
+        CheckConstraint("waiting_on in ('staff', 'thrall')", name="waiting_on"),
+        CheckConstraint("reported_as in ('thrall', 'regnant')", name="reported_as"),
+        CheckConstraint("source in ('game', 'downtime')", name="source"),
+        CheckConstraint("(thrall_id is null) <> (thrall_name = '')", name="thrall"),
+        CheckConstraint("(regnant_id is null) <> (regnant_name = '')", name="regnant"),
+        CheckConstraint("(waiting_on = 'staff') = (approval_id is not null)", name="approval"),
+    )
+
+    # The troupe whose bonds it goes to.
+    troupe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("troupes.id"), index=True)
+    thrall_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("characters.id"), index=True)
+    thrall_name: Mapped[str] = mapped_column(default="", server_default="")
+    regnant_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("characters.id"), index=True)
+    regnant_name: Mapped[str] = mapped_column(default="", server_default="")
+    # Which side the reporting player's character is on.
+    reported_as: Mapped[str]
+    night: Mapped[date] = mapped_column(Date)
+    # At a game, or in a downtime.
+    source: Mapped[str]
+    note: Mapped[str] = mapped_column(default="", server_default="")
+    status: Mapped[str] = mapped_column(default="pending", server_default="pending")
+    # Who decides it: running staff, or the thrall's player.
+    waiting_on: Mapped[str]
+    # Its request in the troupe's approvals queue, while staff decide it.
+    approval_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("approvals.id", ondelete="CASCADE"), unique=True
+    )
+    reported_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    decided_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Why it was declined, for the player who reported it.
+    reason: Mapped[str] = mapped_column(default="", server_default="")
+    # The bond its drink went to, once approved or confirmed.
+    bond_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("blood_bonds.id", ondelete="SET NULL")
+    )

@@ -22,6 +22,7 @@ import { KindBadge } from "../character/NpcKindBadge";
 import { bloodPerTurn, boxes, healthMost } from "./powers";
 import { PowersBanner } from "./Powers";
 import { PoolsTab, SheetTab } from "./ReferenceTabs";
+import { PlayBondReports } from "../character/BondReports";
 import { RetainerPools } from "./RetainerPools";
 import { StatusTab } from "./Status";
 import { TeachingAsks } from "./Teaching";
@@ -159,6 +160,7 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
       {tab === "tracker" && (
         <>
           <TeachingAsks characterId={characterId} />
+          <PlayBondReports characterId={characterId} name={shown.character_name} online={sync.online} />
           <div className="grid gap-3 md:grid-cols-2">
             {shown.vitae ? (
               <VitaeTracker

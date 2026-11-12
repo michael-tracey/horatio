@@ -770,7 +770,7 @@ If the backstory settings coming in need questions this troupe doesn't have, the
 
 ![The Approvals tab with a character asking to make the troupe its home.](images/running-a-troupe/approvals.png)
 
-**Characters › Approvals** is where storytellers and assistant storytellers decide what waits on the home troupe. Show **Pending**, **Approved**, **Declined** or **Withdrawn**, and filter by kind: **Home troupe requests**, **Disciplines**, **Rule reviews**, **Exceptions**, **Diablerie**, and **Merits and flaws**.
+**Characters › Approvals** is where storytellers and assistant storytellers decide what waits on the home troupe. Show **Pending**, **Approved**, **Declined** or **Withdrawn**, and filter by kind: **Home troupe requests**, **Disciplines**, **Rule reviews**, **Exceptions**, **Diablerie**, **Merits and flaws**, and **Blood bonds**.
 
 Each approval says what was asked and when, with **Open sheet**. Add a **Note to the player** if you like, then **Approve** or **Decline**. The player sees the player's side in [Players](players.md#spending-xp).
 
@@ -820,6 +820,19 @@ It needs no approval, and the player is told. Some things can't be set aside thi
 ### Diablerie
 
 A player can say their character committed diablerie, marked **Diablerie**. Before approving, you can name **Who was diablerized** (only staff see it) and adjust what happens. Horatio lists what approving will do to the sheet. Declining changes nothing.
+
+### Blood bonds
+
+Where the troupe's **Blood bonds** setting (under **Settings**) is **Players report and staff approves**, each drink of vampire blood a player reports for their character waits here, marked **Blood bond**: who drank whose blood, on which night, at a game or in a downtime. Approving adds the drink to the bond's log, starting the bond if there isn't one; a drink the regnant's player reported also marks the bond known to its regnant. Declining tells the player your note. Horatio warns you when the thrall holds a full bond to someone else, which makes them immune to other bonds (Errata, p. 295), and won't approve it.
+
+The four settings:
+
+- **Off** (the default): no bonds anywhere. What was recorded, and any drink still waiting, is kept and comes back when it's switched on.
+- **Staff manages**: running staff record every drink on **Characters › Bonds**.
+- **Players report and staff approves**: players report their characters' drinks from the sheet or the Play View, and you approve them here.
+- **Players manage**: a player records a drink their character took, and it counts at once. One the regnant's player records waits for the thrall's player to confirm, or for you when the thrall is an NPC or a name only.
+
+Changing the setting leaves drinks already waiting where they are. **Characters › Bonds** lists every drink still waiting, whoever it waits on, to approve or decline there too. In any mode, a drink in a bond's **Drinks log** can be changed (its night and note) or taken out with a reason; taking out the last one removes the bond. Players can't record a night to come, one before the character was made in Horatio, or a drink while their character holds a full bond to someone else.
 
 ### Approving backstories
 

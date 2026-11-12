@@ -1,15 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { BOND_PAGE, levelName, levelText } from "../../bonds";
 import { InfoButton } from "../../components/InfoButton";
-import { Card } from "../../components/ui";
+import { Button, Card } from "../../components/ui";
+import { BondReportList, ReportDrinkForm } from "./BondReports";
 
 /**
  * The character's blood bonds still felt, as the viewer may know them: those it is
  * bound by, with what each does, and those bound to it that its player has been told
- * of. Running staff see every one, with a link to the troupe's Bonds screen. Shown
- * only when there is something to show, and never while the troupe doesn't track bonds.
+ * of. Running staff see every one, with a link to the troupe's Bonds screen. Where the
+ * troupe lets players report drinks (#661), its player reports one here, and sees the
+ * drinks they reported and those waiting on them to confirm. Shown only when there is
+ * something to show, and never while the troupe doesn't track bonds.
  */
 export function BondsCard({ characterId, name, mine }: { characterId: string; name: string; mine: boolean }) {
   const bonds = useQuery({
@@ -17,8 +21,11 @@ export function BondsCard({ characterId, name, mine }: { characterId: string; na
     queryFn: () => unwrap(api.GET("/api/characters/{character_id}/bonds", { params: { path: { character_id: characterId } } })),
     retry: false,
   });
+  const [reporting, setReporting] = useState(false);
   const b = bonds.data;
-  if (!b || (b.bound_to.length === 0 && b.bound_by.length === 0 && !b.manage_troupe_id)) return null;
+  const reports = b?.reports ?? [];
+  const troupes = b?.report_to ?? [];
+  if (!b || (b.bound_to.length === 0 && b.bound_by.length === 0 && !b.manage_troupe_id && reports.length === 0 && troupes.length === 0)) return null;
   return (
     <Card
       dense
@@ -60,6 +67,23 @@ export function BondsCard({ characterId, name, mine }: { characterId: string; na
         </div>
       )}
       {b.bound_to.length === 0 && b.bound_by.length === 0 && <p className="text-sm text-mist">No blood bonds recorded.</p>}
+      {reports.length > 0 && (
+        <div className="mt-3 border-t border-ash pt-2">
+          <p className="mb-1 text-xs tracking-wide text-mist uppercase">Drinks reported</p>
+          <BondReportList characterId={characterId} reports={reports} />
+        </div>
+      )}
+      {troupes.length > 0 && (
+        <div className="mt-3">
+          {reporting ? (
+            <ReportDrinkForm characterId={characterId} name={name} troupes={troupes} onDone={() => setReporting(false)} />
+          ) : (
+            <Button variant="secondary" onClick={() => setReporting(true)}>
+              Report a drink
+            </Button>
+          )}
+        </div>
+      )}
       {b.manage_troupe_id && (
         <p className="mt-2 text-sm">
           <Link to={`/troupes/${b.manage_troupe_id}/bonds`} className="text-mist underline hover:text-parchment">
