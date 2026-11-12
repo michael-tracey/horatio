@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, or_, select
 
-from horatio import boon_harpy, boon_reviews, boon_status, boons
+from horatio import boon_harpy, boon_reviews, boon_status, boons, court_knows
 from horatio.api.downtimes import staff_troupe
 from horatio.api.influence_log import CharacterChoice
 from horatio.api.troupes import TroupeOut, troupe_out
@@ -246,17 +246,20 @@ def users_of(db: DbSession, ids: Iterable[uuid.UUID | None]) -> dict[uuid.UUID, 
     return {u.id: u.display_name for u in db.scalars(select(User).where(User.id.in_(wanted)))}
 
 
-def party_out(character: Character | None, name: str, reasons: bool = True) -> BoonPartyOut:
-    """One side of a boon. Without `reasons`, for a Harpy (#688), a retired character
-    is shown as retired, not why."""
+def party_out(
+    character: Character | None, name: str, court: Collection[uuid.UUID] | None = None
+) -> BoonPartyOut:
+    """One side of a boon. With `court`, for a Harpy (#688), as the court knows it
+    (horatio.court_knows, #749): gone only if the Who's Who lists it, and why only
+    when that says something in game."""
     if character is None:
         return BoonPartyOut(character_id=None, name=name, kind=None, standing=None)
-    found = boons.standing(character)
+    found = boons.standing(character) if court is None else court_knows.standing(character, court)
     return BoonPartyOut(
         character_id=character.id,
         name=character.name,
         kind=character.kind,
-        standing=found if reasons or found == "active" else "retired",  # type: ignore[arg-type]  # a known reason
+        standing=found,  # type: ignore[arg-type]  # one of boons.STANDINGS
     )
 
 
@@ -268,14 +271,16 @@ def boon_out(
     keeper: Keeper | None = None,
 ) -> BoonOut:
     """The boon as `keeper` sees it: staff (the default) see everything; a Harpy (#688)
-    never its staff note, who entered it, or why a character on it retired."""
+    never its staff note, who entered it, or why a character on it retired, and who
+    has left only as the court knows it (#749)."""
     harpy = keeper is not None and not keeper.staff
+    court = keeper.court if keeper is not None and harpy else None
     debtor = characters.get(boon.debtor_id) if boon.debtor_id else None
     creditor = characters.get(boon.creditor_id) if boon.creditor_id else None
     return BoonOut(
         id=boon.id,
-        debtor=party_out(debtor, boon.debtor_name, not harpy),
-        creditor=party_out(creditor, boon.creditor_name, not harpy),
+        debtor=party_out(debtor, boon.debtor_name, court),
+        creditor=party_out(creditor, boon.creditor_name, court),
         kind=boon.kind,  # type: ignore[arg-type]  # checked by the database
         made_on=boon.made_on,
         reason=boon.reason,
@@ -287,7 +292,7 @@ def boon_out(
         closed_note=boon.closed_note,
         staff_note="" if harpy else boon.staff_note,
         departed=boon.state == "registered"
-        and (boons.departed(debtor, not harpy) or boons.departed(creditor, not harpy)),
+        and (boons.departed(debtor, court) or boons.departed(creditor, court)),
         creditor_disgraced=boon.state == "registered" and boon.creditor_id in disgraced,
         submitted_by=users.get(boon.submitted_by) if boon.submitted_by and not harpy else None,
         submitted_at=boon.created_at,
@@ -476,6 +481,9 @@ HarpyAccess = Literal["none", "submissions", "full"]
 class BoonHarpyIn(BaseModel):
     # The Harpy's access to the ledger: none, the review queue, or the full ledger.
     access: HarpyAccess
+    # Whether the Harpy with the full ledger also reads its standings and statistics
+    # (#749); left out, unchanged.
+    standings: bool | None = None
 
 
 @router.put("/troupes/{troupe_id}/boon-harpy")
@@ -483,9 +491,12 @@ def set_boon_harpy(
     troupe_id: uuid.UUID, body: BoonHarpyIn, db: DbSession, user: CurrentUser
 ) -> TroupeOut:
     """How far the troupe's Harpy reaches into its boon ledger (#688): not at all, the
-    review queue and word of each boon players report, or the full ledger."""
+    review queue and word of each boon players report, or the full ledger; and whether,
+    with the full ledger, the Harpy also reads its standings and statistics (#749)."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_HOUSE_RULES)
     boon_harpy.set_access(db, user, troupe, body.access)
+    if body.standings is not None:
+        boon_harpy.set_standings(db, user, troupe, body.standings)
     db.commit()
     return troupe_out(db, user, troupe)
 
@@ -510,7 +521,7 @@ def troupe_boons(
     off-field), settled, void, pending, or all. Narrowed to those a character or a
     name is on, of a kind, or made between two nights."""
     troupe, keeper = ledger_troupe(db, user, troupe_id)
-    reasons = keeper.staff
+    court = keeper.court
     every = list(
         db.scalars(
             select(Boon)
@@ -533,12 +544,12 @@ def troupe_boons(
         return made_to is None or b.made_on <= made_to
 
     narrowed = [b for b in every if matches(b)]
-    shown = [b for b in narrowed if boons.in_view(b, characters, view, reasons)]
+    shown = [b for b in narrowed if boons.in_view(b, characters, view, court)]
     users = users_of(db, (b.submitted_by for b in shown))
     disgraced = standing_disgraced(db, shown)
     return TroupeBoonsOut(
         boons=[boon_out(b, characters, users, disgraced, keeper=keeper) for b in shown],
-        counts=boons.counts(narrowed, characters, reasons),
+        counts=boons.counts(narrowed, characters, court),
         characters=choices_for(db, troupe, keeper),
     )
 
@@ -853,6 +864,8 @@ class HarpyLedgerOut(BaseModel):
     access: Literal["submissions", "full"]
     # Boons waiting for review or flagged.
     to_review: int
+    # The troupe lets the Harpy read its boon standings and statistics too (#749).
+    sees_standings: bool
 
 
 class PlayBoonsOut(BaseModel):
@@ -1051,6 +1064,7 @@ def harpy_ledgers(db: DbSession, user: User, character: Character) -> list[Harpy
             troupe_name=t.name,
             access=t.boon_harpy,  # type: ignore[arg-type]  # not "none", as found
             to_review=len(boon_reviews.queue(db, t)),
+            sees_standings=boon_harpy.reads_standings(t),
         )
         for t in boon_harpy.offices_of(db, character)
     ]

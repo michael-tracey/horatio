@@ -182,6 +182,9 @@ class Troupe(Imported, Record):
     # the review queue and word of each boon its players report; or "full", the whole
     # ledger, to register, edit and settle boons like its staff.
     boon_harpy: Mapped[str] = mapped_column(default="none", server_default="none")
+    # The Harpy with the full ledger also reads its boon standings and statistics, with
+    # who has left as the court knows it (horatio.court_knows, #749).
+    boon_harpy_standings: Mapped[bool] = mapped_column(default=False, server_default="false")
     # The court over time (horatio.title_history, #712): whether its players see who
     # held each title and when. Its staff always do.
     court_history_players: Mapped[bool] = mapped_column(default=False, server_default="false")

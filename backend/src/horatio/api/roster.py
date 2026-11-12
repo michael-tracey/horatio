@@ -876,6 +876,7 @@ MESSAGES: dict[str, str] = {
     "boon.reopened": "{actor} reopened {debtor}'s {kind} boon to {creditor}{because}.",
     "house.boon_review": "{actor} set boons players report to {setting}.",
     "house.boon_harpy": "{actor} gave the Harpy {setting}.",
+    "house.boon_harpy_standings": "{actor} {setting} the boon standings and statistics.",
     "boon.submitted": "{actor} reported {what} for review: {debtor} owes {creditor}{because}.",
     "boon.accepted": "{actor} accepted {debtor}'s {kind} boon to {creditor}{because}.",
     "boon.rejected": "{actor} didn't accept {debtor}'s {kind} boon to {creditor}{because}.",

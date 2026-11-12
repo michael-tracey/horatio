@@ -8,9 +8,10 @@ is the weight owed to them less the weight they owe.
 
 `load` reads a troupe's ledger into plain rows (`Row`, `Who`); `compute` works out
 every section from them and touches no database, so the statistics page (#702) and
-anything else can reuse the sums on rows of its own. Only staff read them for now
-(`can_read`); the Harpy with full access to the ledger (#688) is meant to read them
-too, through `can_read`.
+anything else can reuse the sums on rows of its own. The troupe's staff read them
+(`reader`), and so does its Harpy with the full ledger where the troupe allows it
+(#749): for the Harpy, `load` reads who has left only as the court knows it
+(horatio.court_knows), so their standings never say a player stopped.
 
 **Scope.** "active", the default, leaves out every boon that involves someone
 departed (dead or off-field, as horatio.boons counts them); "everyone" keeps them.
@@ -21,7 +22,7 @@ far as Horatio knows, so stays in either scope.
 import statistics
 import uuid
 from collections import Counter, defaultdict
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Literal
@@ -29,7 +30,8 @@ from typing import Literal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from horatio import audit, boons, social_age, titles
+from horatio import audit, boon_harpy, boons, court_knows, social_age, titles
+from horatio.boon_harpy import Keeper
 from horatio.models import Boon, Character, CharacterTitle, Troupe, User
 from horatio.sheets import unprocessable
 
@@ -79,11 +81,19 @@ def set_weights(db: Session, user: User, troupe: Troupe, weights: Mapping[str, f
     audit.record(db, user, "boon.weights", troupe_id=troupe.id, changed=changed)
 
 
+def reader(db: Session, user: User, troupe: Troupe) -> Keeper | None:
+    """Who reads the troupe's standings, and as whom: its running staff (and the
+    custodian), as for the ledger; or its Harpy with the full ledger, where the troupe
+    lets the Harpy read them (horatio.boon_harpy.reads_standings, #749). None for
+    anyone else."""
+    keeper = boon_harpy.keeper(db, user, troupe, "full")
+    if keeper is None or keeper.staff:
+        return keeper
+    return keeper if boon_harpy.reads_standings(troupe) else None
+
+
 def can_read(db: Session, user: User, troupe: Troupe) -> bool:
-    """Who may read the troupe's standings: its running staff (and the custodian),
-    as for the ledger. The Harpy with full access to the ledger joins them with
-    #688."""
-    return boons.can_manage(db, user, troupe)
+    return reader(db, user, troupe) is not None
 
 
 # --- rows ---------------------------------------------------------------------------------
@@ -144,8 +154,11 @@ def name_key(name: str) -> str:
     return f"name:{name.strip().casefold()}"
 
 
-def load(db: Session, troupe: Troupe) -> Ledger:
-    """The troupe's ledger as rows, everyone on them, and its court order."""
+def load(db: Session, troupe: Troupe, court: Collection[uuid.UUID] | None = None) -> Ledger:
+    """The troupe's ledger as rows, everyone on them, and its court order. With
+    `court`, for a Harpy, each character's standing as the court knows it
+    (horatio.court_knows): gone only if the Who's Who lists it, and why only when
+    that says something in game."""
     found = list(db.scalars(select(Boon).where(Boon.troupe_id == troupe.id, Boon.state != "void")))
     ids = {c for b in found for c in (b.debtor_id, b.creditor_id) if c is not None}
     characters = {c.id: c for c in db.scalars(select(Character).where(Character.id.in_(ids)))}
@@ -175,7 +188,9 @@ def load(db: Session, troupe: Troupe) -> Ledger:
                 key=key,
                 name=character.name,
                 character_id=character_id,
-                standing=boons.standing(character),
+                standing=boons.standing(character)
+                if court is None
+                else court_knows.standing(character, court),
                 clan=age.clan if age else None,
                 age=age.age if age else None,
                 sect=sects.get(character_id),
@@ -653,6 +668,12 @@ def across(
     )
 
 
-def standings_of(db: Session, troupe: Troupe, scope: Scope = "active") -> Standings:
-    """The troupe's standings, read from its ledger now."""
-    return compute(load(db, troupe), weights_of(troupe), scope)
+def standings_of(
+    db: Session,
+    troupe: Troupe,
+    scope: Scope = "active",
+    court: Collection[uuid.UUID] | None = None,
+) -> Standings:
+    """The troupe's standings, read from its ledger now; with `court`, as a Harpy
+    reads them (`load`)."""
+    return compute(load(db, troupe, court), weights_of(troupe), scope)
