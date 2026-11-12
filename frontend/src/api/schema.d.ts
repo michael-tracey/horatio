@@ -7558,7 +7558,8 @@ export interface paths {
         /**
          * Known Bonds
          * @description The bonds Horatio can work out for the troupe that it doesn't keep yet: from its
-         *     characters' Embraces, ghouls' domitors and vampires' ghoul Retainers (#663).
+         *     characters' Embraces and the sires their sheets name, ghouls' domitors and vampires'
+         *     ghoul Retainers (#663, #739).
          */
         get: operations["known_bonds_api_troupes__troupe_id__bonds_known_get"];
         put?: never;
@@ -21274,7 +21275,7 @@ export interface components {
              * Why
              * @enum {string}
              */
-            why: "embrace" | "domitor" | "retainer";
+            why: "embrace" | "sire" | "domitor" | "retainer";
         };
         /** KnownIn */
         KnownIn: {

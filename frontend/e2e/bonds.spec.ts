@@ -512,7 +512,7 @@ test("a dead regnant's bond fades: staff see the day it ends, and the thrall's s
   await expect(bound).toHaveText(before);
 });
 
-test("bonds Horatio knows by rule: staff fill in a ghoul's from before, and a new domitor moves it (#663)", async ({
+test("bonds Horatio knows by rule: staff fill in a ghoul's and a sheet's sire bond from before, and a new domitor moves it (#663, #739)", async ({
   browser,
 }) => {
   const custodian = await person(browser, "kinbond-cust");
@@ -544,6 +544,16 @@ test("bonds Horatio knows by rule: staff fill in a ghoul's from before, and a ne
     name: "Aurelien Thorne",
     clan: "Toreador",
   });
+  // A vampire NPC whose sheet names her sire (#739), with no Embrace in play.
+  const ottilie = await send(l, "POST", `/api/troupes/${troupe.id}/npcs`, {
+    name: "Ottilie Rennard",
+    npc_kind: "vampire",
+  });
+  await send(l, "PUT", `/api/characters/${ottilie.id}/sire`, {
+    name: "Gideon Ashcombe",
+    clan: "Ventrue",
+    secret: true,
+  });
   await send(l, "PUT", `/api/troupes/${troupe.id}/blood-bonds`, {
     setting: "staff",
   });
@@ -556,11 +566,18 @@ test("bonds Horatio knows by rule: staff fill in a ghoul's from before, and a ne
     "Perrine Valcourt to Aurelien Thorne, Full bond from",
   );
   await expect(known).toContainText("(their domitor)");
-  await l.getByRole("button", { name: "Add this bond" }).click();
+  await expect(known).toContainText(
+    "Ottilie Rennard to Gideon Ashcombe, First drink from",
+  );
+  await expect(known).toContainText("(the sire on their sheet)");
+  await l.getByRole("button", { name: "Add these 2 bonds" }).click();
   const bond = l.getByRole("listitem", {
     name: "Perrine Valcourt bound to Aurelien Thorne",
   });
   await expect(bond).toContainText("Full bond");
+  await expect(
+    l.getByRole("listitem", { name: "Ottilie Rennard bound to Gideon Ashcombe" }),
+  ).toContainText("First drink");
   await expect(known).toHaveCount(0);
 
   // A new domitor: the old bond ends, as faded before the change, and she is bound to the new one.
