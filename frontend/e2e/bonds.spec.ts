@@ -181,6 +181,54 @@ test("staff record three drinks and the thrall's player sees a full bond; the re
   expect(refused.status()).toBe(403);
 });
 
+test("staff see the troupe's bonds as a web: a full bond is a heavy link, and a chain is named (#708)", async ({ browser }) => {
+  const custodian = await person(browser, "bondweb-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "bondweb-lead");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", `/api/troupes`, { name: `Web of Blood ${run}`, lead_handle: lead.handle });
+  const l = lead.page;
+  await send(l, "PUT", `/api/troupes/${troupe.id}/blood-bonds`, { setting: "staff" });
+  const tavish = await send(l, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Tavish Morrow" });
+  const drink = (thrall: object, regnant: object, night: string) => send(l, "POST", `/api/troupes/${troupe.id}/bonds/drinks`, { thrall, regnant, night, source: "game" });
+  // Wren is fully bound to Tavish; Ida has had one drink of him; Tavish himself has drunk twice from the Margrave.
+  for (const night of ["2026-10-03", "2026-10-10", "2026-10-17"]) await drink({ name: "Wren Ashdown" }, { character_id: tavish.id }, night);
+  await drink({ name: "Ida Coyle" }, { character_id: tavish.id }, "2026-10-03");
+  for (const night of ["2026-10-03", "2026-10-10"]) await drink({ character_id: tavish.id }, { name: "The Margrave" }, night);
+
+  await l.goto(`/troupes/${troupe.id}/bonds`);
+  await l.getByRole("navigation", { name: "Blood bonds" }).getByRole("link", { name: "Web" }).click();
+  const chart = l.getByRole("figure", { name: "The web of blood bonds" });
+  await expect(chart).toBeVisible();
+  // The full bond is drawn heaviest; the single drink lightest.
+  const full = chart.locator('[data-bond="Wren Ashdown → Tavish Morrow"] line[data-level="3"]');
+  await expect(full).toHaveAttribute("stroke-width", "5");
+  await expect(chart.locator('[data-bond="Ida Coyle → Tavish Morrow"] line[data-level="1"]')).toHaveAttribute("stroke-width", "1.5");
+  await expect(l.getByRole("region", { name: "Most thralls" })).toContainText("Tavish Morrow2 (1 full)");
+  await expect(l.getByRole("region", { name: "Chains of bonds" })).toContainText("Ida Coyle, Wren Ashdown → Tavish Morrow → The Margrave");
+  // Full bonds only leaves the one.
+  await l.getByRole("group", { name: "Bonds" }).getByRole("button", { name: "Full bonds" }).click();
+  await expect(chart.locator("[data-bond]")).toHaveCount(1);
+  await l.getByRole("group", { name: "Bonds" }).getByRole("button", { name: "Every level" }).click();
+  await expect(chart.locator("[data-bond]")).toHaveCount(3);
+
+  // Selecting Tavish opens his bonds on the list.
+  await chart.locator('[data-person="Tavish Morrow"] circle').nth(1).click();
+  await l.getByRole("link", { name: "Open their bonds" }).click();
+  await expect(l.getByText("Showing only Tavish Morrow's bonds.")).toBeVisible();
+  await expect(l.getByRole("region", { name: "Wren Ashdown" })).toBeVisible();
+
+  // Players never get it.
+  const player = await person(browser, "bondweb-player");
+  expect((await player.page.request.get(`/api/troupes/${troupe.id}/bond-web`)).status()).toBe(403);
+});
+
 test("players report a drink for staff to approve; under Players manage the thrall confirms one the regnant recorded", async ({
   browser,
 }) => {

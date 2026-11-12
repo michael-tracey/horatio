@@ -113,6 +113,9 @@ export function groupBonds(bonds: BondOut[], by: "thrall" | "regnant"): { name: 
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** A side of a bond as the web of bonds keys it (#708): the character's id, or "name:" and the name in lower case. */
+export const partyKey = (party: { character_id: string | null; name: string }) => party.character_id ?? `name:${party.name.trim().toLowerCase()}`;
+
 /** A side picked in WhoPicker ("c:<id>" or "name"), as the API takes it; null until one is. */
 export function partyIn(who: string, name: string): { character_id?: string; name: string } | null {
   if (who.startsWith("c:")) return { character_id: who.slice(2), name: "" };

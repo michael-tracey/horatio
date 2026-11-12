@@ -5467,6 +5467,38 @@
         "title": "BondReportOut",
         "type": "object"
       },
+      "BondWebOut": {
+        "properties": {
+          "bonds": {
+            "items": {
+              "$ref": "#/components/schemas/WebBondOut"
+            },
+            "title": "Bonds",
+            "type": "array"
+          },
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/ClanCountOut"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/WebPersonOut"
+            },
+            "title": "People",
+            "type": "array"
+          }
+        },
+        "required": [
+          "people",
+          "bonds",
+          "clans"
+        ],
+        "title": "BondWebOut",
+        "type": "object"
+      },
       "BookTraitChange": {
         "description": "A change to one book trait. Only the fields given change; the rest stay.",
         "properties": {
@@ -51149,6 +51181,121 @@
         "title": "WaitingLine",
         "type": "object"
       },
+      "WebBondOut": {
+        "properties": {
+          "fades_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fades On"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "regnant": {
+            "title": "Regnant",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "thrall": {
+            "title": "Thrall",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "thrall",
+          "regnant",
+          "level",
+          "status",
+          "fades_on"
+        ],
+        "title": "WebBondOut",
+        "type": "object"
+      },
+      "WebPersonOut": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "standing": {
+            "title": "Standing",
+            "type": "string"
+          },
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "key",
+          "character_id",
+          "name",
+          "kind",
+          "clan",
+          "standing",
+          "titles"
+        ],
+        "title": "WebPersonOut",
+        "type": "object"
+      },
       "WhileAbsentOut": {
         "properties": {
           "note": {
@@ -75014,6 +75161,50 @@
           }
         },
         "summary": "Set Blood Bonds",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/bond-web": {
+      "get": {
+        "description": "Every bond the troupe keeps, and the people on either side, for its running staff.",
+        "operationId": "bond_web_api_troupes__troupe_id__bond_web_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BondWebOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Bond Web",
         "tags": [
           "bonds"
         ]
