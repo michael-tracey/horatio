@@ -55,7 +55,7 @@ export const SETTLED: { value: SettledHow; label: string; meaning: string }[] = 
   },
 ];
 
-/** The ledger's views, as its tabs. Pending boons come with review (#687), so that tab shows only when there are some. */
+/** The ledger's views, as its tabs. Pending boons wait for review (#687), so that tab shows only when there are some. */
 export const VIEWS: { value: BoonView; label: string }[] = [
   { value: "open", label: "Open" },
   { value: "departed", label: "Departed" },
@@ -104,6 +104,12 @@ const EVENTS: Record<BoonEventOut["kind"], string> = {
   settled: "Settled",
   voided: "Made void",
   reopened: "Reopened",
+  submitted: "Reported for review",
+  accepted: "Accepted",
+  rejected: "Not accepted",
+  flagged: "Flagged for review",
+  flag_cleared: "Flag cleared",
+  linked: "Name linked",
 };
 
 export function eventName(kind: BoonEventOut["kind"]): string {
@@ -120,6 +126,7 @@ const FIELDS: Record<string, string> = {
   notify_on_trade: "Tell the debtor if traded",
   staff_note: "Staff note",
   state: "State",
+  flags: "Flags",
 };
 
 /** One change in a boon's log: "Kind: Minor → Major". Empty text reads "(none)". */
@@ -175,4 +182,29 @@ export function rowStarted(row: EntryRow): boolean {
 /** How many boons the rows make, counting each row's count. */
 export function rowsTotal(rows: EntryRow[]): number {
   return rows.filter(rowStarted).reduce((n, r) => n + Math.max(1, r.count || 1), 0);
+}
+
+export type BoonFlag = NonNullable<BoonOut["flags"]>[number];
+
+/** A flag raised for review (#687), as its badge names it. */
+export const FLAG_NAMES: Record<BoonFlag["kind"], string> = {
+  unmatched: "Name not linked",
+  duplicate: "Likely duplicate",
+  hand: "Flagged",
+};
+
+/** What a flag says, after its name: "creditor, The Moon: No character in the troupe has this name." */
+export function flagBody(flag: BoonFlag, boon: Pick<BoonOut, "debtor" | "creditor">): string {
+  if (flag.kind === "unmatched" && flag.side) {
+    const name = flag.side === "debtor" ? boon.debtor.name : boon.creditor.name;
+    return `${flag.side}, ${name}: ${flag.detail}`;
+  }
+  if (flag.kind === "duplicate") return flag.detail;
+  return `${flag.raised_by ? `by ${flag.raised_by}: ` : ""}${flag.note}`;
+}
+
+/** What a flag is about, in a line: "Name not linked (creditor, The Moon): No character in the troupe has this name." */
+export function flagText(flag: BoonFlag, boon: Pick<BoonOut, "debtor" | "creditor">): string {
+  if (flag.kind === "unmatched") return `${FLAG_NAMES.unmatched} (${flagBody(flag, boon).replace(": ", "): ")}`;
+  return `${FLAG_NAMES[flag.kind]}${flag.kind === "hand" && flag.raised_by ? " " : ": "}${flagBody(flag, boon)}`;
 }

@@ -174,6 +174,9 @@ class Troupe(Imported, Record):
     # A boon's creditor's player may mark it settled, called in or forgiven, from the
     # Play View (#686). Only with "owed", where they see it.
     boon_players_settle: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Boons its players report wait for review by its running staff (and the Harpy,
+    # #688) before they stand (horatio.boon_reviews, #687); off, they stand at once.
+    boon_review: Mapped[bool] = mapped_column(default=False, server_default="false")
     # The court over time (horatio.title_history, #712): whether its players see who
     # held each title and when. Its staff always do.
     court_history_players: Mapped[bool] = mapped_column(default=False, server_default="false")

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { closeContextsAfterEach, run, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, shots } from "./support";
 
-/** Boons: the troupe's ledger, for its running staff: registering a game's boons at once, settling, editing and trading them, each with its own log; the boon standings; and the Play View's Boons tab, where players report boons and see what the troupe lets them (#686). */
+/** Boons: the troupe's ledger, for its running staff: registering a game's boons at once, settling, editing and trading them, each with its own log; the boon standings; the Play View's Boons tab, where players report boons and see what the troupe lets them (#686); and review, where reports wait for staff to accept them (#687). */
 
 closeContextsAfterEach();
 
@@ -328,4 +328,74 @@ test("in the Play View's Boons tab a player reports a boon, sees what the troupe
   const log = row.getByRole("list", { name: "Log of Tobiah Venn owes Isolde Marrow" });
   await expect(log).toContainText("as Isolde Marrow");
   await expect(log).toContainText("For old times");
+});
+
+test("held for review, a player's report waits, flagged for its unlinked name, until staff accept it (#687)", async ({ browser }) => {
+  const custodian = await person(browser, "brev-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "brev-lead");
+  const player = await person(browser, "brev-player");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", "/api/troupes", { name: `Debts Weighed ${run}`, lead_handle: lead.handle });
+  await backstoryOptional(custodian.page, troupe.id);
+  const build = { ...ATTRIBUTES_AND_FOCUSES, backgrounds: [["Fame", 3], ["Herd", 2], ["Generation", 1]] as [string, number][], disciplines: [["Celerity", 2], ["Potence", 1], ["Presence", 1]] as [string, number][] };
+  const corvin = await builtVampire(player.page, "Corvin Ashby", "Brujah", build);
+  const asked = await send(player.page, "POST", `/api/characters/${corvin}/home-troupe`, { troupe_id: troupe.id });
+  await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`);
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/boon-ledger`, { on: true });
+
+  // The lead holds reports for review.
+  const l = lead.page;
+  await l.goto(`/troupes/${troupe.id}/settings`);
+  const hold = l.getByRole("checkbox", { name: /^Boons players report wait for review/ });
+  await hold.check();
+  await expect(l.getByText("Boons players report now wait for review.")).toBeVisible();
+  await expect(hold).toBeChecked();
+
+  // Corvin's player reports that someone not on the list owes him.
+  const p = player.page;
+  await p.goto(`/play/characters/${corvin}?tab=boons`);
+  const tab = p.getByRole("region", { name: "Boons" });
+  const report = tab.getByRole("form", { name: "Report a boon" });
+  await report.getByLabel("They owe Corvin Ashby").check();
+  await report.getByLabel("Who").selectOption({ label: "Someone else…" });
+  await report.getByLabel("Their name").fill("Mysterious Stranger");
+  await report.getByLabel("Reason").fill("A ride across the river");
+  await report.getByRole("button", { name: "Report the boon" }).click();
+  await expect(p.getByText(`Sent to Debts Weighed ${run}'s staff for review: Mysterious Stranger owes Corvin Ashby a minor boon.`)).toBeVisible();
+  const reports = tab.getByRole("list", { name: "Your reports" });
+  await expect(reports).toContainText("Mysterious Stranger owes Corvin Ashby a minor boon");
+  await expect(reports).toContainText(`Waiting for Debts Weighed ${run}'s staff to review it.`);
+
+  // The lead sees it waiting, flagged for its name, and accepts it.
+  await l.goto(`/troupes/${troupe.id}/boons`);
+  await l.getByRole("tab", { name: /^To review/ }).click();
+  const row = l.getByRole("list", { name: "Boons to review" }).getByRole("listitem", { name: "To review: Mysterious Stranger owes Corvin Ashby, minor" });
+  await expect(row).toContainText("Name not linked (debtor, Mysterious Stranger): No character in the troupe has this name.");
+  await expect(row.getByText("Waits for review").first()).toBeVisible();
+  await row.getByRole("button", { name: "Review" }).click();
+  await row.getByRole("button", { name: "Accept", exact: true }).click();
+  const accept = row.getByRole("form", { name: "Accept: Mysterious Stranger owes Corvin Ashby" });
+  await accept.getByLabel("Note (optional)").fill("Confirmed with the Harpy");
+  await accept.getByRole("button", { name: "Accept it" }).click();
+  await expect(l.getByText("Accepted: Mysterious Stranger owes Corvin Ashby.")).toBeVisible();
+  await expect(l.getByText("Nothing waits for review, and no boon is flagged.")).toBeVisible();
+
+  // It stands in the ledger, with its review in its log; and the report is gone from the player's tab.
+  await l.getByRole("tab", { name: /^Open/ }).click();
+  const standing = l.getByRole("list", { name: "Boons" }).getByRole("listitem", { name: "Mysterious Stranger owes Corvin Ashby, minor" });
+  await standing.getByRole("button", { name: "Open" }).click();
+  const log = standing.getByRole("list", { name: "Log of Mysterious Stranger owes Corvin Ashby" });
+  await expect(log).toContainText("Reported for review");
+  await expect(log).toContainText("Accepted");
+  await expect(log).toContainText("Confirmed with the Harpy");
+  await p.reload();
+  await expect(p.getByRole("region", { name: "Boons" }).getByRole("form", { name: "Report a boon" })).toBeVisible();
+  await expect(p.getByRole("list", { name: "Your reports" })).toHaveCount(0);
 });
