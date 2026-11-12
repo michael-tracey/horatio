@@ -1241,6 +1241,10 @@ def died(
     character.left_reason = "final_death"
     character.left_listed = True
     db.flush()
+    # Its bonds end, or fade where it was the regnant (#662).
+    from horatio import bonds  # imports horatio.sheets, which imports this module
+
+    bonds.final_death(db, staff, character)
     audit.record(
         db,
         staff,

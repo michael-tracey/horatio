@@ -437,11 +437,14 @@ def wipe_lesser(db: Session, user: User, full: BloodBond) -> None:
         log(db, user, "bond.wiped", other, full=regnant.shown)
 
 
-def end(db: Session, user: User, bond: BloodBond, status: str, reason: str) -> None:
+def end(db: Session, user: User | None, bond: BloodBond, status: str, reason: str) -> None:
     bond.status = status
     bond.ended_at = datetime.now(UTC)
-    bond.ended_by = user.id
+    bond.ended_by = user.id if user else None
     bond.ended_reason = reason
+    # Ended any other way than by fading (`faded` sets it back), it didn't fade.
+    bond.fades_on = None
+    bond.fade_reason = ""
 
 
 def break_bond(db: Session, user: User, bond: BloodBond, reason: str) -> None:
@@ -463,6 +466,236 @@ def set_known(db: Session, user: User, bond: BloodBond, known: bool) -> None:
     bond.known_to_regnant = known
     db.flush()
     log(db, user, "bond.known", bond, known="known" if known else "not known")
+
+
+# --- fading when a side meets Final Death (#662) ----------------------------------------
+#
+# "If a regnant is killed, the bond will slowly fade over the next month" (p. 296). The
+# thrall still feels it all that month, so nothing the thrall's player sees changes:
+# their character's Bonds card shows it as before, and the fade goes only in the
+# troupe's log, which running staff keep (never the thrall's own log). Running staff
+# see the truth at once, with the day it ends, and can move that day with a reason. On
+# that day it ends as faded; the thrall's player is told only that it has faded, with
+# the troupe's next downtime results (`tell_faded`), and until then their sheet still
+# shows it. Off-field and Inactive regnants are left alone: bonds that fade with time
+# and distance are #665. A thrall's Final Death ends its bonds; a regnant's player who
+# knew of one goes on seeing it until staff clear it, for the regnant has no sense of
+# the death.
+
+# How long a dead regnant's bond takes to fade (p. 296: "over the next month").
+FADE_DAYS = 30
+# Why a bond fades.
+REGNANT_DIED = "regnant_died"
+FADE_REASONS = {REGNANT_DIED: "its regnant met Final Death"}
+FINAL_DEATH = "final_death"
+
+
+def today() -> date:
+    return datetime.now(UTC).date()
+
+
+def staff_log(db: Session, user: User | None, action: str, bond: BloodBond, **data: str) -> None:
+    """Into the troupe's log only, which its running staff keep: never the thrall's own
+    log, which the thrall's player reads."""
+    thrall, regnant = parties(db, bond)
+    audit.record(
+        db,
+        user,
+        action,
+        troupe_id=bond.troupe_id,
+        character_id=None,
+        thrall=thrall.shown,
+        regnant=regnant.shown,
+        bond_id=bond.id,
+        **data,
+    )
+
+
+def tracked_bonds(db: Session, *conditions: ColumnElement[bool]) -> list[BloodBond]:
+    """Bonds matching `conditions` in troupes that track bonds: switched off, none of
+    the fading runs (it catches up when switched on again)."""
+    return list(
+        db.scalars(
+            select(BloodBond)
+            .where(
+                *conditions,
+                BloodBond.troupe_id.in_(select(Troupe.id).where(Troupe.blood_bonds != "off")),
+            )
+            .order_by(BloodBond.created_at)
+        )
+    )
+
+
+def start_fading(db: Session, user: User, regnant: Character) -> None:
+    """The regnant met Final Death: each bond still felt where they are the regnant
+    starts to fade, ending FADE_DAYS from today."""
+    ends = today() + timedelta(days=FADE_DAYS)
+    for bond in tracked_bonds(db, BloodBond.regnant_id == regnant.id, BloodBond.status == "active"):
+        bond.status = "fading"
+        bond.fades_on = ends
+        bond.fade_reason = REGNANT_DIED
+        db.flush()
+        staff_log(db, user, "bond.fading", bond, ends=when(ends), why=FADE_REASONS[REGNANT_DIED])
+
+
+def stop_fading(db: Session, user: User, regnant: Character) -> None:
+    """The regnant didn't meet Final Death after all (staff changed why it left): its
+    bonds still fading are felt as before. Those already faded stay ended."""
+    for bond in tracked_bonds(
+        db,
+        BloodBond.regnant_id == regnant.id,
+        BloodBond.status == "fading",
+        BloodBond.fade_reason == REGNANT_DIED,
+    ):
+        bond.status = "active"
+        bond.fades_on = None
+        bond.fade_reason = ""
+        db.flush()
+        staff_log(db, user, "bond.fading_stopped", bond)
+
+
+def thrall_died(db: Session, user: User, thrall: Character) -> None:
+    """The thrall met Final Death: each bond it still felt ends. A regnant's player who
+    knew of a bond goes on seeing it as it was until staff clear it."""
+    for bond in tracked_bonds(db, BloodBond.thrall_id == thrall.id, BloodBond.status.in_(OPEN)):
+        end(db, user, bond, "ended", "Its thrall met Final Death.")
+        bond.kept_for_regnant = bond.known_to_regnant
+        # The thrall is gone: there is no one to tell that it faded.
+        bond.thrall_told_at = bond.ended_at
+        db.flush()
+        log(db, user, "bond.thrall_died", bond)
+
+
+def final_death(db: Session, user: User, character: Character) -> None:
+    """A character met Final Death (horatio.leaving): as a regnant, its bonds fade; as
+    a thrall, its bonds end."""
+    start_fading(db, user, character)
+    thrall_died(db, user, character)
+
+
+def leaving_changed(
+    db: Session, user: User, character: Character, was: str | None, now: str | None
+) -> None:
+    """Why a retired character left was changed: to Final Death, as if it died now;
+    from it, its bonds still fading are felt again."""
+    if was == now:
+        return
+    if now == FINAL_DEATH:
+        final_death(db, user, character)
+    elif was == FINAL_DEATH:
+        stop_fading(db, user, character)
+
+
+def faded(db: Session, bond: BloodBond, user: User | None = None) -> None:
+    """The bond has faded: it ends. The thrall's player is told with the next downtime
+    results; a thrall with no player has no one to tell."""
+    thrall, _ = parties(db, bond)
+    why = bond.fade_reason
+    end(db, user, bond, "ended", f"Faded: {FADE_REASONS.get(why, 'it faded')}.")
+    bond.fade_reason = why
+    if thrall.character is None or thrall.character.kind != "pc":
+        bond.thrall_told_at = bond.ended_at
+    db.flush()
+    staff_log(db, user, "bond.faded", bond)
+
+
+def settle_fades(db: Session, troupe_ids: Sequence[uuid.UUID] | None = None) -> None:
+    """End every fading bond whose day has come: those of `troupe_ids`, or all."""
+    conditions: list[ColumnElement[bool]] = [
+        BloodBond.status == "fading",
+        BloodBond.fades_on <= today(),
+    ]
+    if troupe_ids is not None:
+        conditions.append(BloodBond.troupe_id.in_(troupe_ids))
+    for bond in tracked_bonds(db, *conditions):
+        faded(db, bond)
+
+
+def set_fade(db: Session, user: User, bond: BloodBond, ends: date, reason: str) -> None:
+    """Running staff move the day a fading bond ends, with the reason: to today or
+    before, it ends now, as faded."""
+    reason = reason.strip()
+    if not reason:
+        raise unprocessable("Give a reason for changing when the bond fades.")
+    if bond.status != "fading" or bond.fades_on is None:
+        raise conflict("That bond isn't fading.")
+    was = bond.fades_on
+    if ends <= today():
+        staff_log(
+            db, user, "bond.fade_changed", bond, ends=when(today()), was=when(was), reason=reason
+        )
+        faded(db, bond, user)
+        return
+    if ends == was:
+        return
+    bond.fades_on = ends
+    db.flush()
+    staff_log(db, user, "bond.fade_changed", bond, ends=when(ends), was=when(was), reason=reason)
+
+
+def untold(db: Session, troupe: Troupe) -> list[BloodBond]:
+    """Bonds of the troupe that faded and whose thrall's player isn't told yet."""
+    return list(
+        db.scalars(
+            select(BloodBond)
+            .where(
+                BloodBond.troupe_id == troupe.id,
+                BloodBond.status == "ended",
+                BloodBond.fade_reason != "",
+                BloodBond.thrall_told_at.is_(None),
+            )
+            .order_by(BloodBond.ended_at)
+        )
+    )
+
+
+def tell_faded(db: Session, staff: User, troupe: Troupe) -> int:
+    """With the troupe's downtime results (horatio.responses.deliver_cycle), tell each
+    thrall's player whose bond has faded that it has: only that, never why. Returns
+    how many were told."""
+    if not tracked(troupe):
+        return 0
+    settle_fades(db, [troupe.id])
+    told = 0
+    for bond in untold(db, troupe):
+        thrall, regnant = parties(db, bond)
+        bond.thrall_told_at = datetime.now(UTC)
+        if thrall.character is not None and thrall.character.kind == "pc":
+            notifications.notify(
+                db,
+                [thrall.character.player_id],
+                "sheet.bond",
+                f"{thrall.character.name}'s bond to {regnant.shown} has faded.",
+                f"/characters/{thrall.character.id}",
+                troupe_id=troupe.id,
+                character_id=thrall.character.id,
+            )
+            log(db, staff, "bond.faded_told", bond)
+            told += 1
+    db.flush()
+    return told
+
+
+def clear_kept(db: Session, user: User, bond: BloodBond) -> None:
+    """Running staff stop showing the regnant's player a bond whose thrall died."""
+    if not bond.kept_for_regnant:
+        return
+    bond.kept_for_regnant = False
+    db.flush()
+    staff_log(db, user, "bond.kept_cleared", bond)
+
+
+def as_felt(
+    user: User, bond: BloodBond, thrall: Character | None, regnant: Character | None
+) -> bool:
+    """A bond that has ended which a player still sees as it was: the thrall's player,
+    until told it faded; the regnant's player who knew of it, while its thrall's death
+    is kept from them."""
+    if bond.status != "ended":
+        return False
+    if bond.fade_reason and bond.thrall_told_at is None and plays(user, thrall):
+        return True
+    return bond.kept_for_regnant and plays(user, regnant)
 
 
 # --- staff change a drink -------------------------------------------------------------
