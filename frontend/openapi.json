@@ -4893,6 +4893,21 @@
         "title": "Body_upload_dark_pack_api_tools_dark_pack_upload_post",
         "type": "object"
       },
+      "Body_upload_image_api_troupes__troupe_id__throw_images__which__post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "JPEG, PNG, WebP or HEIC, up to 10 MB.",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_image_api_troupes__troupe_id__throw_images__which__post",
+        "type": "object"
+      },
       "Body_upload_logo_api_clan_logos_post": {
         "properties": {
           "clan": {
@@ -44212,6 +44227,74 @@
         "title": "TextNeed",
         "type": "object"
       },
+      "ThrowImagesNameIn": {
+        "properties": {
+          "name": {
+            "maxLength": 60,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ThrowImagesNameIn",
+        "type": "object"
+      },
+      "ThrowImagesOut": {
+        "properties": {
+          "complete": {
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "paper": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paper"
+          },
+          "rock": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rock"
+          },
+          "scissors": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scissors"
+          }
+        },
+        "required": [
+          "name",
+          "rock",
+          "paper",
+          "scissors",
+          "complete"
+        ],
+        "title": "ThrowImagesOut",
+        "type": "object"
+      },
       "TitleChange": {
         "properties": {
           "sect": {
@@ -81101,6 +81184,263 @@
         "summary": "Change Teacher Rule",
         "tags": [
           "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/throw-images": {
+      "delete": {
+        "description": "Remove the whole set: the troupe throws with Horatio's own again.",
+        "operationId": "remove_images_api_troupes__troupe_id__throw_images_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Images",
+        "tags": [
+          "throw images"
+        ]
+      },
+      "get": {
+        "description": "The troupe's rock, paper and scissors, for its members.",
+        "operationId": "read_images_api_troupes__troupe_id__throw_images_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThrowImagesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Images",
+        "tags": [
+          "throw images"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/throw-images/name": {
+      "put": {
+        "description": "Name the set, or clear its name with an empty one.",
+        "operationId": "name_images_api_troupes__troupe_id__throw_images_name_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThrowImagesNameIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThrowImagesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Name Images",
+        "tags": [
+          "throw images"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/throw-images/{picture_id}/{name}": {
+      "get": {
+        "description": "One of the set's files, for the troupe's members, while it is in the set.",
+        "operationId": "image_file_api_troupes__troupe_id__throw_images__picture_id___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "picture_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Picture Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Image File",
+        "tags": [
+          "throw images"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/throw-images/{which}": {
+      "post": {
+        "description": "A new picture for one throw, kept whole on a transparent square. It replaces\nthe one before, whose files go once the new one is saved.",
+        "operationId": "upload_image_api_troupes__troupe_id__throw_images__which__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "which",
+            "required": true,
+            "schema": {
+              "enum": [
+                "rock",
+                "paper",
+                "scissors"
+              ],
+              "title": "Which",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_image_api_troupes__troupe_id__throw_images__which__post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThrowImagesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Image",
+        "tags": [
+          "throw images"
         ]
       }
     },

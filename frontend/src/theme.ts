@@ -19,6 +19,16 @@ export const THEME_KEY = "horatio.theme";
 /** The browser's bar, in each theme's night. */
 export const BAR_COLOUR: Record<Theme, string> = { dark: "#141016", ultragoth: "#0a0909" };
 
+/**
+ * What the Throws tab is drawn in, in each theme: its panel (dusk) and the word under
+ * a throw (gold), as index.css has them; theme.test.tsx checks they match. For showing
+ * a troupe's throw pictures in both themes at once (#670), whichever is on.
+ */
+export const THROW_PANEL: Record<Theme, { dusk: string; gold: string }> = {
+  dark: { dusk: "#1e1922", gold: "#c9a24a" },
+  ultragoth: { dusk: "#131011", gold: "#f95a63" },
+};
+
 export function isTheme(value: unknown): value is Theme {
   return typeof value === "string" && (THEMES as readonly string[]).includes(value);
 }

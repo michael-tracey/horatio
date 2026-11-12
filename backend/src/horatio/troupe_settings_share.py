@@ -793,6 +793,7 @@ NOT_EXPORTED_COLUMNS: dict[str, str] = {
     "portrait_id": "its profile is its own",
     "portrait_crop": "its profile is its own",
     "banner_id": "its profile is its own",
+    "throw_images": "its pictures are its own, and files aren't carried",
     "profile": "its profile is its own",
     "contact_id": "its staff are its own",
     "seated_clans": "its court is its own (titles and seats aren't carried)",
