@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type {
   BondOut,
@@ -13,6 +14,7 @@ import {
   isOpen,
   levelName,
   partyIn,
+  partyKey,
   PLAYER_SOURCES,
   reportLine,
   SOURCES,
@@ -55,6 +57,9 @@ export function BondsTab({ troupeId }: { troupeId: string }) {
   const [by, setBy] = useState<By>("thrall");
   const [past, setPast] = useState(false);
   const [adding, setAdding] = useState<"drink" | "enter" | null>(null);
+  // ?who=, from the web of bonds (#708): only that person's bonds.
+  const [params, setParams] = useSearchParams();
+  const who = params.get("who");
   const bonds = useQuery({
     queryKey: ["troupe-bonds", troupeId],
     queryFn: () =>
@@ -66,9 +71,12 @@ export function BondsTab({ troupeId }: { troupeId: string }) {
   });
   if (bonds.isPending) return <Loading />;
   if (bonds.error) return <ErrorText error={bonds.error} />;
-  const shown = past ? bonds.data.bonds : bonds.data.bonds.filter(watched);
-  const closed =
-    bonds.data.bonds.length - bonds.data.bonds.filter(watched).length;
+  const theirs = who
+    ? bonds.data.bonds.filter((b) => partyKey(b.thrall) === who || partyKey(b.regnant) === who)
+    : bonds.data.bonds;
+  const named = who ? theirs.flatMap((b) => [b.thrall, b.regnant]).find((p) => partyKey(p) === who)?.name : undefined;
+  const shown = past ? theirs : theirs.filter(watched);
+  const closed = theirs.length - theirs.filter(watched).length;
   const groups = groupBonds(shown, by);
 
   return (
@@ -119,6 +127,14 @@ export function BondsTab({ troupeId }: { troupeId: string }) {
         )}
       </Card>
       <KnownBonds troupeId={troupeId} />
+      {who && (
+        <p className="flex flex-wrap items-center gap-2 text-sm text-mist">
+          Showing only {named ?? "this person"}&apos;s bonds.
+          <Button variant="ghost" onClick={() => setParams({})}>
+            Show everyone&apos;s
+          </Button>
+        </p>
+      )}
       {(bonds.data.reports ?? []).length > 0 && (
         <WaitingReports
           troupeId={troupeId}

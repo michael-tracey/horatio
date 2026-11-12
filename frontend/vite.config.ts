@@ -48,8 +48,9 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,woff2,webp,ico,svg}", "*.png", "*.webmanifest"],
         // The link preview's picture and the big logo are for other sites, not the app.
-        // d3 is only for staff's charts, which need a connection anyway (#706).
-        globIgnores: ["preview.jpg", "logo.png", "assets/d3-*.js"],
+        // d3 is only for staff's charts, which need a connection anyway (#706), and so
+        // is the boon statistics page that draws with it (#702).
+        globIgnores: ["preview.jpg", "logo.png", "assets/d3-*.js", "assets/BoonStatisticsPage-*.js"],
         navigateFallback: "index.html",
         navigateFallbackDenylist: [/^\/api\//],
         // The rules and the manual make some of the app's files big.

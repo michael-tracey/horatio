@@ -5503,6 +5503,38 @@
         "title": "BondReportOut",
         "type": "object"
       },
+      "BondWebOut": {
+        "properties": {
+          "bonds": {
+            "items": {
+              "$ref": "#/components/schemas/WebBondOut"
+            },
+            "title": "Bonds",
+            "type": "array"
+          },
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/ClanCountOut"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/WebPersonOut"
+            },
+            "title": "People",
+            "type": "array"
+          }
+        },
+        "required": [
+          "people",
+          "bonds",
+          "clans"
+        ],
+        "title": "BondWebOut",
+        "type": "object"
+      },
       "BookTraitChange": {
         "description": "A change to one book trait. Only the fields given change; the rest stay.",
         "properties": {
@@ -5837,6 +5869,23 @@
         "title": "BoonAcrossOut",
         "type": "object"
       },
+      "BoonActiveOut": {
+        "properties": {
+          "boons": {
+            "title": "Boons",
+            "type": "integer"
+          },
+          "who": {
+            "$ref": "#/components/schemas/BoonStandingPartyOut"
+          }
+        },
+        "required": [
+          "who",
+          "boons"
+        ],
+        "title": "BoonActiveOut",
+        "type": "object"
+      },
       "BoonBandOut": {
         "properties": {
           "count": {
@@ -6100,6 +6149,119 @@
         "title": "BoonEventOut",
         "type": "object"
       },
+      "BoonFlowOut": {
+        "description": "`matrix[i][j]`: the open weight `groups[i]` owes `groups[j]`; `counts`, how many.",
+        "properties": {
+          "counts": {
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "title": "Counts",
+            "type": "array"
+          },
+          "groups": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
+          "matrix": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "title": "Matrix",
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups",
+          "matrix",
+          "counts"
+        ],
+        "title": "BoonFlowOut",
+        "type": "object"
+      },
+      "BoonGameActivityOut": {
+        "properties": {
+          "by_kind": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "By Kind",
+            "type": "object"
+          },
+          "game": {
+            "$ref": "#/components/schemas/BoonGameOut"
+          },
+          "most_active": {
+            "items": {
+              "$ref": "#/components/schemas/BoonActiveOut"
+            },
+            "title": "Most Active",
+            "type": "array"
+          },
+          "registered": {
+            "title": "Registered",
+            "type": "integer"
+          },
+          "registered_weight": {
+            "title": "Registered Weight",
+            "type": "number"
+          },
+          "settled": {
+            "title": "Settled",
+            "type": "integer"
+          },
+          "settled_weight": {
+            "title": "Settled Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "game",
+          "registered",
+          "registered_weight",
+          "by_kind",
+          "settled",
+          "settled_weight",
+          "most_active"
+        ],
+        "title": "BoonGameActivityOut",
+        "type": "object"
+      },
+      "BoonGameOut": {
+        "properties": {
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "starts_at",
+          "ends_at"
+        ],
+        "title": "BoonGameOut",
+        "type": "object"
+      },
       "BoonGroupOut": {
         "properties": {
           "characters": {
@@ -6206,6 +6368,99 @@
         "title": "BoonLedgerIn",
         "type": "object"
       },
+      "BoonLinkOut": {
+        "description": "What `debtor` owes `creditor` (parties' keys), still open.",
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "creditor": {
+            "title": "Creditor",
+            "type": "string"
+          },
+          "debtor": {
+            "title": "Debtor",
+            "type": "string"
+          },
+          "kinds": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Kinds",
+            "type": "object"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "debtor",
+          "creditor",
+          "count",
+          "weight",
+          "kinds"
+        ],
+        "title": "BoonLinkOut",
+        "type": "object"
+      },
+      "BoonMonthOut": {
+        "description": "One kind of boon in one month (\"2026-10\"): registered, settled, and what stood\nat the month's end, by count and weight.",
+        "properties": {
+          "kind": {
+            "enum": [
+              "trivial",
+              "minor",
+              "major",
+              "blood",
+              "life"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "open": {
+            "title": "Open",
+            "type": "integer"
+          },
+          "open_weight": {
+            "title": "Open Weight",
+            "type": "number"
+          },
+          "registered": {
+            "title": "Registered",
+            "type": "integer"
+          },
+          "registered_weight": {
+            "title": "Registered Weight",
+            "type": "number"
+          },
+          "settled": {
+            "title": "Settled",
+            "type": "integer"
+          },
+          "settled_weight": {
+            "title": "Settled Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "month",
+          "kind",
+          "registered",
+          "registered_weight",
+          "settled",
+          "settled_weight",
+          "open",
+          "open_weight"
+        ],
+        "title": "BoonMonthOut",
+        "type": "object"
+      },
       "BoonMutualOut": {
         "properties": {
           "back": {
@@ -6235,6 +6490,43 @@
           "net"
         ],
         "title": "BoonMutualOut",
+        "type": "object"
+      },
+      "BoonNodeOut": {
+        "properties": {
+          "net": {
+            "title": "Net",
+            "type": "number"
+          },
+          "owed": {
+            "title": "Owed",
+            "type": "number"
+          },
+          "owed_count": {
+            "title": "Owed Count",
+            "type": "integer"
+          },
+          "owes": {
+            "title": "Owes",
+            "type": "number"
+          },
+          "owes_count": {
+            "title": "Owes Count",
+            "type": "integer"
+          },
+          "who": {
+            "$ref": "#/components/schemas/BoonStandingPartyOut"
+          }
+        },
+        "required": [
+          "who",
+          "owes",
+          "owed",
+          "net",
+          "owes_count",
+          "owed_count"
+        ],
+        "title": "BoonNodeOut",
         "type": "object"
       },
       "BoonNoteIn": {
@@ -6989,6 +7281,75 @@
           "mutual"
         ],
         "title": "BoonStandingsOut",
+        "type": "object"
+      },
+      "BoonStatisticsOut": {
+        "properties": {
+          "by_entered": {
+            "items": {
+              "$ref": "#/components/schemas/BoonMonthOut"
+            },
+            "title": "By Entered",
+            "type": "array"
+          },
+          "by_night": {
+            "items": {
+              "$ref": "#/components/schemas/BoonMonthOut"
+            },
+            "title": "By Night",
+            "type": "array"
+          },
+          "clan_flow": {
+            "$ref": "#/components/schemas/BoonFlowOut"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/BoonGameActivityOut"
+            },
+            "title": "Games",
+            "type": "array"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/BoonLinkOut"
+            },
+            "title": "Links",
+            "type": "array"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/BoonNodeOut"
+            },
+            "title": "Nodes",
+            "type": "array"
+          },
+          "scope": {
+            "enum": [
+              "active",
+              "everyone"
+            ],
+            "title": "Scope",
+            "type": "string"
+          },
+          "sect_flow": {
+            "$ref": "#/components/schemas/BoonFlowOut"
+          },
+          "weights": {
+            "$ref": "#/components/schemas/BoonWeightsOut"
+          }
+        },
+        "required": [
+          "scope",
+          "weights",
+          "by_entered",
+          "by_night",
+          "nodes",
+          "links",
+          "clan_flow",
+          "sect_flow",
+          "games"
+        ],
+        "title": "BoonStatisticsOut",
         "type": "object"
       },
       "BoonTallyOut": {
@@ -28394,6 +28755,33 @@
         "title": "MyRemembrancesOut",
         "type": "object"
       },
+      "MyThrowImagesOut": {
+        "properties": {
+          "chosen": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThrowSetOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "offered": {
+            "items": {
+              "$ref": "#/components/schemas/ThrowSetOut"
+            },
+            "title": "Offered",
+            "type": "array"
+          }
+        },
+        "required": [
+          "chosen",
+          "offered"
+        ],
+        "title": "MyThrowImagesOut",
+        "type": "object"
+      },
       "NameIn": {
         "properties": {
           "category": {
@@ -34899,6 +35287,17 @@
             "title": "Theme",
             "type": "string"
           },
+          "throw_images": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Throw Images"
+          },
           "time_zone": {
             "anyOf": [
               {
@@ -38127,6 +38526,18 @@
             "minItems": 1,
             "title": "Boons",
             "type": "array"
+          },
+          "game_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Game Id"
           },
           "note": {
             "default": "",
@@ -47469,6 +47880,46 @@
         "title": "ThrowImagesOut",
         "type": "object"
       },
+      "ThrowSetOut": {
+        "description": "A troupe's whole set, as a person may choose it for their Throws tab.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "paper": {
+            "title": "Paper",
+            "type": "string"
+          },
+          "rock": {
+            "title": "Rock",
+            "type": "string"
+          },
+          "scissors": {
+            "title": "Scissors",
+            "type": "string"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "name",
+          "rock",
+          "paper",
+          "scissors"
+        ],
+        "title": "ThrowSetOut",
+        "type": "object"
+      },
       "TitleChange": {
         "properties": {
           "sect": {
@@ -50908,6 +51359,121 @@
           "link"
         ],
         "title": "WaitingLine",
+        "type": "object"
+      },
+      "WebBondOut": {
+        "properties": {
+          "fades_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fades On"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "regnant": {
+            "title": "Regnant",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "thrall": {
+            "title": "Thrall",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "thrall",
+          "regnant",
+          "level",
+          "status",
+          "fades_on"
+        ],
+        "title": "WebBondOut",
+        "type": "object"
+      },
+      "WebPersonOut": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "standing": {
+            "title": "Standing",
+            "type": "string"
+          },
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "key",
+          "character_id",
+          "name",
+          "kind",
+          "clan",
+          "standing",
+          "titles"
+        ],
+        "title": "WebPersonOut",
         "type": "object"
       },
       "WhileAbsentOut": {
@@ -73247,6 +73813,28 @@
         ]
       }
     },
+    "/api/throw-images": {
+      "get": {
+        "description": "The set the person's Throws tab uses, and the sets they may choose from.",
+        "operationId": "my_images_api_throw_images_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyThrowImagesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Images",
+        "tags": [
+          "throw images"
+        ]
+      }
+    },
     "/api/tools/dark-pack": {
       "delete": {
         "description": "Take the Dark Pack resources off the server. The VTES symbols stay.",
@@ -74890,6 +75478,50 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/bond-web": {
+      "get": {
+        "description": "Every bond the troupe keeps, and the people on either side, for its running staff.",
+        "operationId": "bond_web_api_troupes__troupe_id__bond_web_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BondWebOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Bond Web",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/bonds": {
       "get": {
         "description": "Every bond the troupe keeps, with its log, for its running staff.",
@@ -75866,6 +76498,54 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/boon-games": {
+      "get": {
+        "description": "The troupe's latest games already started, newest first: those its boons can be\nregistered at, for those who keep its ledger.",
+        "operationId": "boon_games_api_troupes__troupe_id__boon_games_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BoonGameOut"
+                  },
+                  "title": "Response Boon Games Api Troupes  Troupe Id  Boon Games Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Boon Games",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/boon-ledger": {
       "put": {
         "description": "Whether the troupe keeps a boon ledger. Off hides it everywhere; what was\nregistered is kept, and comes back when it is switched on again.",
@@ -76027,6 +76707,64 @@
           }
         },
         "summary": "Boon Standings",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boon-statistics": {
+      "get": {
+        "description": "The boon ledger's statistics: by month, who owes whom, debt between clans and\nsects, and each recent game's boons. \"active\" leaves out boons that involve\nsomeone dead or off-field.",
+        "operationId": "boon_statistics_api_troupes__troupe_id__boon_statistics_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "default": "active",
+              "enum": [
+                "active",
+                "everyone"
+              ],
+              "title": "Scope",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonStatisticsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Boon Statistics",
         "tags": [
           "boons"
         ]

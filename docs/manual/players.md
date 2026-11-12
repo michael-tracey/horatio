@@ -474,6 +474,8 @@ The tabs are **Sheet** (to look things up), **Tracker**, **Pools**, **Status** (
 
 On **Throws**, **Throw** picks rock, paper or scissors on your phone; show the other player your screen. On a phone with a motion sensor you can also throw by **flipping the phone** face down and back up in your hand, so two players can flip together: the throw is showing as the screen comes back up, with a short buzz. Turn **Throw by flipping** off on the tab, or in Settings › At game, if you'd rather not; it's kept on that phone. On an iPhone, tap **Turn on flipping the phone** once to let Horatio use the motion sensor.
 
+The pictures are Horatio's own unless you choose another set in Settings › At game › **Throw pictures**: any troupe you play in that has made its own rock, paper and scissors is offered there. The set you choose is kept on your device with the rest of the Play View, so it shows with no signal. If you leave that troupe, or it removes its set, your throws go back to Horatio's.
+
 ![The Play View's Tracker, a few taps into the night: Blood, Willpower and Health](images/players/play-tracker.png)
 
 #### The Tracker
