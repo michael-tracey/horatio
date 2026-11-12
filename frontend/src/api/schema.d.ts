@@ -8082,6 +8082,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/court-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Court History */
+        get: operations["court_history_api_troupes__troupe_id__court_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/court-history/{holding_id}/in-game": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Date Holding
+         * @description Set the in-game dates a holding began and ended; none, to clear them.
+         */
+        put: operations["date_holding_api_troupes__troupe_id__court_history__holding_id__in_game_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/court-order": {
         parameters: {
             query?: never;
@@ -15467,6 +15504,13 @@ export interface components {
             /** Page */
             page: string | null;
         };
+        /** ClanCountOut */
+        ClanCountOut: {
+            /** Clan */
+            clan: string | null;
+            /** Count */
+            count: number;
+        };
         /** ClanFeedingIn */
         ClanFeedingIn: {
             /** Amount */
@@ -15860,10 +15904,32 @@ export interface components {
             /** Uses */
             uses: number;
         };
+        /** CourtHistoryOut */
+        CourtHistoryOut: {
+            /** Clans */
+            clans: components["schemas"]["ClanCountOut"][];
+            /** Full */
+            full: boolean;
+            /** Holdings */
+            holdings: components["schemas"]["TitleHoldingOut"][];
+            /** Players See */
+            players_see: boolean;
+            /** Status */
+            status: components["schemas"]["StatusLineOut"][] | null;
+            /** Titles */
+            titles: components["schemas"]["CourtTitleOut"][];
+        };
         /** CourtOrder */
         CourtOrder: {
             /** Titles */
             titles: string[];
+        };
+        /** CourtTitleOut */
+        CourtTitleOut: {
+            /** Name */
+            name: string;
+            /** Sect */
+            sect: string | null;
         };
         /**
          * CreationItem
@@ -19327,6 +19393,13 @@ export interface components {
             kind: string;
             /** Name */
             name: string;
+        };
+        /** HoldingDatesIn */
+        HoldingDatesIn: {
+            /** Began In Game */
+            began_in_game?: string | null;
+            /** Ended In Game */
+            ended_in_game?: string | null;
         };
         /** HoldingOut */
         HoldingOut: {
@@ -28512,6 +28585,24 @@ export interface components {
              */
             story: string;
         };
+        /** StatusLineOut */
+        StatusLineOut: {
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /** Clan */
+            clan: string | null;
+            /** Gained */
+            gained: number;
+            /** Lost */
+            lost: number;
+            /** Name */
+            name: string;
+            /** Points */
+            points: components["schemas"]["StatusPointOut"][];
+        };
         /** StatusOut */
         StatusOut: {
             /** About */
@@ -28569,6 +28660,18 @@ export interface components {
             troupe_name: string | null;
             /** Unresolved */
             unresolved: string[];
+        };
+        /** StatusPointOut */
+        StatusPointOut: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Fleeting */
+            fleeting: number;
+            /** Negative */
+            negative: number;
         };
         /** StatusRemoveIn */
         StatusRemoveIn: {
@@ -29612,6 +29715,39 @@ export interface components {
             /** Sect */
             sect: string | null;
         };
+        /** TitleHoldingOut */
+        TitleHoldingOut: {
+            /** Backfilled */
+            backfilled: boolean;
+            /**
+             * Began At
+             * Format: date-time
+             */
+            began_at: string;
+            /** Began How */
+            began_how: string | null;
+            /** Began In Game */
+            began_in_game: string | null;
+            /** Character Id */
+            character_id: string | null;
+            /** Character Name */
+            character_name: string;
+            /** Clan */
+            clan: string | null;
+            /** Ended At */
+            ended_at: string | null;
+            /** Ended How */
+            ended_how: string | null;
+            /** Ended In Game */
+            ended_in_game: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+        };
         /** TitleOut */
         TitleOut: {
             /** Alias Of */
@@ -29935,6 +30071,8 @@ export interface components {
             badge_status?: ("all" | "negative" | "none") | null;
             /** Badge Titles */
             badge_titles?: boolean | null;
+            /** Court History Players */
+            court_history_players?: boolean | null;
             /** Description */
             description?: string | null;
             /** Downtime Xp */
@@ -30130,6 +30268,11 @@ export interface components {
              * @default false
              */
             boons: boolean;
+            /**
+             * Court History Players
+             * @default false
+             */
+            court_history_players: boolean;
             /** Description */
             description: string;
             /** Diablerie Flaws */
@@ -47180,6 +47323,73 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    court_history_api_troupes__troupe_id__court_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourtHistoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    date_holding_api_troupes__troupe_id__court_history__holding_id__in_game_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                holding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HoldingDatesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TitleHoldingOut"];
+                };
             };
             /** @description Validation Error */
             422: {

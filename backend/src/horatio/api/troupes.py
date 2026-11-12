@@ -127,6 +127,8 @@ class TroupeOut(BaseModel):
     blood_bonds: Literal["off", "staff", "players_report", "players_manage"] = "off"
     # Boons (horatio.boons): whether the troupe keeps a boon ledger.
     boons: bool = False
+    # The court over time (horatio.title_history): whether its players see it.
+    court_history_players: bool = False
     # The caller may see its Who's Who: its staff, and the players of its characters.
     whos_who: bool
     # Its portrait (add "/48.webp", "/128.webp" or "/512.webp"), or None.
@@ -168,6 +170,7 @@ class TroupeChanges(BaseModel):
     badge_status: Literal["all", "negative", "none"] | None = None
     badge_pronouns: bool | None = None
     whos_who_negative: bool | None = None
+    court_history_players: bool | None = None
     play_tabs_off: list[play_tabs.PlayTab] | None = None
 
 
@@ -368,6 +371,7 @@ def one_out(
         remembrances=troupe.remembrances,
         blood_bonds=troupe.blood_bonds,  # type: ignore[arg-type]  # checked by the database
         boons=troupe.boons,
+        court_history_players=troupe.court_history_players,
         whos_who=whos_who,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
         banner=pictures.banner_url(troupe.id, troupe.banner_id),
@@ -572,6 +576,17 @@ def change_troupe(
                 "troupe.whos_who",
                 troupe_id=troupe.id,
                 status="negative status" if body.whos_who_negative else "no sect status",
+            )
+    if body.court_history_players is not None:
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
+        if body.court_history_players != troupe.court_history_players:
+            troupe.court_history_players = body.court_history_players
+            audit.record(
+                db,
+                user,
+                "troupe.court_history",
+                troupe_id=troupe.id,
+                who="players and staff" if body.court_history_players else "staff only",
             )
     if body.play_tabs_off is not None:
         require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)

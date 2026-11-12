@@ -544,6 +544,7 @@ MESSAGES: dict[str, str] = {
     "title.removed_from_troupe": "{actor} removed the title {title} from the troupe.",
     "title.one_holder": "{actor} switched One holder at a time {what} for the title {title}.",
     "title.court_order": "{actor} set the court order of the troupe's own titles: {order}.",
+    "title.dated": "{actor} set the in-game dates of {character}'s {title}: {what}.",
     "troupe.seats": "{actor} gave seats at court to {clans}.",
     "character.represented_by": "{actor} set who represents {character} at court: {by}.",
     "status.added": "{actor} gave {character} the {type} status {status}, from {patron}"
@@ -570,6 +571,7 @@ MESSAGES: dict[str, str] = {
     "troupe.badges": "{actor} set what badges print: {titles}, {status}.",
     "troupe.badge_pronouns": "{actor} set badges to print {pronouns}.",
     "troupe.whos_who": "{actor} set the Who's Who to show {status}.",
+    "troupe.court_history": "{actor} set the court over time to show to {who}.",
     "troupe.play_tabs": "{actor} set the Play View's tabs for players: {tabs}.",
     "npc.whos_who": "{actor} {listed} {character} on the Who's Who.",
     "scene.created": "{actor} made the scene {name}.",

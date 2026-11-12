@@ -684,6 +684,13 @@ SETTINGS: dict[str, Setting] = {
             boon_weights_words,
         ),
         Setting(
+            "court_history_players",
+            "status_titles",
+            "Players see the court over time",
+            bool,
+            on_off,
+        ),
+        Setting(
             "play_tabs_off",
             "at_game",
             "Play View tabs for players",
@@ -879,6 +886,7 @@ NOT_EXPORTED_TABLES: dict[str, str] = {
     "shared_backgrounds": PLAY,
     "sheet_versions": PLAY,
     "teachings": PLAY,
+    "title_holdings": PLAY,
     "troupe_connectors": "connectors (tokens, Discord channels) are never carried",
     "troupe_location_qualities": "house location qualities aren't carried",
     "troupe_memberships": PLAY,
