@@ -24701,6 +24701,7 @@
           "why": {
             "enum": [
               "embrace",
+              "sire",
               "domitor",
               "retainer"
             ],
@@ -76350,7 +76351,7 @@
     },
     "/api/troupes/{troupe_id}/bonds/known": {
       "get": {
-        "description": "The bonds Horatio can work out for the troupe that it doesn't keep yet: from its\ncharacters' Embraces, ghouls' domitors and vampires' ghoul Retainers (#663).",
+        "description": "The bonds Horatio can work out for the troupe that it doesn't keep yet: from its\ncharacters' Embraces and the sires their sheets name, ghouls' domitors and vampires'\nghoul Retainers (#663, #739).",
         "operationId": "known_bonds_api_troupes__troupe_id__bonds_known_get",
         "parameters": [
           {

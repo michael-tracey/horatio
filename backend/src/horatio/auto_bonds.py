@@ -4,6 +4,12 @@ Blood bonds setting isn't off (horatio.bonds).
 - **The Embrace**: every childe has a one-drink bond to their sire, for the Embrace
   itself takes a drink of the sire's blood (MET: VTM p. 295). An Embrace made in play
   (horatio.embrace) adds it, on the night of the Embrace.
+- **The sire on the sheet** (#739): a vampire whose sire is given on the character
+  (horatio.sire_lines, #707) but who has no Embrace in play has the same bond to that
+  sire. It is only ever filled in, from the day the character was made in Horatio: the
+  sire field says who, never when. A sire kept from players stays so: the bond is the
+  childe's own, which their player sees as they see their sire, and the regnant's
+  player sees it only once staff mark it known.
 - **Domitors**: a ghoul is bound to their domitor (p. 296, "Playing a Ghoul"), fully:
   a ghoul changes domitor only once the old bond has faded, by "achieving a full blood
   bond to the new vampire". Setting a ghoul's domitor (horatio.domitors) adds a full
@@ -41,12 +47,14 @@ from horatio.models import BloodBond, BondEntry, Character, Embrace, Retainer, T
 from horatio.rules.splats import SPLATS
 
 EMBRACE = "embrace"
+SIRE = "sire"
 DOMITOR = "domitor"
 RETAINER = "retainer"
 # How deep each kind of bond stands from the start, and the book's reason.
-LEVELS = {EMBRACE: 1, DOMITOR: bonds.FULL, RETAINER: bonds.FULL}
+LEVELS = {EMBRACE: 1, SIRE: 1, DOMITOR: bonds.FULL, RETAINER: bonds.FULL}
 REASONS = {
     EMBRACE: "Every childe has a one-drink bond to their sire, from the Embrace (p. 295).",
+    SIRE: "Every childe has a one-drink bond to their sire, from the Embrace (p. 295).",
     DOMITOR: "A ghoul is fully bound to their domitor (p. 296).",
     RETAINER: "A ghoul Retainer is fully bound to the vampire they serve (p. 296).",
 }
@@ -171,6 +179,20 @@ def embraced(
     return add(db, user, troupe, known)
 
 
+def sire_known(db: Session, troupe: Troupe, childe: Character) -> Known | None:
+    """A vampire's one-drink bond to the sire its sheet names (#707), from the day it
+    was made in Horatio; None for one with no sire given."""
+    if not bonds.is_vampire(childe) or (childe.sire_id is None and not childe.sire_name.strip()):
+        return None
+    sire = db.get(Character, childe.sire_id) if childe.sire_id is not None else None
+    return Known(
+        SIRE,
+        side(db, troupe, childe, ""),
+        side(db, troupe, sire, childe.sire_name),
+        day_of(childe.created_at),
+    )
+
+
 def domitor_known(db: Session, troupe: Troupe, ghoul: Character) -> Known | None:
     """The ghoul's full bond to their domitor, from today."""
     if not is_ghoul(ghoul) or (ghoul.domitor_id is None and not ghoul.domitor_name.strip()):
@@ -290,7 +312,8 @@ def members(db: Session, troupe: Troupe) -> list[Character]:
 
 def known(db: Session, troupe: Troupe) -> list[Known]:
     """Every bond Horatio can work out for the troupe that it doesn't keep yet: its
-    characters' Embraces, ghouls' domitors, and vampires' ghoul Retainers."""
+    characters' Embraces, the sires their sheets name where no Embrace was made in play,
+    ghouls' domitors, and vampires' ghoul Retainers."""
     found: list[Known] = []
     seen: set[tuple[object, str, object, str]] = set()
 
@@ -309,11 +332,13 @@ def known(db: Session, troupe: Troupe) -> list[Known]:
 
     characters = members(db, troupe)
     by_id = {c.id: c for c in characters}
+    embraced: set[uuid.UUID] = set()
     for record in db.scalars(
         select(Embrace)
         .where(Embrace.result == "vampire", Embrace.character_id.in_(list(by_id)))
-        .order_by(Embrace.embraced_on)
+        .order_by(Embrace.embraced_on, Embrace.id)
     ):
+        embraced.add(record.character_id)
         sire = db.get(Character, record.sire_id) if record.sire_id is not None else None
         childe = by_id[record.character_id]
         keep(
@@ -324,6 +349,10 @@ def known(db: Session, troupe: Troupe) -> list[Known]:
                 record.embraced_on,
             )
         )
+    for character in characters:
+        # An Embrace in play already gives the childe theirs, from its night.
+        if character.id not in embraced:
+            keep(sire_known(db, troupe, character))
     for character in characters:
         domitor = domitor_known(db, troupe, character)
         if domitor is not None:
