@@ -171,6 +171,8 @@ class Ending:
     while_held: str | None
     this_game: bool
     over: bool
+    # Disgraced a Boonbreaker holds while the mark stands (#717): `text` says so.
+    boonbreaker: bool = False
 
 
 @dataclass(frozen=True)
@@ -412,7 +414,9 @@ def endings(
     )
     for row in rows:
         if row.id in marked:
-            found[row.id] = Ending("While a Boonbreaker (p. 397).", None, 0, None, False, False)
+            found[row.id] = Ending(
+                "While a Boonbreaker (p. 397).", None, 0, None, False, False, boonbreaker=True
+            )
     # Each status lasting while another is held waits on that one's ending.
     waiting: list[tuple[HeldStatus, StatusData]] = []
     for name, chain in by_name.items():

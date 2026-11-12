@@ -102,6 +102,8 @@ def test_declaring_voids_their_open_boons_both_ways_and_gives_disgraced(
         if h["name"] == "Disgraced"
     ]
     assert disgraced["ending"]["text"] == "While a Boonbreaker (p. 397)."
+    assert disgraced["ending"]["boonbreaker"] is True
+    assert disgraced["can_remove"] is False
     assert any(
         "declared Cosima (cosima-717) a Boonbreaker: 2 of their boons made void, and gave them" in m
         for m in breakers.messages()

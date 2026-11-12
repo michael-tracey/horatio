@@ -18183,6 +18183,11 @@ export interface components {
         };
         /** EndingOut */
         EndingOut: {
+            /**
+             * Boonbreaker
+             * @default false
+             */
+            boonbreaker: boolean;
             /** Games Left */
             games_left: number;
             /** Not Before */

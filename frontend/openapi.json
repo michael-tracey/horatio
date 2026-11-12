@@ -16784,6 +16784,11 @@
       },
       "EndingOut": {
         "properties": {
+          "boonbreaker": {
+            "default": false,
+            "title": "Boonbreaker",
+            "type": "boolean"
+          },
           "games_left": {
             "title": "Games Left",
             "type": "integer"
