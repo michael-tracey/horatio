@@ -614,6 +614,7 @@ SETTINGS: dict[str, Setting] = {
         Setting(
             "whos_who_negative", "status_titles", "Negative status on the Who's Who", bool, on_off
         ),
+        Setting("sire_lines_players", "status_titles", "Sire lines shown to players", bool, on_off),
         Setting(
             "golconda_enlightened",
             "status_titles",
@@ -851,6 +852,7 @@ NOT_EXPORTED_COLUMNS: dict[str, str] = {
     "seated_clans": "its court is its own (titles and seats aren't carried)",
     "free_changes_since": "set to the time of import when free changes are switched on",
     "rules_version": "kept by the database, changing with the troupe's rules",
+    "bond_clock_from": "the day its own bonds' clocks start from, not a setting (#665)",
 }
 
 # The tables that belong to a troupe and are exported, each in its section.
@@ -2357,6 +2359,7 @@ def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, Setti
             "titles_by",
             "status_at_checkin",
             "whos_who_negative",
+            "sire_lines_players",
             "badge_titles",
             "badge_status",
             "badge_pronouns",

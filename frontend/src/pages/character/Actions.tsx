@@ -17,7 +17,7 @@ import { RetireCharacter } from "./Leaving";
 
 /**
  * The character's less-used actions, behind a ⋯ button beside Play, in groups:
- * Rename, Pronouns and Move to another player (the custodian's, for a PC); Give to a
+ * Rename, Pronouns, Sire and Move to another player (the custodian's, for a PC); Give to a
  * player and Claim link (an NPC's storytellers', for one they can give); diablerie
  * (staff record it, the player asks them to); Export (backup), for its player or an
  * NPC's staff, retired or not; Retire and Delete. `renameOn` is the
@@ -31,6 +31,7 @@ export function CharacterMenu({
   renameOn,
   onRename,
   onPronouns,
+  onSire,
   canRetire = false,
   canDelete,
   canMove = false,
@@ -43,6 +44,8 @@ export function CharacterMenu({
   onRename: () => void;
   /** Set the character's pronouns, for those who may. */
   onPronouns?: () => void;
+  /** Give a vampire its sire (#707), for those who may. */
+  onSire?: () => void;
   canRetire?: boolean;
   canDelete: boolean;
   canMove?: boolean;
@@ -60,7 +63,7 @@ export function CharacterMenu({
   const dates = useDates();
   const diablerieList = useDiablerie(character);
   const diablerieItem = diablerieAction(diablerieList.data);
-  if (!canRename && !renameOn && !onPronouns && !canRetire && !canDelete && !canMove && !canGive && !canExport && !diablerieItem) return null;
+  if (!canRename && !renameOn && !onPronouns && !onSire && !canRetire && !canDelete && !canMove && !canGive && !canExport && !diablerieItem) return null;
 
   return (
     <div>
@@ -75,6 +78,7 @@ export function CharacterMenu({
             canRename && <MenuItem onSelect={onRename}>Rename…</MenuItem>
           )}
           {onPronouns && <MenuItem onSelect={onPronouns}>Pronouns…</MenuItem>}
+          {onSire && <MenuItem onSelect={onSire}>Sire…</MenuItem>}
           {canMove && <MenuItem onSelect={() => setMoving(true)}>Move to another player…</MenuItem>}
         </MenuGroup>
         <MenuGroup label="Give to a player">

@@ -179,6 +179,49 @@ test("staff record three drinks and the thrall's player sees a full bond; the re
   // Neither player can open the Bonds screen.
   const refused = await r.request.get(`/api/troupes/${troupe.id}/bonds`);
   expect(refused.status()).toBe(403);
+
+  // With time (#665): staff see when the full bond drops unless Odile drinks again,
+  // and log a meeting, such as one in a downtime.
+  await expect(bond).toContainText(
+    /Drops to two drinks on .* unless Odile Marchand drinks again\./,
+  );
+  await bond.getByRole("button", { name: "Log a meeting" }).click();
+  const meeting = bond.getByRole("form", {
+    name: "Log a meeting: Odile Marchand and Lucien Vasse",
+  });
+  await meeting.getByLabel("Where it was told").selectOption("downtime");
+  await meeting.getByLabel("Note (optional)").fill("Tea at the Rose");
+  await meeting.getByRole("button", { name: "Log the meeting" }).click();
+  await expect(meeting).toBeHidden();
+  await expect(
+    bond.getByRole("list", {
+      name: "Drinks log of Odile Marchand bound to Lucien Vasse",
+    }),
+  ).toContainText("met, in a downtime");
+  await expect(bond).toContainText("Full bond");
+
+  // The full bond makes Odile immune to others: staff give a reason to record one anyway.
+  await l.getByRole("button", { name: "Record a drink" }).click();
+  const other = l.getByRole("form", { name: "Record a drink" });
+  await other.getByRole("combobox", { name: "Thrall" }).fill("Odile");
+  await other
+    .getByRole("listbox", { name: "Characters" })
+    .getByRole("option", { name: /Odile Marchand/ })
+    .click();
+  await other.getByRole("combobox", { name: "Regnant" }).fill("Lady Grisette");
+  await other
+    .getByRole("listbox", { name: "Characters" })
+    .getByRole("option", { name: /name only/ })
+    .click();
+  await other.getByRole("button", { name: "Record the drink" }).click();
+  await expect(other).toContainText("immune to other bonds");
+  await other
+    .getByLabel("Reason to record it anyway")
+    .fill("The Prince's ritual");
+  await other.getByRole("button", { name: "Record the drink" }).click();
+  await expect(
+    l.getByRole("listitem", { name: "Odile Marchand bound to Lady Grisette" }),
+  ).toContainText("First drink");
 });
 
 test("staff see the troupe's bonds as a web: a full bond is a heavy link, and a chain is named (#708)", async ({ browser }) => {

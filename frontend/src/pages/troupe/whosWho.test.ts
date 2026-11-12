@@ -49,6 +49,7 @@ const DATA: WhosWhoOut = {
   seated: ["Brujah", "Ventrue"],
   can_represent: [],
   shows_negative: false,
+  sire_lines: false,
 };
 
 const shown = (data: WhosWhoOut, filter = { query: "", clan: "", sect: "" }) => sections(data, filter).map((s) => [s.title, s.entries.map((e) => e.name)]);

@@ -1195,6 +1195,64 @@
         "title": "AnswersIn",
         "type": "object"
       },
+      "ApologyBoonIn": {
+        "properties": {
+          "held_id": {
+            "format": "uuid",
+            "title": "Held Id",
+            "type": "string"
+          },
+          "made_on": {
+            "format": "date",
+            "title": "Made On",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          },
+          "wronged": {
+            "$ref": "#/components/schemas/BoonPartyIn"
+          }
+        },
+        "required": [
+          "held_id",
+          "wronged",
+          "made_on"
+        ],
+        "title": "ApologyBoonIn",
+        "type": "object"
+      },
+      "ApologyChoicesOut": {
+        "description": "Where an apology's boon goes: the troupe whose ledger the character's Play\nView shows, and its characters, to name whoever was wronged.",
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterChoice-Output"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "characters"
+        ],
+        "title": "ApologyChoicesOut",
+        "type": "object"
+      },
       "AppearanceOut": {
         "properties": {
           "loading_animation": {
@@ -5118,8 +5176,13 @@
         "type": "object"
       },
       "BondAskOut": {
-        "description": "A drink a player reported, for staff to approve (horatio.bonds).",
+        "description": "A drink a player reported, or a meeting (#665), for staff to approve\n(horatio.bonds).",
         "properties": {
+          "kind": {
+            "default": "drink",
+            "title": "Kind",
+            "type": "string"
+          },
           "night": {
             "format": "date",
             "title": "Night",
@@ -5334,9 +5397,31 @@
             ],
             "title": "Last Drink"
           },
+          "last_met": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Met"
+          },
           "level": {
             "title": "Level",
             "type": "integer"
+          },
+          "next_change": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/horatio__api__bonds__ChangeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "regnant": {
             "$ref": "#/components/schemas/PartyOut"
@@ -5388,6 +5473,15 @@
           "id": {
             "format": "uuid",
             "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "default": "drink",
+            "enum": [
+              "drink",
+              "meeting"
+            ],
+            "title": "Kind",
             "type": "string"
           },
           "night": {
@@ -6664,6 +6758,11 @@
           },
           "creditor": {
             "$ref": "#/components/schemas/BoonPartyOut"
+          },
+          "creditor_disgraced": {
+            "default": false,
+            "title": "Creditor Disgraced",
+            "type": "boolean"
           },
           "debtor": {
             "$ref": "#/components/schemas/BoonPartyOut"
@@ -8706,23 +8805,6 @@
         "title": "ChangeEquipmentIn",
         "type": "object"
       },
-      "ChangeOut": {
-        "properties": {
-          "cost": {
-            "title": "Cost",
-            "type": "integer"
-          },
-          "sheet": {
-            "$ref": "#/components/schemas/SheetOut"
-          }
-        },
-        "required": [
-          "cost",
-          "sheet"
-        ],
-        "title": "ChangeOut",
-        "type": "object"
-      },
       "ChannelIn": {
         "properties": {
           "channel": {
@@ -10323,6 +10405,82 @@
           "warnings"
         ],
         "title": "CharacterReviewOut",
+        "type": "object"
+      },
+      "CharacterSireIn": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "clan": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Clan",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Name",
+            "type": "string"
+          },
+          "secret": {
+            "default": false,
+            "title": "Secret",
+            "type": "boolean"
+          }
+        },
+        "title": "CharacterSireIn",
+        "type": "object"
+      },
+      "CharacterSireOut": {
+        "properties": {
+          "can_change": {
+            "title": "Can Change",
+            "type": "boolean"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "secret": {
+            "title": "Secret",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "clan",
+          "secret",
+          "can_change"
+        ],
+        "title": "CharacterSireOut",
         "type": "object"
       },
       "CharacterTitlesOut": {
@@ -15262,6 +15420,12 @@
             "title": "Note",
             "type": "string"
           },
+          "override": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Override",
+            "type": "string"
+          },
           "source": {
             "default": "staff",
             "enum": [
@@ -16494,6 +16658,12 @@
           "night": {
             "format": "date",
             "title": "Night",
+            "type": "string"
+          },
+          "override": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Override",
             "type": "string"
           },
           "reason": {
@@ -27787,6 +27957,37 @@
         "title": "Me",
         "type": "object"
       },
+      "MeetingIn": {
+        "description": "The thrall and regnant met, which keeps a lesser bond from ending (#665).",
+        "properties": {
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "source": {
+            "default": "staff",
+            "enum": [
+              "game",
+              "downtime",
+              "staff"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "night"
+        ],
+        "title": "MeetingIn",
+        "type": "object"
+      },
       "MemberOut": {
         "properties": {
           "character_id": {
@@ -29263,6 +29464,12 @@
             "default": "",
             "maxLength": 2000,
             "title": "Note",
+            "type": "string"
+          },
+          "override": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Override",
             "type": "string"
           },
           "regnant": {
@@ -32935,6 +33142,11 @@
             "title": "Conditions",
             "type": "string"
           },
+          "creditor_disgraced": {
+            "default": false,
+            "title": "Creditor Disgraced",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -34024,6 +34236,35 @@
           "retired"
         ],
         "title": "PlayerCharacter",
+        "type": "object"
+      },
+      "PlayerMeetingIn": {
+        "properties": {
+          "night": {
+            "format": "date",
+            "title": "Night",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "source": {
+            "default": "game",
+            "enum": [
+              "game",
+              "downtime"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "night"
+        ],
+        "title": "PlayerMeetingIn",
         "type": "object"
       },
       "PlayerNominationsIn": {
@@ -35343,6 +35584,45 @@
           "on"
         ],
         "title": "PowerOut",
+        "type": "object"
+      },
+      "PraisedClaimsOut": {
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterChoice-Output"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "sect",
+          "characters"
+        ],
+        "title": "PraisedClaimsOut",
         "type": "object"
       },
       "Preferences": {
@@ -43973,6 +44253,11 @@
       "SheetBondOut": {
         "description": "A bond on a character's Bonds card: who is on the other side, and its level.",
         "properties": {
+          "can_meet": {
+            "default": false,
+            "title": "Can Meet",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -44489,6 +44774,184 @@
           }
         },
         "title": "SireIn",
+        "type": "object"
+      },
+      "SireLineChoiceOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "clan"
+        ],
+        "title": "SireLineChoiceOut",
+        "type": "object"
+      },
+      "SireLineClanCount": {
+        "properties": {
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "clan",
+          "count"
+        ],
+        "title": "SireLineClanCount",
+        "type": "object"
+      },
+      "SireLineNodeOut": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "generation": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "left_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left Reason"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          },
+          "sire_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sire Key"
+          }
+        },
+        "required": [
+          "key",
+          "character_id",
+          "name",
+          "clan",
+          "generation",
+          "left_reason",
+          "retired",
+          "kind",
+          "sire_key"
+        ],
+        "title": "SireLineNodeOut",
+        "type": "object"
+      },
+      "SireLinesOut": {
+        "properties": {
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/SireLineClanCount"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/SireLineNodeOut"
+            },
+            "title": "Nodes",
+            "type": "array"
+          },
+          "players_see": {
+            "title": "Players See",
+            "type": "boolean"
+          },
+          "staff": {
+            "title": "Staff",
+            "type": "boolean"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "nodes",
+          "clans",
+          "staff",
+          "players_see"
+        ],
+        "title": "SireLinesOut",
         "type": "object"
       },
       "SkillPool": {
@@ -49492,6 +49955,17 @@
             ],
             "title": "Session Xp"
           },
+          "sire_lines_players": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sire Lines Players"
+          },
           "starting_xp": {
             "anyOf": [
               {
@@ -50276,6 +50750,10 @@
             "title": "Session Xp",
             "type": "integer"
           },
+          "sire_lines_players": {
+            "title": "Sire Lines Players",
+            "type": "boolean"
+          },
           "starting_blood": {
             "anyOf": [
               {
@@ -50343,6 +50821,7 @@
           "badge_status",
           "badge_pronouns",
           "whos_who_negative",
+          "sire_lines_players",
           "quests_enabled",
           "quest_requests_per_cycle",
           "whos_who",
@@ -52023,6 +52502,10 @@
             "title": "Shows Negative",
             "type": "boolean"
           },
+          "sire_lines": {
+            "title": "Sire Lines",
+            "type": "boolean"
+          },
           "troupe_id": {
             "format": "uuid",
             "title": "Troupe Id",
@@ -52043,7 +52526,8 @@
           "departed",
           "seated",
           "can_represent",
-          "shows_negative"
+          "shows_negative",
+          "sire_lines"
         ],
         "title": "WhosWhoOut",
         "type": "object"
@@ -53456,6 +53940,35 @@
         "title": "TeachingOut",
         "type": "object"
       },
+      "horatio__api__bonds__ChangeOut": {
+        "description": "What time does next to a bond (#665): it drops to two drinks, or ends, on a day.",
+        "properties": {
+          "due": {
+            "title": "Due",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "drop",
+              "end"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "on": {
+            "format": "date",
+            "title": "On",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "on",
+          "due"
+        ],
+        "title": "ChangeOut",
+        "type": "object"
+      },
       "horatio__api__downtime_effects__AppliedOut": {
         "properties": {
           "character_name": {
@@ -53727,6 +54240,23 @@
           "reason"
         ],
         "title": "AppliedOut",
+        "type": "object"
+      },
+      "horatio__api__sheets__ChangeOut": {
+        "properties": {
+          "cost": {
+            "title": "Cost",
+            "type": "integer"
+          },
+          "sheet": {
+            "$ref": "#/components/schemas/SheetOut"
+          }
+        },
+        "required": [
+          "cost",
+          "sheet"
+        ],
+        "title": "ChangeOut",
         "type": "object"
       },
       "horatio__api__specializations__DetailChange": {
@@ -55925,6 +56455,102 @@
         ]
       }
     },
+    "/api/characters/{character_id}/apology-boon": {
+      "get": {
+        "description": "For staff putting right a slip under Warned or Disgraced: the ledger its boon\ngoes in, and who could have been wronged.",
+        "operationId": "apology_choices_api_characters__character_id__apology_boon_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApologyChoicesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apology Choices",
+        "tags": [
+          "boons"
+        ]
+      },
+      "post": {
+        "description": "Register the boon an apology owes for a slip (p. 316): minor under Warned, major\nunder Disgraced, owed by the character to whoever was wronged.",
+        "operationId": "apology_boon_api_characters__character_id__apology_boon_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApologyBoonIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apology Boon",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
     "/api/characters/{character_id}/attendance": {
       "get": {
         "description": "The games the character came to, newest first.",
@@ -56965,6 +57591,70 @@
           }
         },
         "summary": "Withdraw Report",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/bonds/{bond_id}/meetings": {
+      "post": {
+        "description": "Its player logs the character meeting the other side of a bond it is in (#665):\nit counts now, or waits on staff, by the troupe's setting (horatio.bonds).",
+        "operationId": "report_meeting_api_characters__character_id__bonds__bond_id__meetings_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "bond_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bond Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlayerMeetingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Report Meeting",
         "tags": [
           "bonds"
         ]
@@ -62873,6 +63563,50 @@
         ]
       }
     },
+    "/api/characters/{character_id}/praised-claims": {
+      "get": {
+        "description": "For spending Praised (p. 316): who in the troupe whose ledger the character's\nPlay View shows is Accepted by its sect and not already in its debt. Its player\nsees player characters; staff see the troupe's NPCs too.",
+        "operationId": "praised_claims_api_characters__character_id__praised_claims_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PraisedClaimsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Praised Claims",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
     "/api/characters/{character_id}/primary-path": {
       "put": {
         "description": "Name the primary path of a discipline, for a clan with no in-clan path.",
@@ -64186,6 +64920,160 @@
         ]
       }
     },
+    "/api/characters/{character_id}/sire": {
+      "get": {
+        "description": "The character's sire, as anyone who sees the character sees it.",
+        "operationId": "read_sire_api_characters__character_id__sire_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterSireOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Sire",
+        "tags": [
+          "sire lines"
+        ]
+      },
+      "put": {
+        "description": "Give the character its sire: a character the caller can see, or a name and\nclan; and whether the troupe's players see it.",
+        "operationId": "set_sire_api_characters__character_id__sire_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CharacterSireIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterSireOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Sire",
+        "tags": [
+          "sire lines"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/sire/choices": {
+      "get": {
+        "description": "The vampires that could be the character's sire, by name (`candidates`).",
+        "operationId": "sire_choices_api_characters__character_id__sire_choices_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SireLineChoiceOut"
+                  },
+                  "title": "Response Sire Choices Api Characters  Character Id  Sire Choices Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sire Choices",
+        "tags": [
+          "sire lines"
+        ]
+      }
+    },
     "/api/characters/{character_id}/specializations": {
       "get": {
         "operationId": "character_kinds_api_characters__character_id__specializations_get",
@@ -65092,7 +65980,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChangeOut"
+                  "$ref": "#/components/schemas/horatio__api__sheets__ChangeOut"
                 }
               }
             },
@@ -65146,7 +66034,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChangeOut"
+                  "$ref": "#/components/schemas/horatio__api__sheets__ChangeOut"
                 }
               }
             },
@@ -65200,7 +66088,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChangeOut"
+                  "$ref": "#/components/schemas/horatio__api__sheets__ChangeOut"
                 }
               }
             },
@@ -76059,6 +76947,60 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/confirm-change": {
+      "post": {
+        "description": "Staff confirm the change time has brought a bond, in a troupe where players\nreport and staff approve (#665): it drops to two drinks, or ends.",
+        "operationId": "confirm_change_api_troupes__troupe_id__bonds__bond_id__confirm_change_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "bond_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bond Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BondOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Change",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/bonds/{bond_id}/drinks": {
       "post": {
         "description": "Log another drink on a bond still felt.",
@@ -76394,6 +77336,70 @@
           }
         },
         "summary": "Set Known",
+        "tags": [
+          "bonds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/meetings": {
+      "post": {
+        "description": "Log the thrall and regnant meeting, such as in a downtime: it keeps a lesser bond\nfrom ending (#665).",
+        "operationId": "add_meeting_api_troupes__troupe_id__bonds__bond_id__meetings_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "bond_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Bond Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeetingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BondOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Meeting",
         "tags": [
           "bonds"
         ]
@@ -87302,6 +88308,50 @@
         "summary": "Choices",
         "tags": [
           "shared backgrounds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/sire-lines": {
+      "get": {
+        "description": "Who sired whom: every vampire in the troupe for its staff; for its players, if\nthe troupe shows them, those on its Who's Who with the sires it shows.",
+        "operationId": "read_sire_lines_api_troupes__troupe_id__sire_lines_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SireLinesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Sire Lines",
+        "tags": [
+          "sire lines"
         ]
       }
     },
