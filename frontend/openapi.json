@@ -125,6 +125,18 @@
         "title": "AbsenteeMarked",
         "type": "object"
       },
+      "AcceptIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "title": "AcceptIn",
+        "type": "object"
+      },
       "ActionKindChoiceOut": {
         "properties": {
           "key": {
@@ -6190,7 +6202,13 @@
               "passed_on",
               "settled",
               "voided",
-              "reopened"
+              "reopened",
+              "submitted",
+              "accepted",
+              "rejected",
+              "flagged",
+              "flag_cleared",
+              "linked"
             ],
             "title": "Kind",
             "type": "string"
@@ -6210,6 +6228,88 @@
           "changes"
         ],
         "title": "BoonEventOut",
+        "type": "object"
+      },
+      "BoonFlagOut": {
+        "description": "A flag raised on a boon for review (horatio.boon_reviews, #687).",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "unmatched",
+              "duplicate",
+              "hand"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "other_boon_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Other Boon Id"
+          },
+          "raised_at": {
+            "format": "date-time",
+            "title": "Raised At",
+            "type": "string"
+          },
+          "raised_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raised By"
+          },
+          "side": {
+            "anyOf": [
+              {
+                "enum": [
+                  "debtor",
+                  "creditor"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Side"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "side",
+          "detail",
+          "note",
+          "other_boon_id",
+          "raised_by",
+          "raised_at"
+        ],
+        "title": "BoonFlagOut",
         "type": "object"
       },
       "BoonFlowOut": {
@@ -6690,6 +6790,20 @@
             ],
             "title": "Events"
           },
+          "flags": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BoonFlagOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flags"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -6940,6 +7054,35 @@
           "settle"
         ],
         "title": "BoonPlayersIn",
+        "type": "object"
+      },
+      "BoonReviewIn": {
+        "properties": {
+          "hold": {
+            "title": "Hold",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hold"
+        ],
+        "title": "BoonReviewIn",
+        "type": "object"
+      },
+      "BoonReviewOut": {
+        "properties": {
+          "boons": {
+            "items": {
+              "$ref": "#/components/schemas/BoonOut"
+            },
+            "title": "Boons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "boons"
+        ],
+        "title": "BoonReviewOut",
         "type": "object"
       },
       "BoonSettleIn": {
@@ -11700,6 +11843,18 @@
           "character_ids"
         ],
         "title": "ClanSection",
+        "type": "object"
+      },
+      "ClearIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "title": "ClearIn",
         "type": "object"
       },
       "Cleared": {
@@ -19167,6 +19322,20 @@
         "title": "FittedNpc",
         "type": "object"
       },
+      "FlagIn": {
+        "properties": {
+          "note": {
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "FlagIn",
+        "type": "object"
+      },
       "FlawPlanOut": {
         "description": "A Lesser Generation or Thin Blooded flaw, and what the troupe's setting does.",
         "properties": {
@@ -24706,6 +24875,7 @@
           "why": {
             "enum": [
               "embrace",
+              "sire",
               "domitor",
               "retainer"
             ],
@@ -25114,6 +25284,58 @@
           "url"
         ],
         "title": "Link",
+        "type": "object"
+      },
+      "LinkIn": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "everywhere": {
+            "default": false,
+            "title": "Everywhere",
+            "type": "boolean"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "side": {
+            "enum": [
+              "debtor",
+              "creditor"
+            ],
+            "title": "Side",
+            "type": "string"
+          }
+        },
+        "required": [
+          "side",
+          "character_id"
+        ],
+        "title": "LinkIn",
+        "type": "object"
+      },
+      "LinkOut": {
+        "properties": {
+          "linked": {
+            "title": "Linked",
+            "type": "integer"
+          },
+          "skipped": {
+            "title": "Skipped",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "linked",
+          "skipped"
+        ],
+        "title": "LinkOut",
         "type": "object"
       },
       "LinkedRetainer": {
@@ -33099,6 +33321,14 @@
             ],
             "title": "Owes"
           },
+          "reports": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PlayReportOut"
+            },
+            "title": "Reports",
+            "type": "array"
+          },
           "see": {
             "enum": [
               "intake",
@@ -33283,6 +33513,85 @@
           "retainers"
         ],
         "title": "PlayReference",
+        "type": "object"
+      },
+      "PlayReportOut": {
+        "description": "A boon the character's player reported that waits for review, or that wasn't\naccepted lately, with the reason (#687). Shown to its player whatever else the\ntroupe lets them see: they reported it.",
+        "properties": {
+          "direction": {
+            "enum": [
+              "owes",
+              "owed"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "trivial",
+              "minor",
+              "major",
+              "blood",
+              "life"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "made_on": {
+            "format": "date",
+            "title": "Made On",
+            "type": "string"
+          },
+          "other": {
+            "title": "Other",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "rejected_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejected At"
+          },
+          "rejected_because": {
+            "title": "Rejected Because",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "pending",
+              "rejected"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "direction",
+          "other",
+          "kind",
+          "made_on",
+          "reason",
+          "state",
+          "rejected_because",
+          "rejected_at"
+        ],
+        "title": "PlayReportOut",
         "type": "object"
       },
       "PlayStatusOut": {
@@ -38738,6 +39047,20 @@
           "boons"
         ],
         "title": "RegisterBoonsIn",
+        "type": "object"
+      },
+      "RejectIn": {
+        "properties": {
+          "reason": {
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "RejectIn",
         "type": "object"
       },
       "RememberedMonthOut": {
@@ -50252,6 +50575,11 @@
           "boon_players_settle": {
             "default": false,
             "title": "Boon Players Settle",
+            "type": "boolean"
+          },
+          "boon_review": {
+            "default": false,
+            "title": "Boon Review",
             "type": "boolean"
           },
           "boons": {
@@ -62037,7 +62365,7 @@
         ]
       },
       "post": {
-        "description": "A player reports a boon for their character, which goes in the troupe's ledger\nas theirs, done as the character.",
+        "description": "A player reports a boon for their character, which goes in the troupe's ledger\nas theirs, done as the character: standing, or waiting for review where the troupe\nholds reports for review (#687).",
         "operationId": "report_boon_api_characters__character_id__play_boons_post",
         "parameters": [
           {
@@ -76360,7 +76688,7 @@
     },
     "/api/troupes/{troupe_id}/bonds/known": {
       "get": {
-        "description": "The bonds Horatio can work out for the troupe that it doesn't keep yet: from its\ncharacters' Embraces, ghouls' domitors and vampires' ghoul Retainers (#663).",
+        "description": "The bonds Horatio can work out for the troupe that it doesn't keep yet: from its\ncharacters' Embraces and the sires their sheets name, ghouls' domitors and vampires'\nghoul Retainers (#663, #739).",
         "operationId": "known_bonds_api_troupes__troupe_id__bonds_known_get",
         "parameters": [
           {
@@ -77238,6 +77566,70 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/boon-flags/{flag_id}/clear": {
+      "post": {
+        "description": "Clear a flag, with an optional note: the name is right as it is, say.",
+        "operationId": "clear_api_troupes__troupe_id__boon_flags__flag_id__clear_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "flag_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Flag Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClearIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Clear",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/boon-games": {
       "get": {
         "description": "The troupe's latest games already started, newest first: those its boons can be\nregistered at, for those who keep its ledger.",
@@ -77389,6 +77781,102 @@
           }
         },
         "summary": "Set Boon Players",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boon-review": {
+      "get": {
+        "description": "The review queue: every boon waiting for review or with a flag raised.",
+        "operationId": "review_queue_api_troupes__troupe_id__boon_review_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonReviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Review Queue",
+        "tags": [
+          "boons"
+        ]
+      },
+      "put": {
+        "description": "Whether boons the troupe's players report wait for review before they stand.",
+        "operationId": "set_boon_review_api_troupes__troupe_id__boon_review_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoonReviewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TroupeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Boon Review",
         "tags": [
           "boons"
         ]
@@ -77882,6 +78370,198 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/boons/{boon_id}/accept": {
+      "post": {
+        "description": "A boon waiting for review stands: it was reviewed, perhaps edited first.",
+        "operationId": "accept_api_troupes__troupe_id__boons__boon_id__accept_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "boon_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Boon Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Accept",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boons/{boon_id}/flags": {
+      "post": {
+        "description": "Flag a boon by hand for a ruling, with a note.",
+        "operationId": "flag_api_troupes__troupe_id__boons__boon_id__flags_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "boon_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Boon Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlagIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Flag",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boons/{boon_id}/link": {
+      "post": {
+        "description": "Put a character in place of a name on a boon, or on every boon naming it.",
+        "operationId": "link_api_troupes__troupe_id__boons__boon_id__link_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "boon_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Boon Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Link",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/boons/{boon_id}/pass-on": {
       "post": {
         "description": "Move the debtor's or the creditor's side of a standing boon to another, such\nas a broodmate after a death.",
@@ -77941,6 +78621,70 @@
           }
         },
         "summary": "Pass On",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boons/{boon_id}/reject": {
+      "post": {
+        "description": "A boon waiting for review isn't accepted, with a reason its reporter sees.",
+        "operationId": "reject_api_troupes__troupe_id__boons__boon_id__reject_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "boon_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Boon Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reject",
         "tags": [
           "boons"
         ]

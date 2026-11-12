@@ -49,12 +49,14 @@ export function BoonLedgerSetting({ troupe, canEdit }: { troupe: TroupeOut; canE
           </label>
           <ErrorText error={save.error} />
           {on && <PlayersSetting troupe={troupe} />}
+          {on && <ReviewSetting troupe={troupe} />}
           {on && <JudgeBanSetting troupe={troupe} />}
         </div>
       )}
       {!canEdit && on && <p className="mt-2 text-sm">{PLAYERS_SEE.find((p) => p.value === troupe.boon_players_see)?.summary}</p>}
+      {!canEdit && on && troupe.boon_review && <p className="mt-1 text-sm">Boons players report wait for review before they stand.</p>}
       {!canEdit && on && troupe.boons_judge_ban && (
-        <p className="mt-2 text-sm">The ledger judges the Camarilla&apos;s ban on no boons registered with the Harpy.</p>
+        <p className="mt-1 text-sm">The ledger judges the Camarilla&apos;s ban on no boons registered with the Harpy.</p>
       )}
     </Card>
   );
@@ -135,6 +137,46 @@ function PlayersSetting({ troupe }: { troupe: TroupeOut }) {
       <p className="text-xs text-mist">The Boons tab can also be switched off under Play View tabs.</p>
       <ErrorText error={save.error} />
     </fieldset>
+  );
+}
+
+/**
+ * Whether boons players report wait for review (#687): off, they stand at once.
+ * Either way the report is logged, and Horatio flags names that link to no character
+ * and likely duplicates for review.
+ */
+function ReviewSetting({ troupe }: { troupe: TroupeOut }) {
+  const toast = useToast();
+  // Shown as chosen at once, while it saves.
+  const [hold, setHold] = useState(troupe.boon_review ?? false);
+  const save = useAction(async (next: boolean) => {
+    await unwrap(api.PUT("/api/troupes/{troupe_id}/boon-review", { params: { path: { troupe_id: troupe.id } }, body: { hold: next } }));
+    toast({ message: next ? "Boons players report now wait for review." : "Boons players report now stand at once." });
+  });
+  return (
+    <div className="mt-2 flex flex-col gap-2 border-t border-ash/60 pt-3">
+      <label className="flex items-start gap-2">
+        <input
+          type="checkbox"
+          className="mt-1"
+          checked={hold}
+          disabled={save.isPending}
+          onChange={(e) => {
+            const next = e.target.checked;
+            setHold(next);
+            save.mutate(next, { onError: () => setHold(troupe.boon_review ?? false) });
+          }}
+        />
+        <span>
+          Boons players report wait for review
+          <span className="block text-xs text-mist">
+            Staff accept each one, after an edit if it needs one, or don&apos;t accept it, with a reason its player sees. Off, they stand at once. Either way,
+            Horatio flags names that link to no character, and likely duplicates, under “To review” on the Boons screen.
+          </span>
+        </span>
+      </label>
+      <ErrorText error={save.error} />
+    </div>
   );
 }
 

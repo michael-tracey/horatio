@@ -178,6 +178,9 @@ class Troupe(Imported, Record):
     # horatio.sect_status, #692): off by default, for a ledger that holds every boon.
     # While off, staff mark that ban by hand.
     boons_judge_ban: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Boons its players report wait for review by its running staff (and the Harpy,
+    # #688) before they stand (horatio.boon_reviews, #687); off, they stand at once.
+    boon_review: Mapped[bool] = mapped_column(default=False, server_default="false")
     # The court over time (horatio.title_history, #712): whether its players see who
     # held each title and when. Its staff always do.
     court_history_players: Mapped[bool] = mapped_column(default=False, server_default="false")

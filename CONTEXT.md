@@ -145,6 +145,10 @@ _Avoid_: Favour, debt (in names), IOU, prestation (for one boon)
 A troupe's record of its boons, kept by its running staff while the troupe's Boons setting is on. Off, it is hidden everywhere, and kept. Its players report boons for their characters in the Play View's Boons tab, and see there what the troupe lets them: nothing more, what their characters owe, or also what they're owed; where it lets them, a boon's creditor's player marks it settled.
 _Avoid_: Boon registry, boon sheet
 
+**Boon Review**:
+A troupe's check of boons before or after they stand. It may hold the boons its players report: they wait, pending, until its running staff accept them (after an edit, if need be) or don't, with a reason the player sees. Off, they stand at once. Horatio **flags** a new boon whose side is a name that links to no character, or that looks like a duplicate of another; staff flag any boon by hand for a ruling. Every pending boon and every flagged one waits under **To review**. A name can be **linked** to a character on one boon or on every boon naming it.
+_Avoid_: Approval (that is a sheet's), moderation, queue (in names)
+
 **Boon Standings**:
 Where everyone stands in a troupe's boon ledger, worked out live from its open and settled boons. Each kind of boon has a weight, set per troupe (Trivial 0.5, Minor 1, Major 3, Blood 5, Life 10 unless it sets its own), and a character's **net** is the weight owed to them less the weight they owe. Active by default: boons involving someone dead or off-field are left out. Its running staff see it.
 _Avoid_: Boon score, prestige, ranking

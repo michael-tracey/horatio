@@ -135,6 +135,8 @@ class TroupeOut(BaseModel):
     boon_players_settle: bool = False
     # The ledger judges the ban on no boons registered with the Harpy (#692).
     boons_judge_ban: bool = False
+    # Boons its players report wait for review before they stand (#687).
+    boon_review: bool = False
     # The court over time (horatio.title_history): whether its players see it.
     court_history_players: bool = False
     # The caller may see its Who's Who: its staff, and the players of its characters.
@@ -384,6 +386,7 @@ def one_out(
         boon_players_see=troupe.boon_players_see,  # type: ignore[arg-type]  # checked by the database
         boon_players_settle=troupe.boon_players_settle,
         boons_judge_ban=troupe.boons_judge_ban,
+        boon_review=troupe.boon_review,
         court_history_players=troupe.court_history_players,
         whos_who=whos_who,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),

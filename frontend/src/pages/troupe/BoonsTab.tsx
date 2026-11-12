@@ -30,6 +30,7 @@ import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { BoonReviewQueue, ReviewPanel } from "./BoonReview";
 import { WhoPicker } from "./WhoPicker";
 
 function today(dates: ReturnType<typeof useDates>) {
@@ -46,11 +47,14 @@ function picked(party: BoonOut["debtor"]): { who: string; name: string } {
  * departed, settled, void, all), narrowed to a character or a name, a kind, or a span
  * of nights. Staff register boons, a whole game's at once, and open one to edit,
  * trade, pass on, settle, void or reopen it, each with its own log. Only shown while
- * the troupe keeps a ledger.
+ * the troupe keeps a ledger. Boons waiting for review, or flagged, are listed under
+ * "To review" (#687), and each boon's detail has its review.
  */
 export function BoonsTab({ troupeId }: { troupeId: string }) {
   const [params, setParams] = useSearchParams();
   const [view, setView] = useState<BoonView>("open");
+  // The review queue (#687) in place of the ledger's views.
+  const [reviewing, setReviewing] = useState(false);
   const [who, setWho] = useState<{ who: string; name: string }>(() => {
     const character = params.get("character");
     return character ? { who: `c:${character}`, name: "" } : { who: "", name: "" };
@@ -80,6 +84,11 @@ export function BoonsTab({ troupeId }: { troupeId: string }) {
       ),
     placeholderData: (previous) => previous,
   });
+  const review = useQuery({
+    queryKey: ["boon-review", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/boon-review", { params: { path: { troupe_id: troupeId } } })),
+  });
+  const toReview = review.data?.boons.length ?? 0;
   if (ledger.isPending) return <Loading />;
   if (ledger.error) return <ErrorText error={ledger.error} />;
   const { boons, counts, characters } = ledger.data;
@@ -118,16 +127,30 @@ export function BoonsTab({ troupeId }: { troupeId: string }) {
             <Button
               key={v.value}
               role="tab"
-              aria-selected={view === v.value}
-              variant={view === v.value ? "secondary" : "ghost"}
+              aria-selected={!reviewing && view === v.value}
+              variant={!reviewing && view === v.value ? "secondary" : "ghost"}
               onClick={() => {
                 setView(v.value);
+                setReviewing(false);
                 setOpen(null);
               }}
             >
               {v.label} <span className="text-mist">({counts[v.value] ?? 0})</span>
             </Button>
           ))}
+          {(toReview > 0 || reviewing) && (
+            <Button
+              role="tab"
+              aria-selected={reviewing}
+              variant={reviewing ? "secondary" : "ghost"}
+              onClick={() => {
+                setReviewing(true);
+                setOpen(null);
+              }}
+            >
+              To review <span className="text-mist">({toReview})</span>
+            </Button>
+          )}
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Character or name">
@@ -159,7 +182,9 @@ export function BoonsTab({ troupeId }: { troupeId: string }) {
         )}
       </div>
 
-      {boons.length === 0 ? (
+      {reviewing ? (
+        <BoonReviewQueue troupeId={troupeId} detail={(boonId) => <BoonDetail troupeId={troupeId} boonId={boonId} characters={characters} />} />
+      ) : boons.length === 0 ? (
         <Empty>{narrowed ? "No boons match." : view === "open" ? "No open boons yet." : "None here."}</Empty>
       ) : (
         <ul aria-label="Boons" aria-busy={ledger.isPlaceholderData} className={`flex flex-col gap-2 ${ledger.isPlaceholderData ? "opacity-60" : ""}`}>
@@ -279,6 +304,7 @@ function BoonDetail({ troupeId, boonId, characters }: { troupeId: string; boonId
           </>
         )}
       </dl>
+      <ReviewPanel troupeId={troupeId} boon={b} characters={characters} />
       {doing === null ? (
         <div role="group" aria-label="What to do with it" className="flex flex-wrap gap-2">
           {actionsFor(b.state).map((a) => (

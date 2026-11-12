@@ -18,15 +18,21 @@ export type ThrowImages = {
 
 /**
  * One throw as the other player sees it across a table: the picture, with its
- * word under it for anyone who can't make it out, read out as the word.
+ * word under it for anyone who can't make it out, read out as the word. The word
+ * is above it too, upside down (#740), so it reads the right way up from the far
+ * end of a phone held out between two players.
  */
 export function ThrowFace({ images, which }: { images: ThrowImages; which: Throw }) {
+  const word = "font-display text-5xl leading-none text-gold sm:text-6xl";
   return (
     <div role="img" aria-label={THROW_NAMES[which]} className="flex flex-col items-center">
-      <div aria-hidden="true" className="aspect-square w-[min(68vw,18rem)] text-parchment">
+      <span aria-hidden="true" data-testid="throw-word-flipped" className={`mb-2 rotate-180 ${word}`}>
+        {THROW_NAMES[which]}
+      </span>
+      <div aria-hidden="true" className="aspect-square w-[min(56vw,16rem)] text-parchment">
         {images.picture(which)}
       </div>
-      <span aria-hidden="true" className="mt-1 font-display text-5xl text-gold sm:text-6xl">
+      <span aria-hidden="true" className={`mt-2 ${word}`}>
         {THROW_NAMES[which]}
       </span>
     </div>

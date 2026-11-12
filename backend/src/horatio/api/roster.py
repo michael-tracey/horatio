@@ -876,6 +876,14 @@ MESSAGES: dict[str, str] = {
     "boon.settled": "{actor} marked {debtor}'s {kind} boon to {creditor} settled, {how}{because}.",
     "boon.voided": "{actor} made {debtor}'s {kind} boon to {creditor} void{because}.",
     "boon.reopened": "{actor} reopened {debtor}'s {kind} boon to {creditor}{because}.",
+    "house.boon_review": "{actor} set boons players report to {setting}.",
+    "boon.submitted": "{actor} reported {what} for review: {debtor} owes {creditor}{because}.",
+    "boon.accepted": "{actor} accepted {debtor}'s {kind} boon to {creditor}{because}.",
+    "boon.rejected": "{actor} didn't accept {debtor}'s {kind} boon to {creditor}{because}.",
+    "boon.flagged": "{actor} flagged {debtor}'s {kind} boon to {creditor} for review{because}.",
+    "boon.flag_cleared": "{actor} cleared a flag ({what}) on {debtor}'s {kind} boon to"
+    " {creditor}{because}.",
+    "boon.linked": "{actor} linked the name {name} to {linked_to} on {what}{because}.",
     "bond.drink": "{actor} recorded {character} drinking {regnant}'s blood on {night}, {source}:"
     " {level}{again}.",
     "bond.entered": "{actor} entered {character}'s bond to {regnant}, at {level} from {night}:"

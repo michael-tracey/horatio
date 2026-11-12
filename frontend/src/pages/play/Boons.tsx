@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useId, useState, type FormEvent } from "react";
 import { api, unwrap } from "../../api/client";
-import type { PlayBoonIn, PlayBoonOut, PlayBoonsOut } from "../../api/types";
+import type { PlayBoonIn, PlayBoonOut, PlayBoonsOut, PlayReportOut } from "../../api/types";
 import { disgracedText } from "../../boonStatus";
 import { BOON_PAGE, KINDS, kindName, type BoonKind } from "../../boons";
 import { DateInput } from "../../components/DateInput";
@@ -9,7 +9,7 @@ import { useToast } from "../../components/Toast";
 import { Button, Card, ErrorText, Field, Input, Loaded, Select } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { playerSettles, reportedText, settledText, standingFirst, type PlayerSettles } from "./boons";
+import { playerSettles, reportedText, reportLine, settledText, standingFirst, type PlayerSettles } from "./boons";
 
 /** Picked in "Who" for someone not on the list: an NPC, or a character of another domain. */
 const SOMEONE_ELSE = "someone-else";
@@ -34,6 +34,7 @@ export function BoonsTab({ characterId, name, online }: { characterId: string; n
         {(boons) => (
           <>
             <Report characterId={characterId} name={name} boons={boons} online={online} />
+            {boons.reports && boons.reports.length > 0 && <Reports reports={boons.reports} name={name} troupe={boons.troupe_name} />}
             {boons.owes && <Side title={`${name} owes`} empty={`${name} owes no boons in the ledger.`} boons={boons.owes} owes name={name} characterId={characterId} online={online} />}
             {boons.owed && (
               <Side title={`Owed to ${name}`} empty={`No boons in the ledger are owed to ${name}.`} boons={boons.owed} owes={false} name={name} characterId={characterId} online={online} />
@@ -73,8 +74,10 @@ function Report({ characterId, name, boons, online }: { characterId: string; nam
   const directionName = useId();
   const report = useAction(
     async (body: PlayBoonIn) => {
-      await unwrap(api.POST("/api/characters/{character_id}/play-boons", { params: { path: { character_id: characterId } }, body }));
-      return body;
+      const after = await unwrap(api.POST("/api/characters/{character_id}/play-boons", { params: { path: { character_id: characterId } }, body }));
+      // Held for review (#687): it shows among the reports waiting.
+      const waiting = (b: PlayBoonsOut) => (b.reports ?? []).filter((r) => r.state === "pending").length;
+      return { body, waits: waiting(after) > waiting(boons) };
     },
     [["play-boons", characterId]],
   );
@@ -106,8 +109,8 @@ function Report({ characterId, name, boons, online }: { characterId: string; nam
         count: draft.count,
       },
       {
-        onSuccess: (body) => {
-          toast({ message: reportedText(name, otherName, body.direction, body.kind, body.count ?? 1, boons.troupe_name) });
+        onSuccess: ({ body, waits }) => {
+          toast({ message: reportedText(name, otherName, body.direction, body.kind, body.count ?? 1, boons.troupe_name, waits) });
           setDraft(fresh(today));
           if (!formOnly) setOpen(false);
         },
@@ -325,5 +328,30 @@ function Settle({ boon, characterId, online, done }: { boon: PlayBoonOut; charac
         </Button>
       </div>
     </form>
+  );
+}
+
+/** The player's reports that wait for review, or weren't accepted lately, with why (#687). */
+function Reports({ reports, name, troupe }: { reports: PlayReportOut[]; name: string; troupe: string }) {
+  const dates = useDates();
+  return (
+    <Card title="Your reports" dense>
+      <ul aria-label="Your reports" className="divide-y divide-ash/60">
+        {reports.map((r) => (
+          <li key={r.id} className="py-2 text-sm">
+            <p>
+              {reportLine(r, name)}
+              <span className="text-mist"> · {dates.day(r.made_on)}</span>
+            </p>
+            {r.reason && <p className="text-mist">{r.reason}</p>}
+            {r.state === "pending" ? (
+              <p className="text-xs text-mist">Waiting for {troupe}&apos;s staff to review it.</p>
+            ) : (
+              <p className="text-xs text-blood-bright">Not accepted{r.rejected_at ? `, ${dates.day(r.rejected_at)}` : ""}: {r.rejected_because}</p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }
