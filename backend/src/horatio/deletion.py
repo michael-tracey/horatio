@@ -13,7 +13,7 @@ The troupe logs keep their entries, with the character's name.
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
-from horatio import audit
+from horatio import audit, social_age
 from horatio.models import (
     AllowanceAdjustment,
     AlternateIdentity,
@@ -157,6 +157,13 @@ def delete_character(db: Session, player: User, character: Character) -> None:
     # Its own Embrace goes with it; a childe it sired keeps its sire by name.
     db.execute(delete(Embrace).where(Embrace.character_id == cid))
     db.execute(update(Embrace).where(Embrace.sire_id == cid).values(sire_id=None))
+    db.execute(
+        update(Character)
+        .where(Character.sire_id == cid)
+        .values(
+            sire_id=None, sire_name=name, sire_clan=social_age.standings(db, [cid])[cid].clan or ""
+        )
+    )
     # The scheduled games it checked in to, then its games on the Play View, with
     # their taps, and what the player kept there.
     db.execute(delete(GameAttendance).where(GameAttendance.character_id == cid))

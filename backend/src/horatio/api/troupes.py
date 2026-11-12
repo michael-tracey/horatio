@@ -103,6 +103,8 @@ class TroupeOut(BaseModel):
     # Its Who's Who (horatio.whos_who) shows the negative status each character
     # carries into a game here.
     whos_who_negative: bool
+    # Its players see its sire lines on the Who's Who (horatio.sire_lines).
+    sire_lines_players: bool
     # Quests (horatio.quests): on or off, and the requests each character may make in
     # a downtime cycle.
     quests_enabled: bool
@@ -168,6 +170,7 @@ class TroupeChanges(BaseModel):
     badge_status: Literal["all", "negative", "none"] | None = None
     badge_pronouns: bool | None = None
     whos_who_negative: bool | None = None
+    sire_lines_players: bool | None = None
     play_tabs_off: list[play_tabs.PlayTab] | None = None
 
 
@@ -358,6 +361,7 @@ def one_out(
         badge_status=troupe.badge_status,
         badge_pronouns=troupe.badge_pronouns,
         whos_who_negative=troupe.whos_who_negative,
+        sire_lines_players=troupe.sire_lines_players,
         quests_enabled=troupe.quests_enabled,
         quest_requests_per_cycle=troupe.quest_requests_per_cycle,
         items_expire=troupe.items_expire,
@@ -572,6 +576,17 @@ def change_troupe(
                 "troupe.whos_who",
                 troupe_id=troupe.id,
                 status="negative status" if body.whos_who_negative else "no sect status",
+            )
+    if body.sire_lines_players is not None:
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
+        if body.sire_lines_players != troupe.sire_lines_players:
+            troupe.sire_lines_players = body.sire_lines_players
+            audit.record(
+                db,
+                user,
+                "troupe.sire_lines",
+                troupe_id=troupe.id,
+                shown="its players" if body.sire_lines_players else "only its staff",
             )
     if body.play_tabs_off is not None:
         require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)

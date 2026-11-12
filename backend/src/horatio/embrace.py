@@ -1166,6 +1166,10 @@ def embrace(
             recorded_by=staff.id,
         )
     )
+    # The childe's sire is on the character too (horatio.sire_lines).
+    character.sire_id = plan.sire_id
+    character.sire_name = "" if plan.sire_id else plan.sire_name
+    character.sire_clan = "" if plan.sire_id else plan.sire_clan
     sheets.freeze_sheet(db, staff, character, character.home_troupe_id)
     db.flush()
     for step in plan.steps:

@@ -9724,6 +9724,82 @@
         "title": "CharacterReviewOut",
         "type": "object"
       },
+      "CharacterSireIn": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "clan": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Clan",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Name",
+            "type": "string"
+          },
+          "secret": {
+            "default": false,
+            "title": "Secret",
+            "type": "boolean"
+          }
+        },
+        "title": "CharacterSireIn",
+        "type": "object"
+      },
+      "CharacterSireOut": {
+        "properties": {
+          "can_change": {
+            "title": "Can Change",
+            "type": "boolean"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "secret": {
+            "title": "Secret",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "clan",
+          "secret",
+          "can_change"
+        ],
+        "title": "CharacterSireOut",
+        "type": "object"
+      },
       "CharacterTitlesOut": {
         "properties": {
           "acting": {
@@ -43162,6 +43238,184 @@
         "title": "SireIn",
         "type": "object"
       },
+      "SireLineChoiceOut": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "clan"
+        ],
+        "title": "SireLineChoiceOut",
+        "type": "object"
+      },
+      "SireLineClanCount": {
+        "properties": {
+          "clan": {
+            "title": "Clan",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "clan",
+          "count"
+        ],
+        "title": "SireLineClanCount",
+        "type": "object"
+      },
+      "SireLineNodeOut": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "generation": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "left_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left Reason"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          },
+          "sire_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sire Key"
+          }
+        },
+        "required": [
+          "key",
+          "character_id",
+          "name",
+          "clan",
+          "generation",
+          "left_reason",
+          "retired",
+          "kind",
+          "sire_key"
+        ],
+        "title": "SireLineNodeOut",
+        "type": "object"
+      },
+      "SireLinesOut": {
+        "properties": {
+          "clans": {
+            "items": {
+              "$ref": "#/components/schemas/SireLineClanCount"
+            },
+            "title": "Clans",
+            "type": "array"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/SireLineNodeOut"
+            },
+            "title": "Nodes",
+            "type": "array"
+          },
+          "players_see": {
+            "title": "Players See",
+            "type": "boolean"
+          },
+          "staff": {
+            "title": "Staff",
+            "type": "boolean"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "nodes",
+          "clans",
+          "staff",
+          "players_see"
+        ],
+        "title": "SireLinesOut",
+        "type": "object"
+      },
       "SkillPool": {
         "properties": {
           "name": {
@@ -47847,6 +48101,17 @@
             ],
             "title": "Session Xp"
           },
+          "sire_lines_players": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sire Lines Players"
+          },
           "starting_xp": {
             "anyOf": [
               {
@@ -48605,6 +48870,10 @@
             "title": "Session Xp",
             "type": "integer"
           },
+          "sire_lines_players": {
+            "title": "Sire Lines Players",
+            "type": "boolean"
+          },
           "starting_blood": {
             "anyOf": [
               {
@@ -48672,6 +48941,7 @@
           "badge_status",
           "badge_pronouns",
           "whos_who_negative",
+          "sire_lines_players",
           "quests_enabled",
           "quest_requests_per_cycle",
           "whos_who",
@@ -50237,6 +50507,10 @@
             "title": "Shows Negative",
             "type": "boolean"
           },
+          "sire_lines": {
+            "title": "Sire Lines",
+            "type": "boolean"
+          },
           "troupe_id": {
             "format": "uuid",
             "title": "Troupe Id",
@@ -50257,7 +50531,8 @@
           "departed",
           "seated",
           "can_represent",
-          "shows_negative"
+          "shows_negative",
+          "sire_lines"
         ],
         "title": "WhosWhoOut",
         "type": "object"
@@ -62237,6 +62512,160 @@
         "summary": "Read Sheet",
         "tags": [
           "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/sire": {
+      "get": {
+        "description": "The character's sire, as anyone who sees the character sees it.",
+        "operationId": "read_sire_api_characters__character_id__sire_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterSireOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Sire",
+        "tags": [
+          "sire lines"
+        ]
+      },
+      "put": {
+        "description": "Give the character its sire: a character the caller can see, or a name and\nclan; and whether the troupe's players see it.",
+        "operationId": "set_sire_api_characters__character_id__sire_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CharacterSireIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterSireOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Sire",
+        "tags": [
+          "sire lines"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/sire/choices": {
+      "get": {
+        "description": "The vampires that could be the character's sire, by name (`candidates`).",
+        "operationId": "sire_choices_api_characters__character_id__sire_choices_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SireLineChoiceOut"
+                  },
+                  "title": "Response Sire Choices Api Characters  Character Id  Sire Choices Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sire Choices",
+        "tags": [
+          "sire lines"
         ]
       }
     },
@@ -84399,6 +84828,50 @@
         "summary": "Choices",
         "tags": [
           "shared backgrounds"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/sire-lines": {
+      "get": {
+        "description": "Who sired whom: every vampire in the troupe for its staff; for its players, if\nthe troupe shows them, those on its Who's Who with the sires it shows.",
+        "operationId": "read_sire_lines_api_troupes__troupe_id__sire_lines_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SireLinesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Sire Lines",
+        "tags": [
+          "sire lines"
         ]
       }
     },

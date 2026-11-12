@@ -129,6 +129,9 @@ class Troupe(Imported, Record):
     # Its Who's Who (horatio.whos_who) adds the negative status each character carries
     # into a game here, which is public in the sect anyway (MET: VTM p. 312).
     whos_who_negative: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Its players see its sire lines on the Who's Who (horatio.sire_lines); its staff
+    # always do.
+    sire_lines_players: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Quests (horatio.quests): on or off, and how many quest requests each character
     # may make in a downtime cycle. While off, players see nothing of them.
     quests_enabled: Mapped[bool] = mapped_column(default=False, server_default="false")
