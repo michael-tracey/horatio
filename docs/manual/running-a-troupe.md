@@ -270,6 +270,17 @@ You can also give a title from **Titles…** on a character's ⋯ on the [Charac
 
 The **Status** tab in the Troupe group is a reference for everyone in the troupe: every status of the sects the troupe takes, what it does and where it comes from. There is nothing to set there.
 
+## Boons
+
+A boon is a debt one character owes another, registered with the Harpy (MET: VTM pp. 395-397): trivial, minor, major, blood or life. When the troupe keeps a boon ledger (switch it on under [Troupe settings](#at-game)), storytellers and assistant storytellers keep it under **Characters › Boons**. A boon made off the record isn't in the ledger, and isn't enforced.
+
+- **Register boons** takes one boon or a whole game's: a row for each, with its debtor and creditor (a character of the troupe, retired ones too, or a name only for someone not in Horatio), its kind, the in-game date, the reason and any conditions ("Cannot be traded"). **How many** makes that many alike, for "1 of 3, 2 of 3…". **Where they come from** goes in each boon's log. They all register together, or none do.
+- The ledger's tabs are **Open** (standing, with everyone on it in play), **Departed** (standing, but someone on it has met Final Death or is off-field), **Settled**, **Void** and **All**. Narrow them to a character or a name, a kind, or the nights the boons were made.
+- **Open** on a boon shows its log and what you can do with it: **Edit** (with why: what changed shows only to storytellers and assistant storytellers), **Trade** (a new creditor holds it; tick **Tell the debtor's player if it's traded** on a boon whose conditions ask for that), **Pass on** (either side, to a broodmate after a death, say), **Settle** (called in, forgiven, or formally ignored by the debtor), **Make void** (entered by mistake) and **Reopen**. Each goes in the boon's own log and the troupe's log.
+- On a character's sheet, staff see a **Boons** card: what they owe and are owed, by kind, with a link to the ledger narrowed to them. Players don't see boons yet.
+
+Switched off, the ledger and its entries in the log are hidden; what was registered is kept, and comes back if it is switched on again.
+
 ## The Who's Who
 
 The **Who's Who** tab shows the troupe's active characters as cards, for its players and staff. It is never public. The court comes first, in rank order, then a section for each clan with a seat, then **Other** for the clans without one, then those no longer with us. Search it by character, player or title, or filter it by clan and sect.
@@ -476,6 +487,7 @@ NPCs are never limited by either.
 - **Blood at the start of a game**: what resetting a character's Play View puts their Blood back to: full, or a number you choose.
 - **Diablerie and Lesser Generation**: what recording a diablerie does to a Lesser Generation or Thin Blooded flaw: leave it, remove it and the XP it gave, or remove it and keep the XP.
 - **Items that expire**: let staff give items with an expiry (see [Equipment](#equipment)).
+- **Boons**: keep a boon ledger (see [Boons](#boons)). Off to begin with.
 
 ### Downtimes
 

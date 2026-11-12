@@ -125,6 +125,8 @@ class TroupeOut(BaseModel):
     # Blood bonds (horatio.bonds): "off", not tracked; "staff", who record them; or
     # one of the player modes (#661), which work as "staff" until then.
     blood_bonds: Literal["off", "staff", "players_report", "players_manage"] = "off"
+    # Boons (horatio.boons): whether the troupe keeps a boon ledger.
+    boons: bool = False
     # The caller may see its Who's Who: its staff, and the players of its characters.
     whos_who: bool
     # Its portrait (add "/48.webp", "/128.webp" or "/512.webp"), or None.
@@ -365,6 +367,7 @@ def one_out(
         nominations=reads_nominations,
         remembrances=troupe.remembrances,
         blood_bonds=troupe.blood_bonds,  # type: ignore[arg-type]  # checked by the database
+        boons=troupe.boons,
         whos_who=whos_who,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
         banner=pictures.banner_url(troupe.id, troupe.banner_id),

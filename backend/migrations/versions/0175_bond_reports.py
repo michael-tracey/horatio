@@ -3,8 +3,8 @@ character waits as a bond report, on the troupe's running staff (as a request in
 approvals queue, of the new kind `bond_drink`) or on the thrall's player, until it is
 approved or confirmed.
 
-Revision ID: 0171
-Revises: 0170
+Revision ID: 0175
+Revises: 0172
 Create Date: 2026-11-12 12:00:00.000000
 """
 
@@ -13,8 +13,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0171"
-down_revision: str | None = "0170"
+revision: str = "0175"
+down_revision: str | None = "0172"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

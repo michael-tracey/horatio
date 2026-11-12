@@ -125,6 +125,14 @@ _Avoid_: Master, regnant (that is any blood bond's), sire
 A thrall's forced love for a regnant, from drinking the regnant's blood: one drink, two, or a full bond at three, each on a separate night, and a full bond wipes away the thrall's lesser bonds (MET: VTM p. 295). Either side is a character or a name only. Its level comes from its drinks log, never typed in; staff can enter one that already stands, with a reason, and break one. A troupe tracks them or not at all; with staff recording every drink, with players reporting their characters' drinks for staff to approve, or with players recording them, where one the regnant's player records waits for the thrall's player to confirm. Its running staff see every bond, the thrall's player sees their own, and the regnant's player only those staff mark known to the regnant, or that they reported; nobody else sees any.
 _Avoid_: Blood oath, rating or points (for its drinks), master
 
+**Boon**:
+A debt one character (the debtor) owes another (the creditor), registered in a troupe's boon ledger: trivial, minor, major, blood or life (MET: VTM pp. 395-397), with its in-game date, reason and conditions. Either side is a character, retired ones too, or a name only. It stands until it is settled (called in, forgiven, or formally ignored by its debtor) or made void; while standing, its creditor can trade it, and either side can be passed on. A standing boon that involves a character dead or off-field is "departed". A boon made off the record isn't tracked, and isn't enforced. Each boon keeps its own log; an edit's changes show only to storytellers and assistant storytellers.
+_Avoid_: Favour, debt (in names), IOU, prestation (for one boon)
+
+**Boon Ledger**:
+A troupe's record of its boons, kept by its running staff while the troupe's Boons setting is on. Off, it is hidden everywhere, and kept.
+_Avoid_: Boon registry, boon sheet
+
 **Vitae**:
 The vampiric blood in a ghoul's Blood pool: at most 5 of its 10, the only part it can spend, and refilled only by drinking from a vampire. The rest of the pool is **human Blood**, which cannot be spent.
 _Avoid_: Ghoul blood, vampire points

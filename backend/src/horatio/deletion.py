@@ -25,6 +25,8 @@ from horatio.models import (
     BackstoryFeedback,
     BloodBond,
     BondReport,
+    Boon,
+    BoonEvent,
     Character,
     CharacterTitle,
     CharacterTrait,
@@ -215,6 +217,14 @@ def delete_character(db: Session, player: User, character: Character) -> None:
         update(BondReport)
         .where(BondReport.regnant_id == cid)
         .values(regnant_id=None, regnant_name=name)
+    )
+    # A boon it owes or holds keeps its name; its log forgets who it was done as.
+    db.execute(update(Boon).where(Boon.debtor_id == cid).values(debtor_id=None, debtor_name=name))
+    db.execute(
+        update(Boon).where(Boon.creditor_id == cid).values(creditor_id=None, creditor_name=name)
+    )
+    db.execute(
+        update(BoonEvent).where(BoonEvent.as_character_id == cid).values(as_character_id=None)
     )
     db.execute(update(AuditEvent).where(AuditEvent.character_id == cid).values(character_id=None))
     db.delete(character)
