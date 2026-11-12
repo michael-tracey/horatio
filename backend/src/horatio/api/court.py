@@ -27,7 +27,7 @@ class CourtTitleOut(BaseModel):
     sect: str | None
 
 
-class HoldingOut(BaseModel):
+class TitleHoldingOut(BaseModel):
     id: uuid.UUID
     title: str
     # None once the character is deleted: its name stays.
@@ -72,7 +72,7 @@ class CourtHistoryOut(BaseModel):
     players_see: bool
     # The titles held at some time, in court order.
     titles: list[CourtTitleOut]
-    holdings: list[HoldingOut]
+    holdings: list[TitleHoldingOut]
     # Each home character's status over time: for staff only.
     status: list[StatusLineOut] | None
     # The troupe's characters now, by clan: what fixes each clan's colour.
@@ -84,9 +84,9 @@ class HoldingDatesIn(BaseModel):
     ended_in_game: date | None = None
 
 
-def holding_out(h: TitleHolding, clan: str | None, full: bool) -> HoldingOut:
+def holding_out(h: TitleHolding, clan: str | None, full: bool) -> TitleHoldingOut:
     """A holding as the reader sees it: how it began and ended only for staff."""
-    return HoldingOut(
+    return TitleHoldingOut(
         id=h.id,
         title=h.name,
         character_id=h.character_id,
@@ -167,7 +167,7 @@ def date_holding(
     body: HoldingDatesIn,
     user: CurrentUser,
     db: DbSession,
-) -> HoldingOut:
+) -> TitleHoldingOut:
     """Set the in-game dates a holding began and ended; none, to clear them."""
     troupe = staff_troupe(db, user, troupe_id, TroupeAction.MANAGE_TITLES)
     holding = db.get(TitleHolding, holding_id)

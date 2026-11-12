@@ -6,7 +6,7 @@ import type { components } from "../../api/schema";
  * a row needs so that holders at the same time sit one above another.
  */
 
-export type CourtHolding = components["schemas"]["HoldingOut"];
+export type CourtHolding = components["schemas"]["TitleHoldingOut"];
 type CourtTitle = components["schemas"]["CourtTitleOut"];
 type StatusLine = components["schemas"]["StatusLineOut"];
 
