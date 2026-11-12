@@ -5,6 +5,7 @@ import { BOON_PAGE } from "../../boons";
 import { useToast } from "../../components/Toast";
 import { Card, ErrorText } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { TalonsSetting } from "./BoonTalons";
 
 /**
  * Whether the troupe keeps a boon ledger (#685): off by default. On, its running staff
@@ -51,6 +52,7 @@ export function BoonLedgerSetting({ troupe, canEdit }: { troupe: TroupeOut; canE
           {on && <PlayersSetting troupe={troupe} />}
           {on && <ReviewSetting troupe={troupe} />}
           {on && <HarpySetting troupe={troupe} />}
+          {on && <TalonsSetting troupe={troupe} />}
         </div>
       )}
       {!canEdit && on && <p className="mt-2 text-sm">{PLAYERS_SEE.find((p) => p.value === troupe.boon_players_see)?.summary}</p>}
@@ -58,6 +60,9 @@ export function BoonLedgerSetting({ troupe, canEdit }: { troupe: TroupeOut; canE
       {!canEdit && on && <p className="mt-1 text-sm">{HARPY.find((h) => h.value === (troupe.boon_harpy ?? "none"))?.summary}</p>}
       {!canEdit && on && troupe.boon_harpy === "full" && troupe.boon_harpy_standings && (
         <p className="mt-1 text-sm">The Harpy also reads the boon standings and statistics, with who has left as the court knows it.</p>
+      )}
+      {!canEdit && on && troupe.boon_talons && troupe.boon_harpy === "full" && (
+        <p className="mt-1 text-sm">The Harpy may give others access to the ledger, as {troupe.boon_talon_word ?? "Lesser Harpies"}.</p>
       )}
     </Card>
   );
@@ -202,7 +207,7 @@ const HARPY: { value: HarpyAccess; label: string; hint: string; summary: string 
 
 /** What the Harpy is told of who has left (#749), on the setting that lets them read the standings. */
 const AS_THE_COURT_KNOWS =
-  "They see who has left only as the court knows it: a character the Who's Who lists under No longer with us, and why only when that is Final Death or Off-field. A player stopping (Inactive) is never shown, and a departure the Who's Who doesn't list stays at court. Weights stay yours to set.";
+  "They see who has left only as the court knows it: a character the Who's Who lists under No longer with us, and why only when that is Final Death or Off-field. A player stopping (Inactive) is never shown, and a departure the Who's Who doesn't list stays at court. Lesser Harpies who see the ledger follow it. Weights stay yours to set.";
 
 /**
  * The Harpy's access to the ledger (#688): whoever holds the Harpy title in the troupe

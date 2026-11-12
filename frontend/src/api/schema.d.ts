@@ -2294,6 +2294,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/leaving/warnings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Leaving Warnings
+         * @description What the retire dialog, and changing why a character left, warn of before it
+         *     tells other players something they haven't been told (#748): its player's, and its
+         *     home troupe's running staff's, each as they may know of it.
+         */
+        get: operations["leaving_warnings_api_characters__character_id__leaving_warnings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/location-requests": {
         parameters: {
             query?: never;
@@ -8004,6 +8026,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/boon-talons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boon Talons List
+         * @description Who has access to the ledger as a Lesser Harpy, with what each may do: for the
+         *     Harpy, who gives it, and for the troupe's running staff.
+         */
+        get: operations["boon_talons_list_api_troupes__troupe_id__boon_talons_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boon-talons-setting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Boon Talons
+         * @description Whether the troupe's Harpy may give others access to its boon ledger (#689),
+         *     and what it calls them. Only used while the Harpy has the full ledger.
+         */
+        put: operations["set_boon_talons_api_troupes__troupe_id__boon_talons_setting_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boon-talons/{character_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Give Talon
+         * @description The Harpy gives a character access to the ledger, or changes what it allows,
+         *     as their character. Logged.
+         */
+        put: operations["give_talon_api_troupes__troupe_id__boon_talons__character_id__put"];
+        post?: never;
+        /**
+         * Take Talon
+         * @description Take a character's access to the ledger away: the Harpy, as their character, or
+         *     the troupe's running staff. Logged.
+         */
+        delete: operations["take_talon_api_troupes__troupe_id__boon_talons__character_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/boon-weights": {
         parameters: {
             query?: never;
@@ -8063,7 +8153,7 @@ export interface paths {
         /**
          * One Boon
          * @description A boon with its log. A Harpy given only the review queue (#688) opens only the
-         *     boons in it.
+         *     boons in it; a Lesser Harpy (#689) any boon.
          */
         get: operations["one_boon_api_troupes__troupe_id__boons__boon_id__get"];
         put?: never;
@@ -14934,6 +15024,41 @@ export interface components {
             weight: number;
             who: components["schemas"]["BoonStandingPartyOut"];
         };
+        /** BoonTalonsOut */
+        BoonTalonsOut: {
+            /** Choices */
+            choices: components["schemas"]["TalonChoice"][];
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "harpy" | "staff";
+            /** Talons */
+            talons: components["schemas"]["TalonOut"][];
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /**
+             * Word
+             * @enum {string}
+             */
+            word: "Lesser Harpies" | "Talons";
+        };
+        /** BoonTalonsSettingIn */
+        BoonTalonsSettingIn: {
+            /** On */
+            on: boolean;
+            /**
+             * Word
+             * @default Lesser Harpies
+             * @enum {string}
+             */
+            word: "Lesser Harpies" | "Talons";
+        };
         /** BoonTradeIn */
         BoonTradeIn: {
             creditor: components["schemas"]["BoonPartyIn"];
@@ -19946,7 +20071,8 @@ export interface components {
         };
         /**
          * HarpyLedgerOut
-         * @description A ledger the character keeps as its troupe's Harpy (#688).
+         * @description A ledger the character keeps as its troupe's Harpy (#688), or as one of its
+         *     Lesser Harpies (#689).
          */
         HarpyLedgerOut: {
             /**
@@ -19954,8 +20080,47 @@ export interface components {
              * @enum {string}
              */
             access: "submissions" | "full";
-            /** Sees Standings */
+            /**
+             * Can Add
+             * @default true
+             */
+            can_add: boolean;
+            /**
+             * Can Audit
+             * @default true
+             */
+            can_audit: boolean;
+            /**
+             * Can Edit
+             * @default true
+             */
+            can_edit: boolean;
+            /**
+             * Can Review
+             * @default true
+             */
+            can_review: boolean;
+            /**
+             * Gives Access
+             * @default false
+             */
+            gives_access: boolean;
+            /**
+             * Role
+             * @default harpy
+             * @enum {string}
+             */
+            role: "harpy" | "talon";
+            /**
+             * Sees Standings
+             * @default false
+             */
             sees_standings: boolean;
+            /**
+             * Talon Word
+             * @default Lesser Harpy
+             */
+            talon_word: string;
             /** To Review */
             to_review: number;
             /**
@@ -21661,6 +21826,37 @@ export interface components {
             requests: components["schemas"]["WithdrawnOut"][];
             /** Titles */
             titles: string[];
+        };
+        /** LeavingSharersOut */
+        LeavingSharersOut: {
+            /** Background */
+            background: string;
+            /** Name */
+            name: string;
+            /** Others */
+            others: string[];
+            /** Troupe */
+            troupe: string;
+        };
+        /** LeavingThrallOut */
+        LeavingThrallOut: {
+            /** Name */
+            name: string;
+            /** Troupe */
+            troupe: string;
+        };
+        /**
+         * LeavingWarningsOut
+         * @description What retiring the character, or saying it met Final Death, could tell others
+         *     (horatio.retiring), as the reader may know of it.
+         */
+        LeavingWarningsOut: {
+            /** Shared */
+            shared: components["schemas"]["LeavingSharersOut"][];
+            /** Staff */
+            staff: boolean;
+            /** Thralls */
+            thralls: components["schemas"]["LeavingThrallOut"][];
         };
         /** LedTroupe */
         LedTroupe: {
@@ -30369,6 +30565,61 @@ export interface components {
             /** Label */
             label: string;
         };
+        /** TalonChoice */
+        TalonChoice: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Lesser Harpy */
+            lesser_harpy: boolean;
+            /** Name */
+            name: string;
+        };
+        /** TalonIn */
+        TalonIn: {
+            /**
+             * Can Add
+             * @default false
+             */
+            can_add: boolean;
+            /**
+             * Can Audit
+             * @default false
+             */
+            can_audit: boolean;
+            /**
+             * Can Edit
+             * @default false
+             */
+            can_edit: boolean;
+        };
+        /** TalonOut */
+        TalonOut: {
+            /** Can Add */
+            can_add: boolean;
+            /** Can Audit */
+            can_audit: boolean;
+            /** Can Edit */
+            can_edit: boolean;
+            /**
+             * Character Id
+             * Format: uuid
+             */
+            character_id: string;
+            /**
+             * Given At
+             * Format: date-time
+             */
+            given_at: string;
+            /** Given By */
+            given_by: string;
+            /** In Play */
+            in_play: boolean;
+            /** Name */
+            name: string;
+        };
         /**
          * TapIn
          * @description One tap, as the device made it.
@@ -31575,6 +31826,17 @@ export interface components {
              * @default false
              */
             boon_review: boolean;
+            /**
+             * Boon Talon Word
+             * @default Lesser Harpies
+             * @enum {string}
+             */
+            boon_talon_word: "Lesser Harpies" | "Talons";
+            /**
+             * Boon Talons
+             * @default false
+             */
+            boon_talons: boolean;
             /**
              * Boons
              * @default false
@@ -37479,6 +37741,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CharacterOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    leaving_warnings_api_characters__character_id__leaving_warnings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeavingWarningsOut"];
                 };
             };
             /** @description Validation Error */
@@ -48475,6 +48768,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BoonStatisticsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    boon_talons_list_api_troupes__troupe_id__boon_talons_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonTalonsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_boon_talons_api_troupes__troupe_id__boon_talons_setting_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonTalonsSettingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    give_talon_api_troupes__troupe_id__boon_talons__character_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TalonIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonTalonsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    take_talon_api_troupes__troupe_id__boon_talons__character_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonTalonsOut"];
                 };
             };
             /** @description Validation Error */

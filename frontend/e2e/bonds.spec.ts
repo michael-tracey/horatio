@@ -521,14 +521,42 @@ test("a dead regnant's bond fades: staff see the day it ends, and the thrall's s
   await send(lead.page, "PUT", `/api/troupes/${troupe.id}/blood-bonds`, {
     setting: "staff",
   });
+  let drunk: { id: string } = { id: "" };
   for (const night of ["2026-10-03", "2026-10-10"]) {
-    await send(lead.page, "POST", `/api/troupes/${troupe.id}/bonds/drinks`, {
+    drunk = await send(lead.page, "POST", `/api/troupes/${troupe.id}/bonds/drinks`, {
       thrall: { character_id: solene },
       regnant: { character_id: hale },
       night,
       source: "game",
     });
   }
+
+  // Before retiring him, Malachai's player is warned of what listing him would tell
+  // (#748), but only of a bond they know of: staff haven't told them yet.
+  const r = regnant.page;
+  const retiring = async () => {
+    await r.goto(`/characters/${hale}`);
+    await r.getByRole("button", { name: "More for Malachai Hale" }).click();
+    await r.getByRole("menuitem", { name: "Retire…" }).click();
+    const dialog = r.getByRole("dialog", { name: "Retire Malachai Hale" });
+    await dialog.getByRole("radio", { name: /^Final Death/ }).check();
+    await expect(dialog.getByRole("checkbox", { name: /under “No longer with us”/ })).toBeChecked();
+    return dialog;
+  };
+  let dialog = await retiring();
+  await expect(dialog.getByRole("button", { name: "Retire Malachai Hale" })).toBeEnabled();
+  await expect(dialog.getByRole("note", { name: "What this tells others" })).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/bonds/${drunk.id}/known`, { known: true });
+  dialog = await retiring();
+  const warning = dialog.getByRole("note", { name: "What this tells others" });
+  await expect(warning).toContainText("Malachai Hale is the regnant of Solene Ardoise.");
+  await expect(warning).toContainText("Listing Malachai Hale under “No longer with us” tells the thrall's player that Malachai Hale died now.");
+  await r.screenshot(shots("retire-warning"));
+  // Unlisted, there's nothing to warn of.
+  await dialog.getByRole("checkbox", { name: /under “No longer with us”/ }).uncheck();
+  await expect(warning).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Cancel" }).click();
 
   // Solene's player sees two drinks.
   const t = thrall.page;

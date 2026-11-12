@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab, choosePick, choosePicks, openSlot, pickedAt } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab, choosePick, choosePicks, openSlot, pickedAt, topBar } from "./support";
 
 /** Downtime: a troupe's whole month, and feeding in a downtime. */
 
@@ -31,7 +31,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
 
   // The custodian sets up the troupe.
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -40,7 +40,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await backstoryOptional(custodian.page, troupeName);
 
   // The lead adds a narrator.
-  await lead.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(lead.page)).getByRole("link", { name: "Troupes" }).click();
   await lead.page.getByRole("link", { name: troupeName }).click();
   await lead.page.getByRole("link", { name: "Staff" }).click();
   await expect(lead.page.getByRole("heading", { name: "Add staff" })).toBeVisible();
@@ -289,7 +289,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await sections.getByRole("link", { name: "Characters", exact: true }).click();
 
   // Game badges. The custodian adds a logo for Agnes's clan (Horatio ships none)…
-  await custodian.page.getByRole("link", { name: "Custodian", exact: true }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Custodian", exact: true }).click();
   await custodian.page.getByRole("link", { name: "Clan logos" }).click();
   await custodian.page.getByLabel("Search clans").fill("Brujah");
   await custodian.page.getByLabel("Logo for Brujah", { exact: true }).setInputFiles("e2e/clan-logo.png");
@@ -478,7 +478,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(lead.page.getByText("Logged as E1")).toBeVisible();
   await lead.page.getByLabel("Assign to").first().selectOption({ label: "narrator (Narrator)" });
   await expect(lead.page.getByLabel("Assign to").first()).not.toHaveValue("none");
-  await narrator.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(narrator.page)).getByRole("link", { name: "Troupes" }).click();
   await narrator.page.getByRole("link", { name: troupeName }).click();
   await narrator.page.getByRole("link", { name: /^Downtimes( \d+ waiting)?$/ }).click();
   await narrator.page.getByRole("link", { name: "My work" }).click();
@@ -556,7 +556,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await expect(lead.page.getByText("Complete", { exact: true })).toBeVisible();
 
   // Results always go out in Horatio; Discord needs the server set up first.
-  await lead.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(lead.page)).getByRole("link", { name: "Troupes" }).click();
   await lead.page.getByRole("link", { name: troupeName }).click();
   await lead.page.getByRole("link", { name: "Customise", exact: true }).click();
   await lead.page.getByRole("link", { name: "Connectors", exact: true }).click();

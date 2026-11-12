@@ -2,7 +2,7 @@
 (issue #749).
 
 Revision ID: 0215
-Revises: 0208
+Revises: 0209
 Create Date: 2026-11-13 09:00:00.000000
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0215"
-down_revision: str | None = "0208"
+down_revision: str | None = "0209"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

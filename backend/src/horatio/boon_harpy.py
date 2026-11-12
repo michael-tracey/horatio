@@ -18,13 +18,19 @@ nor a boon's staff note, nor who entered a boon out of game, nor why a character
 retired.
 
 `keeper` is the one check of who may work the ledger, and as whom: the troupe's
-running staff, or a Harpy within the troupe's setting. Lesser Harpies (#689), audits
-(#690), Gallant's offers (#693) and Boonbreakers (#717) are meant to ask it too.
+running staff, a Harpy within the troupe's setting, or a Lesser Harpy (a talon) the
+Harpy gave access (horatio.boon_talons, #689). It answers for one `need`:
+- "submissions": the review queue (#687);
+- "view": seeing the whole ledger;
+- "add": registering boons;
+- "edit": editing, trading, passing on, settling, voiding and reopening them;
+- "audit": auditing a character's boons (#690).
+Audits (#690), Gallant's offers (#693) and Boonbreakers (#717) are meant to ask it too.
 
-A Harpy learns who has left only as the court knows it (horatio.court_knows, #749):
-their `Keeper` carries the troupe's Who's Who listing, and every view of the ledger
-they read goes by it. The troupe may also let the Harpy with the full ledger read its
-boon standings and statistics (`standings`), by the same rule.
+A Harpy or a Lesser Harpy learns who has left only as the court knows it
+(horatio.court_knows, #749): their `Keeper` carries the troupe's Who's Who listing,
+and every view of the ledger they read goes by it. The troupe may also let them read
+its boon standings and statistics (`reads_standings`), by the same rule.
 """
 
 import uuid
@@ -47,15 +53,28 @@ ACCESS = {
     "full": "the full ledger, to register, edit and settle boons",
 }
 RANK = {level: n for n, level in enumerate(ACCESS)}
+# What working the ledger can take (`keeper`'s `need`).
+NEEDS = ("submissions", "view", "add", "edit", "audit")
+EVERYTHING = frozenset(NEEDS)
+# What a Harpy may do, by the troupe's setting.
+HARPY_CAN = {
+    "none": frozenset[str](),
+    "submissions": frozenset({"submissions"}),
+    "full": EVERYTHING,
+}
 
 
 @dataclass(frozen=True)
 class Keeper:
-    """Someone who may work the troupe's ledger: its running staff (no character), or
-    a Harpy, as their character. A Harpy's `court` is who the troupe's Who's Who lists
-    as gone (horatio.court_knows.listed); None for staff, who see why anyone left."""
+    """Someone who may work the troupe's ledger: its running staff (no character), a
+    Harpy, or a Lesser Harpy, as their character, with what they may do (`can`). A
+    Harpy's or Lesser Harpy's `court` is who the troupe's Who's Who lists as gone
+    (horatio.court_knows.listed); None for staff, who see why anyone left."""
 
     character: Character | None
+    can: frozenset[str] = EVERYTHING
+    # "staff", "harpy" or "talon".
+    role: str = "staff"
     court: frozenset[uuid.UUID] | None = None
 
     @property
@@ -94,7 +113,7 @@ def set_standings(db: Session, user: User, troupe: Troupe, on: bool) -> None:
 
 def reads_standings(troupe: Troupe) -> bool:
     """Whether the troupe's setting lets its Harpy read the standings and statistics:
-    only with the full ledger."""
+    only with the full ledger. Lesser Harpies who may see the ledger follow it."""
     return troupe.boon_harpy_standings and reaches(troupe, "full")
 
 
@@ -143,19 +162,27 @@ def reaches(troupe: Troupe, need: str) -> bool:
     return RANK[troupe.boon_harpy] >= RANK[need]
 
 
-def keeper(db: Session, user: User, troupe: Troupe, need: str = "full") -> Keeper | None:
-    """Who `user` works the troupe's ledger as, for `need` ("submissions", the review
-    queue; "full", the whole ledger): its running staff, or one of their characters
-    that holds the Harpy title, where the troupe's setting reaches that far. None for
-    anyone else, or while the troupe keeps no ledger."""
+def keeper(db: Session, user: User, troupe: Troupe, need: str = "view") -> Keeper | None:
+    """Who `user` works the troupe's ledger as, for `need` (one of `NEEDS`): its
+    running staff; one of their characters that holds the Harpy title, where the
+    troupe's setting reaches that far; or one of their characters the Harpy gave
+    access (a Lesser Harpy, horatio.boon_talons), for what that access allows. None
+    for anyone else, or while the troupe keeps no ledger."""
+    if need not in NEEDS:
+        raise ValueError(f"No such need: {need}")
     if boons.can_manage(db, user, troupe):
         return Keeper(None)
     if not boons.tracked(troupe) or troupe.archived_at is not None:
         return None
-    if not reaches(troupe, need):
-        return None
     harpy = harpy_of(db, user, troupe)
-    return Keeper(harpy, court_knows.listed(db, troupe)) if harpy is not None else None
+    if harpy is not None and need in HARPY_CAN[troupe.boon_harpy]:
+        return Keeper(harpy, HARPY_CAN[troupe.boon_harpy], "harpy", court_knows.listed(db, troupe))
+    from horatio import boon_talons  # imports this module
+
+    found = boon_talons.talon_of(db, user, troupe)
+    if found is not None and need in boon_talons.can(found[1]):
+        return Keeper(found[0], boon_talons.can(found[1]), "talon", court_knows.listed(db, troupe))
+    return None
 
 
 def tell(db: Session, troupe: Troupe, made: Sequence[Boon], reporter: Character) -> None:

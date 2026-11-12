@@ -41,6 +41,7 @@ class Troupe(Imported, Record):
         ),
         CheckConstraint("boon_players_see in ('intake', 'owes', 'owed')", name="boon_players_see"),
         CheckConstraint("boon_harpy in ('none', 'submissions', 'full')", name="boon_harpy"),
+        CheckConstraint("boon_talon_word in ('Lesser Harpies', 'Talons')", name="boon_talon_word"),
     )
 
     name: Mapped[str]
@@ -185,6 +186,13 @@ class Troupe(Imported, Record):
     # The Harpy with the full ledger also reads its boon standings and statistics, with
     # who has left as the court knows it (horatio.court_knows, #749).
     boon_harpy_standings: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # The Harpy may give others access to the ledger (horatio.boon_talons, #689): Lesser
+    # Harpies, or talons, as the troupe calls them (`boon_talon_word`). Only while the
+    # Harpy has the full ledger.
+    boon_talons: Mapped[bool] = mapped_column(default=False, server_default="false")
+    boon_talon_word: Mapped[str] = mapped_column(
+        default="Lesser Harpies", server_default="Lesser Harpies"
+    )
     # The court over time (horatio.title_history, #712): whether its players see who
     # held each title and when. Its staff always do.
     court_history_players: Mapped[bool] = mapped_column(default=False, server_default="false")

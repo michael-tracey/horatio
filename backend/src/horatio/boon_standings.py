@@ -83,10 +83,11 @@ def set_weights(db: Session, user: User, troupe: Troupe, weights: Mapping[str, f
 
 def reader(db: Session, user: User, troupe: Troupe) -> Keeper | None:
     """Who reads the troupe's standings, and as whom: its running staff (and the
-    custodian), as for the ledger; or its Harpy with the full ledger, where the troupe
-    lets the Harpy read them (horatio.boon_harpy.reads_standings, #749). None for
+    custodian), as for the ledger; or, where the troupe lets its Harpy read them
+    (horatio.boon_harpy.reads_standings, #749), its Harpy with the full ledger and the
+    Lesser Harpies who may see it (#689), following their Harpy's view. None for
     anyone else."""
-    keeper = boon_harpy.keeper(db, user, troupe, "full")
+    keeper = boon_harpy.keeper(db, user, troupe, "view")
     if keeper is None or keeper.staff:
         return keeper
     return keeper if boon_harpy.reads_standings(troupe) else None

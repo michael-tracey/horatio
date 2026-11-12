@@ -2,7 +2,8 @@
 default and only with the full ledger; and the Harpy learning who has left only as the
 court knows it (horatio.court_knows): gone only if the troupe's Who's Who lists it,
 and why only when that says something in game. Inactive, which says only that a
-player stopped, is never shown. Staff keep the full view."""
+player stopped, is never shown. Lesser Harpies (#689) follow the Harpy's view. Staff
+keep the full view."""
 
 import json
 from collections.abc import Callable
@@ -14,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from tests.api_helpers import Person, Troupe
 from tests.test_api_boon_harpy import Court, ok
+from tests.test_api_boon_talons import Talons
 from tests.test_api_boons import row
 from tests.test_api_downtimes import member_character
 
@@ -70,6 +72,11 @@ class Gone(Court):
 @pytest.fixture
 def gone(client_for: Callable[[], TestClient], session: Session) -> Gone:
     return Gone(Troupe(client_for, session))
+
+
+@pytest.fixture
+def talons(client_for: Callable[[], TestClient], session: Session) -> Talons:
+    return Talons(Troupe(client_for, session))
 
 
 def standing_of(found: list[dict[str, Any]]) -> dict[str, str | None]:
@@ -180,3 +187,33 @@ def test_the_harpy_s_ledger_shows_departures_as_the_court_knows_them(gone: Gone)
     assert [b["debtor"]["name"] for b in open_ones] == ["Cosima"]
     assert open_ones[0]["departed"] is False
     assert "inactive" not in json.dumps(gone.ledger("all", by=harpy))
+
+
+def test_a_lesser_harpy_follows_the_harpy_s_view(talons: Talons) -> None:
+    # Iris, a Lesser Harpy who may only see the ledger, reads what the Harpy reads.
+    ok(talons.setting(True))
+    ok(talons.give(talons.iris, add=False, edit=False, audit=False))
+    made = talons.register(row(talons.bram, talons.agnes))
+    assert made.status_code == 201, made.text
+    retired = talons.other.client.post(
+        f"/characters/{talons.bram}/retire",
+        json={"reason": "inactive", "note": "", "listed": True},
+    )
+    assert retired.status_code == 200, retired.text
+    iris = talons.iris_player
+    standings = f"/troupes/{talons.troupe.id}/boon-standings"
+    assert iris.client.get(standings).status_code == 403
+    assert talons.ledgers(talons.iris, iris)[0]["sees_standings"] is False
+
+    ok(
+        talons.troupe.storyteller.client.put(
+            f"/troupes/{talons.troupe.id}/boon-harpy", json={"access": "full", "standings": True}
+        )
+    )
+
+    assert talons.ledgers(talons.iris, iris)[0]["sees_standings"] is True
+    theirs = ok(iris.client.get(standings, params={"scope": "everyone"}))
+    assert standing_of(theirs["characters"])["Bram"] == "retired"
+    departed = talons.ledger("departed", by=iris)["boons"]
+    assert [b["debtor"]["standing"] for b in departed] == ["retired"]
+    assert "inactive" not in json.dumps(theirs)
