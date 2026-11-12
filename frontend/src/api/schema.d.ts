@@ -7346,6 +7346,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/bonds/known": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Known Bonds
+         * @description The bonds Horatio can work out for the troupe that it doesn't keep yet: from its
+         *     characters' Embraces, ghouls' domitors and vampires' ghoul Retainers (#663).
+         */
+        get: operations["known_bonds_api_troupes__troupe_id__bonds_known_get"];
+        put?: never;
+        /**
+         * Fill In Bonds
+         * @description Add every bond `known_bonds` lists, and say which were added.
+         */
+        post: operations["fill_in_bonds_api_troupes__troupe_id__bonds_known_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/bonds/reports/{report_id}/decide": {
         parameters: {
             query?: never;
@@ -18242,6 +18267,11 @@ export interface components {
              */
             type: "fill_table";
         };
+        /** FilledOut */
+        FilledOut: {
+            /** Added */
+            added: components["schemas"]["BondOut"][];
+        };
         /**
          * FilterCondition
          * @description One condition of a character filter; see horatio.character_filter.
@@ -20546,6 +20576,25 @@ export interface components {
             parent_name: string;
             /** Parent Rating */
             parent_rating: number;
+        };
+        /** KnownBondOut */
+        KnownBondOut: {
+            /** Level */
+            level: number;
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /** Reason */
+            reason: string;
+            regnant: components["schemas"]["PartyOut"];
+            thrall: components["schemas"]["PartyOut"];
+            /**
+             * Why
+             * @enum {string}
+             */
+            why: "embrace" | "domitor" | "retainer";
         };
         /** KnownIn */
         KnownIn: {
@@ -45787,6 +45836,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BondOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    known_bonds_api_troupes__troupe_id__bonds_known_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnownBondOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fill_in_bonds_api_troupes__troupe_id__bonds_known_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilledOut"];
                 };
             };
             /** @description Validation Error */
