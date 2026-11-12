@@ -1,8 +1,8 @@
 """throw images: a troupe's own rock, paper and scissors pictures for the Play
 View's Throws tab (issue #670)
 
-Revision ID: 0169
-Revises: 0166
+Revision ID: 0173
+Revises: 0170
 Create Date: 2026-11-11 18:00:00.000000
 """
 
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects.postgresql import JSONB
 
-revision: str = "0169"
-down_revision: str | None = "0166"
+revision: str = "0173"
+down_revision: str | None = "0170"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
