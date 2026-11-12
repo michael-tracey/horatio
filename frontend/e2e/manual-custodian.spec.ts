@@ -225,7 +225,8 @@ test("screenshots for the manual's Custodian part", async ({ browser }) => {
   await shoot(main.locator("section", { has: c.getByRole("heading", { name: "Found" }) }), "audit", 520);
 
   // Importing from Yorick: the made-up page from the backend's tests, checked by a dry run.
-  await main.getByRole("link", { name: "Import from Yorick", exact: true }).click();
+  await main.getByRole("link", { name: "Tools", exact: true }).click();
+  await main.getByRole("link", { name: "Open the import" }).click();
   await main.getByLabel("Troupe").selectOption({ label: "Harbour Lights" });
   await main.getByLabel("Print Characters page").setInputFiles({
     name: "Print Troupe Characters.html",

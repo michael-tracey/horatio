@@ -877,8 +877,12 @@ test("the custodian imports a troupe's characters from Yorick, matching a line a
   const npc = await lead.page.request.post(`/api/troupes/${troupeId}/npcs`, { headers: { "X-Horatio": "1" }, data: { name: agnes, wizard: false } });
   expect(npc.status(), await npc.text()).toBe(201);
 
+  // The import lives under Tools (#758); its old address, query and all, still lands there.
+  await c.goto("/custodian/yorick-import?troupe=x");
+  await expect(c).toHaveURL(/\/custodian\/tools\/yorick-import\?troupe=x$/);
   await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
-  await c.getByRole("link", { name: "Import from Yorick" }).click();
+  await c.getByRole("link", { name: "Tools", exact: true }).click();
+  await c.getByRole("link", { name: "Open the import" }).click();
   await c.getByLabel("Troupe").selectOption({ label: troupeName });
   await c.getByLabel("Print Characters page").setInputFiles({ name: "Print Troupe Characters.html", mimeType: "text/html", buffer: Buffer.from(page) });
 
