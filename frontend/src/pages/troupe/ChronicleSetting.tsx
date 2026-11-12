@@ -20,7 +20,7 @@ export function ChronicleSetting({ troupe, canEdit }: { troupe: TroupeOut; canEd
           <label className="flex items-start gap-2">
             <input type="checkbox" className="mt-1" checked={on} disabled={save.isPending} onChange={(e) => save.mutate(e.target.checked)} />
             <span>
-              Players see it too
+              Players see the chronicle too
               <span className="block text-xs text-mist">
                 Only what the troupe already shows them: titles, characters on the Who’s Who joining, and those listed under No longer with us. Not Embraces, diablerie or status.
               </span>

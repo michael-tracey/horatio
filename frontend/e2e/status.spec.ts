@@ -1147,7 +1147,7 @@ test("the chronicle: staff see an Embrace and a diablerie on the troupe's timeli
   // The players see it once the troupe lets them, and only what is public.
   expect((await p.request.get(`/api/troupes/${troupeId}/chronicle`)).status()).toBe(403);
   await l.goto(`/troupes/${troupeId}/settings`);
-  const players = l.getByRole("checkbox", { name: /^Players see it too Only what the troupe already shows them/ });
+  const players = l.getByRole("checkbox", { name: /^Players see the chronicle too/ });
   await players.click();
   await expect(players).toBeChecked();
   const seen = await (await p.request.get(`/api/troupes/${troupeId}/chronicle`)).json();
