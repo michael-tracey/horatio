@@ -1183,6 +1183,64 @@
         "title": "AnswersIn",
         "type": "object"
       },
+      "ApologyBoonIn": {
+        "properties": {
+          "held_id": {
+            "format": "uuid",
+            "title": "Held Id",
+            "type": "string"
+          },
+          "made_on": {
+            "format": "date",
+            "title": "Made On",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          },
+          "wronged": {
+            "$ref": "#/components/schemas/BoonPartyIn"
+          }
+        },
+        "required": [
+          "held_id",
+          "wronged",
+          "made_on"
+        ],
+        "title": "ApologyBoonIn",
+        "type": "object"
+      },
+      "ApologyChoicesOut": {
+        "description": "Where an apology's boon goes: the troupe whose ledger the character's Play\nView shows, and its characters, to name whoever was wronged.",
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterChoice-Output"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "characters"
+        ],
+        "title": "ApologyChoicesOut",
+        "type": "object"
+      },
       "AppearanceOut": {
         "properties": {
           "loading_animation": {
@@ -6600,6 +6658,11 @@
           },
           "creditor": {
             "$ref": "#/components/schemas/BoonPartyOut"
+          },
+          "creditor_disgraced": {
+            "default": false,
+            "title": "Creditor Disgraced",
+            "type": "boolean"
           },
           "debtor": {
             "$ref": "#/components/schemas/BoonPartyOut"
@@ -32891,6 +32954,11 @@
             "title": "Conditions",
             "type": "string"
           },
+          "creditor_disgraced": {
+            "default": false,
+            "title": "Creditor Disgraced",
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -35304,6 +35372,45 @@
           "on"
         ],
         "title": "PowerOut",
+        "type": "object"
+      },
+      "PraisedClaimsOut": {
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterChoice-Output"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "sect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sect"
+          },
+          "troupe_id": {
+            "format": "uuid",
+            "title": "Troupe Id",
+            "type": "string"
+          },
+          "troupe_name": {
+            "title": "Troupe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "troupe_id",
+          "troupe_name",
+          "sect",
+          "characters"
+        ],
+        "title": "PraisedClaimsOut",
         "type": "object"
       },
       "Preferences": {
@@ -56577,6 +56684,102 @@
         ]
       }
     },
+    "/api/characters/{character_id}/apology-boon": {
+      "get": {
+        "description": "For staff putting right a slip under Warned or Disgraced: the ledger its boon\ngoes in, and who could have been wronged.",
+        "operationId": "apology_choices_api_characters__character_id__apology_boon_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApologyChoicesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apology Choices",
+        "tags": [
+          "boons"
+        ]
+      },
+      "post": {
+        "description": "Register the boon an apology owes for a slip (p. 316): minor under Warned, major\nunder Disgraced, owed by the character to whoever was wronged.",
+        "operationId": "apology_boon_api_characters__character_id__apology_boon_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApologyBoonIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apology Boon",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
     "/api/characters/{character_id}/attendance": {
       "get": {
         "description": "The games the character came to, newest first.",
@@ -63586,6 +63789,50 @@
         "summary": "Set Power Choices",
         "tags": [
           "sheets"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/praised-claims": {
+      "get": {
+        "description": "For spending Praised (p. 316): who in the troupe whose ledger the character's\nPlay View shows is Accepted by its sect and not already in its debt. Its player\nsees player characters; staff see the troupe's NPCs too.",
+        "operationId": "praised_claims_api_characters__character_id__praised_claims_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PraisedClaimsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Praised Claims",
+        "tags": [
+          "boons"
         ]
       }
     },

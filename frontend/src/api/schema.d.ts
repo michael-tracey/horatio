@@ -757,6 +757,32 @@ export interface paths {
         patch: operations["change_character_api_characters__character_id__patch"];
         trace?: never;
     };
+    "/api/characters/{character_id}/apology-boon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Apology Choices
+         * @description For staff putting right a slip under Warned or Disgraced: the ledger its boon
+         *     goes in, and who could have been wronged.
+         */
+        get: operations["apology_choices_api_characters__character_id__apology_boon_get"];
+        put?: never;
+        /**
+         * Apology Boon
+         * @description Register the boon an apology owes for a slip (p. 316): minor under Warned, major
+         *     under Disgraced, owed by the character to whoever was wronged.
+         */
+        post: operations["apology_boon_api_characters__character_id__apology_boon_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/attendance": {
         parameters: {
             query?: never;
@@ -3051,6 +3077,28 @@ export interface paths {
          * @description Choose, or for staff change, what a power was bought with.
          */
         put: operations["set_power_choices_api_characters__character_id__power_choices_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/praised-claims": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Praised Claims
+         * @description For spending Praised (p. 316): who in the troupe whose ledger the character's
+         *     Play View shows is Accepted by its sect and not already in its debt. Its player
+         *     sees player characters; staff see the troupe's NPCs too.
+         */
+        get: operations["praised_claims_api_characters__character_id__praised_claims_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -12374,6 +12422,41 @@ export interface components {
             /** Quick Hands */
             quick_hands?: boolean | null;
         };
+        /** ApologyBoonIn */
+        ApologyBoonIn: {
+            /**
+             * Held Id
+             * Format: uuid
+             */
+            held_id: string;
+            /**
+             * Made On
+             * Format: date
+             */
+            made_on: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            wronged: components["schemas"]["BoonPartyIn"];
+        };
+        /**
+         * ApologyChoicesOut
+         * @description Where an apology's boon goes: the troupe whose ledger the character's Play
+         *     View shows, and its characters, to name whoever was wronged.
+         */
+        ApologyChoicesOut: {
+            /** Characters */
+            characters: components["schemas"]["CharacterChoice-Output"][];
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
         /** AppearanceOut */
         AppearanceOut: {
             /** Loading Animation */
@@ -14533,6 +14616,11 @@ export interface components {
             /** Conditions */
             conditions: string;
             creditor: components["schemas"]["BoonPartyOut"];
+            /**
+             * Creditor Disgraced
+             * @default false
+             */
+            creditor_disgraced: boolean;
             debtor: components["schemas"]["BoonPartyOut"];
             /** Departed */
             departed: boolean;
@@ -24711,6 +24799,11 @@ export interface components {
             /** Conditions */
             conditions: string;
             /**
+             * Creditor Disgraced
+             * @default false
+             */
+            creditor_disgraced: boolean;
+            /**
              * Id
              * Format: uuid
              */
@@ -25646,6 +25739,20 @@ export interface components {
              * @default 0
              */
             turned_on: number;
+        };
+        /** PraisedClaimsOut */
+        PraisedClaimsOut: {
+            /** Characters */
+            characters: components["schemas"]["CharacterChoice-Output"][];
+            /** Sect */
+            sect: string | null;
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
         };
         /** Preferences */
         Preferences: {
@@ -34431,6 +34538,72 @@ export interface operations {
             };
         };
     };
+    apology_choices_api_characters__character_id__apology_boon_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApologyChoicesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apology_boon_api_characters__character_id__apology_boon_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApologyBoonIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     attended_api_characters__character_id__attendance_get: {
         parameters: {
             query?: never;
@@ -38900,6 +39073,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PowerChoicesOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    praised_claims_api_characters__character_id__praised_claims_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PraisedClaimsOut"];
                 };
             };
             /** @description Validation Error */
