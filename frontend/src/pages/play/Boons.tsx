@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useId, useState, type FormEvent } from "react";
 import { api, unwrap } from "../../api/client";
 import type { PlayBoonIn, PlayBoonOut, PlayBoonsOut } from "../../api/types";
+import { disgracedText } from "../../boonStatus";
 import { BOON_PAGE, KINDS, kindName, type BoonKind } from "../../boons";
 import { DateInput } from "../../components/DateInput";
 import { useToast } from "../../components/Toast";
@@ -33,9 +34,9 @@ export function BoonsTab({ characterId, name, online }: { characterId: string; n
         {(boons) => (
           <>
             <Report characterId={characterId} name={name} boons={boons} online={online} />
-            {boons.owes && <Side title={`${name} owes`} empty={`${name} owes no boons in the ledger.`} boons={boons.owes} owes characterId={characterId} online={online} />}
+            {boons.owes && <Side title={`${name} owes`} empty={`${name} owes no boons in the ledger.`} boons={boons.owes} owes name={name} characterId={characterId} online={online} />}
             {boons.owed && (
-              <Side title={`Owed to ${name}`} empty={`No boons in the ledger are owed to ${name}.`} boons={boons.owed} owes={false} characterId={characterId} online={online} />
+              <Side title={`Owed to ${name}`} empty={`No boons in the ledger are owed to ${name}.`} boons={boons.owed} owes={false} name={name} characterId={characterId} online={online} />
             )}
           </>
         )}
@@ -189,7 +190,23 @@ function Report({ characterId, name, boons, online }: { characterId: string; nam
 }
 
 /** One side of the character's boons: those standing, then those settled, folded away. */
-function Side({ title, empty, boons, owes, characterId, online }: { title: string; empty: string; boons: PlayBoonOut[]; owes: boolean; characterId: string; online: boolean }) {
+function Side({
+  title,
+  empty,
+  boons,
+  owes,
+  name,
+  characterId,
+  online,
+}: {
+  title: string;
+  empty: string;
+  boons: PlayBoonOut[];
+  owes: boolean;
+  name: string;
+  characterId: string;
+  online: boolean;
+}) {
   const { standing, settled } = standingFirst(boons);
   return (
     <Card title={title} dense>
@@ -199,7 +216,7 @@ function Side({ title, empty, boons, owes, characterId, online }: { title: strin
         ) : (
           <ul className="divide-y divide-ash/60">
             {standing.map((b) => (
-              <BoonRow key={b.id} boon={b} owes={owes} characterId={characterId} online={online} />
+              <BoonRow key={b.id} boon={b} owes={owes} creditor={owes ? b.other : name} characterId={characterId} online={online} />
             ))}
           </ul>
         )}
@@ -208,7 +225,7 @@ function Side({ title, empty, boons, owes, characterId, online }: { title: strin
             <summary className="cursor-pointer text-sm text-mist">Settled ({settled.length})</summary>
             <ul className="divide-y divide-ash/60">
               {settled.map((b) => (
-                <BoonRow key={b.id} boon={b} owes={owes} characterId={characterId} online={online} />
+                <BoonRow key={b.id} boon={b} owes={owes} creditor={owes ? b.other : name} characterId={characterId} online={online} />
               ))}
             </ul>
           </details>
@@ -218,7 +235,20 @@ function Side({ title, empty, boons, owes, characterId, online }: { title: strin
   );
 }
 
-function BoonRow({ boon, owes, characterId, online }: { boon: PlayBoonOut; owes: boolean; characterId: string; online: boolean }) {
+function BoonRow({
+  boon,
+  owes,
+  creditor,
+  characterId,
+  online,
+}: {
+  boon: PlayBoonOut;
+  owes: boolean;
+  /** Whom it is owed to, by name. */
+  creditor: string;
+  characterId: string;
+  online: boolean;
+}) {
   const dates = useDates();
   const [settling, setSettling] = useState(false);
   return (
@@ -239,6 +269,7 @@ function BoonRow({ boon, owes, characterId, online }: { boon: PlayBoonOut; owes:
       {boon.reason && <p className="text-mist">{boon.reason}</p>}
       {boon.conditions && <p className="text-xs text-mist">Conditions: {boon.conditions}</p>}
       {boon.notify_on_trade && <p className="text-xs text-mist">Its debtor&apos;s player is told if it&apos;s traded.</p>}
+      {boon.creditor_disgraced && <p className="text-xs text-blood-bright">{disgracedText(creditor)}</p>}
       {boon.state === "settled" && <p className="text-xs text-mist">{settledText(boon, dates.day)}</p>}
       {settling && <Settle boon={boon} characterId={characterId} online={online} done={() => setSettling(false)} />}
     </li>
