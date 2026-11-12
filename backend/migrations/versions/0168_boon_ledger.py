@@ -3,7 +3,7 @@ owes its creditor, either side a character or a name only; and each boon's own l
 of what was done to it (MET: VTM pp. 395-397).
 
 Revision ID: 0168
-Revises: 0165
+Revises: 0166
 Create Date: 2026-11-12 12:00:00.000000
 """
 
@@ -14,7 +14,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0168"
-down_revision: str | None = "0165"
+down_revision: str | None = "0166"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

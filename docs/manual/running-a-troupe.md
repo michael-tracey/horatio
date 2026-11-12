@@ -389,13 +389,14 @@ Publishing, editing a published announcement, pinning and unpinning, unpublishin
 
 ### Locations
 
-**World › Locations** is the troupe's record of the places that matter in its chronicle, and its characters' havens, with who controls each. Storytellers and assistant storytellers keep it; players and narrators never see it.
+**World › Locations** is the troupe's record of the places that matter in its chronicle, and its characters' havens, with who controls each. Storytellers and assistant storytellers keep it; players and narrators never see it, except that a player keeps part of their own Haven from their sheet (see below).
 
 - **Add a location** adds one.
 - The list is a table of each location's name, type, controller, qualities (negative ones in red), influence area and whether it is locked. On a phone each row folds into a short card.
 - Filter the list by controller, type, quality, influence, feeding block, locked or not, and negative qualities.
 - The **⋯** at the end of a row holds **Open**, **Edit…** (the form opens over the list), **Build a quest for it** (when quests are on) and **Remove…**.
 - Open a location to change it, forfeit it, remove a negative quality, add subsidiaries, and read its log.
+- **Havens players keep.** A player whose character has the Haven background can put their Haven on the list from their sheet, and change its name, description, address, map link and advantages (one for each dot of Haven, with Security free for a character with the Security skill). Each change goes in the Haven's log under their name. Your notes, a lock, joint control and heirs, quests and secret negative qualities stay yours: the player never sees them, and sees other negative qualities only as their effect. If you mark one of the troupe's locations as a character's Haven, the player sees it but can't change it.
 
 The troupe's house options for locations are under [Location rules](#location-rules).
 

@@ -125,11 +125,19 @@ export function PowersList({ powers, forms: atOnce = 1, tap }: { powers: PowerSw
   );
 }
 
-/** A short banner while a form or power is on: which, with its notes and what other powers add to it, and a way back. */
+/** Past this many powers on (not forms), the banner shows only their names and Off buttons, to stay short on a phone. */
+const BRIEF_AFTER = 3;
+
+/**
+ * A short banner while a form or power is on: which, with its notes and what other
+ * powers add to it, and a way back: Turn back for a form, Off for a power (#697).
+ */
 export function PowersBanner({ powers, tap }: { powers: PowerSwitch[]; tap: Tap }) {
   const forms = formsOn({ powers });
   const others = powers.filter((p) => p.on && !p.form);
   if (forms.length === 0 && others.length === 0) return null;
+  // With more than a few on, each is a name and its Off button: the notes are in the list.
+  const brief = others.length > BRIEF_AFTER;
   return (
     <section className="rounded-lg border border-gold/60 bg-gold/10 px-3 py-2 text-sm" aria-label="Switched on now">
       {forms.map((f) => (
@@ -153,18 +161,34 @@ export function PowersBanner({ powers, tap }: { powers: PowerSwitch[]; tap: Tap 
         </div>
       ))}
       {others.length > 0 && (
-        <p className={forms.length ? "mt-1" : undefined}>
-          <span className="text-mist">On: </span>
-          {others.map(withPicks).join(", ")}
-        </p>
+        <ul className={forms.length ? "mt-1" : undefined} aria-label="Powers on">
+          {others.map((p) => (
+            <li key={p.key} className={`flex items-start justify-between gap-3 ${brief ? "" : "py-0.5"}`}>
+              <div className="min-w-0">
+                <p>
+                  <span className="text-mist">On: </span>
+                  {withPicks(p)}
+                </p>
+                {!brief && p.notes.length > 0 && <p className="text-xs text-mist">{p.notes.join(" ")}</p>}
+                {!brief &&
+                  (p.added ?? []).map((a) => (
+                    <p key={addedNote(a)} className="text-xs text-mist">
+                      {addedNote(a)}
+                    </p>
+                  ))}
+              </div>
+              <button
+                type="button"
+                className="min-h-9 shrink-0 text-xs text-mist underline hover:text-parchment pointer-coarse:min-h-11"
+                onClick={() => toggle(tap, p)}
+                aria-label={`Switch ${withPicks(p)} off`}
+              >
+                Off
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
-      {others
-        .flatMap((p) => p.added ?? [])
-        .map((a) => (
-          <p key={addedNote(a)} className="text-xs text-mist">
-            {addedNote(a)}
-          </p>
-        ))}
     </section>
   );
 }

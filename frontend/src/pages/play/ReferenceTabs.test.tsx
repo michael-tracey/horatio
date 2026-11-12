@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PlayReference } from "../../api/types";
 import { PoolRow, SheetTab } from "./ReferenceTabs";
 
@@ -169,5 +169,29 @@ describe("PoolRow", () => {
     expect(screen.getByText(/Against your hunted target/).textContent).toBe("Against your hunted target (+2 Accurate), Brutal");
     expect(screen.getByText("10")).toBeTruthy();
     expect(screen.getByText("Brutal: win on the larger pool: exceptional success (p. 516)")).toBeTruthy();
+  });
+
+  it("has a Throw button that takes the pool, its total and its parts to the Throws tab (#698)", () => {
+    const onThrow = vi.fn();
+    const dodge = { ...pool, key: "dodge", name: "Dodge", switch: null, damage: null, parts: [{ label: "Physical", value: 4 }, { label: "Dodge", value: 2 }], total: 6 };
+    render(
+      <ul>
+        <PoolRow pool={dodge} willpower={0} modifiers={[]} on={[]} onThrow={onThrow} />
+        <PoolRow pool={{ ...dodge, key: "initiative", name: "Initiative", parts: [{ label: "Physical", value: 4 }], total: 4 }} willpower={0} modifiers={[]} on={[]} onThrow={onThrow} />
+      </ul>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Throw Dodge" }));
+    expect(onThrow).toHaveBeenCalledWith(dodge, 6, "Physical 4 + Dodge 2");
+    // Initiative sets who acts first; it is never thrown.
+    expect(screen.queryByRole("button", { name: "Throw Initiative" })).toBeNull();
+  });
+
+  it("has no Throw button where the troupe has the Throws tab off", () => {
+    render(
+      <ul>
+        <PoolRow pool={{ ...pool, key: "dodge", name: "Dodge", switch: null, damage: null, parts: [{ label: "Physical", value: 4 }], total: 4 }} willpower={0} modifiers={[]} on={[]} />
+      </ul>,
+    );
+    expect(screen.queryByRole("button", { name: /^Throw/ })).toBeNull();
   });
 });
