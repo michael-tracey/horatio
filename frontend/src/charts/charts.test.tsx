@@ -189,6 +189,19 @@ describe("ChartFrame", () => {
     expect(within(figure).getByRole("table", { name: "Open boons" }).parentElement?.classList.contains("sr-only")).toBe(true);
   });
 
+  it("keeps its controls when a filter leaves nothing to show, so the filter can be undone", () => {
+    render(
+      <ChartFrame title="Open boons" description="By type." height={120} table={table} state="empty" empty="No boons in game time." controls={<input type="checkbox" aria-label="In-game dates" />}>
+        {() => <Bars />}
+      </ChartFrame>,
+    );
+    const figure = screen.getByRole("figure", { name: "Open boons" });
+    expect(within(figure).getByText("No boons in game time.")).toBeTruthy();
+    expect(within(figure).getByRole("checkbox", { name: "In-game dates" })).toBeTruthy();
+    // With nothing drawn there is no table to switch to.
+    expect(within(figure).queryByRole("button", { name: "Show as table" })).toBeNull();
+  });
+
   it("shows a mark's tooltip on keyboard focus, and drops it on Escape", () => {
     render(
       <ChartFrame title="Open boons" description="By type." height={120} table={table}>

@@ -1,11 +1,41 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
-import type { BondOut, BondReportOut, CharacterChoice } from "../../api/types";
-import { BOND_PAGE, groupBonds, isOpen, levelName, partyIn, PLAYER_SOURCES, reportLine, SOURCES, statusText, untold, watched, type BondSource } from "../../bonds";
+import type {
+  BondOut,
+  BondReportOut,
+  CharacterChoice,
+  KnownBondOut,
+} from "../../api/types";
+import {
+  BOND_PAGE,
+  groupBonds,
+  isOpen,
+  levelName,
+  partyIn,
+  partyKey,
+  PLAYER_SOURCES,
+  reportLine,
+  SOURCES,
+  statusText,
+  untold,
+  watched,
+  type BondSource,
+} from "../../bonds";
 import { DateInput } from "../../components/DateInput";
 import { useToast } from "../../components/Toast";
-import { Button, Card, Empty, ErrorText, Field, Input, Loading, Select, Textarea } from "../../components/ui";
+import {
+  Button,
+  Card,
+  Empty,
+  ErrorText,
+  Field,
+  Input,
+  Loading,
+  Select,
+  Textarea,
+} from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { WhoPicker } from "./WhoPicker";
@@ -27,14 +57,26 @@ export function BondsTab({ troupeId }: { troupeId: string }) {
   const [by, setBy] = useState<By>("thrall");
   const [past, setPast] = useState(false);
   const [adding, setAdding] = useState<"drink" | "enter" | null>(null);
+  // ?who=, from the web of bonds (#708): only that person's bonds.
+  const [params, setParams] = useSearchParams();
+  const who = params.get("who");
   const bonds = useQuery({
     queryKey: ["troupe-bonds", troupeId],
-    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/bonds", { params: { path: { troupe_id: troupeId } } })),
+    queryFn: () =>
+      unwrap(
+        api.GET("/api/troupes/{troupe_id}/bonds", {
+          params: { path: { troupe_id: troupeId } },
+        }),
+      ),
   });
   if (bonds.isPending) return <Loading />;
   if (bonds.error) return <ErrorText error={bonds.error} />;
-  const shown = past ? bonds.data.bonds : bonds.data.bonds.filter(watched);
-  const closed = bonds.data.bonds.length - bonds.data.bonds.filter(watched).length;
+  const theirs = who
+    ? bonds.data.bonds.filter((b) => partyKey(b.thrall) === who || partyKey(b.regnant) === who)
+    : bonds.data.bonds;
+  const named = who ? theirs.flatMap((b) => [b.thrall, b.regnant]).find((p) => partyKey(p) === who)?.name : undefined;
+  const shown = past ? theirs : theirs.filter(watched);
+  const closed = theirs.length - theirs.filter(watched).length;
   const groups = groupBonds(shown, by);
 
   return (
@@ -55,25 +97,62 @@ export function BondsTab({ troupeId }: { troupeId: string }) {
         }
       >
         <p className="mb-3 text-sm text-mist">
-          Each separate night a character drinks a vampire&apos;s blood is one drink, up to a full bond at three, which wipes away every lesser bond they have (
-          {BOND_PAGE}). The level comes from the drinks log. A thrall&apos;s player sees their own bonds; a regnant&apos;s player sees one only once it&apos;s
-          marked known to them.
+          Each separate night a character drinks a vampire&apos;s blood is one
+          drink, up to a full bond at three, which wipes away every lesser bond
+          they have ({BOND_PAGE}). The level comes from the drinks log. A
+          thrall&apos;s player sees their own bonds; a regnant&apos;s player
+          sees one only once it&apos;s marked known to them.
         </p>
-        {adding === "drink" && <NewDrinkForm troupeId={troupeId} characters={bonds.data.characters} onDone={() => setAdding(null)} />}
-        {adding === "enter" && <EnterForm troupeId={troupeId} characters={bonds.data.characters} onDone={() => setAdding(null)} />}
+        {adding === "drink" && (
+          <NewDrinkForm
+            troupeId={troupeId}
+            characters={bonds.data.characters}
+            onDone={() => setAdding(null)}
+          />
+        )}
+        {adding === "enter" && (
+          <EnterForm
+            troupeId={troupeId}
+            characters={bonds.data.characters}
+            onDone={() => setAdding(null)}
+          />
+        )}
       </Card>
-      {(bonds.data.reports ?? []).length > 0 && <WaitingReports troupeId={troupeId} reports={bonds.data.reports ?? []} />}
+      <KnownBonds troupeId={troupeId} />
+      {who && (
+        <p className="flex flex-wrap items-center gap-2 text-sm text-mist">
+          Showing only {named ?? "this person"}&apos;s bonds.
+          <Button variant="ghost" onClick={() => setParams({})}>
+            Show everyone&apos;s
+          </Button>
+        </p>
+      )}
+      {(bonds.data.reports ?? []).length > 0 && (
+        <WaitingReports
+          troupeId={troupeId}
+          reports={bonds.data.reports ?? []}
+        />
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div role="group" aria-label="List bonds" className="flex gap-1">
           {(["thrall", "regnant"] as const).map((b) => (
-            <Button key={b} variant={by === b ? "secondary" : "ghost"} aria-pressed={by === b} onClick={() => setBy(b)}>
+            <Button
+              key={b}
+              variant={by === b ? "secondary" : "ghost"}
+              aria-pressed={by === b}
+              onClick={() => setBy(b)}
+            >
               By {b}
             </Button>
           ))}
         </div>
         {closed > 0 && (
           <label className="flex items-center gap-2 text-sm text-mist">
-            <input type="checkbox" checked={past} onChange={(e) => setPast(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={past}
+              onChange={(e) => setPast(e.target.checked)}
+            />
             Show ended and broken bonds ({closed})
           </label>
         )}
@@ -82,14 +161,25 @@ export function BondsTab({ troupeId }: { troupeId: string }) {
         <Empty>No blood bonds yet.</Empty>
       ) : (
         groups.map((g) => (
-          <section key={g.name} aria-label={g.name} className="rounded-lg border border-ash bg-dusk p-3 sm:p-4">
+          <section
+            key={g.name}
+            aria-label={g.name}
+            className="rounded-lg border border-ash bg-dusk p-3 sm:p-4"
+          >
             <h3 className="mb-2 text-base text-gold">
               {g.name}
-              <span className="text-sm text-mist">{by === "thrall" ? ", bound to" : ", whose blood binds"}</span>
+              <span className="text-sm text-mist">
+                {by === "thrall" ? ", bound to" : ", whose blood binds"}
+              </span>
             </h3>
             <ul className="flex flex-col gap-3">
               {g.bonds.map((bond) => (
-                <BondRow key={bond.id} troupeId={troupeId} bond={bond} by={by} />
+                <BondRow
+                  key={bond.id}
+                  troupeId={troupeId}
+                  bond={bond}
+                  by={by}
+                />
               ))}
             </ul>
           </section>
@@ -99,27 +189,66 @@ export function BondsTab({ troupeId }: { troupeId: string }) {
   );
 }
 
-function BondRow({ troupeId, bond, by }: { troupeId: string; bond: BondOut; by: By }) {
+function BondRow({
+  troupeId,
+  bond,
+  by,
+}: {
+  troupeId: string;
+  bond: BondOut;
+  by: By;
+}) {
   const dates = useDates();
   const [doing, setDoing] = useState<"drink" | "break" | "fade" | null>(null);
   const [log, setLog] = useState(false);
   const path = { params: { path: { troupe_id: troupeId, bond_id: bond.id } } };
-  const known = useAction((on: boolean) => unwrap(api.PUT("/api/troupes/{troupe_id}/bonds/{bond_id}/known", { ...path, body: { known: on } })));
-  const clearKept = useAction(() => unwrap(api.POST("/api/troupes/{troupe_id}/bonds/{bond_id}/clear-kept", path)));
+  const known = useAction((on: boolean) =>
+    unwrap(
+      api.PUT("/api/troupes/{troupe_id}/bonds/{bond_id}/known", {
+        ...path,
+        body: { known: on },
+      }),
+    ),
+  );
+  const clearKept = useAction(() =>
+    unwrap(
+      api.POST("/api/troupes/{troupe_id}/bonds/{bond_id}/clear-kept", path),
+    ),
+  );
   const open = isOpen(bond);
   const label = `${bond.thrall.name} bound to ${bond.regnant.name}`;
   const other = by === "thrall" ? bond.regnant : bond.thrall;
   return (
-    <li aria-label={label} className="flex flex-col gap-2 border-t border-ash pt-2 text-sm first:border-t-0 first:pt-0">
+    <li
+      aria-label={label}
+      className="flex flex-col gap-2 border-t border-ash pt-2 text-sm first:border-t-0 first:pt-0"
+    >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p>
           <span className="text-parchment">{other.name}</span>
           {other.kind === "npc" && <span className="text-mist"> (NPC)</span>}
-          {other.kind === null && <span className="text-mist"> (name only)</span>}
-          <span className={open ? "text-gold" : "text-mist"}> · {levelName(bond.level)}</span>
-          {bond.status !== "active" && <span className="text-mist"> · {statusText(bond)}</span>}
-          {bond.status === "fading" && bond.fades_on && <span className="text-mist">: {bond.regnant.name} met Final Death, and it ends on {dates.day(bond.fades_on)}</span>}
-          {bond.last_drink && <span className="text-mist"> · last drink {dates.day(bond.last_drink)}</span>}
+          {other.kind === null && (
+            <span className="text-mist"> (name only)</span>
+          )}
+          <span className={open ? "text-gold" : "text-mist"}>
+            {" "}
+            · {levelName(bond.level)}
+          </span>
+          {bond.status !== "active" && (
+            <span className="text-mist"> · {statusText(bond)}</span>
+          )}
+          {bond.status === "fading" && bond.fades_on && (
+            <span className="text-mist">
+              : {bond.regnant.name} met Final Death, and it ends on{" "}
+              {dates.day(bond.fades_on)}
+            </span>
+          )}
+          {bond.last_drink && (
+            <span className="text-mist">
+              {" "}
+              · last drink {dates.day(bond.last_drink)}
+            </span>
+          )}
         </p>
         {open && doing === null && (
           <div className="flex flex-wrap gap-2">
@@ -139,18 +268,29 @@ function BondRow({ troupeId, bond, by }: { troupeId: string; bond: BondOut; by: 
       </div>
       {bond.status === "fading" && (
         <p className="text-xs text-mist">
-          {bond.thrall.name}&apos;s player sees the bond as it was until it ends and they&apos;re told it has faded, with the next downtime results (p. 296).
+          {bond.thrall.name}&apos;s player sees the bond as it was until it ends
+          and they&apos;re told it has faded, with the next downtime results (p.
+          296).
         </p>
       )}
       {untold(bond) && (
         <p className="text-xs text-gold">
-          {bond.thrall.name}&apos;s player isn&apos;t told yet: their sheet still shows the bond until the next downtime results tell them it has faded.
+          {bond.thrall.name}&apos;s player isn&apos;t told yet: their sheet
+          still shows the bond until the next downtime results tell them it has
+          faded.
         </p>
       )}
       {bond.kept_for_regnant && (
         <div className="flex flex-wrap items-center gap-2 text-xs text-gold">
-          <span>{bond.regnant.name}&apos;s player still sees this bond as it was: the regnant has no sense of the thrall&apos;s death.</span>
-          <Button variant="ghost" disabled={clearKept.isPending} onClick={() => clearKept.mutate(undefined)}>
+          <span>
+            {bond.regnant.name}&apos;s player still sees this bond as it was:
+            the regnant has no sense of the thrall&apos;s death.
+          </span>
+          <Button
+            variant="ghost"
+            disabled={clearKept.isPending}
+            onClick={() => clearKept.mutate(undefined)}
+          >
             Stop showing the regnant
           </Button>
         </div>
@@ -158,20 +298,51 @@ function BondRow({ troupeId, bond, by }: { troupeId: string; bond: BondOut; by: 
       <ErrorText error={clearKept.error} />
       {open && (
         <label className="flex items-center gap-2 text-mist">
-          <input type="checkbox" checked={bond.known_to_regnant} disabled={known.isPending} onChange={(e) => known.mutate(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={bond.known_to_regnant}
+            disabled={known.isPending}
+            onChange={(e) => known.mutate(e.target.checked)}
+          />
           Known to {bond.regnant.name}: their player sees it
         </label>
       )}
       <ErrorText error={known.error} />
-      {doing === "drink" && <DrinkForm troupeId={troupeId} bond={bond} onDone={() => setDoing(null)} />}
-      {doing === "break" && <BreakForm troupeId={troupeId} bond={bond} onDone={() => setDoing(null)} />}
-      {doing === "fade" && <FadeForm troupeId={troupeId} bond={bond} onDone={() => setDoing(null)} />}
+      {doing === "drink" && (
+        <DrinkForm
+          troupeId={troupeId}
+          bond={bond}
+          onDone={() => setDoing(null)}
+        />
+      )}
+      {doing === "break" && (
+        <BreakForm
+          troupeId={troupeId}
+          bond={bond}
+          onDone={() => setDoing(null)}
+        />
+      )}
+      {doing === "fade" && (
+        <FadeForm
+          troupeId={troupeId}
+          bond={bond}
+          onDone={() => setDoing(null)}
+        />
+      )}
       <div>
-        <button type="button" className="text-xs text-mist underline hover:text-parchment" aria-expanded={log} onClick={() => setLog(!log)}>
+        <button
+          type="button"
+          className="text-xs text-mist underline hover:text-parchment"
+          aria-expanded={log}
+          onClick={() => setLog(!log)}
+        >
           {log ? "Hide the drinks log" : `Drinks log (${bond.entries.length})`}
         </button>
         {log && (
-          <ol aria-label={`Drinks log of ${label}`} className="mt-1 flex flex-col gap-1 pl-3 text-xs">
+          <ol
+            aria-label={`Drinks log of ${label}`}
+            className="mt-1 flex flex-col gap-1 pl-3 text-xs"
+          >
             {bond.entries.map((e) => (
               <EntryRow key={e.id} troupeId={troupeId} bond={bond} entry={e} />
             ))}
@@ -192,16 +363,27 @@ function DrinkFields({
   night: string;
   source: BondSource;
   note: string;
-  set: (change: Partial<{ night: string; source: BondSource; note: string }>) => void;
+  set: (
+    change: Partial<{ night: string; source: BondSource; note: string }>,
+  ) => void;
 }) {
   return (
     <>
       <div className="flex flex-wrap gap-3">
         <Field label="Night">
-          <DateInput required value={night} onChange={(e) => set({ night: e.target.value })} className="w-44" />
+          <DateInput
+            required
+            value={night}
+            onChange={(e) => set({ night: e.target.value })}
+            className="w-44"
+          />
         </Field>
         <Field label="Where it was told">
-          <Select value={source} onChange={(e) => set({ source: e.target.value as BondSource })} className="w-44">
+          <Select
+            value={source}
+            onChange={(e) => set({ source: e.target.value as BondSource })}
+            className="w-44"
+          >
             {SOURCES.map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label}
@@ -211,15 +393,26 @@ function DrinkFields({
         </Field>
       </div>
       <Field label="Note (optional)">
-        <Input maxLength={2000} value={note} onChange={(e) => set({ note: e.target.value })} />
+        <Input
+          maxLength={2000}
+          value={note}
+          onChange={(e) => set({ note: e.target.value })}
+        />
       </Field>
     </>
   );
 }
 
 function useDrink(dates: ReturnType<typeof useDates>) {
-  const [drink, setDrink] = useState<{ night: string; source: BondSource; note: string }>({ night: today(dates), source: "game", note: "" });
-  return [drink, (change: Partial<typeof drink>) => setDrink({ ...drink, ...change })] as const;
+  const [drink, setDrink] = useState<{
+    night: string;
+    source: BondSource;
+    note: string;
+  }>({ night: today(dates), source: "game", note: "" });
+  return [
+    drink,
+    (change: Partial<typeof drink>) => setDrink({ ...drink, ...change }),
+  ] as const;
 }
 
 /** The thrall and the regnant, each a character of the troupe's or a name only. */
@@ -239,16 +432,34 @@ function Sides({
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <Field label="Thrall" hint="Who drank: a character, or a name only.">
-        <WhoPicker characters={characters} who={thrall.who} name={thrall.name} onChange={setThrall} />
+        <WhoPicker
+          characters={characters}
+          who={thrall.who}
+          name={thrall.name}
+          onChange={setThrall}
+        />
       </Field>
       <Field label="Regnant" hint="The vampire whose blood it was.">
-        <WhoPicker characters={characters} who={regnant.who} name={regnant.name} onChange={setRegnant} />
+        <WhoPicker
+          characters={characters}
+          who={regnant.who}
+          name={regnant.name}
+          onChange={setRegnant}
+        />
       </Field>
     </div>
   );
 }
 
-function NewDrinkForm({ troupeId, characters, onDone }: { troupeId: string; characters: CharacterChoice[]; onDone: () => void }) {
+function NewDrinkForm({
+  troupeId,
+  characters,
+  onDone,
+}: {
+  troupeId: string;
+  characters: CharacterChoice[];
+  onDone: () => void;
+}) {
   const dates = useDates();
   const toast = useToast();
   const [thrall, setThrall] = useState({ who: "", name: "" });
@@ -258,8 +469,15 @@ function NewDrinkForm({ troupeId, characters, onDone }: { troupeId: string; char
   const r = partyIn(regnant.who, regnant.name);
   const save = useAction(async () => {
     if (!t || !r) return;
-    const bond = await unwrap(api.POST("/api/troupes/{troupe_id}/bonds/drinks", { params: { path: { troupe_id: troupeId } }, body: { thrall: t, regnant: r, ...drink } }));
-    toast({ message: `${bond.thrall.name} to ${bond.regnant.name}: ${levelName(bond.level).toLowerCase()}.` });
+    const bond = await unwrap(
+      api.POST("/api/troupes/{troupe_id}/bonds/drinks", {
+        params: { path: { troupe_id: troupeId } },
+        body: { thrall: t, regnant: r, ...drink },
+      }),
+    );
+    toast({
+      message: `${bond.thrall.name} to ${bond.regnant.name}: ${levelName(bond.level).toLowerCase()}.`,
+    });
     onDone();
   });
   return (
@@ -281,7 +499,10 @@ function NewDrinkForm({ troupeId, characters, onDone }: { troupeId: string; char
       <DrinkFields {...drink} set={setDrink} />
       <ErrorText error={save.error} />
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={save.isPending || !t || !r || !drink.night}>
+        <Button
+          type="submit"
+          disabled={save.isPending || !t || !r || !drink.night}
+        >
           Record the drink
         </Button>
         <Button type="button" variant="ghost" onClick={onDone}>
@@ -292,7 +513,15 @@ function NewDrinkForm({ troupeId, characters, onDone }: { troupeId: string; char
   );
 }
 
-function EnterForm({ troupeId, characters, onDone }: { troupeId: string; characters: CharacterChoice[]; onDone: () => void }) {
+function EnterForm({
+  troupeId,
+  characters,
+  onDone,
+}: {
+  troupeId: string;
+  characters: CharacterChoice[];
+  onDone: () => void;
+}) {
   const dates = useDates();
   const [thrall, setThrall] = useState({ who: "", name: "" });
   const [regnant, setRegnant] = useState({ who: "", name: "" });
@@ -303,7 +532,12 @@ function EnterForm({ troupeId, characters, onDone }: { troupeId: string; charact
   const r = partyIn(regnant.who, regnant.name);
   const save = useAction(async () => {
     if (!t || !r) return;
-    await unwrap(api.POST("/api/troupes/{troupe_id}/bonds", { params: { path: { troupe_id: troupeId } }, body: { thrall: t, regnant: r, level, night, reason } }));
+    await unwrap(
+      api.POST("/api/troupes/{troupe_id}/bonds", {
+        params: { path: { troupe_id: troupeId } },
+        body: { thrall: t, regnant: r, level, night, reason },
+      }),
+    );
     onDone();
   });
   return (
@@ -315,7 +549,10 @@ function EnterForm({ troupeId, characters, onDone }: { troupeId: string; charact
         save.mutate(undefined);
       }}
     >
-      <p className="text-xs text-mist">A bond that already stands, such as one from before Horatio: it starts at its level, and later drinks add to it.</p>
+      <p className="text-xs text-mist">
+        A bond that already stands, such as one from before Horatio: it starts
+        at its level, and later drinks add to it.
+      </p>
       <Sides
         characters={characters}
         thrall={thrall}
@@ -325,7 +562,11 @@ function EnterForm({ troupeId, characters, onDone }: { troupeId: string; charact
       />
       <div className="flex flex-wrap gap-3">
         <Field label="Level">
-          <Select value={level} onChange={(e) => setLevel(Number(e.target.value))} className="w-44">
+          <Select
+            value={level}
+            onChange={(e) => setLevel(Number(e.target.value))}
+            className="w-44"
+          >
             {[1, 2, 3].map((l) => (
               <option key={l} value={l}>
                 {levelName(l)}
@@ -334,15 +575,28 @@ function EnterForm({ troupeId, characters, onDone }: { troupeId: string; charact
           </Select>
         </Field>
         <Field label="Since" hint="The night it stood at this level.">
-          <DateInput required value={night} onChange={(e) => setNight(e.target.value)} className="w-44" />
+          <DateInput
+            required
+            value={night}
+            onChange={(e) => setNight(e.target.value)}
+            className="w-44"
+          />
         </Field>
       </div>
       <Field label="Reason">
-        <Textarea rows={2} maxLength={2000} value={reason} onChange={(e) => setReason(e.target.value)} />
+        <Textarea
+          rows={2}
+          maxLength={2000}
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+        />
       </Field>
       <ErrorText error={save.error} />
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={save.isPending || !t || !r || !night || !reason.trim()}>
+        <Button
+          type="submit"
+          disabled={save.isPending || !t || !r || !night || !reason.trim()}
+        >
           Enter the bond
         </Button>
         <Button type="button" variant="ghost" onClick={onDone}>
@@ -353,13 +607,28 @@ function EnterForm({ troupeId, characters, onDone }: { troupeId: string; charact
   );
 }
 
-function DrinkForm({ troupeId, bond, onDone }: { troupeId: string; bond: BondOut; onDone: () => void }) {
+function DrinkForm({
+  troupeId,
+  bond,
+  onDone,
+}: {
+  troupeId: string;
+  bond: BondOut;
+  onDone: () => void;
+}) {
   const dates = useDates();
   const toast = useToast();
   const [drink, setDrink] = useDrink(dates);
   const save = useAction(async () => {
-    const after = await unwrap(api.POST("/api/troupes/{troupe_id}/bonds/{bond_id}/drinks", { params: { path: { troupe_id: troupeId, bond_id: bond.id } }, body: drink }));
-    toast({ message: `${after.thrall.name} to ${after.regnant.name}: ${levelName(after.level).toLowerCase()}.` });
+    const after = await unwrap(
+      api.POST("/api/troupes/{troupe_id}/bonds/{bond_id}/drinks", {
+        params: { path: { troupe_id: troupeId, bond_id: bond.id } },
+        body: drink,
+      }),
+    );
+    toast({
+      message: `${after.thrall.name} to ${after.regnant.name}: ${levelName(after.level).toLowerCase()}.`,
+    });
     onDone();
   });
   return (
@@ -385,10 +654,23 @@ function DrinkForm({ troupeId, bond, onDone }: { troupeId: string; bond: BondOut
   );
 }
 
-function BreakForm({ troupeId, bond, onDone }: { troupeId: string; bond: BondOut; onDone: () => void }) {
+function BreakForm({
+  troupeId,
+  bond,
+  onDone,
+}: {
+  troupeId: string;
+  bond: BondOut;
+  onDone: () => void;
+}) {
   const [reason, setReason] = useState("");
   const save = useAction(async () => {
-    await unwrap(api.POST("/api/troupes/{troupe_id}/bonds/{bond_id}/break", { params: { path: { troupe_id: troupeId, bond_id: bond.id } }, body: { reason } }));
+    await unwrap(
+      api.POST("/api/troupes/{troupe_id}/bonds/{bond_id}/break", {
+        params: { path: { troupe_id: troupeId, bond_id: bond.id } },
+        body: { reason },
+      }),
+    );
     onDone();
   });
   return (
@@ -400,12 +682,24 @@ function BreakForm({ troupeId, bond, onDone }: { troupeId: string; bond: BondOut
         save.mutate(undefined);
       }}
     >
-      <Field label="Reason" hint="Breaking a bond is hard, but it can be done (p. 296).">
-        <Textarea rows={2} maxLength={2000} value={reason} onChange={(e) => setReason(e.target.value)} />
+      <Field
+        label="Reason"
+        hint="Breaking a bond is hard, but it can be done (p. 296)."
+      >
+        <Textarea
+          rows={2}
+          maxLength={2000}
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+        />
       </Field>
       <ErrorText error={save.error} />
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" variant="danger" disabled={save.isPending || !reason.trim()}>
+        <Button
+          type="submit"
+          variant="danger"
+          disabled={save.isPending || !reason.trim()}
+        >
           Break the bond
         </Button>
         <Button type="button" variant="ghost" onClick={onDone}>
@@ -417,12 +711,25 @@ function BreakForm({ troupeId, bond, onDone }: { troupeId: string; bond: BondOut
 }
 
 /** Move the day a fading bond ends, with a reason: today ends it now, as faded. */
-function FadeForm({ troupeId, bond, onDone }: { troupeId: string; bond: BondOut; onDone: () => void }) {
+function FadeForm({
+  troupeId,
+  bond,
+  onDone,
+}: {
+  troupeId: string;
+  bond: BondOut;
+  onDone: () => void;
+}) {
   const dates = useDates();
   const [ends, setEnds] = useState(bond.fades_on ?? today(dates));
   const [reason, setReason] = useState("");
   const save = useAction(async () => {
-    await unwrap(api.PUT("/api/troupes/{troupe_id}/bonds/{bond_id}/fade", { params: { path: { troupe_id: troupeId, bond_id: bond.id } }, body: { fades_on: ends, reason } }));
+    await unwrap(
+      api.PUT("/api/troupes/{troupe_id}/bonds/{bond_id}/fade", {
+        params: { path: { troupe_id: troupeId, bond_id: bond.id } },
+        body: { fades_on: ends, reason },
+      }),
+    );
     onDone();
   });
   return (
@@ -436,18 +743,35 @@ function FadeForm({ troupeId, bond, onDone }: { troupeId: string; bond: BondOut;
     >
       <div className="flex flex-wrap gap-3">
         <Field label="It ends on" hint="Today or before ends it now, as faded.">
-          <DateInput required value={ends} onChange={(e) => setEnds(e.target.value)} className="w-44" />
+          <DateInput
+            required
+            value={ends}
+            onChange={(e) => setEnds(e.target.value)}
+            className="w-44"
+          />
         </Field>
-        <Button type="button" variant="ghost" className="self-end" onClick={() => setEnds(today(dates))}>
+        <Button
+          type="button"
+          variant="ghost"
+          className="self-end"
+          onClick={() => setEnds(today(dates))}
+        >
           Today
         </Button>
       </div>
       <Field label="Reason">
-        <Input maxLength={2000} value={reason} onChange={(e) => setReason(e.target.value)} />
+        <Input
+          maxLength={2000}
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+        />
       </Field>
       <ErrorText error={save.error} />
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={save.isPending || !ends || !reason.trim()}>
+        <Button
+          type="submit"
+          disabled={save.isPending || !ends || !reason.trim()}
+        >
           Save the fade
         </Button>
         <Button type="button" variant="ghost" onClick={onDone}>
@@ -461,33 +785,66 @@ function FadeForm({ troupeId, bond, onDone }: { troupeId: string; bond: BondOut;
 type Entry = BondOut["entries"][number];
 
 /** A line of a bond's log, which staff can change (its night and note) or take out with a reason. */
-function EntryRow({ troupeId, bond, entry: e }: { troupeId: string; bond: BondOut; entry: Entry }) {
+function EntryRow({
+  troupeId,
+  bond,
+  entry: e,
+}: {
+  troupeId: string;
+  bond: BondOut;
+  entry: Entry;
+}) {
   const dates = useDates();
   const [doing, setDoing] = useState<"change" | "remove" | null>(null);
   const [night, setNight] = useState(e.night);
   const [note, setNote] = useState(e.note);
   const [reason, setReason] = useState("");
-  const path = { params: { path: { troupe_id: troupeId, bond_id: bond.id, entry_id: e.id } } };
+  const path = {
+    params: { path: { troupe_id: troupeId, bond_id: bond.id, entry_id: e.id } },
+  };
   const change = useAction(async () => {
-    await unwrap(api.PATCH("/api/troupes/{troupe_id}/bonds/{bond_id}/entries/{entry_id}", { ...path, body: { night, note } }));
+    await unwrap(
+      api.PATCH("/api/troupes/{troupe_id}/bonds/{bond_id}/entries/{entry_id}", {
+        ...path,
+        body: { night, note },
+      }),
+    );
     setDoing(null);
   });
   const remove = useAction(async () => {
-    await unwrap(api.POST("/api/troupes/{troupe_id}/bonds/{bond_id}/entries/{entry_id}/remove", { ...path, body: { reason } }));
+    await unwrap(
+      api.POST(
+        "/api/troupes/{troupe_id}/bonds/{bond_id}/entries/{entry_id}/remove",
+        { ...path, body: { reason } },
+      ),
+    );
     setDoing(null);
   });
-  const what = e.kind === "entered" ? `entered at ${levelName(e.level ?? 1).toLowerCase()}` : `a drink, ${SOURCES.find((s) => s.value === e.source)?.label.toLowerCase()}`;
+  const what =
+    e.kind === "entered"
+      ? `entered at ${levelName(e.level ?? 1).toLowerCase()}`
+      : `a drink, ${SOURCES.find((s) => s.value === e.source)?.label.toLowerCase()}`;
   return (
     <li aria-label={`${dates.day(e.night)}: ${what}`}>
       {dates.day(e.night)}: {what}
       {e.note && <span className="text-mist"> · {e.note}</span>}
-      {e.recorded_by && <span className="text-mist"> · by {e.recorded_by}</span>}
+      {e.recorded_by && (
+        <span className="text-mist"> · by {e.recorded_by}</span>
+      )}
       {doing === null && (
         <span className="ml-2 inline-flex gap-2">
-          <button type="button" className="text-mist underline hover:text-parchment" onClick={() => setDoing("change")}>
+          <button
+            type="button"
+            className="text-mist underline hover:text-parchment"
+            onClick={() => setDoing("change")}
+          >
             Change
           </button>
-          <button type="button" className="text-mist underline hover:text-parchment" onClick={() => setDoing("remove")}>
+          <button
+            type="button"
+            className="text-mist underline hover:text-parchment"
+            onClick={() => setDoing("remove")}
+          >
             Take out
           </button>
         </span>
@@ -503,10 +860,19 @@ function EntryRow({ troupeId, bond, entry: e }: { troupeId: string; bond: BondOu
         >
           <div className="flex flex-wrap gap-3">
             <Field label="Night">
-              <DateInput required value={night} onChange={(ev) => setNight(ev.target.value)} className="w-44" />
+              <DateInput
+                required
+                value={night}
+                onChange={(ev) => setNight(ev.target.value)}
+                className="w-44"
+              />
             </Field>
             <Field label={e.kind === "entered" ? "Reason" : "Note"}>
-              <Input maxLength={2000} value={note} onChange={(ev) => setNote(ev.target.value)} />
+              <Input
+                maxLength={2000}
+                value={note}
+                onChange={(ev) => setNote(ev.target.value)}
+              />
             </Field>
           </div>
           <ErrorText error={change.error} />
@@ -514,7 +880,11 @@ function EntryRow({ troupeId, bond, entry: e }: { troupeId: string; bond: BondOu
             <Button type="submit" disabled={change.isPending || !night}>
               Save
             </Button>
-            <Button type="button" variant="ghost" onClick={() => setDoing(null)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setDoing(null)}
+            >
               Cancel
             </Button>
           </div>
@@ -529,15 +899,34 @@ function EntryRow({ troupeId, bond, entry: e }: { troupeId: string; bond: BondOu
             remove.mutate(undefined);
           }}
         >
-          <Field label="Reason" hint={bond.entries.length === 1 ? "It's the only line in the log, so the bond goes too." : "The level is worked out again."}>
-            <Input maxLength={2000} value={reason} onChange={(ev) => setReason(ev.target.value)} />
+          <Field
+            label="Reason"
+            hint={
+              bond.entries.length === 1
+                ? "It's the only line in the log, so the bond goes too."
+                : "The level is worked out again."
+            }
+          >
+            <Input
+              maxLength={2000}
+              value={reason}
+              onChange={(ev) => setReason(ev.target.value)}
+            />
           </Field>
           <ErrorText error={remove.error} />
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" variant="danger" disabled={remove.isPending || !reason.trim()}>
+            <Button
+              type="submit"
+              variant="danger"
+              disabled={remove.isPending || !reason.trim()}
+            >
               Take it out
             </Button>
-            <Button type="button" variant="ghost" onClick={() => setDoing(null)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setDoing(null)}
+            >
               Cancel
             </Button>
           </div>
@@ -551,7 +940,91 @@ function EntryRow({ troupeId, bond, entry: e }: { troupeId: string; bond: BondOu
  * Drinks players reported that are still waiting: on staff (also in Approvals) or on
  * a thrall's player. Staff can decide either kind here.
  */
-function WaitingReports({ troupeId, reports }: { troupeId: string; reports: BondReportOut[] }) {
+const KNOWN_WHY: Record<KnownBondOut["why"], string> = {
+  embrace: "from the Embrace",
+  domitor: "their domitor",
+  retainer: "a ghoul Retainer",
+};
+
+/**
+ * Bonds Horatio can work out but doesn't keep yet (#663): childer to the sires who
+ * Embraced them, ghouls to their domitors, and ghoul Retainers to their vampires, from
+ * before the troupe tracked bonds. Staff look the list over and add them all at once;
+ * once added there's nothing more to show. Bonds made from now on are added as they
+ * happen.
+ */
+function KnownBonds({ troupeId }: { troupeId: string }) {
+  const dates = useDates();
+  const toast = useToast();
+  const known = useQuery({
+    queryKey: ["troupe-bonds", troupeId, "known"],
+    queryFn: () =>
+      unwrap(
+        api.GET("/api/troupes/{troupe_id}/bonds/known", {
+          params: { path: { troupe_id: troupeId } },
+        }),
+      ),
+  });
+  const fill = useAction(
+    () =>
+      unwrap(
+        api.POST("/api/troupes/{troupe_id}/bonds/known", {
+          params: { path: { troupe_id: troupeId } },
+        }),
+      ),
+    [["troupe-bonds", troupeId]],
+  );
+  if (!known.data || known.data.length === 0) return null;
+  const count = known.data.length;
+  return (
+    <Card title="Fill in known bonds">
+      <p className="mb-2 text-sm text-mist">
+        Horatio knows of {count === 1 ? "a bond" : `${count} bonds`} from before
+        the troupe tracked them: every childe has a one-drink bond to their sire
+        ({BOND_PAGE}), and a ghoul, a ghoul Retainer too, is fully bound to the
+        vampire they serve (MET: VTM p. 296). Add {count === 1 ? "it" : "them"}{" "}
+        to the bonds here?
+      </p>
+      <ul aria-label="Known bonds" className="mb-3 flex flex-col gap-1 text-sm">
+        {known.data.map((k) => (
+          <li
+            key={`${k.why}-${k.thrall.character_id ?? k.thrall.name}-${k.regnant.character_id ?? k.regnant.name}`}
+          >
+            {k.thrall.name} to {k.regnant.name}, {levelName(k.level)} from{" "}
+            {dates.day(k.night)}{" "}
+            <span className="text-mist">({KNOWN_WHY[k.why]})</span>
+          </li>
+        ))}
+      </ul>
+      <Button
+        variant="secondary"
+        disabled={fill.isPending}
+        onClick={() =>
+          fill.mutate(undefined, {
+            onSuccess: (done) =>
+              toast({
+                message:
+                  done.added.length === 1
+                    ? "Added 1 bond."
+                    : `Added ${done.added.length} bonds.`,
+              }),
+          })
+        }
+      >
+        Add {count === 1 ? "this bond" : `these ${count} bonds`}
+      </Button>
+      <ErrorText error={fill.error} />
+    </Card>
+  );
+}
+
+function WaitingReports({
+  troupeId,
+  reports,
+}: {
+  troupeId: string;
+  reports: BondReportOut[];
+}) {
   return (
     <Card title="Drinks waiting">
       <ul aria-label="Drinks waiting" className="flex flex-col gap-3 text-sm">
@@ -563,7 +1036,13 @@ function WaitingReports({ troupeId, reports }: { troupeId: string; reports: Bond
   );
 }
 
-function WaitingReport({ troupeId, report: r }: { troupeId: string; report: BondReportOut }) {
+function WaitingReport({
+  troupeId,
+  report: r,
+}: {
+  troupeId: string;
+  report: BondReportOut;
+}) {
   const dates = useDates();
   const [declining, setDeclining] = useState(false);
   const [reason, setReason] = useState("");
@@ -578,22 +1057,36 @@ function WaitingReport({ troupeId, report: r }: { troupeId: string; report: Bond
   const line = reportLine(r, dates.day(r.night));
   const reporter = r.reported_as === "thrall" ? r.thrall.name : r.regnant.name;
   return (
-    <li aria-label={line} className="flex flex-col gap-1 border-t border-ash pt-2 first:border-t-0 first:pt-0">
+    <li
+      aria-label={line}
+      className="flex flex-col gap-1 border-t border-ash pt-2 first:border-t-0 first:pt-0"
+    >
       <span>
-        {line}, {PLAYER_SOURCES.find((s) => s.value === r.source)?.label.toLowerCase()}
+        {line},{" "}
+        {PLAYER_SOURCES.find((s) => s.value === r.source)?.label.toLowerCase()}
         {r.note && <span className="text-mist"> · {r.note}</span>}
       </span>
       <span className="text-xs text-mist">
         Reported for {reporter}
         {r.reported_by && ` by ${r.reported_by}`} ·{" "}
-        {r.waiting_on === "staff" ? "waiting for staff (also in Approvals)" : `waiting for ${r.thrall.name}'s player to confirm`}
+        {r.waiting_on === "staff"
+          ? "waiting for staff (also in Approvals)"
+          : `waiting for ${r.thrall.name}'s player to confirm`}
       </span>
       {!declining ? (
         <span className="flex flex-wrap gap-2">
-          <Button variant="secondary" disabled={decide.isPending} onClick={() => decide.mutate(true)}>
+          <Button
+            variant="secondary"
+            disabled={decide.isPending}
+            onClick={() => decide.mutate(true)}
+          >
             Approve
           </Button>
-          <Button variant="ghost" disabled={decide.isPending} onClick={() => setDeclining(true)}>
+          <Button
+            variant="ghost"
+            disabled={decide.isPending}
+            onClick={() => setDeclining(true)}
+          >
             Decline
           </Button>
         </span>
@@ -607,13 +1100,21 @@ function WaitingReport({ troupeId, report: r }: { troupeId: string; report: Bond
           }}
         >
           <Field label="Why" hint="The player who reported it sees it.">
-            <Input maxLength={2000} value={reason} onChange={(ev) => setReason(ev.target.value)} />
+            <Input
+              maxLength={2000}
+              value={reason}
+              onChange={(ev) => setReason(ev.target.value)}
+            />
           </Field>
           <span className="flex flex-wrap gap-2">
             <Button type="submit" variant="danger" disabled={decide.isPending}>
               Decline it
             </Button>
-            <Button type="button" variant="ghost" onClick={() => setDeclining(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setDeclining(false)}
+            >
               Cancel
             </Button>
           </span>

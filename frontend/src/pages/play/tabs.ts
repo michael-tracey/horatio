@@ -16,6 +16,8 @@ export const TABS = [
   { key: "status", label: "Status" },
   { key: "equipment", label: "Equipment" },
   { key: "throws", label: "Throws" },
+  // Only while the troupe keeps a boon ledger (#686).
+  { key: "boons", label: "Boons" },
 ] as const satisfies readonly { key: Tab; label: string }[];
 
 // Every tab the server knows is in TABS: one missing here fails the typecheck.
@@ -27,9 +29,14 @@ export function tabsOn(off: readonly string[]): Tab[] {
   return TABS.map((t) => t.key).filter((key) => !off.includes(key));
 }
 
+/** The tabs a troupe's players see: those it has on, and Boons only while it keeps a boon ledger. */
+export function troupeTabs(troupe: Pick<TroupeOut, "play_tabs_off"> & { boons?: boolean }): Tab[] {
+  return tabsOn(troupe.play_tabs_off).filter((key) => key !== "boons" || !!troupe.boons);
+}
+
 /** Whether a troupe uses the Play View: any of its tabs is on. */
-export function usesPlayView(troupe: Pick<TroupeOut, "play_tabs_off">): boolean {
-  return tabsOn(troupe.play_tabs_off).length > 0;
+export function usesPlayView(troupe: Pick<TroupeOut, "play_tabs_off"> & { boons?: boolean }): boolean {
+  return troupeTabs(troupe).length > 0;
 }
 
 /** The tabs a character's Play View shows: those it has, and Status only with sect status. */
@@ -54,7 +61,7 @@ export function tabNames(keys: readonly Tab[]): string {
  * person's troupes has on (all of them with no troupe), and for each choice a troupe
  * has switched off, which troupes did.
  */
-export function openingChoices<T extends Tab>(choices: readonly T[], troupes: readonly Pick<TroupeOut, "name" | "play_tabs_off">[]): { offered: T[]; off: { tab: T; troupes: string[] }[] } {
+export function openingChoices<T extends Tab>(choices: readonly T[], troupes: readonly (Pick<TroupeOut, "name" | "play_tabs_off"> & { boons?: boolean })[]): { offered: T[]; off: { tab: T; troupes: string[] }[] } {
   const using = troupes.filter((t) => usesPlayView(t));
   const offered = choices.filter((c) => using.length === 0 || using.some((t) => !t.play_tabs_off.includes(c)));
   const off = choices.map((tab) => ({ tab, troupes: using.filter((t) => t.play_tabs_off.includes(tab)).map((t) => t.name) })).filter((o) => o.troupes.length > 0);

@@ -43,7 +43,7 @@ from typing import Literal, get_args
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
-from horatio import audit, notifications
+from horatio import audit, notifications, title_history
 from horatio.models import (
     Character,
     CharacterTitle,
@@ -286,6 +286,7 @@ def remove_title(db: Session, staff: User, troupe: Troupe, name: str) -> None:
             CharacterTitle.troupe_id == troupe.id, CharacterTitle.name == name
         )
     )
+    title_history.ended(db, "removed", troupe_id=troupe.id, names=[name])
     db.delete(found)
     db.flush()
     audit.record(db, staff, "title.removed_from_troupe", troupe_id=troupe.id, title=name)
@@ -483,8 +484,12 @@ def set_titles(
         audit.record(
             db, staff, "title.taken", troupe_id=troupe.id, character_id=character.id, title=name
         )
+        title_history.ended(
+            db, "taken", troupe_id=troupe.id, character_id=character.id, names=[name]
+        )
     for name in after - before:
         db.add(CharacterTitle(troupe_id=troupe.id, character_id=character.id, name=name))
+        title_history.began(db, troupe.id, character, name, "given")
         audit.record(
             db, staff, "title.given", troupe_id=troupe.id, character_id=character.id, title=name
         )
@@ -657,6 +662,7 @@ def choose(
     was = active_title(db, troupe.id, character.id)
     db.add(CharacterTitle(troupe_id=troupe.id, character_id=character.id, name=name))
     db.flush()
+    title_history.began(db, troupe.id, character, name, "chosen" if acting == "player" else "given")
     becomes = active or not before
     if becomes:
         make_active(db, troupe.id, character.id, name)
@@ -741,6 +747,13 @@ def give_up(db: Session, user: User, character: Character, name: str) -> None:
     was_active = row.active
     db.delete(row)
     db.flush()
+    title_history.ended(
+        db,
+        "given_up" if acting == "player" else "taken",
+        troupe_id=troupe.id,
+        character_id=character.id,
+        names=[name],
+    )
     left = held(db, troupe.id, character.id)
     if was_active:
         what = "it was active; no title is active now" if left else "it was active"
@@ -793,7 +806,7 @@ def give_up_on_retiring(db: Session, user: User, character: Character) -> None:
         troupe = db.get_one(Troupe, troupe_id)
         order = court_order(db, troupe_id)
         names.sort(key=lambda n: court_key(order, n))
-        drop_all(db, troupe_id, character.id)
+        drop_all(db, troupe_id, character.id, how="retired")
         audit.record(
             db,
             user,
@@ -813,10 +826,11 @@ def give_up_on_retiring(db: Session, user: User, character: Character) -> None:
     db.flush()
 
 
-def drop_all(db: Session, troupe_id: uuid.UUID, character_id: uuid.UUID) -> None:
-    """A character leaving a troupe leaves its titles there."""
+def drop_all(db: Session, troupe_id: uuid.UUID, character_id: uuid.UUID, how: str = "left") -> None:
+    """A character leaving a troupe leaves its titles there; so does one retiring."""
     db.execute(
         delete(CharacterTitle).where(
             CharacterTitle.troupe_id == troupe_id, CharacterTitle.character_id == character_id
         )
     )
+    title_history.ended(db, how, troupe_id=troupe_id, character_id=character_id)

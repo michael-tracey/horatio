@@ -57,7 +57,8 @@ export function TableView({ table, caption, className }: { table: ChartTable; ca
  * tall, axes included, so the card never scrolls inside itself.
  *
  * While loading for the first time it shows the loader; with nothing to show,
- * `empty`. While `refreshing`, the last drawing stays, faded, rather than
+ * `empty`, keeping its `controls`, so a filter that empties the chart can be undone.
+ * While `refreshing`, the last drawing stays, faded, rather than
  * jumping. `children` draws the marks for the measured size.
  */
 export function ChartFrame({
@@ -101,12 +102,14 @@ export function ChartFrame({
             {description}
           </p>
         </div>
-        {ready && (
+        {(ready || state === "empty") && (
           <div className="flex flex-wrap items-center gap-2">
-            {!asTable && controls}
-            <button type="button" aria-pressed={asTable} onClick={() => setAsTable((t) => !t)} className="min-h-8 text-sm text-mist underline hover:text-parchment">
-              {asTable ? "Show as chart" : "Show as table"}
-            </button>
+            {(!asTable || !ready) && controls}
+            {ready && (
+              <button type="button" aria-pressed={asTable} onClick={() => setAsTable((t) => !t)} className="min-h-8 text-sm text-mist underline hover:text-parchment">
+                {asTable ? "Show as chart" : "Show as table"}
+              </button>
+            )}
           </div>
         )}
       </header>

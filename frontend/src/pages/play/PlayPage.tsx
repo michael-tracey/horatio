@@ -26,8 +26,10 @@ import { PlayBondReports } from "../character/BondReports";
 import { RetainerPools } from "./RetainerPools";
 import { StatusTab } from "./Status";
 import { TeachingAsks } from "./Teaching";
+import { BoonsTab } from "./Boons";
 import { ThrowsTab } from "./Throws";
 import { useChallenge } from "./Challenge";
+import { useChosenThrowImages } from "./chosenThrows";
 import { load } from "./challenge";
 import { DRANK, incapacitated, influenceStanding, latestUndoable, tapsToast, type Damage, type Shown, type ShownEntry, type Tap } from "./tracker";
 import { TrackerStrip } from "./TrackerStrip";
@@ -58,8 +60,8 @@ const UNNOTED = new Set(["blood", "willpower", "health"]);
  * the Sheet to look things up in; the Tracker, with blood, Willpower, health,
  * Morality and Beast traits as boxes with big buttons to tap, the character's
  * limited uses and the game's log; and Pools, its test pools and powers; with
- * Status for a character with sect status, Equipment, and Throws for rock, paper,
- * scissors. On every tab but the Tracker, a strip under the tabs shows Blood,
+ * Status for a character with sect status, Equipment, Throws for rock, paper,
+ * scissors, and Boons while its troupe keeps a boon ledger. On every tab but the Tracker, a strip under the tabs shows Blood,
  * Willpower and health, with "−" to spend, and the Pools tab's powers have Use
  * buttons. Each tap says what it did in a toast with Undo, and Undo for the last
  * tap is in the header on every tab. Taps are kept on the phone when there is no signal and sent when it
@@ -104,6 +106,8 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
   const [feeding, setFeeding] = useState(false);
   // A pool thrown from the Pools tab, kept for this browser tab while the tabs switch (#698).
   const challenging = useChallenge();
+  // The pictures the person chose in Settings (#671), kept with the Play View for no signal.
+  const throwImages = useChosenThrowImages();
   const choose = (next: Tab) =>
     setParams(
       (p) => {
@@ -129,8 +133,8 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
   const undoButton = <UndoLast last={shown ? latestUndoable(shown.log) : undefined} undo={undo} />;
 
   // Throws needs nothing from the server, so it works before the sheet comes, or with none kept on the phone.
-  if (view.isPending) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}>{tab === "throws" ? <ThrowsTab challenging={challenging} /> : <Loading />}</PlayShell>;
-  if (!shown) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}>{tab === "throws" ? <ThrowsTab challenging={challenging} /> : <ErrorText error={view.error} />}</PlayShell>;
+  if (view.isPending) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}>{tab === "throws" ? <ThrowsTab images={throwImages} challenging={challenging} /> : <Loading />}</PlayShell>;
+  if (!shown) return <PlayShell characterId={characterId} scene={back} sync={sync} awake={awake} undo={undoButton} tabs={tabs}>{tab === "throws" ? <ThrowsTab images={throwImages} challenging={challenging} /> : <ErrorText error={view.error} />}</PlayShell>;
 
   const record: RecordTap = (change) => {
     // Influence always asks for the spend's details, for the troupe's influence log.
@@ -184,11 +188,13 @@ function SheetedPlay({ characterId, play }: { characterId: string; play: Play })
       {tab === "equipment" && <EquipmentTab characterId={characterId} view={shown} tap={tap} />}
       {tab === "throws" && (
         <ThrowsTab
+          images={throwImages}
           challenging={challenging}
           willpower={shown.willpower.value}
           spendWillpower={() => tap({ kind: "change", tracker: "willpower", amount: -1, damage: null })}
         />
       )}
+      {tab === "boons" && <BoonsTab characterId={characterId} name={shown.character_name} online={sync.online} />}
       {tab === "tracker" && (
         <>
           <TeachingAsks characterId={characterId} />

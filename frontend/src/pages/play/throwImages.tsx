@@ -119,3 +119,28 @@ export const HORATIO_IMAGES: ThrowImages = {
     return <Drawn />;
   },
 };
+
+// --- A troupe's own (#670) ----------------------------------------------------------
+
+/** Where a troupe's three pictures are, as the API gives them: add "/512.webp" or "/128.webp". */
+export type TroupeThrowSet = Record<Throw, string>;
+
+/**
+ * A troupe's uploaded set, as the tab shows it: each picture whole on its square
+ * (horatio.pictures keeps it so), never recoloured, so it looks as the troupe made it.
+ */
+export function troupeImages(name: string, set: TroupeThrowSet): ThrowImages {
+  return pictureImages(name, { rock: `${set.rock}/512.webp`, paper: `${set.paper}/512.webp`, scissors: `${set.scissors}/512.webp` });
+}
+
+/**
+ * A troupe's set from each picture's own source: its address, or the picture itself as
+ * kept on the device for the Throws tab offline (#671, play/chosenThrows.ts).
+ */
+export function pictureImages(name: string, sources: Record<Throw, string>): ThrowImages {
+  return {
+    name,
+    picture: (which) => <img src={sources[which]} alt="" draggable={false} className="h-full w-full object-contain" />,
+  };
+}
+

@@ -3,12 +3,13 @@ import { api, unwrap } from "../../api/client";
 import type { TroupeOut } from "../../api/types";
 import { Button, Card, ErrorText } from "../../components/ui";
 import { useAction } from "../../hooks";
-import { TABS, tabNames, tabsOn, type Tab } from "../play/tabs";
+import { TABS, tabNames, tabsOn, troupeTabs, type Tab } from "../play/tabs";
 
 // What a few of the tabs bring with them, under their switches.
 const NOTES: Partial<Record<Tab, string>> = {
   tracker: "Blood, Willpower, health, limited uses and the game's log. Off, the strip of Blood, Willpower and health on the other tabs goes with it.",
   status: "Only for characters with sect status.",
+  boons: "Only while the troupe keeps a boon ledger (Boons, in these settings): players report boons, and see what the ledger lets them.",
 };
 
 /**
@@ -22,9 +23,12 @@ export function PlayTabsSetting({ troupe, canEdit }: { troupe: TroupeOut; canEdi
   // The last tab switched off waits here until the storyteller says yes.
   const [last, setLast] = useState<Tab | null>(null);
   const off = troupe.play_tabs_off;
-  const on = tabsOn(off);
+  // Switched on, and of those the tabs players see: Boons only with a ledger.
+  const switched = tabsOn(off);
+  const on = troupeTabs(troupe);
+  const every = TABS.filter((t) => t.key !== "boons" || troupe.boons).length;
   const change = (tab: Tab, checked: boolean) => {
-    if (!checked && on.length === 1) setLast(tab);
+    if (!checked && on.length === 1 && on.includes(tab)) setLast(tab);
     else save.mutate(checked ? off.filter((t) => t !== tab) : [...off, tab]);
   };
   return (
@@ -33,13 +37,13 @@ export function PlayTabsSetting({ troupe, canEdit }: { troupe: TroupeOut; canEdi
         The tabs players see on the Play View at games. Staff always see every tab on NPCs. Turn them all off if your players keep their sheets here but don't play from Horatio.
       </p>
       {!canEdit ? (
-        <p className="text-sm">{on.length === 0 ? "The troupe doesn't use the Play View for players." : on.length === TABS.length ? "Players see every tab." : `Players see ${tabNames(on)}.`}</p>
+        <p className="text-sm">{on.length === 0 ? "The troupe doesn't use the Play View for players." : on.length === every ? "Players see every tab." : `Players see ${tabNames(on)}.`}</p>
       ) : (
         <div className="flex flex-col gap-2 text-sm">
           {on.length === 0 && <p className="text-gold">The Play View is off for players. Staff still run NPCs and scenes. Switch a tab on to give it back to players.</p>}
           {TABS.map(({ key, label }) => (
             <label key={key} className="flex items-start gap-2">
-              <input type="checkbox" className="mt-1" checked={on.includes(key) && last !== key} disabled={save.isPending || last !== null} onChange={(e) => change(key, e.target.checked)} />
+              <input type="checkbox" className="mt-1" checked={switched.includes(key) && last !== key} disabled={save.isPending || last !== null} onChange={(e) => change(key, e.target.checked)} />
               <span>
                 {label}
                 {NOTES[key] && <span className="block text-xs text-mist">{NOTES[key]}</span>}

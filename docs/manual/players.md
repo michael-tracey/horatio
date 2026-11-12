@@ -120,6 +120,8 @@ A card called **Against the rules** lists anything on the sheet the rules no lon
 
 Where a troupe tracks blood bonds, a **Blood bonds** card shows the bonds the character is bound by, with what each does in play, and those bound to it that you've been told of (MET: VTM p. 295). Nobody else's player sees your bonds.
 
+At a game, the Play View counts the bonds your character is bound by. On the **Pools** tab, each defence a bond lowers has a line of its own against the regnant, "Against Lucien's powers (−3 Blood bond)", as it counts only against them: two drinks take 1 from Social defence, a full bond 3 from Social and Mental. The **Sheet** tab lists each bond with what crossing the regnant costs in Willpower. A first drink has no rules effect, only feelings to play. The bonds to your character, as the regnant, never show there.
+
 Where the troupe lets players report drinks, **Report a drink** on that card says your character drank someone's blood, or someone drank your character's: pick the other character from the troupe, or type a name, then the night and where it happened. What happens next depends on the troupe:
 
 - **Players report and staff approves**: it waits for the storytellers, and counts once they approve. If they decline, you see why.
@@ -466,9 +468,13 @@ The [Play View](glossary.md#play-view) is the character sheet for a game, laid o
 
 Along the top: the way back to the character, **Keep the screen awake**, **Undo** for your last tap, and whether your taps are saved. Every tap is kept on the phone when there's no signal and sent when it comes back; to open the Play View with no signal at all, see [Using Horatio at a game with no signal](#using-horatio-at-a-game-with-no-signal).
 
-The tabs are **Sheet** (to look things up), **Tracker**, **Pools**, **Status** (for a character with sect status), **Equipment** and **Throws** (rock, paper, scissors), as many of them as your character's home troupe has switched on. On every tab but the Tracker, a strip under the tabs shows Blood, Willpower and health, with **−** to spend. Your settings choose which tab it opens on; where your troupe has switched that one off, it opens on the first tab on. A troupe whose players keep their sheets in Horatio but don't play from it switches the Play View off for players, and their characters have no **Play**.
+The tabs are **Sheet** (to look things up), **Tracker**, **Pools**, **Status** (for a character with sect status), **Equipment**, **Throws** (rock, paper, scissors) and **Boons** (while your troupe keeps a boon ledger), as many of them as your character's home troupe has switched on. On every tab but the Tracker, a strip under the tabs shows Blood, Willpower and health, with **−** to spend. Your settings choose which tab it opens on; where your troupe has switched that one off, it opens on the first tab on. A troupe whose players keep their sheets in Horatio but don't play from it switches the Play View off for players, and their characters have no **Play**.
+
+**Boons** is where you report a boon your character owes or is owed: who (another player character, or **Someone else…** for an NPC or someone from another domain), which way, the kind, the night it was made, the reason, any conditions, and how many alike. It goes into your troupe's boon ledger, which its staff keep; a boon made off the record isn't enforced. Your troupe chooses what else you see there: nothing more, the boons your character owes, or those and the boons it is owed. Where your troupe allows it, you can mark a boon owed to your character **settled**, as called in or forgiven. Reporting and settling need a signal; what the tab shows is kept on your phone with the rest of the Play View.
 
 On **Throws**, **Throw** picks rock, paper or scissors on your phone; show the other player your screen. On a phone with a motion sensor you can also throw by **flipping the phone** face down and back up in your hand, so two players can flip together: the throw is showing as the screen comes back up, with a short buzz. Turn **Throw by flipping** off on the tab, or in Settings › At game, if you'd rather not; it's kept on that phone. On an iPhone, tap **Turn on flipping the phone** once to let Horatio use the motion sensor.
+
+The pictures are Horatio's own unless you choose another set in Settings › At game › **Throw pictures**: any troupe you play in that has made its own rock, paper and scissors is offered there. The set you choose is kept on your device with the rest of the Play View, so it shows with no signal. If you leave that troupe, or it removes its set, your throws go back to Horatio's.
 
 ![The Play View's Tracker, a few taps into the night: Blood, Willpower and Health](images/players/play-tracker.png)
 

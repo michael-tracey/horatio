@@ -19,9 +19,11 @@ from horatio.api import (
     backstories,
     backups,
     badges,
+    bond_web,
     bonds,
     book_traits,
     boon_standings,
+    boon_statistics,
     boons,
     calendar,
     cart,
@@ -33,6 +35,7 @@ from horatio.api import (
     checkin,
     clan_logos,
     connectors,
+    court,
     creation,
     dark_pack,
     discord,
@@ -91,6 +94,7 @@ from horatio.api import (
     system,
     targets,
     teachers,
+    throw_images,
     titles,
     tools,
     trait_exceptions,
@@ -153,6 +157,7 @@ for module in (
     auth,
     troupes,
     troupe_profiles,
+    throw_images,
     games,
     checkin,
     game_xp,
@@ -235,8 +240,11 @@ for module in (
     nominations,
     remembrances,
     bonds,
+    bond_web,
     boons,
     boon_standings,
+    boon_statistics,
+    court,
     posts,
     targets,
     projects,
@@ -249,6 +257,8 @@ for module in (
     jyhad_card,
 ):
     api.include_router(module.router)
+# The signed-in person's choice of throw pictures (#671), beside the troupe's own.
+api.include_router(throw_images.mine_router)
 
 
 @api.get("/health")

@@ -1,23 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { openingChoices, openingTab, shownTabs, tabNames, TABS, tabsOn, usesPlayView } from "./tabs";
+import { openingChoices, openingTab, shownTabs, tabNames, TABS, tabsOn, troupeTabs, usesPlayView } from "./tabs";
 
 const EVERY = TABS.map((t) => t.key);
 
 describe("a troupe's Play View tabs (#673)", () => {
   it("has every tab on by default", () => {
-    expect(tabsOn([])).toEqual(["sheet", "tracker", "pools", "status", "equipment", "throws"]);
+    expect(tabsOn([])).toEqual(["sheet", "tracker", "pools", "status", "equipment", "throws", "boons"]);
     expect(usesPlayView({ play_tabs_off: [] })).toBe(true);
   });
 
   it("leaves out the tabs switched off, and uses no Play View with every one off", () => {
-    expect(tabsOn(["pools", "status"])).toEqual(["sheet", "tracker", "equipment", "throws"]);
+    expect(tabsOn(["pools", "status"])).toEqual(["sheet", "tracker", "equipment", "throws", "boons"]);
     expect(usesPlayView({ play_tabs_off: ["sheet", "tracker", "pools", "status"] })).toBe(true);
     expect(usesPlayView({ play_tabs_off: EVERY })).toBe(false);
   });
 
+  it("has Boons only while the troupe keeps a boon ledger (#686)", () => {
+    expect(troupeTabs({ play_tabs_off: [], boons: false })).not.toContain("boons");
+    expect(troupeTabs({ play_tabs_off: [], boons: true })).toContain("boons");
+    expect(troupeTabs({ play_tabs_off: ["boons"], boons: true })).not.toContain("boons");
+    // Every other tab off: only Boons, and only with a ledger.
+    const others = EVERY.filter((t) => t !== "boons");
+    expect(usesPlayView({ play_tabs_off: others, boons: false })).toBe(false);
+    expect(usesPlayView({ play_tabs_off: others, boons: true })).toBe(true);
+  });
+
   it("shows a character the tabs it has, and Status only with sect status", () => {
     expect(shownTabs(EVERY, true)).toEqual(EVERY);
-    expect(shownTabs(EVERY, false)).toEqual(["sheet", "tracker", "pools", "equipment", "throws"]);
+    expect(shownTabs(EVERY, false)).toEqual(["sheet", "tracker", "pools", "equipment", "throws", "boons"]);
     expect(shownTabs(["sheet", "pools"], true)).toEqual(["sheet", "pools"]);
   });
 

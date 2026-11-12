@@ -91,12 +91,13 @@ export function mineOf(list: CharacterListOut[] | undefined, userId: string): Mi
   };
 }
 
-/** Who the person is, their characters and troupes: about them alone. */
-const PERSON = new Set(["me", "characters", "troupes"]);
+/** Who the person is, their characters and troupes, and the throw pictures they chose
+ * (#671, pages/play/chosenThrows.ts): about them alone. */
+const PERSON = new Set(["me", "characters", "troupes", "throw-images"]);
 /** The rules: the same for everyone. */
 const RULES = new Set(["catalogue", "splats"]);
 /** The Play View's own, about one character: kept only for one with a Play View. */
-const PLAY = new Set(["play", "play-reference", "play-games"]);
+const PLAY = new Set(["play", "play-reference", "play-games", "play-boons"]);
 /** About one character, named second in the key: kept for the person's own. The sheet and
  * what it shows, and the Play View and its tabs. Never the Play View's Others tab, which
  * is about other characters, nor anything between games (downtimes, XP, results). */

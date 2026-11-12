@@ -9,6 +9,9 @@ Whose setting applies is a PC's: its home troupe's, or while it has none the tro
 it is built for. A visitor keeps its home troupe's tabs at another troupe's game.
 The setting is about what players see: on an NPC, staff always see every tab,
 whatever its troupe has set.
+
+Boons (#686) is a tab only while the troupe keeps a boon ledger (horatio.boons): with
+the ledger off it isn't there, on or off, and doesn't count as a tab on.
 """
 
 import uuid
@@ -23,7 +26,7 @@ from horatio.models import Character, Troupe, User
 
 # The Play View's tabs, as the frontend's TABS names them (pages/play/PlayPage.tsx),
 # in their order there. A tab added there is added here.
-PlayTab = Literal["sheet", "tracker", "pools", "status", "equipment", "throws"]
+PlayTab = Literal["sheet", "tracker", "pools", "status", "equipment", "throws", "boons"]
 PLAY_TABS: tuple[PlayTab, ...] = get_args(PlayTab)
 
 # Why a character with no Play View isn't run in a scene.
@@ -36,7 +39,10 @@ NAMES: dict[PlayTab, str] = {
     "status": "Status",
     "equipment": "Equipment",
     "throws": "Throws",
+    "boons": "Boons",
 }
+# Tabs a troupe has only while it keeps what they show.
+LEDGER_TAB: PlayTab = "boons"
 assert set(NAMES) == set(PLAY_TABS)
 
 
@@ -52,10 +58,16 @@ def tabs_off(off: Iterable[str]) -> list[PlayTab]:
     return [t for t in PLAY_TABS if t in gone]
 
 
+def troupe_tabs(troupe: Troupe) -> list[PlayTab]:
+    """The tabs the troupe's players see: those it has on, and Boons only while it
+    keeps a boon ledger."""
+    return [t for t in tabs_on(troupe.play_tabs_off) if t != LEDGER_TAB or troupe.boons]
+
+
 def uses_play_view(troupe: Troupe | None) -> bool:
     """Whether a troupe uses the Play View for its players: it has any tab on. No
     troupe has them all."""
-    return troupe is None or bool(tabs_on(troupe.play_tabs_off))
+    return troupe is None or bool(troupe_tabs(troupe))
 
 
 def troupe_id_of(character: Character) -> uuid.UUID | None:
@@ -67,11 +79,15 @@ def troupe_id_of(character: Character) -> uuid.UUID | None:
 
 
 def character_tabs(db: Session, character: Character) -> list[PlayTab]:
-    """The tabs the character's Play View has: every one on an NPC, else those its
-    troupe has on, none when it doesn't use the Play View for players."""
+    """The tabs the character's Play View has: every one on an NPC (Boons only while
+    its troupe keeps a ledger), else those its troupe has on, none when it doesn't use
+    the Play View for players."""
     troupe_id = troupe_id_of(character)
     troupe = db.get(Troupe, troupe_id) if troupe_id else None
-    return list(PLAY_TABS) if troupe is None else tabs_on(troupe.play_tabs_off)
+    if troupe is not None:
+        return troupe_tabs(troupe)
+    owner = db.get(Troupe, character.owner_troupe_id) if character.owner_troupe_id else None
+    return [t for t in PLAY_TABS if t != LEDGER_TAB or (owner is not None and owner.boons)]
 
 
 def without_play_view(db: Session, characters: Iterable[Character]) -> set[uuid.UUID]:
@@ -83,10 +99,10 @@ def without_play_view(db: Session, characters: Iterable[Character]) -> set[uuid.
         return set()
     off = {
         troupe_id
-        for troupe_id, tabs in db.execute(
-            select(Troupe.id, Troupe.play_tabs_off).where(Troupe.id.in_(troupes))
+        for troupe_id, tabs, ledger in db.execute(
+            select(Troupe.id, Troupe.play_tabs_off, Troupe.boons).where(Troupe.id.in_(troupes))
         )
-        if not tabs_on(tabs)
+        if not [t for t in tabs_on(tabs) if t != LEDGER_TAB or ledger]
     }
     return {character_id for character_id, troupe_id in found.items() if troupe_id in off}
 

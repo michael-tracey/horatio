@@ -13,7 +13,7 @@ The troupe logs keep their entries, with the character's name.
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
-from horatio import audit, social_age
+from horatio import audit, social_age, title_history
 from horatio.models import (
     AllowanceAdjustment,
     AlternateIdentity,
@@ -182,6 +182,8 @@ def delete_character(db: Session, player: User, character: Character) -> None:
     db.execute(delete(BackstoryFeedback).where(BackstoryFeedback.character_id == cid))
     db.execute(delete(Backstory).where(Backstory.character_id == cid))
     db.execute(delete(CharacterTitle).where(CharacterTitle.character_id == cid))
+    # Its holdings of titles end, and stay in each troupe's court history under its name.
+    title_history.ended(db, "deleted", character_id=cid)
     # A troupe's locations it controlled, jointly or as heir, keep its name; a Haven
     # of its is one no longer.
     name = character.name

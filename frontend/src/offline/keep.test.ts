@@ -92,7 +92,7 @@ describe("what is kept", () => {
   });
 
   it("keeps the sheet, the Play View and its reference for the person's own kept characters", () => {
-    for (const what of ["character", "sheet", "play", "play-reference", "character-equipment"]) {
+    for (const what of ["character", "sheet", "play", "play-reference", "play-boons", "character-equipment"]) {
       expect(keepsQuery([what, ROSA], mine)).toBe(true);
       expect(keepsQuery([what, OLD], mine)).toBe(false);
       expect(keepsQuery([what, OTHER], mine)).toBe(false);
@@ -101,7 +101,7 @@ describe("what is kept", () => {
 
   it("keeps no Play View for a character whose troupe doesn't use it, only its sheet (#673)", () => {
     const sheets = mineOf([character(ROSA, { play_view: false })], ME);
-    for (const what of ["play", "play-reference", "play-games"]) expect(keepsQuery([what, ROSA], sheets)).toBe(false);
+    for (const what of ["play", "play-reference", "play-games", "play-boons"]) expect(keepsQuery([what, ROSA], sheets)).toBe(false);
     for (const what of ["character", "sheet", "character-equipment"]) expect(keepsQuery([what, ROSA], sheets)).toBe(true);
   });
 

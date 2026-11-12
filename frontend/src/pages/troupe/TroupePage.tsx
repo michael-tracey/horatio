@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { Avatar } from "../../components/Avatar";
 import { Badge, ErrorText, GroupedTabs, Loading, PageTitle } from "../../components/ui";
 import { useMe } from "../../hooks";
 import { ApprovalsTab } from "./ApprovalsTab";
-import { BondsTab } from "./BondsTab";
+import { BondsPages } from "./BondsPages";
 import { BoonStandingsTab } from "./BoonStandingsTab";
 import { BoonsTab } from "./BoonsTab";
 import { ConnectorsTab } from "./ConnectorsTab";
@@ -47,6 +48,11 @@ import { useWaiting } from "./WaitingList";
 import { tabCounts } from "./waiting";
 import { WhosWhoTab } from "./WhosWhoTab";
 import { XpAwardsTab } from "./XpAwardsTab";
+
+// The boon statistics bring d3 with them (#702), so they load only when opened (#706).
+const BoonStatisticsPage = lazy(() => import("./BoonStatisticsPage").then((m) => ({ default: m.BoonStatisticsPage })));
+// The court over time (#712) draws with the chart kit, so d3 loads only when it is opened.
+const CourtTab = lazy(() => import("./CourtTab").then((m) => ({ default: m.CourtTab })));
 
 export function TroupePage() {
   const { troupeId = "" } = useParams();
@@ -100,6 +106,7 @@ export function TroupePage() {
               ...(t.nominations ? [{ to: `${base}/nominations`, label: t.player_nominations ? "Nominations" : "Remembrances" }] : []),
               { to: `${base}/house-rules`, label: "House rules" },
               { to: `${base}/status`, label: "Status" },
+              ...(!can.running && t.whos_who && t.court_history_players ? [{ to: `${base}/court`, label: "Court" }] : []),
               ...(can.staff ? [{ to: `${base}/staff`, label: "Staff" }] : []),
               ...(can.running ? [{ to: `${base}/log`, label: "Log" }] : []),
             ],
@@ -114,9 +121,11 @@ export function TroupePage() {
               ...(can.running ? [{ to: `${base}/play`, label: "At game" }] : []),
               ...(can.running ? [{ to: `${base}/xp`, label: "Award XP" }] : []),
               ...(can.running ? [{ to: `${base}/titles`, label: "Titles" }] : []),
+              ...(can.running ? [{ to: `${base}/court`, label: "Court" }] : []),
               ...(can.running && (t.blood_bonds ?? "off") !== "off" ? [{ to: `${base}/bonds`, label: "Bonds" }] : []),
               ...(can.running && t.boons ? [{ to: `${base}/boons`, label: "Boons" }] : []),
               ...(can.running && t.boons ? [{ to: `${base}/boon-standings`, label: "Boon standings" }] : []),
+              ...(can.running && t.boons ? [{ to: `${base}/boon-statistics`, label: "Boon statistics" }] : []),
             ],
           },
           {
@@ -185,9 +194,29 @@ export function TroupePage() {
         <Route path="npcs" element={<Navigate to={`${base}/characters?show=npcs`} replace />} />
         {can.running && <Route path="npcs/:characterId" element={<StockNpcBuilder troupeId={t.id} />} />}
         {can.running && <Route path="titles" element={<TitlesTab troupeId={t.id} />} />}
-        {can.running && (t.blood_bonds ?? "off") !== "off" && <Route path="bonds" element={<BondsTab troupeId={t.id} />} />}
+        {(can.running || (t.whos_who && t.court_history_players)) && (
+          <Route
+            path="court"
+            element={
+              <Suspense fallback={<Loading />}>
+                <CourtTab troupeId={t.id} />
+              </Suspense>
+            }
+          />
+        )}
+        {can.running && (t.blood_bonds ?? "off") !== "off" && <Route path="bonds/*" element={<BondsPages troupeId={t.id} />} />}
         {can.running && t.boons && <Route path="boons" element={<BoonsTab troupeId={t.id} />} />}
         {can.running && t.boons && <Route path="boon-standings" element={<BoonStandingsTab troupeId={t.id} />} />}
+        {can.running && t.boons && (
+          <Route
+            path="boon-statistics"
+            element={
+              <Suspense fallback={<Loading />}>
+                <BoonStatisticsPage troupeId={t.id} />
+              </Suspense>
+            }
+          />
+        )}
         {can.running && <Route path="shared/*" element={<SharedBackgroundsTab troupeId={t.id} />} />}
         {can.running && <Route path="locations/*" element={<LocationsTab troupeId={t.id} questsOn={t.quests_enabled} />} />}
         {can.running && <Route path="equipment" element={<EquipmentTab troupeId={t.id} troupeName={t.name} />} />}

@@ -39,6 +39,7 @@ class Troupe(Imported, Record):
             "blood_bonds in ('off', 'staff', 'players_report', 'players_manage')",
             name="blood_bonds",
         ),
+        CheckConstraint("boon_players_see in ('intake', 'owes', 'owed')", name="boon_players_see"),
     )
 
     name: Mapped[str]
@@ -160,6 +161,16 @@ class Troupe(Imported, Record):
     # nothing of it shows, not even in the log; what was registered is kept, and comes
     # back when it is on again.
     boons: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # What its players see of the ledger in the Play View's Boons tab (#686): "intake",
+    # the form to report a boon, and nothing of the ledger; "owes", also the boons
+    # their characters owe; "owed", also those owed to them.
+    boon_players_see: Mapped[str] = mapped_column(default="intake", server_default="intake")
+    # A boon's creditor's player may mark it settled, called in or forgiven, from the
+    # Play View (#686). Only with "owed", where they see it.
+    boon_players_settle: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # The court over time (horatio.title_history, #712): whether its players see who
+    # held each title and when. Its staff always do.
+    court_history_players: Mapped[bool] = mapped_column(default=False, server_default="false")
     # What each kind of boon weighs in its boon standings (horatio.boon_standings,
     # #691), by kind: {"major": 3}. A kind left out weighs its default.
     boon_weights: Mapped[dict[str, float]] = mapped_column(JSONB, default=dict, server_default="{}")
@@ -219,6 +230,10 @@ class Troupe(Imported, Record):
     portrait_id: Mapped[uuid.UUID | None]
     portrait_crop: Mapped[dict[str, float] | None] = mapped_column(JSONB)
     banner_id: Mapped[uuid.UUID | None]
+    # Its own rock, paper and scissors for the Throws tab (horatio.api.throw_images,
+    # issue #670): {"name", "rock", "paper", "scissors"}, each picture the id its
+    # files are kept under (horatio.pictures). Offered only with all three.
+    throw_images: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
     # Links, schedule, venue, setting, new players, age and content: all optional
     # text, kept as horatio.troupe_profiles.Profile writes it.
     profile: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
@@ -493,3 +508,60 @@ class CharacterTitle(Record):
     character_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("characters.id"), index=True)
     name: Mapped[str]
     active: Mapped[bool] = mapped_column(default=False, server_default="false")
+
+
+# How a holding of a title began and ended (horatio.title_history). "unknown" is for
+# one the backfill found held, or given up, with no record of how.
+HOLDING_BEGAN = ("given", "chosen", "unknown")
+HOLDING_ENDED = ("taken", "given_up", "retired", "left", "removed", "deleted", "unknown")
+
+
+class TitleHolding(Record):
+    """One character's holding of one title in one troupe, from when it began to when
+    it ended (CONTEXT.md: Title History): the court over time (#712). Written as
+    titles change (horatio.titles); those from before were recovered from the log.
+    A deleted character's holdings stay, under its name."""
+
+    __tablename__ = "title_holdings"
+    __table_args__ = (
+        CheckConstraint(
+            "began_how in (" + ", ".join(f"'{h}'" for h in HOLDING_BEGAN) + ")", name="began_how"
+        ),
+        CheckConstraint(
+            "ended_how is null or ended_how in ("
+            + ", ".join(f"'{h}'" for h in HOLDING_ENDED)
+            + ")",
+            name="ended_how",
+        ),
+        CheckConstraint("(ended_at is null) = (ended_how is null)", name="ended"),
+        CheckConstraint("ended_at is null or ended_at >= began_at", name="in_order"),
+        # A character holds a title in a troupe once at a time.
+        Index(
+            "uq_title_holdings_open",
+            "troupe_id",
+            "character_id",
+            "name",
+            unique=True,
+            postgresql_where=text("ended_at is null"),
+        ),
+    )
+
+    troupe_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("troupes.id", ondelete="CASCADE"), index=True
+    )
+    character_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("characters.id", ondelete="SET NULL"), index=True
+    )
+    # Its name when the holding began, so it still reads once the character is deleted.
+    character_name: Mapped[str]
+    name: Mapped[str]
+    began_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    began_how: Mapped[str]
+    # None while it is held.
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ended_how: Mapped[str | None]
+    # The in-game dates, where staff give them; the real dates are always kept.
+    began_in_game: Mapped[date | None] = mapped_column(Date)
+    ended_in_game: Mapped[date | None] = mapped_column(Date)
+    # Recovered from the log by the migration that began the history, not seen happen.
+    backfilled: Mapped[bool] = mapped_column(default=False, server_default="false")

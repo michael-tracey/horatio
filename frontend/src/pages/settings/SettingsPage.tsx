@@ -18,6 +18,7 @@ import { saveAwake } from "../play/wakeLock";
 import { ViewedAs } from "../ViewedAs";
 import { EmailNotifications } from "./EmailNotifications";
 import { PasswordCard } from "./PasswordCard";
+import { ThrowPictures } from "./ThrowPictures";
 
 type Key = keyof Preferences;
 
@@ -368,6 +369,9 @@ export function SettingsPage({ player }: { player: PlayerOut }) {
           <OpeningTab />
           <Setting label="Throw by flipping" hint="On the Throws tab, flip your phone face down and back up to throw. On this device, and only on phones with a motion sensor.">
             <FlipToggle />
+          </Setting>
+          <Setting label="Throw pictures" hint="What the Throws tab shows: Horatio's, or the set of a troupe you play in that has made its own. Kept on this device for games with no signal.">
+            <ThrowPictures />
           </Setting>
         </Card>
 

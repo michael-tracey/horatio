@@ -10,13 +10,14 @@ from typing import Literal
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
-from sqlalchemy import and_, or_, select
+from sqlalchemy import or_, select
 
-from horatio import bonds
+from horatio import auto_bonds, bonds
 from horatio.api.downtimes import staff_troupe
 from horatio.api.influence_log import CharacterChoice
 from horatio.api.troupes import TroupeOut, troupe_out
 from horatio.auth.deps import CurrentUser, DbSession
+from horatio.auth.viewing import read_only
 from horatio.models import BloodBond, BondReport, Character, Troupe, TroupeMembership, User
 from horatio.permissions import TroupeAction, visible_character
 
@@ -234,6 +235,22 @@ class CharacterBondsOut(BaseModel):
     reports: list[BondReportOut] = []
 
 
+class KnownBondOut(BaseModel):
+    # embrace | domitor | retainer: why Horatio knows of it (#663).
+    why: Literal["embrace", "domitor", "retainer"]
+    thrall: PartyOut
+    regnant: PartyOut
+    # The level it stands at from the start: 1, or 3 for a full bond.
+    level: int
+    night: date
+    reason: str
+
+
+class FilledOut(BaseModel):
+    # The bonds added, as the Bonds screen shows them.
+    added: list[BondOut]
+
+
 def party_out(character: Character | None, name: str) -> PartyOut:
     if character is None:
         return PartyOut(character_id=None, name=name, kind=None)
@@ -372,6 +389,36 @@ def troupe_bonds(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Trou
         ],
         reports=[report_out(db, user, r) for r in bonds.pending_reports(db, troupe)],
     )
+
+
+def known_out(item: auto_bonds.Known) -> KnownBondOut:
+    return KnownBondOut(
+        why=item.why,  # type: ignore[arg-type]  # one of auto_bonds' three
+        thrall=party_out(item.thrall.character, item.thrall.name),
+        regnant=party_out(item.regnant.character, item.regnant.name),
+        level=item.level,
+        night=item.night,
+        reason=item.reason,
+    )
+
+
+@router.get("/troupes/{troupe_id}/bonds/known")
+def known_bonds(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> list[KnownBondOut]:
+    """The bonds Horatio can work out for the troupe that it doesn't keep yet: from its
+    characters' Embraces, ghouls' domitors and vampires' ghoul Retainers (#663)."""
+    troupe = bonds_troupe(db, user, troupe_id)
+    found = auto_bonds.known(db, troupe)
+    db.commit()
+    return [known_out(item) for item in found]
+
+
+@router.post("/troupes/{troupe_id}/bonds/known")
+def fill_in_bonds(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> FilledOut:
+    """Add every bond `known_bonds` lists, and say which were added."""
+    troupe = bonds_troupe(db, user, troupe_id)
+    added = auto_bonds.fill_in(db, user, troupe)
+    db.commit()
+    return FilledOut(added=[bond_out(db, bond) for bond in added])
 
 
 @router.post("/troupes/{troupe_id}/bonds/drinks", status_code=status.HTTP_201_CREATED)
@@ -610,45 +657,15 @@ def character_bonds(character_id: uuid.UUID, db: DbSession, user: CurrentUser) -
     too, until they are told it faded; one whose thrall died, to the regnant's player
     who knew of it, until staff clear it (#662)."""
     character = visible_character(db, user, character_id)
-    mine = or_(BloodBond.thrall_id == character.id, BloodBond.regnant_id == character.id)
-    troupe_ids = db.scalars(select(BloodBond.troupe_id).where(mine).distinct()).all()
-    if troupe_ids:
-        bonds.settle_fades(db, troupe_ids)
+    settle = not read_only(db)
+    seen = bonds.seen_by(db, user, character, settle=settle)
+    if settle:
         db.commit()
-    found = db.scalars(
-        select(BloodBond)
-        .where(
-            mine,
-            or_(
-                BloodBond.status.in_(bonds.OPEN),
-                and_(
-                    BloodBond.status == "ended",
-                    or_(
-                        and_(BloodBond.fade_reason != "", BloodBond.thrall_told_at.is_(None)),
-                        BloodBond.kept_for_regnant,
-                    ),
-                ),
-            ),
-        )
-        .order_by(BloodBond.created_at)
-    ).all()
-    troupes = {
-        t.id: t
-        for t in db.scalars(select(Troupe).where(Troupe.id.in_({b.troupe_id for b in found})))
-    }
     bound_to: list[SheetBondOut] = []
     bound_by: list[SheetBondOut] = []
     manage: uuid.UUID | None = None
-    for bond in found:
-        troupe = troupes[bond.troupe_id]
-        thrall, regnant = bonds.parties(db, bond)
-        if bond.status in bonds.OPEN:
-            if not bonds.shown_to(db, user, bond, troupe, thrall.character, regnant.character):
-                continue
-        elif not (
-            bonds.tracked(troupe) and bonds.as_felt(user, bond, thrall.character, regnant.character)
-        ):
-            continue
+    for s in seen:
+        bond, troupe, thrall, regnant = s.bond, s.troupe, s.thrall, s.regnant
         level = bonds.level(db, bond)
         if bond.thrall_id == character.id:
             bound_to.append(SheetBondOut(id=bond.id, name=regnant.shown, level=level))

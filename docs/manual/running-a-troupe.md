@@ -277,8 +277,9 @@ A boon is a debt one character owes another, registered with the Harpy (MET: VTM
 - **Register boons** takes one boon or a whole game's: a row for each, with its debtor and creditor (a character of the troupe, retired ones too, or a name only for someone not in Horatio), its kind, the in-game date, the reason and any conditions ("Cannot be traded"). **How many** makes that many alike, for "1 of 3, 2 of 3…". **Where they come from** goes in each boon's log. They all register together, or none do.
 - The ledger's tabs are **Open** (standing, with everyone on it in play), **Departed** (standing, but someone on it has met Final Death or is off-field), **Settled**, **Void** and **All**. Narrow them to a character or a name, a kind, or the nights the boons were made.
 - **Open** on a boon shows its log and what you can do with it: **Edit** (with why: what changed shows only to storytellers and assistant storytellers), **Trade** (a new creditor holds it; tick **Tell the debtor's player if it's traded** on a boon whose conditions ask for that), **Pass on** (either side, to a broodmate after a death, say), **Settle** (called in, forgiven, or formally ignored by the debtor), **Make void** (entered by mistake) and **Reopen**. Each goes in the boon's own log and the troupe's log.
-- On a character's sheet, staff see a **Boons** card: what they owe and are owed, by kind, with a link to the ledger narrowed to them. Players don't see boons yet.
+- On a character's sheet, staff see a **Boons** card: what they owe and are owed, by kind, with a link to the ledger narrowed to them.
 - **Characters › Boon standings** shows where everyone stands, live. Each kind of boon has a weight (Trivial 0.5, Minor 1, Major 3, Blood 5, Life 10 to begin with; **Change** sets the troupe's own), and a character's **net** is the weight owed to them less the weight they owe. It shows open boons by kind, each character's standing, the court (each title holder, and who owes them and whom they owe most), clans, ages and sects, how long open debts have stood, how boons get settled and who calls theirs in, boons across clan and sect lines, and characters who owe each other. **Active** leaves out boons that involve someone dead or off-field; **Everyone** keeps them.
+- **Players** report boons in the Play View's **Boons** tab: who, which way, the kind, the night, the reason, any conditions, and how many. A report goes straight into the ledger, marked in its log as done as their character. Under **Boons** in the troupe's settings, choose what else they see there: **the form to report a boon only** (the default), **also what they owe**, or **also what they're owed**. With the last, you can let **players mark boons owed to them settled**: only the creditor's player, as called in or forgiven, never the debtor's. Players never see a boon's log, its staff note, or who registered it. The tab shows only while the ledger is on, and can be switched off under **Play View tabs**.
 
 Switched off, the ledger and its entries in the log are hidden; what was registered is kept, and comes back if it is switched on again.
 
@@ -483,12 +484,13 @@ NPCs are never limited by either.
 
 ### At game
 
-- **Play View tabs**: a switch for each of the Play View's tabs (Sheet, Tracker, Pools, Status, Equipment, Throws), all on to begin with. A tab switched off doesn't show on your players' Play Views; with the Tracker off, the strip of Blood, Willpower and health on the other tabs goes too. Staff always see every tab on NPCs. A visiting character keeps its home troupe's tabs. Switch every tab off if your players keep their sheets in Horatio but don't play from it: the card says what that does before it's saved. Its player characters then have no **Play**, check-in doesn't open the Play View, and phones don't keep the Play View for a game with no signal. Staff still run NPCs, the At game tab and scenes as before, with every tab on an NPC; a player character with no Play View can't be put in a scene.
+- **Play View tabs**: a switch for each of the Play View's tabs (Sheet, Tracker, Pools, Status, Equipment, Throws, and Boons while the troupe keeps a boon ledger), all on to begin with. A tab switched off doesn't show on your players' Play Views; with the Tracker off, the strip of Blood, Willpower and health on the other tabs goes too. Staff always see every tab on NPCs. A visiting character keeps its home troupe's tabs. Switch every tab off if your players keep their sheets in Horatio but don't play from it: the card says what that does before it's saved. Its player characters then have no **Play**, check-in doesn't open the Play View, and phones don't keep the Play View for a game with no signal. Staff still run NPCs, the At game tab and scenes as before, with every tab on an NPC; a player character with no Play View can't be put in a scene.
+- **Throw pictures**: your troupe's own rock, paper and scissors for the Throws tab, instead of Horatio's. Upload a picture for each (JPEG, PNG, WebP or HEIC, up to 10 MB); Horatio keeps it whole on a square, transparency and all, and strips anything else the file carries. Give the set a name if you like. The preview shows them as the Throws tab will, in Dark or Ultra goth, so you can check they read at arm's length. The set is offered to your players only once all three are there. Replace any one, or remove the set to go back to Horatio's. Each change goes in the troupe log.
 - **Badges**: whether game badges print titles, character pronouns, and all status, negative status only, or none.
 - **Blood at the start of a game**: what resetting a character's Play View puts their Blood back to: full, or a number you choose.
 - **Diablerie and Lesser Generation**: what recording a diablerie does to a Lesser Generation or Thin Blooded flaw: leave it, remove it and the XP it gave, or remove it and keep the XP.
 - **Items that expire**: let staff give items with an expiry (see [Equipment](#equipment)).
-- **Boons**: keep a boon ledger (see [Boons](#boons)). Off to begin with.
+- **Boons**: keep a boon ledger (see [Boons](#boons)). Off to begin with. On, choose what players see of it in the Play View's Boons tab, and whether a boon's creditor's player may mark it settled.
 
 ### Downtimes
 
@@ -847,6 +849,22 @@ The four settings:
 - **Players manage**: a player records a drink their character took, and it counts at once. One the regnant's player records waits for the thrall's player to confirm, or for you when the thrall is an NPC or a name only.
 
 Changing the setting leaves drinks already waiting where they are. **Characters › Bonds** lists every drink still waiting, whoever it waits on, to approve or decline there too. In any mode, a drink in a bond's **Drinks log** can be changed (its night and note) or taken out with a reason; taking out the last one removes the bond. Players can't record a night to come, one before the character was made in Horatio, or a drink while their character holds a full bond to someone else.
+
+#### Bonds Horatio knows by rule
+
+Some bonds need no one to record them, and Horatio adds them itself while the setting isn't **Off**:
+
+- **The Embrace**: every childe has a one-drink bond to their sire, since the Embrace itself is a drink of the sire's blood (MET: VTM p. 295). Running an Embrace on a ghoul's sheet adds it, from the night of the Embrace.
+- **A ghoul's domitor**: a ghoul is fully bound to their domitor (p. 296). Setting a ghoul's domitor adds the full bond; a ghoul made before any troupe accepted it gets it when its home troupe accepts it. Changing the domitor ends the bond to the old one, since the book has a ghoul change domitor only once that bond has faded, and adds the new.
+- **Ghoul Retainers**: a vampire's ghoul Retainer is fully bound to them. The bond is by the Retainer's name until you link the Retainer to an NPC, when it moves to the NPC. The vampire's player made the Retainer a ghoul, so this one is known to them; the others aren't until you mark them known.
+
+None is added if the two already have a bond, if a full bond to someone else makes the thrall immune, or if either side is retired. Each goes in the logs with the book's reason.
+
+For characters from before the troupe tracked bonds, **Characters › Bonds** shows **Fill in known bonds**: the bonds Horatio can work out from Embraces, domitors and ghoul Retainers that the troupe doesn't keep yet. Look the list over and add them all at once; once they're in, it goes away.
+
+#### The web of bonds
+
+**Characters › Bonds › Web** draws the same bonds as a web: an arrow from each thrall to their regnant, heavier and brighter for a stronger bond, with fading, ended and broken bonds faint and dashed. Each person is a dot coloured by clan and sized by how many thralls they hold; a name only has a dashed edge. Filter to those still in play or everyone, full bonds only, one clan, title holders, or add ended and broken bonds. Point at or select someone to light up their bonds; **Open their bonds** opens the list on just theirs. Under the web, **Most thralls** names who holds the most, and **Chains of bonds** shows where someone bound to another holds thralls of their own. Every chart has **Show as table**. Only the staff who can open **Characters › Bonds** see the web; players never do.
 
 #### When a regnant or a thrall meets Final Death
 

@@ -678,11 +678,38 @@ SETTINGS: dict[str, Setting] = {
         ),
         Setting("boons", "at_game", "Boons", bool, on_off),
         Setting(
+            "boon_players_see",
+            "at_game",
+            "What players see of the boon ledger",
+            Literal["intake", "owes", "owed"],
+            chosen(
+                {
+                    "intake": "The form to report a boon only",
+                    "owes": "Also what they owe",
+                    "owed": "Also what they owe and are owed",
+                }
+            ),
+        ),
+        Setting(
+            "boon_players_settle",
+            "at_game",
+            "Players mark boons owed to them settled",
+            bool,
+            on_off,
+        ),
+        Setting(
             "boon_weights",
             "at_game",
             "Boon weights",
             dict[Literal["trivial", "minor", "major", "blood", "life"], float],
             boon_weights_words,
+        ),
+        Setting(
+            "court_history_players",
+            "status_titles",
+            "Players see the court over time",
+            bool,
+            on_off,
         ),
         Setting(
             "play_tabs_off",
@@ -812,6 +839,7 @@ NOT_EXPORTED_COLUMNS: dict[str, str] = {
     "portrait_id": "its profile is its own",
     "portrait_crop": "its profile is its own",
     "banner_id": "its profile is its own",
+    "throw_images": "its pictures are its own, and files aren't carried",
     "profile": "its profile is its own",
     "contact_id": "its staff are its own",
     "seated_clans": "its court is its own (titles and seats aren't carried)",
@@ -879,6 +907,7 @@ NOT_EXPORTED_TABLES: dict[str, str] = {
     "shared_backgrounds": PLAY,
     "sheet_versions": PLAY,
     "teachings": PLAY,
+    "title_holdings": PLAY,
     "troupe_connectors": "connectors (tokens, Discord channels) are never carried",
     "troupe_location_qualities": "house location qualities aren't carried",
     "troupe_memberships": PLAY,
@@ -2331,6 +2360,8 @@ def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, Setti
             "items_expire",
             "blood_bonds",
             "boons",
+            "boon_players_see",
+            "boon_players_settle",
             "player_nominations",
             "remembrances",
             "assamite_name",

@@ -990,6 +990,117 @@ test("Throws on the Play View: rock, paper or scissors, the last three kept, wit
   await p.screenshot({ ...shots("throws-ultragoth"), animations: "disabled" });
 });
 
+test("a troupe uploads its own rock, paper and scissors, names the set and previews it in Dark and Ultra goth (#670)", async ({ browser }) => {
+  const custodian = await person(browser, "throwpix-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "throwpix-lead");
+  const headers = { "X-Horatio": "1" };
+  await custodian.page.reload();
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: `Bone Throwers ${run}`, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+
+  const l = lead.page;
+  await l.goto(`/troupes/${troupeId}/settings`);
+  const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "Throw pictures", exact: true }) });
+  await expect(card.getByText("None yet")).toHaveCount(3);
+
+  // A small PNG for each: Horatio keeps it whole on a transparent square.
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+  for (const which of ["Rock", "Paper"]) {
+    await card.getByLabel(`Choose a picture for ${which}`).setInputFiles({ name: `${which}.png`, mimeType: "image/png", buffer: png });
+    await expect(card.getByRole("img", { name: `The troupe's ${which.toLowerCase()}` })).toBeVisible();
+  }
+  await expect(card.getByText("Add the rest: the set is offered only with all three.")).toBeVisible();
+  await card.getByLabel("Choose a picture for Scissors").setInputFiles({ name: "Scissors.png", mimeType: "image/png", buffer: png });
+  await expect(card.getByRole("img", { name: "The troupe's scissors" })).toBeVisible();
+  await expect(card.getByText("Add the rest: the set is offered only with all three.")).toHaveCount(0);
+
+  await card.getByLabel(/Title for the set/).fill("Land of the Sky bones");
+  await card.getByRole("button", { name: "Use this title" }).click();
+  await expect(card.getByRole("button", { name: "Use this title" })).toBeDisabled();
+
+  // The preview shows all three as the Throws tab would, in Dark, then Ultra goth.
+  const preview = card.getByRole("region", { name: "Preview" });
+  for (const which of ["Rock", "Paper", "Scissors"]) await expect(preview.getByRole("img", { name: which, exact: true })).toBeVisible();
+  const panel = preview.getByTestId("throw-preview");
+  await expect(panel).toHaveCSS("background-color", "rgb(30, 25, 34)");
+  await preview.getByRole("radio", { name: "Ultra goth" }).check();
+  await expect(panel).toHaveCSS("background-color", "rgb(19, 16, 17)");
+
+  // Replacing one keeps the set; removing the set goes back to Horatio's.
+  const old = await card.getByRole("img", { name: "The troupe's rock" }).getAttribute("src");
+  await card.getByLabel("Choose a picture for Rock").setInputFiles({ name: "Rock2.png", mimeType: "image/png", buffer: png });
+  await expect(card.getByRole("img", { name: "The troupe's rock" })).not.toHaveAttribute("src", old!);
+  await card.getByRole("button", { name: "Remove the set" }).click();
+  await card.getByRole("alertdialog", { name: "Remove the throw pictures" }).getByRole("button", { name: "Remove them" }).click();
+  await expect(card.getByText("None yet")).toHaveCount(3);
+  await expect(card.getByRole("region", { name: "Preview" })).toHaveCount(0);
+
+  await l.goto(`/troupes/${troupeId}/log`);
+  await expect(l.getByText("gave the troupe a new picture for Rock.")).toBeVisible();
+  await expect(l.getByText("named the troupe's throw pictures: Land of the Sky bones.")).toBeVisible();
+  await expect(l.getByText("removed the troupe's throw pictures.")).toBeVisible();
+});
+
+test("a player chooses a troupe's own throw pictures in Settings, and the Throws tab shows them (#671)", async ({ browser }) => {
+  const custodian = await person(browser, "throwpick-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "throwpick-lead");
+  const player = await person(browser, "throwpick-play");
+  const headers = { "X-Horatio": "1" };
+  await custodian.page.reload();
+  const pebbleName = `Pebble Court ${run}`;
+  const made = await custodian.page.request.post("/api/troupes", { headers, data: { name: pebbleName, lead_handle: lead.handle } });
+  expect(made.status(), await made.text()).toBe(201);
+  const troupeId: string = (await made.json()).id;
+  // The player plays in it, here as one of its narrators.
+  const staffed = await lead.page.request.put(`/api/troupes/${troupeId}/staff`, { headers, data: { handle: player.handle, role: "narrator" } });
+  expect(staffed.status(), await staffed.text()).toBe(200);
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+
+  const p = player.page;
+  await p.getByLabel("Name").fill("Ottilie");
+  await p.getByRole("button", { name: "Create" }).click();
+  await expect(p.getByRole("heading", { name: "Concept" })).toBeVisible();
+  const id = new URL(p.url()).pathname.split("/")[2]!;
+
+  // Until the troupe has all three, only Horatio's are offered.
+  await p.goto("/account/settings");
+  const choice = p.getByRole("radiogroup", { name: "Throw pictures" });
+  await expect(choice.getByRole("radio")).toHaveCount(1);
+  await expect(choice.getByRole("radio", { name: /Horatio's/ })).toHaveAttribute("aria-checked", "true");
+  for (const which of ["rock", "paper", "scissors"]) {
+    const sent = await lead.page.request.post(`/api/troupes/${troupeId}/throw-images/${which}`, { headers, multipart: { file: { name: `${which}.png`, mimeType: "image/png", buffer: png } } });
+    expect(sent.status(), await sent.text()).toBe(200);
+  }
+  await p.reload();
+  const pebbles = choice.getByRole("radio", { name: new RegExp(pebbleName) });
+  await pebbles.click();
+  await expect(p.getByText(`Throw pictures: ${pebbleName}. Saved.`)).toBeVisible();
+  await expect(pebbles).toHaveAttribute("aria-checked", "true");
+
+  // The Throws tab throws with the troupe's pictures, read in to keep for no signal.
+  await p.goto(`/play/characters/${id}`);
+  await p.getByRole("tab", { name: "Throws" }).click();
+  const throws = p.getByRole("region", { name: "Throws" });
+  await throws.getByRole("button", { name: "Throw" }).click();
+  const face = throws.getByRole("img", { name: /^(Rock|Paper|Scissors)$/ });
+  await expect(face).toBeVisible();
+  await expect(face.locator("img")).toHaveAttribute("src", /^data:image\/webp;base64,/);
+  await p.screenshot({ ...shots("throws-troupe-pictures"), animations: "disabled" });
+
+  // Back to Horatio's own.
+  await p.goto("/account/settings");
+  await choice.getByRole("radio", { name: /Horatio's/ }).click();
+  await expect(p.getByText("Throw pictures: Horatio's. Saved.")).toBeVisible();
+  await p.goto(`/play/characters/${id}`);
+  await p.getByRole("tab", { name: "Throws" }).click();
+  await throws.getByRole("button", { name: "Throw" }).click();
+  await expect(face).toBeVisible();
+  await expect(face.locator("img")).toHaveCount(0);
+});
+
 test("throwing by flipping the phone face down and back up, on a phone, and switching it off (#669)", async ({ browser }) => {
   test.skip(test.info().project.name !== "phone", "the phone's orientation sensor");
   const { page: p } = await person(browser, "phone-flipper");
