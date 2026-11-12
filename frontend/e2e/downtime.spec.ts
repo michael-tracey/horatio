@@ -152,11 +152,11 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByRole("button", { name: "Add to cart · 10 XP" }).click();
   await expect(cart.getByText("Strength → Dexterity · 10 XP")).toBeVisible();
   await expect(p.getByText("after these changes", { exact: true })).toBeVisible();
-  await expect(p.getByText("19", { exact: true })).toBeVisible(); // 30 − 1 for Influence − 10
+  await expect(p.getByText("18", { exact: true })).toBeVisible(); // 30 − 1 for Acute Sense − 1 for Influence − 10
   await p.getByRole("button", { name: "Spend XP" }).click();
   await expect(p.getByText("Spent 11 XP.")).toBeVisible();
   await expect(p.getByText("Available", { exact: true })).toBeVisible();
-  await expect(p.getByText("19", { exact: true })).toBeVisible();
+  await expect(p.getByText("18", { exact: true })).toBeVisible();
   // Merits that give other traits apply them: Rugged adds a health level to each track.
   await part("Merits and Flaws").getByRole("button", { name: "Add" }).click();
   // Every Ventrue merit, though Agnes is Brujah and cannot take them.
@@ -168,7 +168,8 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await p.getByRole("button", { name: "Add to cart" }).click();
   await p.getByRole("button", { name: "Spend XP" }).click();
   await expect(p.getByText("+1 from Rugged").first()).toBeVisible();
-  await expect(p.getByText("16", { exact: true })).toBeVisible();
+  // 15 Available, as 15 are Spent: Acute Sense 1, Influence 1, the focus 10 and Rugged 3.
+  await expect(p.locator("#experience > div").filter({ hasText: "Available" }).locator("dd").first()).toHaveText("15");
   for (const level of ["Healthy", "Injured", "Incapacitated"])
     await expect(part("Health Levels").getByRole("img", { name: `${level}: 4 boxes` })).toBeVisible();
   await p.screenshot(shots("sheet"));
@@ -193,7 +194,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await characterTab(p, "Troupes");
   await p.getByLabel("Troupe", { exact: true }).selectOption({ label: troupeName });
   await expect(p.getByText("Nothing differs")).toBeVisible();
-  await expect(p.getByText(/If accepted now, 11 XP will be lost/)).toBeVisible();
+  await expect(p.getByText(/If accepted now, 10 XP will be lost/)).toBeVisible();
   await p.getByRole("button", { name: "Ask to join as home troupe" }).click();
   await expect(p.getByText(/Waiting for .* storytellers/)).toBeVisible();
 

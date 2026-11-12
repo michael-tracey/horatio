@@ -32,7 +32,15 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from horatio import audit, backstories, free_changes, notifications, titles, xp_range
+from horatio import (
+    audit,
+    backstories,
+    creation_xp,
+    free_changes,
+    notifications,
+    titles,
+    xp_range,
+)
 from horatio.creation import Pool, pools_for
 from horatio.models import (
     Approval,
@@ -432,7 +440,11 @@ def creation_differences(
         return []
     target = pools_for(rules.creation_rules(), rows)
     current = pools_for(current_rules.creation_rules(), rows)
-    picked = [r for r in rows if r.trait.creation_pick is not None]
+    # Merits and flaws taken in creation were bought with XP, or gave it
+    # (horatio.creation_xp): no free dots to pay for. A smaller budget for them here
+    # leaves them as they are, as flaws past the budget always were.
+    paid = creation_xp.CATEGORIES if creation_xp.keeps_xp(character) else ()
+    picked = [r for r in rows if r.trait.creation_pick is not None and r.category.key not in paid]
     placed = {id(r) for pool in target.values() for r in pool.traits}
 
     differences: list[Difference] = []
@@ -469,6 +481,8 @@ def creation_differences(
         )
 
     for pool in target.values():
+        if pool.category in paid:
+            continue
         # Flaws past the budget are kept, paying nothing past it: the troupe's check
         # flags them until it accepts the character.
         if pool.remaining < 0 and not pool.past_budget:

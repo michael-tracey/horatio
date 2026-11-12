@@ -202,12 +202,12 @@ test("a quick NPC's Ventrue Royalty places its free backgrounds, and staff take 
   await p.goto(`/characters/${npcId}`);
 
   // The merit's 4, 3 and 2 are fitted where they save the most (#566): only Resources' fifth
-  // dot is bought, beside Brawl's.
+  // dot is bought, beside Brawl's, and the merit's own 2 XP, as a player's (#657).
   const royalty = p.getByRole("region", { name: "Ventrue Royalty places" });
   await expect(royalty.getByRole("combobox", { name: "Ventrue Royalty at 4", exact: true })).toHaveValue("Resources");
   await expect(royalty.getByRole("combobox", { name: "Ventrue Royalty at 3", exact: true })).toHaveValue("Haven");
   await expect(royalty.getByRole("combobox", { name: "Ventrue Royalty at 2", exact: true })).toHaveValue("Allies");
-  await expect(p.getByText("10 XP", { exact: true })).toBeVisible();
+  await expect(p.getByText("12 XP", { exact: true })).toBeVisible();
   await p.screenshot(shots("npc-places"));
 
   // Its player had Haven bought, not placed: taken off, Haven takes the creation pick at 3 instead.
@@ -241,7 +241,7 @@ test("staff choose a quick NPC's Thaumaturgic Expertise path and a skill's field
     expect(rated.status(), await rated.text()).toBe(200);
   }
   await p.goto(`/characters/${npcId}`);
-  await expect(p.getByText("26 XP", { exact: true })).toBeVisible();
+  await expect(p.getByText("27 XP", { exact: true })).toBeVisible();
 
   // Both are flagged where they're listed, each with the box to put it right in.
   const expertise = p.getByRole("listitem").filter({ has: p.getByLabel("What Thaumaturgic Expertise applies to") });
@@ -252,7 +252,7 @@ test("staff choose a quick NPC's Thaumaturgic Expertise path and a skill's field
   await expertise.getByLabel("What Thaumaturgic Expertise applies to").selectOption(path);
   await p.screenshot(shots("npc-detail"));
   await expertise.getByRole("button", { name: "Set" }).click();
-  await expect(p.getByText("20 XP", { exact: true })).toBeVisible();
+  await expect(p.getByText("21 XP", { exact: true })).toBeVisible();
   await expect(p.getByText("Choose what it applies to:")).toHaveCount(0);
   await expect(p.getByText(`Thaumaturgic Expertise: ${path}`, { exact: true })).toBeVisible();
 
@@ -261,14 +261,14 @@ test("staff choose a quick NPC's Thaumaturgic Expertise path and a skill's field
   await p.getByLabel("Crafts field", { exact: true }).press("Enter");
   await expect(p.getByRole("button", { name: "Crafts: Illumination 2", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(p.getByText("Crafts needs a field:")).toHaveCount(0);
-  await expect(p.getByText("20 XP", { exact: true })).toBeVisible();
+  await expect(p.getByText("21 XP", { exact: true })).toBeVisible();
 
   // And it can be changed again later.
   await p.getByRole("button", { name: "Change the detail of Crafts: Illumination" }).click();
   await p.getByLabel("Crafts field", { exact: true }).fill("Painting");
   await p.getByRole("button", { name: "Set", exact: true }).click();
   await expect(p.getByRole("button", { name: "Crafts: Painting 2", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(p.getByText("20 XP", { exact: true })).toBeVisible();
+  await expect(p.getByText("21 XP", { exact: true })).toBeVisible();
 });
 
 test("staff choose what a quick NPC's Piece That Remains gives on its sheet, and change it in the builder (#577)", async ({ browser }) => {
@@ -289,7 +289,7 @@ test("staff choose what a quick NPC's Piece That Remains gives on its sheet, and
     expect(rated.status(), await rated.text()).toBe(200);
   }
   await p.goto(`/characters/${npcId}`);
-  await expect(p.getByText("19 XP", { exact: true })).toBeVisible();
+  await expect(p.getByText("21 XP", { exact: true })).toBeVisible();
 
   // On the Sheet tab, staff choose the clan merit it gives.
   await p.locator("main").getByRole("link", { name: "Sheet", exact: true }).click();
@@ -304,9 +304,9 @@ test("staff choose what a quick NPC's Piece That Remains gives on its sheet, and
   // Royalty is held, free, and its own dots are placed with the creation picks.
   await expect(p.locator('[data-free-choices="Ventrue Royalty"]')).toContainText("placed with the NPC's creation picks");
 
-  // Back in the builder, Royalty's 4, 3 and 2 are fitted onto the backgrounds: 19 XP falls to 10.
+  // Back in the builder, Royalty's 4, 3 and 2 are fitted onto the backgrounds: 21 XP falls to 12.
   await p.locator("main").getByRole("link", { name: "Build", exact: true }).click();
-  await expect(p.getByText("10 XP", { exact: true })).toBeVisible();
+  await expect(p.getByText("12 XP", { exact: true })).toBeVisible();
   const royalty = p.getByRole("region", { name: "Ventrue Royalty places" });
   await expect(royalty.getByRole("combobox", { name: "Ventrue Royalty at 4", exact: true })).toHaveValue("Resources");
 
@@ -316,7 +316,7 @@ test("staff choose what a quick NPC's Piece That Remains gives on its sheet, and
   await built.getByRole("combobox").selectOption("Aura of Command");
   await built.getByRole("button", { name: "Save" }).click();
   await expect(built).toContainText("Aura of Command");
-  await expect(p.getByText("19 XP", { exact: true })).toBeVisible();
+  await expect(p.getByText("21 XP", { exact: true })).toBeVisible();
   await expect(royalty).toHaveCount(0);
 });
 

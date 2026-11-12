@@ -63,9 +63,15 @@ def vivian(troupe: Troupe, *, merits: list[tuple[str, int]] | None = None) -> st
         ],
     )
     assert complete(troupe.player, ghoul).status_code == 200
-    # Her 30 creation XP, all spent: 7 dots of Mental and 3 of Social at 3 XP each.
-    put(troupe.player, ghoul, "attributes", "Mental", 10)
-    put(troupe.player, ghoul, "attributes", "Social", 8)
+    # Her 30 creation XP, all spent: her merits' (p. 106), then dots of Mental and
+    # Social at 3 XP each, and a skill dot or two at 1 for what is left.
+    left = sheet(troupe.player, ghoul)["xp"]["balance"]
+    mental = min(7, left // 3)
+    put(troupe.player, ghoul, "attributes", "Mental", 3 + mental)
+    social = (left - 3 * mental) // 3
+    put(troupe.player, ghoul, "attributes", "Social", 5 + social)
+    for skill in ["Stealth", "Survival"][: left - 3 * (mental + social)]:
+        put(troupe.player, ghoul, "skills", skill, 1)
     make_home(troupe, ghoul)
     assert sheet(troupe.player, ghoul)["xp"]["balance"] == 0
     return ghoul

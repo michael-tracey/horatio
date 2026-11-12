@@ -1070,7 +1070,10 @@ herd_factor = 2
 
 # ---------------------------------------------------------------------------
 # Character creation, as Yorick seeded it: picks give that many free dots to
-# one trait each; merits and flaws each have a budget of points instead.
+# one trait each; merits and flaws each have a budget of points instead. Merits
+# taken in creation cost initial XP, up to their 7 points, and flaws add theirs to
+# it, at most 7 XP (p. 85 Step Eight, p. 106): the flaws' budget is the most XP
+# they give (horatio.creation_xp).
 
 [[creation_rules]]
 category = "attributes"

@@ -7,8 +7,9 @@ import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 
 const KINDS: Record<string, string> = { self_entered: "self-entered", cap: "above a ceiling", reprice: "repriced", debt: "XP debt" };
-// Lines whose reason says all there is: a purchase, and creation XP lost when accepted.
-const UNLABELLED = new Set(["purchase", "lost"]);
+// Lines whose reason says all there is: a purchase, creation XP lost when accepted, and
+// a merit or flaw taken in creation ("Iron Will 0 → 3, taken in creation").
+const UNLABELLED = new Set(["purchase", "lost", "creation"]);
 
 /** The character's XP history. `selfEntering`: its player, while it has no home
  * troupe, may add XP to it themselves; the troupe it joins accepts or removes it. */

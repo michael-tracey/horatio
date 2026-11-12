@@ -4021,7 +4021,8 @@
               "cap",
               "reprice",
               "debt",
-              "lost"
+              "lost",
+              "creation"
             ],
             "title": "Kind",
             "type": "string"
@@ -10352,6 +10353,16 @@
             },
             "title": "Shortfalls",
             "type": "array"
+          },
+          "xp": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CreationXpOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -10360,6 +10371,40 @@
           "needs"
         ],
         "title": "CreationOut",
+        "type": "object"
+      },
+      "CreationXpOut": {
+        "description": "The character's XP, the book's way (MET: VTM pp. 85, 106): what it starts with,\nwhat the merits taken in creation cost, what the flaws gave (at most\n`flaw_budget`), and what is left to spend once creation is finished.",
+        "properties": {
+          "flaw_budget": {
+            "title": "Flaw Budget",
+            "type": "integer"
+          },
+          "flaws": {
+            "title": "Flaws",
+            "type": "integer"
+          },
+          "left": {
+            "title": "Left",
+            "type": "integer"
+          },
+          "merits": {
+            "title": "Merits",
+            "type": "integer"
+          },
+          "starting": {
+            "title": "Starting",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "starting",
+          "merits",
+          "flaws",
+          "flaw_budget",
+          "left"
+        ],
+        "title": "CreationXpOut",
         "type": "object"
       },
       "CropIn": {

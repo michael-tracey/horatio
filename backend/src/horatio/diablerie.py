@@ -151,14 +151,15 @@ def morality_row(db: Session, character: Character) -> sheets.SheetRow | None:
 
 
 def net_spent(db: Session, character: Character, definition_id: uuid.UUID, detail: str) -> int:
-    """The XP spent on a trait, net of what came back: negative for a flaw that paid."""
+    """The XP spent on a trait, net of what came back: negative for a flaw that paid,
+    in creation (horatio.creation_xp) or since."""
     return -(
         db.scalar(
             select(func.coalesce(func.sum(XpEntry.amount), 0)).where(
                 XpEntry.character_id == character.id,
                 XpEntry.trait_definition_id == definition_id,
                 func.coalesce(XpEntry.detail, "") == detail,
-                XpEntry.kind.in_(("purchase", "reprice")),
+                XpEntry.kind.in_(("purchase", "reprice", "creation")),
             )
         )
         or 0
@@ -342,7 +343,7 @@ def removing_flaw(
             .where(
                 XpEntry.character_id == character.id,
                 XpEntry.trait_definition_id == row.definition.id,
-                XpEntry.kind == "purchase",
+                XpEntry.kind.in_(("purchase", "creation")),
                 XpEntry.amount > 0,
             )
             .order_by(XpEntry.id.desc())

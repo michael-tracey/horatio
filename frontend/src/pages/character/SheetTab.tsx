@@ -70,7 +70,7 @@ import { DomitorCard } from "./Domitor";
 import { BuiltTo } from "./BuiltTo";
 import { EmbraceCard } from "./Embrace";
 import { useHasDomitor } from "./splats";
-import { pointsText } from "./creation/logic";
+import { pointsText, xpText } from "./creation/logic";
 import { xpTotal } from "./xpTotals";
 import { useCatalogue } from "../../catalogue";
 
@@ -1263,6 +1263,12 @@ function CreationPanel({
         Picks placed or taken back here wait in the cart until you apply them.
         Experience can be spent once creation is finished.
       </p>
+      {creation.xp && (
+        // Merits taken in creation cost XP and flaws add it, as on Merits & flaws (p. 106).
+        <p aria-label="Creation XP" className="mb-3 text-sm">
+          {xpText(creation.xp)}
+        </p>
+      )}
       <div className="grid gap-3 sm:grid-cols-2">
         {[...byCategory].map(([category, pools]) => (
           <div key={category}>

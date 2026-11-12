@@ -212,7 +212,7 @@ With **NPCs** or **Everyone** shown, choose **New NPC**:
 
 1. Give it a **Name** and choose its **Kind** (a vampire, a ghoul, a mortal and others, or a custom kind you describe).
 2. Choose its **Form**:
-   - **Sheeted**: a full sheet. **Quick build** sets ratings directly, with a running tally of what the NPC is worth; **Use step-by-step creation** builds it as a player would.
+   - **Sheeted**: a full sheet. **Quick build** sets ratings directly, with a running tally of what the NPC is worth (its merits at what they'd cost a player character, and its flaws giving up to the troupe's budget for them); **Use step-by-step creation** builds it as a player would.
    - **Stock**: no sheet, only a rating and a few specialisations, as the book's Stock NPCs have.
 3. Choose **Quick build**, **Use step-by-step creation** or **Make Stock NPC**.
 
@@ -552,6 +552,8 @@ A new or changed price applies from a character's next purchase. What it has alr
 ### Starting points
 
 **Starting points** sets what new characters get free in each category: picks at a rating, or a budget of points. Choose **Change** beside a category to play it differently; going back uses the rule set's again.
+
+Merits and flaws work as the book has it (MET: VTM pp. 85, 106): merits taken in creation are bought with the character's starting XP, and flaws add their points to it. Their budgets here are the most points of merits a new character takes (its clan's rarity and bloodline merits among them), and the most XP its flaws give; flaws past that need your OK and give nothing more. Changing a budget applies at once to characters being built here. Characters finished before Horatio worked this way (November 2026) keep the numbers they had, when merits and flaws came from free budgets and gave and cost no XP.
 
 The same page has:
 

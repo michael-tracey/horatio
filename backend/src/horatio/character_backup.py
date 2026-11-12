@@ -118,6 +118,7 @@ XpKind = Literal[
     "reprice",
     "debt",
     "lost",
+    "creation",
 ]
 
 
@@ -688,7 +689,7 @@ def earned_lines(lines: Sequence[BackupXpLine]) -> list[tuple[BackupXpLine, int]
     for n, line in enumerate(lines):
         if line.kind in EARNED_KINDS and line.kind != "correction":
             gives[n] = gives.get(n, 0) + line.amount
-        elif line.kind == "correction" and corrected[n] != "purchase":
+        elif line.kind == "correction" and corrected[n] not in ("purchase", "creation"):
             target = line.corrects if line.corrects is not None else n
             gives[target] = gives.get(target, 0) + line.amount
     return [(lines[n], amount) for n, amount in sorted(gives.items())]
@@ -915,8 +916,9 @@ def write_xp(
     """The file's XP history as this character's: each line earned there as
     self-entered XP, dated as it was; each trait on the sheet bought for what was
     paid for it there; fees, debt and lost XP as they were; and the rest of what was
-    spent (corrections, traits no longer held) as one line. XP paid for a trait that
-    couldn't come in stays unspent. The self-entered XP it comes to."""
+    spent (corrections, traits no longer held, merits and flaws taken in creation) as
+    one line. XP paid for a trait that couldn't come in stays unspent. The
+    self-entered XP it comes to."""
     where = document.troupe or "a file"
     lines = document.xp
     self_entered = 0
@@ -1159,6 +1161,9 @@ def import_character(
         card_text=who.card_text,
         card_flavour=who.card_flavour,
         creation_completed_at=datetime.now(UTC),
+        # What its merits and flaws cost or gave in creation comes in with the rest
+        # of what it spent there, not as creation lines (horatio.creation_xp).
+        merits_flaws_xp=False,
     )
     db.add(character)
     db.flush()

@@ -12436,7 +12436,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "award" | "purchase" | "settlement" | "fee" | "correction" | "self_entered" | "cap" | "reprice" | "debt" | "lost";
+            kind: "award" | "purchase" | "settlement" | "fee" | "correction" | "self_entered" | "cap" | "reprice" | "debt" | "lost" | "creation";
             /**
              * On
              * Format: date
@@ -14719,6 +14719,25 @@ export interface components {
              * @default []
              */
             shortfalls: components["schemas"]["ShortfallOut"][];
+            xp?: components["schemas"]["CreationXpOut"] | null;
+        };
+        /**
+         * CreationXpOut
+         * @description The character's XP, the book's way (MET: VTM pp. 85, 106): what it starts with,
+         *     what the merits taken in creation cost, what the flaws gave (at most
+         *     `flaw_budget`), and what is left to spend once creation is finished.
+         */
+        CreationXpOut: {
+            /** Flaw Budget */
+            flaw_budget: number;
+            /** Flaws */
+            flaws: number;
+            /** Left */
+            left: number;
+            /** Merits */
+            merits: number;
+            /** Starting */
+            starting: number;
         };
         /**
          * CropIn

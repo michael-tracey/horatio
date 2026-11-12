@@ -356,7 +356,10 @@ scheme = "free"
 
 # ---------------------------------------------------------------------------
 # Character creation: as for a vampire, but for disciplines (p. 296): 5 dots to
-# place as the player likes, in-clan only. Points left unplaced are saved.
+# place as the player likes, in-clan only. Points left unplaced are saved. Merits
+# cost initial XP and flaws add to it as a vampire's do: p. 296 changes only which
+# merits a ghoul may take, and has it pay for its domitor's rarity and bloodline
+# merits (horatio.creation_xp).
 
 [[creation_rules]]
 category = "attributes"
