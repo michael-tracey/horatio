@@ -1138,8 +1138,9 @@ test("throwing by flipping the phone face down and back up, on a phone, and swit
   await expect(flipping).toBeChecked();
   await expect(throws).toContainText("Flip the phone face down and back up to throw.");
 
-  // A flip throws, at once: no count-in, the throw showing as the screen comes up.
+  // A flip throws: as the screen comes back up it counts in, as the button does (#756).
   await orient(flip);
+  await expect(throws.getByText(/^(Rock|Paper|Scissors)…$/)).toBeVisible();
   await expect(throws.getByRole("img", { name: /^(Rock|Paper|Scissors)$/ })).toBeVisible();
   const past = throws.getByRole("region", { name: "Last throws" }).getByRole("listitem");
   await expect(past).toHaveCount(1);
