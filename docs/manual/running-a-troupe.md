@@ -848,6 +848,10 @@ The four settings:
 
 Changing the setting leaves drinks already waiting where they are. **Characters › Bonds** lists every drink still waiting, whoever it waits on, to approve or decline there too. In any mode, a drink in a bond's **Drinks log** can be changed (its night and note) or taken out with a reason; taking out the last one removes the bond. Players can't record a night to come, one before the character was made in Horatio, or a drink while their character holds a full bond to someone else.
 
+#### The web of bonds
+
+**Characters › Bonds › Web** draws the same bonds as a web: an arrow from each thrall to their regnant, heavier and brighter for a stronger bond, with fading, ended and broken bonds faint and dashed. Each person is a dot coloured by clan and sized by how many thralls they hold; a name only has a dashed edge. Filter to those still in play or everyone, full bonds only, one clan, title holders, or add ended and broken bonds. Point at or select someone to light up their bonds; **Open their bonds** opens the list on just theirs. Under the web, **Most thralls** names who holds the most, and **Chains of bonds** shows where someone bound to another holds thralls of their own. Every chart has **Show as table**. Only the staff who can open **Characters › Bonds** see the web; players never do.
+
 #### When a regnant or a thrall meets Final Death
 
 "If a regnant is killed, the bond will slowly fade over the next month" (MET: VTM p. 296). When a character is retired with **Final Death** (or why it left is changed to Final Death), each bond it's the regnant of starts **fading**. On **Characters › Bonds** it says so, with the day it ends, 30 days on. **Change the fade** moves that day, with a reason; choose today to end it now.
