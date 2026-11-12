@@ -1065,6 +1065,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/boons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Boons
+         * @description The boons still standing the character owes and is owed, by kind, in each
+         *     troupe whose ledger the caller keeps: for the staff view of the sheet. Players
+         *     see nothing here (what they may see comes with #686).
+         */
+        get: operations["character_boons_api_characters__character_id__boons_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/building-troupe": {
         parameters: {
             query?: never;
@@ -7296,6 +7318,182 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/boon-ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Boon Ledger
+         * @description Whether the troupe keeps a boon ledger. Off hides it everywhere; what was
+         *     registered is kept, and comes back when it is switched on again.
+         */
+        put: operations["set_boon_ledger_api_troupes__troupe_id__boon_ledger_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Troupe Boons
+         * @description The troupe's boons in one view of its ledger, newest first: open (standing,
+         *     both parties in play), departed (standing, but someone on it is dead or
+         *     off-field), settled, void, pending, or all. Narrowed to those a character or a
+         *     name is on, of a kind, or made between two nights.
+         */
+        get: operations["troupe_boons_api_troupes__troupe_id__boons_get"];
+        put?: never;
+        /**
+         * Register
+         * @description Register boons in the ledger: one, or a whole game's at once, each row as many
+         *     times as its count. All or none: a row that can't be registered stops them all.
+         */
+        post: operations["register_api_troupes__troupe_id__boons_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boons/{boon_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One Boon
+         * @description A boon with its log.
+         */
+        get: operations["one_boon_api_troupes__troupe_id__boons__boon_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit
+         * @description Correct what a boon says, with a note. Its log keeps each field before and
+         *     after, which only the troupe's storytellers and assistant storytellers see.
+         */
+        patch: operations["edit_api_troupes__troupe_id__boons__boon_id__patch"];
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boons/{boon_id}/pass-on": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pass On
+         * @description Move the debtor's or the creditor's side of a standing boon to another, such
+         *     as a broodmate after a death.
+         */
+        post: operations["pass_on_api_troupes__troupe_id__boons__boon_id__pass_on_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boons/{boon_id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reopen
+         * @description A settled or void boon stands again, with a note.
+         */
+        post: operations["reopen_api_troupes__troupe_id__boons__boon_id__reopen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boons/{boon_id}/settle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Settle
+         * @description The boon is settled: called in, forgiven, or formally ignored (p. 397).
+         */
+        post: operations["settle_api_troupes__troupe_id__boons__boon_id__settle_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boons/{boon_id}/trade": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trade
+         * @description Its creditor traded it: another holds it now. If its conditions ask, its
+         *     debtor's player is told.
+         */
+        post: operations["trade_api_troupes__troupe_id__boons__boon_id__trade_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boons/{boon_id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Void
+         * @description The boon never stood, or no longer counts, with a note: entered by mistake, say.
+         */
+        post: operations["void_api_troupes__troupe_id__boons__boon_id__void_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/character-backups": {
         parameters: {
             query?: never;
@@ -12992,6 +13190,193 @@ export interface components {
                 };
             };
         };
+        /** BoonChangeOut */
+        BoonChangeOut: {
+            /** After */
+            after: string;
+            /** Before */
+            before: string;
+            /** Field */
+            field: string;
+        };
+        /**
+         * BoonEditIn
+         * @description What to correct; anything left out stays as it is. The note is required.
+         */
+        BoonEditIn: {
+            /** Conditions */
+            conditions?: string | null;
+            creditor?: components["schemas"]["BoonPartyIn"] | null;
+            debtor?: components["schemas"]["BoonPartyIn"] | null;
+            /** Kind */
+            kind?: ("trivial" | "minor" | "major" | "blood" | "life") | null;
+            /** Made On */
+            made_on?: string | null;
+            /** Note */
+            note: string;
+            /** Notify On Trade */
+            notify_on_trade?: boolean | null;
+            /** Reason */
+            reason?: string | null;
+            /** Staff Note */
+            staff_note?: string | null;
+        };
+        /** BoonEventOut */
+        BoonEventOut: {
+            /** As Character */
+            as_character: string | null;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** By */
+            by: string | null;
+            /** Changes */
+            changes: components["schemas"]["BoonChangeOut"][] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "registered" | "edited" | "traded" | "passed_on" | "settled" | "voided" | "reopened";
+            /** Note */
+            note: string;
+        };
+        /** BoonKindCount */
+        BoonKindCount: {
+            /** Count */
+            count: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "trivial" | "minor" | "major" | "blood" | "life";
+        };
+        /** BoonLedgerIn */
+        BoonLedgerIn: {
+            /** On */
+            on: boolean;
+        };
+        /** BoonNoteIn */
+        BoonNoteIn: {
+            /** Note */
+            note: string;
+        };
+        /** BoonOut */
+        BoonOut: {
+            /** Closed At */
+            closed_at: string | null;
+            /** Closed Note */
+            closed_note: string;
+            /** Conditions */
+            conditions: string;
+            creditor: components["schemas"]["BoonPartyOut"];
+            debtor: components["schemas"]["BoonPartyOut"];
+            /** Departed */
+            departed: boolean;
+            /** Events */
+            events?: components["schemas"]["BoonEventOut"][] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "trivial" | "minor" | "major" | "blood" | "life";
+            /**
+             * Made On
+             * Format: date
+             */
+            made_on: string;
+            /** Notify On Trade */
+            notify_on_trade: boolean;
+            /** Reason */
+            reason: string;
+            /** Settled How */
+            settled_how: ("called_in" | "forgiven" | "ignored") | null;
+            /** Staff Note */
+            staff_note: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "pending" | "registered" | "settled" | "void";
+            /**
+             * Submitted At
+             * Format: date-time
+             */
+            submitted_at: string;
+            /** Submitted By */
+            submitted_by: string | null;
+        };
+        /**
+         * BoonPartyIn
+         * @description One side of a boon: a character in the troupe, or a name only.
+         */
+        BoonPartyIn: {
+            /** Character Id */
+            character_id?: string | null;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+        };
+        /** BoonPartyOut */
+        BoonPartyOut: {
+            /** Character Id */
+            character_id: string | null;
+            /** Kind */
+            kind: string | null;
+            /** Name */
+            name: string;
+            /** Standing */
+            standing: ("active" | "final_death" | "off_field" | "inactive" | "retired") | null;
+        };
+        /** BoonPassOnIn */
+        BoonPassOnIn: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Side
+             * @enum {string}
+             */
+            side: "debtor" | "creditor";
+            to: components["schemas"]["BoonPartyIn"];
+        };
+        /** BoonSettleIn */
+        BoonSettleIn: {
+            /**
+             * How
+             * @enum {string}
+             */
+            how: "called_in" | "forgiven" | "ignored";
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** BoonTradeIn */
+        BoonTradeIn: {
+            creditor: components["schemas"]["BoonPartyIn"];
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
         /** BreakIn */
         BreakIn: {
             /** Reason */
@@ -13461,6 +13846,11 @@ export interface components {
             bound_to: components["schemas"]["SheetBondOut"][];
             /** Manage Troupe Id */
             manage_troupe_id: string | null;
+        };
+        /** CharacterBoonsOut */
+        CharacterBoonsOut: {
+            /** Troupes */
+            troupes: components["schemas"]["TroupeBoonSummaryOut"][];
         };
         /** CharacterChanges */
         CharacterChanges: {
@@ -20945,6 +21335,46 @@ export interface components {
             /** Removed */
             removed: string;
         };
+        /** NewBoonIn */
+        NewBoonIn: {
+            /**
+             * Conditions
+             * @default
+             */
+            conditions: string;
+            /**
+             * Count
+             * @default 1
+             */
+            count: number;
+            creditor: components["schemas"]["BoonPartyIn"];
+            debtor: components["schemas"]["BoonPartyIn"];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "trivial" | "minor" | "major" | "blood" | "life";
+            /**
+             * Made On
+             * Format: date
+             */
+            made_on: string;
+            /**
+             * Notify On Trade
+             * @default false
+             */
+            notify_on_trade: boolean;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            /**
+             * Staff Note
+             * @default
+             */
+            staff_note: string;
+        };
         /** NewCharacter */
         NewCharacter: {
             /** Building Troupe Id */
@@ -24446,6 +24876,19 @@ export interface components {
             because: components["schemas"]["TraitRefOut"][];
             /** Message */
             message: string;
+        };
+        /**
+         * RegisterBoonsIn
+         * @description One boon, or a whole game's at once.
+         */
+        RegisterBoonsIn: {
+            /** Boons */
+            boons: components["schemas"]["NewBoonIn"][];
+            /**
+             * Note
+             * @default
+             */
+            note: string;
         };
         /** RememberedMonthOut */
         RememberedMonthOut: {
@@ -28337,6 +28780,31 @@ export interface components {
              */
             setting: "off" | "staff" | "players_report" | "players_manage";
         };
+        /** TroupeBoonSummaryOut */
+        TroupeBoonSummaryOut: {
+            /** Owed */
+            owed: components["schemas"]["BoonKindCount"][];
+            /** Owes */
+            owes: components["schemas"]["BoonKindCount"][];
+            /**
+             * Troupe Id
+             * Format: uuid
+             */
+            troupe_id: string;
+            /** Troupe Name */
+            troupe_name: string;
+        };
+        /** TroupeBoonsOut */
+        TroupeBoonsOut: {
+            /** Boons */
+            boons: components["schemas"]["BoonOut"][];
+            /** Characters */
+            characters: components["schemas"]["CharacterChoice-Output"][];
+            /** Counts */
+            counts: {
+                [key: string]: number;
+            };
+        };
         /** TroupeChanges */
         TroupeChanges: {
             /** Allowed Sects */
@@ -28539,6 +29007,11 @@ export interface components {
              * @enum {string}
              */
             blood_bonds: "off" | "staff" | "players_report" | "players_manage";
+            /**
+             * Boons
+             * @default false
+             */
+            boons: boolean;
             /** Description */
             description: string;
             /** Diablerie Flaws */
@@ -31913,6 +32386,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CharacterBondsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    character_boons_api_characters__character_id__boons_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterBoonsOut"];
                 };
             };
             /** @description Validation Error */
@@ -44068,6 +44572,362 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BookTraitOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_boon_ledger_api_troupes__troupe_id__boon_ledger_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonLedgerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    troupe_boons_api_troupes__troupe_id__boons_get: {
+        parameters: {
+            query?: {
+                view?: "open" | "departed" | "settled" | "void" | "pending" | "all";
+                character_id?: string | null;
+                name?: string;
+                kind?: ("trivial" | "minor" | "major" | "blood" | "life") | null;
+                made_from?: string | null;
+                made_to?: string | null;
+            };
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeBoonsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    register_api_troupes__troupe_id__boons_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterBoonsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    one_boon_api_troupes__troupe_id__boons__boon_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                boon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_api_troupes__troupe_id__boons__boon_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                boon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonEditIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pass_on_api_troupes__troupe_id__boons__boon_id__pass_on_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                boon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonPassOnIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reopen_api_troupes__troupe_id__boons__boon_id__reopen_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                boon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonNoteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    settle_api_troupes__troupe_id__boons__boon_id__settle_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                boon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonSettleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trade_api_troupes__troupe_id__boons__boon_id__trade_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                boon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonTradeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    void_api_troupes__troupe_id__boons__boon_id__void_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                boon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoonNoteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"];
                 };
             };
             /** @description Validation Error */
