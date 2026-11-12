@@ -189,8 +189,11 @@ class FreeChoicesSummaryOut(BaseModel):
 
 
 class BondAskOut(BaseModel):
-    """A drink a player reported, for staff to approve (horatio.bonds)."""
+    """A drink a player reported, or a meeting (#665), for staff to approve
+    (horatio.bonds)."""
 
+    # drink | meeting
+    kind: str = "drink"
     thrall: str
     regnant: str
     # Which side the reporting player's character is on.
@@ -415,13 +418,14 @@ def bond_out(db: DbSession, approval: Approval) -> BondAskOut | None:
     thrall, regnant = bonds.report_parties(db, report)
     troupe = db.get_one(Troupe, report.troupe_id)
     return BondAskOut(
+        kind=report.kind,
         thrall=thrall.shown,
         regnant=regnant.shown,
         reported_as=report.reported_as,
         night=report.night,
         source=report.source,
         refused=bonds.immune_to(db, troupe, thrall, regnant)
-        if report.status == "pending"
+        if report.status == "pending" and report.kind == "drink"
         else None,
     )
 

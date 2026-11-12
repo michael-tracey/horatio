@@ -128,6 +128,84 @@ export function ReportDrinkForm({
   );
 }
 
+/**
+ * A meeting between the character and the other side of a bond it is in, logged by its
+ * player (#665): it keeps a lesser bond from ending. It counts at once where players
+ * manage their bonds, and waits for the storytellers where they approve.
+ */
+export function ReportMeetingForm({
+  characterId,
+  bondId,
+  name,
+  other,
+  setting,
+  onDone,
+}: {
+  characterId: string;
+  bondId: string;
+  name: string;
+  other: string;
+  setting: string | null;
+  onDone: () => void;
+}) {
+  const dates = useDates();
+  const toast = useToast();
+  const [night, setNight] = useState(dates.toInput(new Date()).slice(0, 10));
+  const [source, setSource] = useState<BondReportOut["source"]>("downtime");
+  const [note, setNote] = useState("");
+  const save = useAction(async () => {
+    const done = await unwrap(
+      api.POST("/api/characters/{character_id}/bonds/{bond_id}/meetings", {
+        params: { path: { character_id: characterId, bond_id: bondId } },
+        body: { night, source, note },
+      }),
+    );
+    toast({ message: done.outcome === "recorded" ? "Meeting recorded." : "Sent to the storytellers to approve." });
+    onDone();
+  });
+  return (
+    <form
+      aria-label={`Log a meeting with ${other}`}
+      className="mt-1 flex flex-col gap-3 rounded-md border border-ash p-3 text-sm"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save.mutate(undefined);
+      }}
+    >
+      <p className="text-xs text-mist">
+        {name} and {other} met or spoke. Games you both checked in at count already.{" "}
+        {setting === "players_report" ? "The storytellers approve it before it counts." : "It counts at once."}
+      </p>
+      <div className="flex flex-wrap gap-3">
+        <Field label="Night">
+          <DateInput required value={night} onChange={(e) => setNight(e.target.value)} className="w-44" />
+        </Field>
+        <Field label="Where">
+          <Select value={source} onChange={(e) => setSource(e.target.value as BondReportOut["source"])} className="w-44">
+            {PLAYER_SOURCES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </div>
+      <Field label="Note (optional)">
+        <Input maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+      <ErrorText error={save.error} />
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" disabled={save.isPending || !night}>
+          Log the meeting
+        </Button>
+        <Button type="button" variant="ghost" onClick={onDone}>
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 /** The drinks its player reported for the character, and those waiting on them to confirm. */
 export function BondReportList({ characterId, reports }: { characterId: string; reports: BondReportOut[] }) {
   const dates = useDates();

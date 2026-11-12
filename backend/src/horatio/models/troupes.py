@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 from sqlalchemy import (
@@ -41,6 +41,7 @@ class Troupe(Imported, Record):
         ),
         CheckConstraint("boon_players_see in ('intake', 'owes', 'owed')", name="boon_players_see"),
         CheckConstraint("boon_harpy in ('none', 'submissions', 'full')", name="boon_harpy"),
+        CheckConstraint("boon_talon_word in ('Lesser Harpies', 'Talons')", name="boon_talon_word"),
     )
 
     name: Mapped[str]
@@ -131,6 +132,9 @@ class Troupe(Imported, Record):
     # Its Who's Who (horatio.whos_who) adds the negative status each character carries
     # into a game here, which is public in the sect anyway (MET: VTM p. 312).
     whos_who_negative: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Its players see its sire lines on the Who's Who (horatio.sire_lines); its staff
+    # always do.
+    sire_lines_players: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Quests (horatio.quests): on or off, and how many quest requests each character
     # may make in a downtime cycle. While off, players see nothing of them.
     quests_enabled: Mapped[bool] = mapped_column(default=False, server_default="false")
@@ -155,6 +159,12 @@ class Troupe(Imported, Record):
     # "players_manage", players record them. The player modes come with #661; until
     # then they work as "staff".
     blood_bonds: Mapped[str] = mapped_column(default="off", server_default="off")
+    # The day the troupe's bonds' clocks start from (#665): no bond drops or ends for
+    # time spent apart before it, so bonds kept before fading with time came in, or
+    # entered from before Horatio, don't all fade at once.
+    bond_clock_from: Mapped[date] = mapped_column(
+        Date, default=lambda: datetime.now(UTC).date(), server_default=text("current_date")
+    )
     # Boons (horatio.boons, #685): whether the troupe keeps a boon ledger. While off,
     # nothing of it shows, not even in the log; what was registered is kept, and comes
     # back when it is on again.
@@ -173,6 +183,13 @@ class Troupe(Imported, Record):
     # the review queue and word of each boon its players report; or "full", the whole
     # ledger, to register, edit and settle boons like its staff.
     boon_harpy: Mapped[str] = mapped_column(default="none", server_default="none")
+    # The Harpy may give others access to the ledger (horatio.boon_talons, #689): Lesser
+    # Harpies, or talons, as the troupe calls them (`boon_talon_word`). Only while the
+    # Harpy has the full ledger.
+    boon_talons: Mapped[bool] = mapped_column(default=False, server_default="false")
+    boon_talon_word: Mapped[str] = mapped_column(
+        default="Lesser Harpies", server_default="Lesser Harpies"
+    )
     # The court over time (horatio.title_history, #712): whether its players see who
     # held each title and when. Its staff always do.
     court_history_players: Mapped[bool] = mapped_column(default=False, server_default="false")

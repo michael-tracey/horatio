@@ -261,7 +261,7 @@ def _also(
                 Viewing.ended_at.is_(None),
                 Viewing.ends_at > func.now(),
             )
-            .order_by(Viewing.created_at)
+            .order_by(Viewing.created_at, Viewing.id)
         )
     )
     for v in viewings:
@@ -320,7 +320,7 @@ def preview(db: Session, keep: User, other: User, viewer: User) -> Preview:
         db.scalars(
             select(FormerHandle.handle)
             .where(FormerHandle.user_id == other.id, FormerHandle.held_until > func.now())
-            .order_by(FormerHandle.created_at)
+            .order_by(FormerHandle.created_at, FormerHandle.id)
         )
     )
     others = [

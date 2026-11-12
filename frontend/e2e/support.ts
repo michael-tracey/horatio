@@ -21,6 +21,20 @@ export async function undoInHeader(page: Page, tap: string | RegExp) {
   return undo;
 }
 
+/**
+ * The site's main navigation in the top bar (#746): the bar itself on a wide screen;
+ * below 1024px, behind the Menu button, which this opens if it isn't open already.
+ * Characters, Troupes, Rules reference, Help, Custodian, the account link and Sign
+ * out are all in it.
+ */
+export async function topBar(page: Page): Promise<Locator> {
+  const nav = page.getByRole("navigation", { name: "Main" });
+  if ((page.viewportSize()?.width ?? 1280) >= 1024) return nav;
+  const menu = page.getByRole("button", { name: "Menu", exact: true });
+  if ((await menu.getAttribute("aria-expanded")) !== "true") await menu.click();
+  return nav;
+}
+
 /** Which group each of a PC's tabs is in on a phone (CharacterPage). */
 const CHARACTER_GROUPS: Record<string, string> = {
   Sheet: "Sheet",

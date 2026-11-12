@@ -101,6 +101,9 @@ class WhosWhoOut(BaseModel):
     can_represent: list[uuid.UUID]
     # It shows the negative status each character carries into a game here.
     shows_negative: bool
+    # The caller may see the troupe's sire lines (horatio.sire_lines): its staff
+    # always, its players if the troupe shows them.
+    sire_lines: bool
 
 
 class CourtOrder(BaseModel):
@@ -214,6 +217,7 @@ def read_whos_who(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> Who
             if staff or (characters[i].kind == "pc" and characters[i].player_id == user.id)
         ],
         shows_negative=troupe.whos_who_negative,
+        sire_lines=staff or troupe.sire_lines_players,
     )
 
 

@@ -129,7 +129,7 @@ def viewed_as(db: DbSession, user: CurrentUser) -> list[ViewedAs]:
         select(Viewing, User.display_name)
         .join(User, Viewing.custodian_id == User.id)
         .where(Viewing.user_id == user.id)
-        .order_by(Viewing.created_at.desc())
+        .order_by(Viewing.created_at.desc(), Viewing.id.desc())
         .limit(100)
     )
     return [

@@ -110,7 +110,11 @@ def mark_out(
 
     def one(boon_id: uuid.UUID) -> BoonOut | None:
         boon = found.get(boon_id)
-        return boon_out(boon, characters, {}, keeper, marked) if boon is not None else None
+        return (
+            boon_out(boon, characters, {}, keeper=keeper, marked=marked)
+            if boon is not None
+            else None
+        )
 
     who = party_out(character, "", keeper.staff)
     who.boonbreaker = mark.lifted_at is None
@@ -130,6 +134,17 @@ def mark_out(
     )
 
 
+def the_harpy(db: DbSession, user: CurrentUser, troupe_id: uuid.UUID) -> tuple[Troupe, Keeper]:
+    """Staff, or the Harpy with the full ledger: declaring a Boonbreaker, and mercy,
+    are the Harpy's (p. 397), not a Lesser Harpy's (#689)."""
+    troupe, keeper = ledger_troupe(db, user, troupe_id, "edit")
+    if keeper.role == "talon":
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Only the Harpy, or staff, declare a Boonbreaker."
+        )
+    return troupe, keeper
+
+
 def a_mark(db: DbSession, troupe: Troupe, mark_id: uuid.UUID) -> Boonbreaker:
     mark = db.get(Boonbreaker, mark_id)
     if mark is None or mark.troupe_id != troupe.id:
@@ -147,7 +162,7 @@ def a_character(db: DbSession, character_id: uuid.UUID) -> Character:
 @router.get("/troupes/{troupe_id}/boonbreakers")
 def troupe_boonbreakers(troupe_id: uuid.UUID, db: DbSession, user: CurrentUser) -> BoonbreakersOut:
     """Everyone marked a Boonbreaker in the troupe's ledger, standing marks first."""
-    troupe, keeper = ledger_troupe(db, user, troupe_id)
+    troupe, keeper = ledger_troupe(db, user, troupe_id, "view")
     marked = boonbreakers.marked(db, troupe.id)
     return BoonbreakersOut(
         marks=[mark_out(db, m, keeper, marked) for m in boonbreakers.marks_of(db, troupe)]
@@ -159,13 +174,13 @@ def boonbreaker_preview(
     troupe_id: uuid.UUID, character_id: uuid.UUID, db: DbSession, user: CurrentUser
 ) -> BoonbreakerPreviewOut:
     """What declaring the character a Boonbreaker would make void, before it's done."""
-    troupe, keeper = ledger_troupe(db, user, troupe_id)
+    troupe, keeper = the_harpy(db, user, troupe_id)
     character = a_character(db, character_id)
     found = boonbreakers.preview(db, troupe, character)
     characters = characters_of(db, found.boons)
     marked = boonbreakers.marked(db, troupe.id)
     return BoonbreakerPreviewOut(
-        boons=[boon_out(b, characters, {}, keeper, marked) for b in found.boons],
+        boons=[boon_out(b, characters, {}, keeper=keeper, marked=marked) for b in found.boons],
         owed_by=found.owed_by,
         owed_to=found.owed_to,
     )
@@ -177,7 +192,7 @@ def declare_boonbreaker(
 ) -> BoonbreakerOut:
     """Declare a character a Boonbreaker (p. 397): their open boons void, both ways,
     and Disgraced while the mark stands."""
-    troupe, keeper = ledger_troupe(db, user, troupe_id)
+    troupe, keeper = the_harpy(db, user, troupe_id)
     character = a_character(db, body.character_id)
     mark = boonbreakers.declare(
         db, user, troupe, keeper, character, body.note, body.refused_boon_id
@@ -192,7 +207,7 @@ def appeal_boonbreaker(
 ) -> BoonbreakerOut:
     """An appeal for mercy and its outcome (p. 398). Granted, the mark is lifted and
     the boons named in `restore` stand again."""
-    troupe, keeper = ledger_troupe(db, user, troupe_id)
+    troupe, keeper = the_harpy(db, user, troupe_id)
     mark = a_mark(db, troupe, mark_id)
     boonbreakers.appeal(
         db,
@@ -217,7 +232,7 @@ def answer_status_loss(
 ) -> BoonOut:
     """For a great boon its debtor formally ignored (p. 395): staff or the Harpy took
     the status they lost, with the status tools, or won't."""
-    troupe, keeper = ledger_troupe(db, user, troupe_id)
+    troupe, keeper = ledger_troupe(db, user, troupe_id, "edit")
     boon = troupe_boon(db, troupe, boon_id)
     boonbreakers.answer_loss(db, user, boon, body.taken, body.note, keeper)
     db.commit()

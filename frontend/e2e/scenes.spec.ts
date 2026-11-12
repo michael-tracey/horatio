@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, openScene, backstoryOptional, builtVampire, ATTRIBUTES_AND_FOCUSES } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, openScene, backstoryOptional, builtVampire, ATTRIBUTES_AND_FOCUSES, topBar } from "./support";
 
 /** Scenes: storytellers pinning NPCs and tapping for them. */
 
@@ -11,7 +11,7 @@ test("a storyteller pins three NPCs in a Scene view, taps for two, and each full
   const lead = await person(browser, "scene-lead");
   const troupeName = `Court of Masks ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -20,7 +20,7 @@ test("a storyteller pins three NPCs in a Scene view, taps for two, and each full
 
   // Three NPCs, made straight through the API.
   const p = lead.page;
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(p.url()).pathname.split("/")[2]!;
@@ -168,7 +168,7 @@ test("a Scene card shows an NPC's best attacks and defences, and its Pools and P
   const lead = await person(browser, "pools-lead");
   const troupeName = `Court of Hounds ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -177,7 +177,7 @@ test("a Scene card shows an NPC's best attacks and defences, and its Pools and P
 
   // An NPC with four attacks and Shape of the Beast: Physical 5, Brawl 3, Melee 2, Firearms 1, Athletics 1, Dodge 2.
   const p = lead.page;
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(p.url()).pathname.split("/")[2]!;
@@ -244,7 +244,7 @@ test("two storytellers share a troupe's named scenes: each pins, taps and sees t
   const second = await person(browser, "named-storyteller");
   const troupeName = `Court of Tapers ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -253,7 +253,7 @@ test("two storytellers share a troupe's named scenes: each pins, taps and sees t
 
   // A second storyteller and three NPCs, made straight through the API.
   const p = lead.page;
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(p.url()).pathname.split("/")[2]!;
@@ -460,7 +460,7 @@ test("staff keep a troupe's scenes on their phones: with no signal both tap the 
 
   // Signing out clears what the phone kept.
   await l.goto("/characters");
-  await l.getByRole("button", { name: "Sign out" }).click();
+  await (await topBar(l)).getByRole("button", { name: "Sign out" }).click();
   await expect(l.getByRole("heading", { name: "Sign in" })).toBeVisible();
   expect(await l.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("horatio.offline.scenes.")))).toEqual([]);
 });

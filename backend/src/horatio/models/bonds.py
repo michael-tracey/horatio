@@ -60,15 +60,19 @@ class BloodBond(Record):
 
 class BondEntry(Record):
     """A line of a blood bond's log, from which its level is worked out
-    (horatio.bonds.level_of): a drink, on a night, which counts once a night; or the
+    (horatio.bonds.level_of): a drink, on a night, which counts once a night; the
     bond entered by staff at the level it already stood at, such as one from before
-    Horatio, with the reason."""
+    Horatio, with the reason; a full bond dropped to two drinks after three months
+    without drinking (#665, p. 296), which sets the level as entering does; or the two
+    meeting, which keeps a lesser bond from ending and changes no level."""
 
     __tablename__ = "bond_entries"
     __table_args__ = (
-        CheckConstraint("kind in ('drink', 'entered')", name="kind"),
+        CheckConstraint("kind in ('drink', 'entered', 'dropped', 'meeting')", name="kind"),
         CheckConstraint("source in ('game', 'downtime', 'staff')", name="source"),
-        CheckConstraint("(kind = 'entered') = (level is not null)", name="entered_level"),
+        CheckConstraint(
+            "(kind in ('entered', 'dropped')) = (level is not null)", name="entered_level"
+        ),
         CheckConstraint("level between 1 and 3", name="level"),
     )
 
@@ -80,20 +84,25 @@ class BondEntry(Record):
     night: Mapped[date] = mapped_column(Date)
     # Where it was told: at a game, in a downtime, or to staff some other way.
     source: Mapped[str] = mapped_column(default="staff", server_default="staff")
-    # For a bond entered, the level it stood at: 1 to 3 drinks.
+    # For a bond entered, the level it stood at, 1 to 3 drinks; for one dropped, the
+    # level it fell to.
     level: Mapped[int | None]
     # A note, or for a bond entered, the reason.
     note: Mapped[str] = mapped_column(default="", server_default="")
+    # None for a drop Horatio made by itself.
     recorded_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    # A drop: when the thrall's player was told of it, with the troupe's next downtime
+    # results. Until then their character's sheet shows the bond as it was.
+    thrall_told_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class BondReport(Record):
-    """A drink a player reported for their own character (#661), waiting until it is
-    decided: on the troupe's running staff, through its approvals queue (the troupe's
-    setting "players report and staff approves", or a regnant's drink whose thrall has
-    no player to confirm it); or on the thrall's player, who confirms or declines a
-    drink the regnant's player recorded ("players manage"). Its drink goes in the
-    bond's log only once it is approved or confirmed (horatio.bonds)."""
+    """A drink a player reported for their own character (#661), or a meeting (#665),
+    waiting until it is decided: on the troupe's running staff, through its approvals
+    queue (the troupe's setting "players report and staff approves", or a regnant's
+    drink whose thrall has no player to confirm it); or on the thrall's player, who
+    confirms or declines a drink the regnant's player recorded ("players manage"). Its
+    drink goes in the bond's log only once it is approved or confirmed (horatio.bonds)."""
 
     __tablename__ = "bond_reports"
     __table_args__ = (
@@ -101,6 +110,7 @@ class BondReport(Record):
             "status in ('pending', 'approved', 'declined', 'withdrawn')", name="status"
         ),
         CheckConstraint("waiting_on in ('staff', 'thrall')", name="waiting_on"),
+        CheckConstraint("kind in ('drink', 'meeting')", name="kind"),
         CheckConstraint("reported_as in ('thrall', 'regnant')", name="reported_as"),
         CheckConstraint("source in ('game', 'downtime')", name="source"),
         CheckConstraint("(thrall_id is null) <> (thrall_name = '')", name="thrall"),
@@ -114,6 +124,8 @@ class BondReport(Record):
     thrall_name: Mapped[str] = mapped_column(default="", server_default="")
     regnant_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("characters.id"), index=True)
     regnant_name: Mapped[str] = mapped_column(default="", server_default="")
+    # A drink, or the two meeting (#665), which keeps a lesser bond from ending.
+    kind: Mapped[str] = mapped_column(default="drink", server_default="drink")
     # Which side the reporting player's character is on.
     reported_as: Mapped[str]
     night: Mapped[date] = mapped_column(Date)

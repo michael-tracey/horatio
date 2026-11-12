@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { BoonOut, CharacterChoice } from "../../api/types";
 import { partyIn } from "../../bonds";
+import { disgracedText } from "../../boonStatus";
 import {
   actionsFor,
   BOON_PAGE,
@@ -35,12 +36,21 @@ import { BoonReviewQueue, ReviewPanel } from "./BoonReview";
 import { WhoPicker } from "./WhoPicker";
 
 /**
- * How far the one keeping the ledger reaches: its running staff (null), or a Harpy
- * (#688), working as their character from the Play View, with the review queue only
- * or the full ledger. A Harpy never sees or writes a boon's staff note.
+ * Who keeps the ledger, and how far they reach: its running staff (null), or a Harpy
+ * (#688) or a Lesser Harpy (#689), working as their character from the Play View. A
+ * Harpy has the review queue only or the full ledger; a Lesser Harpy sees the ledger
+ * and does what the Harpy let them. Neither sees or writes a boon's staff note.
  */
-type HarpyAccess = "submissions" | "full";
-const HarpyMode = createContext<HarpyAccess | null>(null);
+export type LedgerKeeper = {
+  access: "submissions" | "full";
+  role: "harpy" | "talon";
+  add: boolean;
+  edit: boolean;
+  review: boolean;
+  // One of the troupe's Lesser Harpies, as it calls them: "Lesser Harpy" or "Talon".
+  word: string;
+};
+const HarpyMode = createContext<LedgerKeeper | null>(null);
 
 function today(dates: ReturnType<typeof useDates>) {
   return dates.toInput(new Date()).slice(0, 10);
@@ -59,9 +69,9 @@ function picked(party: BoonOut["debtor"]): { who: string; name: string } {
  * the troupe keeps a ledger. Boons waiting for review, or flagged, are listed under
  * "To review" (#687), and each boon's detail has its review.
  */
-export function BoonsTab({ troupeId, harpy = null }: { troupeId: string; harpy?: HarpyAccess | null }) {
+export function BoonsTab({ troupeId, harpy = null }: { troupeId: string; harpy?: LedgerKeeper | null }) {
   return (
-    <HarpyMode.Provider value={harpy}>{harpy === "submissions" ? <ReviewOnly troupeId={troupeId} /> : <Ledger troupeId={troupeId} />}</HarpyMode.Provider>
+    <HarpyMode.Provider value={harpy}>{harpy?.access === "submissions" ? <ReviewOnly troupeId={troupeId} /> : <Ledger troupeId={troupeId} />}</HarpyMode.Provider>
   );
 }
 
@@ -122,9 +132,11 @@ function Ledger({ troupeId }: { troupeId: string }) {
       ),
     placeholderData: (previous) => previous,
   });
+  const reviews = !harpy || harpy.review;
   const review = useQuery({
     queryKey: ["boon-review", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/boon-review", { params: { path: { troupe_id: troupeId } } })),
+    enabled: reviews,
   });
   const toReview = review.data?.boons.length ?? 0;
   if (ledger.isPending) return <Loading />;
@@ -145,7 +157,8 @@ function Ledger({ troupeId }: { troupeId: string }) {
       <Card
         title="Boon ledger"
         actions={
-          !adding && (
+          !adding &&
+          (!harpy || harpy.add) && (
             <Button variant="secondary" onClick={() => setAdding(true)}>
               Register boons
             </Button>
@@ -155,12 +168,14 @@ function Ledger({ troupeId }: { troupeId: string }) {
         <p className="text-sm text-mist">
           The debts characters owe each other, registered with the Harpy ({BOON_PAGE}). Each boon keeps its own log; an edit&apos;s changes show only to
           storytellers and assistant storytellers. A boon made off the record isn&apos;t tracked here.
-          {harpy && " You keep it as the troupe's Harpy: what you do is logged as your character. An NPC you can't pick is named by name, for staff to link."}
+          {harpy?.role === "harpy" && " You keep it as the troupe's Harpy: what you do is logged as your character. An NPC you can't pick is named by name, for staff to link."}
+          {harpy?.role === "talon" &&
+            ` You keep it as a ${harpy.word} of the troupe, as far as the Harpy lets you: what you do is logged as your character. An NPC you can't pick is named by name, for staff to link.`}
         </p>
         {adding && <QuickEntry troupeId={troupeId} characters={characters} onDone={() => setAdding(false)} />}
       </Card>
 
-      <Boonbreakers troupeId={troupeId} characters={characters} />
+      {(!harpy || harpy.role === "harpy") && <Boonbreakers troupeId={troupeId} characters={characters} />}
 
       <div className="flex flex-col gap-3">
         <div role="tablist" aria-label="Ledger views" className="flex flex-wrap gap-1">
@@ -179,7 +194,7 @@ function Ledger({ troupeId }: { troupeId: string }) {
               {v.label} <span className="text-mist">({counts[v.value] ?? 0})</span>
             </Button>
           ))}
-          {(toReview > 0 || reviewing) && (
+          {reviews && (toReview > 0 || reviewing) && (
             <Button
               role="tab"
               aria-selected={reviewing}
@@ -274,6 +289,7 @@ function BoonRow({
           </p>
           {boon.reason && <p className="text-mist">{boon.reason}</p>}
           {boon.conditions && <p className="text-xs text-mist">Conditions: {boon.conditions}</p>}
+          {boon.creditor_disgraced && <p className="text-xs text-blood-bright">{disgracedText(partyName(boon.creditor))}</p>}
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           {state && <Badge tone={boon.state === "void" ? "blood" : "mist"}>{state}</Badge>}
@@ -359,9 +375,9 @@ function BoonDetail({ troupeId, boonId, characters }: { troupeId: string; boonId
           </>
         )}
       </dl>
-      <ReviewPanel troupeId={troupeId} boon={b} characters={characters} />
-      {b.status_loss && harpy !== "submissions" && <StatusLoss troupeId={troupeId} boon={b} />}
-      {harpy === "submissions" ? null : doing === null ? (
+      {(!harpy || harpy.review) && <ReviewPanel troupeId={troupeId} boon={b} characters={characters} />}
+      {b.status_loss && (!harpy || harpy.edit) && <StatusLoss troupeId={troupeId} boon={b} />}
+      {harpy && !harpy.edit ? null : doing === null ? (
         <div role="group" aria-label="What to do with it" className="flex flex-wrap gap-2">
           {actionsFor(b.state).map((a) => (
             <Button key={a} variant={a === "void" ? "ghost" : "secondary"} onClick={() => setDoing(a)}>

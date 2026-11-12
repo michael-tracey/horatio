@@ -7,6 +7,7 @@ import {
   builtVampire,
   ATTRIBUTES_AND_FOCUSES,
   backstoryOptional,
+  shots,
 } from "./support";
 
 /** Blood bonds: the troupe's setting, staff recording drinks on the Bonds screen, players reporting them (#661), and who sees them. */
@@ -179,6 +180,49 @@ test("staff record three drinks and the thrall's player sees a full bond; the re
   // Neither player can open the Bonds screen.
   const refused = await r.request.get(`/api/troupes/${troupe.id}/bonds`);
   expect(refused.status()).toBe(403);
+
+  // With time (#665): staff see when the full bond drops unless Odile drinks again,
+  // and log a meeting, such as one in a downtime.
+  await expect(bond).toContainText(
+    /Drops to two drinks on .* unless Odile Marchand drinks again\./,
+  );
+  await bond.getByRole("button", { name: "Log a meeting" }).click();
+  const meeting = bond.getByRole("form", {
+    name: "Log a meeting: Odile Marchand and Lucien Vasse",
+  });
+  await meeting.getByLabel("Where it was told").selectOption("downtime");
+  await meeting.getByLabel("Note (optional)").fill("Tea at the Rose");
+  await meeting.getByRole("button", { name: "Log the meeting" }).click();
+  await expect(meeting).toBeHidden();
+  await expect(
+    bond.getByRole("list", {
+      name: "Drinks log of Odile Marchand bound to Lucien Vasse",
+    }),
+  ).toContainText("met, in a downtime");
+  await expect(bond).toContainText("Full bond");
+
+  // The full bond makes Odile immune to others: staff give a reason to record one anyway.
+  await l.getByRole("button", { name: "Record a drink" }).click();
+  const other = l.getByRole("form", { name: "Record a drink" });
+  await other.getByRole("combobox", { name: "Thrall" }).fill("Odile");
+  await other
+    .getByRole("listbox", { name: "Characters" })
+    .getByRole("option", { name: /Odile Marchand/ })
+    .click();
+  await other.getByRole("combobox", { name: "Regnant" }).fill("Lady Grisette");
+  await other
+    .getByRole("listbox", { name: "Characters" })
+    .getByRole("option", { name: /name only/ })
+    .click();
+  await other.getByRole("button", { name: "Record the drink" }).click();
+  await expect(other).toContainText("immune to other bonds");
+  await other
+    .getByLabel("Reason to record it anyway")
+    .fill("The Prince's ritual");
+  await other.getByRole("button", { name: "Record the drink" }).click();
+  await expect(
+    l.getByRole("listitem", { name: "Odile Marchand bound to Lady Grisette" }),
+  ).toContainText("First drink");
 });
 
 test("staff see the troupe's bonds as a web: a full bond is a heavy link, and a chain is named (#708)", async ({ browser }) => {
@@ -227,6 +271,67 @@ test("staff see the troupe's bonds as a web: a full bond is a heavy link, and a 
   // Players never get it.
   const player = await person(browser, "bondweb-player");
   expect((await player.page.request.get(`/api/troupes/${troupe.id}/bond-web`)).status()).toBe(403);
+});
+
+test("staff see one web of obligation: boons, blood bonds and sire lines on the same people, each layer switched on and off (#709)", async ({ browser }) => {
+  const custodian = await person(browser, "oblweb-cust");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "oblweb-lead");
+  const headers = { "X-Horatio": "1" };
+  const send = async (page: Page, method: "POST" | "PUT", url: string, data: object = {}) => {
+    const response = await page.request.fetch(url, { method, headers, data });
+    expect(response.status(), await response.text()).toBeLessThan(300);
+    return response.json();
+  };
+  await custodian.page.reload();
+  const troupe = await send(custodian.page, "POST", `/api/troupes`, { name: `Ties That Bind ${run}`, lead_handle: lead.handle });
+  const l = lead.page;
+  await send(l, "PUT", `/api/troupes/${troupe.id}/blood-bonds`, { setting: "staff" });
+  await send(l, "PUT", `/api/troupes/${troupe.id}/boon-ledger`, { on: true });
+  const seraphine = await send(l, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Seraphine Vale" });
+  const lucan = await send(l, "POST", `/api/troupes/${troupe.id}/npcs`, { name: "Lucan Drey" });
+  // Seraphine sired Lucan; he owes her a major boon and is fully bound to her.
+  await send(l, "PUT", `/api/characters/${lucan.id}/sire`, { character_id: seraphine.id, name: "", clan: "", secret: false });
+  await send(l, "POST", `/api/troupes/${troupe.id}/boons`, {
+    boons: [
+      { debtor: { character_id: lucan.id }, creditor: { character_id: seraphine.id }, kind: "major", made_on: "2026-10-03" },
+      // Old Hesper, known only by name, is owed a boon by Lucan...
+      { debtor: { character_id: lucan.id }, creditor: { name: "Old Hesper" }, kind: "minor", made_on: "2026-10-03" },
+    ],
+  });
+  for (const night of ["2026-10-03", "2026-10-10", "2026-10-17"])
+    await send(l, "POST", `/api/troupes/${troupe.id}/bonds/drinks`, { thrall: { character_id: lucan.id }, regnant: { character_id: seraphine.id }, night, source: "game" });
+  // ...and has drunk once from Seraphine, written in lower case this time.
+  await send(l, "POST", `/api/troupes/${troupe.id}/bonds/drinks`, { thrall: { name: "old hesper" }, regnant: { character_id: seraphine.id }, night: "2026-10-03", source: "game" });
+
+  await l.goto(`/troupes/${troupe.id}`);
+  await l.getByRole("navigation", { name: "Troupe sections" }).getByRole("link", { name: "Characters", exact: true }).click();
+  await l.getByRole("link", { name: "Web of obligation", exact: true }).click();
+  const chart = l.getByRole("figure", { name: "The web of obligation" });
+  await expect(chart).toBeVisible();
+  await expect(chart.locator('[data-tie="boons"]')).toHaveCount(2);
+  await expect(chart.locator('[data-tie="bonds"]')).toHaveCount(2);
+  await expect(chart.locator('[data-tie="sires"]')).toHaveCount(1);
+  // Old Hesper, owed a boon and bound by blood, is one dot.
+  await expect(chart.locator('[data-person="Old Hesper"]')).toHaveCount(1);
+  await expect(chart.locator("[data-person]")).toHaveCount(3);
+  await l.screenshot(shots("obligation-web"));
+
+  // Switching the boons off takes their arrows away, and on again brings them back.
+  const layers = l.getByRole("group", { name: "Layers" });
+  await layers.getByRole("checkbox", { name: "Boons" }).uncheck();
+  await expect(chart.locator('[data-tie="boons"]')).toHaveCount(0);
+  await expect(chart.locator('[data-tie="bonds"]')).toHaveCount(2);
+  await layers.getByRole("checkbox", { name: "Sire lines" }).uncheck();
+  await expect(chart.locator('[data-tie="sires"]')).toHaveCount(0);
+  await layers.getByRole("checkbox", { name: "Boons" }).check();
+  await expect(chart.locator('[data-tie="boons"]')).toHaveCount(2);
+
+  // Selecting Lucan says every tie he has, and opens his record.
+  await chart.locator('[data-person="Lucan Drey"] circle').nth(1).click();
+  await expect(l.getByText(/Lucan Drey: boons owes 2/)).toBeVisible();
+  await l.getByRole("button", { name: "Open their record" }).click();
+  await expect(l).toHaveURL(new RegExp(`/characters/${lucan.id}`));
 });
 
 test("players report a drink for staff to approve; under Players manage the thrall confirms one the regnant recorded", async ({
@@ -416,14 +521,42 @@ test("a dead regnant's bond fades: staff see the day it ends, and the thrall's s
   await send(lead.page, "PUT", `/api/troupes/${troupe.id}/blood-bonds`, {
     setting: "staff",
   });
+  let drunk: { id: string } = { id: "" };
   for (const night of ["2026-10-03", "2026-10-10"]) {
-    await send(lead.page, "POST", `/api/troupes/${troupe.id}/bonds/drinks`, {
+    drunk = await send(lead.page, "POST", `/api/troupes/${troupe.id}/bonds/drinks`, {
       thrall: { character_id: solene },
       regnant: { character_id: hale },
       night,
       source: "game",
     });
   }
+
+  // Before retiring him, Malachai's player is warned of what listing him would tell
+  // (#748), but only of a bond they know of: staff haven't told them yet.
+  const r = regnant.page;
+  const retiring = async () => {
+    await r.goto(`/characters/${hale}`);
+    await r.getByRole("button", { name: "More for Malachai Hale" }).click();
+    await r.getByRole("menuitem", { name: "Retire…" }).click();
+    const dialog = r.getByRole("dialog", { name: "Retire Malachai Hale" });
+    await dialog.getByRole("radio", { name: /^Final Death/ }).check();
+    await expect(dialog.getByRole("checkbox", { name: /under “No longer with us”/ })).toBeChecked();
+    return dialog;
+  };
+  let dialog = await retiring();
+  await expect(dialog.getByRole("button", { name: "Retire Malachai Hale" })).toBeEnabled();
+  await expect(dialog.getByRole("note", { name: "What this tells others" })).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await send(lead.page, "PUT", `/api/troupes/${troupe.id}/bonds/${drunk.id}/known`, { known: true });
+  dialog = await retiring();
+  const warning = dialog.getByRole("note", { name: "What this tells others" });
+  await expect(warning).toContainText("Malachai Hale is the regnant of Solene Ardoise.");
+  await expect(warning).toContainText("Listing Malachai Hale under “No longer with us” tells the thrall's player that Malachai Hale died now.");
+  await r.screenshot(shots("retire-warning"));
+  // Unlisted, there's nothing to warn of.
+  await dialog.getByRole("checkbox", { name: /under “No longer with us”/ }).uncheck();
+  await expect(warning).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Cancel" }).click();
 
   // Solene's player sees two drinks.
   const t = thrall.page;
@@ -469,7 +602,7 @@ test("a dead regnant's bond fades: staff see the day it ends, and the thrall's s
   await expect(bound).toHaveText(before);
 });
 
-test("bonds Horatio knows by rule: staff fill in a ghoul's from before, and a new domitor moves it (#663)", async ({
+test("bonds Horatio knows by rule: staff fill in a ghoul's and a sheet's sire bond from before, and a new domitor moves it (#663, #739)", async ({
   browser,
 }) => {
   const custodian = await person(browser, "kinbond-cust");
@@ -501,6 +634,16 @@ test("bonds Horatio knows by rule: staff fill in a ghoul's from before, and a ne
     name: "Aurelien Thorne",
     clan: "Toreador",
   });
+  // A vampire NPC whose sheet names her sire (#739), with no Embrace in play.
+  const ottilie = await send(l, "POST", `/api/troupes/${troupe.id}/npcs`, {
+    name: "Ottilie Rennard",
+    npc_kind: "vampire",
+  });
+  await send(l, "PUT", `/api/characters/${ottilie.id}/sire`, {
+    name: "Gideon Ashcombe",
+    clan: "Ventrue",
+    secret: true,
+  });
   await send(l, "PUT", `/api/troupes/${troupe.id}/blood-bonds`, {
     setting: "staff",
   });
@@ -513,11 +656,18 @@ test("bonds Horatio knows by rule: staff fill in a ghoul's from before, and a ne
     "Perrine Valcourt to Aurelien Thorne, Full bond from",
   );
   await expect(known).toContainText("(their domitor)");
-  await l.getByRole("button", { name: "Add this bond" }).click();
+  await expect(known).toContainText(
+    "Ottilie Rennard to Gideon Ashcombe, First drink from",
+  );
+  await expect(known).toContainText("(the sire on their sheet)");
+  await l.getByRole("button", { name: "Add these 2 bonds" }).click();
   const bond = l.getByRole("listitem", {
     name: "Perrine Valcourt bound to Aurelien Thorne",
   });
   await expect(bond).toContainText("Full bond");
+  await expect(
+    l.getByRole("listitem", { name: "Ottilie Rennard bound to Gideon Ashcombe" }),
+  ).toContainText("First drink");
   await expect(known).toHaveCount(0);
 
   // A new domitor: the old bond ends, as faded before the change, and she is bound to the new one.

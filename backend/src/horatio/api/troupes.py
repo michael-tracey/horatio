@@ -103,6 +103,8 @@ class TroupeOut(BaseModel):
     # Its Who's Who (horatio.whos_who) shows the negative status each character
     # carries into a game here.
     whos_who_negative: bool
+    # Its players see its sire lines on the Who's Who (horatio.sire_lines).
+    sire_lines_players: bool
     # Quests (horatio.quests): on or off, and the requests each character may make in
     # a downtime cycle.
     quests_enabled: bool
@@ -135,6 +137,10 @@ class TroupeOut(BaseModel):
     boon_review: bool = False
     # The Harpy's access to the ledger (#688): none, the review queue, or all of it.
     boon_harpy: Literal["none", "submissions", "full"] = "none"
+    # The Harpy may give others access to the ledger (#689), and what the troupe calls
+    # them.
+    boon_talons: bool = False
+    boon_talon_word: Literal["Lesser Harpies", "Talons"] = "Lesser Harpies"
     # The court over time (horatio.title_history): whether its players see it.
     court_history_players: bool = False
     # The caller may see its Who's Who: its staff, and the players of its characters.
@@ -178,6 +184,7 @@ class TroupeChanges(BaseModel):
     badge_status: Literal["all", "negative", "none"] | None = None
     badge_pronouns: bool | None = None
     whos_who_negative: bool | None = None
+    sire_lines_players: bool | None = None
     court_history_players: bool | None = None
     play_tabs_off: list[play_tabs.PlayTab] | None = None
 
@@ -369,6 +376,7 @@ def one_out(
         badge_status=troupe.badge_status,
         badge_pronouns=troupe.badge_pronouns,
         whos_who_negative=troupe.whos_who_negative,
+        sire_lines_players=troupe.sire_lines_players,
         quests_enabled=troupe.quests_enabled,
         quest_requests_per_cycle=troupe.quest_requests_per_cycle,
         items_expire=troupe.items_expire,
@@ -383,6 +391,8 @@ def one_out(
         boon_players_settle=troupe.boon_players_settle,
         boon_review=troupe.boon_review,
         boon_harpy=troupe.boon_harpy,  # type: ignore[arg-type]  # checked by the database
+        boon_talons=troupe.boon_talons,
+        boon_talon_word=troupe.boon_talon_word,  # type: ignore[arg-type]  # checked by the database
         court_history_players=troupe.court_history_players,
         whos_who=whos_who,
         portrait=pictures.troupe_portrait_url(troupe.id, troupe.portrait_id),
@@ -588,6 +598,17 @@ def change_troupe(
                 "troupe.whos_who",
                 troupe_id=troupe.id,
                 status="negative status" if body.whos_who_negative else "no sect status",
+            )
+    if body.sire_lines_players is not None:
+        require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)
+        if body.sire_lines_players != troupe.sire_lines_players:
+            troupe.sire_lines_players = body.sire_lines_players
+            audit.record(
+                db,
+                user,
+                "troupe.sire_lines",
+                troupe_id=troupe.id,
+                shown="its players" if body.sire_lines_players else "only its staff",
             )
     if body.court_history_players is not None:
         require_troupe_action(db, user, troupe, TroupeAction.MANAGE_HOUSE_RULES)

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab, builtVampire, ATTRIBUTES_AND_FOCUSES, PASSWORD, tapMid, choosePick, chooseDots } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab, builtVampire, ATTRIBUTES_AND_FOCUSES, PASSWORD, tapMid, choosePick, chooseDots, topBar } from "./support";
 
 /** A troupe's setup: its rules, XP range, staff, profile and archiving, and asking for one. */
 
@@ -12,7 +12,7 @@ test("a troupe changes what new characters start with and their downtime actions
   const player = await person(browser, "start-player");
   const troupeName = `Court of Embers ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -21,7 +21,7 @@ test("a troupe changes what new characters start with and their downtime actions
 
   // The lead gives new characters a bigger merit budget.
   const l = lead.page;
-  await l.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(l)).getByRole("link", { name: "Troupes" }).click();
   await l.getByRole("link", { name: troupeName }).click();
   await l.getByRole("link", { name: "Customise", exact: true }).click();
   await l.getByRole("link", { name: "Rules", exact: true }).click();
@@ -471,7 +471,7 @@ test("a player looks up the rules: a power by name and by its summary, then as p
 
   // From the main nav, the book's rules: a power found by its name, and by a word of its summary.
   const p = player.page;
-  await p.getByRole("link", { name: "Rules reference" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Rules reference" }).click();
   const search = p.getByRole("searchbox", { name: "Search the rules" });
   const entry = (name: string) => p.getByTestId("rules-entry").filter({ has: p.getByRole("heading", { name, exact: true }) });
   await search.fill("majesty");
@@ -798,7 +798,7 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   const player = await person(browser, "floor-player");
   const troupeName = `Court of Bones ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -808,7 +808,7 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
 
   // The chronicle began before Horatio: the lead sets the floor and ceiling by hand, in Customise.
   const l = lead.page;
-  await l.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(l)).getByRole("link", { name: "Troupes" }).click();
   await l.getByRole("link", { name: troupeName }).click();
   await l.getByRole("link", { name: "Customise", exact: true }).click();
   await l.getByRole("link", { name: "Troupe settings", exact: true }).click();
@@ -824,13 +824,13 @@ test("a troupe's XP floor and ceiling: new characters start at the floor, and st
   // Players see where the troupe stands on its page.
   const p = player.page;
   await p.reload();
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await expect(p.getByRole("heading", { name: "XP floor and ceiling" })).toBeVisible();
   await expect(p.getByText("100 XP", { exact: true })).toBeVisible();
 
   // A character built for the troupe starts at its floor.
-  await p.getByRole("link", { name: "Characters" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Characters" }).click();
   await p.getByLabel("Name").fill("Mara");
   await p.getByLabel("Which troupe will you play in?").selectOption({ label: troupeName });
   await p.getByRole("button", { name: "Create" }).click();
@@ -896,7 +896,7 @@ test("storytellers filter the troupe's characters and print what they find", asy
   const lead = await person(browser, "filter-lead");
   const troupeName = `Court of Mirrors ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -905,7 +905,7 @@ test("storytellers filter the troupe's characters and print what they find", asy
 
   // Three NPCs, made straight through the API (the builder has its own test).
   const p = lead.page;
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   const troupeId = new URL(p.url()).pathname.split("/")[2]!;
   const headers = { "X-Horatio": "1" };
@@ -1201,7 +1201,7 @@ test("someone asks for a troupe of their own, and the custodian approves it", as
   const troupeName = `Court of Cinders ${run}`;
 
   const a = asker.page;
-  await a.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(a)).getByRole("link", { name: "Troupes" }).click();
   await a.getByRole("button", { name: "Ask for a new troupe" }).click();
   await a.getByLabel("Troupe name").fill(troupeName);
   await a.getByLabel("Note to the custodian").fill("Eight players ready.");
@@ -1212,7 +1212,7 @@ test("someone asks for a troupe of their own, and the custodian approves it", as
   // It waits on the custodian's bell and under Custodian → Troupe requests.
   const c = custodian.page;
   await c.reload();
-  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: /Troupe requests/ }).click();
   const request = c.getByRole("listitem").filter({ hasText: troupeName });
   await expect(request.getByText("Eight players ready.")).toBeVisible();
@@ -1323,7 +1323,7 @@ test("archiving a troupe lets its characters go and ends its cycle, and the cust
   // the characters it had; its log is still there to read.
   const c = custodian.page;
   await c.reload();
-  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "Archived troupes" }).click();
   const card = c.getByRole("listitem").filter({ has: c.getByRole("heading", { name: troupeName }) });
   await expect(card.getByText("The chronicle has ended")).toBeVisible();
@@ -1354,7 +1354,7 @@ test("a lead adds staff by picking from a list of people, the troupe's own playe
   const player = await person(browser, "staff-player");
   const troupeName = `Court of Keys ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   // The custodian finds the lead in the list by typing part of their handle.
@@ -1385,7 +1385,7 @@ test("a lead adds staff by picking from a list of people, the troupe's own playe
   await expect(card("Visiting troupes").getByText("A troupe this character plays in without its home there.")).toBeVisible();
 
   // The list opens as soon as the box is clicked: the troupe's player first.
-  await lead.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(lead.page)).getByRole("link", { name: "Troupes" }).click();
   await lead.page.getByRole("link", { name: troupeName }).click();
   await lead.page.getByRole("link", { name: "Staff", exact: true }).click();
   await lead.page.getByLabel("Person").click();
@@ -1696,7 +1696,7 @@ test("a troupe's profile: storytellers fill it in, and people not signed in see 
 
   const c = custodian.page;
   await c.reload();
-  await c.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(c)).getByRole("link", { name: "Troupes" }).click();
   await expect(c.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await c.getByLabel("Name").fill(troupeName);
   await c.getByLabel("Lead storyteller").fill(lead.handle);
@@ -1705,7 +1705,7 @@ test("a troupe's profile: storytellers fill it in, and people not signed in see 
 
   // The lead fills in the profile on the troupe's Profile tab.
   const l = lead.page;
-  await l.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(l)).getByRole("link", { name: "Troupes" }).click();
   await l.getByRole("link", { name: troupeName }).click();
   const troupeUrl = l.url();
   const troupeId = troupeUrl.split("/troupes/")[1]!.split("/")[0]!;
@@ -1755,7 +1755,7 @@ test("a troupe's profile: storytellers fill it in, and people not signed in see 
 
   // Anyone signed in sees it, street address and all; and the portrait shows in the troupe list.
   const p = player.page;
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await expect(p.getByRole("link", { name: troupeName }).locator('img[src*="/portraits/"]')).toBeVisible();
   await p.getByRole("link", { name: troupeName }).click();
   await p.getByRole("link", { name: "Profile", exact: true }).click();
@@ -2161,14 +2161,14 @@ test("a troupe's public page asks a newcomer to make an account, which brings th
   const lead = await person(browser, "joinlink-lead");
   const troupeName = `Wardens of Whitby ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();
   await expect(custodian.page.getByRole("link", { name: troupeName })).toBeVisible();
   const l = lead.page;
-  await l.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(l)).getByRole("link", { name: "Troupes" }).click();
   await l.getByRole("link", { name: troupeName }).click();
   await expect(l.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(l.url()).pathname.split("/")[2]!;
@@ -2213,7 +2213,7 @@ test("a troupe's Profile tab switches it public at once, About shows its XP rang
   const visitor = await (await browser.newContext()).newPage();
   const troupeName = `Court of Thresholds ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -2223,7 +2223,7 @@ test("a troupe's Profile tab switches it public at once, About shows its XP rang
 
   // About, for the lead: nothing is waiting yet.
   const l = lead.page;
-  await l.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(l)).getByRole("link", { name: "Troupes" }).click();
   await l.getByRole("link", { name: troupeName }).click();
   await expect(l.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(l.url()).pathname.split("/")[2]!;

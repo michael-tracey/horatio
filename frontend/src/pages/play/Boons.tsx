@@ -3,6 +3,7 @@ import { useId, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { HarpyLedgerOut, PlayBoonIn, PlayBoonOut, PlayBoonsOut, PlayReportOut } from "../../api/types";
+import { disgracedText } from "../../boonStatus";
 import { BOON_PAGE, BREAKER_PAGE, KINDS, kindName, type BoonKind } from "../../boons";
 import { DateInput } from "../../components/DateInput";
 import { useToast } from "../../components/Toast";
@@ -44,9 +45,9 @@ export function BoonsTab({ characterId, name, online }: { characterId: string; n
             ))}
             <Report characterId={characterId} name={name} boons={boons} online={online} />
             {boons.reports && boons.reports.length > 0 && <Reports reports={boons.reports} name={name} troupe={boons.troupe_name} />}
-            {boons.owes && <Side title={`${name} owes`} empty={`${name} owes no boons in the ledger.`} boons={boons.owes} owes characterId={characterId} online={online} />}
+            {boons.owes && <Side title={`${name} owes`} empty={`${name} owes no boons in the ledger.`} boons={boons.owes} owes name={name} characterId={characterId} online={online} />}
             {boons.owed && (
-              <Side title={`Owed to ${name}`} empty={`No boons in the ledger are owed to ${name}.`} boons={boons.owed} owes={false} characterId={characterId} online={online} />
+              <Side title={`Owed to ${name}`} empty={`No boons in the ledger are owed to ${name}.`} boons={boons.owed} owes={false} name={name} characterId={characterId} online={online} />
             )}
           </>
         )}
@@ -55,14 +56,21 @@ export function BoonsTab({ characterId, name, online }: { characterId: string; n
   );
 }
 
-/** For the troupe's Harpy (#688): a way to the ledger they keep, and how many boons wait for review. */
+/** For the troupe's Harpy (#688), or one of its Lesser Harpies (#689): a way to the ledger they keep, and how many boons wait for review. */
 function HarpyCard({ characterId, name, ledger, online }: { characterId: string; name: string; ledger: HarpyLedgerOut; online: boolean }) {
   const full = ledger.access === "full";
+  const talon = ledger.role === "talon";
+  const reviews = ledger.can_review ?? true;
+  const does = talon
+    ? `You keep the troupe's boon ledger as far as the Harpy lets you: see it${ledger.can_add ? ", add boons" : ""}${ledger.can_edit ? ", edit and settle them, and review what players report" : ""}.`
+    : full
+      ? "You keep the troupe's boon ledger: register, edit and settle boons, and review what players report."
+      : "You review the boons players report.";
   return (
-    <Card title={`${name}, Harpy of ${ledger.troupe_name}`}>
+    <Card title={`${name}, ${talon ? (ledger.talon_word ?? "Lesser Harpy") : "Harpy"} of ${ledger.troupe_name}`}>
       <p className="text-sm text-mist">
-        {full ? "You keep the troupe's boon ledger: register, edit and settle boons, and review what players report." : "You review the boons players report."}
-        {ledger.to_review > 0 ? ` ${ledger.to_review} to review.` : " Nothing waits for review."}
+        {does}
+        {reviews && (ledger.to_review > 0 ? ` ${ledger.to_review} to review.` : " Nothing waits for review.")}
       </p>
       {online ? (
         <Link to={`/play/characters/${characterId}/ledger`} className="mt-2 inline-flex min-h-10 items-center text-sm text-gold underline hover:text-parchment">
@@ -222,7 +230,23 @@ function Report({ characterId, name, boons, online }: { characterId: string; nam
 }
 
 /** One side of the character's boons: those standing, then those settled, folded away. */
-function Side({ title, empty, boons, owes, characterId, online }: { title: string; empty: string; boons: PlayBoonOut[]; owes: boolean; characterId: string; online: boolean }) {
+function Side({
+  title,
+  empty,
+  boons,
+  owes,
+  name,
+  characterId,
+  online,
+}: {
+  title: string;
+  empty: string;
+  boons: PlayBoonOut[];
+  owes: boolean;
+  name: string;
+  characterId: string;
+  online: boolean;
+}) {
   const { standing, settled } = standingFirst(boons);
   return (
     <Card title={title} dense>
@@ -232,7 +256,7 @@ function Side({ title, empty, boons, owes, characterId, online }: { title: strin
         ) : (
           <ul className="divide-y divide-ash/60">
             {standing.map((b) => (
-              <BoonRow key={b.id} boon={b} owes={owes} characterId={characterId} online={online} />
+              <BoonRow key={b.id} boon={b} owes={owes} creditor={owes ? b.other : name} characterId={characterId} online={online} />
             ))}
           </ul>
         )}
@@ -241,7 +265,7 @@ function Side({ title, empty, boons, owes, characterId, online }: { title: strin
             <summary className="cursor-pointer text-sm text-mist">Settled ({settled.length})</summary>
             <ul className="divide-y divide-ash/60">
               {settled.map((b) => (
-                <BoonRow key={b.id} boon={b} owes={owes} characterId={characterId} online={online} />
+                <BoonRow key={b.id} boon={b} owes={owes} creditor={owes ? b.other : name} characterId={characterId} online={online} />
               ))}
             </ul>
           </details>
@@ -251,7 +275,20 @@ function Side({ title, empty, boons, owes, characterId, online }: { title: strin
   );
 }
 
-function BoonRow({ boon, owes, characterId, online }: { boon: PlayBoonOut; owes: boolean; characterId: string; online: boolean }) {
+function BoonRow({
+  boon,
+  owes,
+  creditor,
+  characterId,
+  online,
+}: {
+  boon: PlayBoonOut;
+  owes: boolean;
+  /** Whom it is owed to, by name. */
+  creditor: string;
+  characterId: string;
+  online: boolean;
+}) {
   const dates = useDates();
   const [settling, setSettling] = useState(false);
   return (
@@ -277,6 +314,7 @@ function BoonRow({ boon, owes, characterId, online }: { boon: PlayBoonOut; owes:
       {boon.reason && <p className="text-mist">{boon.reason}</p>}
       {boon.conditions && <p className="text-xs text-mist">Conditions: {boon.conditions}</p>}
       {boon.notify_on_trade && <p className="text-xs text-mist">Its debtor&apos;s player is told if it&apos;s traded.</p>}
+      {boon.creditor_disgraced && <p className="text-xs text-blood-bright">{disgracedText(creditor)}</p>}
       {boon.state === "settled" && <p className="text-xs text-mist">{settledText(boon, dates.day)}</p>}
       {settling && <Settle boon={boon} characterId={characterId} online={online} done={() => setSettling(false)} />}
     </li>

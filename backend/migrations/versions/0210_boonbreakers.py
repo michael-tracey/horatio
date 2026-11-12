@@ -3,7 +3,7 @@ made void, Disgraced while the mark stands; and the status a debtor loses for
 ignoring a major, blood or life boon (p. 395).
 
 Revision ID: 0210
-Revises: 0202
+Revises: 0209
 Create Date: 2026-11-12 23:55:00.000000
 """
 
@@ -14,7 +14,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0210"
-down_revision: str | None = "0202"
+down_revision: str | None = "0209"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
