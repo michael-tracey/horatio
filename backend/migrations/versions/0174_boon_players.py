@@ -1,8 +1,8 @@
 """What players see of a troupe's boon ledger in the Play View's Boons tab, and
 whether a boon's creditor's player may mark it settled (issue #686).
 
-Revision ID: 0171
-Revises: 0168
+Revision ID: 0174
+Revises: 0172
 Create Date: 2026-11-12 18:00:00.000000
 """
 
@@ -11,8 +11,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0171"
-down_revision: str | None = "0168"
+revision: str = "0174"
+down_revision: str | None = "0172"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
