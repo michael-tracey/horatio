@@ -1,0 +1,79 @@
+import type { BondOut, TroupeOut } from "./api/types";
+
+/** Where the book has the blood bond's three drinks. */
+export const BOND_PAGE = "MET: VTM p. 295";
+
+export type BondSetting = TroupeOut["blood_bonds"];
+export type BondSource = BondOut["entries"][number]["source"];
+
+/** The troupe's Blood bonds setting, each with what it means. The player modes come with #661. */
+export const BOND_SETTINGS: { value: NonNullable<BondSetting>; label: string; meaning: string; ready: boolean }[] = [
+  { value: "off", label: "Off", meaning: "Horatio doesn't track blood bonds: no Bonds card on sheets and no Bonds screen.", ready: true },
+  { value: "staff", label: "Staff manages", meaning: "Running staff record each drink, enter bonds that already stand and break them.", ready: true },
+  { value: "players_report", label: "Players report and staff approves", meaning: "Players report the drinks their characters take, for staff to approve.", ready: false },
+  { value: "players_manage", label: "Players manage", meaning: "Players record the drinks their characters take themselves.", ready: false },
+];
+
+export const SOURCES: { value: BondSource; label: string }[] = [
+  { value: "game", label: "At a game" },
+  { value: "downtime", label: "In a downtime" },
+  { value: "staff", label: "Told to staff" },
+];
+
+const LEVELS: Record<number, { name: string; feel: string; effect: string }> = {
+  1: { name: "First drink", feel: "you're drawn to them", effect: "No effect in play, but play the pull." },
+  2: {
+    name: "Second drink",
+    feel: "you can't easily turn against them",
+    effect: "−1 to Social defence against their powers. Harming them costs 1 Willpower an hour.",
+  },
+  3: {
+    name: "Full bond",
+    feel: "they come before everyone else",
+    effect: "−3 to Social and Mental defence against their powers. Acting against their wishes costs 1 Willpower; harming them, 3 Willpower an hour.",
+  },
+};
+
+/** A bond's level as its thrall feels it: "Second drink: you can't easily turn against them", and what it does in play. */
+export function levelText(level: number): { line: string; effect: string } {
+  const l = LEVELS[Math.min(Math.max(level, 1), 3)]!;
+  return { line: `${l.name}: ${l.feel}`, effect: l.effect };
+}
+
+/** A bond's level, short: "First drink", "Full bond". */
+export function levelName(level: number): string {
+  return LEVELS[Math.min(Math.max(level, 1), 3)]!.name;
+}
+
+/** What became of a bond no longer felt, or that it's still felt. */
+export function statusText(bond: Pick<BondOut, "status" | "ended_reason">): string {
+  if (bond.status === "broken") return `Broken: ${bond.ended_reason}`;
+  if (bond.status === "ended") return bond.ended_reason ? `Ended: ${bond.ended_reason}` : "Ended";
+  if (bond.status === "fading") return "Fading";
+  return "Active";
+}
+
+export const isOpen = (bond: Pick<BondOut, "status">) => bond.status === "active" || bond.status === "fading";
+
+/** The bonds grouped under each thrall, or each regnant, by name; open bonds first in each group. */
+export function groupBonds(bonds: BondOut[], by: "thrall" | "regnant"): { name: string; bonds: BondOut[] }[] {
+  const groups = new Map<string, { name: string; bonds: BondOut[] }>();
+  for (const bond of bonds) {
+    const side = bond[by];
+    const key = side.character_id ?? `name:${side.name.toLowerCase()}`;
+    const group = groups.get(key) ?? { name: side.name, bonds: [] };
+    group.bonds.push(bond);
+    groups.set(key, group);
+  }
+  const other = by === "thrall" ? "regnant" : "thrall";
+  return [...groups.values()]
+    .map((g) => ({ ...g, bonds: [...g.bonds].sort((a, b) => Number(isOpen(b)) - Number(isOpen(a)) || a[other].name.localeCompare(b[other].name)) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** A side picked in WhoPicker ("c:<id>" or "name"), as the API takes it; null until one is. */
+export function partyIn(who: string, name: string): { character_id?: string; name: string } | null {
+  if (who.startsWith("c:")) return { character_id: who.slice(2), name: "" };
+  if (who === "name" && name.trim()) return { name: name.trim() };
+  return null;
+}

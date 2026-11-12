@@ -7,6 +7,7 @@ from datetime import datetime
 from fastapi import APIRouter
 from sqlalchemy import or_, select
 
+from horatio import bonds
 from horatio.api.roster import LogEntry, log_entries
 from horatio.auth.deps import CurrentUser, DbSession
 from horatio.models import AuditEvent, Troupe, User
@@ -34,7 +35,7 @@ def character_log(
     query = (
         select(AuditEvent, User.display_name)
         .outerjoin(User, AuditEvent.actor_id == User.id)
-        .where(AuditEvent.character_id == character.id)
+        .where(AuditEvent.character_id == character.id, ~bonds.hidden_events())
         .order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc())
         .limit(min(max(limit, 1), 500))
     )

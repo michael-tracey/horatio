@@ -1043,6 +1043,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/bonds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Character Bonds
+         * @description The bonds still felt that the character is in, as the caller may know of
+         *     them: all of them for the running staff of the troupe that keeps one; its
+         *     player's own as thrall; and as regnant, only those known to the regnant.
+         */
+        get: operations["character_bonds_api_characters__character_id__bonds_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/building-troupe": {
         parameters: {
             query?: never;
@@ -7121,6 +7143,133 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/troupes/{troupe_id}/blood-bonds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Blood Bonds
+         * @description How far Horatio tracks the troupe's blood bonds. Off hides them everywhere;
+         *     what was recorded is kept, and comes back when it is switched on again.
+         */
+        put: operations["set_blood_bonds_api_troupes__troupe_id__blood_bonds_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/bonds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Troupe Bonds
+         * @description Every bond the troupe keeps, with its log, for its running staff.
+         */
+        get: operations["troupe_bonds_api_troupes__troupe_id__bonds_get"];
+        put?: never;
+        /**
+         * Enter Bond
+         * @description Enter a bond that already stands, such as one from before Horatio, at its
+         *     level, with the reason.
+         */
+        post: operations["enter_bond_api_troupes__troupe_id__bonds_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/bonds/drinks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Drink
+         * @description Log a drink the thrall took of the regnant's blood: on the bond between them,
+         *     or a new one.
+         */
+        post: operations["record_drink_api_troupes__troupe_id__bonds_drinks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/break": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Break Bond
+         * @description Mark the bond broken, with the reason (p. 296).
+         */
+        post: operations["break_bond_api_troupes__troupe_id__bonds__bond_id__break_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/drinks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Drink
+         * @description Log another drink on a bond still felt.
+         */
+        post: operations["add_drink_api_troupes__troupe_id__bonds__bond_id__drinks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/bonds/{bond_id}/known": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Known
+         * @description Whether the regnant's player is told of the bond, and sees it.
+         */
+        put: operations["set_known_api_troupes__troupe_id__bonds__bond_id__known_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/troupes/{troupe_id}/book-traits": {
         parameters: {
             query?: never;
@@ -12514,6 +12663,14 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** BloodBondsIn */
+        BloodBondsIn: {
+            /**
+             * Setting
+             * @enum {string}
+             */
+            setting: "off" | "staff" | "players_report" | "players_manage";
+        };
         /** Body_add_table_api_yorick_imports__troupe_id__names_file_post */
         Body_add_table_api_yorick_imports__troupe_id__names_file_post: {
             /**
@@ -12661,6 +12818,61 @@ export interface components {
              */
             file: string;
         };
+        /** BondEntryOut */
+        BondEntryOut: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Level */
+            level: number | null;
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /** Note */
+            note: string;
+            /** Recorded By */
+            recorded_by: string | null;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "game" | "downtime" | "staff";
+        };
+        /** BondOut */
+        BondOut: {
+            /** Ended At */
+            ended_at: string | null;
+            /** Ended Reason */
+            ended_reason: string;
+            /** Entries */
+            entries: components["schemas"]["BondEntryOut"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Known To Regnant */
+            known_to_regnant: boolean;
+            /** Last Drink */
+            last_drink: string | null;
+            /** Level */
+            level: number;
+            regnant: components["schemas"]["PartyOut"];
+            /** Status */
+            status: string;
+            thrall: components["schemas"]["PartyOut"];
+        };
         /**
          * BookTraitChange
          * @description A change to one book trait. Only the fields given change; the rest stay.
@@ -12779,6 +12991,11 @@ export interface components {
                     [key: string]: string[];
                 };
             };
+        };
+        /** BreakIn */
+        BreakIn: {
+            /** Reason */
+            reason: string;
         };
         /** BreakingOut */
         BreakingOut: {
@@ -13235,6 +13452,15 @@ export interface components {
              * Format: uuid
              */
             character_id: string;
+        };
+        /** CharacterBondsOut */
+        CharacterBondsOut: {
+            /** Bound By */
+            bound_by: components["schemas"]["SheetBondOut"][];
+            /** Bound To */
+            bound_to: components["schemas"]["SheetBondOut"][];
+            /** Manage Troupe Id */
+            manage_troupe_id: string | null;
         };
         /** CharacterChanges */
         CharacterChanges: {
@@ -15400,6 +15626,25 @@ export interface components {
             /** Due */
             due: boolean;
         };
+        /** DrinkIn */
+        DrinkIn: {
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Source
+             * @default staff
+             * @enum {string}
+             */
+            source: "game" | "downtime" | "staff";
+        };
         /** DyscrasiaOut */
         DyscrasiaOut: {
             /** Name */
@@ -15854,6 +16099,20 @@ export interface components {
             this_game: boolean;
             /** While Held */
             while_held: string | null;
+        };
+        /** EnterIn */
+        EnterIn: {
+            /** Level */
+            level: number;
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /** Reason */
+            reason: string;
+            regnant: components["schemas"]["PartyIn"];
+            thrall: components["schemas"]["PartyIn"];
         };
         /** EntryOut */
         EntryOut: {
@@ -18942,6 +19201,11 @@ export interface components {
             /** Parent Rating */
             parent_rating: number;
         };
+        /** KnownIn */
+        KnownIn: {
+            /** Known */
+            known: boolean;
+        };
         /** LanguagesIn */
         LanguagesIn: {
             /** Custom */
@@ -20677,6 +20941,27 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** NewDrinkIn */
+        NewDrinkIn: {
+            /**
+             * Night
+             * Format: date
+             */
+            night: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            regnant: components["schemas"]["PartyIn"];
+            /**
+             * Source
+             * @default staff
+             * @enum {string}
+             */
+            source: "game" | "downtime" | "staff";
+            thrall: components["schemas"]["PartyIn"];
+        };
         /** NewLead */
         NewLead: {
             /** Handle */
@@ -21644,6 +21929,28 @@ export interface components {
             submitted_at: string | null;
             /** Submitted Late */
             submitted_late: boolean;
+        };
+        /**
+         * PartyIn
+         * @description One side of a bond: a character in the troupe, or a name only.
+         */
+        PartyIn: {
+            /** Character Id */
+            character_id?: string | null;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+        };
+        /** PartyOut */
+        PartyOut: {
+            /** Character Id */
+            character_id: string | null;
+            /** Kind */
+            kind: string | null;
+            /** Name */
+            name: string;
         };
         /** PasswordChange */
         PasswordChange: {
@@ -26031,6 +26338,21 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * SheetBondOut
+         * @description A bond on a character's Bonds card: who is on the other side, and its level.
+         */
+        SheetBondOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Level */
+            level: number;
+            /** Name */
+            name: string;
+        };
         /** SheetOut */
         SheetOut: {
             /**
@@ -27968,6 +28290,18 @@ export interface components {
             /** Name */
             name: string | null;
         };
+        /** TroupeBondsOut */
+        TroupeBondsOut: {
+            /** Bonds */
+            bonds: components["schemas"]["BondOut"][];
+            /** Characters */
+            characters: components["schemas"]["CharacterChoice-Output"][];
+            /**
+             * Setting
+             * @enum {string}
+             */
+            setting: "off" | "staff" | "players_report" | "players_manage";
+        };
         /** TroupeChanges */
         TroupeChanges: {
             /** Allowed Sects */
@@ -28164,6 +28498,12 @@ export interface components {
             badge_titles: boolean;
             /** Banner */
             banner: string | null;
+            /**
+             * Blood Bonds
+             * @default off
+             * @enum {string}
+             */
+            blood_bonds: "off" | "staff" | "players_report" | "players_manage";
             /** Description */
             description: string;
             /** Diablerie Flaws */
@@ -31507,6 +31847,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BadgesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    character_bonds_api_characters__character_id__bonds_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterBondsOut"];
                 };
             };
             /** @description Validation Error */
@@ -43353,6 +43724,250 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_blood_bonds_api_troupes__troupe_id__blood_bonds_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BloodBondsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    troupe_bonds_api_troupes__troupe_id__bonds_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TroupeBondsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enter_bond_api_troupes__troupe_id__bonds_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnterIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BondOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_drink_api_troupes__troupe_id__bonds_drinks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewDrinkIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BondOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    break_bond_api_troupes__troupe_id__bonds__bond_id__break_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                bond_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BreakIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BondOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_drink_api_troupes__troupe_id__bonds__bond_id__drinks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                bond_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DrinkIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BondOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_known_api_troupes__troupe_id__bonds__bond_id__known_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                bond_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KnownIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BondOut"];
+                };
             };
             /** @description Validation Error */
             422: {
