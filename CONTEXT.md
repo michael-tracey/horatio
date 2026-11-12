@@ -165,6 +165,10 @@ _Avoid_: Approval (that is a sheet's), moderation, queue (in names)
 Where everyone stands in a troupe's boon ledger, worked out live from its open and settled boons. Each kind of boon has a weight, set per troupe (Trivial 0.5, Minor 1, Major 3, Blood 5, Life 10 unless it sets its own), and a character's **net** is the weight owed to them less the weight they owe. Active by default: boons involving someone dead or off-field are left out. Its running staff see it.
 _Avoid_: Boon score, prestige, ranking
 
+**Boonbreaker**:
+A character who refused to pay a boon and was declared one in a troupe's boon ledger by its running staff, or the Harpy with the full ledger (MET: VTM p. 397). Every boon still open that they owe or are owed there is made void, and they hold Disgraced for as long as the mark stands. The mark is public at court. They may appeal for mercy to the Harpy, then to a court of seven to thirteen Harpies (p. 398); each appeal is recorded. Mercy lifts the mark and ends that Disgraced, and whoever lifts it chooses which of the voided boons stand again. Separately, a debtor who formally ignores a major, blood or life boon loses status (p. 395): Horatio marks it for staff or the Harpy to take with the status tools, never by itself.
+_Avoid_: Boon breaker (two words, in names), defaulter, blacklist
+
 **Vitae**:
 The vampiric blood in a ghoul's Blood pool: at most 5 of its 10, the only part it can spend, and refilled only by drinking from a vampire. The rest of the pool is **human Blood**, which cannot be spent.
 _Avoid_: Ghoul blood, vampire points

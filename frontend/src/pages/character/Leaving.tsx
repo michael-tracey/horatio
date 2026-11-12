@@ -6,6 +6,7 @@ import { Dialog } from "../../components/Dialog";
 import { Button, Card, ErrorText, Field, Textarea } from "../../components/ui";
 import { useAction, useMe } from "../../hooks";
 import { abilities } from "../troupe/roles";
+import { leavingWarnings } from "./leavingWarnings";
 
 type Reason = "final_death" | "off_field" | "inactive";
 
@@ -20,6 +21,27 @@ const REASONS: { key: Reason; name: string; about: string }[] = [
 const andList = (names: string[]) => new Intl.ListFormat("en-GB", { type: "conjunction" }).format(names);
 
 type LeavingBody = { reason: Reason; note: string; listed: boolean };
+
+/**
+ * What the choices would tell other players before they should know (#748): a dead
+ * regnant's thralls, a shared background's other sharers. A warning only.
+ */
+function LeavingWarnings({ character, reason, listed, remembering }: { character: CharacterOut; reason: Reason | null; listed: boolean; remembering: boolean }) {
+  const found = useQuery({
+    queryKey: ["leaving-warnings", character.id],
+    queryFn: () => unwrap(api.GET("/api/characters/{character_id}/leaving/warnings", { params: { path: { character_id: character.id } } })),
+  });
+  if (!found.data) return null;
+  const said = leavingWarnings(found.data, { name: character.name, reason, listed, remembering });
+  if (said.length === 0) return null;
+  return (
+    <div role="note" aria-label="What this tells others" className="flex flex-col gap-1 rounded-md border border-gold/40 bg-gold/10 px-3 py-2 text-sm">
+      {said.map((text) => (
+        <p key={text}>{text}</p>
+      ))}
+    </div>
+  );
+}
 
 /** Listed under "No longer with us" unless the player only stopped playing it. */
 function listedByDefault(reason: Reason): boolean {
@@ -38,6 +60,7 @@ function LeavingForm({
   error,
   onSubmit,
   onCancel,
+  remembering = false,
   children,
 }: {
   character: CharacterOut;
@@ -47,6 +70,8 @@ function LeavingForm({
   error: unknown;
   onSubmit: (body: LeavingBody) => void;
   onCancel: () => void;
+  /** Remembrances will be opened, or asked for, as the character leaves. */
+  remembering?: boolean;
   /** More choices, after the listing. */
   children?: ReactNode;
 }) {
@@ -89,6 +114,7 @@ function LeavingForm({
         </span>
       </label>
       {children}
+      <LeavingWarnings character={character} reason={reason} listed={shown} remembering={remembering} />
       <ErrorText error={error} />
       <div className="flex justify-end gap-2">
         <Button type="button" variant="ghost" onClick={onCancel}>
@@ -143,6 +169,7 @@ export function RetireCharacter({ character, onDone }: { character: CharacterOut
         error={retire.error}
         onSubmit={(body) => retire.mutate({ ...body, remembrances: offered && remember }, { onSuccess: onDone })}
         onCancel={onDone}
+        remembering={offered && remember}
       >
         {offered && (
           <label className="flex items-start gap-2 text-sm">

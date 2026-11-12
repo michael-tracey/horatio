@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
-import { closeContextsAfterEach, makeCustodian, PASSWORD, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional } from "./support";
+import { closeContextsAfterEach, makeCustodian, PASSWORD, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, topBar } from "./support";
 
 /**
  * The screenshots in the manual's Custodian part (docs/manual/custodian.md), made
@@ -119,7 +119,7 @@ test("screenshots for the manual's Custodian part", async ({ browser }) => {
   await send(c, "POST", `/api/players/${ruth.id}/email-change`, { email: "ruth.c@example.com", reason: "Lost access to her old address" });
 
   const main = c.locator("main");
-  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
 
   // Troupe requests.
   await main.getByRole("link", { name: /^Troupe requests/ }).click();
@@ -225,7 +225,8 @@ test("screenshots for the manual's Custodian part", async ({ browser }) => {
   await shoot(main.locator("section", { has: c.getByRole("heading", { name: "Found" }) }), "audit", 520);
 
   // Importing from Yorick: the made-up page from the backend's tests, checked by a dry run.
-  await main.getByRole("link", { name: "Import from Yorick", exact: true }).click();
+  await main.getByRole("link", { name: "Tools", exact: true }).click();
+  await main.getByRole("link", { name: "Open the import" }).click();
   await main.getByLabel("Troupe").selectOption({ label: "Harbour Lights" });
   await main.getByLabel("Print Characters page").setInputFiles({
     name: "Print Troupe Characters.html",

@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, PASSWORD, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab } from "./support";
+import { closeContextsAfterEach, run, PASSWORD, shots, person, makeCustodian, builtVampire, ATTRIBUTES_AND_FOCUSES, backstoryOptional, characterTab, topBar } from "./support";
 
 /** What the custodian does with people's accounts and characters. */
 
@@ -25,7 +25,7 @@ test("a player fills in their profile, and the custodian resets their password",
 
   // The player fills in their profile from their name in the header.
   const p = player.page;
-  await p.getByRole("link", { name: "people-player" }).click();
+  await (await topBar(p)).getByRole("link", { name: "people-player" }).click();
   await expect(p.getByRole("heading", { name: "Your account" })).toBeVisible();
   await p.getByLabel("Bio").fill("Playing since the Masquerade was young.");
   await p.getByLabel("Discord username").fill("@Carbuncle_Fan");
@@ -39,7 +39,7 @@ test("a player fills in their profile, and the custodian resets their password",
   // leaving the list. Email is off in this suite, so the link is there to copy.
   const c = custodian.page;
   await c.reload();
-  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(player.email);
   const row = c.locator("main tr").filter({ hasText: player.email });
@@ -106,7 +106,7 @@ test("a player fills in their profile, and the custodian resets their password",
   await p.screenshot(shots("forgot"));
 
   // The custodian sees who reset their password, and when.
-  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
   await expect(c.getByText("people-player set a new password with a reset link.").first()).toBeVisible();
   await expect(c.getByText("people-custodian cancelled people-player's reset link.").first()).toBeVisible();
   await c.screenshot(shots("password-resets"));
@@ -121,7 +121,7 @@ test("the custodian changes a player's email, and the player confirms it from th
   // Email is off in this suite, so the player can't change their own: their link
   // could only go to the new address by email.
   const p = player.page;
-  await p.getByRole("link", { name: "chmail-player" }).click();
+  await (await topBar(p)).getByRole("link", { name: "chmail-player" }).click();
   await p.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
   await expect(p.getByText(`You sign in with ${player.email}`)).toBeVisible();
   await expect(p.getByText("Horatio can't send email here, so ask the custodian to change your email.")).toBeVisible();
@@ -130,7 +130,7 @@ test("the custodian changes a player's email, and the player confirms it from th
   // another account uses is refused.
   const c = custodian.page;
   await c.reload();
-  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(player.email);
   const row = c.locator("main tr").filter({ hasText: player.email });
@@ -213,7 +213,7 @@ test("the custodian filters People by the troupe a player's active character is 
 
   const c = custodian.page;
   await c.reload();
-  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
   const list = c.locator("main tr");
   const filter = c.getByLabel("Active character in");
@@ -248,7 +248,7 @@ test("the custodian views Horatio as a player, read-only, and the player sees th
   // The custodian starts from People, saying why.
   const c = custodian.page;
   await c.reload();
-  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(player.email);
   const row = c.locator("main tr").filter({ hasText: player.email });
@@ -262,11 +262,11 @@ test("the custodian views Horatio as a player, read-only, and the player sees th
   await expect(banner).toBeVisible();
   await expect(c.getByRole("heading", { name: "Your characters" })).toBeVisible();
   await expect(c.locator("main").getByText("Marisol")).toBeVisible();
-  await expect(c.getByRole("link", { name: "Custodian", exact: true })).toHaveCount(0);
+  await expect((await topBar(c)).getByRole("link", { name: "Custodian", exact: true })).toHaveCount(0);
   await c.screenshot(shots("view-as"));
 
   // Nothing can be changed: the API refuses, whatever the page sends.
-  await c.getByRole("link", { name: "viewas-player" }).click();
+  await (await topBar(c)).getByRole("link", { name: "viewas-player" }).click();
   await c.getByLabel("Bio").fill("Not mine to write.");
   await c.getByRole("button", { name: "Save profile" }).click();
   await expect(c.getByText(`You are viewing Horatio as @${player.handle}, read-only. Stop viewing to make changes.`)).toBeVisible();
@@ -276,12 +276,12 @@ test("the custodian views Horatio as a player, read-only, and the player sees th
 
   // Stopping makes them the custodian again.
   await banner.getByRole("button", { name: "Stop" }).click();
-  await expect(c.getByRole("link", { name: "Custodian", exact: true })).toBeVisible();
+  await expect((await topBar(c)).getByRole("link", { name: "Custodian", exact: true })).toBeVisible();
   await expect(c.getByText(`Viewing as @${player.handle}, read-only.`)).toHaveCount(0);
 
   // The player sees when, by whom and why in their account's settings; their bio is as it was.
   await p.reload();
-  await p.getByRole("link", { name: "viewas-player" }).click();
+  await (await topBar(p)).getByRole("link", { name: "viewas-player" }).click();
   await expect(p.getByLabel("Bio")).toHaveValue("");
   await p.locator("main").getByRole("link", { name: "Settings", exact: true }).click();
   const visits = p.locator("section", { has: p.getByRole("heading", { name: "When the custodian viewed as you" }) });
@@ -321,7 +321,7 @@ test("the custodian searches the audit log across troupes by person, days and ch
 
   const c = custodian.page;
   await c.reload();
-  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "Audit", exact: true }).click();
   const found = c.getByRole("list", { name: "Audit log" }).getByRole("listitem");
 
@@ -386,7 +386,7 @@ test("the custodian suspends a lead storyteller, who can't sign in until it is l
   expect(made.status(), await made.text()).toBe(201);
 
   // The custodian suspends them from People, with a reason only they see.
-  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(lead.email);
   const row = c.locator("main tr").filter({ hasText: lead.email });
@@ -407,7 +407,7 @@ test("the custodian suspends a lead storyteller, who can't sign in until it is l
   await c.screenshot(shots("suspended"));
 
   // The troupe list marks the troupe.
-  await c.getByRole("link", { name: "Troupes", exact: true }).click();
+  await (await topBar(c)).getByRole("link", { name: "Troupes", exact: true }).click();
   await expect(c.locator("main li").filter({ hasText: troupeName }).getByText("Lead suspended")).toBeVisible();
 
   // The lead is signed out at once, and told why they can't sign in, but not the reason.
@@ -421,7 +421,7 @@ test("the custodian suspends a lead storyteller, who can't sign in until it is l
   await l.screenshot(shots("suspended-sign-in"));
 
   // The custodian lifts it, and they can sign in again.
-  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(lead.email);
   await personAction(row, "susp-lead", "Lift suspension…");
@@ -462,7 +462,7 @@ test("the custodian moves a character to another player, not while its game is u
 
   // The custodian finds the player on People, opens their characters and moves it.
   const c = custodian.page;
-  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(before.email);
   const row = c.locator("main tr").filter({ hasText: before.email });
@@ -567,7 +567,7 @@ test("the custodian merges two accounts of one person: the characters and staff 
 
   // The custodian finds the second account on People and merges it into the first.
   const c = custodian.page;
-  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "People", exact: true }).click();
   await c.getByLabel("Search people").fill(twice.email);
   const row = c.locator("main tr").filter({ hasText: twice.email });
@@ -641,7 +641,7 @@ test("the custodian chooses the loading animation, which shows as Horatio next o
   makeCustodian(custodian.email);
   const c = custodian.page;
   await c.reload();
-  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "Settings", exact: true }).click();
 
   // Each of the four, moving as it would, with the blood drip until another is chosen.
@@ -713,7 +713,7 @@ test("the custodian previews fitting a troupe's NPC creation picks, then fits th
   asBuiltBeforeFitting(npc.id);
   await send(lead.page, "POST", `/api/troupes/${troupe.id}/npcs`, { name: stan, npc_kind: "mortal", npc_form: "stock" });
 
-  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "Tools", exact: true }).click();
   const tool = c.locator("section").filter({ has: c.getByRole("heading", { name: "Fit NPC creation picks" }) });
   await tool.getByLabel("Troupe").selectOption({ label: troupeName });
@@ -748,7 +748,7 @@ test("the custodian fetches the Dark Pack resources and the VTES symbols onto th
   makeCustodian(custodian.email);
   const c = custodian.page;
   await c.reload();
-  await c.getByRole("link", { name: "Custodian", exact: true }).click();
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
   await c.getByRole("link", { name: "Tools", exact: true }).click();
   const card = (title: string) => c.locator("section").filter({ has: c.getByRole("heading", { name: title, exact: true }) });
   const darkPack = card("Dark Pack resources");
@@ -877,8 +877,12 @@ test("the custodian imports a troupe's characters from Yorick, matching a line a
   const npc = await lead.page.request.post(`/api/troupes/${troupeId}/npcs`, { headers: { "X-Horatio": "1" }, data: { name: agnes, wizard: false } });
   expect(npc.status(), await npc.text()).toBe(201);
 
-  await c.getByRole("link", { name: "Custodian", exact: true }).click();
-  await c.getByRole("link", { name: "Import from Yorick" }).click();
+  // The import lives under Tools (#758); its old address, query and all, still lands there.
+  await c.goto("/custodian/yorick-import?troupe=x");
+  await expect(c).toHaveURL(/\/custodian\/tools\/yorick-import\?troupe=x$/);
+  await (await topBar(c)).getByRole("link", { name: "Custodian", exact: true }).click();
+  await c.getByRole("link", { name: "Tools", exact: true }).click();
+  await c.getByRole("link", { name: "Open the import" }).click();
   await c.getByLabel("Troupe").selectOption({ label: troupeName });
   await c.getByLabel("Print Characters page").setInputFiles({ name: "Print Troupe Characters.html", mimeType: "text/html", buffer: Buffer.from(page) });
 

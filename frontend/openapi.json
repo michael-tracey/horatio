@@ -1253,6 +1253,132 @@
         "title": "ApologyChoicesOut",
         "type": "object"
       },
+      "AppealIn": {
+        "properties": {
+          "against": {
+            "anyOf": [
+              {
+                "maximum": 13.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Against"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On"
+          },
+          "outcome": {
+            "enum": [
+              "granted",
+              "refused"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "restore": {
+            "default": [],
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Restore",
+            "type": "array"
+          },
+          "to": {
+            "enum": [
+              "harpy",
+              "court"
+            ],
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "to",
+          "outcome"
+        ],
+        "title": "AppealIn",
+        "type": "object"
+      },
+      "AppealOut": {
+        "properties": {
+          "against": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Against"
+          },
+          "by": {
+            "title": "By",
+            "type": "string"
+          },
+          "follows": {
+            "title": "Follows",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "on": {
+            "format": "date",
+            "title": "On",
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "granted",
+              "refused"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "to": {
+            "enum": [
+              "harpy",
+              "court"
+            ],
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "to",
+          "outcome",
+          "against",
+          "note",
+          "follows",
+          "on",
+          "by"
+        ],
+        "title": "AppealOut",
+        "type": "object"
+      },
       "AppearanceOut": {
         "properties": {
           "loading_animation": {
@@ -7222,6 +7348,22 @@
             "title": "State",
             "type": "string"
           },
+          "status_loss": {
+            "anyOf": [
+              {
+                "enum": [
+                  "due",
+                  "taken",
+                  "waived"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Loss"
+          },
           "submitted_at": {
             "format": "date-time",
             "title": "Submitted At",
@@ -7310,6 +7452,11 @@
       },
       "BoonPartyOut": {
         "properties": {
+          "boonbreaker": {
+            "default": false,
+            "title": "Boonbreaker",
+            "type": "boolean"
+          },
           "character_id": {
             "anyOf": [
               {
@@ -8125,6 +8272,148 @@
           "defaults"
         ],
         "title": "BoonWeightsOut",
+        "type": "object"
+      },
+      "BoonbreakerOut": {
+        "properties": {
+          "appeals": {
+            "items": {
+              "$ref": "#/components/schemas/AppealOut"
+            },
+            "title": "Appeals",
+            "type": "array"
+          },
+          "character": {
+            "$ref": "#/components/schemas/BoonPartyOut"
+          },
+          "declared_as": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Declared As"
+          },
+          "declared_at": {
+            "format": "date-time",
+            "title": "Declared At",
+            "type": "string"
+          },
+          "disgraced": {
+            "title": "Disgraced",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lifted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifted At"
+          },
+          "lifted_note": {
+            "title": "Lifted Note",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "refused": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BoonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "restored": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Restored",
+            "type": "array"
+          },
+          "voided": {
+            "items": {
+              "$ref": "#/components/schemas/BoonOut"
+            },
+            "title": "Voided",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "character",
+          "note",
+          "declared_at",
+          "declared_as",
+          "refused",
+          "voided",
+          "restored",
+          "disgraced",
+          "appeals",
+          "lifted_at",
+          "lifted_note"
+        ],
+        "title": "BoonbreakerOut",
+        "type": "object"
+      },
+      "BoonbreakerPreviewOut": {
+        "properties": {
+          "boons": {
+            "items": {
+              "$ref": "#/components/schemas/BoonOut"
+            },
+            "title": "Boons",
+            "type": "array"
+          },
+          "owed_by": {
+            "title": "Owed By",
+            "type": "integer"
+          },
+          "owed_to": {
+            "title": "Owed To",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "boons",
+          "owed_by",
+          "owed_to"
+        ],
+        "title": "BoonbreakerPreviewOut",
+        "type": "object"
+      },
+      "BoonbreakersOut": {
+        "properties": {
+          "marks": {
+            "items": {
+              "$ref": "#/components/schemas/BoonbreakerOut"
+            },
+            "title": "Marks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "marks"
+        ],
+        "title": "BoonbreakersOut",
         "type": "object"
       },
       "BreakIn": {
@@ -14280,6 +14569,38 @@
         "title": "DecisionOut",
         "type": "object"
       },
+      "DeclareIn": {
+        "properties": {
+          "character_id": {
+            "format": "uuid",
+            "title": "Character Id",
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "refused_boon_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refused Boon Id"
+          }
+        },
+        "required": [
+          "character_id",
+          "note"
+        ],
+        "title": "DeclareIn",
+        "type": "object"
+      },
       "Decline": {
         "properties": {
           "reason": {
@@ -17048,6 +17369,11 @@
       },
       "EndingOut": {
         "properties": {
+          "boonbreaker": {
+            "default": false,
+            "title": "Boonbreaker",
+            "type": "boolean"
+          },
           "games_left": {
             "title": "Games Left",
             "type": "integer"
@@ -25664,6 +25990,85 @@
         "title": "LeavingOut",
         "type": "object"
       },
+      "LeavingSharersOut": {
+        "properties": {
+          "background": {
+            "title": "Background",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "others": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Others",
+            "type": "array"
+          },
+          "troupe": {
+            "title": "Troupe",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "background",
+          "troupe",
+          "others"
+        ],
+        "title": "LeavingSharersOut",
+        "type": "object"
+      },
+      "LeavingThrallOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "troupe": {
+            "title": "Troupe",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "troupe"
+        ],
+        "title": "LeavingThrallOut",
+        "type": "object"
+      },
+      "LeavingWarningsOut": {
+        "description": "What retiring the character, or saying it met Final Death, could tell others\n(horatio.retiring), as the reader may know of it.",
+        "properties": {
+          "shared": {
+            "items": {
+              "$ref": "#/components/schemas/LeavingSharersOut"
+            },
+            "title": "Shared",
+            "type": "array"
+          },
+          "staff": {
+            "title": "Staff",
+            "type": "boolean"
+          },
+          "thralls": {
+            "items": {
+              "$ref": "#/components/schemas/LeavingThrallOut"
+            },
+            "title": "Thralls",
+            "type": "array"
+          }
+        },
+        "required": [
+          "thralls",
+          "shared",
+          "staff"
+        ],
+        "title": "LeavingWarningsOut",
+        "type": "object"
+      },
       "LedTroupe": {
         "properties": {
           "id": {
@@ -33697,6 +34102,11 @@
             "title": "Other",
             "type": "string"
           },
+          "other_boonbreaker": {
+            "default": false,
+            "title": "Other Boonbreaker",
+            "type": "boolean"
+          },
           "other_id": {
             "anyOf": [
               {
@@ -33797,6 +34207,11 @@
       },
       "PlayBoonsOut": {
         "properties": {
+          "boonbreaker": {
+            "default": false,
+            "title": "Boonbreaker",
+            "type": "boolean"
+          },
           "can_report": {
             "title": "Can Report",
             "type": "boolean"
@@ -46551,6 +46966,25 @@
           "lost"
         ],
         "title": "StatusLineOut",
+        "type": "object"
+      },
+      "StatusLossIn": {
+        "properties": {
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "taken": {
+            "title": "Taken",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "taken"
+        ],
+        "title": "StatusLossIn",
         "type": "object"
       },
       "StatusOut": {
@@ -61920,6 +62354,50 @@
           }
         },
         "summary": "Change Leaving",
+        "tags": [
+          "characters"
+        ]
+      }
+    },
+    "/api/characters/{character_id}/leaving/warnings": {
+      "get": {
+        "description": "What the retire dialog, and changing why a character left, warn of before it\ntells other players something they haven't been told (#748): its player's, and its\nhome troupe's running staff's, each as they may know of it.",
+        "operationId": "leaving_warnings_api_characters__character_id__leaving_warnings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeavingWarningsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Leaving Warnings",
         "tags": [
           "characters"
         ]
@@ -79246,6 +79724,220 @@
         ]
       }
     },
+    "/api/troupes/{troupe_id}/boonbreakers": {
+      "get": {
+        "description": "Everyone marked a Boonbreaker in the troupe's ledger, standing marks first.",
+        "operationId": "troupe_boonbreakers_api_troupes__troupe_id__boonbreakers_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonbreakersOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Boonbreakers",
+        "tags": [
+          "boons"
+        ]
+      },
+      "post": {
+        "description": "Declare a character a Boonbreaker (p. 397): their open boons void, both ways,\nand Disgraced while the mark stands.",
+        "operationId": "declare_boonbreaker_api_troupes__troupe_id__boonbreakers_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeclareIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonbreakerOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Declare Boonbreaker",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boonbreakers/preview": {
+      "get": {
+        "description": "What declaring the character a Boonbreaker would make void, before it's done.",
+        "operationId": "boonbreaker_preview_api_troupes__troupe_id__boonbreakers_preview_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonbreakerPreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Boonbreaker Preview",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boonbreakers/{mark_id}/appeals": {
+      "post": {
+        "description": "An appeal for mercy and its outcome (p. 398). Granted, the mark is lifted and\nthe boons named in `restore` stand again.",
+        "operationId": "appeal_boonbreaker_api_troupes__troupe_id__boonbreakers__mark_id__appeals_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "mark_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Mark Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppealIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonbreakerOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Appeal Boonbreaker",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
     "/api/troupes/{troupe_id}/boons": {
       "get": {
         "description": "The troupe's boons in one view of its ledger, newest first: open (standing,\nboth parties in play), departed (standing, but someone on it is dead or\noff-field), settled, void, pending, or all. Narrowed to those a character or a\nname is on, of a kind, or made between two nights.",
@@ -80007,6 +80699,70 @@
           }
         },
         "summary": "Settle",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boons/{boon_id}/status-loss": {
+      "post": {
+        "description": "For a great boon its debtor formally ignored (p. 395): staff or the Harpy took\nthe status they lost, with the status tools, or won't.",
+        "operationId": "answer_status_loss_api_troupes__troupe_id__boons__boon_id__status_loss_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "boon_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Boon Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusLossIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Answer Status Loss",
         "tags": [
           "boons"
         ]

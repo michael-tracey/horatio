@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, or_, select
 
-from horatio import boon_harpy, boon_reviews, boon_status, boon_talons, boons
+from horatio import boon_harpy, boon_reviews, boon_status, boon_talons, boonbreakers, boons
 from horatio.api.downtimes import staff_troupe
 from horatio.api.influence_log import CharacterChoice
 from horatio.api.troupes import TroupeOut, troupe_out
@@ -34,6 +34,7 @@ router = APIRouter(tags=["boons"])
 Kind = Literal["trivial", "minor", "major", "blood", "life"]
 State = Literal["pending", "registered", "settled", "void"]
 SettledHow = Literal["called_in", "forgiven", "ignored"]
+StatusLoss = Literal["due", "taken", "waived"]
 View = Literal["open", "departed", "settled", "void", "pending", "all"]
 Standing = Literal["active", "final_death", "off_field", "inactive", "retired"]
 EventKind = Literal[
@@ -136,6 +137,8 @@ class BoonPartyOut(BaseModel):
     kind: str | None
     # From Horatio: active, or why it retired; None for a name only.
     standing: Standing | None
+    # Marked a Boonbreaker in this ledger now (#717): public at court.
+    boonbreaker: bool = False
 
 
 class BoonChangeOut(BaseModel):
@@ -200,6 +203,9 @@ class BoonOut(BaseModel):
     # Its flags still raised for review (#687): only on a single boon and in the
     # review queue, not in the ledger's list.
     flags: list[BoonFlagOut] | None = None
+    # A great boon its debtor formally ignored costs them status (#717, p. 395): due
+    # until staff or the Harpy say they took it, or won't.
+    status_loss: StatusLoss | None = None
 
 
 class TroupeBoonsOut(BaseModel):
@@ -266,16 +272,21 @@ def boon_out(
     users: Mapping[uuid.UUID, str],
     disgraced: Collection[uuid.UUID] = frozenset(),
     keeper: Keeper | None = None,
+    marked: Collection[uuid.UUID] = (),
 ) -> BoonOut:
     """The boon as `keeper` sees it: staff (the default) see everything; a Harpy (#688)
     never its staff note, who entered it, or why a character on it retired."""
     harpy = keeper is not None and not keeper.staff
     debtor = characters.get(boon.debtor_id) if boon.debtor_id else None
     creditor = characters.get(boon.creditor_id) if boon.creditor_id else None
+    debtor_out = party_out(debtor, boon.debtor_name, not harpy)
+    creditor_out = party_out(creditor, boon.creditor_name, not harpy)
+    debtor_out.boonbreaker = boon.debtor_id in marked
+    creditor_out.boonbreaker = boon.creditor_id in marked
     return BoonOut(
         id=boon.id,
-        debtor=party_out(debtor, boon.debtor_name, not harpy),
-        creditor=party_out(creditor, boon.creditor_name, not harpy),
+        debtor=debtor_out,
+        creditor=creditor_out,
         kind=boon.kind,  # type: ignore[arg-type]  # checked by the database
         made_on=boon.made_on,
         reason=boon.reason,
@@ -291,6 +302,7 @@ def boon_out(
         creditor_disgraced=boon.state == "registered" and boon.creditor_id in disgraced,
         submitted_by=users.get(boon.submitted_by) if boon.submitted_by and not harpy else None,
         submitted_at=boon.created_at,
+        status_loss=boon.status_loss,  # type: ignore[arg-type]  # checked by the database
     )
 
 
@@ -349,7 +361,12 @@ def full_out(
         else {}
     )
     out = boon_out(
-        boon, characters_of(db, [boon]), users, standing_disgraced(db, [boon]), keeper=keeper
+        boon,
+        characters_of(db, [boon]),
+        users,
+        standing_disgraced(db, [boon]),
+        keeper=keeper,
+        marked=boonbreakers.marked(db, troupe.id),
     )
     diffs = boons.sees_changes(db, user, troupe)
     out.events = [event_out(e, users, names, diffs, harpy) for e in lines]
@@ -543,8 +560,11 @@ def troupe_boons(
     shown = [b for b in narrowed if boons.in_view(b, characters, view, reasons)]
     users = users_of(db, (b.submitted_by for b in shown))
     disgraced = standing_disgraced(db, shown)
+    marks = boonbreakers.marked(db, troupe.id)
     return TroupeBoonsOut(
-        boons=[boon_out(b, characters, users, disgraced, keeper=keeper) for b in shown],
+        boons=[
+            boon_out(b, characters, users, disgraced, keeper=keeper, marked=marks) for b in shown
+        ],
         counts=boons.counts(narrowed, characters, reasons),
         characters=choices_for(db, troupe, keeper),
     )
@@ -831,6 +851,8 @@ class PlayBoonOut(BaseModel):
     creditor_disgraced: bool = False
     # The caller may mark it settled here.
     can_settle: bool
+    # The other side is marked a Boonbreaker in this ledger now (#717).
+    other_boonbreaker: bool = False
 
 
 class PlayReportOut(BaseModel):
@@ -893,6 +915,8 @@ class PlayBoonsOut(BaseModel):
     reports: list[PlayReportOut] = []
     # The ledgers its player keeps as the Harpy (#688), for the character's player.
     harpy: list[HarpyLedgerOut] = []
+    # The character itself is marked a Boonbreaker in this ledger now (#717).
+    boonbreaker: bool = False
 
 
 def play_ledger(db: DbSession, user: User, character_id: uuid.UUID) -> tuple[Character, Troupe]:
@@ -1016,6 +1040,7 @@ def play_out(
     ]
     others = characters_of(db, found)
     disgraced = standing_disgraced(db, found)
+    marks = boonbreakers.marked(db, troupe.id)
     playing = in_play(db, troupe, character)
     settles = playing and (character.kind == "npc" or boons.players_settle(troupe))
 
@@ -1039,6 +1064,7 @@ def play_out(
             settled_note=b.closed_note,
             creditor_disgraced=b.state == "registered" and b.creditor_id in disgraced,
             can_settle=settles and not owes and b.state == "registered",
+            other_boonbreaker=other_id in marks,
         )
 
     def side(owes: bool) -> list[PlayBoonOut]:
@@ -1057,6 +1083,7 @@ def play_out(
         characters=play_choices(db, troupe, character) if playing else [],
         reports=reports_of(db, troupe, character),
         harpy=harpy_ledgers(db, user, character),
+        boonbreaker=character.id in marks,
     )
 
 

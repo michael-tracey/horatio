@@ -2,7 +2,7 @@
 who made it and as whom, and who it was given to.
 
 Revision ID: 0214
-Revises: 0209
+Revises: 0210
 Create Date: 2026-11-13 18:00:00.000000
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0214"
-down_revision: str | None = "0209"
+down_revision: str | None = "0210"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

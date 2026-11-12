@@ -85,6 +85,8 @@ PLAYERS_SEE = {
 # How a player may settle a boon owed to their character: formally ignoring one is
 # its debtor's doing (p. 397).
 PLAYER_SETTLES = ("called_in", "forgiven")
+# Formally ignoring one of these costs its debtor status (p. 395; horatio.boonbreakers).
+COSTS_STATUS = ("major", "blood", "life")
 # The most boons one entry may make, and rows a quick entry may hold.
 MOST_AT_ONCE = 20
 MOST_ROWS = 100
@@ -527,6 +529,7 @@ def settle(
     must_stand(boon, "settled")
     note = note.strip()
     close(boon, "settled", note, how)
+    boon.status_loss = "due" if how == "ignored" and boon.kind in COSTS_STATUS else None
     db.flush()
     event(
         db,
@@ -566,6 +569,7 @@ def reopen(
     boon.settled_how = None
     boon.closed_at = None
     boon.closed_note = ""
+    boon.status_loss = None
     db.flush()
     event(db, user, boon, "reopened", note, {"state": (was, "Standing")}, as_character)
     log(db, user, "boon.reopened", boon, reason=note)

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, openScene, undoInHeader, backstoryOptional, builtVampire, characterTab, ATTRIBUTES_AND_FOCUSES } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, openScene, undoInHeader, backstoryOptional, builtVampire, characterTab, ATTRIBUTES_AND_FOCUSES, topBar } from "./support";
 
 /** The Play View at a game: blood, feeding, the Beast and derangements. */
 
@@ -198,7 +198,7 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   const lead = await person(browser, "play-lead");
   const troupeName = `Court of Candles ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -209,7 +209,7 @@ test("at a game, the Play View tracks blood and uses, offline too, and the story
   // blood, 2 a turn), Herd 2, Physical 5, Social 4, Mental 3, Dodge 2, Intimidation 3
   // and Celerity 2.
   const p = lead.page;
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(p.url()).pathname.split("/")[2]!;
@@ -766,7 +766,7 @@ test("Killer Instincts: +2 Accurate and Brutal on a line of their own against th
   const lead = await person(browser, "instinct-lead");
   const troupeName = `Ashen Spoor ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -775,7 +775,7 @@ test("Killer Instincts: +2 Accurate and Brutal on a line of their own against th
 
   // An NPC with Killer Instincts (Vol. 2 p. 84): Physical 5, Brawl 3, Melee 2, Firearms 1, Athletics 1.
   const p = lead.page;
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(p.url()).pathname.split("/")[2]!;
@@ -908,7 +908,7 @@ test("kept on the phone, a player's character opens with no signal: the sheet, t
   await p.getByRole("button", { name: "Spend Willpower", exact: true }).click();
   await expect(p.getByRole("status")).toHaveText("Saving · 1 tap waiting");
   await p.goto("/characters");
-  await p.getByRole("button", { name: "Sign out" }).click();
+  await (await topBar(p)).getByRole("button", { name: "Sign out" }).click();
   const leaving = p.getByRole("dialog", { name: "Sign out?" });
   await expect(leaving).toContainText("1 tap hasn't been sent yet. Sign out anyway?");
   await leaving.getByRole("button", { name: "Sign out anyway" }).click();
@@ -1221,7 +1221,7 @@ test("Shape of the Beast on the Play View: a Huge fight form adds Healthy levels
   const lead = await person(browser, "beast-lead");
   const troupeName = `Hollow Hill ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -1230,7 +1230,7 @@ test("Shape of the Beast on the Play View: a Huge fight form adds Healthy levels
 
   // An NPC with Shape of the Beast: Physical 5, Brawl 3, Dodge 2, Protean 4, Celerity 2.
   const p = lead.page;
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(p.url()).pathname.split("/")[2]!;
@@ -1340,7 +1340,7 @@ test("Ravenous Conglomeration on the Play View: two forms at once, never two of 
   const lead = await person(browser, "ravenous-lead");
   const troupeName = `Gorge Hall ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -1349,7 +1349,7 @@ test("Ravenous Conglomeration on the Play View: two forms at once, never two of 
 
   // An NPC with Vicissitude 5 (Horrid Form, Blood Form), Protean 4 (Shape of the Beast's two forms) and the luminary power.
   const p = lead.page;
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(p.url()).pathname.split("/")[2]!;
@@ -1542,7 +1542,7 @@ test("Feed with Herd: 5 minutes for Blood equal to Herd, waiting while the phone
   const lead = await person(browser, "feed-lead", { reducedMotion: "reduce" });
   const troupeName = `Court of Thirst ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -1553,7 +1553,7 @@ test("Feed with Herd: 5 minutes for Blood equal to Herd, waiting while the phone
   const p = lead.page;
   await watchFeeding(p);
   await p.clock.install();
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(p.url()).pathname.split("/")[2]!;
@@ -1645,7 +1645,7 @@ test("Derangement traits on the Play View: a temporary derangement added, warnin
   const lead = await person(browser, "derange-lead");
   const troupeName = `Court of Bedlam ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -1655,7 +1655,7 @@ test("Derangement traits on the Play View: a temporary derangement added, warnin
   // Two NPCs the lead runs, neither with the Derangement flaw: a Malkavian, whose
   // clan weakness is a derangement, and a Toreador.
   const p = lead.page;
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(p.url()).pathname.split("/")[2]!;
@@ -1760,7 +1760,7 @@ test("Beast traits on the Play View warn what each one brings, and the Frenzy ru
   const lead = await person(browser, "frenzy-lead");
   const troupeName = `Court of Fangs ${run}`;
   await custodian.page.reload();
-  await custodian.page.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
   await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
@@ -1769,7 +1769,7 @@ test("Beast traits on the Play View warn what each one brings, and the Frenzy ru
 
   // A Brujah NPC the lead runs at game.
   const p = lead.page;
-  await p.getByRole("link", { name: "Troupes" }).click();
+  await (await topBar(p)).getByRole("link", { name: "Troupes" }).click();
   await p.getByRole("link", { name: troupeName }).click();
   await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
   const troupeId = new URL(p.url()).pathname.split("/")[2]!;

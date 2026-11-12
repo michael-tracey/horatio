@@ -916,6 +916,7 @@ NOT_EXPORTED_TABLES: dict[str, str] = {
     "boon_audits": PLAY,
     "bond_reports": PLAY,
     "boon_talons": PLAY,
+    "boonbreakers": PLAY,
     "boons": PLAY,
     "calendar_feeds": "people's own calendar links",
     "character_titles": PLAY,
