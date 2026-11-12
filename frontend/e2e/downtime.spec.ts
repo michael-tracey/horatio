@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab, choosePick, choosePicks, openSlot, pickedAt, topBar } from "./support";
+import { backstoryOptional, characterTab, choosePick, choosePicks, closeContextsAfterEach, makeCustodian, openNewTroupe, openSlot, person, pickedAt, run, shots, topBar } from "./support";
 
 /** Downtime: a troupe's whole month, and feeding in a downtime. */
 
@@ -31,8 +31,7 @@ test("a troupe's month, from new character to downtime results", async ({ browse
 
   // The custodian sets up the troupe.
   await custodian.page.reload();
-  await (await topBar(custodian.page)).getByRole("link", { name: "Troupes" }).click();
-  await expect(custodian.page.getByRole("heading", { name: "New troupe" })).toBeVisible();
+  await openNewTroupe(custodian.page);
   await custodian.page.getByLabel("Name").fill(troupeName);
   await custodian.page.getByLabel("Lead storyteller").fill(lead.handle);
   await custodian.page.getByRole("button", { name: "Create troupe" }).click();

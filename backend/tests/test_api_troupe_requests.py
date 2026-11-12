@@ -43,7 +43,7 @@ def test_approving_makes_the_troupe_with_the_asker_as_lead(
     [task] = [i for i in bell(custodian) if i["kind"] == "troupe_request"]
     assert task["task"] is True
     assert task["summary"] == "asker asks for a new troupe, Nights of Boston"
-    assert task["link"] == "/custodian/troupe-requests"
+    assert task["link"] == "/custodian/troupe-management#requests"
 
     approved = custodian.client.post(f"/troupe-requests/{request['id']}/approve")
     assert approved.status_code == 200, approved.text

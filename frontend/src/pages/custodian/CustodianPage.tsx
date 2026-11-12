@@ -1,7 +1,6 @@
 import { Link, Navigate, Route, Routes, useLocation } from "react-router";
 import { Loading, PageTitle, Tabs } from "../../components/ui";
 import { useMe } from "../../hooks";
-import { ArchivedTroupesTab } from "./ArchivedTroupesTab";
 import { AuditTab } from "./AuditTab";
 import { BackupsTab } from "./BackupsTab";
 import { ClanLogosTab } from "./ClanLogosTab";
@@ -9,7 +8,8 @@ import { PeopleTab } from "./PeopleTab";
 import { SettingsTab } from "./SettingsTab";
 import { SystemTab } from "./SystemTab";
 import { ToolsTab } from "./ToolsTab";
-import { TroupeRequestsTab, useTroupeRequests } from "./TroupeRequestsTab";
+import { TroupeManagementTab } from "./TroupeManagementTab";
+import { useTroupeRequests } from "./TroupeRequestsTab";
 import { YorickImportTab } from "./YorickImportTab";
 
 /** What only the custodian can do, in one place. Anyone else is sent away. */
@@ -25,8 +25,7 @@ export function CustodianPage() {
       <Tabs
         tabs={[
           { to: "/custodian/people", label: "People" },
-          { to: "/custodian/troupe-requests", label: "Troupe requests", count: requests.data?.filter((r) => r.status === "pending").length ?? 0 },
-          { to: "/custodian/archived-troupes", label: "Archived troupes" },
+          { to: "/custodian/troupe-management", label: "Troupe management", count: requests.data?.filter((r) => r.status === "pending").length ?? 0 },
           { to: "/custodian/clan-logos", label: "Clan logos" },
           { to: "/custodian/backups", label: "Backups" },
           { to: "/custodian/audit", label: "Audit" },
@@ -38,8 +37,10 @@ export function CustodianPage() {
       <Routes>
         <Route index element={<Navigate to="people" replace />} />
         <Route path="people" element={<PeopleTab />} />
-        <Route path="troupe-requests" element={<TroupeRequestsTab />} />
-        <Route path="archived-troupes" element={<ArchivedTroupesTab />} />
+        <Route path="troupe-management" element={<TroupeManagementTab />} />
+        {/* Their own tabs until #759; old links land on their sections. */}
+        <Route path="troupe-requests" element={<Navigate to="/custodian/troupe-management#requests" replace />} />
+        <Route path="archived-troupes" element={<Navigate to="/custodian/troupe-management#archived" replace />} />
         <Route path="clan-logos" element={<ClanLogosTab />} />
         {/* Moved under Tools (#758); old links, with their ?troupe=, still land there. */}
         <Route path="yorick-import" element={<ToYorickImport />} />
