@@ -1,0 +1,72 @@
+/* The chart kit's colours (#706), as custom properties on a chart's figure, so
+   the marks are written against roles and each theme sets them once. Values from
+   palette.ts (keep the two in step). Dark and Ultra goth share the categorical
+   hues, which pass on both; the furniture follows each theme's own tokens. */
+.chart {
+  --chart-series-1: #3987e5;
+  --chart-series-2: #d95926;
+  --chart-series-3: #199e70;
+  --chart-series-4: #c98500;
+  --chart-series-5: #d55181;
+  --chart-series-6: #008300;
+  --chart-series-7: #9085e9;
+  --chart-series-8: #e66767;
+  /* Other: grey, never a ninth hue. */
+  --chart-other: #8a8291;
+  --chart-ink: var(--color-parchment);
+  --chart-ink-secondary: var(--color-mist);
+  --chart-grid: var(--color-ash);
+  --chart-axis: var(--color-line);
+  --chart-surface: var(--color-dusk);
+}
+
+/* On paper: the same hues stepped for white, and black ink. */
+@media print {
+  .chart {
+    --chart-series-1: #2a78d6;
+    --chart-series-2: #eb6834;
+    --chart-series-3: #1baf7a;
+    --chart-series-4: #eda100;
+    --chart-series-5: #e87ba4;
+    --chart-series-6: #008300;
+    --chart-series-7: #6250d6;
+    --chart-series-8: #e34948;
+    --chart-other: #898781;
+    --chart-ink: #0b0b0b;
+    --chart-ink-secondary: #52514e;
+    --chart-grid: #e1e0d9;
+    --chart-axis: #c3c2b7;
+    --chart-surface: #ffffff;
+  }
+}
+
+/* A mark lifts a little while it is pointed at or focused. */
+.chart-mark {
+  transition: opacity 120ms ease-out;
+}
+.chart-mark:focus {
+  outline: none;
+}
+.chart-mark:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+.chart-plot:has(.chart-mark:hover) .chart-mark:not(:hover),
+.chart-plot:has(.chart-mark:focus-visible) .chart-mark:not(:focus-visible) {
+  opacity: 0.55;
+}
+
+/* A line chart's crosshair: the hairline at the column pointed at or focused. */
+.chart-crosshair {
+  opacity: 0;
+}
+.chart-mark:hover .chart-crosshair,
+.chart-mark:focus-visible .chart-crosshair {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-mark {
+    transition: none;
+  }
+}
