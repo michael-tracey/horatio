@@ -4,7 +4,7 @@ approvals queue, of the new kind `bond_drink`) or on the thrall's player, until 
 approved or confirmed.
 
 Revision ID: 0167
-Revises: 0165
+Revises: 0166
 Create Date: 2026-11-12 12:00:00.000000
 """
 
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0167"
-down_revision: str | None = "0165"
+down_revision: str | None = "0166"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
