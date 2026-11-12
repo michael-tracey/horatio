@@ -50,6 +50,7 @@ import { GivePanel } from "./GivePanel";
 import { HouseTraitsCard } from "./HouseTraitsCard";
 import { HeldLocationsCard } from "./HeldLocationsCard";
 import { BondsCard } from "./BondsCard";
+import { BoonsCard } from "./BoonsCard";
 import { LocationsCard } from "./LocationsCard";
 import { rulesTroupe } from "./rules";
 import { fieldSkills } from "./fields";
@@ -724,6 +725,7 @@ export function SheetTab({
         {!mine && <LocationsCard characterId={character.id} />}
         <HeldLocationsCard characterId={character.id} mine={mine} />
         <BondsCard characterId={character.id} name={character.name} mine={mine} />
+        {!mine && <BoonsCard characterId={character.id} />}
         {(character.creation_complete || !mine) && (
           <TroupesCard character={character} sheet={s} mine={mine} />
         )}

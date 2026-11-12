@@ -71,6 +71,7 @@ class TroupeAction(StrEnum):
     WRITE_POSTS = "write_posts"
     PROPOSE_NEWS = "propose_news"
     MANAGE_BONDS = "manage_bonds"
+    MANAGE_BOONS = "manage_boons"
 
 
 _LEAD = {Role.LEAD_STORYTELLER}
@@ -152,6 +153,9 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     # breaking bonds, and saying which are known to their regnants (horatio.bonds).
     # Narrators, and players but for their own characters', never see them.
     TroupeAction.MANAGE_BONDS: frozenset(_RUNNING),
+    # Keeping the troupe's boon ledger: registering, editing, trading, passing on,
+    # settling and voiding boons, and reading every edit's changes (horatio.boons).
+    TroupeAction.MANAGE_BOONS: frozenset(_RUNNING),
 }
 
 

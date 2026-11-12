@@ -665,6 +665,7 @@ SETTINGS: dict[str, Setting] = {
                 }
             ),
         ),
+        Setting("boons", "at_game", "Boons", bool, on_off),
         Setting(
             "play_tabs_off",
             "at_game",
@@ -832,6 +833,7 @@ NOT_EXPORTED_TABLES: dict[str, str] = {
     "backstory_feedback": PLAY,
     "backstory_question_sets": "backstory question sets aren't carried",
     "blood_bonds": PLAY,
+    "boons": PLAY,
     "calendar_feeds": "people's own calendar links",
     "character_titles": PLAY,
     "characters": PLAY,
@@ -2309,6 +2311,7 @@ def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, Setti
             "diablerie_flaws",
             "items_expire",
             "blood_bonds",
+            "boons",
             "player_nominations",
             "remembrances",
             "assamite_name",
