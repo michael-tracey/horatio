@@ -4,9 +4,10 @@ import type { InfluenceEntryOut } from "../../api/types";
 import { Button, ErrorText } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
+import { cyclePath } from "./cycles";
 
 /** The discovery blocks answers added to an entry, each of which can be taken off again if it was a mistake. */
-export function BlockSources({ entry }: { entry: InfluenceEntryOut }) {
+export function BlockSources({ troupeId, entry }: { troupeId: string; entry: InfluenceEntryOut }) {
   const dates = useDates();
   const remove = useAction((id: string) => unwrap(api.DELETE("/api/influence-blocks/{block_id}", { params: { path: { block_id: id } } })));
   if (!entry.blocked_by?.length) return null;
@@ -21,7 +22,7 @@ export function BlockSources({ entry }: { entry: InfluenceEntryOut }) {
                 <>
                   {" "}
                   in{" "}
-                  <Link to={`/cycles/${b.cycle_id}`} className="hover:text-gold">
+                  <Link to={cyclePath(troupeId, b.cycle_id)} className="hover:text-gold">
                     {b.cycle_name}
                   </Link>
                 </>

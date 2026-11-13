@@ -1,13 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { Link, Route, Routes, useParams } from "react-router";
+import { useId, useRef, useState } from "react";
+import { Link, Navigate, Route, Routes, useLocation, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
+import type { ClanName } from "../../clanNames";
 import { ClanNames } from "../../components/ClanNames";
 import type { CycleOut, QuestionIn } from "../../api/types";
-import { Badge, Button, Card, ErrorText, Field, Input, Loading, Notice, PageTitle, Select, Tabs, Textarea } from "../../components/ui";
+import { Badge, Button, Card, ErrorText, Field, Input, Loading, Notice, PageTabs, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
-import { cycleStatus, kindLabels, pastDue, timeLeft } from "./cycles";
+import { useTitle } from "../../title";
+import { cyclePath, cycleStatus, kindLabels, pastDue, timeLeft } from "./cycles";
 import { AimedTab } from "./AimedTab";
 import { CycleProjectsTab } from "./CycleProjectsTab";
 import { closeFacts, completeFacts, projectFacts } from "./delivery";
@@ -17,70 +19,80 @@ import { NominationsReview } from "../nominations/NominationsReview";
 import { ParticipantsTab } from "./ParticipantsTab";
 import { ResponsesTab } from "./ResponsesTab";
 
-export function CyclePage() {
-  const { cycleId = "" } = useParams();
-  const cycle = useQuery({
-    queryKey: ["cycle", cycleId],
-    queryFn: () => unwrap(api.GET("/api/cycles/{cycle_id}", { params: { path: { cycle_id: cycleId } } })),
-  });
-  // For the way back: which troupe's cycle this is.
-  const troupeId = cycle.data?.troupe_id ?? "";
-  const troupe = useQuery({
-    queryKey: ["troupe", troupeId],
-    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}", { params: { path: { troupe_id: troupeId } } })),
-    enabled: !!troupeId,
-  });
+/** A downtime cycle, inside its troupe's Downtimes › Cycles (#776). */
+export function CyclePage({ troupeId, clanName }: { troupeId: string; clanName?: ClanName | null }) {
+  const { cycleId = "", "*": rest = "" } = useParams();
+  const { search, hash } = useLocation();
+  const cycle = useCycle(cycleId);
+  const heading = useId();
+  // The cycle's name in the tab's title, between its tab and the troupe's (#775):
+  // "Responses · Harvest Moon · Cycles · ‹troupe› · Horatio".
+  const named = useRef<HTMLHeadingElement>(null);
+  useTitle(cycle.data?.troupe_id === troupeId ? cycle.data.name : null, named);
   if (cycle.isPending) return <Loading />;
   if (cycle.error) return <ErrorText error={cycle.error} />;
   const c = cycle.data;
-  const base = `/cycles/${c.id}`;
+  // A cycle is only ever shown under its own troupe.
+  if (c.troupe_id !== troupeId) return <Navigate to={`${cyclePath(c.troupe_id, c.id, rest)}${search}${hash}`} replace />;
+  const base = cyclePath(troupeId, c.id);
   return (
-    <ClanNames name={troupe.data?.assamite_name}>
-      <nav aria-label="Breadcrumb" className="mb-1 text-sm text-mist">
-        <ol className="flex flex-wrap items-center gap-x-1.5">
-          <li className="min-w-0">
-            <Link to={`/troupes/${c.troupe_id}`} className="block truncate hover:text-parchment hover:underline">
-              {troupe.data?.name ?? "Troupe"}
-            </Link>
-          </li>
-          <li aria-hidden="true">›</li>
-          <li>
-            <Link to={`/troupes/${c.troupe_id}/downtimes`} className="hover:text-parchment hover:underline">
-              Downtimes
-            </Link>
-          </li>
-          <li aria-hidden="true">›</li>
-        </ol>
-      </nav>
-      <PageTitle actions={<Badge tone={c.status === "open" ? "gold" : "mist"}>{cycleStatus(c.status)}</Badge>}>{c.name}</PageTitle>
-      <Tabs
-        tabs={[
-          { to: base, label: "Overview", end: true },
-          { to: `${base}/form`, label: "Form" },
-          { to: `${base}/participants`, label: "Participants" },
-          // A troupe that doesn't track feeding has no Feeding tab.
-          ...(c.feeding ? [{ to: `${base}/feeding`, label: "Feeding" }] : []),
-          { to: `${base}/responses`, label: "Responses" },
-          { to: `${base}/aimed`, label: "Aimed at" },
-          { to: `${base}/projects`, label: "Projects" },
-          { to: `${base}/delivery`, label: "Delivery" },
-          // A troupe that uses Player Nominations or Remembrances reviews and publishes them here.
-          ...(c.player_nominations || c.remembrances ? [{ to: `${base}/nominations`, label: c.player_nominations ? "Nominations" : "Remembrances" }] : []),
-        ]}
-      />
-      <Routes>
-        <Route index element={<Overview cycle={c} />} />
-        <Route path="form" element={<FormEditor cycle={c} />} />
-        <Route path="participants" element={<ParticipantsTab cycle={c} />} />
-        <Route path="feeding" element={<FeedingTab cycle={c} />} />
-        <Route path="responses" element={<ResponsesTab cycle={c} />} />
-        <Route path="aimed" element={<AimedTab cycle={c} />} />
-        <Route path="projects" element={<CycleProjectsTab cycle={c} />} />
-        <Route path="delivery" element={<DeliveryTab cycle={c} />} />
-        {(c.player_nominations || c.remembrances) && <Route path="nominations" element={<NominationsReview cycle={c} />} />}
-      </Routes>
+    <ClanNames name={clanName}>
+      {/* A region rather than a <section>, so the cards inside stay the nearest sections to their headings. */}
+      <div role="region" aria-labelledby={heading}>
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h2 id={heading} ref={named} className="font-display text-xl text-parchment">
+            {c.name}
+          </h2>
+          <Badge tone={c.status === "open" ? "gold" : "mist"}>{cycleStatus(c.status)}</Badge>
+        </div>
+        <PageTabs
+          label="Cycle"
+          tabs={[
+            { to: base, label: "Overview", end: true },
+            { to: `${base}/form`, label: "Form" },
+            { to: `${base}/participants`, label: "Participants" },
+            // A troupe that doesn't track feeding has no Feeding tab.
+            ...(c.feeding ? [{ to: `${base}/feeding`, label: "Feeding" }] : []),
+            { to: `${base}/responses`, label: "Responses" },
+            { to: `${base}/aimed`, label: "Aimed at" },
+            { to: `${base}/projects`, label: "Projects" },
+            { to: `${base}/delivery`, label: "Delivery" },
+            // A troupe that uses Player Nominations or Remembrances reviews and publishes them here.
+            ...(c.player_nominations || c.remembrances ? [{ to: `${base}/nominations`, label: c.player_nominations ? "Nominations" : "Remembrances" }] : []),
+          ]}
+        />
+        <Routes>
+          <Route index element={<Overview cycle={c} />} />
+          <Route path="form" element={<FormEditor cycle={c} />} />
+          <Route path="participants" element={<ParticipantsTab cycle={c} />} />
+          <Route path="feeding" element={<FeedingTab cycle={c} />} />
+          <Route path="responses" element={<ResponsesTab cycle={c} />} />
+          <Route path="aimed" element={<AimedTab cycle={c} />} />
+          <Route path="projects" element={<CycleProjectsTab cycle={c} />} />
+          <Route path="delivery" element={<DeliveryTab cycle={c} />} />
+          {(c.player_nominations || c.remembrances) && <Route path="nominations" element={<NominationsReview cycle={c} />} />}
+        </Routes>
+      </div>
     </ClanNames>
   );
+}
+
+/** An old `/cycles/:cycleId/...` link, from a bookmark or an old notice: on to the
+ * same page of the cycle under its troupe (#776). */
+export function OldCycleLink() {
+  const { cycleId = "", "*": rest = "" } = useParams();
+  const { search, hash } = useLocation();
+  const cycle = useCycle(cycleId);
+  if (cycle.isPending) return <Loading />;
+  if (cycle.error) return <ErrorText error={cycle.error} />;
+  return <Navigate to={`${cyclePath(cycle.data.troupe_id, cycle.data.id, rest)}${search}${hash}`} replace />;
+}
+
+function useCycle(cycleId: string) {
+  return useQuery({
+    queryKey: ["cycle", cycleId],
+    queryFn: () => unwrap(api.GET("/api/cycles/{cycle_id}", { params: { path: { cycle_id: cycleId } } })),
+  });
 }
 
 function Overview({ cycle }: { cycle: CycleOut }) {

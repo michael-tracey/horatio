@@ -247,13 +247,14 @@ test("screenshots for Running a troupe", async ({ browser }) => {
   await expect(asking).toContainText("Asking to make this home");
   await shot(l, "approvals", undefined, 1100);
 
-  // The cycle's Overview, and its Responses.
-  await l.goto(`/cycles/${cycle.id}`);
+  // The cycle's Overview, and its Responses: the cycle itself, under the troupe's tabs (#776).
+  const harvest = l.getByRole("region", { name: "Harvest Moon" });
+  await l.goto(`/troupes/${troupeId}/downtimes/${cycle.id}`);
   await expect(l.getByText("2 of 3 submitted")).toBeVisible();
-  await shot(l, "cycle", undefined, 900);
-  await l.goto(`/cycles/${cycle.id}/responses`);
+  await shot(l, "cycle", harvest, 900);
+  await l.goto(`/troupes/${troupeId}/downtimes/${cycle.id}/responses`);
   await expect(l.getByRole("region", { name: "Ezra Vale", exact: true })).toBeVisible();
-  await shot(l, "responses", undefined, 1100);
+  await shot(l, "responses", harvest, 1100);
 
   // Game night: check-in open, two characters in.
   await send(l, "PUT", `/api${base}/games/${gameId}/checkin`);
@@ -322,7 +323,7 @@ test("screenshots for Running a troupe", async ({ browser }) => {
     real.participants = real.participants.map((p: { character_id: string }) => ({ ...p, unreachable: p.character_id === celestine ? [] : ["discord"] }));
     await route.fulfill({ json: real });
   });
-  await l.goto(`/cycles/${cycle.id}/delivery`);
+  await l.goto(`/troupes/${troupeId}/downtimes/${cycle.id}/delivery`);
   const deliverCard = card(l, "Deliver results");
   await expect(deliverCard.getByText(/ of 2 downtimes have every response written\.$/)).toBeVisible();
   const partly = deliverCard.getByLabel(/^Also deliver the \d partly written/);

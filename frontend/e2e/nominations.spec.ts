@@ -61,7 +61,7 @@ test("players write Player Nominations in their downtime, staff review, star and
   await expect(w.getByRole("button", { name: "Submit downtime" })).toBeVisible();
   await expect(w.getByRole("heading", { name: "Player Nominations" })).toHaveCount(0);
   const l = lead.page;
-  await l.goto(`/cycles/${cycle.id}`);
+  await l.goto(`/troupes/${troupe.id}/downtimes/${cycle.id}`);
   await expect(l.getByRole("link", { name: "Responses" })).toBeVisible();
   await expect(l.getByRole("link", { name: "Nominations" })).toHaveCount(0);
 
@@ -85,7 +85,7 @@ test("players write Player Nominations in their downtime, staff review, star and
   await expect(w.getByText(/^Submitted\./)).toBeVisible();
 
   // The lead reviews them on the cycle's Nominations tab, with who wrote each.
-  await l.goto(`/cycles/${cycle.id}/nominations`);
+  await l.goto(`/troupes/${troupe.id}/downtimes/${cycle.id}/nominations`);
   const table = l.getByRole("table", { name: "Player Nominations" });
   await expect(table.getByRole("row")).toHaveCount(3);
   await expect(l.getByText("2 written · 0 removed · 0 starred")).toBeVisible();
@@ -179,7 +179,7 @@ test("a character retires with remembrances, the next downtime asks for a memory
   await expect(f.getByText(/^Submitted\./)).toBeVisible();
 
   // The lead reviews it, with its writer, and publishes.
-  await l.goto(`/cycles/${cycle.id}/nominations`);
+  await l.goto(`/troupes/${troupe.id}/downtimes/${cycle.id}/nominations`);
   const memories = l.getByRole("table", { name: "Memories of Vera Lune" });
   await expect(memories).toContainText("She lit every lantern");
   await expect(memories).toContainText("Otto Reyes");
