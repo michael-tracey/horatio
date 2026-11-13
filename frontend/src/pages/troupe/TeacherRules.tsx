@@ -20,7 +20,7 @@ function numbers(from: number, to: number): number[] {
 const sameRule = (a: TeacherRuleOut | "new", b: TeacherRuleOut | "new") => (a === "new" || b === "new" ? a === b : a.id === b.id);
 
 /**
- * The troupe's teacher rules, under Customise › House rules › Teachers: kinds of trait that
+ * The troupe's teacher rules, in the Settings at the top of Characters › Approvals (#785): kinds of trait that
  * need a teacher here beyond discipline dots. None by default, and then nothing
  * changes. Storytellers add one, change it or remove it; each change goes in the
  * troupe's log, and the players' House rules tab lists them.

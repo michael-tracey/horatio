@@ -42,12 +42,17 @@ test("quests: a player asks for one, staff build it Complex 2 and send it, it is
   await characterTab(p, "Results");
   await expect(p.locator("main").getByRole("link", { name: "Quests", exact: true })).toHaveCount(0);
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/house-rules/quests`);
+  // Quests are switched on in the Features list; their requests a cycle are in the Quests tab's Settings (#785).
+  await l.goto(`/troupes/${troupeId}/settings`);
+  const row = l.getByRole("list", { name: "Features" }).getByRole("listitem", { name: "Quests" });
+  await row.getByRole("switch", { name: "Quests" }).click();
+  await expect(row.getByRole("switch", { name: "Quests" })).toHaveAttribute("aria-checked", "true");
+  await row.getByRole("link", { name: "Settings for Quests" }).click();
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/quests#settings-quests$`));
   await l.getByRole("button", { name: "Change quest settings" }).click();
-  await l.getByLabel("Run quests in this troupe").check();
   await l.getByLabel("Requests per character per cycle").fill("1");
   await l.getByRole("button", { name: "Save" }).click();
-  await expect(l.getByText("On: 1 request per character each downtime cycle.")).toBeVisible();
+  await expect(l.getByText("1 request per character each downtime cycle.")).toBeVisible();
 
   // The player asks for a quest, from behind a button below their quests; a second is refused with the reason.
   await p.reload();

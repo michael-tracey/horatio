@@ -31,4 +31,22 @@ describe("a feature's folded Settings (#784)", () => {
       delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
     }
   });
+
+  it("opens at a moved part's card when an old House rules address lands on it (#785)", () => {
+    const scroll = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { value: scroll, configurable: true });
+    try {
+      render(
+        <MemoryRouter initialEntries={["/troupes/t1/approvals#settings-teachers"]}>
+          <FeatureSettings>
+            <div id="settings-teachers">Teachers</div>
+          </FeatureSettings>
+        </MemoryRouter>,
+      );
+      expect(screen.getByText("Settings").closest("details")!.open).toBe(true);
+      expect(scroll.mock.contexts[0]).toBe(document.getElementById("settings-teachers"));
+    } finally {
+      delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
+  });
 });

@@ -11,22 +11,17 @@ import { useClanName } from "../../components/ClanNames";
 import { Badge, Button, ErrorText, Input, Loading, PageTabs, Select } from "../../components/ui";
 import { useRulesAction } from "../../hooks";
 import { AllowancesSection } from "./AllowancesSection";
-import { BackstorySettings } from "./BackstorySettings";
 import { BookTraitsSection } from "./BookTraitsSection";
 import { pageText } from "./bookPage";
 import { CostsSection } from "./CostsSection";
-import { FreeChangesSettings } from "./FreeChangesSettings";
+import { partHome, PART_HOMES, type SettingsPart } from "./features";
 import { HouseRulesTab } from "./HouseRulesTab";
 import { HouseTraitsSection } from "./HouseTraitsSection";
 import { KeywordsSection } from "./KeywordsSection";
 import { LanguagesSection } from "./LanguagesSection";
-import { LocationRulesSection } from "./LocationRulesSection";
 import { OwnChecks } from "./OwnChecks";
-import { QuestSettings } from "./QuestSettings";
-import { RetainerRules } from "./RetainerRules";
 import { writtenStrength } from "./checkStrength";
 import { StartingSection } from "./StartingSection";
-import { TeacherRules } from "./TeacherRules";
 import { WrittenRulesSection } from "./WrittenRulesSection";
 
 type Strength = "refuse" | "complete" | "review" | "note" | "off";
@@ -74,12 +69,6 @@ const RULE_SECTIONS = [
   { path: "house-traits", label: "House merits and flaws" },
   { path: "written", label: "Written rules" },
   { path: "book-traits", label: "Book traits" },
-  { path: "locations", label: "Locations" },
-  { path: "quests", label: "Quests" },
-  { path: "retainers", label: "Retainers" },
-  { path: "backstories", label: "Backstories" },
-  { path: "free-changes", label: "Free changes" },
-  { path: "teachers", label: "Teachers" },
 ] as const;
 
 /**
@@ -88,7 +77,10 @@ const RULE_SECTIONS = [
  * here, what new characters start with, how many downtime actions characters get,
  * how many languages Linguistics gives, and the troupe's own merits and flaws.
  * Storytellers change them here; assistant storytellers read them. The status of
- * each sect is a reference of its own, in the Rulebook's Status (#787).
+ * each sect is a reference of its own, in the Rulebook's Status (#787). The parts that
+ * set up a feature rather than a rule (Locations, Quests, Retainers, Backstories, Free
+ * changes, Teachers) are folded at the top of the tab where staff meet that feature
+ * (#785); their old addresses go there.
  */
 export function RulesTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: boolean }) {
   const troupeId = troupe.id;
@@ -110,17 +102,24 @@ export function RulesTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: bool
         <Route path="house-traits" element={<HouseTraitsSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="written" element={<WrittenRulesSection troupeId={troupeId} canEdit={canEdit} />} />
         <Route path="book-traits" element={<BookTraitsSection troupeId={troupeId} canEdit={canEdit} />} />
-        <Route path="locations" element={<LocationRulesSection troupeId={troupeId} canEdit={canEdit} />} />
-        <Route path="quests" element={<QuestSettings troupeId={troupeId} canEdit={canEdit} />} />
-        <Route path="retainers" element={<RetainerRules troupeId={troupeId} canEdit={canEdit} />} />
-        <Route path="backstories" element={<BackstorySettings troupeId={troupeId} />} />
-        <Route path="free-changes" element={<FreeChangesSettings troupeId={troupeId} canEdit={canEdit} />} />
-        <Route path="teachers" element={<TeacherRules troupeId={troupeId} canEdit={canEdit} />} />
+        {(Object.keys(PART_HOMES) as SettingsPart[]).map((part) => (
+          <Route key={part} path={part} element={<Navigate to={movedPart(troupe, part)} replace />} />
+        ))}
         {/* A part that isn't one: back to what players read. */}
         <Route path="*" element={<Navigate to={base} replace />} />
       </Routes>
     </>
   );
+}
+
+/**
+ * Where a part moved by #785 now lives. Quests' tab is there only while quests are on, so
+ * with them off its address goes to the Features list, where they're switched on.
+ */
+function movedPart(troupe: TroupeOut, part: SettingsPart): string {
+  const base = `/troupes/${troupe.id}`;
+  if (part === "quests" && !troupe.quests_enabled) return `${base}/settings`;
+  return `${base}/${partHome(part)}`;
 }
 
 /**

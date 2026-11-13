@@ -443,9 +443,9 @@ test("with free changes by games played, a new character drops a skill for its f
   const troupeId = (await made.json()).id;
   await backstoryOptional(custodian.page, troupeId);
 
-  // The lead gives new characters free changes for their first 3 games, under Rules.
+  // The lead gives new characters free changes for their first 3 games, in the Settings at the top of Approvals.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/house-rules/free-changes`);
+  await l.goto(`/troupes/${troupeId}/approvals#settings-free-changes`);
   await l.getByRole("button", { name: "Change free changes" }).click();
   await l.getByLabel(/^By games played/).check();
   await l.getByLabel("Games attended").fill("3");

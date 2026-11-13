@@ -1,5 +1,5 @@
-"""Teacher rules (horatio.teaching): a troupe's storytellers make them under Customise ›
-Rules › Teachers; a player buying a trait one is about chooses a teacher; the
+"""Teacher rules (horatio.teaching): a troupe's storytellers make them in the Settings at
+the top of Characters › Approvals; a player buying a trait one is about chooses a teacher; the
 teacher's player confirms spending Willpower on it."""
 
 import uuid
