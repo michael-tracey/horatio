@@ -12,6 +12,7 @@ import { BoonsPages } from "./BoonsPages";
 import { ConnectorsTab } from "./ConnectorsTab";
 import { CyclesTab } from "./CyclesTab";
 import { EquipmentTab } from "./EquipmentTab";
+import { TabSettings } from "./FeatureSettings";
 import { GameNightPage } from "./GameNight";
 import { HouseRulesTab } from "./HouseRulesTab";
 import { InfluenceLogTab } from "./InfluenceLogTab";
@@ -19,7 +20,7 @@ import { LinesVeilsTab } from "./LinesVeilsTab";
 import { LocationsTab } from "./LocationsTab";
 import { LogTab } from "./LogTab";
 import { StockNpcBuilder } from "./StockNpcBuilder";
-import { MyWork, WorkTab } from "./WorkTab";
+import { OldWorkLink, WorkTab } from "./WorkTab";
 import { AgenciesTab } from "../news/AgenciesTab";
 import { PostsSection } from "../news/PostsSection";
 import { useGlance } from "../news/queries";
@@ -86,6 +87,8 @@ export function TroupePage() {
   const t = troupe.data;
   const can = abilities(t.my_role, me.data?.is_custodian ?? false);
   const base = `/troupes/${t.id}`;
+  // Those who may change a feature's settings find them folded at the top of its tab (#784).
+  const settings = can.storyteller && !t.archived;
 
   return (
     <>
@@ -124,7 +127,17 @@ export function TroupePage() {
         {t.whos_who && !t.archived && <Route path="announcements/*" element={<PostsSection troupeId={t.id} kind="announcement" writes={can.running} proposes={false} />} />}
         {can.running && <Route path="news-agencies" element={<AgenciesTab troupeId={t.id} archived={t.archived} />} />}
         {can.staff && <Route path="staff" element={<StaffTab troupe={t} canManage={can.storyteller} />} />}
-        {t.whos_who && <Route path="whos-who" element={<WhosWhoTab troupeId={t.id} />} />}
+        {t.whos_who && (
+          <Route
+            path="whos-who"
+            element={
+              <>
+                {settings && <TabSettings troupe={t} feature="whos_who" />}
+                <WhosWhoTab troupeId={t.id} />
+              </>
+            }
+          />
+        )}
         {t.nominations && (
           <Route path="nominations" element={<NominationsTab troupeId={t.id} canStar={can.running} nominations={!!t.player_nominations} remembrances={!!t.remembrances} />} />
         )}
@@ -132,7 +145,17 @@ export function TroupePage() {
         {can.running && !t.archived && <Route path="characters/import" element={<TroupeImportPage troupeId={t.id} />} />}
         {can.running && <Route path="players" element={<PlayersTab troupeId={t.id} />} />}
         {can.staff && <Route path="lines-veils" element={<LinesVeilsTab troupeId={t.id} />} />}
-        {can.running && <Route path="play" element={<PlayTab troupeId={t.id} />} />}
+        {can.running && (
+          <Route
+            path="play"
+            element={
+              <>
+                {settings && <TabSettings troupe={t} feature="play_view" />}
+                <PlayTab troupeId={t.id} />
+              </>
+            }
+          />
+        )}
         {can.running && <Route path="xp" element={<XpAwardsTab troupeId={t.id} />} />}
         {can.running && <Route path="games/:gameId" element={<GameNightPage troupeId={t.id} />} />}
         {/* NPCs were a tab of their own until they joined the Characters list (#556). */}
@@ -159,8 +182,28 @@ export function TroupePage() {
             }
           />
         )}
-        {can.running && (t.blood_bonds ?? "off") !== "off" && <Route path="bonds/*" element={<BondsPages troupeId={t.id} />} />}
-        {can.running && t.boons && <Route path="boons/*" element={<BoonsPages troupeId={t.id} />} />}
+        {can.running && (t.blood_bonds ?? "off") !== "off" && (
+          <Route
+            path="bonds/*"
+            element={
+              <>
+                {settings && <TabSettings troupe={t} feature="blood_bonds" />}
+                <BondsPages troupeId={t.id} />
+              </>
+            }
+          />
+        )}
+        {can.running && t.boons && (
+          <Route
+            path="boons/*"
+            element={
+              <>
+                {settings && <TabSettings troupe={t} feature="boons" />}
+                <BoonsPages troupeId={t.id} />
+              </>
+            }
+          />
+        )}
         {/* The standings and statistics were tabs of their own until they joined Boons (#780). */}
         <Route path="boon-standings" element={<Navigate to={`${base}/boons/standings`} replace />} />
         <Route path="boon-statistics" element={<Navigate to={`${base}/boons/statistics`} replace />} />
@@ -187,12 +230,12 @@ export function TroupePage() {
         {can.running && <Route path="specializations/*" element={<SpecializationsTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.running && <Route path="log" element={<LogTab troupeId={t.id} />} />}
         {can.running && <Route path="downtimes" element={<CyclesTab troupeId={t.id} />} />}
-        {can.running && (
+        {can.staff && (
           <Route
             path="downtimes/:cycleId/*"
             element={
               <Suspense fallback={<Loading />}>
-                <CyclePage troupeId={t.id} clanName={t.assamite_name} />
+                <CyclePage troupeId={t.id} clanName={t.assamite_name} running={can.running} />
               </Suspense>
             }
           />
@@ -200,7 +243,7 @@ export function TroupePage() {
         {can.running && <Route path="connectors" element={<ConnectorsTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.running && <Route path="share" element={<ShareSettingsTab troupe={t} canImport={can.storyteller && !t.archived} />} />}
         {can.staff && <Route path="work" element={<WorkTab troupeId={t.id} />} />}
-        {can.staff && <Route path="work/:cycleId" element={<MyWork troupeId={t.id} canLog={can.running} />} />}
+        {can.staff && <Route path="work/:cycleId" element={<OldWorkLink troupeId={t.id} />} />}
         {can.running && <Route path="influence/*" element={<InfluenceLogTab troupeId={t.id} />} />}
         {can.staff && <Route path="tables" element={<TablesTab troupeId={t.id} canEdit={can.running} />} />}
         {can.staff && t.quests_enabled && <Route path="quests/*" element={<QuestsTab troupeId={t.id} running={can.running} />} />}

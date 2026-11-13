@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab, builtVampire, ATTRIBUTES_AND_FOCUSES } from "./support";
+import { closeContextsAfterEach, run, shots, person, makeCustodian, backstoryOptional, characterTab, builtVampire, ATTRIBUTES_AND_FOCUSES, switchFeature } from "./support";
 
 /** Status and titles, on the sheet, on badges and at a game. */
 
@@ -201,13 +201,8 @@ test("Enlightened: a Sabbat follower of an Accepted path holds it, and a Camaril
   await expect(card.getByRole("listitem", { name: "Acknowledged" })).toBeVisible();
   await expect(card.getByRole("listitem", { name: "Enlightened" })).toHaveCount(0);
 
-  // The lead switches on the optional rule, in the troupe's settings.
-  await l.goto(`/troupes/${troupeId}/settings`);
-  const golconda = l.locator("section").filter({ has: l.getByRole("heading", { name: "Golconda and Enlightened" }) });
-  await expect(golconda.getByLabel(/Golconda Seekers are Enlightened/)).not.toBeChecked();
-  // It saves as it is clicked, and shows once saved.
-  await golconda.getByLabel(/Golconda Seekers are Enlightened/).click();
-  await expect(golconda.getByLabel(/Golconda Seekers are Enlightened/)).toBeChecked();
+  // The lead switches on the optional rule, in the Features list of the troupe's settings.
+  await switchFeature(l, troupeId, "Golconda and Enlightened", true);
   await l.screenshot(shots("golconda-setting"));
 
   await l.goto(`/characters/${seraphine}/status`);
@@ -305,8 +300,8 @@ test("with a boon ledger, the ban on no boons registered with the Harpy is judge
   await expect(boonsBan).toContainText("does not apply");
   await expect(card.getByText("Fleeting: 0 of 5")).toBeVisible();
 
-  // The lead has the ledger judge it, in the troupe's settings.
-  await l.goto(`/troupes/${troupeId}/settings`);
+  // The lead has the ledger judge it, in the Boons tab's settings (#784).
+  await l.goto(`/troupes/${troupeId}/boons#settings`);
   const judge = l.getByRole("checkbox", { name: /Judge “No boons registered” from the boon ledger/ });
   await judge.check();
   await expect(l.getByText("The boon ledger now judges the ban on no boons registered with the Harpy.")).toBeVisible();
@@ -600,8 +595,8 @@ test("a troupe chooses whether its badges print titles and status: by default al
   await expect(warned.getByLabel("Negative status: Warned")).toBeVisible();
   await l.screenshot(shots("badges-status"));
 
-  // In the troupe's settings, the lead turns titles off and prints negative status only.
-  await l.goto(`/troupes/${troupeId}/settings`);
+  // In At game's settings (#784), the lead turns titles off and prints negative status only.
+  await l.goto(`/troupes/${troupeId}/play#settings`);
   const setting = l.locator("section").filter({ has: l.getByRole("heading", { name: "Badges", exact: true }) });
   await expect(setting.getByLabel("Print titles")).toBeChecked();
   await expect(setting.getByLabel(/^All/)).toBeChecked();
@@ -778,9 +773,9 @@ test("where the troupe chooses the night's status at check-in, an elder Senescha
   await send(lead.page, "POST", `/api/approvals/${asked.id}/approve`, {});
   await send(lead.page, "PUT", `/api/troupes/${troupeId}/characters/${id}/titles`, { titles: ["Seneschal"] });
 
-  // The lead switches the house rule on under Customise, and the players' House rules tab says so.
+  // The lead switches the house rule on in At game's settings (#784), and the players' House rules tab says so.
   const l = lead.page;
-  await l.goto(`/troupes/${troupeId}/settings`);
+  await l.goto(`/troupes/${troupeId}/play#settings`);
   const card = l.locator("section").filter({ has: l.getByRole("heading", { name: "The night's status" }) });
   await card.getByLabel("Choose the night's status at check-in").click();
   await expect(card.getByLabel("Choose the night's status at check-in")).toBeChecked();
@@ -1115,10 +1110,7 @@ test("the court over time: staff give a Prince and take it away, and see one fin
   // Staff see it all; the troupe can let its players see the titles too.
   const shown = await p.request.get(`/api/troupes/${troupeId}/court-history`);
   expect((await shown.json()).full).toBe(true);
-  await p.goto(`/troupes/${troupeId}/settings`);
-  // The box shows what the troupe has saved, so it ticks once the change is in.
-  await p.getByRole("checkbox", { name: /^Players see it too/ }).click();
-  await expect(p.getByRole("checkbox", { name: /^Players see it too/ })).toBeChecked();
+  await switchFeature(p, troupeId, "The court over time, for players", true);
   const saved = await p.request.get(`/api/troupes/${troupeId}/court-history`);
   expect((await saved.json()).players_see).toBe(true);
 });
@@ -1198,10 +1190,7 @@ test("the chronicle: staff see an Embrace and a diablerie on the troupe's timeli
 
   // The players see it once the troupe lets them, and only what is public.
   expect((await p.request.get(`/api/troupes/${troupeId}/chronicle`)).status()).toBe(403);
-  await l.goto(`/troupes/${troupeId}/settings`);
-  const players = l.getByRole("checkbox", { name: /^Players see the chronicle too/ });
-  await players.click();
-  await expect(players).toBeChecked();
+  await switchFeature(l, troupeId, "The chronicle, for players", true);
   const seen = await (await p.request.get(`/api/troupes/${troupeId}/chronicle`)).json();
   expect(seen.full).toBe(false);
   expect(seen.events.map((e: { kind: string }) => e.kind)).not.toContain("diablerie");

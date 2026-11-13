@@ -66,23 +66,23 @@ test("staff record three drinks and the thrall's player sees a full bond; the re
   const odile = await home(thrall.page, "Odile Marchand");
   const lucien = await home(regnant.page, "Lucien Vasse");
 
-  // Bonds are off by default: no Bonds screen. The lead switches them on.
+  // Bonds are off by default: no Bonds screen. The lead switches them on in the Features list, which starts them as Staff manages.
   const l = lead.page;
   await l.goto(`/troupes/${troupe.id}/settings`);
-  const off = l.getByRole("radio", { name: /^Off/ });
-  await expect(off).toBeChecked();
-  await expect(l.getByRole("radio", { name: /^Players manage/ })).toBeEnabled();
-  // Checked once the troupe saves it.
-  await l.getByRole("radio", { name: /^Staff manages/ }).click();
-  await expect(l.getByText(/^Blood bonds are tracked\./)).toBeVisible();
+  const bonds = l.getByRole("list", { name: "Features" }).getByRole("listitem", { name: "Blood bonds" });
+  await expect(bonds.getByRole("switch", { name: "Blood bonds" })).toHaveAttribute("aria-checked", "false");
+  await bonds.getByRole("switch", { name: "Blood bonds" }).click();
+  await expect(l.getByText("Blood bonds: switched on.")).toBeVisible();
+  await expect(bonds).toContainText("Staff manages");
+  // Their Settings, folded at the top of the Bonds tab, choose how they're kept: off is the switch's alone.
+  await bonds.getByRole("link", { name: "Settings for Blood bonds" }).click();
   await expect(l.getByRole("radio", { name: /^Staff manages/ })).toBeChecked();
+  await expect(l.getByRole("radio", { name: /^Players manage/ })).toBeEnabled();
+  await expect(l.getByRole("radio", { name: /^Off/ })).toHaveCount(0);
 
-  // The first drink, on the Bonds screen under Court.
-  await l
-    .getByRole("navigation", { name: "Troupe sections" })
-    .getByRole("link", { name: "Court", exact: true })
-    .click();
-  await l.getByRole("link", { name: "Bonds", exact: true }).click();
+  // The first drink, on the Bonds screen under Court, where its Settings are.
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupe.id}/bonds#settings$`));
+  await expect(l.getByRole("navigation", { name: "Court", exact: true }).getByRole("link", { name: "Bonds", exact: true })).toHaveAttribute("aria-current", "page");
   await expect(l.getByText("No blood bonds yet.")).toBeVisible();
   await l.getByRole("button", { name: "Record a drink" }).click();
   const record = l.getByRole("form", { name: "Record a drink" });

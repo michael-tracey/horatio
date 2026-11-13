@@ -85,7 +85,8 @@ export function troupeTabGroups(t: TroupeTabsTroupe, can: ReturnType<typeof abil
       label: "Downtimes",
       tabs: [
         ...(can.running ? [{ to: `${base}/downtimes`, label: "Cycles", count: counts.downtimes }] : []),
-        ...(can.staff ? [{ to: `${base}/work`, label: "My work", count: counts.work }] : []),
+        // A narrator's cycle opens on their own work in it, so My work stays open there (#789).
+        ...(can.staff ? [{ to: `${base}/work`, label: "My work", count: counts.work, ...(can.running ? {} : { also: `${base}/downtimes` }) }] : []),
         ...(can.staff ? [{ to: `${base}/tables`, label: "Fill tables" }] : []),
         ...(can.running ? [{ to: `${base}/influence`, label: "Influence log", count: counts.influence }] : []),
         ...(can.staff && t.quests_enabled ? [{ to: `${base}/quests`, label: "Quests", count: counts.quests }] : []),

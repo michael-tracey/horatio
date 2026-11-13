@@ -9,7 +9,7 @@ import { TABS, tabNames, tabsOn, troupeTabs, type Tab } from "../play/tabs";
 const NOTES: Partial<Record<Tab, string>> = {
   tracker: "Blood, Willpower, health, limited uses and the game's log. Off, the strip of Blood, Willpower and health on the other tabs goes with it.",
   status: "Only for characters with sect status.",
-  boons: "Only while the troupe keeps a boon ledger (Boons, in these settings): players report boons, and see what the ledger lets them.",
+  boons: "Only while the troupe keeps a boon ledger (Boons, in the Features list): players report boons, and see what the ledger lets them.",
 };
 
 /**

@@ -5,7 +5,7 @@ import { api, unwrap } from "../../api/client";
 import type { ClanName } from "../../clanNames";
 import { ClanNames } from "../../components/ClanNames";
 import type { CycleOut, QuestionIn } from "../../api/types";
-import { Badge, Button, Card, ErrorText, Field, Input, Loading, Notice, PageTabs, Select, Textarea } from "../../components/ui";
+import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Notice, PageTabs, Select, Textarea } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
 import { useTitle } from "../../title";
@@ -18,9 +18,15 @@ import { FeedingTab } from "./FeedingTab";
 import { NominationsReview } from "../nominations/NominationsReview";
 import { ParticipantsTab } from "./ParticipantsTab";
 import { ResponsesTab } from "./ResponsesTab";
+import { MyWork, useWorkCycles } from "./WorkTab";
 
-/** A downtime cycle, inside its troupe's Downtimes › Cycles (#776). */
-export function CyclePage({ troupeId, clanName }: { troupeId: string; clanName?: ClanName | null }) {
+/** A downtime cycle, inside its troupe's Downtimes › Cycles (#776). Narrators, who
+ * don't run cycles, see only their own work in it (#789). */
+export function CyclePage({ troupeId, clanName, running = true }: { troupeId: string; clanName?: ClanName | null; running?: boolean }) {
+  return running ? <RunCycle troupeId={troupeId} clanName={clanName} /> : <NarratorCycle troupeId={troupeId} />;
+}
+
+function RunCycle({ troupeId, clanName }: { troupeId: string; clanName?: ClanName | null }) {
   const { cycleId = "", "*": rest = "" } = useParams();
   const { search, hash } = useLocation();
   const cycle = useCycle(cycleId);
@@ -54,6 +60,8 @@ export function CyclePage({ troupeId, clanName }: { troupeId: string; clanName?:
             // A troupe that doesn't track feeding has no Feeding tab.
             ...(c.feeding ? [{ to: `${base}/feeding`, label: "Feeding" }] : []),
             { to: `${base}/responses`, label: "Responses" },
+            // What is the viewer's own to write in this cycle, as Downtimes › My work opens it (#789).
+            { to: `${base}/work`, label: "My work" },
             { to: `${base}/aimed`, label: "Aimed at" },
             { to: `${base}/projects`, label: "Projects" },
             { to: `${base}/delivery`, label: "Delivery" },
@@ -67,6 +75,7 @@ export function CyclePage({ troupeId, clanName }: { troupeId: string; clanName?:
           <Route path="participants" element={<ParticipantsTab cycle={c} />} />
           <Route path="feeding" element={<FeedingTab cycle={c} />} />
           <Route path="responses" element={<ResponsesTab cycle={c} />} />
+          <Route path="work" element={<MyWork troupeId={troupeId} canLog />} />
           <Route path="aimed" element={<AimedTab cycle={c} />} />
           <Route path="projects" element={<CycleProjectsTab cycle={c} />} />
           <Route path="delivery" element={<DeliveryTab cycle={c} />} />
@@ -74,6 +83,34 @@ export function CyclePage({ troupeId, clanName }: { troupeId: string; clanName?:
         </Routes>
       </div>
     </ClanNames>
+  );
+}
+
+/** A narrator's cycle: their own work in it and nothing else (#789). Narrators don't
+ * run cycles, so its name and status come from their list of cycles to answer. */
+function NarratorCycle({ troupeId }: { troupeId: string }) {
+  const { cycleId = "", "*": rest = "" } = useParams();
+  const { search, hash } = useLocation();
+  const heading = useId();
+  const named = useRef<HTMLHeadingElement>(null);
+  const cycles = useWorkCycles(troupeId);
+  const c = cycles.data?.find((w) => w.id === cycleId);
+  useTitle(c?.name, named);
+  if (cycles.isPending) return <Loading />;
+  if (cycles.error) return <ErrorText error={cycles.error} />;
+  if (!c) return <Empty>Nothing in this cycle is for you to answer.</Empty>;
+  // Their work is all of the cycle a narrator sees, so any other page of it opens there.
+  if (rest !== "work") return <Navigate to={`${cyclePath(troupeId, c.id, "work")}${search}${hash}`} replace />;
+  return (
+    <div role="region" aria-labelledby={heading}>
+      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <h2 id={heading} ref={named} className="font-display text-xl text-parchment">
+          {c.name}
+        </h2>
+        <Badge tone={c.status === "open" ? "gold" : "mist"}>{cycleStatus(c.status)}</Badge>
+      </div>
+      <MyWork troupeId={troupeId} />
+    </div>
   );
 }
 

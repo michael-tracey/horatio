@@ -1,18 +1,24 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router";
+import { Link, Navigate, useLocation, useParams } from "react-router";
 import { api, unwrap } from "../../api/client";
 import { ResponseEditor } from "../../components/ResponseEditor";
 import { Badge, Button, Card, Empty, ErrorText, Loading } from "../../components/ui";
 import { useDates } from "../../dates";
 import { useAction, useMe } from "../../hooks";
-import { cycleStatus, workLine } from "./cycles";
+import { cyclePath, cycleStatus, workLine } from "./cycles";
 
-export function WorkTab({ troupeId }: { troupeId: string }) {
-  const dates = useDates();
-  const cycles = useQuery({
+/** The cycles with downtimes for the viewer to answer, narrators included. */
+export function useWorkCycles(troupeId: string) {
+  return useQuery({
     queryKey: ["work-cycles", troupeId],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/work-cycles", { params: { path: { troupe_id: troupeId } } })),
   });
+}
+
+/** Downtimes › My work: each cycle with something to answer, opening its My work tab (#789). */
+export function WorkTab({ troupeId }: { troupeId: string }) {
+  const dates = useDates();
+  const cycles = useWorkCycles(troupeId);
   if (cycles.isPending) return <Loading />;
   if (cycles.error) return <ErrorText error={cycles.error} />;
   if (!cycles.data.length) return <Empty>No downtimes to answer yet.</Empty>;
@@ -21,7 +27,7 @@ export function WorkTab({ troupeId }: { troupeId: string }) {
       <ul className="divide-y divide-ash">
         {cycles.data.map((c) => (
           <li key={c.id}>
-            <Link to={c.id} className="group flex items-center justify-between gap-2 py-3">
+            <Link to={cyclePath(troupeId, c.id, "work")} className="group flex items-center justify-between gap-2 py-3">
               <span className="min-w-0">
                 <span className="block group-hover:text-gold">{c.name}</span>
                 <span className="block text-xs text-mist">
@@ -36,6 +42,14 @@ export function WorkTab({ troupeId }: { troupeId: string }) {
       </ul>
     </Card>
   );
+}
+
+/** An old `work/:cycleId` link, from a bookmark or an old notice: on to the cycle's
+ * own My work tab (#789). */
+export function OldWorkLink({ troupeId }: { troupeId: string }) {
+  const { cycleId = "" } = useParams();
+  const { search, hash } = useLocation();
+  return <Navigate to={`${cyclePath(troupeId, cycleId, "work")}${search}${hash}`} replace />;
 }
 
 /** A staff member's own work in one cycle: what is assigned to them, and for
@@ -97,6 +111,13 @@ export function MyWork({ troupeId, canLog = false }: { troupeId: string; canLog?
           </ul>
         </Card>
       )}
+      <p className="text-sm text-mist">
+        For a random result, roll on the troupe's{" "}
+        <Link to={`/troupes/${troupeId}/tables`} className="text-gold hover:underline">
+          Fill tables
+        </Link>
+        .
+      </p>
       <ErrorText error={accept.error ?? decline.error} />
     </div>
   );
