@@ -37,16 +37,18 @@ host nginx :443 ── Let's Encrypt certificate, renewed by certbot's timer
    and the host's SSH key at `~/.ssh/ansible_gce_key`. These are the same tools as for
    the other apps.
 3. **Settings:** `cp deploy/production.env.example deploy/production.env` and
-   fill it in:
-   - `HORATIO_DB_PASSWORD`: `openssl rand -hex 24`. Postgres keeps the password
-     it was created with, so never change it afterwards.
-   - `HORATIO_LETSENCRYPT_EMAIL`: where certificate expiry warnings go.
-   - Discord and SMTP: optional; each connector stays off until its settings are
-     filled in. For Discord, also register
-     `https://horatio.lotslarp.org/api/discord/callback` as an OAuth2 redirect.
-     Making the Discord app and bot, step by step, and which setting takes each
-     value, is in the custodian manual: [Setting up Discord and
+   fill it in. The sample is blank. The notes above each setting say what it's
+   for, where to get the value and what to watch out for.
+   - **Required:** `HORATIO_DB_PASSWORD`, `HORATIO_PUBLIC_URL` (here
+     `https://horatio.lotslarp.org`) and `HORATIO_LETSENCRYPT_EMAIL`. `deploy.sh`
+     stops if any of them is empty. Never change the database password after the
+     first deploy.
+   - **Optional:** email (SMTP) and Discord stay off until their settings are
+     filled in. The sample walks through making the Discord app and bot, including
+     the OAuth2 redirect to register (`<HORATIO_PUBLIC_URL>/api/discord/callback`).
+     The custodian manual has the same steps: [Setting up Discord and
      email](../docs/manual/custodian.md#setting-up-discord-and-email).
+   - `HORATIO_PUBLIC_URL` must name the same host as `domain` in `playbook.yml`.
 
 ## Deploying
 
