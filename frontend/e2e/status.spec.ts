@@ -1080,9 +1080,9 @@ test("the court over time: staff give a Prince and take it away, and see one fin
   await titles(["Prince"]);
   await titles([]);
 
-  // Characters › Court: the Prince's row, with one bar, ended.
+  // Court › Court: the Prince's row, with one bar, ended.
   await p.goto(`/troupes/${troupeId}/titles`);
-  await p.getByRole("navigation", { name: "Characters", exact: true }).getByRole("link", { name: "Court", exact: true }).click();
+  await p.getByRole("navigation", { name: "Court", exact: true }).getByRole("link", { name: "Court", exact: true }).click();
   const chart = p.getByRole("figure", { name: "Who held each title" });
   await expect(chart).toBeVisible();
   const bar = chart.getByRole("img", { name: /^Prince: Aurelio Vance: from / });
@@ -1161,10 +1161,10 @@ test("the chronicle: staff see an Embrace and a diablerie on the troupe's timeli
   await accept(mireval);
   await send(lead.page, "POST", `/api/characters/${mireval}/embrace/died`, { embraced_on: "1791-06-02", sire_name: "Lucien" });
 
-  // Characters › Chronicle: both, at their in-game dates.
+  // Court › Chronicle: both, at their in-game dates.
   const l = lead.page;
   await l.goto(`/troupes/${troupeId}/titles`);
-  await l.getByRole("navigation", { name: "Characters", exact: true }).getByRole("link", { name: "Chronicle", exact: true }).click();
+  await l.getByRole("navigation", { name: "Court", exact: true }).getByRole("link", { name: "Chronicle", exact: true }).click();
   const chart = l.getByRole("figure", { name: "The chronicle" });
   await expect(chart).toBeVisible();
   await expect(chart.getByRole("checkbox", { name: "In-game dates" })).toBeChecked();

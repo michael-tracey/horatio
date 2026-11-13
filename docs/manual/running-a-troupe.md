@@ -87,15 +87,16 @@ Only the lead storyteller (and the custodian) can do these, on the **Profile** t
 
 ## Finding your way around a troupe
 
-A troupe's page has its tabs in groups. Which ones you see depends on your role.
+A troupe's page has its tabs in groups, one for each job. Which tabs you see depends on your role, but a tab is always in the same group: players who may read the troupe's Court and Chronicle find them under **Court** too.
 
 | Group | Tabs |
 | --- | --- |
-| Troupe | About, Profile, News, Announcements, Who's Who, Nominations, House rules, Status, Staff, Log |
-| Characters | Approvals, Characters, At game, Award XP, Titles |
-| World | Locations, Equipment, Shared backgrounds |
-| Players | Players, Lines and veils |
+| Troupe | About, Profile, Who's Who, News, Announcements, Nominations, House rules, Status, Staff, Log |
+| Characters | Approvals, Being built, Characters, Players, Lines and veils |
+| Games | At game, Scenes, Award XP |
+| Court | Titles, Court, Chronicle, Boons, Bonds, Web of obligation |
 | Downtimes | Cycles, My work, Fill tables, Influence log, Quests |
+| World | Locations, Equipment, Shared backgrounds |
 | Customise | Overview, Troupe settings, Rules, Specialisations, News, Connectors, Share settings |
 
 A number on a tab is how much waits on you there, such as approvals to decide.
@@ -198,9 +199,9 @@ Each character's **⋯**, at the end of its row, holds what you can do for it, p
 
 ## Players and their lines and veils
 
-**Players › Players** lists everyone with an active character in the troupe, home or visiting, with the characters they bring and any staff role they hold here. Search it by player or character name.
+**Characters › Players** lists everyone with an active character in the troupe, home or visiting, with the characters they bring and any staff role they hold here. Search it by player or character name.
 
-**Players › Lines and veils** gathers every line and veil the troupe's players have given, on one screen, so staff can plan games. All staff, narrators too, see it. Whose each one is shows only for players who share theirs with other players; open a player's profile to see the rest. How players set them is in [Getting started](getting-started.md).
+**Characters › Lines and veils** gathers every line and veil the troupe's players have given, on one screen, so staff can plan games. All staff, narrators too, see it. Whose each one is shows only for players who share theirs with other players; open a player's profile to see the rest. How players set them is in [Getting started](getting-started.md).
 
 ## NPCs
 
@@ -269,7 +270,7 @@ When a player's character turns villain, or its player can no longer run it, sta
 
 ## Titles and status
 
-**Characters › Titles** lists the titles the troupe gives in tables: those held first, with who holds them, then the vacant ones by sect, folded away under **Show vacant**. Each row has the title, its sect, the status it gives, whether it is a **House rule** (a title the troupe added), and its **One holder at a time** switch. On a phone each row folds into a short card, with the switch under it.
+**Court › Titles** lists the titles the troupe gives in tables: those held first, with who holds them, then the vacant ones by sect, folded away under **Show vacant**. Each row has the title, its sect, the status it gives, whether it is a **House rule** (a title the troupe added), and its **One holder at a time** switch. On a phone each row folds into a short card, with the switch under it.
 
 - **One holder at a time** is a house rule you set title by title, for the book's titles and your own alike. It's off for every title until you switch it on, so several characters may hold a Prince, say, where your game runs two domains. Switched on, players can't choose the title while someone holds it, though staff can still give it. For a title with other names (a Baron is also an Advocate), it is for them all. Each change goes in the troupe's log.
 - **Add a title** makes a title of the troupe's own: its name, its sect (or any sect), the status it gives, and whether it is one holder at a time.
@@ -283,7 +284,7 @@ The **Status** tab in the Troupe group is a reference for everyone in the troupe
 
 ## Boons
 
-A boon is a debt one character owes another, registered with the Harpy (MET: VTM pp. 395-397): trivial, minor, major, blood or life. When the troupe keeps a boon ledger (switch it on in the [Features list](#features) of Troupe settings), storytellers and assistant storytellers keep it under **Characters › Boons**, in three parts: **Ledger** (the boons themselves), **Standings** and **Statistics**. A boon made off the record isn't in the ledger, and isn't enforced.
+A boon is a debt one character owes another, registered with the Harpy (MET: VTM pp. 395-397): trivial, minor, major, blood or life. When the troupe keeps a boon ledger (switch it on in the [Features list](#features) of Troupe settings), storytellers and assistant storytellers keep it under **Court › Boons**, in three parts: **Ledger** (the boons themselves), **Standings** and **Statistics**. A boon made off the record isn't in the ledger, and isn't enforced.
 
 - **Register boons** takes one boon or a whole game's: a row for each, with its debtor and creditor (a character of the troupe, retired ones too, or a name only for someone not in Horatio), its kind, the in-game date, the reason and any conditions ("Cannot be traded"). **How many** makes that many alike, for "1 of 3, 2 of 3…". **Where they come from** goes in each boon's log. They all register together, or none do.
 - The ledger's tabs are **Open** (standing, with everyone on it in play), **Departed** (standing, but someone on it has met Final Death or is off-field), **Settled**, **Void** and **All**. Narrow them to a character or a name, a kind, or the nights the boons were made.
@@ -297,7 +298,7 @@ A boon is a debt one character owes another, registered with the Harpy (MET: VTM
 - **Review**: tick **Boons players report wait for review** in the Boons tab's **Settings**, and a report waits, pending, instead of standing at once. Horatio also flags any new boon, whoever entered it, whose debtor or creditor is a name that links to no character, and any that looks like a duplicate of another (same people, kind, night and reason); **Flag for review** on an open boon flags it by hand, with what needs a ruling. Everything waiting or flagged is under **To review** in the ledger. **Review** on one shows it with its flags: **Accept** makes it stand (edit it first if it needs it), **Don't accept** voids it with a reason the player who reported it sees, in their Boons tab and their notifications. **Link to a character** puts a character in place of a name, on that boon or on every boon naming it; **Clear the flag** keeps it as it is. Accepting or not accepting clears a boon's flags.
 - **The Harpy**: in the Boons tab's **Settings**, choose **The Harpy's access to the ledger**: **None** (the default: the ledger is staff's alone), **Receives submissions** (the Harpy reviews what players report, as staff do under **To review**, and is told of each report) or **The full ledger** (the Harpy also registers, edits, trades, passes on, settles, voids and reopens boons). The Harpy is whoever holds the Harpy title in the troupe, a Master Harpy too; with several, each has it, and it ends when the title does or the character retires. They work from their character's Play View (**Boons**, then **Open the boon ledger** or **Review boons**), and what they do is logged as done by their character. They never see what an edit changed, a boon's staff note or who entered a boon, and they can't write a staff note. Who has left they see only as the court knows it: a character the Who's Who lists under **No longer with us** shows as gone, with why only if that's Final Death or Off-field; a player stopping (Inactive) is never shown, and a departure the Who's Who doesn't list stays at court. They name only player characters and NPCs already in the ledger; any other NPC they name by name, for you to link. With the full ledger, tick **The Harpy also reads the boon standings and statistics** to let them read those too, from **Standings** and **Statistics** on their ledger page, by the same rule; the weights stay yours to set. Off to begin with, the standings and statistics are staff's.
 - **Lesser Harpies**: with the Harpy on the full ledger, tick **The Harpy may give others access to the ledger**, and choose whether the troupe calls them **Lesser Harpies** or **Talons**. The Harpy then gives access from their ledger page, choosing for each whether they may add boons, edit them (with settling and reviewing what players report) and perform audits; holders of the Lesser Harpy title are offered first. Each works from their own Play View, as their character, and sees what the Harpy sees. The access stays with the office when the Harpy changes. You see who has what under the same setting, and can take it away. They see who has left as the Harpy does, only as the court knows it, and read the standings and statistics where you let the Harpy.
-- **Boonbreakers** (MET: VTM pp. 397-398): someone who refused to pay a boon after the Harpy gave them the chance. Under **Characters › Boons › Ledger**, **Declare a Boonbreaker**, choose who, and Horatio says first how many of their boons it makes void ("This makes 3 boons void: 2 owed by them, 1 owed to them"). Give what they refused, and the boon if it's in the ledger. Every open boon they owe or are owed is made void, each with why in its log, and they hold **Disgraced** for as long as the mark stands: its usual end doesn't apply, and it can't be removed on its own. A character whose sect holds no status gets the mark without it. The mark shows beside their name in the ledger and the Play View. A Harpy with the full ledger can declare one too, as their character. **Record an appeal** for each appeal for mercy, to the Harpy or a court of seven to thirteen Harpies, with the outcome; a court's votes against are kept, and what the book says follows (six months more for each vote against, or the rest of the term falling on the Harpy) is shown for you to carry out with the status tools. Mercy granted lifts the mark and ends that Disgraced; the book doesn't say the voided boons come back, so you choose which, if any, stand again.
+- **Boonbreakers** (MET: VTM pp. 397-398): someone who refused to pay a boon after the Harpy gave them the chance. Under **Court › Boons › Ledger**, **Declare a Boonbreaker**, choose who, and Horatio says first how many of their boons it makes void ("This makes 3 boons void: 2 owed by them, 1 owed to them"). Give what they refused, and the boon if it's in the ledger. Every open boon they owe or are owed is made void, each with why in its log, and they hold **Disgraced** for as long as the mark stands: its usual end doesn't apply, and it can't be removed on its own. A character whose sect holds no status gets the mark without it. The mark shows beside their name in the ledger and the Play View. A Harpy with the full ledger can declare one too, as their character. **Record an appeal** for each appeal for mercy, to the Harpy or a court of seven to thirteen Harpies, with the outcome; a court's votes against are kept, and what the book says follows (six months more for each vote against, or the rest of the term falling on the Harpy) is shown for you to carry out with the status tools. Mercy granted lifts the mark and ends that Disgraced; the book doesn't say the voided boons come back, so you choose which, if any, stand again.
 - **Ignoring a great boon** (p. 395): a debtor who formally ignores a major, blood or life boon loses status. Settling one as **Formally ignored** marks it: take the status with the status tools on their sheet, then say **Status taken**, or **No status taken**. Horatio never takes it by itself.
 
 - **Audits**: under **Audits** at the foot of the ledger, choose a character and **Make the audit**: their boons as the ledger holds them now, kept as they are, so later changes don't alter it. It shows their standing, clan and age, how many boons they owe and are owed and what those weigh, and each boon on either side, standing, settled or departed. It leaves out staff notes and logs, and shows who has left only as the court knows it: as the Who's Who lists them under "No longer with us", with why only for Final Death or Off-field, never that a player stopped. **Give it to** a player character in play, now or later (once), and their player reads it in their Play View's Boons tab and is told. The Harpy with the full ledger, and Lesser Harpies the Harpy lets **perform audits**, make them too, as their characters, and see the audits made that way; you see every audit, and each goes in the troupe's log. Each opens on a page of its own, to read or print.
@@ -509,7 +510,7 @@ The parts of the chronicle's Setting Style Document (MET: VTM pp. 331–336) tha
 Who's Who, At game, Boons and Bonds each have **Settings** at the top of their tab, folded away until opened, for storytellers. A feature's **Settings** link in the Features list opens them.
 
 - **Who's Who**: whether it also shows the negative status each character carries into a game here, and whether players see its sire lines.
-- **At game** (**Characters › At game**), for the Play View and the game itself:
+- **At game** (**Games › At game**), for the Play View and the game itself:
   - **Play View tabs**: a switch for each of the Play View's tabs (Sheet, Tracker, Pools, Status, Equipment, Throws, and Boons while the troupe keeps a boon ledger), all on to begin with. A tab switched off doesn't show on your players' Play Views; with the Tracker off, the strip of Blood, Willpower and health on the other tabs goes too. Staff always see every tab on NPCs. A visiting character keeps its home troupe's tabs. Switch every tab off if your players keep their sheets in Horatio but don't play from it: the card says what that does before it's saved. Its player characters then have no **Play**, check-in doesn't open the Play View, and phones don't keep the Play View for a game with no signal. Staff still run NPCs, the At game tab and scenes as before, with every tab on an NPC; a player character with no Play View can't be put in a scene.
   - **The night's status**: tick **Choose the night's status at check-in** so players choose their one source of abiding status as they check in, fixed for the game. Off, they choose it on the Play View as the game begins.
   - **Badges**: whether game badges print titles, character pronouns, and all status, negative status only, or none.
@@ -888,11 +889,11 @@ Where the troupe's **Blood bonds** setting (in the Bonds tab's **Settings**) is 
 
 Blood bonds are switched on and off in the [Features list](#features) (off by default: no bonds anywhere; what was recorded, and any drink still waiting, is kept and comes back when it's switched on). Switched on, they're kept one of three ways:
 
-- **Staff manages**, as they start: running staff record every drink on **Characters › Bonds**.
+- **Staff manages**, as they start: running staff record every drink on **Court › Bonds**.
 - **Players report and staff approves**: players report their characters' drinks from the sheet or the Play View, and you approve them here.
 - **Players manage**: a player records a drink their character took, and it counts at once. One the regnant's player records waits for the thrall's player to confirm, or for you when the thrall is an NPC or a name only.
 
-Changing the setting leaves drinks already waiting where they are. **Characters › Bonds** lists every drink still waiting, whoever it waits on, to approve or decline there too. In any mode, a drink in a bond's **Drinks log** can be changed (its night and note) or taken out with a reason; taking out the last one removes the bond. Players can't record a night to come, one before the character was made in Horatio, or a drink while their character holds a full bond to someone else.
+Changing the setting leaves drinks already waiting where they are. **Court › Bonds** lists every drink still waiting, whoever it waits on, to approve or decline there too. In any mode, a drink in a bond's **Drinks log** can be changed (its night and note) or taken out with a reason; taking out the last one removes the bond. Players can't record a night to come, one before the character was made in Horatio, or a drink while their character holds a full bond to someone else.
 
 #### Bonds Horatio knows by rule
 
@@ -904,21 +905,21 @@ Some bonds need no one to record them, and Horatio adds them itself while the se
 
 None is added if the two already have a bond, if a full bond to someone else makes the thrall immune, or if either side is retired. Each goes in the logs with the book's reason.
 
-For characters from before the troupe tracked bonds, **Characters › Bonds** shows **Fill in known bonds**: the bonds Horatio can work out from Embraces, domitors and ghoul Retainers that the troupe doesn't keep yet. Look the list over and add them all at once; once they're in, it goes away.
+For characters from before the troupe tracked bonds, **Court › Bonds** shows **Fill in known bonds**: the bonds Horatio can work out from Embraces, domitors and ghoul Retainers that the troupe doesn't keep yet. Look the list over and add them all at once; once they're in, it goes away.
 
 #### The web of bonds
 
-**Characters › Bonds › Web** draws the same bonds as a web: an arrow from each thrall to their regnant, heavier and brighter for a stronger bond, with fading, ended and broken bonds faint and dashed. Each person is a dot coloured by clan and sized by how many thralls they hold; a name only has a dashed edge. Filter to those still in play or everyone, full bonds only, one clan, title holders, or add ended and broken bonds. Point at or select someone to light up their bonds; **Open their bonds** opens the list on just theirs. Under the web, **Most thralls** names who holds the most, and **Chains of bonds** shows where someone bound to another holds thralls of their own. Every chart has **Show as table**. Only the staff who can open **Characters › Bonds** see the web; players never do.
+**Court › Bonds › Web** draws the same bonds as a web: an arrow from each thrall to their regnant, heavier and brighter for a stronger bond, with fading, ended and broken bonds faint and dashed. Each person is a dot coloured by clan and sized by how many thralls they hold; a name only has a dashed edge. Filter to those still in play or everyone, full bonds only, one clan, title holders, or add ended and broken bonds. Point at or select someone to light up their bonds; **Open their bonds** opens the list on just theirs. Under the web, **Most thralls** names who holds the most, and **Chains of bonds** shows where someone bound to another holds thralls of their own. Every chart has **Show as table**. Only the staff who can open **Court › Bonds** see the web; players never do.
 
 #### The web of obligation
 
-**Characters › Web of obligation** lays what ties the troupe's characters together on one web, each kind a layer you can switch on and off: **Boons** (solid arrows, debtor to creditor, heavier for more weight), **Blood bonds** (dashed, thrall to regnant, heavier for a stronger bond) and **Sire lines** (dotted, sire to childe). Someone in more than one layer is one dot, a name only too, however it was written; a dot is sized by how many ties it has, and coloured by clan, by net boon standing, or by thralls held. Filter to those in play or everyone, one clan, or title holders; for boons, hide those lighter than a weight, and for bonds, add ended and broken ones. Point at or select someone to see every tie they have; **Open their record** opens their sheet. Each layer shows only where its own chart would: boons while the troupe keeps a ledger, bonds to the staff who can open **Characters › Bonds** while the troupe tracks them. Players never see it.
+**Court › Web of obligation** lays what ties the troupe's characters together on one web, each kind a layer you can switch on and off: **Boons** (solid arrows, debtor to creditor, heavier for more weight), **Blood bonds** (dashed, thrall to regnant, heavier for a stronger bond) and **Sire lines** (dotted, sire to childe). Someone in more than one layer is one dot, a name only too, however it was written; a dot is sized by how many ties it has, and coloured by clan, by net boon standing, or by thralls held. Filter to those in play or everyone, one clan, or title holders; for boons, hide those lighter than a weight, and for bonds, add ended and broken ones. Point at or select someone to see every tie they have; **Open their record** opens their sheet. Each layer shows only where its own chart would: boons while the troupe keeps a ledger, bonds to the staff who can open **Court › Bonds** while the troupe tracks them. Players never see it.
 
 #### When a regnant or a thrall meets Final Death
 
-"If a regnant is killed, the bond will slowly fade over the next month" (MET: VTM p. 296). When a character is retired with **Final Death** (or why it left is changed to Final Death), each bond it's the regnant of starts **fading**. On **Characters › Bonds** it says so, with the day it ends, 30 days on. **Change the fade** moves that day, with a reason; choose today to end it now.
+"If a regnant is killed, the bond will slowly fade over the next month" (MET: VTM p. 296). When a character is retired with **Final Death** (or why it left is changed to Final Death), each bond it's the regnant of starts **fading**. On **Court › Bonds** it says so, with the day it ends, 30 days on. **Change the fade** moves that day, with a reason; choose today to end it now.
 
-The thrall still feels the bond all that month, so nothing their player sees changes: the bond stays on their sheet as it was, with no notification and nothing in their character's log. The fade goes only in the troupe's log. On the day, the bond ends as faded, but the thrall's sheet still shows it until their player is told, with the troupe's next downtime results: "Agnes's bond to Bram has faded", never why. **Characters › Bonds** marks a faded bond whose thrall isn't told yet.
+The thrall still feels the bond all that month, so nothing their player sees changes: the bond stays on their sheet as it was, with no notification and nothing in their character's log. The fade goes only in the troupe's log. On the day, the bond ends as faded, but the thrall's sheet still shows it until their player is told, with the troupe's next downtime results: "Agnes's bond to Bram has faded", never why. **Court › Bonds** marks a faded bond whose thrall isn't told yet.
 
 Retiring a regnant **Off-field** or **Inactive** leaves its bonds alone. If you change a regnant's Final Death to something else, its bonds still fading are felt again; those already faded stay ended.
 
@@ -928,9 +929,9 @@ Players can still learn of a death in other ways, which are yours to choose: lis
 
 #### Bonds that fade with time
 
-A bond must be kept up (MET: VTM p. 296). A **full bond drops to two drinks** after three months without the thrall drinking the regnant's blood. A **two-drink bond ends** after six months without the two meeting or speaking, and a **one-drink bond** after a year. A drink counts as meeting. So does a game both characters checked in at. For other meetings, such as one in a downtime, use **Log a meeting** on the bond. Each bond on **Characters › Bonds** says what happens to it next, and when ("Drops to two drinks on 12 Feb 2027 unless Agnes drinks again").
+A bond must be kept up (MET: VTM p. 296). A **full bond drops to two drinks** after three months without the thrall drinking the regnant's blood. A **two-drink bond ends** after six months without the two meeting or speaking, and a **one-drink bond** after a year. A drink counts as meeting. So does a game both characters checked in at. For other meetings, such as one in a downtime, use **Log a meeting** on the bond. Each bond on **Court › Bonds** says what happens to it next, and when ("Drops to two drinks on 12 Feb 2027 unless Agnes drinks again").
 
-There's no clock running at night: Horatio makes the changes due when the troupe's bonds are next looked at, or its downtime results delivered. Under **Staff manages** and **Players manage** it makes them by itself. Under **Players report and staff approves** each waits on **Characters › Bonds**, marked **Due**, until you **Confirm** it; log a meeting or a drink instead if the two did keep it up. A change goes in the troupe's log only. The thrall's player is told with the next downtime results, "Agnes's bond to Bram has weakened" or "has faded", and until then their sheet shows the bond as it was.
+There's no clock running at night: Horatio makes the changes due when the troupe's bonds are next looked at, or its downtime results delivered. Under **Staff manages** and **Players manage** it makes them by itself. Under **Players report and staff approves** each waits on **Court › Bonds**, marked **Due**, until you **Confirm** it; log a meeting or a drink instead if the two did keep it up. A change goes in the troupe's log only. The thrall's player is told with the next downtime results, "Agnes's bond to Bram has weakened" or "has faded", and until then their sheet shows the bond as it was.
 
 No bond drops or ends for time before the troupe's bonds started fading with time, or before it last switched bonds back on from **Off**: nothing could be logged while they were off.
 
@@ -938,7 +939,7 @@ A full bond makes the thrall immune to other bonds until it drops (Errata, p. 29
 
 #### The Vinculum
 
-A troupe that allows the Sabbat (its allowed sects are any, or include the Sabbat) and tracks blood bonds has **The Vinculum** at the foot of **Characters › Bonds** (MET: VTM pp. 433–435). A Camarilla-only troupe never sees it.
+A troupe that allows the Sabbat (its allowed sects are any, or include the Sabbat) and tracks blood bonds has **The Vinculum** at the foot of **Court › Bonds** (MET: VTM pp. 433–435). A Camarilla-only troupe never sees it.
 
 - **Record a Vaulderie**: who took part (characters of the troupe, or names), anyone among them who was a **false Sabbat**, drinking but giving no blood, who officiated, and the night. It counts at once.
 - **Ratings** come from the Vaulderies two shared, each night counted once: 1 after the first, for good; 2 if more than once in the past year; 3 if more than 10 times; 4 if about weekly for three months, never missing more than two weeks in a row; 5 if every few days for three months. They thin as the history does, so a 2 returns to 1 after a year without another. Both of a pair feel the same rating, except that nobody gains one toward a false Sabbat (Errata, p. 434). The **Ratings** table shows everyone's, or pick one Vaulderie under **Show** to see just that circle, such as a pack.
@@ -1140,11 +1141,11 @@ If an award takes a character past the monthly figure, Horatio warns you (or, wi
 
 ### The At game tab and the Play View
 
-**Characters › At game** shows each character's Blood, Willpower and health as their Play View has them, with their player's lines and veils. Open a character to tap for them, run an NPC, or read what they spent and why. How the Play View works is in [Players](players.md#at-game).
+**Games › At game** shows each character's Blood, Willpower and health as their Play View has them, with their player's lines and veils. Open a character to tap for them, run an NPC, or read what they spent and why. How the Play View works is in [Players](players.md#at-game).
 
 ### Scenes
 
-**Open the scenes** on the At game tab puts several characters on one page, side by side, to run a scene: tap Blood, Willpower, health and Beast traits for each, with Undo and the log. Stock NPCs show their pool and resource to tap.
+**Games › Scenes** (or **Open the scenes** on the At game tab) puts several characters on one page, side by side, to run a scene: tap Blood, Willpower, health and Beast traits for each, with Undo and the log. Stock NPCs show their pool and resource to tap.
 
 - A line at the top of the Scenes page and of each scene leads back: the troupe, its **At game** tab, then **Scenes**.
 - Make a scene with **Name of a new scene**, then find characters and NPCs by name to put them in it.
@@ -1175,12 +1176,12 @@ Storytellers and assistant storytellers give XP only to characters whose home tr
 
 ### Awarding XP
 
-![Characters › Award XP: everyone at a set amount, raised or lowered per character.](images/running-a-troupe/award-xp.png)
+![Games › Award XP: everyone at a set amount, raised or lowered per character.](images/running-a-troupe/award-xp.png)
 
 There are three ways:
 
 - **A game's XP**, from its night after check-in (see [Awarding a game's XP](#awarding-a-games-xp)).
-- **Characters › Award XP**, for the whole troupe at once without check-in: set what **Everyone gets**, raise or lower it per character with the arrows (0 for someone who missed it), write the **Note everyone gets**, and choose **Award…**. Tick **Also add to floor and ceiling** to raise them by the amount everyone gets.
+- **Games › Award XP**, for the whole troupe at once without check-in: set what **Everyone gets**, raise or lower it per character with the arrows (0 for someone who missed it), write the **Note everyone gets**, and choose **Award…**. Tick **Also add to floor and ceiling** to raise them by the amount everyone gets.
 - **Award XP…** on one character's ⋯ on the [Characters list](#each-characters-actions).
 
 Completing a downtime gives the cycle's completion XP by itself, as the character submits.

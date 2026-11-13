@@ -264,7 +264,7 @@ test("screenshots for Running a troupe", async ({ browser }) => {
   await plainHost(l);
   await shot(l, "game-night", undefined, 1000);
 
-  // Characters › Award XP, ready to award.
+  // Games › Award XP, ready to award.
   await l.goto(`${base}/xp`);
   await l.getByLabel("Note everyone gets").fill("Game, the Harvest Ball");
   await l.getByRole("button", { name: "Less XP for Wren Halloway" }).click();
