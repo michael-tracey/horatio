@@ -576,7 +576,9 @@ test("a troupe's month, from new character to downtime results", async ({ browse
   await lead.page.getByRole("link", { name: troupeName }).click();
   await lead.page.getByRole("link", { name: "Customise", exact: true }).click();
   await lead.page.getByRole("link", { name: "Connectors", exact: true }).click();
-  await expect(lead.page.getByText("Always on")).toBeVisible();
+  // Customise opens on its Overview, whose features say "Always on" too: look in Connectors' own card.
+  const inHoratio = lead.page.locator("section").filter({ has: lead.page.getByRole("heading", { name: "In Horatio", exact: true }) });
+  await expect(inHoratio.getByText("Always on")).toBeVisible();
   // In plain words, with no server settings named and nothing to fill in.
   await expect(lead.page.getByText(/Discord isn't set up on this server yet. Ask the custodian/)).toBeVisible();
   await expect(lead.page.getByText(/Email isn't set up on this server yet/)).toBeVisible();
