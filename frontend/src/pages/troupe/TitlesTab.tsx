@@ -9,6 +9,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, Empty, ErrorText, Field, Input, Loading, Select } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { statusLink } from "../rules/rulesBrowser";
 import { SeatsSetting } from "./SeatsSetting";
 import { pageLabel } from "../../components/TraitInfo";
 import { aliasText, titleGives, titleGroups, titleStatusWords } from "./titleGroups";
@@ -106,8 +107,8 @@ export function TitlesTab({ troupeId }: { troupeId: string }) {
           staff. A title of a sect goes only to characters of that sect, and a title means nothing outside this troupe. Of a character's titles, only the
           active one gives status. Several characters may hold a title unless you switch on One holder at a time for it; then, while someone holds it,
           players can't choose it, though staff can still give it. What each status does is on the{" "}
-          <Link to={`/troupes/${troupeId}/status`} className="text-parchment underline hover:text-gold">
-            Status tab
+          <Link to={statusLink(troupeId)} className="text-parchment underline hover:text-gold">
+            Rulebook's Status
           </Link>
           .
         </p>

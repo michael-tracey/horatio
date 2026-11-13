@@ -533,7 +533,7 @@ When a new version of Horatio is ready, a small **Update ready · Reload** shows
 
 ## Status and titles
 
-The character's **Status & Titles** tab shows its sect status and its titles in its home troupe.
+The character's **Status & Titles** tab shows its sect status and its titles in its home troupe. **How status works here**, below them, opens the Rulebook's **Status** for that troupe: every status, what it does and what gives it there.
 
 **Status** lists what the character holds now: Accepted by its sect, the abiding and innate status its active title, social age and merits give, and the fleeting and negative status it holds, each with who gave it. Tap a status to see what it does. The count of fleeting status against its cap is shown. Who adds and removes fleeting and negative status is the troupe's choice: either players add their own, naming who gave it (**Add status**), or only staff do. Where your troupe keeps a boon ledger, the Play View's **Status** tab says beside **Praised** whom you can claim a trivial boon's worth of help from when you spend it: the characters of your sect in the troupe who aren't already in your debt (MET: VTM p. 316).
 

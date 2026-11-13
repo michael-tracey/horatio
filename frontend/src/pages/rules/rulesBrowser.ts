@@ -26,6 +26,12 @@ export const SECTIONS: Section[] = [
 /** The troupe's written house rules (#434): a part of their own, before the catalogue's. */
 export const WRITTEN: Section = { key: "written", label: "Written rules", categories: ["written"] };
 
+/** The status reference, a category of its own beside the catalogue's: every status of a troupe's sects (#787). */
+export const STATUS: Section = { key: "status", label: "Status", categories: [] };
+
+/** The Rulebook's address for a troupe's status reference (#787): it was the troupe's own Status tab. */
+export const statusLink = (troupeId: string) => `/rules?${new URLSearchParams({ troupe: troupeId, category: STATUS.key })}`;
+
 /** The section a catalogue category is browsed in, if it is. */
 export function sectionOf(category: string): Section | undefined {
   return SECTIONS.find((s) => s.categories.includes(category));

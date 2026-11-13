@@ -281,7 +281,7 @@ When a player's character turns villain, or its player can no longer run it, sta
 
 You can also give a title from **Titles…** on a character's ⋯ on the [Characters list](#each-characters-actions), or from the character's Status & Titles tab. Whether players choose their own titles, and keep their own status, is set under [Troupe settings](#customise-troupe-settings).
 
-The **Status** tab in the Troupe group is a reference for everyone in the troupe: every status of the sects the troupe takes, what it does and where it comes from. There is nothing to set there.
+What each status does is in the **Rulebook**, under **Status**, with the troupe chosen under **As played in**: every status of the sects the troupe takes, what it does and where it comes from here. Anyone can read it, and there is nothing to set there. **Rulebook's Status** under Court › Titles and **How status works here** on a character's Status & Titles tab open it with the troupe chosen; old links to the troupe's Status tab lead there too.
 
 ## Boons
 
