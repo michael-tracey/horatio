@@ -12033,6 +12033,149 @@
         "title": "ChooseIn",
         "type": "object"
       },
+      "ChronicleEventOut": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "clan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clan"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "ends_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends On"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "title",
+              "status",
+              "embrace",
+              "diablerie",
+              "death",
+              "arrival",
+              "departure"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On"
+          },
+          "ongoing": {
+            "title": "Ongoing",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "key",
+          "kind",
+          "character_id",
+          "character_name",
+          "clan",
+          "label",
+          "detail",
+          "at",
+          "on",
+          "ends_at",
+          "ends_on",
+          "ongoing"
+        ],
+        "title": "ChronicleEventOut",
+        "type": "object"
+      },
+      "ChronicleOut": {
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/ChronicleEventOut"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "full": {
+            "title": "Full",
+            "type": "boolean"
+          },
+          "players_see": {
+            "title": "Players See",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "full",
+          "players_see",
+          "events"
+        ],
+        "title": "ChronicleOut",
+        "type": "object"
+      },
       "ClaimLinkOut": {
         "properties": {
           "carried_reason": {
@@ -51186,6 +51329,17 @@
             ],
             "title": "Badge Titles"
           },
+          "chronicle_players": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chronicle Players"
+          },
           "court_history_players": {
             "anyOf": [
               {
@@ -51923,6 +52077,11 @@
           "boons": {
             "default": false,
             "title": "Boons",
+            "type": "boolean"
+          },
+          "chronicle_players": {
+            "default": false,
+            "title": "Chronicle Players",
             "type": "boolean"
           },
           "court_history_players": {
@@ -82443,6 +82602,49 @@
         "summary": "Change Check",
         "tags": [
           "house rules"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/chronicle": {
+      "get": {
+        "operationId": "troupe_chronicle_api_troupes__troupe_id__chronicle_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChronicleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Troupe Chronicle",
+        "tags": [
+          "chronicle"
         ]
       }
     },
