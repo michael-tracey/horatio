@@ -464,7 +464,7 @@ The **Log** tab in the Troupe group shows what has happened in the troupe, newes
 
 ## Customise: the overview
 
-![Customise › Overview: the Setting up checklist and the house settings at a glance.](images/running-a-troupe/customise-overview.png)
+![Customise › Overview: the Setting up checklist, the troupe's features and the house rules that differ from the book.](images/running-a-troupe/customise-overview.png)
 
 Everything under **Customise** can stay as the book has it. Storytellers and the lead change it; assistant storytellers can read it all. Each change saves straight away.
 
@@ -475,7 +475,10 @@ Everything under **Customise** can stay as the book has it. Storytellers and the
 3. **Staff**.
 4. **First cycle**.
 
-Below it, **House settings at a glance** sums up who may join, XP, status and titles, checks, costs, starting points, downtime actions, house merits and flaws, quests and connectors, each with a link to change (or, for assistants, see) it.
+Below it, nothing is changed: the Overview points to where things are.
+
+- **Features** lists the troupe's features, each on or off, as in the [Features list](#customise-troupe-settings). A feature with a tab links to it; **Switch them in Troupe settings** goes to the list where they're switched. Who may join, XP, status and titles and the setting are on Troupe settings too.
+- **House rules** names each part of the rules the troupe plays differently from the book (checks, costs, starting points, downtime actions, house merits and flaws, and other house rules), each linked to where it's set. While there are none, it says everything plays as the book has it. **Read them as players do** opens the troupe's **House rules** tab.
 
 ## Customise: troupe settings
 
