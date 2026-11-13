@@ -80,12 +80,9 @@ test("staff record three drinks and the thrall's player sees a full bond; the re
   await expect(l.getByRole("radio", { name: /^Players manage/ })).toBeEnabled();
   await expect(l.getByRole("radio", { name: /^Off/ })).toHaveCount(0);
 
-  // The first drink, on the Bonds screen under Characters.
-  await l
-    .getByRole("navigation", { name: "Troupe sections" })
-    .getByRole("link", { name: "Characters", exact: true })
-    .click();
-  await l.getByRole("link", { name: "Bonds", exact: true }).click();
+  // The first drink, on the Bonds screen under Characters, where its Settings are.
+  await expect(l).toHaveURL(new RegExp(`/troupes/${troupe.id}/bonds#settings$`));
+  await expect(l.getByRole("navigation", { name: "Characters" }).getByRole("link", { name: "Bonds", exact: true })).toHaveAttribute("aria-current", "page");
   await expect(l.getByText("No blood bonds yet.")).toBeVisible();
   await l.getByRole("button", { name: "Record a drink" }).click();
   const record = l.getByRole("form", { name: "Record a drink" });
