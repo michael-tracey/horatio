@@ -44457,15 +44457,126 @@
             "maxLength": 200,
             "title": "Era",
             "type": "string"
-          },
-          "tone": {
-            "default": "",
-            "maxLength": 200,
-            "title": "Tone",
-            "type": "string"
           }
         },
         "title": "Setting",
+        "type": "object"
+      },
+      "SettingEntryIn": {
+        "properties": {
+          "book_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Book Key"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Description",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "theme",
+              "mood",
+              "note"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "SettingEntryIn",
+        "type": "object"
+      },
+      "SettingEntryOut": {
+        "properties": {
+          "book_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Book Key"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "theme",
+              "mood",
+              "note"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "description",
+          "book_key",
+          "page"
+        ],
+        "title": "SettingEntryOut",
+        "type": "object"
+      },
+      "SettingEntryWords": {
+        "properties": {
+          "description": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Description",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "title": "SettingEntryWords",
         "type": "object"
       },
       "SettingItem": {
@@ -44492,6 +44603,168 @@
           "value"
         ],
         "title": "SettingItem",
+        "type": "object"
+      },
+      "SettingOrderIn": {
+        "properties": {
+          "ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Ids",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "theme",
+              "mood",
+              "note"
+            ],
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "ids"
+        ],
+        "title": "SettingOrderIn",
+        "type": "object"
+      },
+      "SettingOut": {
+        "properties": {
+          "agency": {
+            "title": "Agency",
+            "type": "string"
+          },
+          "can_edit": {
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "chronicle": {
+            "title": "Chronicle",
+            "type": "string"
+          },
+          "locale": {
+            "title": "Locale",
+            "type": "string"
+          },
+          "moods": {
+            "items": {
+              "$ref": "#/components/schemas/SettingEntryOut"
+            },
+            "title": "Moods",
+            "type": "array"
+          },
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/SettingEntryOut"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "power": {
+            "title": "Power",
+            "type": "string"
+          },
+          "subtitle": {
+            "title": "Subtitle",
+            "type": "string"
+          },
+          "teaser": {
+            "title": "Teaser",
+            "type": "string"
+          },
+          "themes": {
+            "items": {
+              "$ref": "#/components/schemas/SettingEntryOut"
+            },
+            "title": "Themes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "chronicle",
+          "locale",
+          "subtitle",
+          "teaser",
+          "power",
+          "agency",
+          "themes",
+          "moods",
+          "notes",
+          "can_edit"
+        ],
+        "title": "SettingOut",
+        "type": "object"
+      },
+      "SettingPresetOut": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "theme",
+              "mood",
+              "note"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "key",
+          "name",
+          "page",
+          "description"
+        ],
+        "title": "SettingPresetOut",
+        "type": "object"
+      },
+      "SettingTextIn": {
+        "properties": {
+          "agency": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Agency",
+            "type": "string"
+          },
+          "power": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Power",
+            "type": "string"
+          },
+          "subtitle": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Subtitle",
+            "type": "string"
+          },
+          "teaser": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Teaser",
+            "type": "string"
+          }
+        },
+        "title": "SettingTextIn",
         "type": "object"
       },
       "SettingsDocument": {
@@ -52653,8 +52926,7 @@
             "default": {
               "chronicle": "",
               "city": "",
-              "era": "",
-              "tone": ""
+              "era": ""
             }
           },
           "venue": {
@@ -76973,6 +77245,32 @@
         ]
       }
     },
+    "/api/setting-presets": {
+      "get": {
+        "description": "The book's sample themes (p. 325) and moods (pp. 325-326), to start an entry\nfrom: their descriptions are in our own words.",
+        "operationId": "read_setting_presets_api_setting_presets_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SettingPresetOut"
+                  },
+                  "title": "Response Read Setting Presets Api Setting Presets Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Setting Presets",
+        "tags": [
+          "setting style"
+        ]
+      }
+    },
     "/api/shared-background-entries/{entry_id}": {
       "delete": {
         "operationId": "unlog_entry_api_shared_background_entries__entry_id__delete",
@@ -91456,6 +91754,325 @@
         "summary": "Set Seats",
         "tags": [
           "whos-who"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/setting": {
+      "get": {
+        "description": "The troupe's Setting Style Document as its staff write it. Anyone signed in\nmay read it: it is the chronicle's handout for players.",
+        "operationId": "read_setting_api_troupes__troupe_id__setting_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Setting",
+        "tags": [
+          "setting style"
+        ]
+      },
+      "put": {
+        "description": "The subtitle, teaser, power and agency, all at once.",
+        "operationId": "write_setting_text_api_troupes__troupe_id__setting_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingTextIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Write Setting Text",
+        "tags": [
+          "setting style"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/setting/entries": {
+      "post": {
+        "description": "Add a theme, mood or storyteller note, last in its list.",
+        "operationId": "add_setting_entry_api_troupes__troupe_id__setting_entries_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingEntryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Setting Entry",
+        "tags": [
+          "setting style"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/setting/entries/{entry_id}": {
+      "delete": {
+        "operationId": "remove_setting_entry_api_troupes__troupe_id__setting_entries__entry_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Setting Entry",
+        "tags": [
+          "setting style"
+        ]
+      },
+      "put": {
+        "description": "Change an entry's name and description; a note's text.",
+        "operationId": "change_setting_entry_api_troupes__troupe_id__setting_entries__entry_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entry_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingEntryWords"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Setting Entry",
+        "tags": [
+          "setting style"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/setting/order": {
+      "put": {
+        "description": "Put the themes, the moods or the notes in a new order.",
+        "operationId": "order_setting_entries_api_troupes__troupe_id__setting_order_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingOrderIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Order Setting Entries",
+        "tags": [
+          "setting style"
         ]
       }
     },

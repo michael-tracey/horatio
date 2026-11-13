@@ -93,6 +93,7 @@ from horatio.api import (
     rules,
     scenes,
     sect_status,
+    setting_style,
     setup,
     shared_backgrounds,
     sheets,
@@ -246,6 +247,7 @@ for module in (
     whos_who,
     quests,
     backstories,
+    setting_style,
     written_rules,
     nominations,
     remembrances,
@@ -277,6 +279,7 @@ for module in (
     api.include_router(module.router)
 # The signed-in person's choice of throw pictures (#671), beside the troupe's own.
 api.include_router(throw_images.mine_router)
+api.include_router(setting_style.presets_router)
 
 
 @api.get("/health")

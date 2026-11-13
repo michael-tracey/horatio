@@ -99,7 +99,7 @@ test("screenshots for Running a troupe", async ({ browser }) => {
     schedule: "Second Saturday of the month, 7 pm to midnight",
     content_notes: "",
     links: {},
-    setting: { chronicle: "The Drowned Crown", city: "Port Halden", era: "Modern nights", tone: "Political, slow-burning" },
+    setting: { chronicle: "The Drowned Crown", city: "Port Halden", era: "Modern nights" },
     venue: { name: "The Lantern Rooms", region: "Port Halden", address: "", access: "Step-free access" },
     new_players: "welcoming",
   });

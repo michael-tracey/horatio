@@ -601,3 +601,91 @@ def test_the_merits_and_flaws_migration_recalculates_only_drafts(
             connection.execute(text("delete from characters where player_id = :id"), {"id": user})
             connection.execute(text("delete from troupes where lead_user_id = :id"), {"id": user})
             connection.execute(text("delete from users where id = :id"), {"id": user})
+
+
+def test_the_setting_migration_makes_each_tone_a_mood_and_back(
+    engine: Engine, alembic_config: Config
+) -> None:
+    """Migration 0220 (#770): a profile's tone becomes a mood of the troupe's own, named
+    by it when short and described by it when long, and goes from the profile; going
+    back puts it on the profile again."""
+    command.downgrade(alembic_config, "0219")
+    user = uuid.uuid4()
+    short, long, none = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    long_tone = (
+        "Political intrigue at court, with a slow-burning horror under it all, night after night."
+    )
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "insert into users (id, email, display_name, handle)"
+                    " values (:id, 'tone@example.com', 'Tone', 'tone')"
+                ),
+                {"id": user},
+            )
+            for troupe, name, tone in (
+                (short, "Short Tone", "  Gothic noir "),
+                (long, "Long Tone", long_tone),
+                (none, "No Tone", None),
+            ):
+                setting = {"chronicle": name, "city": "Leeds"}
+                if tone is not None:
+                    setting["tone"] = tone
+                connection.execute(
+                    text(
+                        "insert into troupes (id, name, lead_user_id, profile)"
+                        " values (:id, :name, :lead, cast(:profile as jsonb))"
+                    ),
+                    {
+                        "id": troupe,
+                        "name": name,
+                        "lead": user,
+                        "profile": json.dumps({"setting": setting}),
+                    },
+                )
+
+        command.upgrade(alembic_config, "head")
+
+        with engine.connect() as connection:
+            moods = connection.execute(
+                text(
+                    "select troupe_id, kind, name, description, book_key, position"
+                    " from chronicle_motifs where troupe_id in (:a, :b, :c)"
+                ),
+                {"a": short, "b": long, "c": none},
+            ).all()
+            profiles = dict(
+                connection.execute(
+                    text("select id, profile from troupes where id in (:a, :b, :c)"),
+                    {"a": short, "b": long, "c": none},
+                ).all()
+            )
+        assert sorted(moods, key=lambda m: m[2]) == [
+            (short, "mood", "Gothic noir", "", None, 1),
+            (long, "mood", "Tone", long_tone, None, 1),
+        ]
+        assert profiles[short]["setting"] == {"chronicle": "Short Tone", "city": "Leeds"}
+        assert profiles[long]["setting"] == {"chronicle": "Long Tone", "city": "Leeds"}
+
+        command.downgrade(alembic_config, "0219")
+        with engine.connect() as connection:
+            tones = dict(
+                connection.execute(
+                    text(
+                        "select id, profile -> 'setting' ->> 'tone' from troupes"
+                        " where id in (:a, :b, :c)"
+                    ),
+                    {"a": short, "b": long, "c": none},
+                ).all()
+            )
+        assert tones == {short: "Gothic noir", long: long_tone, none: None}
+    finally:
+        command.upgrade(alembic_config, "head")
+        with engine.begin() as connection:
+            for troupe in (short, long, none):
+                connection.execute(
+                    text("delete from chronicle_motifs where troupe_id = :id"), {"id": troupe}
+                )
+                connection.execute(text("delete from troupes where id = :id"), {"id": troupe})
+            connection.execute(text("delete from users where id = :id"), {"id": user})

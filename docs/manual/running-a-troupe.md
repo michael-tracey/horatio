@@ -14,6 +14,7 @@ Every troupe has exactly one **lead storyteller**, and as many **storytellers**,
 | Rename or remove any staff member's scene, clear old scenes | Yes | No | No | No |
 | Add, change and remove staff | Yes | Yes | No | No |
 | Change the house rules and troupe settings (Customise) | Yes | Yes | No (can read them) | No |
+| Write the setting: its teaser, scope, themes, moods and storyteller notes (Troupe settings) | Yes | Yes | Yes | No |
 | Set up connectors (Discord, email) and choose the Discord channels for news and announcements | Yes | Yes | No (can read them) | No |
 | Edit the troupe's profile, add games to the schedule | Yes | Yes | No | No |
 | See character sheets, the Characters list and the Players list | Yes | Yes | Yes | No |
@@ -53,7 +54,7 @@ The troupe's **Profile** tab is what it tells players and people thinking of joi
 
 1. Open the troupe, then **Profile**.
 2. Choose **Edit profile**.
-3. Fill in what you want to show: a portrait and banner, **Links**, **When it plays** (how often games run, and the upcoming games), **Where it plays** (city, venue, address, accessibility), **The setting** (chronicle, city, era, tone), **New players** (whether you are taking them, and a contact on the staff) and **Age and content** (a minimum age and content notes).
+3. Fill in what you want to show: a portrait and banner, **Links**, **When it plays** (how often games run, and the upcoming games), **Where it plays** (city, venue, address, accessibility), **The setting** (chronicle, city, era; its themes and moods are under [Troupe settings](#the-setting)), **New players** (whether you are taking them, and a contact on the staff) and **Age and content** (a minimum age and content notes).
 4. Choose **Save profile**.
 
 To add a game to the schedule, fill in **Game starts** and **Game ends** under Upcoming games and choose **Add game**. Times are in your time zone; everyone sees them in their own.
@@ -487,6 +488,15 @@ The **Features** list at the top has a row for each optional feature: Who's Who,
 Storytellers switch a feature on or off with the switch at the start of its row. It's the same setting as the feature's card further down (or, for Quests, under **Rules › Quests**), so either can be used. A feature switched off has no tab, and what was recorded with it is kept for when it's on again. Blood bonds switched on here are kept by staff; choose another way under its **Settings**. Who's Who and News are always on, and the Play View is switched tab by tab. Assistant storytellers see the list without the switches.
 
 ![Troupe settings › Features, as a new troupe has them: Who's Who, News, the Play View and Feeding on, the rest off.](images/running-a-troupe/troupe-features.png)
+
+### The setting
+
+The parts of the chronicle's Setting Style Document (MET: VTM pp. 331–336) that you write yourselves, for your players to read. Storytellers and assistant storytellers write it, and each change goes in the troupe log.
+
+- **Title and teaser**: a subtitle under the chronicle's name from the profile ("A City Under Siege"), and the teaser, the chronicle as its characters know it, in Markdown. The troupe's description stays the short blurb on the troupe list.
+- **Scope**: the locale is the profile's city; say how powerful the characters are and how far they can change the story.
+- **Themes** and **Moods**: each one an entry of its own, shown as a chip that opens to its description. **Add a theme** or **Add a mood** starts from one of the book's samples (themes p. 325, moods pp. 325–326), which fills in a description for you to change, or from your own. Drag a chip onto another to put it in that place, or open it and use **Earlier** and **Later**.
+- **Storyteller notes**: short rules for the chronicle, such as how long ago characters may have been Embraced, each its own entry in the order you put them.
 
 ### Who may join
 

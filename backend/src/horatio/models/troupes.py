@@ -8,6 +8,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Index,
+    Text,
     UniqueConstraint,
     func,
     text,
@@ -273,6 +274,15 @@ class Troupe(Imported, Record):
     contact_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     # Its written house rules (horatio.written_rules) show on its profile too.
     written_rules_public: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Its Setting Style Document (horatio.setting_style), which players read: the
+    # chronicle's subtitle under its name ("A City Under Siege"), its teaser in
+    # Markdown (in-world, unlike the listing's description), and the power and agency
+    # of its scope. The locale is the profile's city; themes, moods and storyteller
+    # notes are ChronicleMotif entries.
+    setting_subtitle: Mapped[str] = mapped_column(default="", server_default="")
+    setting_teaser: Mapped[str] = mapped_column(Text, default="", server_default="")
+    setting_power: Mapped[str] = mapped_column(Text, default="", server_default="")
+    setting_agency: Mapped[str] = mapped_column(Text, default="", server_default="")
     # Game XP (horatio.game_xp): a chart of XP by earned-XP band and attendance kind,
     # adjustments, the monthly cap and absentee games, as GameXpSettings writes it.
     # Empty is the book's way: the session XP for everyone there, warned past 10 a month.

@@ -72,6 +72,7 @@ class TroupeAction(StrEnum):
     PROPOSE_NEWS = "propose_news"
     MANAGE_BONDS = "manage_bonds"
     MANAGE_BOONS = "manage_boons"
+    WRITE_SETTING = "write_setting"
 
 
 _LEAD = {Role.LEAD_STORYTELLER}
@@ -156,6 +157,9 @@ TROUPE_POLICY: dict[TroupeAction, frozenset[Role]] = {
     # Keeping the troupe's boon ledger: registering, editing, trading, passing on,
     # settling and voiding boons, and reading every edit's changes (horatio.boons).
     TroupeAction.MANAGE_BOONS: frozenset(_RUNNING),
+    # Writing the chronicle's Setting Style Document: its subtitle, teaser, scope,
+    # themes, moods and storyteller notes (horatio.setting_style).
+    TroupeAction.WRITE_SETTING: frozenset(_RUNNING),
 }
 
 
