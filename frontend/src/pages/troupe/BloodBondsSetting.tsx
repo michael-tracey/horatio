@@ -21,8 +21,8 @@ export function BloodBondsSetting({ troupe, canEdit }: { troupe: TroupeOut; canE
         setting === "off"
           ? "Blood bonds aren't tracked now. What was recorded is kept, for if you switch them back on."
           : setting === "staff"
-            ? "Blood bonds are tracked. Staff keep them on the Bonds screen, under Characters."
-            : "Blood bonds are tracked. Players report drinks on their sheets and in the Play View; staff see every bond on the Bonds screen, under Characters.",
+            ? "Blood bonds are tracked. Staff keep them on the Bonds screen, under Court."
+            : "Blood bonds are tracked. Players report drinks on their sheets and in the Play View; staff see every bond on the Bonds screen, under Court.",
     });
   });
   const chosen = BOND_SETTINGS.find((s) => s.value === now) ?? BOND_SETTINGS[0]!;

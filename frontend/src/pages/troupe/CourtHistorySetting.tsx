@@ -16,7 +16,7 @@ export function CourtHistorySetting({ troupe, canEdit }: { troupe: TroupeOut; ca
         <p className="text-sm">{on ? "Players and staff see who held each title, and when." : "Only staff see who held each title, and when."}</p>
       ) : (
         <div className="flex flex-col gap-2 text-sm">
-          <p className="text-mist">Staff always see it under Characters › Court, with status over time.</p>
+          <p className="text-mist">Staff always see it under Court › Court, with status over time.</p>
           <label className="flex items-start gap-2">
             <input type="checkbox" className="mt-1" checked={on} disabled={save.isPending} onChange={(e) => save.mutate(e.target.checked)} />
             <span>

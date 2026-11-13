@@ -16,7 +16,7 @@ export function ChronicleSetting({ troupe, canEdit }: { troupe: TroupeOut; canEd
         <p className="text-sm">{on ? "Players and staff see the troupe’s chronicle." : "Only staff see the troupe’s chronicle."}</p>
       ) : (
         <div className="flex flex-col gap-2 text-sm">
-          <p className="text-mist">Staff always see all of it under Characters › Chronicle: Embraces, deaths, diablerie, status and titles.</p>
+          <p className="text-mist">Staff always see all of it under Court › Chronicle: Embraces, deaths, diablerie, status and titles.</p>
           <label className="flex items-start gap-2">
             <input type="checkbox" className="mt-1" checked={on} disabled={save.isPending} onChange={(e) => save.mutate(e.target.checked)} />
             <span>

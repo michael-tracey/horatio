@@ -24,7 +24,7 @@ export function BoonLedgerSetting({ troupe, canEdit }: { troupe: TroupeOut; canE
     );
     toast({
       message: next
-        ? "The boon ledger is on. Staff keep it on the Boons screen, under Characters."
+        ? "The boon ledger is on. Staff keep it on the Boons screen, under Court."
         : "The boon ledger is off. What was registered is kept, for if you switch it back on.",
     });
   });
