@@ -6675,7 +6675,9 @@
               "rejected",
               "flagged",
               "flag_cleared",
-              "linked"
+              "linked",
+              "gallant_given",
+              "gallant_declined"
             ],
             "title": "Kind",
             "type": "string"
@@ -7299,6 +7301,16 @@
               }
             ],
             "title": "Flags"
+          },
+          "gallant": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GallantOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "id": {
             "format": "uuid",
@@ -20699,6 +20711,56 @@
           "parts"
         ],
         "title": "Frenzy",
+        "type": "object"
+      },
+      "GallantAnswerIn": {
+        "properties": {
+          "give": {
+            "title": "Give",
+            "type": "boolean"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "give"
+        ],
+        "title": "GallantAnswerIn",
+        "type": "object"
+      },
+      "GallantOut": {
+        "description": "Gallant offered for a repaid boon's debtor (horatio.boon_gallant, #693), which\nthe caller may give or decline.",
+        "properties": {
+          "creditor": {
+            "title": "Creditor",
+            "type": "string"
+          },
+          "debtor": {
+            "title": "Debtor",
+            "type": "string"
+          },
+          "reasons": {
+            "items": {
+              "enum": [
+                "nobility",
+                "great"
+              ],
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "debtor",
+          "creditor",
+          "reasons"
+        ],
+        "title": "GallantOut",
         "type": "object"
       },
       "GameChoice": {
@@ -34141,6 +34203,16 @@
             "default": false,
             "title": "Creditor Disgraced",
             "type": "boolean"
+          },
+          "gallant": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GallantOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "id": {
             "format": "uuid",
@@ -64356,6 +64428,70 @@
         ]
       }
     },
+    "/api/characters/{character_id}/play-boons/{boon_id}/gallant": {
+      "post": {
+        "description": "The creditor's player, with Social Nobility, gives the debtor of a boon repaid\nto their character Gallant, or not (p. 405); staff may answer here too.",
+        "operationId": "answer_play_gallant_api_characters__character_id__play_boons__boon_id__gallant_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Character Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "boon_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Boon Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GallantAnswerIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayBoonsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Answer Play Gallant",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
     "/api/characters/{character_id}/play-boons/{boon_id}/settle": {
       "post": {
         "description": "A boon owed to the character is settled, called in or forgiven, by its\ncreditor's player, where the troupe lets them.",
@@ -81172,6 +81308,70 @@
           }
         },
         "summary": "Flag",
+        "tags": [
+          "boons"
+        ]
+      }
+    },
+    "/api/troupes/{troupe_id}/boons/{boon_id}/gallant": {
+      "post": {
+        "description": "Staff, or a Harpy with the full ledger, give the repaid boon's debtor Gallant,\nor decline to (pp. 402, 405).",
+        "operationId": "answer_gallant_api_troupes__troupe_id__boons__boon_id__gallant_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "troupe_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Troupe Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "boon_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Boon Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GallantAnswerIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoonOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Answer Gallant",
         "tags": [
           "boons"
         ]

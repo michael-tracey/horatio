@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { actionsFor, appealText, changeText, countsText, emptyRow, eventName, flagBody, flagText, LOSS_TEXT, owes, partyName, rowsTotal, stateText, voidsText, type BoonFlag } from "./boons";
+import { actionsFor, appealText, changeText, countsText, emptyRow, eventName, flagBody, flagText, gallantText, LOSS_TEXT, owes, partyName, rowsTotal, stateText, voidsText, type BoonFlag } from "./boons";
 
 const party = (name: string, standing: "active" | "final_death" | "off_field" | null = "active") => ({
   character_id: standing ? "c1" : null,
@@ -100,5 +100,16 @@ describe("Boonbreakers (#717)", () => {
   it("says what is owed for ignoring a great boon", () => {
     expect(LOSS_TEXT.due).toContain("p. 395");
     expect(LOSS_TEXT.waived).toBe("No status was taken for ignoring it.");
+  });
+});
+
+describe("Gallant (#693)", () => {
+  it("asks whether to give Gallant, saying why it is offered (#693)", () => {
+    expect(gallantText({ debtor: "Bram", reasons: ["nobility"] })).toBe("Give Bram Gallant for repaying it? The creditor has Social Nobility (p. 405).");
+    expect(gallantText({ debtor: "Bram", reasons: ["nobility", "great"] })).toBe(
+      "Give Bram Gallant for repaying it? The creditor has Social Nobility (p. 405), and a great boon repaid to someone of significance (p. 402).",
+    );
+    expect(eventName("gallant_declined")).toBe("Gallant not given");
+    expect(changeText({ field: "gallant", before: "Offered", after: "Given to Bram" })).toBe("Gallant: Offered → Given to Bram");
   });
 });

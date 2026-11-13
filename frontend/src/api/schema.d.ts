@@ -2821,6 +2821,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/characters/{character_id}/play-boons/{boon_id}/gallant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer Play Gallant
+         * @description The creditor's player, with Social Nobility, gives the debtor of a boon repaid
+         *     to their character Gallant, or not (p. 405); staff may answer here too.
+         */
+        post: operations["answer_play_gallant_api_characters__character_id__play_boons__boon_id__gallant_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/characters/{character_id}/play-boons/{boon_id}/settle": {
         parameters: {
             query?: never;
@@ -8443,6 +8464,27 @@ export interface paths {
          * @description Flag a boon by hand for a ruling, with a note.
          */
         post: operations["flag_api_troupes__troupe_id__boons__boon_id__flags_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/troupes/{troupe_id}/boons/{boon_id}/gallant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer Gallant
+         * @description Staff, or a Harpy with the full ledger, give the repaid boon's debtor Gallant,
+         *     or decline to (pp. 402, 405).
+         */
+        post: operations["answer_gallant_api_troupes__troupe_id__boons__boon_id__gallant_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -15090,7 +15132,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "registered" | "edited" | "traded" | "passed_on" | "settled" | "voided" | "reopened" | "submitted" | "accepted" | "rejected" | "flagged" | "flag_cleared" | "linked";
+            kind: "registered" | "edited" | "traded" | "passed_on" | "settled" | "voided" | "reopened" | "submitted" | "accepted" | "rejected" | "flagged" | "flag_cleared" | "linked" | "gallant_given" | "gallant_declined";
             /** Note */
             note: string;
         };
@@ -15330,6 +15372,7 @@ export interface components {
             events?: components["schemas"]["BoonEventOut"][] | null;
             /** Flags */
             flags?: components["schemas"]["BoonFlagOut"][] | null;
+            gallant?: components["schemas"]["GallantOut"] | null;
             /**
              * Id
              * Format: uuid
@@ -20294,6 +20337,29 @@ export interface components {
             beast: components["schemas"]["PoolPart"][];
             /** Parts */
             parts: components["schemas"]["PoolPart"][];
+        };
+        /** GallantAnswerIn */
+        GallantAnswerIn: {
+            /** Give */
+            give: boolean;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /**
+         * GallantOut
+         * @description Gallant offered for a repaid boon's debtor (horatio.boon_gallant, #693), which
+         *     the caller may give or decline.
+         */
+        GallantOut: {
+            /** Creditor */
+            creditor: string;
+            /** Debtor */
+            debtor: string;
+            /** Reasons */
+            reasons: ("nobility" | "great")[];
         };
         /**
          * GameChoice
@@ -25768,6 +25834,7 @@ export interface components {
              * @default false
              */
             creditor_disgraced: boolean;
+            gallant?: components["schemas"]["GallantOut"] | null;
             /**
              * Id
              * Format: uuid
@@ -39675,6 +39742,42 @@ export interface operations {
             };
         };
     };
+    answer_play_gallant_api_characters__character_id__play_boons__boon_id__gallant_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+                boon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GallantAnswerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayBoonsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     settle_owed_api_characters__character_id__play_boons__boon_id__settle_post: {
         parameters: {
             query?: never;
@@ -50512,6 +50615,42 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    answer_gallant_api_troupes__troupe_id__boons__boon_id__gallant_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                troupe_id: string;
+                boon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GallantAnswerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

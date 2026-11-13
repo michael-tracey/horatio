@@ -916,6 +916,10 @@ MESSAGES: dict[str, str] = {
     " of {rating} on {night}: {reason}",
     "bond.vinculum_tie_removed": "{actor} took out the background tie between {one} and"
     " {other}: {reason}",
+    "boon.gallant_given": "{actor} gave {debtor} Gallant for repaying their {kind} boon to"
+    " {creditor}{because}.",
+    "boon.gallant_declined": "{actor} gave {debtor} no Gallant for repaying their {kind} boon"
+    " to {creditor}{because}.",
     "bond.drink": "{actor} recorded {character} drinking {regnant}'s blood on {night}, {source}:"
     " {level}{again}.",
     "bond.entered": "{actor} entered {character}'s bond to {regnant}, at {level} from {night}:"

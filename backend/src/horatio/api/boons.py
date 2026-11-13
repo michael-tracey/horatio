@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import and_, or_, select
 
 from horatio import (
+    boon_gallant,
     boon_harpy,
     boon_reviews,
     boon_status,
@@ -59,6 +60,8 @@ EventKind = Literal[
     "flagged",
     "flag_cleared",
     "linked",
+    "gallant_given",
+    "gallant_declined",
 ]
 FlagKind = Literal["unmatched", "duplicate", "hand"]
 Side = Literal["debtor", "creditor"]
@@ -168,6 +171,17 @@ class BoonEventOut(BaseModel):
     changes: list[BoonChangeOut] | None
 
 
+class GallantOut(BaseModel):
+    """Gallant offered for a repaid boon's debtor (horatio.boon_gallant, #693), which
+    the caller may give or decline."""
+
+    debtor: str
+    creditor: str
+    # Why: "nobility" (its creditor has Social Nobility, p. 405), "great" (a great
+    # boon repaid to someone of significance, p. 402), or both.
+    reasons: list[Literal["nobility", "great"]]
+
+
 class BoonFlagOut(BaseModel):
     """A flag raised on a boon for review (horatio.boon_reviews, #687)."""
 
@@ -214,6 +228,9 @@ class BoonOut(BaseModel):
     # A great boon its debtor formally ignored costs them status (#717, p. 395): due
     # until staff or the Harpy say they took it, or won't.
     status_loss: StatusLoss | None = None
+    # Gallant offered for its debtor, for the caller to answer (#693): only on a single
+    # boon, for staff or a Harpy with the full ledger.
+    gallant: GallantOut | None = None
 
 
 class TroupeBoonsOut(BaseModel):
@@ -384,7 +401,18 @@ def full_out(
     diffs = boons.sees_changes(db, user, troupe)
     out.events = [event_out(e, users, names, diffs, harpy) for e in lines]
     out.flags = [flag_out(f, users) for f in flags]
+    found = boon_gallant.offer(db, boon)
+    if found is not None and boon_gallant.keeper_answers(keeper):
+        out.gallant = gallant_out(found)
     return out
+
+
+def gallant_out(found: boon_gallant.Offer) -> GallantOut:
+    return GallantOut(
+        debtor=found.debtor.name,
+        creditor=found.creditor.name,
+        reasons=list(found.reasons),  # type: ignore[arg-type]  # nobility or great
+    )
 
 
 def standing_disgraced(db: DbSession, found: Iterable[Boon]) -> set[uuid.UUID]:
@@ -872,6 +900,8 @@ class PlayBoonOut(BaseModel):
     can_settle: bool
     # The other side is marked a Boonbreaker in this ledger now (#717).
     other_boonbreaker: bool = False
+    # Gallant offered for its debtor, for the caller to answer here (#693).
+    gallant: GallantOut | None = None
 
 
 class PlayReportOut(BaseModel):
@@ -1065,6 +1095,17 @@ def play_out(
     marks = boonbreakers.marked(db, troupe.id)
     playing = in_play(db, troupe, character)
     settles = playing and (character.kind == "npc" or boons.players_settle(troupe))
+    staff = boons.can_manage(db, user, troupe)
+
+    def gallant_for(b: Boon) -> GallantOut | None:
+        """Gallant offered for a repaid boon's debtor, if the caller answers it here:
+        its creditor's player, or staff."""
+        found = boon_gallant.offer(db, b) if playing else None
+        if found is None:
+            return None
+        if staff or boon_gallant.player_answers(troupe, found, user):
+            return gallant_out(found)
+        return None
 
     def out(b: Boon, owes: bool) -> PlayBoonOut:
         other_id, other_name = (
@@ -1087,6 +1128,7 @@ def play_out(
             creditor_disgraced=b.state == "registered" and b.creditor_id in disgraced,
             can_settle=settles and not owes and b.state == "registered",
             other_boonbreaker=other_id in marks,
+            gallant=gallant_for(b) if not owes and b.state == "settled" else None,
         )
 
     def side(owes: bool) -> list[PlayBoonOut]:

@@ -4,7 +4,7 @@ import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { HarpyLedgerOut, PlayBoonIn, PlayBoonOut, PlayBoonsOut, PlayReportOut } from "../../api/types";
 import { disgracedText } from "../../boonStatus";
-import { BOON_PAGE, BREAKER_PAGE, KINDS, kindName, type BoonKind } from "../../boons";
+import { BOON_PAGE, BREAKER_PAGE, gallantText, KINDS, kindName, type BoonKind } from "../../boons";
 import { DateInput } from "../../components/DateInput";
 import { useToast } from "../../components/Toast";
 import { Badge, Button, Card, ErrorText, Field, Input, Loaded, Select } from "../../components/ui";
@@ -351,7 +351,37 @@ function BoonRow({
       {boon.creditor_disgraced && <p className="text-xs text-blood-bright">{disgracedText(creditor)}</p>}
       {boon.state === "settled" && <p className="text-xs text-mist">{settledText(boon, dates.day)}</p>}
       {settling && <Settle boon={boon} characterId={characterId} online={online} done={() => setSettling(false)} />}
+      {boon.gallant && <Gallant boon={boon} offer={boon.gallant} characterId={characterId} online={online} />}
     </li>
+  );
+}
+
+/** Gallant offered for repaying a boon owed to the character (#693): with Social
+ * Nobility, its creditor's player gives it, or not, once (p. 405). */
+function Gallant({ boon, offer, characterId, online }: { boon: PlayBoonOut; offer: NonNullable<PlayBoonOut["gallant"]>; characterId: string; online: boolean }) {
+  const answer = useAction(
+    (give: boolean) =>
+      unwrap(
+        api.POST("/api/characters/{character_id}/play-boons/{boon_id}/gallant", {
+          params: { path: { character_id: characterId, boon_id: boon.id } },
+          body: { give, note: "" },
+        }),
+      ),
+    [["play-boons", characterId]],
+  );
+  return (
+    <div role="group" aria-label="Gallant offered" className="mt-2 flex flex-col gap-2 rounded-md border border-gold/60 bg-gold/10 p-2">
+      <p>{gallantText(offer)}</p>
+      <ErrorText error={answer.error} />
+      <div className="flex flex-wrap gap-2">
+        <Button className="min-h-10" disabled={!online || answer.isPending} onClick={() => answer.mutate(true)}>
+          Give Gallant
+        </Button>
+        <Button variant="secondary" className="min-h-10" disabled={!online || answer.isPending} onClick={() => answer.mutate(false)}>
+          Not this time
+        </Button>
+      </div>
+    </div>
   );
 }
 

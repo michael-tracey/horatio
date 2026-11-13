@@ -11,6 +11,7 @@ import {
   changeText,
   emptyRow,
   eventName,
+  gallantText,
   KINDS,
   kindName,
   LOSS_TEXT,
@@ -382,6 +383,7 @@ function BoonDetail({ troupeId, boonId, characters }: { troupeId: string; boonId
       </dl>
       {(!harpy || harpy.review) && <ReviewPanel troupeId={troupeId} boon={b} characters={characters} />}
       {b.status_loss && (!harpy || harpy.edit) && <StatusLoss troupeId={troupeId} boon={b} />}
+      {b.gallant && (!harpy || harpy.edit) && <GallantOffer troupeId={troupeId} boon={b} offer={b.gallant} />}
       {harpy && !harpy.edit ? null : doing === null ? (
         <div role="group" aria-label="What to do with it" className="flex flex-wrap gap-2">
           {actionsFor(b.state).map((a) => (
@@ -678,6 +680,36 @@ function SettleForm({ troupeId, boon, onDone }: { troupeId: string; boon: BoonOu
       <ErrorText error={save.error} />
       <FormButtons pending={save.isPending} ready label="Settle it" onCancel={onDone} />
     </form>
+  );
+}
+
+/** Gallant offered for a repaid boon's debtor (#693): staff give it or not, once. */
+function GallantOffer({ troupeId, boon, offer }: { troupeId: string; boon: BoonOut; offer: NonNullable<BoonOut["gallant"]> }) {
+  const [note, setNote] = useState("");
+  const answer = useAction(async (give: boolean) => {
+    await unwrap(
+      api.POST("/api/troupes/{troupe_id}/boons/{boon_id}/gallant", {
+        ...boonPath(troupeId, boon),
+        body: { give, note },
+      }),
+    );
+  });
+  return (
+    <section aria-label="Gallant offered" className="flex flex-col gap-2 rounded-md border border-gold/60 bg-gold/10 p-3 text-sm">
+      <p>{gallantText(offer)}</p>
+      <Field label="Note (optional)" hint="It goes in the boon's log.">
+        <Input maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+      <ErrorText error={answer.error} />
+      <div className="flex flex-wrap gap-2">
+        <Button disabled={answer.isPending} onClick={() => answer.mutate(true)}>
+          Give Gallant
+        </Button>
+        <Button variant="ghost" disabled={answer.isPending} onClick={() => answer.mutate(false)}>
+          Not this time
+        </Button>
+      </div>
+    </section>
   );
 }
 
