@@ -152,9 +152,10 @@ test("a blood hunt: staff give a Primogen Bloodhunted, which brings Forsaken, lo
   await expect(card.getByText("Fleeting: 0 of 3")).toBeVisible();
 
   // The status reference says what it does and where it comes from; no title gives it.
-  // Its old place under Rules leads there, and each sect opens to read.
+  // Its old places, under Rules and the troupe's Status tab, lead to the Rulebook's
+  // Status with the troupe chosen (#787), and each sect opens to read.
   await l.goto(`/troupes/${troupeId}/rules/status`);
-  await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/status$`));
+  await expect(l).toHaveURL(new RegExp(`/rules\\?troupe=${troupeId}&category=status$`));
   await l.getByRole("heading", { name: "Camarilla status", exact: true }).click();
   const hunted = l.getByRole("listitem", { name: "Bloodhunted", exact: true });
   await expect(hunted.getByText("Negative", { exact: true })).toBeVisible();
@@ -448,6 +449,13 @@ test("Status & Titles: a Camarilla player sees the status held with its sources,
   await panel.getByRole("button", { name: "Close" }).click();
   await expect(panel).toBeHidden();
 
+  // How status works in the home troupe is the Rulebook's, with the troupe chosen (#787).
+  await p.getByRole("link", { name: "How status works here" }).click();
+  await expect(p).toHaveURL(new RegExp(`/rules\\?troupe=${troupeId}&category=status$`));
+  await expect(p.getByRole("button", { name: "Status", pressed: true })).toBeVisible();
+  await expect(p.getByRole("heading", { name: "Camarilla status", exact: true })).toBeVisible();
+  await p.goBack();
+
   // The lead, on a phone: the titles sidebar sits below the status and its bans, and
   // the panel fills the screen, where the lead makes Lady Vasquez exempt with a reason.
   const l = lead.page;
@@ -535,10 +543,10 @@ test("titles say what they give, or why not, and the troupe's rules list every s
   await expect(title("Trustee").getByText("No rules yet", { exact: true })).toBeVisible();
   await expect(title("Pontifex")).toContainText("A Tremere title: it gives no sect status");
 
-  // The status reference, from there: every status by sect, its type, what it does, and
-  // what gives it in this troupe. Each sect is folded away until opened.
-  await p.getByRole("link", { name: "Status tab" }).click();
-  await expect(p).toHaveURL(new RegExp(`/troupes/${troupeId}/status$`));
+  // The status reference, from there, in the Rulebook: every status by sect, its type,
+  // what it does, and what gives it in this troupe. Each sect is folded away until opened.
+  await p.getByRole("link", { name: "Rulebook's Status" }).click();
+  await expect(p).toHaveURL(new RegExp(`/rules\\?troupe=${troupeId}&category=status$`));
   await expect(p.getByText(/^A reference, with nothing to set/)).toBeVisible();
   await expect(p.getByRole("listitem", { name: "Noble", exact: true })).toBeHidden();
   for (const sect of ["General", "Anarch", "Camarilla", "Independent Alliance", "Sabbat"])

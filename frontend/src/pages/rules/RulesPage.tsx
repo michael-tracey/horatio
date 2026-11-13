@@ -27,11 +27,13 @@ import {
   ratingLabel,
   SECTIONS,
   sectionCounts,
+  STATUS,
   WRITTEN,
   shownChecks,
   type Entry,
   type Filters,
 } from "./rulesBrowser";
+import { StatusReference } from "./StatusReference";
 
 /** How many entries show at first, and how many more each tap: a phone draws a long list slowly. */
 const PAGE = 50;
@@ -89,6 +91,9 @@ export function RulesPage() {
   const ratings = filters.section ? ratingChoices(all, filters.section) : [];
   const barredCount = all.filter((e) => e.barred && (!filters.section || e.section === filters.section)).length;
   const filtering = !!(filters.section || filters.query || filters.clan || filters.rating != null);
+  // The status reference is a troupe's, not the catalogue's: chosen like a category, shown instead of the list (#787).
+  const statusShown = filters.section === STATUS.key;
+  const troupeName = troupes.data?.find((t) => t.id === troupeId)?.name ?? data?.troupe_name ?? "the troupe";
 
   // How many show: back to one page whenever the filters change.
   const filterKey = JSON.stringify([splat, troupeId, filters]);
@@ -137,13 +142,15 @@ export function RulesPage() {
 
         <FilterBar count={all.length} filtering={filtering}>
           <div className="flex flex-col gap-3">
-            <Input
-              type="search"
-              aria-label="Search the rules"
-              placeholder="Search names and summaries…"
-              value={filters.query}
-              onChange={(e) => set({ q: e.target.value })}
-            />
+            {!statusShown && (
+              <Input
+                type="search"
+                aria-label="Search the rules"
+                placeholder="Search names and summaries…"
+                value={filters.query}
+                onChange={(e) => set({ q: e.target.value })}
+              />
+            )}
             <nav aria-label="Categories" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
               <Chip label="Everything" pressed={!filters.section} onClick={() => set({ category: "", rating: "" })} />
               {[
@@ -158,8 +165,11 @@ export function RulesPage() {
                   onClick={() => set({ category: s.key, rating: "" })}
                 />
               ))}
+              {splat === "vampire" && (
+                <Chip label={STATUS.label} pressed={statusShown} onClick={() => set({ category: STATUS.key, rating: "", q: "", clan: "" })} />
+              )}
             </nav>
-            <div className="flex flex-wrap gap-2">
+            <div className={`flex flex-wrap gap-2 ${statusShown ? "hidden" : ""}`}>
               <Select aria-label="Clan" value={filters.clan} onChange={(e) => set({ clan: e.target.value })} className="w-auto">
                 <option value="">Any clan</option>
                 {data &&
@@ -195,7 +205,17 @@ export function RulesPage() {
         </FilterBar>
 
         <ErrorText error={rules.error} />
-        {rules.isPending ? (
+        {statusShown ? (
+          troupeId ? (
+            <StatusReference troupeId={troupeId} troupeName={troupeName} />
+          ) : (
+            <Card>
+              <EmptyState title="Choose a troupe to see its status.">
+                Each troupe's status follows the sects it takes, its titles and its house rules: choose one under As played in.
+              </EmptyState>
+            </Card>
+          )
+        ) : rules.isPending ? (
           <Loading />
         ) : data && shown.length === 0 ? (
           <Card>

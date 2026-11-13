@@ -100,7 +100,7 @@ test("news: a storyteller makes an agency and schedules a story, it goes out, an
   await expect(troupeTab(p, /^News$/)).toBeVisible();
 
   // The troupe's front page has the latest headline.
-  await troupeTab(p, /^About$/).click();
+  await troupeTab(p, /^Overview$/).click();
   await expect(p.getByRole("heading", { name: "Latest news" })).toBeVisible();
   await expect(p.getByRole("link", { name: /Fire at the harbour warehouses/ })).toBeVisible();
 });
@@ -161,7 +161,7 @@ test("announcements: a storyteller pins one, a player sees its banner, dismisses
   await expect(p.getByRole("link", { name: /^Pinned: New venue parking/ })).toBeVisible();
   await expect(troupeTab(p, /^Announcements$/)).toBeVisible();
   // Dismissed for them only: the banner is gone from the front page for good.
-  await troupeTab(p, /^About$/).click();
+  await troupeTab(p, /^Overview$/).click();
   await expect(p.getByRole("heading", { name: "Who may join" })).toBeVisible();
   await expect(p.getByRole("list", { name: "Pinned announcements" })).toHaveCount(0);
 });
