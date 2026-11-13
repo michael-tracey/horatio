@@ -50,7 +50,15 @@ from horatio.models import (
     User,
     XpEntry,
 )
-from horatio.rules.checks import Context, Violation, is_ban, matches, traits_in, violations
+from horatio.rules.checks import (
+    SECT_KEY,
+    Context,
+    Violation,
+    is_ban,
+    matches,
+    traits_in,
+    violations,
+)
 from horatio.rules.conditions import describe as describe_condition
 from horatio.rules.grants import (
     Effects,
@@ -713,6 +721,23 @@ def blocking(violation: Violation, character: Character) -> bool:
     )
 
 
+def not_offered(violation: Violation, character: Character) -> bool:
+    """Whether a broken check keeps a trait out of what the character is offered: one
+    that stops the change (`blocking`), and, while a player's character is built,
+    another sect's merit or flaw (#765). A sect's check is only needed to finish
+    creation, so a change of sect is not refused over the merits held; but the
+    wizard does not offer what its sect leaves out, as it does not offer another
+    clan's merit. A troupe that softens the check, or switches it off, has them
+    offered again; staff building an NPC are offered them all."""
+    check = violation.check
+    return blocking(violation, character) or (
+        check.key.startswith(SECT_KEY)
+        and check.strength == "complete"
+        and character.creation_completed_at is None
+        and character.kind != "npc"
+    )
+
+
 # Stands in for the detail a player will give, when asking whether a trait can be taken.
 FIELD_TO_BE_CHOSEN = "(to be chosen)"
 
@@ -838,6 +863,14 @@ def refusals(
             for t in sheet
         ):
             found.append((subject.category, subject.full_name))
+        # Another sect's merit is refused for the sect the character is in, which the
+        # check does not name (it names the sects the merit is for).
+        if violation.check.key.startswith(SECT_KEY):
+            found += [
+                (t.category, t.full_name)
+                for t in sheet
+                if t.category == "sect" and t.category != category_key and t.rating != 0
+            ]
         return tuple(dict.fromkeys(found))
 
     staff = character.kind == "npc"
@@ -888,7 +921,7 @@ def refusals(
             new = [
                 v
                 for v in violations(trying if same_clan else checks, trial, trial_context)
-                if blocking(v, character) and v.key not in before
+                if not_offered(v, character) and v.key not in before
             ]
             if new and opens:
                 aside = set_aside(rules, trial, candidate)
