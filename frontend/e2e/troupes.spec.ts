@@ -118,14 +118,14 @@ test("Troupe settings open on a Features list: each optional feature on or off, 
   expect(made.status(), await made.text()).toBe(201);
   const troupeId: string = (await made.json()).id;
 
-  // Boons are off: there's no Boons tab under Characters.
+  // Boons are off: there's no Boons tab under Court.
   const l = lead.page;
   // A group's tabs, under its name in the troupe's sections.
-  const characters = l.getByRole("navigation", { name: "Characters", exact: true });
+  const court = l.getByRole("navigation", { name: "Court", exact: true });
   const downtimes = l.getByRole("navigation", { name: "Downtimes", exact: true });
-  await l.goto(`/troupes/${troupeId}/characters`);
-  await expect(characters.getByRole("link", { name: "Approvals", exact: true })).toBeVisible();
-  await expect(characters.getByRole("link", { name: "Boons", exact: true })).toHaveCount(0);
+  await l.goto(`/troupes/${troupeId}/titles`);
+  await expect(court.getByRole("link", { name: "Titles", exact: true })).toBeVisible();
+  await expect(court.getByRole("link", { name: "Boons", exact: true })).toHaveCount(0);
 
   // Troupe settings list every feature, on or off, before the groups of settings.
   await l.goto(`/troupes/${troupeId}/settings`);
@@ -142,10 +142,10 @@ test("Troupe settings open on a Features list: each optional feature on or off, 
   await expect(l.getByRole("checkbox", { name: /^Keep a boon ledger/ })).toBeChecked();
   await boons.getByRole("link", { name: "Settings for Boons" }).click();
   await expect(l).toHaveURL(/#feature-boons$/);
-  // Its tab is there now, under Characters.
+  // Its tab is there now, under Court.
   await boons.getByRole("link", { name: "Open Boons" }).click();
   await expect(l).toHaveURL(new RegExp(`/troupes/${troupeId}/boons`));
-  await expect(characters.getByRole("link", { name: "Boons", exact: true })).toBeVisible();
+  await expect(court.getByRole("link", { name: "Boons", exact: true })).toBeVisible();
 
   // Quests: switched on, a Quests tab under Downtimes; switched off again, it goes.
   await l.goto(`/troupes/${troupeId}/settings`);
