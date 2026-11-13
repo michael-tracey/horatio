@@ -21,6 +21,7 @@ import { PlayTabsSetting } from "./PlayTabsSetting";
 import { ThrowImagesSetting } from "./ThrowImagesSetting";
 import { NominationsSetting } from "../nominations/NominationsSetting";
 import { RemembrancesSetting } from "../nominations/RemembrancesSetting";
+import { NewCharacterIncentive } from "./NewCharacterIncentive";
 import { SettingStyle } from "./SettingStyle";
 import { ExperienceDefaults, StartingBlood } from "./StartingSection";
 import { FeaturesList } from "./FeaturesList";
@@ -66,6 +67,7 @@ export function SettingsTab({ troupe, canEdit }: { troupe: TroupeOut; canEdit: b
           }
         />
         <GameXpCard troupeId={troupe.id} canEdit={canEdit} sessionXp={troupe.session_xp} />
+        <NewCharacterIncentive troupeId={troupe.id} canEdit={canEdit} />
       </Group>
       <Group title="Status and titles">
         <StatusSetting troupe={troupe} canEdit={canEdit} />

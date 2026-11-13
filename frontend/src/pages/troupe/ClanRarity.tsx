@@ -3,7 +3,7 @@ import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { ClanRarityOut } from "../../api/types";
 import { useClanName } from "../../components/ClanNames";
-import { Button, Card, ErrorText, Loading, Select } from "../../components/ui";
+import { Button, Card, ErrorText, Input, Loading, Select } from "../../components/ui";
 import { useRulesAction } from "../../hooks";
 
 const RARITIES = ["common", "uncommon", "rare", "restricted"] as const;
@@ -28,15 +28,21 @@ export function bookRarity(row: ClanRarityOut["clans"][number], setting: string 
  * House rule: how rare each clan is in the troupe's setting (#313). A character built
  * here takes the rarity merit its clan's rarity names, from its merit points; a
  * bloodline is as rare as its clan. By default each clan goes by the book for the
- * setting's sect: the troupe's one sect, or each character's own.
+ * setting's sect: the troupe's one sect, or each character's own. Each clan rated here
+ * can carry a few words on why ("due to story"), which the Setting Style Document
+ * shows beside it (#771).
  */
 export function ClanRarity({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
   const path = { params: { path: { troupe_id: troupeId } } };
   const rarity = useQuery({ queryKey: ["clan-rarity", troupeId], queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/clan-rarity", path)) });
   const [editing, setEditing] = useState<Record<string, string> | null>(null);
+  const [notes, setNotes] = useState<Record<string, string>>({});
   const named = useClanName();
   const save = useRulesAction(async (rarities: Record<string, string>) => {
-    await unwrap(api.PUT("/api/troupes/{troupe_id}/clan-rarity", { ...path, body: { rarities: rarities as Record<string, (typeof RARITIES)[number]> } }));
+    const kept = Object.fromEntries(Object.entries(notes).filter(([clan, note]) => rarities[clan] && note.trim()));
+    await unwrap(
+      api.PUT("/api/troupes/{troupe_id}/clan-rarity", { ...path, body: { rarities: rarities as Record<string, (typeof RARITIES)[number]>, notes: kept } }),
+    );
     setEditing(null);
   });
   if (rarity.isPending) return <Loading />;
@@ -49,7 +55,15 @@ export function ClanRarity({ troupeId, canEdit }: { troupeId: string; canEdit: b
       actions={
         canEdit &&
         editing === null && (
-          <Button variant="secondary" className="min-h-8 px-3" aria-label="Change clan rarity" onClick={() => setEditing(own)}>
+          <Button
+            variant="secondary"
+            className="min-h-8 px-3"
+            aria-label="Change clan rarity"
+            onClick={() => {
+              setNotes(Object.fromEntries(clans.filter((c) => c.house && c.note).map((c) => [c.clan, c.note!])));
+              setEditing(own);
+            }}
+          >
             Change
           </Button>
         )
@@ -68,7 +82,9 @@ export function ClanRarity({ troupeId, canEdit }: { troupeId: string; canEdit: b
           {clans.map((c) => (
             <li key={c.clan} className="flex flex-wrap justify-between gap-x-3 py-1">
               <span>{named(c.clan)}</span>
-              <span className={c.house ? "text-parchment" : "text-mist"}>{c.house ? `${c.house} (house rule)` : bookRarity(c, setting)}</span>
+              <span className={c.house ? "text-parchment" : "text-mist"}>
+                {c.house ? `${c.house} (house rule${c.note ? `: ${c.note}` : ""})` : bookRarity(c, setting)}
+              </span>
             </li>
           ))}
         </ul>
@@ -102,6 +118,16 @@ export function ClanRarity({ troupeId, canEdit }: { troupeId: string; canEdit: b
                     </option>
                   ))}
                 </Select>
+                {editing[c.clan] && (
+                  <Input
+                    aria-label={`Why the ${named(c.clan)} are ${editing[c.clan]}`}
+                    placeholder="Why, such as due to story (optional)"
+                    maxLength={200}
+                    className="h-9 w-full"
+                    value={notes[c.clan] ?? ""}
+                    onChange={(e) => setNotes({ ...notes, [c.clan]: e.target.value })}
+                  />
+                )}
               </li>
             ))}
           </ul>

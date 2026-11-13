@@ -582,6 +582,85 @@ test("staff write the setting: a theme from the book, a mood of their own, put i
   await a.screenshot(shots("setting-style"));
 });
 
+test("players read the whole setting on its tab, in print, on the profile when shown, and in brief as they build (#771)", async ({ browser }) => {
+  const custodian = await person(browser, "setdoc-custodian");
+  makeCustodian(custodian.email);
+  const lead = await person(browser, "setdoc-lead");
+  const player = await person(browser, "setdoc-player");
+  await custodian.page.reload();
+  const send = async (page: Page, method: "POST" | "PUT" | "PATCH", url: string, data: unknown) => {
+    const response = await page.request.fetch(url, { method, headers: { "X-Horatio": "1" }, data });
+    expect(response.ok(), await response.text()).toBe(true);
+    return response.json();
+  };
+  const troupeName = `Court of Settings ${run}`;
+  const troupeId: string = (await send(custodian.page, "POST", "/api/troupes", { name: troupeName, lead_handle: lead.handle })).id;
+  const l = lead.page;
+  // The parts staff write (#770), and settings the troupe already has.
+  await send(l, "PATCH", `/api/troupes/${troupeId}`, { allowed_sects: ["Camarilla"] });
+  await send(l, "PUT", `/api/troupes/${troupeId}/setting`, { subtitle: "A City Under Siege", teaser: "The domain stands *weary*, but proud.", power: "", agency: "" });
+  await send(l, "POST", `/api/troupes/${troupeId}/setting/entries`, { kind: "theme", name: "Chaos", description: "" });
+  await send(l, "POST", `/api/troupes/${troupeId}/setting/entries`, { kind: "mood", name: "Brooding", description: "" });
+
+  // The lead gives a clan rarity a reason, under Rules' starting points.
+  await l.goto(`/troupes/${troupeId}/rules/starting`);
+  const rarity = l.locator("section").filter({ has: l.getByRole("heading", { name: "Clan rarity", exact: true }) });
+  await rarity.getByRole("button", { name: "Change clan rarity" }).click();
+  await rarity.getByLabel("Lasombra rarity").selectOption("uncommon");
+  await rarity.getByLabel("Why the Lasombra are uncommon").fill("due to story");
+  await rarity.getByRole("button", { name: "Save" }).click();
+  await expect(rarity.getByText("uncommon (house rule: due to story)")).toBeVisible();
+
+  // Every member reads the whole document on the Setting tab.
+  const p = player.page;
+  await p.goto(`/troupes/${troupeId}`);
+  await p.getByRole("link", { name: "Setting", exact: true }).click();
+  await expect(p).toHaveURL(new RegExp(`/troupes/${troupeId}/setting$`));
+  const doc = p.getByRole("article", { name: "Setting Style Document" });
+  await expect(doc.getByRole("heading", { name: troupeName })).toBeVisible();
+  await expect(doc.getByText("A City Under Siege")).toBeVisible();
+  await expect(doc.getByRole("region", { name: "Setting", exact: true })).toContainText("Camarilla. Every character is built by the Camarilla setting");
+  await expect(doc.getByRole("region", { name: "Clan rarity adjustments" })).toContainText("Lasombra, from rare, due to story");
+  await expect(doc.getByRole("region", { name: "Cost modifications" })).toContainText("Settings default");
+  await expect(doc.getByRole("region", { name: "Setting-specific mechanics" })).toContainText("Initial XP is 30 XP.");
+  await expect(doc.getByRole("link", { name: "Edit in Settings" })).toHaveCount(0);
+
+  // The lead switches on the New Character Incentive; the document gives its working.
+  await l.goto(`/troupes/${troupeId}/settings`);
+  await l.getByRole("checkbox", { name: /Use the New Character Incentive/ }).click();
+  await expect(l.getByRole("checkbox", { name: /Use the New Character Incentive/ })).toBeChecked();
+  await l.goto(`/troupes/${troupeId}/setting`);
+  await expect(l.getByRole("region", { name: "Setting-specific mechanics" })).toContainText("+ the New Character Incentive");
+  await expect(l.getByRole("link", { name: "Edit in Settings" })).toHaveAttribute("href", `/troupes/${troupeId}/settings`);
+
+  // Printed, black on white, for the Storyteller table.
+  await p.goto(`/print/setting/${troupeId}`);
+  await expect(p.getByRole("heading", { name: troupeName })).toBeVisible();
+  await expect(p).toHaveTitle(`Print · Setting · ${troupeName} · Horatio`);
+
+  // On the profile only once the lead shows it there; a public profile shows it to anyone.
+  await send(l, "PUT", `/api/troupes/${troupeId}/profile/public`, { public: true });
+  const visitor = await (await browser.newContext()).newPage();
+  await visitor.goto(`/t/${troupeId}`);
+  await expect(visitor.getByRole("heading", { name: troupeName })).toBeVisible();
+  await expect(visitor.getByRole("article", { name: "Setting Style Document" })).toHaveCount(0);
+  await l.goto(`/troupes/${troupeId}/settings`);
+  await l.getByRole("checkbox", { name: /Show it on the troupe's profile/ }).click();
+  await expect(l.getByRole("checkbox", { name: /Show it on the troupe's profile/ })).toBeChecked();
+  await visitor.reload();
+  await expect(visitor.getByRole("article", { name: "Setting Style Document" }).getByText("Chaos")).toBeVisible();
+
+  // A character built to the troupe's rules shows the setting in brief as it is made.
+  const made = await send(p, "POST", "/api/characters", { splat: "vampire", name: "Vesper", building_troupe_id: troupeId });
+  await p.goto(`/characters/${made.id}/create/concept`);
+  const brief = p.getByRole("region", { name: "The setting you're building for" });
+  await expect(brief).toContainText("Theme: Chaos");
+  await expect(brief).toContainText("Mood: Brooding");
+  await expect(brief).toContainText("weary");
+  await brief.getByRole("link", { name: "Read the whole setting" }).click();
+  await expect(p).toHaveURL(new RegExp(`/troupes/${troupeId}/setting$`));
+});
+
 test("a player looks up the rules: a power by name and by its summary, then as played in a troupe, a house price shown and a banned merit hidden (#422)", async ({ browser }) => {
   const custodian = await person(browser, "rulebook-custodian");
   makeCustodian(custodian.email);

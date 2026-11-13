@@ -65,6 +65,10 @@ class Troupe(Imported, Record):
     # The XP a character had when the chronicle began: where the troupe's XP floor
     # and ceiling start (horatio.xp_range).
     starting_xp: Mapped[int] = mapped_column(default=30, server_default="30")
+    # The optional New Character Incentive (MET: VTM p. 349, #771): a new character
+    # built for it starts with the starting XP and a quarter of the XP a character could
+    # have earned here, rather than at the XP floor (horatio.xp_range.new_character_xp).
+    new_character_incentive: Mapped[bool] = mapped_column(default=False, server_default="false")
     # House rule: the blood characters start a game with (no more than their
     # generation's most). None starts them full.
     starting_blood: Mapped[int | None]
@@ -230,6 +234,11 @@ class Troupe(Imported, Record):
     # ("Lasombra": "rare"), over the book's rarity for the setting's sect. A character
     # built here takes the rarity merit it names (horatio.clan_merits).
     clan_rarity: Mapped[dict[str, str]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # Why, for each clan it rates itself, as the Setting Style Document gives it ("due to
+    # story", MET: VTM p. 332): by clan, kept only for a clan in `clan_rarity`.
+    clan_rarity_notes: Mapped[dict[str, str]] = mapped_column(
+        JSONB, default=dict, server_default="{}"
+    )
     # House rule: the bloodline each clan plays as by default, by clan ("Tzimisce":
     # "Tzimisce: Koldun"), or the clan itself for none, over the book's default for the
     # setting's sect. A clan it leaves out goes by the book (horatio.clan_merits).
@@ -283,6 +292,9 @@ class Troupe(Imported, Record):
     setting_teaser: Mapped[str] = mapped_column(Text, default="", server_default="")
     setting_power: Mapped[str] = mapped_column(Text, default="", server_default="")
     setting_agency: Mapped[str] = mapped_column(Text, default="", server_default="")
+    # The document shows on the troupe's profile too, as its written rules can (#771):
+    # a public profile shows it to anyone at all.
+    setting_public: Mapped[bool] = mapped_column(default=False, server_default="false")
     # Game XP (horatio.game_xp): a chart of XP by earned-XP band and attendance kind,
     # adjustments, the monthly cap and absentee games, as GameXpSettings writes it.
     # Empty is the book's way: the session XP for everyone there, warned past 10 a month.

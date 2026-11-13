@@ -21,6 +21,7 @@ const bare: TroupeProfileOut = {
   min_age: null,
   content_notes: "",
   written_rules: [],
+  setting_document: false,
   can_edit: false,
   pictures_available: true,
 };

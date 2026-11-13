@@ -36,6 +36,7 @@ import { RosterTab } from "./RosterTab";
 import { TroupeImportPage } from "./TroupeImport";
 import { RulesTab } from "./RulesTab";
 import { SettingsTab } from "./SettingsTab";
+import { SettingTab } from "./SettingTab";
 import { SetupTab } from "./SetupTab";
 import { SharedBackgroundsTab } from "./SharedBackgroundsTab";
 import { ShareSettingsTab } from "./ShareSettingsTab";
@@ -111,6 +112,7 @@ export function TroupePage() {
             tabs: [
               { to: base, label: "About", end: true },
               { to: `${base}/profile`, label: "Profile" },
+              { to: `${base}/setting`, label: "Setting" },
               ...(t.whos_who && !t.archived ? [{ to: `${base}/news`, label: "News", count: glance.data?.news_unread ?? 0, countLabel: "unread" }] : []),
               ...(t.whos_who && !t.archived ? [{ to: `${base}/announcements`, label: "Announcements", count: glance.data?.announcements_unread ?? 0, countLabel: "unread" }] : []),
               ...(t.whos_who ? [{ to: `${base}/whos-who`, label: "Who's Who" }] : []),
@@ -188,6 +190,7 @@ export function TroupePage() {
         <Route index element={<OverviewTab troupe={t} can={can} />} />
         <Route path="profile" element={<ProfileTab troupe={t} can={can} />} />
         <Route path="house-rules" element={<HouseRulesTab troupe={t} staff={can.running} />} />
+        <Route path="setting" element={<SettingTab troupeId={t.id} staff={can.running} />} />
         <Route path="status" element={<StatusRulesTab troupe={t} />} />
         {t.whos_who && !t.archived && <Route path="news/*" element={<PostsSection troupeId={t.id} kind="news" writes={can.running} proposes={can.staff && !can.running} />} />}
         {/* Announcements are written by storytellers and assistant storytellers only: narrators read them, as players do. */}

@@ -586,6 +586,7 @@ SETTINGS: dict[str, Setting] = {
         Setting("session_xp", "xp", "Session XP", Annotated[int, Field(ge=0, le=100)]),
         Setting("downtime_xp", "xp", "Downtime XP", Annotated[int, Field(ge=0, le=100)]),
         Setting("starting_xp", "xp", "Starting XP", Annotated[int, Field(ge=0, le=10000)]),
+        Setting("new_character_incentive", "xp", "New Character Incentive", bool, on_off),
         Setting("game_xp", "xp", "Game XP", dict[str, JsonValue], game_xp_words),
         Setting(
             "status_by",
@@ -905,6 +906,8 @@ NOT_EXPORTED_COLUMNS: dict[str, str] = {
     "setting_teaser": "the chronicle's setting is its own",
     "setting_power": "the chronicle's setting is its own",
     "setting_agency": "the chronicle's setting is its own",
+    "setting_public": "the chronicle's setting is its own",
+    "clan_rarity_notes": "the chronicle's setting is its own: why it rates clans so (#771)",
 }
 
 # The tables that belong to a troupe and are exported, each in its section.
@@ -2413,6 +2416,7 @@ def apply_settings(target: Target, user: User, chosen: Sequence[tuple[str, Setti
             "session_xp",
             "downtime_xp",
             "starting_xp",
+            "new_character_incentive",
             "status_by",
             "titles_by",
             "status_at_checkin",

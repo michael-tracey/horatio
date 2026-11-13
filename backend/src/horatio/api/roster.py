@@ -360,6 +360,7 @@ MESSAGES: dict[str, str] = {
     " {extra} extra, {self_entered_removed} self-entered and {above_ceiling_removed} above"
     " the ceiling taken away.",
     "troupe.starting_xp": "{actor} set the troupe's starting XP to {starting_xp}.",
+    "troupe.new_character_incentive": "{actor} {state} the New Character Incentive.",
     "troupe.xp_defaults": "{actor} set the troupe's XP to {session_xp} for a game and"
     " {downtime_xp} for a downtime.",
     "troupe.xp_range_game": "{actor} added a game's {amount} XP to the floor and ceiling.",
@@ -393,6 +394,7 @@ MESSAGES: dict[str, str] = {
     "troupe.profile_changed": "{actor} changed the troupe's profile.",
     "troupe.setting_text": "{actor} changed the setting's {parts}.",
     "troupe.setting_entry_added": "{actor} added the {kind} {name} to the setting.",
+    "troupe.setting_public": "{actor} set the troupe's profile so it {state}.",
     "troupe.setting_entry_changed": "{actor} changed the setting's {kind} {name}.",
     "troupe.setting_entry_removed": "{actor} removed the {kind} {name} from the setting.",
     "troupe.setting_entries_ordered": "{actor} put the setting's {kind} in order: {names}.",
