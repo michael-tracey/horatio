@@ -7,6 +7,7 @@ import { kindName } from "../boons";
 import { useDates } from "../dates";
 import { usePreferences } from "../hooks";
 import { PAPERS, pageRule } from "../paper";
+import { useTitle } from "../title";
 
 /**
  * An audit of a character's boons (#690), as it was made, black on white: for the
@@ -22,6 +23,7 @@ export function BoonAuditPrintPage() {
     queryKey: ["boon-audit", auditId],
     queryFn: () => unwrap(api.GET("/api/boon-audits/{audit_id}", { params: { path: { audit_id: auditId } } })),
   });
+  useTitle(audit.data ? `Print · Boon audit · ${audit.data.name}` : "Print");
   if (audit.isPending) return <p className="p-8 text-black">Loading…</p>;
   if (audit.error) return <p className="p-8 text-black">{audit.error.message}</p>;
   const a = audit.data;
