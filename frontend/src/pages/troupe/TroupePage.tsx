@@ -43,7 +43,7 @@ import { SharedBackgroundsTab } from "./SharedBackgroundsTab";
 import { ShareSettingsTab } from "./ShareSettingsTab";
 import { SpecializationsTab } from "./SpecializationsTab";
 import { StaffTab } from "./StaffTab";
-import { StatusRulesTab } from "./StatusRulesSection";
+import { statusLink } from "../rules/rulesBrowser";
 import { TablesTab } from "./TablesTab";
 import { TitlesTab } from "./TitlesTab";
 import { troupeTabGroups } from "./troupeTabs";
@@ -123,7 +123,8 @@ export function TroupePage() {
         <Route path="profile" element={<ProfileTab troupe={t} can={can} />} />
         <Route path="house-rules" element={<HouseRulesTab troupe={t} staff={can.running} />} />
         <Route path="setting" element={<SettingTab troupeId={t.id} staff={can.running} />} />
-        <Route path="status" element={<StatusRulesTab troupe={t} />} />
+        {/* The status reference moved into the Rulebook, with this troupe chosen (#787). */}
+        <Route path="status" element={<Navigate to={statusLink(t.id)} replace />} />
         {t.whos_who && !t.archived && <Route path="news/*" element={<PostsSection troupeId={t.id} kind="news" writes={can.running} proposes={can.staff && !can.running} />} />}
         {/* Announcements are written by storytellers and assistant storytellers only: narrators read them, as players do. */}
         {t.whos_who && !t.archived && <Route path="announcements/*" element={<PostsSection troupeId={t.id} kind="announcement" writes={can.running} proposes={false} />} />}
@@ -226,8 +227,8 @@ export function TroupePage() {
         {can.running && !t.archived && <Route path="being-built" element={<BeingBuiltTab troupeId={t.id} />} />}
         {can.running && <Route path="customise" element={<SetupTab troupe={t} canEdit={can.storyteller && !t.archived} />} />}
         {can.running && <Route path="settings" element={<SettingsTab troupe={t} canEdit={can.storyteller && !t.archived} />} />}
-        {/* The status reference was a part of Rules until it moved to the Troupe group. */}
-        <Route path="rules/status" element={<Navigate to={`${base}/status`} replace />} />
+        {/* The status reference was a part of Rules, then the Troupe group's Status tab, before the Rulebook. */}
+        <Route path="rules/status" element={<Navigate to={statusLink(t.id)} replace />} />
         {can.running && <Route path="rules/*" element={<RulesTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.running && <Route path="specializations/*" element={<SpecializationsTab troupeId={t.id} canEdit={can.storyteller} />} />}
         {can.running && <Route path="log" element={<LogTab troupeId={t.id} />} />}

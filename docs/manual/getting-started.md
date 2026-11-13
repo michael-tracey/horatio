@@ -148,6 +148,6 @@ Keep the link to yourself: anyone with it can see those dates. If it gets out, c
 - On a part's page, the list of its sections is at the side on a computer, and under **On this page** at the top on a phone.
 - A page of the manual prints cleanly, without the menu.
 
-**Rulebook**, in the same menu, lists every trait, power, ritual, merit and flaw, each with its book page and a short summary. Choose a troupe under **As played in** to see it with that troupe's house rules. It isn't the troupe's own **House rules** tab, which lists only what the troupe changes.
+**Rulebook**, in the same menu, lists every trait, power, ritual, merit and flaw, each with its book page and a short summary. Choose a troupe under **As played in** to see it with that troupe's house rules. With a troupe chosen, **Status** shows every status of the sects it takes, what each does and what gives it there. It isn't the troupe's own **House rules** tab, which lists only what the troupe changes.
 
 For a word you don't know, see the [Glossary](glossary.md). For a question the manual doesn't answer, ask your troupe's storytellers, or the custodian.

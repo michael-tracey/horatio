@@ -45,7 +45,6 @@ export function troupeTabGroups(t: TroupeTabsTroupe, can: ReturnType<typeof abil
         ...(t.whos_who && live ? [{ to: `${base}/announcements`, label: "Announcements", count: counts.announcementsUnread ?? 0, countLabel: "unread" }] : []),
         ...(t.nominations ? [{ to: `${base}/nominations`, label: t.player_nominations ? "Nominations" : "Remembrances" }] : []),
         { to: `${base}/house-rules`, label: "House rules" },
-        { to: `${base}/status`, label: "Status" },
         ...(can.staff ? [{ to: `${base}/staff`, label: "Staff" }] : []),
         ...(can.running ? [{ to: `${base}/log`, label: "Log" }] : []),
       ],

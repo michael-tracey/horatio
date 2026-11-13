@@ -1,23 +1,24 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "../../api/client";
-import type { StatusRuleOut, TroupeOut } from "../../api/types";
+import type { StatusRuleOut } from "../../api/types";
 import { useClanName } from "../../components/ClanNames";
 import { Explainer } from "../../components/Explainer";
 import { pageLabel } from "../../components/TraitInfo";
 import { Badge, ErrorText, Loading } from "../../components/ui";
 import { NO_RULES_YET } from "../character/status";
-import { givenByText, STATUS_TYPES } from "./statusRules";
+import { givenByText, STATUS_TYPES } from "../troupe/statusRules";
 
 /**
  * Every status of the sects the troupe takes, and the general status, by sect: its
  * type, what it does, and where it comes from (the troupe's titles, social ages,
- * factions and merits). The rule set's, as a reference for anyone in the troupe:
- * there is nothing to set here. Each sect folds away, as the whole runs long.
+ * factions and merits). The rule set's, as a reference for anyone: there is nothing
+ * to set here. Each sect folds away, as the whole runs long. In the Rulebook, for
+ * the troupe chosen there (#787); it was the troupe's own Status tab before.
  */
-export function StatusRulesTab({ troupe }: { troupe: TroupeOut }) {
+export function StatusReference({ troupeId, troupeName }: { troupeId: string; troupeName: string }) {
   const rules = useQuery({
-    queryKey: ["status-rules", troupe.id],
-    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/status-rules", { params: { path: { troupe_id: troupe.id } } })),
+    queryKey: ["status-rules", troupeId],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/status-rules", { params: { path: { troupe_id: troupeId } } })),
   });
   if (rules.isPending) return <Loading />;
   if (rules.error) return <ErrorText error={rules.error} />;
@@ -26,7 +27,7 @@ export function StatusRulesTab({ troupe }: { troupe: TroupeOut }) {
   return (
     <div className="flex flex-col gap-6">
       <p className="text-sm text-mist">
-        A reference, with nothing to set: every status of the sects {troupe.name} takes, what it does, and what gives it here. Open a sect to read its
+        A reference, with nothing to set: every status of the sects {troupeName} takes, what it does, and what gives it here. Open a sect to read its
         status.
       </p>
       <Explainer id="rules-status" title="How status works">

@@ -188,7 +188,7 @@ The people who run a troupe: its [lead storyteller](#lead-storyteller), [storyte
 
 ## Status
 
-A character's standing in their sect and troupe, from their titles and status traits, shown on the character's **Status & Titles** tab and the troupe's **Status** tab.
+A character's standing in their sect and troupe, from their titles and status traits, shown on the character's **Status & Titles** tab; what each status does is under **Status** in the **Rulebook**.
 
 ## Storyteller
 

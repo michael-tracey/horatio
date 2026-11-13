@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { Link } from "react-router";
 import { api, unwrap } from "../../api/client";
 import type { BanOut, CharacterOut, CharacterTitlesOut, HeldTitleOut, StatusOut, TitleChoiceOut } from "../../api/types";
 import { useClanName } from "../../components/ClanNames";
@@ -8,6 +9,7 @@ import { InfoButton } from "../../components/InfoButton";
 import { pageLabel } from "../../components/TraitInfo";
 import { Badge, Button, Card, ErrorText } from "../../components/ui";
 import { useAction } from "../../hooks";
+import { statusLink } from "../rules/rulesBrowser";
 import { aliasText, titleGives, titleGroups } from "../troupe/titleGroups";
 import { StatusCard, useStatus, WithReason } from "./StatusCard";
 
@@ -23,6 +25,12 @@ export function StatusTitlesTab({ character }: { character: CharacterOut }) {
       <div className="flex min-w-0 flex-col gap-4">
         <StatusCard character={character} />
         <Bans character={character} />
+        {/* Every status of the home troupe's sects, what it does and what gives it there (#787). */}
+        {character.home_troupe_id && (
+          <Link to={statusLink(character.home_troupe_id)} className="self-start text-sm text-mist underline hover:text-parchment">
+            How status works here
+          </Link>
+        )}
       </div>
       <aside aria-label="Titles" className="flex min-w-0 flex-col gap-4">
         <TitlesCard character={character} />

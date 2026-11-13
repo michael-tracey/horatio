@@ -67,7 +67,7 @@ const strength = (value: string) => STRENGTHS.find((s) => s.value === value);
  * what traits cost here, what new characters start with, how many downtime
  * actions characters get, how many languages Linguistics gives, and the troupe's
  * own merits and flaws. The status of
- * each sect is a reference of its own, on the Troupe group's Status tab.
+ * each sect is a reference of its own, in the Rulebook's Status (#787).
  */
 export function RulesTab({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
   const base = `/troupes/${troupeId}/rules`;
