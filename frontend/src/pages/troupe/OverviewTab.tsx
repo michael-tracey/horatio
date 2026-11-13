@@ -6,60 +6,86 @@ import type { PostOut, TroupeOut } from "../../api/types";
 import { useToast } from "../../components/Toast";
 import { useAction } from "../../hooks";
 import { LogList } from "../../components/LogList";
-import { AtHandle } from "../../components/PersonPicker";
-import { Card, ErrorText, Loading } from "../../components/ui";
-import { useDates } from "../../dates";
+import { Card, ErrorText, Loading, Notice } from "../../components/ui";
 import { useAgencies, useGlance } from "../news/queries";
 import { Banners, Masthead } from "../news/Story";
+import { ArchiveTroupe } from "./ArchiveTroupe";
 import { GamesCard } from "./GamesCard";
+import { hasProfile } from "./profile";
+import { NameAndDescription, PublicSwitch } from "./ProfileControls";
 import type { abilities } from "./roles";
 import { sectsText, useSplatsText } from "./SettingsTab";
+import { TroupeProfileView } from "./TroupeProfile";
 import { useWaiting, WaitingList } from "./WaitingList";
 import { XpRangeCard } from "./XpRange";
 
 /**
- * The troupe at a glance, to read: for its staff, what is waiting on them first;
- * for its members, its pinned announcements and the latest of its news, the games to come, to say whether they are coming, and its
- * calendar to subscribe to; then what the troupe is, when it next plays and who leads it; who may join; its
- * XP floor and ceiling; and, for its running staff, the latest of its log. Nothing
- * here is a setting: those are under Customise, and the full profile is on the
- * Profile tab.
+ * The troupe's front page, its Overview (#781, About and Profile in one): for its
+ * staff, what is waiting on them first; for its members, its pinned announcements,
+ * the latest of its news and the games to come; then its profile, which its
+ * storytellers edit here card by card, and who switch it public; who may join; its
+ * XP floor and ceiling; for its running staff, the latest of its log; and its
+ * lead's name, description and archiving. The troupe's settings are under Customise.
  */
 export function OverviewTab({ troupe, can }: { troupe: TroupeOut; can: ReturnType<typeof abilities> }) {
   const base = `/troupes/${troupe.id}`;
   const change = can.storyteller && !troupe.archived;
+  const leading = can.lead && !troupe.archived;
   const settings = (
     <Link to={`${base}/settings`} className="text-sm text-mist underline hover:text-parchment">
       Change in Customise
     </Link>
   );
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      {can.staff && !troupe.archived && <WaitingCard troupeId={troupe.id} />}
-      {/* For its members: the same people as see its Who's Who. */}
-      {troupe.whos_who && !troupe.archived && <PinnedBanners troupeId={troupe.id} />}
-      {troupe.whos_who && !troupe.archived && <LatestNews troupeId={troupe.id} />}
-      {troupe.whos_who && !troupe.archived && <GamesCard troupe={troupe} canAddGames={can.storyteller} running={can.running} />}
-      <Summary troupe={troupe} />
-      <JoinCard troupe={troupe} link={change && settings} />
-      <div className="md:col-span-2">
-        <XpRangeCard
-          troupeId={troupe.id}
-          canEdit={false}
-          link={
-            <>
-              {can.running && (
-                <Link to={`${base}/xp`} className="text-sm text-mist underline hover:text-parchment">
-                  Award XP
-                </Link>
-              )}
-              {change && settings}
-            </>
-          }
-        />
+    <div className="flex flex-col gap-6">
+      <div className="grid gap-6 md:grid-cols-2 empty:hidden">
+        {can.staff && !troupe.archived && <WaitingCard troupeId={troupe.id} />}
+        {/* For its members: the same people as see its Who's Who. */}
+        {troupe.whos_who && !troupe.archived && <PinnedBanners troupeId={troupe.id} />}
+        {troupe.whos_who && !troupe.archived && <LatestNews troupeId={troupe.id} />}
+        {troupe.whos_who && !troupe.archived && <GamesCard troupe={troupe} canAddGames={can.storyteller} running={can.running} />}
       </div>
+      <Profile troupe={troupe} />
+      <JoinCard troupe={troupe} link={change && settings} />
+      <XpRangeCard
+        troupeId={troupe.id}
+        canEdit={false}
+        link={
+          <>
+            {can.running && (
+              <Link to={`${base}/xp`} className="text-sm text-mist underline hover:text-parchment">
+                Award XP
+              </Link>
+            )}
+            {change && settings}
+          </>
+        }
+      />
       {can.running && <RecentLog troupeId={troupe.id} />}
+      {/* The lead's own, at the foot: renaming and archiving are rare. */}
+      {leading && <NameAndDescription troupe={troupe} />}
+      {leading && <ArchiveTroupe troupe={troupe} />}
     </div>
+  );
+}
+
+/** The troupe's profile, for anyone who can see the troupe. Its storytellers switch it public and edit it card by card. */
+function Profile({ troupe }: { troupe: TroupeOut }) {
+  const profile = useQuery({
+    queryKey: ["troupe-profile", troupe.id],
+    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/profile", { params: { path: { troupe_id: troupe.id } } })),
+  });
+  if (profile.isPending) return <Loading />;
+  if (profile.error) return <ErrorText error={profile.error} />;
+  const p = profile.data;
+  return (
+    <>
+      {p.can_edit && <PublicSwitch profile={p} />}
+      <section aria-label="Profile" className="flex flex-col gap-3">
+        {p.can_edit && !hasProfile(p) && <Notice>Nothing on the profile yet: add a portrait, links, when and where the troupe plays, and more, with each card's Edit.</Notice>}
+        <TroupeProfileView profile={p} signedIn edit={p.can_edit} />
+      </section>
+    </>
   );
 }
 
@@ -77,54 +103,6 @@ function WaitingCard({ troupeId }: { troupeId: string }) {
       ) : (
         <WaitingList lines={waiting.data} label="Waiting on you" />
       )}
-    </Card>
-  );
-}
-
-/** The troupe's description, next game, schedule and lead, from its profile. */
-function Summary({ troupe }: { troupe: TroupeOut }) {
-  const dates = useDates();
-  const profile = useQuery({
-    queryKey: ["troupe-profile", troupe.id],
-    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/profile", { params: { path: { troupe_id: troupe.id } } })),
-  });
-  const p = profile.data;
-  const next = p?.games[0];
-  return (
-    <Card>
-      <div className="flex flex-col gap-3 text-sm">
-        {/* Not a heading: the page's own title already is. */}
-        <p className="font-display text-lg text-gold">{troupe.name}</p>
-        <p className="whitespace-pre-line">{troupe.description || <span className="text-mist">No description yet.</span>}</p>
-        {profile.isPending ? (
-          <Loading />
-        ) : profile.error ? (
-          <ErrorText error={profile.error} />
-        ) : (
-          p && (
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-              <dt className="text-mist">Next game</dt>
-              <dd>{next ? dates.gameStart(next.starts_at) : <span className="text-mist">None planned</span>}</dd>
-              {p.schedule && (
-                <>
-                  <dt className="text-mist">Schedule</dt>
-                  <dd>{p.schedule}</dd>
-                </>
-              )}
-              <dt className="text-mist">Lead storyteller</dt>
-              <dd>
-                <Link to={`/players/${p.lead.id}`} className="hover:text-gold">
-                  {p.lead.display_name}
-                </Link>{" "}
-                <AtHandle handle={p.lead.handle} />
-              </dd>
-            </dl>
-          )
-        )}
-        <Link to={`/troupes/${troupe.id}/profile`} className="self-start text-mist underline hover:text-parchment">
-          See the full profile
-        </Link>
-      </div>
     </Card>
   );
 }

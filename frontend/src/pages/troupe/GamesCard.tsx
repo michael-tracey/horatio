@@ -47,9 +47,8 @@ export function GamesCard({ troupe, canAddGames, running }: { troupe: TroupeOut;
           title="No games planned yet."
           action={
             canAddGames && (
-              <Link to={`/troupes/${troupe.id}/profile`} className="text-sm text-gold underline">
-                Add games on the Profile tab
-              </Link>
+              // The profile's When it plays is on this same page, the Overview (#781).
+              <span className="text-sm text-mist">Add games with Edit on When it plays, below.</span>
             )
           }
         >

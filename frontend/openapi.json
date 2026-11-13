@@ -90642,7 +90642,7 @@
     },
     "/api/troupes/{troupe_id}/profile/public": {
       "put": {
-        "description": "Show the profile to anyone, or only to people signed in, without touching\nthe rest of it: the Profile tab's switch, which saves at once.",
+        "description": "Show the profile to anyone, or only to people signed in, without touching\nthe rest of it: the Public switch on the troupe's Overview, which saves at once.",
         "operationId": "set_public_api_troupes__troupe_id__profile_public_put",
         "parameters": [
           {

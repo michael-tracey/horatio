@@ -1,57 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+/** The troupe's own controls on its Overview (#781): who sees the profile, and its lead's name and description. */
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { TroupeOut, TroupeProfileOut } from "../../api/types";
-import { Button, Card, ErrorText, Field, Input, Loading, Notice, Textarea } from "../../components/ui";
+import { Button, Card, ErrorText, Field, Input, Textarea } from "../../components/ui";
 import { useAction, useRulesAction } from "../../hooks";
-import { ArchiveTroupe } from "./ArchiveTroupe";
-import { hasProfile, publicPath } from "./profile";
-import { ProfileEditor } from "./ProfileEditor";
-import type { abilities } from "./roles";
-import { TroupeProfileView } from "./TroupeProfile";
-
-/**
- * The troupe's profile, for anyone who can see the troupe. Its storytellers
- * switch it public and edit it here; its lead also renames, describes and
- * archives the troupe.
- */
-export function ProfileTab({ troupe, can }: { troupe: TroupeOut; can: ReturnType<typeof abilities> }) {
-  const [editing, setEditing] = useState(false);
-  const profile = useQuery({
-    queryKey: ["troupe-profile", troupe.id],
-    queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/profile", { params: { path: { troupe_id: troupe.id } } })),
-  });
-  if (profile.isPending) return <Loading />;
-  if (profile.error) return <ErrorText error={profile.error} />;
-  const p = profile.data;
-  const leading = can.lead && !troupe.archived;
-
-  return (
-    <div className="flex flex-col gap-6">
-      {p.can_edit && <PublicSwitch profile={p} />}
-      {leading && <NameAndDescription troupe={troupe} />}
-      {editing ? (
-        <ProfileEditor profile={p} onDone={() => setEditing(false)} />
-      ) : (
-        <section aria-label="Profile" className="flex flex-col gap-3">
-          {p.can_edit && (
-            <div className="flex justify-end">
-              <Button variant="secondary" onClick={() => setEditing(true)}>
-                Edit profile
-              </Button>
-            </div>
-          )}
-          {p.can_edit && !hasProfile(p) && <Notice>Nothing on the profile yet: add a portrait, links, when and where the troupe plays, and more.</Notice>}
-          <TroupeProfileView profile={p} signedIn />
-        </section>
-      )}
-      {leading && <ArchiveTroupe troupe={troupe} />}
-    </div>
-  );
-}
+import { publicPath } from "./profile";
 
 /** Who sees the profile: anyone, or only people signed in. Saves as soon as it is changed. */
-function PublicSwitch({ profile }: { profile: TroupeProfileOut }) {
+export function PublicSwitch({ profile }: { profile: TroupeProfileOut }) {
   const [copied, setCopied] = useState(false);
   const change = useAction((on: boolean) =>
     unwrap(api.PUT("/api/troupes/{troupe_id}/profile/public", { params: { path: { troupe_id: profile.id } }, body: { public: on } })),
@@ -106,7 +62,7 @@ function PublicSwitch({ profile }: { profile: TroupeProfileOut }) {
 }
 
 /** The troupe's name and description, which only its lead changes. */
-function NameAndDescription({ troupe }: { troupe: TroupeOut }) {
+export function NameAndDescription({ troupe }: { troupe: TroupeOut }) {
   const [name, setName] = useState(troupe.name);
   const [description, setDescription] = useState(troupe.description);
   const save = useRulesAction(() =>

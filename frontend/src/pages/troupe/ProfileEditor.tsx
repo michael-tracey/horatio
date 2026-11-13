@@ -1,11 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { api, unwrap } from "../../api/client";
 import type { TroupeProfileIn, TroupeProfileOut } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
 import { DateInput } from "../../components/DateInput";
 import { Dialog } from "../../components/Dialog";
-import { Button, Card, ErrorText, Field, Input, Notice, Select, Textarea } from "../../components/ui";
+import { Button, ErrorText, Field, Input, Notice, Select, Textarea } from "../../components/ui";
 import type { Crop } from "../../components/crop";
 import { useDates } from "../../dates";
 import { useAction } from "../../hooks";
@@ -15,155 +15,178 @@ import { editable, LINKS } from "./profile";
 const MAX_BYTES = 10 * 1024 * 1024;
 const ACCEPT = "image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif";
 
-/** Everything on the profile, for the troupe's storytellers to change. Whether it
- * is public is the Profile tab's switch, which saves on its own. */
-export function ProfileEditor({ profile, onDone }: { profile: TroupeProfileOut; onDone: () => void }) {
+/** The parts of the profile a storyteller edits one card at a time (#781). */
+export type ProfilePart = "links" | "when" | "where" | "setting" | "newcomers" | "age";
+
+/** What each part changes of the profile; the rest goes back as it is. */
+const FIELDS: Record<ProfilePart, (keyof TroupeProfileIn)[]> = {
+  links: ["links"],
+  when: ["schedule"],
+  where: ["venue"],
+  setting: ["setting"],
+  newcomers: ["new_players", "contact_id"],
+  age: ["min_age", "content_notes"],
+};
+
+/** Each troupe's profile saves one at a time (#781): each save sends the whole
+ * profile, so two cards saved together would otherwise each undo the other's part. */
+const saving = new Map<string, Promise<unknown>>();
+function inTurn<T>(troupeId: string, save: () => Promise<T>): Promise<T> {
+  const turn = (saving.get(troupeId) ?? Promise.resolve()).catch(() => undefined).then(save);
+  saving.set(troupeId, turn);
+  return turn;
+}
+
+/**
+ * One part of the profile, edited in its own card. Saving sends the whole profile
+ * as last saved with only this part's fields changed, so another card saved a moment
+ * ago, or still saving, is kept. Whether it is public is its own switch, which saves on its own.
+ */
+export function ProfilePartEditor({ profile, part, onDone }: { profile: TroupeProfileOut; part: ProfilePart; onDone: () => void }) {
   const path = { params: { path: { troupe_id: profile.id } } };
   const [form, setForm] = useState<TroupeProfileIn>(() => editable(profile));
   const staff = useQuery({
     queryKey: ["staff", profile.id],
     queryFn: () => unwrap(api.GET("/api/troupes/{troupe_id}/staff", path)),
+    enabled: part === "newcomers",
   });
-  const save = useAction(async () => {
-    await unwrap(api.PUT("/api/troupes/{troupe_id}/profile", { ...path, body: form }));
-    onDone();
-  });
+  const client = useQueryClient();
+  const save = useAction(() =>
+    inTurn(profile.id, async () => {
+      // Built from the profile as last saved, which may be newer than this card's copy.
+      const key = ["troupe-profile", profile.id];
+      const latest = client.getQueryData<TroupeProfileOut>(key) ?? profile;
+      const changed = Object.fromEntries(FIELDS[part].map((field) => [field, form[field]]));
+      const saved = await unwrap(api.PUT("/api/troupes/{troupe_id}/profile", { ...path, body: { ...editable(latest), ...changed } }));
+      // Into the cache at once, so the next card saved builds on this one. A fetch
+      // already on its way was asked before this save: stopped first, or its answer
+      // would land after this one and put the old part back.
+      await client.cancelQueries({ queryKey: key });
+      client.setQueryData(key, saved);
+      onDone();
+    }),
+  );
   const set = (changes: Partial<TroupeProfileIn>) => setForm((f) => ({ ...f, ...changes }));
   const venue = form.venue!;
   const setting = form.setting!;
 
   return (
-    <Card title="Edit the profile">
-      <div className="flex flex-col gap-6">
-        <Pictures profile={profile} />
-        <form
-          className="flex flex-col gap-6"
-          onSubmit={(e) => {
-            e.preventDefault();
-            save.mutate(undefined);
-          }}
-        >
-          <Part title="Links">
-            <div className="grid gap-3 sm:grid-cols-2">
-              {LINKS.map(({ kind, label, placeholder }) => (
-                <Field key={kind} label={label}>
-                  <Input
-                    type="url"
-                    placeholder={placeholder}
-                    value={form.links[kind] ?? ""}
-                    onChange={(e) => set({ links: { ...form.links, [kind]: e.target.value } })}
-                  />
-                </Field>
-              ))}
-            </div>
-          </Part>
-
-          <Part title="When it plays">
-            <Field label="How often games run" hint={`Such as "Second Saturday of the month, 7 pm to midnight".`}>
-              <Input maxLength={200} value={form.schedule} onChange={(e) => set({ schedule: e.target.value })} />
-            </Field>
-            <Games profile={profile} />
-          </Part>
-
-          <Part title="Where it plays">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="City or region">
-                <Input maxLength={200} value={venue.region} onChange={(e) => set({ venue: { ...venue, region: e.target.value } })} />
-              </Field>
-              <Field label="Venue name">
-                <Input maxLength={200} value={venue.name} onChange={(e) => set({ venue: { ...venue, name: e.target.value } })} />
-              </Field>
-            </div>
-            <Field label="Address" hint="Shown only to people signed in, even on a public profile.">
-              <Input maxLength={200} value={venue.address} onChange={(e) => set({ venue: { ...venue, address: e.target.value } })} />
-            </Field>
-            <Field label="Accessibility" hint="Step-free access, parking, a quiet room.">
-              <Textarea rows={2} maxLength={2000} value={venue.access} onChange={(e) => set({ venue: { ...venue, access: e.target.value } })} />
-            </Field>
-          </Part>
-
-          <Part title="The setting">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Chronicle">
-                <Input maxLength={200} value={setting.chronicle} onChange={(e) => set({ setting: { ...setting, chronicle: e.target.value } })} />
-              </Field>
-              <Field label="City it is set in">
-                <Input maxLength={200} value={setting.city} onChange={(e) => set({ setting: { ...setting, city: e.target.value } })} />
-              </Field>
-              <Field label="Era">
-                <Input maxLength={200} value={setting.era} onChange={(e) => set({ setting: { ...setting, era: e.target.value } })} />
-              </Field>
-            </div>
-            <p className="mt-2 text-xs text-mist">Its themes, moods and the rest of its Setting Style Document are under Troupe settings › The setting.</p>
-          </Part>
-
-          <Part title="New players">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Taking new players?" hint="Shows on the troupe list and the profile.">
-                <Select
-                  value={form.new_players ?? ""}
-                  onChange={(e) => set({ new_players: e.target.value === "" ? null : (e.target.value as "welcoming" | "closed") })}
-                >
-                  <option value="">Not saying</option>
-                  <option value="welcoming">Welcoming new players</option>
-                  <option value="closed">Not taking new players right now</option>
-                </Select>
-              </Field>
-              <Field label="Contact for new players" hint="One of the troupe's staff.">
-                <Select value={form.contact_id ?? ""} onChange={(e) => set({ contact_id: e.target.value || null })}>
-                  <option value="">No one</option>
-                  {(staff.data ?? []).map((s) => (
-                    <option key={s.user_id} value={s.user_id}>
-                      {s.display_name} (@{s.handle})
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </div>
-          </Part>
-
-          <Part title="Age and content">
-            <Field label="Minimum age" hint="Leave empty for none.">
+    <form
+      className="flex flex-col gap-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save.mutate(undefined);
+      }}
+    >
+      {part === "links" && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {LINKS.map(({ kind, label, placeholder }) => (
+            <Field key={kind} label={label}>
               <Input
-                type="number"
-                min={0}
-                max={99}
-                className="w-28"
-                value={form.min_age ?? ""}
-                onChange={(e) => set({ min_age: e.target.value === "" ? null : Number(e.target.value) })}
+                type="url"
+                placeholder={placeholder}
+                value={form.links[kind] ?? ""}
+                onChange={(e) => set({ links: { ...form.links, [kind]: e.target.value } })}
               />
             </Field>
-            <Field label="Content notes">
-              <Textarea rows={3} maxLength={2000} value={form.content_notes} onChange={(e) => set({ content_notes: e.target.value })} />
+          ))}
+        </div>
+      )}
+      {part === "when" && (
+        <Field label="How often games run" hint={`Such as "Second Saturday of the month, 7 pm to midnight".`}>
+          <Input maxLength={200} value={form.schedule} onChange={(e) => set({ schedule: e.target.value })} />
+        </Field>
+      )}
+      {part === "where" && (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="City or region">
+              <Input maxLength={200} value={venue.region} onChange={(e) => set({ venue: { ...venue, region: e.target.value } })} />
             </Field>
-          </Part>
-
-          <ErrorText error={save.error ?? staff.error} />
-          <div className="flex flex-wrap justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={onDone}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={save.isPending}>
-              {save.isPending ? "Saving…" : "Save profile"}
-            </Button>
+            <Field label="Venue name">
+              <Input maxLength={200} value={venue.name} onChange={(e) => set({ venue: { ...venue, name: e.target.value } })} />
+            </Field>
           </div>
-        </form>
+          <Field label="Address" hint="Shown only to people signed in, even on a public profile.">
+            <Input maxLength={200} value={venue.address} onChange={(e) => set({ venue: { ...venue, address: e.target.value } })} />
+          </Field>
+          <Field label="Accessibility" hint="Step-free access, parking, a quiet room.">
+            <Textarea rows={2} maxLength={2000} value={venue.access} onChange={(e) => set({ venue: { ...venue, access: e.target.value } })} />
+          </Field>
+        </>
+      )}
+      {part === "setting" && (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Chronicle">
+              <Input maxLength={200} value={setting.chronicle} onChange={(e) => set({ setting: { ...setting, chronicle: e.target.value } })} />
+            </Field>
+            <Field label="City it is set in">
+              <Input maxLength={200} value={setting.city} onChange={(e) => set({ setting: { ...setting, city: e.target.value } })} />
+            </Field>
+            <Field label="Era">
+              <Input maxLength={200} value={setting.era} onChange={(e) => set({ setting: { ...setting, era: e.target.value } })} />
+            </Field>
+          </div>
+          <p className="text-xs text-mist">Its themes, moods and the rest of its Setting Style Document are under Troupe settings › The setting.</p>
+        </>
+      )}
+      {part === "newcomers" && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Taking new players?" hint="Shows on the troupe list and the profile.">
+            <Select
+              value={form.new_players ?? ""}
+              onChange={(e) => set({ new_players: e.target.value === "" ? null : (e.target.value as "welcoming" | "closed") })}
+            >
+              <option value="">Not saying</option>
+              <option value="welcoming">Welcoming new players</option>
+              <option value="closed">Not taking new players right now</option>
+            </Select>
+          </Field>
+          <Field label="Contact for new players" hint="One of the troupe's staff.">
+            <Select value={form.contact_id ?? ""} onChange={(e) => set({ contact_id: e.target.value || null })}>
+              <option value="">No one</option>
+              {(staff.data ?? []).map((s) => (
+                <option key={s.user_id} value={s.user_id}>
+                  {s.display_name} (@{s.handle})
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </div>
+      )}
+      {part === "age" && (
+        <>
+          <Field label="Minimum age" hint="Leave empty for none.">
+            <Input
+              type="number"
+              min={0}
+              max={99}
+              className="w-28"
+              value={form.min_age ?? ""}
+              onChange={(e) => set({ min_age: e.target.value === "" ? null : Number(e.target.value) })}
+            />
+          </Field>
+          <Field label="Content notes">
+            <Textarea rows={3} maxLength={2000} value={form.content_notes} onChange={(e) => set({ content_notes: e.target.value })} />
+          </Field>
+        </>
+      )}
+      <ErrorText error={save.error ?? staff.error} />
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button type="button" variant="ghost" onClick={onDone}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={save.isPending}>
+          {save.isPending ? "Saving…" : "Save"}
+        </Button>
       </div>
-    </Card>
-  );
-}
-
-function Part({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <fieldset className="flex flex-col gap-3">
-      <legend className="mb-2 font-display text-parchment">{title}</legend>
-      {children}
-    </fieldset>
+    </form>
   );
 }
 
 /** Upcoming games: each added or taken away at once, in the editor's own time zone. */
-function Games({ profile }: { profile: TroupeProfileOut }) {
+export function Games({ profile }: { profile: TroupeProfileOut }) {
   const dates = useDates();
   const path = { params: { path: { troupe_id: profile.id } } };
   const [starts, setStarts] = useState("");
@@ -182,7 +205,7 @@ function Games({ profile }: { profile: TroupeProfileOut }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <h4 className="text-sm text-mist">Upcoming games</h4>
+      <h3 className="text-sm text-mist">Upcoming games</h3>
       {profile.games.length > 0 ? (
         <ul className="divide-y divide-ash text-sm" aria-label="Upcoming games to edit">
           {profile.games.map((g) => (
@@ -225,14 +248,13 @@ function Games({ profile }: { profile: TroupeProfileOut }) {
 }
 
 /** The portrait (cropped square, like a character's picture) and the banner. */
-function Pictures({ profile }: { profile: TroupeProfileOut }) {
+export function Pictures({ profile }: { profile: TroupeProfileOut }) {
   const [open, setOpen] = useState(false);
   if (!profile.pictures_available) {
     return <Notice>Pictures are not set up here. On the server they are kept in the directory HORATIO_UPLOAD_DIR names.</Notice>;
   }
   return (
-    <fieldset className="flex flex-col gap-3">
-      <legend className="mb-2 font-display text-parchment">Portrait and banner</legend>
+    <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-4">
         <Avatar name={profile.name} picture={profile.portrait} size="md" />
         <Button type="button" variant="secondary" onClick={() => setOpen(true)}>
@@ -243,7 +265,7 @@ function Pictures({ profile }: { profile: TroupeProfileOut }) {
         <PortraitEditor profile={profile} onDone={() => setOpen(false)} />
       </Dialog>
       <Banner profile={profile} />
-    </fieldset>
+    </div>
   );
 }
 

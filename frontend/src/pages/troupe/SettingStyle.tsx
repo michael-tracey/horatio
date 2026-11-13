@@ -129,7 +129,7 @@ function TitleCard({ troupeId, setting }: { troupeId: string; setting: SettingOu
         <p className="text-sm">
           <span className="text-mist">Chronicle: </span>
           {name}{" "}
-          <Link to={`/troupes/${troupeId}/profile`} className="text-xs text-mist underline hover:text-parchment">
+          <Link to={`/troupes/${troupeId}`} className="text-xs text-mist underline hover:text-parchment">
             (from the profile)
           </Link>
         </p>
@@ -193,7 +193,7 @@ function ScopeCard({ troupeId, setting }: { troupeId: string; setting: SettingOu
         <p className="text-sm">
           <span className="text-mist">Locale: </span>
           {locale}{" "}
-          <Link to={`/troupes/${troupeId}/profile`} className="text-xs text-mist underline hover:text-parchment">
+          <Link to={`/troupes/${troupeId}`} className="text-xs text-mist underline hover:text-parchment">
             (the profile's city)
           </Link>
         </p>

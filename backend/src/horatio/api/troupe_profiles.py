@@ -294,7 +294,7 @@ def set_public(
     troupe_id: uuid.UUID, body: PublicIn, db: DbSession, user: CurrentUser
 ) -> TroupeProfileOut:
     """Show the profile to anyone, or only to people signed in, without touching
-    the rest of it: the Profile tab's switch, which saves at once."""
+    the rest of it: the Public switch on the troupe's Overview, which saves at once."""
     troupe = editable(db, user, troupe_id)
     make_public(db, user, troupe, body.public)
     db.commit()

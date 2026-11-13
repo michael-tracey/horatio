@@ -10983,7 +10983,7 @@ export interface paths {
         /**
          * Set Public
          * @description Show the profile to anyone, or only to people signed in, without touching
-         *     the rest of it: the Profile tab's switch, which saves at once.
+         *     the rest of it: the Public switch on the troupe's Overview, which saves at once.
          */
         put: operations["set_public_api_troupes__troupe_id__profile_public_put"];
         post?: never;

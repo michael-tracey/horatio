@@ -53,7 +53,7 @@ function Checklist({ troupe, setup: s }: { troupe: TroupeOut; setup: SetupOut })
           : s.described
             ? "Add a portrait, links, and when and where you play."
             : "Describe the troupe, then add a portrait and when and where you play.",
-      to: `${base}/profile`,
+      to: base,
     },
     {
       label: "House rules",

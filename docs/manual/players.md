@@ -563,7 +563,7 @@ At game, influence spent from **Uses this game** on the Play View asks for the d
 
 ## Calendar and RSVPs
 
-The troupe's page (its **About** tab) shows its upcoming **Games** to its members. For each, say whether you're **Coming**, **Maybe** or **Not coming**; tap your answer again to take it back. Everyone sees how many said each; the storytellers see who.
+The troupe's page (its **Overview**) shows its upcoming **Games** to its members. For each, say whether you're **Coming**, **Maybe** or **Not coming**; tap your answer again to take it back. Everyone sees how many said each; the storytellers see who.
 
 **Subscribe to the calendar** gives you a link that puts the troupe's games and downtime dates in your own calendar app, and keeps itself up to date. [Getting started](getting-started.md) has more about it.
 
@@ -573,7 +573,7 @@ The troupe's page (its **About** tab) shows its upcoming **Games** to its member
 
 ## Reading the troupe's news
 
-A troupe's **News** tab, in its Troupe group, has the in-world news its storytellers write: stories from its news agencies, such as a newspaper or a rumour sheet, newest first, each under its agency's masthead. Every player with a character in the troupe, home or visiting, gets every story. **From** shows one agency's stories only. The troupe's **About** tab shows the latest headline.
+A troupe's **News** tab, in its Troupe group, has the in-world news its storytellers write: stories from its news agencies, such as a newspaper or a rumour sheet, newest first, each under its agency's masthead. Every player with a character in the troupe, home or visiting, gets every story. **From** shows one agency's stories only. The troupe's **Overview** shows the latest headline.
 
 A dot marks each story you haven't read, and the News tab shows how many there are. Opening a story reads it; **Mark all as read** clears the lot. Stories from the last 30 days show first; **Show older stories** brings back the rest.
 
@@ -587,7 +587,7 @@ Many troupes also post their news to a channel on their Discord server.
 
 A troupe's **Announcements** tab, beside News, has out-of-character messages from its staff: a game moved, new parking at the venue, downtimes due on Friday. Each is signed by the staff member who wrote it and their role. Everyone in the troupe gets every announcement. They're never mixed with the in-world news, and have their own unread dots and count on the tab.
 
-**Banners.** Staff can pin an announcement to the troupe's front page for a while. It shows as a banner at the top of the troupe's **About** tab, and first on the Announcements tab. **Dismiss** hides the banner for you alone; the announcement stays on the Announcements tab.
+**Banners.** Staff can pin an announcement to the troupe's front page for a while. It shows as a banner at the top of the troupe's **Overview**, and first on the Announcements tab. **Dismiss** hides the banner for you alone; the announcement stays on the Announcements tab.
 
 **Bell and email.** Each announcement comes to the bell as "Announcement: *title*" and, unlike news, by email too, since they're often practical. Turn either off under Account › Settings: **Troupe announcements in the bell** in **Troupes**, and **Troupe announcements** under **Notifications by email**. One the staff mark **Important** is emailed to everyone in the troupe even so.
 
