@@ -64,7 +64,12 @@ def renamed_on(troupe: Troupe, character_id: str, day: date) -> None:
 def summaries(person: Person) -> list[str]:
     response = person.client.get("/notifications")
     assert response.status_code == 200, response.text
-    return [i["summary"] for i in response.json()["items"] if not i["task"]]
+    # Sign-up notices (#757) reach the custodian as everyone signs up; left out here.
+    return [
+        i["summary"]
+        for i in response.json()["items"]
+        if not i["task"] and i["kind"] != "account.signed_up"
+    ]
 
 
 def troupe_log(person: Person, troupe_id: str) -> list[str]:

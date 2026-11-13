@@ -2409,8 +2409,9 @@ export interface paths {
         /**
          * Character Log
          * @description Everything that happened to the character, newest first. Its player sees it
-         *     all; a troupe's staff see the sheet's own history and what happened in their
-         *     troupe, not in the character's other troupes.
+         *     all but its copy as an NPC (horatio.npc_copies); a troupe's staff see the sheet's
+         *     own history and what happened in their troupe, not in the character's other
+         *     troupes.
          */
         get: operations["character_log_api_characters__character_id__log_get"];
         put?: never;
@@ -2484,6 +2485,28 @@ export interface paths {
         get: operations["nominations_about_api_characters__character_id__nominations_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/characters/{character_id}/npc-copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy As Npc
+         * @description Copy a retired player character as a sheeted NPC of its home troupe, named
+         *     "[NPC] <name>" (horatio.npc_copies, #764), for the troupe's running staff. The
+         *     original stays as it is with its player, who isn't told.
+         */
+        post: operations["copy_as_npc_api_characters__character_id__npc_copy_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -24572,6 +24595,12 @@ export interface components {
             /** Rating */
             rating: number;
         };
+        /** NpcCopyOut */
+        NpcCopyOut: {
+            character: components["schemas"]["CharacterOut"];
+            /** Left Out */
+            left_out: string[];
+        };
         /** NpcKeptOffOut */
         NpcKeptOffOut: {
             /** Category */
@@ -39042,6 +39071,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AboutYouOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    copy_as_npc_api_characters__character_id__npc_copy_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpcCopyOut"];
                 };
             };
             /** @description Validation Error */

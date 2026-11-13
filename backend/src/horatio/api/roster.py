@@ -514,6 +514,10 @@ MESSAGES: dict[str, str] = {
     " {whence}; parts left out: {left_out}; XP unspent in the file: {unspent}.",
     "npc.replaced_from_backup": "{actor} replaced the NPC {character}'s sheet from a backup"
     " file {whence}; parts left out: {left_out}; XP unspent in the file: {unspent}.",
+    "npc.copied_from_character": "{actor} made the NPC {character}, a copy of @{from_handle}'s"
+    " retired character {original} as it stood; parts left out: {left_out}.",
+    "character.copied_as_npc": "{actor} made the NPC {npc} from a copy of {character}, which"
+    " stays as it was.",
     "npc.stock_changed": "{actor} changed the Stock NPC {character}.",
     "npc.pick_placed": "{actor} placed a creation pick of {pick} on {name} for the NPC"
     " {character}.",
