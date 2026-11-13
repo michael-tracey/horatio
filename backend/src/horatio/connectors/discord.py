@@ -36,10 +36,29 @@ LIMIT = 2000
 # An embed's text. Discord allows 4,096, and 6,000 across a message's embeds with
 # their titles, so this leaves room for the headline and the agency's name.
 EMBED_LIMIT = 4000
-# The bot needs only to see channels and send messages there: VIEW_CHANNEL (1 << 10)
-# and SEND_MESSAGES (1 << 11). No privileged intents.
+# What the bot asks for when a server adds it (#839): to see channels and send
+# messages there, and, for the troupe's news and announcements, which are embeds
+# with their pictures attached, Embed Links and Attach Files. No privileged intents.
+ADMINISTRATOR = 1 << 3
 VIEW_CHANNEL = 1 << 10
-PERMISSIONS = VIEW_CHANNEL | (1 << 11)
+SEND_MESSAGES = 1 << 11
+EMBED_LINKS = 1 << 14
+ATTACH_FILES = 1 << 15
+PERMISSIONS = VIEW_CHANNEL | SEND_MESSAGES | EMBED_LINKS | ATTACH_FILES
+# Each of them by the name Discord shows in a channel's settings, in that order.
+PERMISSION_NAMES = {
+    VIEW_CHANNEL: "View Channels",
+    SEND_MESSAGES: "Send Messages",
+    EMBED_LINKS: "Embed Links",
+    ATTACH_FILES: "Attach Files",
+}
+# Downtime results are plain text; posts are embeds with pictures.
+FOR_RESULTS = VIEW_CHANNEL | SEND_MESSAGES
+FOR_POSTS = PERMISSIONS
+# Every permission, as the server's owner and an administrator have.
+ALL_PERMISSIONS = (1 << 64) - 1
+# Discord's error code for a request the bot lacks a permission for.
+MISSING_PERMISSIONS = 50013
 # Text and announcement channels.
 TEXT_CHANNEL_TYPES = (0, 5)
 # A wait Discord asks for that is short enough to sit out here, in seconds.
@@ -109,9 +128,12 @@ def request(method: str, path: str, **kwargs: Any) -> httpx.Response:
             if response.status_code == 401:
                 raise SendError("Discord refused Horatio's bot token.", retry=False)
             if response.status_code == 403:
-                raise SendError(
-                    "The Horatio bot cannot see or post in that channel.", retry=False, status=403
+                reason = (
+                    "The Horatio bot is missing a permission in that channel."
+                    if error_code(response) == MISSING_PERMISSIONS
+                    else "The Horatio bot cannot see or post in that channel."
                 )
+                raise SendError(reason, retry=False, status=403)
             if response.status_code == 404:
                 raise SendError("That channel or server no longer exists.", retry=False, status=404)
             if response.is_error:
@@ -120,6 +142,13 @@ def request(method: str, path: str, **kwargs: Any) -> httpx.Response:
                 )
             return response
         raise SendError("Discord kept asking Horatio to slow down.", retry=True, retry_after=60)
+
+
+def error_code(response: httpx.Response) -> int | None:
+    try:
+        return int(response.json()["code"])
+    except (ValueError, KeyError, TypeError):
+        return None
 
 
 def rate_limit_wait(response: httpx.Response) -> float:
@@ -201,8 +230,12 @@ def message_request(payload: Mapping[str, Any], files: Sequence[File]) -> dict[s
 
 
 def post_message(channel: str, payload: Mapping[str, Any], files: Sequence[File] = ()) -> str:
-    """Post one message to a channel; returns its id. Raises SendError."""
-    sent = request("POST", f"/channels/{channel}/messages", **message_request(payload, files))
+    """Post one message to a channel; returns its id. Raises SendError, naming the
+    permissions the bot lacks there when Discord refuses it for that."""
+    try:
+        sent = request("POST", f"/channels/{channel}/messages", **message_request(payload, files))
+    except SendError as error:
+        raise explained(error, channel, FOR_POSTS) from None
     return str(sent.json()["id"])
 
 
@@ -211,9 +244,12 @@ def edit_message(
 ) -> None:
     """Change a message the bot posted. Raises SendError, with status 404 when the
     message is no longer there."""
-    request(
-        "PATCH", f"/channels/{channel}/messages/{message_id}", **message_request(payload, files)
-    )
+    try:
+        request(
+            "PATCH", f"/channels/{channel}/messages/{message_id}", **message_request(payload, files)
+        )
+    except SendError as error:
+        raise explained(error, channel, FOR_POSTS) from None
 
 
 def delete_message(channel: str, message_id: str) -> None:
@@ -232,12 +268,23 @@ class Channel:
     category: str | None
     # Whether @everyone is kept out, so only roles and people given access see it.
     private: bool
+    # Of the permissions Horatio asks for (PERMISSION_NAMES), those the bot lacks
+    # in this channel; None when they weren't checked or couldn't be.
+    missing: tuple[str, ...] | None = None
 
 
-def text_channels(guild_id: str) -> list[Channel]:
-    """The server's text channels, in Discord's order, with whether each is private."""
+def text_channels(guild_id: str, permissions: bool = False) -> list[Channel]:
+    """The server's text channels, in Discord's order, with whether each is private,
+    and with `permissions`, which of the permissions Horatio needs the bot lacks in
+    each. A failure to check them leaves them unchecked rather than failing."""
     found = request("GET", f"/guilds/{guild_id}/channels").json()
     categories = {c["id"]: c["name"] for c in found if c.get("type") == 4}
+    access: BotAccess | None = None
+    if permissions:
+        try:
+            access = bot_access(guild_id)
+        except SendError:
+            access = None
 
     def private(channel: Mapping[str, Any]) -> bool:
         return any(
@@ -251,10 +298,117 @@ def text_channels(guild_id: str) -> list[Channel]:
             name=c["name"],
             category=categories.get(c.get("parent_id") or ""),
             private=private(c),
+            missing=None
+            if access is None
+            else tuple(
+                missing(access.permissions(c.get("permission_overwrites", [])), PERMISSIONS)
+            ),
         )
         for c in sorted(found, key=lambda c: (c.get("position", 0), c["id"]))
         if c.get("type") in TEXT_CHANNEL_TYPES
     ]
+
+
+# --- the bot's permissions in a channel ---------------------------------------------------
+
+
+def overwrite(permissions: int, rule: Mapping[str, Any] | None) -> int:
+    if rule is None:
+        return permissions
+    return (permissions & ~int(rule.get("deny", 0))) | int(rule.get("allow", 0))
+
+
+@dataclass(frozen=True)
+class BotAccess:
+    """What decides the bot's permissions in a server's channels: the server, its
+    owner and roles (role id to permissions), and the bot's id and roles."""
+
+    guild_id: str
+    owner_id: str
+    roles: Mapping[str, int]
+    bot_id: str
+    bot_roles: Sequence[str]
+
+    def permissions(self, overwrites: Sequence[Mapping[str, Any]]) -> int:
+        """The bot's permissions in a channel with these overwrites, as Discord works
+        them out: the server's owner and an administrator have every one; otherwise
+        @everyone's, then the bot's roles', then the channel's overwrites for
+        @everyone, for the bot's roles together, and for the bot itself. Without
+        View Channels it has none; without Send Messages, it can't embed or attach."""
+        if self.bot_id == self.owner_id:
+            return ALL_PERMISSIONS
+        base = self.roles.get(self.guild_id, 0)
+        for role in self.bot_roles:
+            base |= self.roles.get(role, 0)
+        if base & ADMINISTRATOR:
+            return ALL_PERMISSIONS
+        rules = {str(o.get("id")): o for o in overwrites}
+        result = overwrite(base, rules.get(self.guild_id))
+        allow = deny = 0
+        for role in self.bot_roles:
+            rule = rules.get(role)
+            if rule is not None:
+                allow |= int(rule.get("allow", 0))
+                deny |= int(rule.get("deny", 0))
+        result = (result & ~deny) | allow
+        result = overwrite(result, rules.get(self.bot_id))
+        if not result & VIEW_CHANNEL:
+            return 0
+        if not result & SEND_MESSAGES:
+            result &= ~(EMBED_LINKS | ATTACH_FILES)
+        return result
+
+
+def bot_access(guild_id: str) -> BotAccess:
+    """The bot's place in a server, from Discord: three calls. Raises SendError."""
+    try:
+        bot_id = str(request("GET", "/users/@me").json()["id"])
+        guild = request("GET", f"/guilds/{guild_id}").json()
+        member = request("GET", f"/guilds/{guild_id}/members/{bot_id}").json()
+        return BotAccess(
+            guild_id=guild_id,
+            owner_id=str(guild.get("owner_id", "")),
+            roles={str(r["id"]): int(r.get("permissions", 0)) for r in guild.get("roles", [])},
+            bot_id=bot_id,
+            bot_roles=[str(r) for r in member.get("roles", [])],
+        )
+    except (KeyError, TypeError, ValueError) as error:
+        raise SendError(
+            "Discord's answer about the bot was not as expected.", retry=False
+        ) from error
+
+
+def missing(permissions: int, needs: int) -> list[str]:
+    """The names of the permissions in `needs` that `permissions` lacks."""
+    return [name for bit, name in PERMISSION_NAMES.items() if needs & bit and not permissions & bit]
+
+
+def listed(names: Sequence[str]) -> str:
+    return names[0] if len(names) == 1 else f"{', '.join(names[:-1])} and {names[-1]}"
+
+
+def missing_in(channel: str, needs: int) -> list[str] | None:
+    """The permissions in `needs` the bot lacks in a channel, or None when Discord
+    won't say. Never raises."""
+    try:
+        found = request("GET", f"/channels/{channel}").json()
+        access = bot_access(str(found["guild_id"]))
+        return missing(access.permissions(found.get("permission_overwrites") or []), needs)
+    except (SendError, KeyError, TypeError, ValueError):
+        return None
+
+
+def explained(error: SendError, channel: str, needs: int) -> SendError:
+    """A refusal for want of permission, saying which ones the bot lacks there."""
+    if error.status == 403:
+        lacking = missing_in(channel, needs)
+        if lacking:
+            them = "that permission" if len(lacking) == 1 else "those permissions"
+            error.reason = (
+                f"The Horatio bot needs {listed(lacking)} in that channel. "
+                f"Give it {them} in the channel's settings on Discord."
+            )
+    return error
 
 
 def plain_name(name: str) -> str:
@@ -402,6 +556,7 @@ class DiscordConnector(Connector):
                     json={"content": part, "allowed_mentions": {"parse": []}},
                 )
             except SendError as error:
+                explained(error, target, FOR_RESULTS)
                 if n:
                     error.reason = f"{error.reason} ({n} of {len(parts)} parts were sent.)"
                 raise

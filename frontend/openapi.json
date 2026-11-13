@@ -9737,6 +9737,20 @@
             "title": "Id",
             "type": "string"
           },
+          "missing": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missing"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -84676,7 +84690,7 @@
         ]
       },
       "get": {
-        "description": "The connected server, its text channels, and the troupe's characters, with\nthe channel each one's name suggests. One call to Discord.",
+        "description": "The connected server, its text channels with the permissions the bot lacks in\neach, and the troupe's characters, with the channel each one's name suggests.\nFour calls to Discord.",
         "operationId": "discord_setup_api_troupes__troupe_id__discord_get",
         "parameters": [
           {

@@ -31,6 +31,12 @@ OTHER_GUILD = "999"
 AGNES_CHANNEL = "201"
 OPEN_CHANNEL = "202"
 TEST_CHANNEL = "203"
+# The Horatio bot, the role Discord gives it when a server adds it, and the server's owner.
+BOT = "500"
+BOT_ROLE = "600"
+OWNER = "700"
+# What @everyone may do in a new server: see channels and send messages there.
+EVERYONE = discord.VIEW_CHANNEL | discord.SEND_MESSAGES
 
 
 def read_body(request: httpx.Request) -> tuple[dict[str, Any], dict[str, tuple[str, bytes]]]:
@@ -76,6 +82,26 @@ class FakeDiscord:
         self.next: list[tuple[int, dict[str, Any]]] = []
         self.waits: list[float] = []
         self.guild = (GUILD, "Court of Ash")
+        # The permissions of the bot's own role: those an invite asked for.
+        self.bot_role = discord.PERMISSIONS
+        # Whether Discord answers questions about the bot and its server.
+        self.answers_about_bot = True
+        everyone_denied = {"id": GUILD, "type": 0, "deny": str(1 << 10), "allow": "0"}
+        bot_allowed = {"id": BOT_ROLE, "type": 0, "deny": "0", "allow": str(EVERYONE)}
+        self.channels: list[dict[str, Any]] = [
+            {"id": "100", "type": 4, "name": "Players", "position": 0},
+            {
+                "id": AGNES_CHANNEL,
+                "type": 0,
+                "name": "agnes",
+                "parent_id": "100",
+                "position": 1,
+                "permission_overwrites": [everyone_denied, bot_allowed],
+            },
+            {"id": OPEN_CHANNEL, "type": 0, "name": "general", "position": 2},
+            {"id": TEST_CHANNEL, "type": 0, "name": "st-test", "position": 3},
+            {"id": "300", "type": 2, "name": "voice", "position": 4},
+        ]
 
     def handle(self, request: httpx.Request) -> httpx.Response:
         path = request.url.path
@@ -86,29 +112,35 @@ class FakeDiscord:
             return httpx.Response(200, json={"guild": {"id": self.guild[0], "name": self.guild[1]}})
         assert request.headers["Authorization"] == "Bot test-token"
         if path == f"/api/v10/guilds/{GUILD}/channels":
-            everyone_denied = [{"id": GUILD, "type": 0, "deny": str(1 << 10), "allow": "0"}]
-            return httpx.Response(
-                200,
-                json=[
-                    {"id": "100", "type": 4, "name": "Players", "position": 0},
-                    {
-                        "id": AGNES_CHANNEL,
-                        "type": 0,
-                        "name": "agnes",
-                        "parent_id": "100",
-                        "position": 1,
-                        "permission_overwrites": everyone_denied,
-                    },
-                    {"id": OPEN_CHANNEL, "type": 0, "name": "general", "position": 2},
-                    {"id": TEST_CHANNEL, "type": 0, "name": "st-test", "position": 3},
-                    {"id": "300", "type": 2, "name": "voice", "position": 4},
+            return httpx.Response(200, json=self.channels)
+        about_bot = {
+            "/api/v10/users/@me": {"id": BOT},
+            f"/api/v10/guilds/{GUILD}": {
+                "id": GUILD,
+                "owner_id": OWNER,
+                "roles": [
+                    {"id": GUILD, "permissions": str(EVERYONE)},
+                    {"id": BOT_ROLE, "permissions": str(self.bot_role)},
                 ],
-            )
+            },
+            f"/api/v10/guilds/{GUILD}/members/{BOT}": {"roles": [BOT_ROLE]},
+        }
+        if path in about_bot:
+            if not self.answers_about_bot:
+                return httpx.Response(403, json={"message": "Missing Access", "code": 50001})
+            return httpx.Response(200, json=about_bot[path])
         if path.startswith("/api/v10/channels/"):
+            channel = path.split("/")[4]
+            if request.method == "GET" and path.count("/") == 4:
+                if not self.answers_about_bot:
+                    return httpx.Response(403, json={"message": "Missing Access", "code": 50001})
+                found = next((c for c in self.channels if c["id"] == channel), None)
+                if found is None:
+                    return httpx.Response(404, json={"message": "Unknown Channel", "code": 10003})
+                return httpx.Response(200, json={**found, "guild_id": GUILD})
             if self.next:
                 code, body = self.next.pop(0)
                 return httpx.Response(code, json=body)
-            channel = path.split("/")[4]
             if channel in self.gone:
                 return httpx.Response(404, json={"message": "Unknown Channel", "code": 10003})
             message_id = path.split("/")[6] if path.count("/") >= 6 else None
@@ -255,6 +287,48 @@ def test_a_failure_part_way_says_how_much_was_sent(fake_discord: FakeDiscord) ->
 # --- embeds, edited and deleted --------------------------------------------------------------
 
 
+def test_a_refusal_for_want_of_permission_names_what_the_bot_lacks(
+    fake_discord: FakeDiscord,
+) -> None:
+    # The bot was added with the old invite: it may see channels and send messages.
+    fake_discord.bot_role = discord.VIEW_CHANNEL | discord.SEND_MESSAGES
+    fake_discord.next = [(403, {"message": "Missing Permissions", "code": 50013})]
+
+    with pytest.raises(SendError) as failed:
+        discord.post_message(OPEN_CHANNEL, {"embeds": [{"title": "Fire at the docks"}]})
+
+    assert failed.value.reason == (
+        "The Horatio bot needs Embed Links and Attach Files in that channel. "
+        "Give it those permissions in the channel's settings on Discord."
+    )
+    assert failed.value.retry is False
+
+
+def test_results_refused_in_a_channel_the_bot_cant_post_in_say_so(
+    fake_discord: FakeDiscord,
+) -> None:
+    deny_send = {"id": BOT_ROLE, "type": 0, "deny": str(discord.SEND_MESSAGES), "allow": "0"}
+    fake_discord.channels[3]["permission_overwrites"] = [deny_send]
+    fake_discord.next = [(403, {"message": "Missing Permissions", "code": 50013})]
+
+    with pytest.raises(SendError) as failed:
+        discord.DiscordConnector().send({}, TEST_CHANNEL, message())
+
+    assert failed.value.reason.startswith("The Horatio bot needs Send Messages in that channel.")
+
+
+def test_a_refusal_discord_wont_explain_says_a_permission_is_missing(
+    fake_discord: FakeDiscord,
+) -> None:
+    fake_discord.answers_about_bot = False
+    fake_discord.next = [(403, {"message": "Missing Permissions", "code": 50013})]
+
+    with pytest.raises(SendError) as failed:
+        discord.post_message(OPEN_CHANNEL, {"content": "News"})
+
+    assert failed.value.reason == "The Horatio bot is missing a permission in that channel."
+
+
 def test_an_embed_goes_with_its_pictures_and_pings_nobody(fake_discord: FakeDiscord) -> None:
     embed = {"title": "Fire at the docks", "image": {"url": "attachment://picture.webp"}}
     picture = discord.File("picture.webp", b"RIFF-picture")
@@ -357,6 +431,50 @@ def test_connecting_a_server_and_choosing_channels(
     assert "storyteller connected the Discord server Court of Ash." in log
 
 
+def test_the_invite_asks_for_what_posts_need() -> None:
+    names = discord.missing(0, discord.PERMISSIONS)
+
+    assert discord.PERMISSIONS == 52224
+    assert names == ["View Channels", "Send Messages", "Embed Links", "Attach Files"]
+
+
+def test_staff_see_which_permissions_the_bot_lacks_in_each_channel(
+    scene: Scene,  # noqa: F811
+    fake_discord: FakeDiscord,
+) -> None:
+    troupe = scene.troupe
+    connect_server(scene)
+    # A server that added the bot before Horatio asked for Embed Links and Attach Files.
+    fake_discord.bot_role = discord.VIEW_CHANNEL | discord.SEND_MESSAGES
+    deny_view = {"id": BOT_ROLE, "type": 0, "deny": str(discord.VIEW_CHANNEL), "allow": "0"}
+    fake_discord.channels[3]["permission_overwrites"] = [deny_view]
+
+    setup = troupe.storyteller.client.get(f"/troupes/{troupe.id}/discord").json()
+    posting = troupe.storyteller.client.get(f"/troupes/{troupe.id}/post-channels").json()
+
+    expected = {
+        "agnes": ["Embed Links", "Attach Files"],
+        "general": ["Embed Links", "Attach Files"],
+        "st-test": ["View Channels", "Send Messages", "Embed Links", "Attach Files"],
+    }
+    assert {c["name"]: c["missing"] for c in setup["channels"]} == expected
+    assert {c["name"]: c["missing"] for c in posting["channels"]} == expected
+
+    fake_discord.bot_role = discord.PERMISSIONS
+    fake_discord.channels[3]["permission_overwrites"] = []
+    setup = troupe.storyteller.client.get(f"/troupes/{troupe.id}/discord").json()
+    assert {c["name"]: c["missing"] for c in setup["channels"]} == {
+        "agnes": [],
+        "general": [],
+        "st-test": [],
+    }
+
+    # When Discord won't say, the channels are still listed, unchecked.
+    fake_discord.answers_about_bot = False
+    setup = troupe.storyteller.client.get(f"/troupes/{troupe.id}/discord").json()
+    assert [c["missing"] for c in setup["channels"]] == [None, None, None]
+
+
 def test_the_server_comes_only_from_discord(
     scene: Scene,  # noqa: F811
     fake_discord: FakeDiscord,
@@ -444,6 +562,87 @@ def test_private_channels_come_first_then_the_full_name() -> None:
 
 def test_a_channel_two_characters_could_have_goes_to_neither() -> None:
     assert suggest(["Agnes Wren", "Agnes  Wren"], [channel("1", "agnes-wren")]) == {}
+
+
+# --- the bot's permissions in a channel ------------------------------------------------------
+
+ROLE = "800"
+
+
+def access(everyone: int = EVERYONE, role: int = 0, owner: str = OWNER) -> discord.BotAccess:
+    return discord.BotAccess(
+        guild_id=GUILD,
+        owner_id=owner,
+        roles={GUILD: everyone, ROLE: role},
+        bot_id=BOT,
+        bot_roles=[ROLE],
+    )
+
+
+def rule(id: str, allow: int = 0, deny: int = 0) -> dict[str, Any]:
+    return {"id": id, "allow": str(allow), "deny": str(deny)}
+
+
+def lacks(bot: discord.BotAccess, *overwrites: dict[str, Any]) -> list[str]:
+    return discord.missing(bot.permissions(list(overwrites)), discord.PERMISSIONS)
+
+
+def test_the_bots_roles_add_to_everyones() -> None:
+    assert lacks(access()) == ["Embed Links", "Attach Files"]
+    assert lacks(access(role=discord.EMBED_LINKS | discord.ATTACH_FILES)) == []
+
+
+def test_the_owner_and_an_administrator_may_do_anything() -> None:
+    hidden = rule(GUILD, deny=discord.VIEW_CHANNEL)
+
+    assert lacks(access(everyone=0, owner=BOT), hidden) == []
+    assert lacks(access(everyone=0, role=discord.ADMINISTRATOR), hidden) == []
+
+
+def test_a_private_channel_needs_the_bot_let_in() -> None:
+    hidden = rule(GUILD, deny=discord.VIEW_CHANNEL)
+    full = discord.PERMISSIONS
+
+    assert lacks(access(role=full), hidden) == [
+        "View Channels",
+        "Send Messages",
+        "Embed Links",
+        "Attach Files",
+    ]
+    assert lacks(access(role=full), hidden, rule(ROLE, allow=discord.VIEW_CHANNEL)) == []
+    assert lacks(access(role=full), hidden, rule(BOT, allow=discord.VIEW_CHANNEL)) == []
+
+
+def test_the_bot_itself_comes_last_then_its_roles_allow_over_their_denials() -> None:
+    full = discord.PERMISSIONS
+
+    assert lacks(access(role=full), rule(ROLE, deny=discord.EMBED_LINKS)) == ["Embed Links"]
+    assert (
+        lacks(
+            access(role=full),
+            rule(ROLE, deny=discord.EMBED_LINKS),
+            rule(BOT, allow=discord.EMBED_LINKS),
+        )
+        == []
+    )
+    assert (
+        lacks(
+            access(role=full),
+            rule(GUILD, deny=discord.ATTACH_FILES),
+            rule(ROLE, allow=discord.ATTACH_FILES),
+        )
+        == []
+    )
+
+
+def test_without_send_messages_nothing_can_be_embedded_or_attached() -> None:
+    no_send = rule(ROLE, deny=discord.SEND_MESSAGES)
+
+    assert lacks(access(role=discord.PERMISSIONS), no_send) == [
+        "Send Messages",
+        "Embed Links",
+        "Attach Files",
+    ]
 
 
 def test_without_a_server_there_is_nothing_to_suggest(

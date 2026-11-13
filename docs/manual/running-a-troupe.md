@@ -774,7 +774,7 @@ Discord results are posted by the Horatio bot, which the troupe adds to its own 
 2. Discord asks which server to add the bot to, and shows what it may do. Pick the troupe's server and accept.
 3. Discord sends you back to Connectors, which says the server is connected and names it.
 
-The bot may see channels and send messages in them; nothing else. Horatio doesn't read what people write there, the bot can't manage the server, it never mentions (pings) anyone, and it posts only where you choose. **Disconnect** makes Horatio forget the server and its channels; the bot stays in the server until someone there removes it.
+The bot may see channels and send messages in them, and, for news and announcements, embed links and attach pictures; nothing else. Horatio doesn't read what people write there, the bot can't manage the server, it never mentions (pings) anyone, and it posts only where you choose. **Disconnect** makes Horatio forget the server and its channels; the bot stays in the server until someone there removes it.
 
 #### Making a channel for each character
 
@@ -783,6 +783,8 @@ Each character's results go to a private text channel of its own, which you make
 1. In the troupe's Discord server, make a text channel. Naming it after the character, such as `#agnes-wren`, lets Horatio suggest it (see below).
 2. Make it private, so everyone in the server is kept out of it.
 3. Let in the character's player, the staff (a staff role is easiest), and the Horatio bot (by its own role, named after the bot, or by name). The bot must be able to see the channel and send messages there.
+
+Where the bot lacks a permission it needs in a channel you've chosen, Horatio says so beside it: **View Channels** and **Send Messages** for results, and also **Embed Links** and **Attach Files** for news and announcements. A server that added the bot before Horatio asked for the last two needs them given to the bot's role (Server Settings › Roles), or in the channels' own settings. If Discord refuses a post anyway, the delivery's error names the permission that's missing.
 
 Make a **test channel** that only staff can see, with the bot let in, too. Putting the characters' channels in one category whose permissions they share saves setting each one up.
 
