@@ -5,8 +5,7 @@ import { AuditTab } from "./AuditTab";
 import { BackupsTab } from "./BackupsTab";
 import { ClanLogosTab } from "./ClanLogosTab";
 import { PeopleTab } from "./PeopleTab";
-import { SettingsTab } from "./SettingsTab";
-import { SystemTab } from "./SystemTab";
+import { SiteTab } from "./SiteTab";
 import { ToolsTab } from "./ToolsTab";
 import { TroupeManagementTab } from "./TroupeManagementTab";
 import { useTroupeRequests } from "./TroupeRequestsTab";
@@ -29,8 +28,7 @@ export function CustodianPage() {
           { to: "/custodian/clan-logos", label: "Clan logos" },
           { to: "/custodian/backups", label: "Backups" },
           { to: "/custodian/audit", label: "Audit" },
-          { to: "/custodian/settings", label: "Settings" },
-          { to: "/custodian/system", label: "System" },
+          { to: "/custodian/site", label: "Site" },
           { to: "/custodian/tools", label: "Tools" },
         ]}
       />
@@ -46,8 +44,10 @@ export function CustodianPage() {
         <Route path="yorick-import" element={<ToYorickImport />} />
         <Route path="backups" element={<BackupsTab />} />
         <Route path="audit" element={<AuditTab />} />
-        <Route path="settings" element={<SettingsTab />} />
-        <Route path="system" element={<SystemTab />} />
+        <Route path="site" element={<SiteTab />} />
+        {/* Their own tabs until #790; old links land on Site. */}
+        <Route path="settings" element={<Navigate to="/custodian/site" replace />} />
+        <Route path="system" element={<Navigate to="/custodian/site" replace />} />
         <Route path="tools" element={<ToolsTab />} />
         <Route
           path="tools/yorick-import"
