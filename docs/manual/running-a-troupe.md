@@ -158,7 +158,7 @@ With player characters, or everyone, it's a table: the character (with the title
 Tick characters, or **Select all shown**, then choose **Print…**:
 
 - **Sheets**: **Print selected** or **Print all**, for the printable sheets.
-- **Game badges**: **Badges for selected** or **Badges for all**, and **Storyteller badges** for the staff. What badges print is set under [Troupe settings](#customise-troupe-settings).
+- **Game badges**: **Badges for selected** or **Badges for all**, and **Storyteller badges** for the staff. What badges print is set in At game's **Settings** (see [A feature's own settings](#a-features-own-settings)).
 
 Printing opens in a new tab, so what you ticked stays.
 
@@ -283,7 +283,7 @@ The **Status** tab in the Troupe group is a reference for everyone in the troupe
 
 ## Boons
 
-A boon is a debt one character owes another, registered with the Harpy (MET: VTM pp. 395-397): trivial, minor, major, blood or life. When the troupe keeps a boon ledger (switch it on under [Troupe settings](#at-game)), storytellers and assistant storytellers keep it under **Characters › Boons**, in three parts: **Ledger** (the boons themselves), **Standings** and **Statistics**. A boon made off the record isn't in the ledger, and isn't enforced.
+A boon is a debt one character owes another, registered with the Harpy (MET: VTM pp. 395-397): trivial, minor, major, blood or life. When the troupe keeps a boon ledger (switch it on in the [Features list](#features) of Troupe settings), storytellers and assistant storytellers keep it under **Characters › Boons**, in three parts: **Ledger** (the boons themselves), **Standings** and **Statistics**. A boon made off the record isn't in the ledger, and isn't enforced.
 
 - **Register boons** takes one boon or a whole game's: a row for each, with its debtor and creditor (a character of the troupe, retired ones too, or a name only for someone not in Horatio), its kind, the in-game date, the reason and any conditions ("Cannot be traded"). **How many** makes that many alike, for "1 of 3, 2 of 3…". **Where they come from** goes in each boon's log. They all register together, or none do.
 - The ledger's tabs are **Open** (standing, with everyone on it in play), **Departed** (standing, but someone on it has met Final Death or is off-field), **Settled**, **Void** and **All**. Narrow them to a character or a name, a kind, or the nights the boons were made.
@@ -292,10 +292,10 @@ A boon is a debt one character owes another, registered with the Harpy (MET: VTM
 - **Standings** shows where everyone stands, live. Each kind of boon has a weight (Trivial 0.5, Minor 1, Major 3, Blood 5, Life 10 to begin with; **Change** sets the troupe's own), and a character's **net** is the weight owed to them less the weight they owe. It shows open boons by kind, each character's standing, the court (each title holder, and who owes them and whom they owe most), clans, ages and sects, how long open debts have stood, how boons get settled and who calls theirs in, boons across clan and sect lines, and characters who owe each other. **Active** leaves out boons that involve someone dead or off-field; **Everyone** keeps them.
 - **Statistics** shows how the ledger has moved over time: boons registered, settled and open debt, by count or by weight, who owes whom as a network, debt between clans and sects, and boons at each game. It counts with the same weights and the same **Active** or **Everyone**, and every chart can be read as a table.
 - **Status and boons** (MET: VTM p. 316): while a boon's creditor holds **Disgraced**, the ledger and the Play View say beside it that it need not be repaid while they do; nothing is settled or changed, and the note goes when the status does. On a character's **Status**, staff see **Apology boon…** beside a held **Warned** or **Disgraced**: an apology and a boon put a slip right, a minor boon under Warned and a major one under Disgraced. It registers that boon in the ledger, owed by the character to whoever was wronged (the status's patron to begin with). Horatio doesn't record slips themselves, so the offer stays there while the status lasts.
-- With **Judge "No boons registered" from the ledger** on under **Boons** in the troupe's settings (off by default), the Camarilla's lesser status ban on **no boons registered with the Harpy** (MET: VTM p. 403) is judged from the ledger: it applies to a character with no boon registered, owed or owed to them, standing or settled, in any troupe they're in that keeps a ledger and judges it. Pending and void boons don't count (a Boonbreaker's boons are made void), and a standing boon stops counting once the other side has left as the court knows it (the Who's Who lists them), as on the Harpy's standings; a settled boon always counts. Switch it on once the ledger holds every boon, or the whole court comes under the ban. A mark staff put on the ban still decides it.
-- **Players** report boons in the Play View's **Boons** tab: who, which way, the kind, the night, the reason, any conditions, and how many. A report goes straight into the ledger, marked in its log as done as their character. Under **Boons** in the troupe's settings, choose what else they see there: **the form to report a boon only** (the default), **also what they owe**, or **also what they're owed**. With the last, you can let **players mark boons owed to them settled**: only the creditor's player, as called in or forgiven, never the debtor's. Players never see a boon's log, its staff note, or who registered it. The tab shows only while the ledger is on, and can be switched off under **Play View tabs**.
-- **Review**: tick **Boons players report wait for review** under **Boons** in the troupe's settings, and a report waits, pending, instead of standing at once. Horatio also flags any new boon, whoever entered it, whose debtor or creditor is a name that links to no character, and any that looks like a duplicate of another (same people, kind, night and reason); **Flag for review** on an open boon flags it by hand, with what needs a ruling. Everything waiting or flagged is under **To review** in the ledger. **Review** on one shows it with its flags: **Accept** makes it stand (edit it first if it needs it), **Don't accept** voids it with a reason the player who reported it sees, in their Boons tab and their notifications. **Link to a character** puts a character in place of a name, on that boon or on every boon naming it; **Clear the flag** keeps it as it is. Accepting or not accepting clears a boon's flags.
-- **The Harpy**: under **Boons** in the troupe's settings, choose **The Harpy's access to the ledger**: **None** (the default: the ledger is staff's alone), **Receives submissions** (the Harpy reviews what players report, as staff do under **To review**, and is told of each report) or **The full ledger** (the Harpy also registers, edits, trades, passes on, settles, voids and reopens boons). The Harpy is whoever holds the Harpy title in the troupe, a Master Harpy too; with several, each has it, and it ends when the title does or the character retires. They work from their character's Play View (**Boons**, then **Open the boon ledger** or **Review boons**), and what they do is logged as done by their character. They never see what an edit changed, a boon's staff note or who entered a boon, and they can't write a staff note. Who has left they see only as the court knows it: a character the Who's Who lists under **No longer with us** shows as gone, with why only if that's Final Death or Off-field; a player stopping (Inactive) is never shown, and a departure the Who's Who doesn't list stays at court. They name only player characters and NPCs already in the ledger; any other NPC they name by name, for you to link. With the full ledger, tick **The Harpy also reads the boon standings and statistics** to let them read those too, from **Standings** and **Statistics** on their ledger page, by the same rule; the weights stay yours to set. Off to begin with, the standings and statistics are staff's.
+- With **Judge "No boons registered" from the ledger** on in the Boons tab's **Settings** (off by default), the Camarilla's lesser status ban on **no boons registered with the Harpy** (MET: VTM p. 403) is judged from the ledger: it applies to a character with no boon registered, owed or owed to them, standing or settled, in any troupe they're in that keeps a ledger and judges it. Pending and void boons don't count (a Boonbreaker's boons are made void), and a standing boon stops counting once the other side has left as the court knows it (the Who's Who lists them), as on the Harpy's standings; a settled boon always counts. Switch it on once the ledger holds every boon, or the whole court comes under the ban. A mark staff put on the ban still decides it.
+- **Players** report boons in the Play View's **Boons** tab: who, which way, the kind, the night, the reason, any conditions, and how many. A report goes straight into the ledger, marked in its log as done as their character. In the Boons tab's **Settings**, choose what else they see there: **the form to report a boon only** (the default), **also what they owe**, or **also what they're owed**. With the last, you can let **players mark boons owed to them settled**: only the creditor's player, as called in or forgiven, never the debtor's. Players never see a boon's log, its staff note, or who registered it. The tab shows only while the ledger is on, and can be switched off under **Play View tabs**.
+- **Review**: tick **Boons players report wait for review** in the Boons tab's **Settings**, and a report waits, pending, instead of standing at once. Horatio also flags any new boon, whoever entered it, whose debtor or creditor is a name that links to no character, and any that looks like a duplicate of another (same people, kind, night and reason); **Flag for review** on an open boon flags it by hand, with what needs a ruling. Everything waiting or flagged is under **To review** in the ledger. **Review** on one shows it with its flags: **Accept** makes it stand (edit it first if it needs it), **Don't accept** voids it with a reason the player who reported it sees, in their Boons tab and their notifications. **Link to a character** puts a character in place of a name, on that boon or on every boon naming it; **Clear the flag** keeps it as it is. Accepting or not accepting clears a boon's flags.
+- **The Harpy**: in the Boons tab's **Settings**, choose **The Harpy's access to the ledger**: **None** (the default: the ledger is staff's alone), **Receives submissions** (the Harpy reviews what players report, as staff do under **To review**, and is told of each report) or **The full ledger** (the Harpy also registers, edits, trades, passes on, settles, voids and reopens boons). The Harpy is whoever holds the Harpy title in the troupe, a Master Harpy too; with several, each has it, and it ends when the title does or the character retires. They work from their character's Play View (**Boons**, then **Open the boon ledger** or **Review boons**), and what they do is logged as done by their character. They never see what an edit changed, a boon's staff note or who entered a boon, and they can't write a staff note. Who has left they see only as the court knows it: a character the Who's Who lists under **No longer with us** shows as gone, with why only if that's Final Death or Off-field; a player stopping (Inactive) is never shown, and a departure the Who's Who doesn't list stays at court. They name only player characters and NPCs already in the ledger; any other NPC they name by name, for you to link. With the full ledger, tick **The Harpy also reads the boon standings and statistics** to let them read those too, from **Standings** and **Statistics** on their ledger page, by the same rule; the weights stay yours to set. Off to begin with, the standings and statistics are staff's.
 - **Lesser Harpies**: with the Harpy on the full ledger, tick **The Harpy may give others access to the ledger**, and choose whether the troupe calls them **Lesser Harpies** or **Talons**. The Harpy then gives access from their ledger page, choosing for each whether they may add boons, edit them (with settling and reviewing what players report) and perform audits; holders of the Lesser Harpy title are offered first. Each works from their own Play View, as their character, and sees what the Harpy sees. The access stays with the office when the Harpy changes. You see who has what under the same setting, and can take it away. They see who has left as the Harpy does, only as the court knows it, and read the standings and statistics where you let the Harpy.
 - **Boonbreakers** (MET: VTM pp. 397-398): someone who refused to pay a boon after the Harpy gave them the chance. Under **Characters › Boons › Ledger**, **Declare a Boonbreaker**, choose who, and Horatio says first how many of their boons it makes void ("This makes 3 boons void: 2 owed by them, 1 owed to them"). Give what they refused, and the boon if it's in the ledger. Every open boon they owe or are owed is made void, each with why in its log, and they hold **Disgraced** for as long as the mark stands: its usual end doesn't apply, and it can't be removed on its own. A character whose sect holds no status gets the mark without it. The mark shows beside their name in the ledger and the Play View. A Harpy with the full ledger can declare one too, as their character. **Record an appeal** for each appeal for mercy, to the Harpy or a court of seven to thirteen Harpies, with the outcome; a court's votes against are kept, and what the book says follows (six months more for each vote against, or the rest of the term falling on the Harpy) is shown for you to carry out with the status tools. Mercy granted lifts the mark and ends that Disgraced; the book doesn't say the voided boons come back, so you choose which, if any, stand again.
 - **Ignoring a great boon** (p. 395): a debtor who formally ignores a major, blood or life boon loses status. Settling one as **Formally ignored** marks it: take the status with the status tools on their sheet, then say **Status taken**, or **No status taken**. Horatio never takes it by itself.
@@ -308,7 +308,7 @@ Switched off, the ledger and its entries in the log are hidden; what was registe
 
 The **Who's Who** tab shows the troupe's active characters as cards, for its players and staff. It is never public. The court comes first, in rank order, then a section for each clan with a seat, then **Other** for the clans without one, then those no longer with us. Search it by character, player or title, or filter it by clan and sect.
 
-What it shows of sect status is set under [Troupe settings](#customise-troupe-settings).
+What it shows of sect status is set in its **Settings**, at the top of the tab (see [A feature's own settings](#a-features-own-settings)).
 
 ## News
 
@@ -405,7 +405,7 @@ Publishing, editing a published announcement, pinning and unpinning, unpublishin
 - **Find items** searches by words, holder, kind, quality, grade, who gave it and when, held or discarded.
 - **Export CSV** downloads the list; **Find these characters** opens the Characters list on the holders.
 
-> **If your troupe uses this:** with **Items that expire** switched on in Troupe settings, you can give an item an expiry: on a day, after a number of the holder's games, or at the end of the downtime cycle. An expired item is taken back, and its history kept.
+> **If your troupe uses this:** with **Items that expire** switched on in the Features list of Troupe settings, you can give an item an expiry: on a day, after a number of the holder's games, or at the end of the downtime cycle. An expired item is taken back, and its history kept.
 
 ## Locations and quests
 
@@ -479,13 +479,19 @@ Below it, **House settings at a glance** sums up who may join, XP, status and ti
 
 ## Customise: troupe settings
 
-**Customise › Troupe settings** holds the settings for the whole troupe, in groups, under a list of its features.
+**Customise › Troupe settings** holds the settings for the whole troupe, in groups, under a list of its features. A feature with a tab of its own keeps the rest of its settings at the top of that tab (see [A feature's own settings](#a-features-own-settings)).
 
 ### Features
 
 The **Features** list at the top has a row for each optional feature: Who's Who, News and announcements, the Play View, Boons, Blood bonds, Player Nominations, Remembrances, the court over time and the chronicle for players, Quests, Feeding, Golconda and Enlightened, and Items that expire. Each row says whether it's on, what it adds and which tabs appear with it, with **Open** to go to its tab once it's on, and **Settings** for the rest of its settings where it has more.
 
-Storytellers switch a feature on or off with the switch at the start of its row. It's the same setting as the feature's card further down (or, for Quests, under **Rules › Quests**), so either can be used. A feature switched off has no tab, and what was recorded with it is kept for when it's on again. Blood bonds switched on here are kept by staff; choose another way under its **Settings**. Who's Who and News are always on, and the Play View is switched tab by tab. Assistant storytellers see the list without the switches.
+Storytellers switch a feature on or off with the switch at the start of its row. This is the one place each is switched (Quests also under **Rules › Quests**). A feature switched off has no tab, and what was recorded with it is kept for when it's on again. Blood bonds switched on here are kept by staff; choose another way under its **Settings**. Feeding switched on here is feeding as the book has it, with its Vol. 2 options as they were. Who's Who and News are always on, and the Play View is switched tab by tab. Assistant storytellers see the list without the switches.
+
+- **Player Nominations**: players praise each other's roleplaying in their downtimes, for you to review and publish each month (see [Player Nominations](#player-nominations)). Switched off, none of it shows anywhere; what was written and published is kept for when it's on again.
+- **Remembrances**: ask the troupe for memories of a character who leaves play (see [Remembrances](#remembrances)). Independent of Player Nominations. Switched off, none can be opened or written and nothing of them shows, except those already published: they stay on the characters' pages and the Who's Who, because they belong to the people remembered.
+- **The court over time** and **the chronicle**, for players: staff always see them; switched on, players see who held each title and when, and the chronicle's public events, never Embraces, diablerie or status.
+- **Golconda and Enlightened**: a house option for a sect that recognises the pursuit of Golconda, so Golconda Seekers hold the innate status Enlightened (Vol. 2, p. 267).
+- **Items that expire**: let staff give items with an expiry (see [Equipment](#equipment)).
 
 ![Troupe settings › Features, as a new troupe has them: Who's Who, News, the Play View and Feeding on, the rest off.](images/running-a-troupe/troupe-features.png)
 
@@ -497,6 +503,19 @@ The parts of the chronicle's Setting Style Document (MET: VTM pp. 331–336) tha
 - **Scope**: the locale is the profile's city; say how powerful the characters are and how far they can change the story.
 - **Themes** and **Moods**: each one an entry of its own, shown as a chip that opens to its description. **Add a theme** or **Add a mood** starts from one of the book's samples (themes p. 325, moods pp. 325–326), which fills in a description for you to change, or from your own. Drag a chip onto another to put it in that place, or open it and use **Earlier** and **Later**.
 - **Storyteller notes**: short rules for the chronicle, such as how long ago characters may have been Embraced, each its own entry in the order you put them.
+
+### A feature's own settings
+
+Who's Who, At game, Boons and Bonds each have **Settings** at the top of their tab, folded away until opened, for storytellers. A feature's **Settings** link in the Features list opens them.
+
+- **Who's Who**: whether it also shows the negative status each character carries into a game here, and whether players see its sire lines.
+- **At game** (**Characters › At game**), for the Play View and the game itself:
+  - **Play View tabs**: a switch for each of the Play View's tabs (Sheet, Tracker, Pools, Status, Equipment, Throws, and Boons while the troupe keeps a boon ledger), all on to begin with. A tab switched off doesn't show on your players' Play Views; with the Tracker off, the strip of Blood, Willpower and health on the other tabs goes too. Staff always see every tab on NPCs. A visiting character keeps its home troupe's tabs. Switch every tab off if your players keep their sheets in Horatio but don't play from it: the card says what that does before it's saved. Its player characters then have no **Play**, check-in doesn't open the Play View, and phones don't keep the Play View for a game with no signal. Staff still run NPCs, the At game tab and scenes as before, with every tab on an NPC; a player character with no Play View can't be put in a scene.
+  - **The night's status**: tick **Choose the night's status at check-in** so players choose their one source of abiding status as they check in, fixed for the game. Off, they choose it on the Play View as the game begins.
+  - **Badges**: whether game badges print titles, character pronouns, and all status, negative status only, or none.
+  - **Throw pictures**: your troupe's own rock, paper and scissors for the Throws tab, instead of Horatio's. Upload a picture for each (JPEG, PNG, WebP or HEIC, up to 10 MB); Horatio keeps it whole on a square, transparency and all, and strips anything else the file carries. Give the set a name if you like. The preview shows them as the Throws tab will, in Dark or Ultra goth, so you can check they read at arm's length. The set is offered to your players only once all three are there. Replace any one, or remove the set to go back to Horatio's. Each change goes in the troupe log.
+- **Boons** (see [Boons](#boons)): what players see of the ledger in the Play View's Boons tab, whether a boon's creditor's player may mark it settled, whether boons players report wait for review, how far the Harpy reaches into it, whether the Harpy may give others access as Lesser Harpies, and whether the ledger judges the Camarilla's ban on no boons registered.
+- **Bonds** (see [Blood bonds](#blood-bonds)): how Horatio keeps them: **Staff manages**, **Players report and staff approves** or **Players manage**.
 
 ### Who may join
 
@@ -515,34 +534,18 @@ NPCs are never limited by either.
 
 - **Status on sheets**: **Players keep their own** (a player adds and removes fleeting and negative status on their own character, naming who gave it) or **Staff only**. Storytellers and assistant storytellers can always change status, with a reason for the character's log.
 - **Titles on sheets**: **Players choose their own** (from the troupe's titles of the character's sect; staff are told) or **Staff only**. A title the troupe holds to [one holder at a time](#titles-and-status) is staff's to give while someone holds it.
-- **The night's status**: tick **Choose the night's status at check-in** so players choose their one source of abiding status as they check in, fixed for the game. Off, they choose it on the Play View as the game begins.
-- **Who's Who**: whether it also shows the negative status each character carries into a game here, and whether players see its sire lines.
-- **Golconda and Enlightened**: a house option for a sect that recognises the pursuit of Golconda.
 - **Status bans on clans**: which clans each sect's status bans name here: the Camarilla's pillar clans (a character of none of them is under a lesser ban) and its known Caitiff (a greater ban), and the Sabbat's antitribu under a lesser or a greater ban. The pillar clans start as Volume II has them (Assamite, Malkavian, Nosferatu, Toreador, Tremere and Ventrue); **As the core book (2013)** adds the Brujah back, or tick the clans by hand (the Gangrel, say). A bloodline goes with its clan, and a character staff have marked keeps the mark.
 
-### At game
+### Blood and diablerie
 
-- **Play View tabs**: a switch for each of the Play View's tabs (Sheet, Tracker, Pools, Status, Equipment, Throws, and Boons while the troupe keeps a boon ledger), all on to begin with. A tab switched off doesn't show on your players' Play Views; with the Tracker off, the strip of Blood, Willpower and health on the other tabs goes too. Staff always see every tab on NPCs. A visiting character keeps its home troupe's tabs. Switch every tab off if your players keep their sheets in Horatio but don't play from it: the card says what that does before it's saved. Its player characters then have no **Play**, check-in doesn't open the Play View, and phones don't keep the Play View for a game with no signal. Staff still run NPCs, the At game tab and scenes as before, with every tab on an NPC; a player character with no Play View can't be put in a scene.
-- **Throw pictures**: your troupe's own rock, paper and scissors for the Throws tab, instead of Horatio's. Upload a picture for each (JPEG, PNG, WebP or HEIC, up to 10 MB); Horatio keeps it whole on a square, transparency and all, and strips anything else the file carries. Give the set a name if you like. The preview shows them as the Throws tab will, in Dark or Ultra goth, so you can check they read at arm's length. The set is offered to your players only once all three are there. Replace any one, or remove the set to go back to Horatio's. Each change goes in the troupe log.
-- **Badges**: whether game badges print titles, character pronouns, and all status, negative status only, or none.
 - **Blood at the start of a game**: what resetting a character's Play View puts their Blood back to: full, or a number you choose.
 - **Diablerie and Lesser Generation**: what recording a diablerie does to a Lesser Generation or Thin Blooded flaw: leave it, remove it and the XP it gave, or remove it and keep the XP.
-- **Items that expire**: let staff give items with an expiry (see [Equipment](#equipment)).
-- **Boons**: keep a boon ledger (see [Boons](#boons)). Off to begin with. On, choose what players see of it in the Play View's Boons tab, whether a boon's creditor's player may mark it settled, whether boons players report wait for review, how far the Harpy reaches into it, and whether the Harpy may give others access as Lesser Harpies.
-
-### Downtimes
-
-- **Player Nominations**: let players praise each other's roleplaying in their downtimes, for you to review and publish each month (see [Player Nominations](#player-nominations)). Off by default. Switched off, none of it shows anywhere; what was written and published is kept for when it's on again.
-- **Remembrances**: ask the troupe for memories of a character who leaves play (see [Remembrances](#remembrances)). Off by default, and independent of Player Nominations. Switched off, none can be opened or written and nothing of them shows, except those already published: they stay on the characters' pages and the Who's Who, because they belong to the people remembered.
 
 ### Feeding
 
-**Feeding** sets how far Horatio handles feeding between games:
+**Feeding**, switched on in the Features list, is feeding as the book has it: each clan needs a number of feeding actions a cycle, Herd and some traits change it, and staff answer full or half Blood for the next game. Switched off, there's no Feeding section on the downtime form, no Feeding tab on a cycle, nothing in the results, and no half Blood at the next game.
 
-- **Don't track feeding**: no Feeding section on the downtime form, no Feeding tab on a cycle, nothing in the results, and no half Blood at the next game.
-- **Book feeding**, the default: each clan needs a number of feeding actions a cycle, Herd and some traits change it, and staff answer full or half Blood for the next game.
-
-> **If your troupe uses this:** with feeding tracked, you can switch on the optional Vol. 2 rules, each on its own:
+> **If your troupe uses this:** with feeding on, you can switch on the optional Vol. 2 rules, each on its own:
 >
 > - **Blood Resonance**: players name the humor they hunt for; staff answer with the Resonance fed on and any Dyscrasia.
 > - **Feeding territories**: areas only the characters the domain's Authority names may feed in. A **Feeding territories** card then appears here, where storytellers and assistant storytellers keep the list as the Authority proclaims it.
@@ -881,12 +884,11 @@ A player can say their character committed diablerie, marked **Diablerie**. Befo
 
 ### Blood bonds
 
-Where the troupe's **Blood bonds** setting (under **Settings**) is **Players report and staff approves**, each drink of vampire blood a player reports for their character waits here, marked **Blood bond**: who drank whose blood, on which night, at a game or in a downtime. Approving adds the drink to the bond's log, starting the bond if there isn't one; a drink the regnant's player reported also marks the bond known to its regnant. Declining tells the player your note. Horatio warns you when the thrall holds a full bond to someone else, which makes them immune to other bonds (Errata, p. 295), and won't approve it.
+Where the troupe's **Blood bonds** setting (in the Bonds tab's **Settings**) is **Players report and staff approves**, each drink of vampire blood a player reports for their character waits here, marked **Blood bond**: who drank whose blood, on which night, at a game or in a downtime. Approving adds the drink to the bond's log, starting the bond if there isn't one; a drink the regnant's player reported also marks the bond known to its regnant. Declining tells the player your note. Horatio warns you when the thrall holds a full bond to someone else, which makes them immune to other bonds (Errata, p. 295), and won't approve it.
 
-The four settings:
+Blood bonds are switched on and off in the [Features list](#features) (off by default: no bonds anywhere; what was recorded, and any drink still waiting, is kept and comes back when it's switched on). Switched on, they're kept one of three ways:
 
-- **Off** (the default): no bonds anywhere. What was recorded, and any drink still waiting, is kept and comes back when it's switched on.
-- **Staff manages**: running staff record every drink on **Characters › Bonds**.
+- **Staff manages**, as they start: running staff record every drink on **Characters › Bonds**.
 - **Players report and staff approves**: players report their characters' drinks from the sheet or the Play View, and you approve them here.
 - **Players manage**: a player records a drink their character took, and it counts at once. One the regnant's player records waits for the thrall's player to confirm, or for you when the thrall is an NPC or a name only.
 
@@ -1065,7 +1067,7 @@ Once results are out, choose **Mark complete** on the Overview. Horatio says fir
 
 ### Player Nominations
 
-> **If your troupe uses this:** switch on **Player Nominations** under [Customise › Troupe settings](#downtimes).
+> **If your troupe uses this:** switch on **Player Nominations** in the [Features list](#features) of Customise › Troupe settings.
 
 Each downtime form gets a **Player Nominations** section, where players write short notes praising someone's roleplaying, each optionally linked to a character in the troupe or one of its staff. They don't use actions. You read them on the cycle's **Nominations** tab, open to storytellers and assistant storytellers, once a player submits their downtime.
 
@@ -1079,7 +1081,7 @@ Every starred nomination, from every month, rotates in a quiet line at the foot 
 
 ### Remembrances
 
-> **If your troupe uses this:** switch on **Remembrances** under [Customise › Troupe settings](#downtimes).
+> **If your troupe uses this:** switch on **Remembrances** in the [Features list](#features) of Customise › Troupe settings.
 
 When a character leaves play, the troupe can ask everyone in the next downtime for a memory of them.
 

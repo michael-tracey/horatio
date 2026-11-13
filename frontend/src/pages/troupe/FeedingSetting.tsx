@@ -28,19 +28,6 @@ export const RULES: { key: Rule; label: string; meaning: string }[] = [
   },
 ];
 
-const MODES: { value: "off" | "book"; label: string; meaning: string }[] = [
-  {
-    value: "off",
-    label: "Don't track feeding",
-    meaning: "No Feeding section on the downtime form, no Feeding tab on a cycle, nothing in the results, and no half Blood at the next game.",
-  },
-  {
-    value: "book",
-    label: "Book feeding",
-    meaning: "Each clan needs a number of feeding actions a cycle, Herd and some traits change it, and staff answer full or half Blood for the next game.",
-  },
-];
-
 /** What a change did, for the toast. */
 export function feedingChangeText(before: Setting, after: Setting): string {
   if (after.feeding === "off") return "Feeding isn't tracked now. What was recorded is kept, for if you switch it back on.";
@@ -50,9 +37,10 @@ export function feedingChangeText(before: Setting, after: Setting): string {
 }
 
 /**
- * How far Horatio handles feeding between games: not at all, as the core book has it
- * (the default), or with the optional Vol. 2 rules, each its own switch. Switching
- * feeding off only hides it: what was recorded stays and comes back.
+ * How Horatio handles feeding between games, once it's on: as the core book has it (the
+ * default), or with the optional Vol. 2 rules, each its own switch. Feeding is switched on
+ * and off in the Features list above (#784); off only hides it: what was recorded stays and
+ * comes back.
  */
 export function FeedingSetting({ troupeId, canEdit }: { troupeId: string; canEdit: boolean }) {
   const path = { params: { path: { troupe_id: troupeId } } };
@@ -74,36 +62,22 @@ export function FeedingSetting({ troupeId, canEdit }: { troupeId: string; canEdi
   // The Rack builds on Blood Resonance: switching that off switches the Rack off too.
   const toggle = (rule: Rule, on: boolean) => change(rule === "resonance" && !on ? { resonance: false, rack: false } : { [rule]: on });
   const played = RULES.filter((r) => now[r.key]);
-  const mode = MODES.find((m) => m.value === now.feeding) ?? MODES[1]!;
 
   return (
     <Card title="Feeding">
       <p className="mb-3 text-sm text-mist">
-        How far Horatio handles feeding between games. Switching it off hides feeding everywhere; whatever was recorded is kept, and comes back if it is switched on again.
+        How Horatio handles feeding between games. As the book has it, each clan needs a number of feeding actions a cycle, Herd and some traits change it, and staff
+        answer full or half Blood for the next game. Feeding is switched on and off in the Features list.
       </p>
       {!canEdit ? (
         <p className="text-sm">
-          {mode.label}. <span className="text-mist">{mode.meaning}</span>
-          {!off && played.length > 0 && <span className="mt-1 block">With {played.map((r) => r.label).join(", ")} (Vol. 2).</span>}
+          {off ? "Not tracked." : played.length > 0 ? `With ${played.map((r) => r.label).join(", ")} (Vol. 2).` : "As the book has it."}
         </p>
       ) : (
         <div className="flex flex-col gap-3 text-sm">
-          <fieldset className="flex flex-col gap-2" disabled={save.isPending}>
-            <legend className="sr-only">How Horatio handles feeding</legend>
-            {MODES.map((m) => (
-              <label key={m.value} className="flex items-start gap-2">
-                <input type="radio" name="feeding" className="mt-1" checked={now.feeding === m.value} onChange={() => change({ feeding: m.value })} />
-                <span>
-                  {m.label}
-                  {m.value === "book" && <span className="text-mist"> (the default)</span>}
-                  <span className="block text-xs text-mist">{m.meaning}</span>
-                </span>
-              </label>
-            ))}
-          </fieldset>
-          <fieldset className="flex flex-col gap-2 border-t border-ash pt-3" aria-label="Optional rules (Vol. 2)" disabled={off || save.isPending}>
+          <fieldset className="flex flex-col gap-2" aria-label="Optional rules (Vol. 2)" disabled={off || save.isPending}>
             <p className="text-xs tracking-wide text-mist uppercase">Optional rules (Vol. 2)</p>
-            {off && <p className="text-xs text-mist">Offered while feeding is tracked.</p>}
+            {off && <p className="text-xs text-mist">Offered while feeding is on.</p>}
             {RULES.map((r) => {
               const blocked = r.key === "rack" && !now.resonance;
               return (
