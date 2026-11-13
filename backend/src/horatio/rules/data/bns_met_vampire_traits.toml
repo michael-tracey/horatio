@@ -3347,13 +3347,6 @@ properties = { rating = 2, type = "Clan", requirement = "Gangrel: Noiad" }
 
 [[traits]]
 category = "merits"
-name = "Blood of Tzimisce"
-description = "The spirits of your land guard you: +3 to all attack test pools while in your haven. Gain 2 free dots of Lore, and your Lore can go 2 higher."
-page_reference = "244"
-properties = { rating = 1, type = "Clan", requirement = "Tzimisce" }
-
-[[traits]]
-category = "merits"
 name = "Blood of the Ancients"
 description = "+2 wild card to defend against all Necromancy, and your Willpower retest against it costs no Willpower. No help against Thaumaturgy."
 page_reference = "Vol. 2 Issue 1, p. 35"

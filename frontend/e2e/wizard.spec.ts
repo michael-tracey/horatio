@@ -355,6 +355,22 @@ test("Seasoned Traveler frees a pick on Survival, which goes to another skill", 
   await expect(p.getByRole("navigation", { name: "Creation steps" }).getByText("(needs a look)")).toHaveCount(0);
 });
 
+test("a Tzimisce is offered Blood of the Tzimisce once, by the book's name, on Skills and on Merits & flaws (#811)", async ({ browser }) => {
+  const { page: p } = await person(browser, "wf-tzimisce");
+  const id = await creatingVampire(p, "Voivode's Heir", "Tzimisce", [], ATTRIBUTES_AND_FOCUSES);
+  await p.goto(`/characters/${id}/create/skills`);
+  await p.getByText("Optional: skills from merits (costs merit points)").click();
+  const fromMerits = p.getByRole("region", { name: "From merits" });
+  await expect(fromMerits.getByRole("switch", { name: /^Blood of the Tzimisce/ })).toHaveCount(1);
+  await expect(fromMerits.getByRole("switch", { name: /^Blood of Tzimisce/ })).toHaveCount(0);
+
+  await p.goto(`/characters/${id}/create/merits`);
+  await p.getByLabel("Show Merits").selectOption("Everything");
+  const merits = p.getByRole("region", { name: "Merits", exact: true });
+  await expect(merits.getByRole("checkbox", { name: /^Blood of the Tzimisce/ })).toHaveCount(1);
+  await expect(merits.getByRole("checkbox", { name: /^Blood of Tzimisce/ })).toHaveCount(0);
+});
+
 test("Archaic names the Computer pick it clashes with on Merits, and Computer names Archaic on Skills", async ({ browser }) => {
   const { page: p } = await person(browser, "wf-archaic");
   const skills: [string, number][] = [["Brawl", 4], ["Dodge", 3], ["Athletics", 3], ["Awareness", 2], ["Empathy", 2], ["Firearms", 2], ["Investigation", 1], ["Leadership", 1], ["Computer", 1], ["Melee", 1]];
